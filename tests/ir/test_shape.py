@@ -7,15 +7,16 @@ symbolic dimensions and error conditions.
 
 from __future__ import annotations
 
+import typing
 from collections import namedtuple
-from typing import TYPE_CHECKING, cast
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicSolver, SymInt, broadcast_shapes, matmul_shape, normalize_axis
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -105,7 +106,7 @@ def test_normalize_axis() -> None:
     with pytest.raises((ValueError, ShapeMismatchError)):
         normalize_axis((-4,), 3)
     with pytest.raises(TypeError):
-        cast("EagerCallableProtocol", normalize_axis)(1.5, 3)
+        typing.cast("EagerCallableProtocol", normalize_axis)(1.5, 3)
 
 
 def test_symint() -> None:
@@ -152,21 +153,21 @@ def test_shape_tracker() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     TensorSpec = namedtuple("TensorSpec", ["shape"])
-    assert ShapeTracker.infer_elementwise([]) == ()
+    assert typing.cast("EagerValue", ShapeTracker.infer_elementwise([])) == ()
     t1 = TensorSpec(shape=(2, SymInt("A")))
     t2 = TensorSpec(shape=(SymInt("A"),))
-    out = cast("EagerCallableProtocol", ShapeTracker.infer_elementwise)([t1, t2])
-    assert len(out) == 2
-    assert out[0] == 2
-    assert isinstance(out[1], SymInt) and out[1].expr == "A"
+    out = typing.cast("EagerCallableProtocol", ShapeTracker.infer_elementwise)([t1, t2])
+    assert typing.cast("EagerValue", len(out)) == 2
+    assert typing.cast("EagerValue", out[0]) == 2
+    assert typing.cast("EagerValue", isinstance(typing.cast("EagerValue", out[1]), SymInt) and out[1].expr == "A")
     t3 = TensorSpec(shape=(SymInt("A"), 2))
     t4 = TensorSpec(shape=(2,))
-    out_matmul = cast("EagerCallableProtocol", ShapeTracker.infer_matmul)(t3, t4)
-    assert len(out_matmul) == 1
-    assert isinstance(out_matmul[0], SymInt) and out_matmul[0].expr == "A"
+    out_matmul = typing.cast("EagerCallableProtocol", ShapeTracker.infer_matmul)(t3, t4)
+    assert typing.cast("EagerValue", len(out_matmul)) == 1
+    assert typing.cast("EagerValue", isinstance(typing.cast("EagerValue", out_matmul[0]), SymInt) and out_matmul[0].expr == "A")
     t5 = TensorSpec(shape=(2, 3))
     t6 = TensorSpec(shape=(3, 4))
-    out_matmul2 = cast("EagerCallableProtocol", ShapeTracker.infer_matmul)(t5, t6)
+    out_matmul2 = typing.cast("EagerCallableProtocol", ShapeTracker.infer_matmul)(t5, t6)
     assert out_matmul2 == (2, 4)
 
 

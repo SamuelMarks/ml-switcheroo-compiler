@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
-from typing import Optional, cast  # noqa: F401
+import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
@@ -15,7 +14,7 @@ from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxMathVisitor,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -186,7 +185,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         return "jnp"
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -195,15 +194,16 @@ class JAXCodeGenerator(BaseGenerator):
         Returns:
             dict[str, str]: Dictionary mapping operation type to format string.
         """
-        ops = super().get_ops_map(kwargs)
-        ops["Zeros"] = self._format_zeros_like("zeros", kwargs)
-        ops["Ones"] = self._format_zeros_like("ones", kwargs)
-        ops["Full"] = self._format_full(kwargs)
+        kw = kwargs if kwargs is not None else {}
+        ops = super().get_ops_map(kw)
+        ops["Zeros"] = self._format_zeros_like("zeros", kw)
+        ops["Ones"] = self._format_zeros_like("ones", kw)
+        ops["Full"] = self._format_full(kw)
         ops["Relu"] = "jax.nn.relu({0})"
         ops["Gelu"] = "jax.nn.gelu({0})"
         ops["Silu"] = "jax.nn.silu({0})"
-        ops["Softmax"] = "jax.nn.softmax({0})" if "axis" not in kwargs else "jax.nn.softmax({0}, axis={axis})"
-        ops["LogSoftmax"] = "jax.nn.log_softmax({0})" if "axis" not in kwargs else "jax.nn.log_softmax({0}, axis={axis})"
+        ops["Softmax"] = "jax.nn.softmax({0})" if "axis" not in kw else "jax.nn.softmax({0}, axis={axis})"
+        ops["LogSoftmax"] = "jax.nn.log_softmax({0})" if "axis" not in kw else "jax.nn.log_softmax({0}, axis={axis})"
         ops["Sigmoid"] = "jax.nn.sigmoid({0})"
         return ops
 
@@ -268,12 +268,12 @@ class JAXCodeGenerator(BaseGenerator):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
+            evaluated = evaluate_graph(graph, inputs=inputs)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
-                    return cast(EagerValue, evaluated.get(graph.outputs[0]))
+                    return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return cast(EagerValue, evaluated)
+            return typing.cast(EagerValue, evaluated)
 
         return fallback_forward
 
@@ -301,7 +301,7 @@ class JAXCodeGenerator(BaseGenerator):
             """
             del w_kwargs
             jax_args = [getattr(jnp_mod, "asarray")(a.data if isinstance(a, Tensor) else a) for a in w_args]
-            return cast(Callable[..., EagerValue], target_fn)(*jax_args)
+            return typing.cast(TypedVariadicCallable[EagerValue], target_fn)(*jax_args)
 
         return executable
 

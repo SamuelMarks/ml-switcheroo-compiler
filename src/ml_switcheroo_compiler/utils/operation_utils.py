@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import abc
+import typing
 from collections.abc import Iterable, Sequence
-from typing import Protocol
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 
 
-class _OperationProtocol(Protocol):
+class _OperationProtocol(typing.Protocol):
     """Protocol representing an operation with input tensors."""
 
     @property
@@ -21,7 +21,7 @@ class _OperationProtocol(Protocol):
         """
 
 
-class _LineageNodeProtocol(Protocol):
+class _LineageNodeProtocol(typing.Protocol):
     """Protocol representing a graph lineage node."""
 
     @property
@@ -33,7 +33,7 @@ class _LineageNodeProtocol(Protocol):
         """
 
 
-class _LineageHistoryProtocol(Protocol):
+class _LineageHistoryProtocol(typing.Protocol):
     """Protocol representing tensor lineage history."""
 
     @property
@@ -45,7 +45,7 @@ class _LineageHistoryProtocol(Protocol):
         """
 
 
-class _LineageTensorProtocol(Protocol):
+class _LineageTensorProtocol(typing.Protocol):
     """Protocol representing a tensor with optional lineage metadata."""
 
 

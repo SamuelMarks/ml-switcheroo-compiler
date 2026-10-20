@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 
-if TYPE_CHECKING:
+from ml_switcheroo_ir import NodeDict
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
@@ -20,7 +22,7 @@ def test_buffer_allocation_coverage() -> None:
     n2 = IRNode(id="n2", op_type="Sub", inputs=["n1"])  # in place safe
     n3 = IRNode(id="n3", op_type="MatMul", inputs=["n1", "n2"])
 
-    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    g.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3})
     g.outputs = ["n1"]
 
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n1, n2, n3]):
@@ -41,7 +43,7 @@ def test_buffer_allocation_in_place() -> None:
     n1 = IRNode(id="n1", op_type="Input", inputs=[])
     n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])  # n1 used once
 
-    g.nodes = {"n1": n1, "n2": n2}
+    g.nodes = NodeDict({"n1": n1, "n2": n2})
 
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n1, n2]):
         with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value=128):
@@ -58,7 +60,7 @@ def test_buffer_allocation_dynamic() -> None:
 
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", inputs=[])
-    g.nodes = {"n1": n1}
+    g.nodes = NodeDict({"n1": n1})
 
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n1]):
         with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value="size_expr"):
@@ -164,7 +166,7 @@ def test_buffer_allocation_branch_coverage() -> None:
     # Missing node in graph for reuse
     n3.inputs.append("missing_node")
 
-    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    g.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3})
 
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n1, n2, n3]):
         with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", side_effect=[128, 256, 256]):
@@ -174,7 +176,7 @@ def test_buffer_allocation_branch_coverage() -> None:
     g2 = IRGraph()
     n4 = IRNode(id="n4", op_type="Input", inputs=[])
     n4.attributes["buffer_offset_symbolic"] = "offset_n4"
-    g2.nodes = {"n4": n4}
+    g2.nodes = NodeDict({"n4": n4})
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n4]):
         with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value="size_expr"):
             buffer_allocation_pass(g2)
@@ -196,7 +198,7 @@ def test_buffer_allocation_pass_class() -> None:
     n3 = IRNode(id="n3", op_type="Relu", inputs=["n2"], shape_metadata=(16, 16))
     n3.attributes["dtype"] = "float32"
 
-    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    g.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3})
     g.outputs = ["n3"]
 
     intervals = alloc_pass.compute_liveness_intervals(g)
@@ -223,7 +225,7 @@ def test_buffer_allocation_pass_class() -> None:
 
     g_extra = IRGraph()
     n_extra = IRNode(id="n_extra", op_type="Input", inputs=["external_non_node"], shape_metadata=(16, 16))
-    g_extra.nodes = {"n_extra": n_extra}
+    g_extra.nodes = NodeDict({"n_extra": n_extra})
     g_extra.outputs = ["n_extra", "missing_out_id"]
     intervals_extra = alloc_pass.compute_liveness_intervals(g_extra)
     assert "n_extra" in intervals_extra

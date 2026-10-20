@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import typing
 from collections.abc import Generator
-from typing import Union, cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-AsyncResultType = Union[Tensor, IRNode, OpArgValue]
+AsyncResultType = typing.Union[Tensor, IRNode, "OpArgValue"]
 
 
 class AsyncIOFuture:
@@ -102,7 +102,7 @@ class NonblockingLoad(OpDef):
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
         if shape is not None and isinstance(shape, (list, tuple)):
-            return tuple(int(cast(int, d)) for d in shape)
+            return tuple(int(typing.cast(int, d)) for d in shape)
         return ()
 
 

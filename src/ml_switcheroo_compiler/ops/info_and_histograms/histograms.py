@@ -1,6 +1,8 @@
 """Misc operations."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -53,7 +55,7 @@ class Histogram2d(OpDef):
                 b1, b2 = bins
                 b1_len = b1 if isinstance(b1, int) else (int(getattr(b1, "shape")[0]) - 1 if hasattr(b1, "shape") else 10)
                 b2_len = b2 if isinstance(b2, int) else (int(getattr(b2, "shape")[0]) - 1 if hasattr(b2, "shape") else 10)
-                return cast(TensorOrScalar, (b1_len, b2_len))
+                return typing.cast(TensorOrScalar, (b1_len, b2_len))
         return (10, 10)
 
 
@@ -75,7 +77,7 @@ class HistogramBinEdges(OpDef):
         """
         bins = kwargs.get("bins", 10)
         if hasattr(bins, "shape") and len(getattr(bins, "shape")) > 0:
-            return cast(TensorOrScalar, getattr(bins, "shape"))
+            return typing.cast(TensorOrScalar, getattr(bins, "shape"))
         if isinstance(bins, int):
             return (bins + 1,)
         return (11,)

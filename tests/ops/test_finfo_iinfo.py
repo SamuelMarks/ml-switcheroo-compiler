@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.dtype import DType
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -62,7 +63,7 @@ def test_misc_ops_shapes() -> None:
                 Args:
                     shape: Test parameter `shape`.
                 """
-                self.shape = shape
+                self.shape: tuple[int, ...] = typing.cast("tuple[int, ...]", shape)
                 self.data = None
 
         # Operations returning ()
@@ -73,38 +74,38 @@ def test_misc_ops_shapes() -> None:
         # Scalar / single array ops returning same shape
         for OpClass in [I0, Mish, Tril, Triu, Unwrap, AxisIndex]:
             op = OpClass()
-            assert op.infer_shape(Dummy((2, 2))) == (2, 2)
-            assert op.infer_shape(Dummy((3, 4, 5))) == (3, 4, 5)
+            assert op.infer_shape(Dummy(typing.cast("EagerValue", (2, 2)))) == (2, 2)
+            assert op.infer_shape(Dummy(typing.cast("EagerValue", (3, 4, 5)))) == (3, 4, 5)
 
         # Histogram ops
         op = Histogram()
         # (hist, bins) default bins=10
-        assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((100,))) == (100,)
+        assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((100,))) == (100,)
 
         op = Histogram2d()
-        assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((100,)), cast("EagerCallableProtocol", Dummy)((100,))) == (100,)
+        assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((100,)), typing.cast("EagerCallableProtocol", Dummy)((100,))) == (100,)
 
         op = HistogramBinEdges()
-        assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((100,))) == (100,)
+        assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((100,))) == (100,)
 
         # Kron
         op = Kron()
-        assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((2, 2)), cast("EagerCallableProtocol", Dummy)((3, 3))) == (2, 2)
+        assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((2, 2)), typing.cast("EagerCallableProtocol", Dummy)((3, 3))) == (2, 2)
 
         # Intersect1d
         op = Intersect1d()
         # Intersect1d fallback logic -> we don't know the size, but broadcast_shapes or dummy eval might give (0,) or some size
-        shape = cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)), cast("EagerCallableProtocol", Dummy)((5,)))
-        assert isinstance(shape, tuple)
+        shape = typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), typing.cast("EagerCallableProtocol", Dummy)((5,)))
+        assert isinstance(typing.cast("EagerValue", shape), tuple)
 
         # TrimZeros
         op = TrimZeros()
-        shape = cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((5,)))
-        assert isinstance(shape, tuple)
+        shape = typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)))
+        assert isinstance(typing.cast("EagerValue", shape), tuple)
 
         op = Modf()
-        assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((2, 2))) == (2, 2)
+        assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((2, 2))) == (2, 2)
 
         op = Rot90()
-        assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((2, 2))) == (2, 2)
-        assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", Dummy)((3, 4, 5))) == (3, 4, 5)
+        assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((2, 2))) == (2, 2)
+        assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((3, 4, 5))) == (3, 4, 5)

@@ -1,7 +1,8 @@
 """IRGraph to AST emission and class reconstruction."""
 
+from __future__ import annotations
+
 import os
-from typing import Optional
 
 import libcst as cst
 
@@ -34,7 +35,7 @@ def _build_attribute_chain(names: list[str]) -> cst.BaseExpression:
 def _emit_call_args(
     node: IRNode,
     target_framework: str,
-    var_map: Optional[dict[str, str]] = None,
+    var_map: dict[str, str] | None = None,
 ) -> list[cst.Arg]:
     """Emit CST argument list for an IR operation node.
 
@@ -74,9 +75,9 @@ def _emit_call_args(
 
 def _emit_control_flow_statement(
     node: IRNode,
-    var_map: Optional[dict[str, str]] = None,
-    assigned_name: Optional[str] = None,
-) -> Optional[cst.SimpleStatementLine]:
+    var_map: dict[str, str] | None = None,
+    assigned_name: str | None = None,
+) -> cst.SimpleStatementLine | None:
     """Emit control flow statements for Cond, Scan, and WhileLoop nodes.
 
     Args:
@@ -116,9 +117,9 @@ def _emit_control_flow_statement(
 
 def _emit_container_statement(
     node: IRNode,
-    var_map: Optional[dict[str, str]] = None,
-    assigned_name: Optional[str] = None,
-) -> Optional[cst.SimpleStatementLine]:
+    var_map: dict[str, str] | None = None,
+    assigned_name: str | None = None,
+) -> cst.SimpleStatementLine | None:
     """Emit container access statements for DictGet and GetItem nodes.
 
     Args:
@@ -159,9 +160,9 @@ def _emit_container_statement(
 
 def _emit_foreign_statement(
     node: IRNode,
-    var_map: Optional[dict[str, str]] = None,
-    assigned_name: Optional[str] = None,
-) -> Optional[cst.SimpleStatementLine]:
+    var_map: dict[str, str] | None = None,
+    assigned_name: str | None = None,
+) -> cst.SimpleStatementLine | None:
     """Emit ForeignCall statements forwarding varargs and kwargs.
 
     Args:
@@ -194,9 +195,9 @@ def _emit_foreign_statement(
 def _emit_operator_statement(
     node: IRNode,
     target_framework: str,
-    var_map: Optional[dict[str, str]] = None,
-    assigned_name: Optional[str] = None,
-) -> Optional[cst.SimpleStatementLine]:
+    var_map: dict[str, str] | None = None,
+    assigned_name: str | None = None,
+) -> cst.SimpleStatementLine | None:
     """Emit mapped operator call statement.
 
     Args:
@@ -227,9 +228,9 @@ def _emit_operator_statement(
 def _emit_node_statement(
     node: IRNode,
     target_framework: str,
-    var_map: Optional[dict[str, str]] = None,
-    assigned_name: Optional[str] = None,
-) -> Optional[cst.SimpleStatementLine]:
+    var_map: dict[str, str] | None = None,
+    assigned_name: str | None = None,
+) -> cst.SimpleStatementLine | None:
     """Emit CST statement for a single IR node.
 
     Args:
@@ -366,7 +367,7 @@ def _build_class_params(graph: IRGraph) -> list[cst.Param]:
 def _build_return_statement(
     graph: IRGraph,
     var_map: dict[str, str],
-    last_val_name: Optional[str],
+    last_val_name: str | None,
 ) -> cst.SimpleStatementLine:
     """Build the final return or pass statement for a method.
 
@@ -413,7 +414,7 @@ def emit_ir_to_class(
             var_map[out_id] = out_id
 
     func_body: list[cst.BaseStatement] = []
-    last_val_name: Optional[str] = None
+    last_val_name: str | None = None
 
     for node_id, node in graph.nodes.items():
         if node.op_type == "Input":

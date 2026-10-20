@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -41,7 +41,7 @@ def _validate_conv2d_args(in1: Tensor, in2: Tensor) -> None:
     Raises:
         ValueError: If either input shape is `None`.
     """
-    if in1.shape is None or in2.shape is None:
+    if getattr(in1, "shape", None) is None or getattr(in2, "shape", None) is None:
         raise ValueError("Inputs to convolve2d must have statically known shapes.")
 
 
@@ -72,9 +72,9 @@ def convolve2d(
         data = backend.execute_op("Convolve2d", in1.data, in2.data, **kwargs)
         return Tensor(data, TensorConfig(getattr(data, "shape"), in1.dtype, in1.device))
 
-    return cast(
+    return typing.cast(
         TensorOrScalar,
-        cast("EagerCallableProtocol", _emit_signal_node)(
+        typing.cast("EagerCallableProtocol", _emit_signal_node)(
             "Convolve2d",
             [in1, in2],
             kwargs,

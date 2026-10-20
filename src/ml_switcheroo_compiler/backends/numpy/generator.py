@@ -1,7 +1,9 @@
 """Implementation of generator operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.generator`)."""
 
+from __future__ import annotations
+
+import typing
 from types import ModuleType
-from typing import cast
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -160,7 +162,7 @@ class NumpyGenerator(
         return sys.modules["numpy"]
 
     @classmethod
-    def get_scipy_module(cls, submodule: str) -> ModuleType:
+    def get_scipy_module(cls, submodule: str = "special") -> ModuleType:
         """Return the requested SciPy submodule.
 
         Args:
@@ -185,7 +187,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return cast("TensorLike", getattr(np.random, "default_rng")(*args, **kwargs))
+        return typing.cast("TensorLike", getattr(np.random, "default_rng")(*args, **kwargs))
 
     @classmethod
     def load(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -199,7 +201,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return cast(EagerValue, getattr(np, "load")(*args, **kwargs))
+        return typing.cast(EagerValue, getattr(np, "load")(*args, **kwargs))
 
     @classmethod
     def save(cls, *args: EagerValue, **kwargs: EagerValue) -> None:

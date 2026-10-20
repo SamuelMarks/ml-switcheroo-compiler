@@ -1,6 +1,9 @@
 """Tests for structural CST pattern matching, state lifting, and AST node coverage."""
 
+from __future__ import annotations
+
 import libcst as cst
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
 from ml_switcheroo_compiler.backends.cst_transpiler import (
@@ -178,20 +181,22 @@ def test_ast_to_ir_dynamic_call_signatures() -> None:
 def test_ir_to_ast_control_flow_and_data_structures() -> None:
     """Verify emission of Cond, Scan, WhileLoop, DictGet, and GetItem to AST."""
     graph = IRGraph()
-    graph.nodes = {
-        "x": IRNode(id="x", op_type="Input"),
-        "cond": IRNode(id="cond", op_type="Input"),
-        "c_node": IRNode(id="c_node", op_type="Cond", inputs=["cond", "x", "x"], attributes={"var_name": "res"}),
-        "scan_node": IRNode(id="scan_node", op_type="Scan", inputs=["x"], attributes={"var_name": "scanned"}),
-        "dict_get": IRNode(id="dict_get", op_type="DictGet", inputs=["x"], attributes={"key": "weight", "var_name": "w"}),
-        "get_item": IRNode(id="get_item", op_type="GetItem", inputs=["x"], attributes={"index": 0, "var_name": "first"}),
-        "foreign": IRNode(
-            id="foreign",
-            op_type="ForeignCall",
-            inputs=["x"],
-            attributes={"callee": "custom_fn", "has_varargs": True, "has_varkwargs": True, "var_name": "f_out"},
-        ),
-    }
+    graph.nodes = NodeDict(
+        {
+            "x": IRNode(id="x", op_type="Input"),
+            "cond": IRNode(id="cond", op_type="Input"),
+            "c_node": IRNode(id="c_node", op_type="Cond", inputs=["cond", "x", "x"], attributes={"var_name": "res"}),
+            "scan_node": IRNode(id="scan_node", op_type="Scan", inputs=["x"], attributes={"var_name": "scanned"}),
+            "dict_get": IRNode(id="dict_get", op_type="DictGet", inputs=["x"], attributes={"key": "weight", "var_name": "w"}),
+            "get_item": IRNode(id="get_item", op_type="GetItem", inputs=["x"], attributes={"index": 0, "var_name": "first"}),
+            "foreign": IRNode(
+                id="foreign",
+                op_type="ForeignCall",
+                inputs=["x"],
+                attributes={"callee": "custom_fn", "has_varargs": True, "has_varkwargs": True, "var_name": "f_out"},
+            ),
+        }
+    )
 
     ast_mod = emit_ir_to_ast(graph, "jax")
     code = ast_mod.code

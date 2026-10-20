@@ -1,11 +1,14 @@
 """CuPy backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import logging
 import resource
 import sys
 import time
-from collections.abc import Callable
-from typing import Optional, Union, cast
+import typing
+
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 try:
     import cupy as cp
@@ -23,7 +26,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -99,8 +103,8 @@ class CupyProfiler:
 
     def _prepare_cupy_inputs(
         self,
-        inputs: dict[str, Union[list[float], list[list[float]], "cp.ndarray"]],
-    ) -> tuple[dict[str, "cp.ndarray"], list["cp.ndarray"]]:
+        inputs: dict[str, list[float] | list[list[float]] | cp.ndarray],
+    ) -> tuple[dict[str, cp.ndarray], list[cp.ndarray]]:
         """Convert input dictionary values into CuPy float32 arrays.
 
         Args:
@@ -136,7 +140,7 @@ class CupyProfiler:
                 start_event = cp.cuda.Event()
                 end_event = cp.cuda.Event()
                 start_event.record()
-                _ = cast(Callable[..., EagerValue], step_fn)()
+                _ = typing.cast(TypedVariadicCallable[EagerValue], step_fn)()
                 end_event.record()
                 end_event.synchronize()
                 return float(cp.cuda.get_elapsed_time(start_event, end_event))
@@ -144,7 +148,7 @@ class CupyProfiler:
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         self._sync()
         start = time.perf_counter()
-        _ = cast(Callable[..., EagerValue], step_fn)()
+        _ = typing.cast(TypedVariadicCallable[EagerValue], step_fn)()
         self._sync()
         end = time.perf_counter()
         return (end - start) * 1000.0
@@ -153,7 +157,7 @@ class CupyProfiler:
         self,
         latencies: list[float],
         warmup_iters: int,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Compute latency percentiles and peak memory metrics from collected samples.
 
         Args:
@@ -182,11 +186,11 @@ class CupyProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], "cp.ndarray"]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | cp.ndarray],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on CuPy GPU backend with stream synchronization.
 
         Args:
@@ -215,7 +219,7 @@ class CupyProfiler:
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         cp_inputs_dict, cp_input_list = self._prepare_cupy_inputs(inputs)
 
-        def _execute_step() -> Union[cp.ndarray, dict[str, cp.ndarray]]:
+        def _execute_step() -> cp.ndarray | dict[str, cp.ndarray]:
             """Execute a single forward evaluation step.
 
             Returns:

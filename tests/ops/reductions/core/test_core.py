@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from pytest_mock import MockerFixture
 
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -28,15 +28,15 @@ def test_reduction_op_call(mocker: MockerFixture) -> None:
 
     # Test passing arguments
     res = op(axis=0)
-    assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "result")
+    assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "result")
     mock_dispatch.assert_called_with("MockReduction", axis=0)
 
     res = op(keepdims=True)
-    assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "result")
+    assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "result")
     mock_dispatch.assert_called_with("MockReduction", keepdims=True)
 
     res = op(axis=1, keepdims=False)
-    assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "result")
+    assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "result")
     mock_dispatch.assert_called_with("MockReduction", axis=1, keepdims=False)
 
 

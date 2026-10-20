@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable
-from typing import TypeVar, cast
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 
-Carry = TypeVar("Carry")
-OutElem = TypeVar("OutElem")
+Carry = typing.TypeVar("Carry")
+OutElem = typing.TypeVar("OutElem")
 
 
 def scan(
@@ -35,5 +35,5 @@ def scan(
     import ml_switcheroo_compiler.ops.control_flow as cf
 
     if config.eager_mode:
-        return cast(tuple[Carry, Tensor], getattr(cf, "scan_eager")(f, init, xs, length))
-    return cast(tuple[Carry, Tensor], getattr(cf, "scan_tracing")(f, init, xs, length))
+        return typing.cast(tuple[Carry, Tensor], getattr(cf, "scan_eager")(f, init, xs, length))
+    return typing.cast(tuple[Carry, Tensor], getattr(cf, "scan_tracing")(f, init, xs, length))

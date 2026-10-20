@@ -1,6 +1,8 @@
 """Eager signal and 2D spatial filtering operations for backend array modules."""
 
-from typing import Optional, cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ops.configs import BlurConfig
@@ -23,7 +25,7 @@ def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], 
     ay = getattr(np_mod, "arange")(-ky // 2 + 1.0, ky // 2 + 1.0)
     xx, yy = getattr(np_mod, "meshgrid")(ax, ay)
     kernel = getattr(np_mod, "exp")(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
-    return cast(EagerValue, kernel / getattr(np_mod, "sum")(kernel))
+    return typing.cast(EagerValue, kernel / getattr(np_mod, "sum")(kernel))
 
 
 def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue, mode: str) -> EagerValue:
@@ -44,8 +46,8 @@ def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue
     del mode
     if getattr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    _b, _c, H, W = cast(tuple[int, ...], getattr(imgs, "shape"))
-    kH, kW = cast(tuple[int, ...], getattr(kernel, "shape"))
+    _b, _c, H, W = typing.cast(tuple[int, ...], getattr(imgs, "shape"))
+    kH, kW = typing.cast(tuple[int, ...], getattr(kernel, "shape"))
     pad_h = kH // 2
     pad_w = kW // 2
     padded = getattr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
@@ -55,10 +57,10 @@ def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue
             region = padded[:, :, y : y + kH, x : x + kW]
             expanded_kernel = getattr(np_mod, "expand_dims")(getattr(np_mod, "expand_dims")(kernel, 0), 0)
             out[:, :, y, x] = getattr(np_mod, "sum")(region * expanded_kernel, axis=(-2, -1))
-    return cast(EagerValue, out)
+    return typing.cast(EagerValue, out)
 
 
-def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: Optional[BlurConfig]) -> BlurConfig:
+def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: BlurConfig | None) -> BlurConfig:
     """Resolve or construct a BlurConfig instance from keyword arguments.
 
     Args:
@@ -73,14 +75,14 @@ def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: Optional[BlurCon
         sg = kwargs.get("sigma", (1.0, 1.0)) if hasattr(kwargs, "get") else (1.0, 1.0)
         df = str(kwargs.get("data_format", None)) if hasattr(kwargs, "get") else None
         return BlurConfig(
-            kernel_size=cast("tuple[int, int]", ks),
-            sigma=cast("tuple[float, float]", sg),
+            kernel_size=typing.cast("tuple[int, int]", ks),
+            sigma=typing.cast("tuple[float, float]", sg),
             data_format=df,
         )
     return config_obj
 
 
-def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_obj: Optional[BlurConfig] = None, **kwargs: EagerValue) -> EagerValue:
+def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_obj: BlurConfig | None = None, **kwargs: EagerValue) -> EagerValue:
     """Apply eager 2D Gaussian blur filtering to a 4D image batch.
 
     Args:
@@ -93,7 +95,7 @@ def gaussian_blur_eager(backend_module: EagerValue, images: EagerValue, config_o
         EagerValue: Blurred 4D image batch tensor.
     """
     config = _get_blur_config(kwargs, config_obj)
-    kernel = _generate_gaussian_kernel(backend_module, cast("tuple[int, int]", config.kernel_size), cast("tuple[float, float]", config.sigma))
+    kernel = _generate_gaussian_kernel(backend_module, typing.cast("tuple[int, int]", config.kernel_size), typing.cast("tuple[float, float]", config.sigma))
     return _apply_conv2d_batch(backend_module, images, kernel, "reflect")
 
 
@@ -114,7 +116,7 @@ def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size
     """
     if getattr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    B, C, H, W = cast(tuple[int, ...], getattr(imgs, "shape"))
+    B, C, H, W = typing.cast(tuple[int, ...], getattr(imgs, "shape"))
     kH, kW = kernel_size
     pad_h = kH // 2
     pad_w = kW // 2
@@ -125,7 +127,7 @@ def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size
             region = padded[:, :, y : y + kH, x : x + kW]
             flat_region = getattr(np_mod, "reshape")(region, (B, C, kH * kW))
             out[:, :, y, x] = getattr(np_mod, "median")(flat_region, axis=-1)
-    return cast(EagerValue, out)
+    return typing.cast(EagerValue, out)
 
 
 def median_filter_eager(
@@ -133,7 +135,7 @@ def median_filter_eager(
     images: EagerValue,
     kernel_size: tuple[int, int],
     padding: str = "same",
-    data_format: Optional[EagerValue] = None,
+    data_format: EagerValue | None = None,
 ) -> EagerValue:
     """Apply eager 2D median filtering to a 4D image batch.
 

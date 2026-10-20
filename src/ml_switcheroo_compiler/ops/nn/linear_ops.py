@@ -1,9 +1,8 @@
 """Linear transformations."""
 
-from typing import (
-    Optional,  # noqa: F401
-    cast,
-)
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.ops.linalg.matmul import matmul
 from ml_switcheroo_compiler.ops.shape.frontend import swapaxes
 
 
-def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> TensorOrScalar:
+def linear(input: Tensor, weight: Tensor, bias: Tensor | None = None) -> TensorOrScalar:
     """Apply a linear transformation to the incoming data: y = input @ weight.T + bias.
 
     Args:
@@ -24,13 +23,13 @@ def linear(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> Tens
     Returns:
         The transformed tensor.
     """
-    out = matmul(input, cast("Tensor", swapaxes(weight, -1, -2)))
+    out = matmul(input, typing.cast("Tensor", swapaxes(weight, -1, -2)))
     if bias is not None:
         out = add(out, bias)
     return out
 
 
-def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Optional[Tensor] = None) -> TensorOrScalar:
+def bilinear(input1: Tensor, input2: Tensor, weight: Tensor, bias: Tensor | None = None) -> TensorOrScalar:
     """Apply a bilinear transformation to the incoming data.
 
     y = input1 @ weight @ input2 + bias (broadcasting over batch dims).

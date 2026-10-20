@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 from unittest.mock import patch
 
 import pytest
@@ -10,7 +10,7 @@ import pytest
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dispatch import dispatch
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 

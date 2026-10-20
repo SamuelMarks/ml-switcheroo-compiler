@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -11,10 +11,11 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
     global_eager_registry,
 )
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @global_eager_registry.register("Signbit")
-def _signbit(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _signbit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager signbit operation on the active backend array.
 
     Args:
@@ -27,13 +28,13 @@ def _signbit(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     """
     func = getattr(backend_module, "signbit", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
-    x = cast(EagerTensorProtocol, args[0])
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    x = typing.cast(EagerTensorProtocol, args[0])
     return x < 0
 
 
 @global_eager_registry.register("Packbits")
-def _np_packbits(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np packbits operation on the active backend array.
 
     Args:
@@ -46,12 +47,12 @@ def _np_packbits(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     """
     func = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).packbits(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).packbits(*args, **kwargs)
 
 
 @global_eager_registry.register("Unpackbits")
-def _np_unpackbits(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np unpackbits operation on the active backend array.
 
     Args:
@@ -64,5 +65,5 @@ def _np_unpackbits(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """
     func = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).unpackbits(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).unpackbits(*args, **kwargs)

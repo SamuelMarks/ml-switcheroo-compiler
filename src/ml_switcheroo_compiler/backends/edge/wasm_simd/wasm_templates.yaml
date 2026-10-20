@@ -7011,10 +7011,6 @@ templates:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
-  Saddmm:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
   Save:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
@@ -12332,10 +12328,6 @@ templates:
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"
   elementwise_affine:
-    body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
-      \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
-      }}\n"
-  eliminate_deprecated_list_indexing:
     body: "// Default Fallback: {op_type}\nfor (int j = 0; j < {nelem}; ++j) {{\n\
       \    float in0_val = buf_{in0}[j];\n    buf_{clean_id}[j] = {scalar_expr};\n\
       }}\n"

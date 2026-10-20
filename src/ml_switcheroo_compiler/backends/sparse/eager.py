@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from typing import Union, cast
+import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
@@ -16,6 +15,7 @@ from ml_switcheroo_compiler.backends.sparse.types import (
     CSRTensor,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 _DIRECT_OPS = {
     "coo_fromdense": kernels.coo_fromdense,
@@ -158,7 +158,7 @@ def execute_op(
             return linalg_res
 
     if op_type in _DIRECT_OPS:
-        handler = cast(Callable[..., EagerValue], _DIRECT_OPS[op_type])
+        handler = typing.cast(TypedVariadicCallable[EagerValue], _DIRECT_OPS[op_type])
         return handler(*args, **kwargs)
 
     schema = mapping_loader.load_backend_mappings("sparse")
@@ -176,7 +176,7 @@ def execute_op(
 
     func = global_eager_registry.get(op_type)
     if func is not None:
-        processed_args: list[Union[EagerValue, EagerValue]] = []
+        processed_args: list[EagerValue | EagerValue] = []
         for a in args:
             if isinstance(a, (COOTensor, CSRTensor, CSCTensor)):
                 processed_args.append(a.to_dense())

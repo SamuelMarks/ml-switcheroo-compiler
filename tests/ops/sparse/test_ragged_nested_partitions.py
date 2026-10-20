@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.sparse import (
     sparse_to_dense,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -31,11 +31,11 @@ def test_sparse_extras() -> None:
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = SparseConcat()
-    assert cast("EagerCallableProtocol", op1.infer_shape)(None) == ()
+    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(None) == ()
     op2 = SparseSplit()
-    assert cast("EagerCallableProtocol", op2.infer_shape)(None, None) == ((),)
+    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(None, None) == ((),)
     op3 = SparseToDense()
-    assert cast("EagerCallableProtocol", op3.infer_shape)(None, None, None, None) == ()
+    assert typing.cast("EagerCallableProtocol", op3.infer_shape)(None, None, None, None) == ()
 
     config.eager_mode = False
     from unittest.mock import patch
@@ -55,7 +55,7 @@ def test_ragged_extras() -> None:
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = BooleanMask()
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", op1.infer_shape)(None, None)) == 1
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", op1.infer_shape)(None, None)) == 1
     op2 = MapFlatValues()
     assert op2.infer_shape(None) == ()
 
@@ -64,5 +64,5 @@ def test_ragged_extras() -> None:
 
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node") as mock_emit:
         boolean_mask(t1, t1)
-        cast("EagerCallableProtocol", map_flat_values)(lambda x: x, t1)
+        typing.cast("EagerCallableProtocol", map_flat_values)(lambda x: x, t1)
         assert mock_emit.call_count == 2

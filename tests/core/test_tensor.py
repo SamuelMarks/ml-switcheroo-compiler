@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -117,7 +119,7 @@ def test_tensor_config_list_shape_and_parse_dim() -> None:
 
     # 172, 173 - will happen when passing "dynamic" to Tensor config shape
     t = Tensor(np.array([1, 2]), c)
-    assert cast("EagerTensorProtocol", t.shape) == cast("EagerTensorProtocol", (2, "dynamic"))
+    assert typing.cast("EagerTensorProtocol", t.shape) == typing.cast("EagerTensorProtocol", (2, "dynamic"))
 
 
 def test_tensor_eval_already_in_graph() -> None:
@@ -185,14 +187,14 @@ def test_tensor_view_list_shape() -> None:
 
     with patch("ml_switcheroo_compiler.ops.registry.get_frontend") as mock_get_frontend:
         mock_get_frontend.return_value = lambda x, shape: Tensor(np.zeros(shape), TensorConfig(shape=shape, dtype="float32", device="cpu"))
-        res = cast("EagerCallableProtocol", t.view)([4])
-        assert cast("EagerTensorProtocol", getattr(res, "shape")) == (4,)
+        res = typing.cast("EagerCallableProtocol", t.view)([4])
+        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (4,)
 
         res2 = t.view(2, 2)
-        assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
 
-        res3 = cast("EagerCallableProtocol", t.view)((4,))
-        assert cast("EagerTensorProtocol", getattr(res3, "shape")) == (4,)
+        res3 = typing.cast("EagerCallableProtocol", t.view)((4,))
+        assert typing.cast("EagerTensorProtocol", getattr(res3, "shape")) == (4,)
 
 
 def test_tensor_eval_branches() -> None:
@@ -216,7 +218,7 @@ def test_tensor_eval_branches() -> None:
 
         def __init__(self) -> None:
             """Initialize DummyGraph."""
-            self.outputs = cast("list[EagerTensorProtocol]", [])
+            self.outputs = typing.cast("list[EagerTensorProtocol]", [])
 
     graph_inst = DummyGraph()
     global_tracing_state.is_tracing = True
@@ -228,7 +230,7 @@ def test_tensor_eval_branches() -> None:
 
         id = "test_id"
 
-    t2 = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyData)(), cast("EagerCallableProtocol", TensorConfig)((), "float32", "cpu"))
+    t2 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyData)(), typing.cast("EagerCallableProtocol", TensorConfig)((), "float32", "cpu"))
 
     # Not in graph outputs -> append
     assert t2.eval() is t2
@@ -260,7 +262,7 @@ def test_tensor_contiguous() -> None:
             return "cpu"
 
     assert TensorConfig(shape=None, dtype=None, device=None).shape == ()
-    assert TensorConfig(shape=123, dtype="invalid_dtype_xyz", device=CustomDev()).shape == ()
+    assert TensorConfig(shape=123, dtype="invalid_dtype_xyz", device=typing.cast("EagerValue", CustomDev())).shape == ()
     t = Tensor(np.array(1), TensorConfig((), "float32", "cpu"))
     assert t.contiguous() is t
     with patch("ml_switcheroo_compiler.ops.registry.get_frontend", return_value=lambda x, shape: x):

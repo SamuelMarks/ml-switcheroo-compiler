@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -25,7 +25,7 @@ from ml_switcheroo_compiler.grad.api import (
 from ml_switcheroo_compiler.grad.options import GradOptions
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -48,11 +48,11 @@ def test_grad_api_overwrite_with_gradient_full() -> None:
             x: Test parameter `x`.
         """
         overwritten = overwrite_with_gradient(x, g)
-        return cast("Tensor", cast("EagerTensorProtocol", overwritten) * cast("EagerTensorProtocol", 2.0))
+        return typing.cast("Tensor", typing.cast("EagerTensorProtocol", overwritten) * typing.cast("EagerTensorProtocol", 2.0))
 
     # Under value_and_grad
     vag = value_and_grad(target_fn)
-    val, computed_grad = cast("EagerCallableProtocol", vag)(t)
+    val, computed_grad = typing.cast("EagerCallableProtocol", vag)(t)
     assert val is not None
     assert computed_grad is not None
 
@@ -71,7 +71,7 @@ def test_grad_api_backward_non_proxy_data() -> None:
             """String representation."""
             return "raw_val_str"
 
-    loss_tensor = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", NonProxyData)(), cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
+    loss_tensor = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", NonProxyData)(), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
 
     global_tracing_state.start_tracing("test_graph")
     global_tracing_state.active_graph = graph
@@ -96,8 +96,8 @@ def test_grad_api_grad_has_aux_branch() -> None:
         return x * 5.0, "auxiliary"
 
     grad_fn = grad(fn_aux, options=opts)
-    grads, aux = cast("EagerCallableProtocol", grad_fn)(2.0)
-    assert cast("EagerCallableProtocol", np.isclose)(grads, 5.0)
+    grads, aux = typing.cast("EagerCallableProtocol", grad_fn)(2.0)
+    assert typing.cast("EagerCallableProtocol", np.isclose)(grads, 5.0)
     assert aux == "auxiliary"
 
 
@@ -114,10 +114,10 @@ def test_grad_api_value_and_grad_has_aux_branch() -> None:
         return x * 3.0, "aux_info"
 
     vag_fn = value_and_grad(fn_with_aux, options=opts)
-    (loss, aux), grad_val = cast("EagerCallableProtocol", vag_fn)(4.0)
+    (loss, aux), grad_val = typing.cast("EagerCallableProtocol", vag_fn)(4.0)
     assert aux == "aux_info"
     assert loss == 12.0
-    assert cast("EagerCallableProtocol", np.isclose)(grad_val, 3.0)
+    assert typing.cast("EagerCallableProtocol", np.isclose)(grad_val, 3.0)
 
 
 def test_grad_api_nth_order_grad_graph() -> None:
@@ -129,9 +129,11 @@ def test_grad_api_nth_order_grad_graph() -> None:
     graph = LogicalGraph(name="poly_graph")
     graph.inputs = ["x"]
     graph.outputs = ["x"]
-    graph.nodes = {
-        "x": LogicalNode(id="x", op_type="Input", inputs=[], attributes={}, shape_metadata=()),
-    }
+    graph.nodes = NodeDict(
+        {
+            "x": LogicalNode(id="x", op_type="Input", inputs=[], attributes={}, shape_metadata=()),
+        }
+    )
 
     with patch("ml_switcheroo_compiler.transforms.autodiff.grad") as mock_grad:
         mock_g1 = LogicalGraph(name="g1")
@@ -157,11 +159,11 @@ def test_grad_api_nth_order_grad() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
+        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
 
     first_order = nth_order_grad(f, n=1)
     res_1 = first_order(2.0)
-    assert cast("EagerCallableProtocol", np.isclose)(res_1, 12.0)
+    assert typing.cast("EagerCallableProtocol", np.isclose)(res_1, 12.0)
 
 
 def test_grad_api_symbolic_hvp_and_hvp() -> None:
@@ -173,11 +175,11 @@ def test_grad_api_symbolic_hvp_and_hvp() -> None:
         mock_hvp.return_value = "symbolic_hvp_graph"
         # Test with outputs=None
         res1 = hvp_graph(graph, ["x"], ["v"], outputs=None)
-        assert cast("EagerTensorProtocol", res1) == cast("EagerTensorProtocol", "symbolic_hvp_graph")
+        assert typing.cast("EagerTensorProtocol", res1) == typing.cast("EagerTensorProtocol", "symbolic_hvp_graph")
 
         # Test with explicit outputs
         res2 = hvp_graph(graph, ["x"], ["v"], outputs=["custom_out"])
-        assert cast("EagerTensorProtocol", res2) == cast("EagerTensorProtocol", "symbolic_hvp_graph")
+        assert typing.cast("EagerTensorProtocol", res2) == typing.cast("EagerTensorProtocol", "symbolic_hvp_graph")
 
     # Test top-level hvp function
     with patch("ml_switcheroo_compiler.grad.jvp_vjp.hvp", return_value=("prim_val", "hvp_val")) as mock_jvp_hvp:

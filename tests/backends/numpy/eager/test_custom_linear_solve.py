@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_customlinearsolve
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -25,4 +25,4 @@ def test_custom_linear_solve_fallback() -> None:
         return x
 
     res = _np_customlinearsolve(np, f, np.array([1, 2]))
-    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.array)([1, 2]))

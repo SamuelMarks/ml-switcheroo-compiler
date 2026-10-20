@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -11,7 +11,7 @@ import ml_switcheroo_compiler.core.assertions as assertions
 from ml_switcheroo_compiler.core.assertions import clear_assertions, evaluate_assertions, record_assertion
 from ml_switcheroo_compiler.ops.control_flow import assert_value
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
@@ -45,8 +45,8 @@ def test_assertions() -> None:
             """
             return self.val
 
-    cast("EagerCallableProtocol", record_assertion)(
-        cast("EagerCallableProtocol", DummyProxy)(cast("EagerCallableProtocol", np.array)([False])),
+    typing.cast("EagerCallableProtocol", record_assertion)(
+        typing.cast("EagerCallableProtocol", DummyProxy)(typing.cast("EagerCallableProtocol", np.array)([False])),
         "Proxy failed",
     )
     with pytest.raises(AssertionError, match="Proxy failed"):
@@ -89,7 +89,7 @@ def test_assertions_coverage() -> None:
             """
             return np.array([True, True])
 
-    assert bool(cast("EagerCallableProtocol", assertions._evaluate_single_condition)(cast("EagerCallableProtocol", NumpyCond)())) is True
+    assert bool(typing.cast("EagerCallableProtocol", assertions._evaluate_single_condition)(typing.cast("EagerCallableProtocol", NumpyCond)())) is True
 
     class NumpyCondFalse:
         """Condition helper returning a mixed NumPy array."""
@@ -102,7 +102,7 @@ def test_assertions_coverage() -> None:
             """
             return np.array([True, False])
 
-    assert bool(cast("EagerCallableProtocol", assertions._evaluate_single_condition)(cast("EagerCallableProtocol", NumpyCondFalse)())) is False
+    assert bool(typing.cast("EagerCallableProtocol", assertions._evaluate_single_condition)(typing.cast("EagerCallableProtocol", NumpyCondFalse)())) is False
 
     assert assertions._evaluate_single_condition(True) is True
     assert assertions._evaluate_single_condition(False) is False
@@ -127,7 +127,7 @@ def test_assertions_coverage() -> None:
             yield True
             yield True
 
-    assert bool(cast("EagerCallableProtocol", assertions._evaluate_single_condition)(cast("EagerCallableProtocol", ValueErrCond)())) is True
+    assert bool(typing.cast("EagerCallableProtocol", assertions._evaluate_single_condition)(typing.cast("EagerCallableProtocol", ValueErrCond)())) is True
 
     assertions.clear_assertions()
     assertions.record_assertion(True, "All good")

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, cast
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 _ASSERTIONS_LIST: list[tuple[TensorOrScalar, str]] = []
@@ -46,7 +46,7 @@ def _evaluate_iterable(c: TensorOrScalar) -> bool:
         ValueError: If `c` is not a non-string iterable.
     """
     if isinstance(c, Iterable) and not isinstance(c, (str, bytes)):
-        return all(bool(x) for x in cast("Iterable[TensorOrScalar]", c))
+        return all(bool(x) for x in typing.cast("Iterable[TensorOrScalar]", c))
     raise ValueError(f"Could not evaluate boolean value of {type(c)}")
 
 

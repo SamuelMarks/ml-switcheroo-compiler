@@ -1,13 +1,12 @@
-# ruff: noqa: E402
 """Distributed configuration classes."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import pydantic
+from ml_switcheroo_ir import AttributeValue
 
 
-@dataclass
-class DistributedConfig:
+class DistributedConfig(pydantic.BaseModel):
     """Configuration for distributed execution.
 
     Attributes:
@@ -21,6 +20,8 @@ class DistributedConfig:
         options (dict[str, AttributeValue]): Additional backend-specific configuration options.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     world_size: int = 1
     rank: int = 0
     local_rank: int = 0
@@ -28,7 +29,4 @@ class DistributedConfig:
     init_method: str | None = "env://"
     timeout_sec: float = 1800.0  # 30 minutes default
     topology_type: str | None = None
-    options: dict[str, AttributeValue] = field(default_factory=dict)
-
-
-from ml_switcheroo_ir import AttributeValue
+    options: dict[str, AttributeValue] = pydantic.Field(default_factory=dict)

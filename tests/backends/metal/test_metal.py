@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import ctypes
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.metal.metal import (
     MetalCodeGenerator,
@@ -17,7 +18,7 @@ from ml_switcheroo_compiler.backends.metal.metal import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -25,7 +26,7 @@ def test_metal_generator() -> None:
     """Test Metal code generation."""
     graph = IRGraph()
     graph.inputs = ["in_0"]
-    graph.nodes = {"matmul": IRNode(id="matmul", op_type="MatMul", inputs=["in_0"])}
+    graph.nodes = NodeDict({"matmul": IRNode(id="matmul", op_type="MatMul", inputs=["in_0"])})
     gen = MetalCodeGenerator(graph)
     out = gen.generate()
     assert "matmul" in out
@@ -35,7 +36,7 @@ def test_metal_generator() -> None:
 def test_metal_generator_coverage() -> None:
     """Test Metal generator coverage."""
     graph = IRGraph()
-    graph.nodes = {"input": IRNode(id="input", op_type="Input", inputs=[])}
+    graph.nodes = NodeDict({"input": IRNode(id="input", op_type="Input", inputs=[])})
     gen = MetalCodeGenerator(graph)
     out = gen.generate()
     assert "matmul" not in out
@@ -60,17 +61,17 @@ def test_calculate_node_bytes_branches() -> None:
     """Test all branches of _calculate_node_bytes."""
     # float64
     node_64 = IRNode(id="n1", op_type="Custom", inputs=[], attributes={"dtype": "float64"})
-    node_64.shape_metadata = [2, 3]
+    node_64.shape_metadata = (2, 3)
     assert _calculate_node_bytes(node_64) == (6, 48)
 
     # float16
     node_16 = IRNode(id="n2", op_type="Custom", inputs=[], attributes={"dtype": "float16"})
-    node_16.shape_metadata = [4]
+    node_16.shape_metadata = (4,)
     assert _calculate_node_bytes(node_16) == (4, 8)
 
     # int8
     node_8 = IRNode(id="n3", op_type="Custom", inputs=[], attributes={"dtype": "int8"})
-    node_8.shape_metadata = [5]
+    node_8.shape_metadata = (5,)
     assert _calculate_node_bytes(node_8) == (5, 5)
 
     # Default shape and dtype
@@ -109,9 +110,11 @@ def test_metal_generate_missing_template_branches() -> None:
     """Test generate with op_type missing from templates and with graph inputs."""
     graph = IRGraph()
     graph.inputs = ["in_0"]
-    graph.nodes = {
-        "unmapped_op": IRNode(id="unmapped_op", op_type="NonExistentOp", inputs=["in_0"]),
-    }
+    graph.nodes = NodeDict(
+        {
+            "unmapped_op": IRNode(id="unmapped_op", op_type="NonExistentOp", inputs=["in_0"]),
+        }
+    )
     gen = MetalCodeGenerator(graph)
     out = gen.generate()
     assert "evaluate_metal" in out
@@ -236,11 +239,11 @@ def test_metal_runner_execute_kernel_success() -> None:
     with patch.dict(sys.modules, {"Metal": mock_metal}):
         # Case 1: with inputs
         res = runner.execute_kernel("src", "main", np.array([1.0], dtype=np.float32))
-        assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", getattr(res, "__getitem__"))(0), 42.0)
+        assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerCallableProtocol", getattr(res, "__getitem__"))(0), 42.0)
 
         # Case 2: without inputs
         res2 = runner.execute_kernel("src", "main")
-        assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", getattr(res2, "__getitem__"))(0), 42.0)
+        assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerCallableProtocol", getattr(res2, "__getitem__"))(0), 42.0)
 
 
 def test_metal_runner_launch_kernel() -> None:
@@ -346,7 +349,7 @@ def test_metal_coverage_additional_branches() -> None:
     graph = IRGraph()
     node = IRNode(id="fused_0", op_type="FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
     node.shape_metadata = (4,)
-    graph.nodes = {"fused_0": node}
+    graph.nodes = NodeDict({"fused_0": node})
     gen = MetalCodeGenerator(graph)
     code = gen.generate()
     assert "kernel void fused_elementwise_0(" in code
@@ -411,7 +414,7 @@ def test_metal_prepare_input_buffers() -> None:
     wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
     list_raw = [1, 2, 3]
 
-    buffers = cast("EagerCallableProtocol", _prepare_metal_input_buffers)(
+    buffers = typing.cast("EagerCallableProtocol", _prepare_metal_input_buffers)(
         graph,
         (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw),
     )
@@ -443,7 +446,7 @@ def test_metal_evaluate_fallback() -> None:
     g_single = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
     n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_single.nodes = {"x": n_in, "out": n_exp}
+    g_single.nodes = NodeDict({"x": n_in, "out": n_exp})
     g_single.inputs = ["x"]
     g_single.outputs = ["out"]
 
@@ -452,14 +455,14 @@ def test_metal_evaluate_fallback() -> None:
     assert res_single is not None
 
     # Test with arg.data wrapper and extra arguments
-    res_wrapper = cast("EagerCallableProtocol", _evaluate_metal_fallback)(g_single, (cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
+    res_wrapper = typing.cast("EagerCallableProtocol", _evaluate_metal_fallback)(g_single, (typing.cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
     assert res_wrapper is not None
 
     # 2. Multi output graph
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.nodes = NodeDict({"x": n_in, "out1": n_out1, "out2": n_out2})
     g_multi.inputs = ["x"]
     g_multi.outputs = ["out1", "out2"]
 
@@ -469,7 +472,7 @@ def test_metal_evaluate_fallback() -> None:
 
     # 3. Empty output graph
     g_empty = IRGraph()
-    g_empty.nodes = {"x": n_in}
+    g_empty.nodes = NodeDict({"x": n_in})
     g_empty.inputs = ["x"]
     g_empty.outputs = []
 
@@ -489,7 +492,7 @@ def _test_metal_compile_and_runner_dispatch_part_1(_state: dict[str, EagerTensor
     graph = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
     n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    graph.nodes = {"x": n_in, "out": n_exp}
+    graph.nodes = NodeDict({"x": n_in, "out": n_exp})
     graph.inputs = ["x"]
     graph.outputs = ["out"]
 
@@ -505,7 +508,7 @@ def _test_metal_compile_and_runner_dispatch_part_1(_state: dict[str, EagerTensor
         artifact = gen.compile_aot(graph, compile_options=["-O3"])
         assert isinstance(artifact, CompiledArtifact)
         assert artifact.binary_bytes == b"metalc binary source"
-        assert cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "metal"
+        assert typing.cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "metal"
 
     # 2. Compile without list options and without assembly ptx
     mock_comp_empty = HardwareCompilationResult(
@@ -538,13 +541,13 @@ def _test_metal_compile_and_runner_dispatch_part_2(_state: dict[str, EagerTensor
     with patch.object(MetalRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.metal.metal.MetalRunner", return_value=mock_runner):
             res_avail = artifact.callable_fn(np.array([1.0, 2.0], dtype=np.float32))
-            assert cast("EagerCallableProtocol", np.array_equal)(res_avail, cast("EagerCallableProtocol", np.array)([42.0]))
+            assert typing.cast("EagerCallableProtocol", np.array_equal)(res_avail, typing.cast("EagerCallableProtocol", np.array)([42.0]))
 
     # 3b. Multi output with device present
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"x": n_in, "out1": n_out1, "out2": n_out2}))
     g_multi.inputs = ["x"]
     g_multi.outputs = ["out1", "out2"]
     gen_multi = MetalCodeGenerator(g_multi)
@@ -556,7 +559,7 @@ def _test_metal_compile_and_runner_dispatch_part_2(_state: dict[str, EagerTensor
     mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
     with patch.object(MetalRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.metal.metal.MetalRunner", return_value=mock_runner_multi):
-            res_m = cast("EagerCallableProtocol", art_multi.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            res_m = typing.cast("EagerCallableProtocol", art_multi.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_m == (100, 200)
 
     # 3c. Device is None -> falls back to evaluator

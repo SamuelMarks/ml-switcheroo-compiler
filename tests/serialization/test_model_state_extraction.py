@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
-if TYPE_CHECKING:
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 def test_init_classes_serialization() -> None:
@@ -85,7 +88,7 @@ def test_init_classes_serialization() -> None:
                 path: Test parameter `path`.
             """
             pass
-            return cast("SavedModel", None)
+            return typing.cast("SavedModel", None)
 
     assert callable(test_init_classes_serialization)
 
@@ -137,7 +140,7 @@ def test_extract_model_state_layers() -> None:
 
         weights = [FakeW("w1")]
 
-    ws = cast("EagerCallableProtocol", _extract_model_weights)(cast("EagerCallableProtocol", FakeModel)())
+    ws = typing.cast("EagerCallableProtocol", _extract_model_weights)(typing.cast("EagerCallableProtocol", FakeModel)())
     assert ws["w1"] == 1
 
     class FakeOpt:
@@ -151,8 +154,8 @@ def test_extract_model_state_layers() -> None:
 
         optimizer = FakeOpt()
 
-    st = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _extract_optimizer_state)(cast("EagerCallableProtocol", FakeModelOpt)(), st)
+    st = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _extract_optimizer_state)(typing.cast("EagerCallableProtocol", FakeModelOpt)(), st)
     assert st["v1"] == 1
     assert st["m1"] == 1
 
@@ -162,10 +165,10 @@ def test_extract_model_state_layers() -> None:
         non_trainable_variables = [FakeW("nt1")]
 
     st = {}
-    ws = cast("EagerTensorProtocol", {"nt1": 1})
-    cast("EagerCallableProtocol", _extract_non_trainable_state)(cast("EagerCallableProtocol", FakeModelNT)(), st, ws)
+    ws = typing.cast("EagerTensorProtocol", {"nt1": 1})
+    typing.cast("EagerCallableProtocol", _extract_non_trainable_state)(typing.cast("EagerCallableProtocol", FakeModelNT)(), st, ws)
     assert "nt1" not in st
-    cast("EagerCallableProtocol", _extract_non_trainable_state)(cast("EagerCallableProtocol", FakeModelNT)(), st, {})
+    typing.cast("EagerCallableProtocol", _extract_non_trainable_state)(typing.cast("EagerCallableProtocol", FakeModelNT)(), st, {})
     assert st["nt1"] == 1
 
 
@@ -180,11 +183,11 @@ def test_extract_model_state_submodules() -> None:
             """Test function get_config."""
             return {"c": 1}
 
-    st = cast("EagerCallableProtocol", _extract_model_state)(cast("EagerCallableProtocol", FakeModelNT)(), {})
-    assert isinstance(st, dict)
-    (c, m) = cast("EagerCallableProtocol", _compile_model_metadata)(cast("EagerCallableProtocol", FakeModelNT)())
+    st = typing.cast("EagerCallableProtocol", _extract_model_state)(typing.cast("EagerCallableProtocol", FakeModelNT)(), {})
+    assert isinstance(typing.cast("EagerValue", st), dict)
+    (c, m) = typing.cast("EagerCallableProtocol", _compile_model_metadata)(typing.cast("EagerCallableProtocol", FakeModelNT)())
     assert c == {"c": 1}
-    (c2, m2) = cast("EagerCallableProtocol", _compile_model_metadata)(None)
+    (c2, m2) = typing.cast("EagerCallableProtocol", _compile_model_metadata)(None)
     assert c2 == {}
     import os
     import zipfile
@@ -194,15 +197,21 @@ def test_extract_model_state_submodules() -> None:
         os.remove(tf)
     from unittest.mock import patch
 
-    import ml_switcheroo_compiler.serialization as s
+    from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 
     with zipfile.ZipFile(tf, "w") as zf:
-        with patch.object(s.H5WeightFormat, "save"):
+        with patch.object(H5WeightFormat, "save"):
             _write_h5_to_zip(zf, "a.h5", {"a": 1})
     if os.path.exists(tf):
         os.remove(tf)
-    ctx = KerasSerializationContext(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
-    with patch.object(s.H5WeightFormat, "save"):
+    ctx = KerasSerializationContext(
+        filepath=tf,
+        config_dict={},
+        metadata={},
+        weights_store=typing.cast("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"w": 1}),
+        state_store=typing.cast("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"s": 1}),
+    )
+    with patch.object(H5WeightFormat, "save"):
         _write_keras_zip(ctx)
     if os.path.exists(tf):
         os.remove(tf)
@@ -232,8 +241,8 @@ def test_extract_model_state_parameters() -> None:
 
         ema_variables = [FakeW("ema1"), FakeW("ema2")]
 
-    st = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _extract_ema_state)(cast("EagerCallableProtocol", FakeModelEMA)(), st)
+    st = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _extract_ema_state)(typing.cast("EagerCallableProtocol", FakeModelEMA)(), st)
     assert st["ema1"] == 1
     assert st["ema2"] == 1
 
@@ -255,9 +264,9 @@ def test_extract_model_state_nested_objects() -> None:
         mock_w.assert_not_called()
     if os.path.exists(tf):
         os.remove(tf)
-    ctx2 = cast("EagerCallableProtocol", KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
+    ctx2 = typing.cast("EagerCallableProtocol", KerasSerializationContext)(filepath=tf, config_dict={}, metadata={}, weights_store={"w": 1}, state_store={"s": 1})
     with patch.object(s, "_write_h5_to_zip") as mock_w:
-        cast("EagerCallableProtocol", _write_keras_zip)(ctx2)
+        typing.cast("EagerCallableProtocol", _write_keras_zip)(ctx2)
         assert mock_w.call_count == 2
     if os.path.exists(tf):
         os.remove(tf)
@@ -297,7 +306,7 @@ def test_serialize_keras_object() -> None:
             return {"a": 1}
 
     assert serialize_object() == {}
-    assert serialize_object(MyC()) == {"a": 1}
+    assert serialize_object(typing.cast("EagerValue", MyC())) == {"a": 1}
     assert serialize_object(1) == {}
 
 
@@ -367,17 +376,17 @@ def test_export_methods() -> None:
             return "{}"
 
     g = FakeGraph()
-    cast("EagerCallableProtocol", export_to_onnx)(g, "test.onnx")
+    typing.cast("EagerCallableProtocol", export_to_onnx)(g, "test.onnx")
     assert os.path.exists("test.onnx")
     with open("test.onnx", "rb") as f:
         assert f.read() == b"ONNX"
     os.remove("test.onnx")
-    cast("EagerCallableProtocol", export_to_tflite)(g, "test.tflite")
+    typing.cast("EagerCallableProtocol", export_to_tflite)(g, "test.tflite")
     assert os.path.exists("test.tflite")
     with open("test.tflite", "rb") as f:
         assert f.read() == b"TFLITE"
     os.remove("test.tflite")
-    cast("EagerCallableProtocol", export_model_topology)(g, "test.json")
+    typing.cast("EagerCallableProtocol", export_model_topology)(g, "test.json")
     assert os.path.exists("test.json")
     with open("test.json") as f2:
         assert f2.read() == "{}"
@@ -392,12 +401,12 @@ def test_init_exports_mocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with (
-        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"),
-        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"),
-        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"),
-        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"),
-        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"),
-        cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"),
+        typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"),
+        typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"),
+        typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"),
+        typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"),
+        typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"),
+        typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"),
     ):
         _save_as_h5({}, "test.h5")
         _save_as_safetensors({}, "test.st")
@@ -415,16 +424,16 @@ def test_init_exports_unmocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", _save_as_h5)(None, None)
+        typing.cast("EagerCallableProtocol", _save_as_h5)(None, None)
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", _save_as_safetensors)(None, None)
+        typing.cast("EagerCallableProtocol", _save_as_safetensors)(None, None)
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", _load_h5_weights)(None)
+        typing.cast("EagerCallableProtocol", _load_h5_weights)(None)
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", _load_safetensors_weights)(None)
-    assert cast("EagerCallableProtocol", _load_npz_weights)(None) == {}
+        typing.cast("EagerCallableProtocol", _load_safetensors_weights)(None)
+    assert typing.cast("EagerCallableProtocol", _load_npz_weights)(None) == {}
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", _load_pickle_weights)(None)
+        typing.cast("EagerCallableProtocol", _load_pickle_weights)(None)
 
 
 def test_init_module_exports() -> None:
@@ -434,17 +443,17 @@ def test_init_module_exports() -> None:
     import ml_switcheroo_compiler.serialization as s
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
-    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"):
+    with typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "save"):
         _save_as_h5({}, "test.h5")
-    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"):
+    with typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "save"):
         _save_as_safetensors({}, "test.st")
-    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"):
+    with typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "H5WeightFormat")), "load"):
         _load_h5_weights("test.h5")
-    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"):
+    with typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "SafetensorsWeightFormat")), "load"):
         _load_safetensors_weights("test.st")
-    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"):
+    with typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "NpzWeightFormat")), "load"):
         _load_npz_weights("test.npz")
-    with cast("EagerCallableProtocol", patch.object)(cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"):
+    with typing.cast("EagerCallableProtocol", patch.object)(typing.cast("EagerTensorProtocol", getattr(s, "PickleWeightFormat")), "load"):
         _load_pickle_weights("test.pk")
     assert callable(test_init_module_exports)
 
@@ -462,9 +471,9 @@ def test_init_module_all_exports() -> None:
     tf_npz = "test_real_init_unmocked.npz"
     tf_pk = "test_real_init_unmocked.pk"
     _save_as_h5({"a": 1}, tf)
-    assert "a" in cast("EagerCallableProtocol", _load_h5_weights)(tf)
+    assert "a" in typing.cast("EagerCallableProtocol", _load_h5_weights)(tf)
     _save_as_safetensors({"a": np.array([1.0], dtype=np.float32)}, tf_st)
-    assert "a" in cast("EagerCallableProtocol", _load_safetensors_weights)(tf_st)
+    assert "a" in typing.cast("EagerCallableProtocol", _load_safetensors_weights)(tf_st)
     assert _load_npz_weights(tf_npz) == {}
     with pytest.raises(FileNotFoundError):
         _load_pickle_weights(tf_pk)
@@ -506,6 +515,6 @@ def test_extract_optimizer_state_missing_branches() -> None:
 
         optimizer = FakeOptEmpty()
 
-    st = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _extract_optimizer_state)(cast("EagerCallableProtocol", FakeModelOptEmpty)(), st)
+    st = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _extract_optimizer_state)(typing.cast("EagerCallableProtocol", FakeModelOptEmpty)(), st)
     assert len(st) == 0

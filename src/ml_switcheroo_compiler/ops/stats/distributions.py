@@ -1,5 +1,7 @@
 """Statistical distributions."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op

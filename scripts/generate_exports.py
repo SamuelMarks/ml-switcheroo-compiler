@@ -1,5 +1,7 @@
 """Build script to dynamically regenerate __all__ literal string lists."""
 
+from __future__ import annotations
+
 import ast
 import importlib
 import os
@@ -8,7 +10,6 @@ import subprocess
 import sys
 import tempfile
 import types
-from typing import Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
@@ -62,7 +63,7 @@ def _append_import_lines(
         all_exports.extend(unique_exports)
 
 
-def _extract_existing_all(source: str) -> Optional[list[str]]:
+def _extract_existing_all(source: str) -> list[str] | None:
     """Extract existing __all__ string literals from Python source.
 
     Args:
@@ -113,7 +114,7 @@ def generate_init(
     filepath: str,
     module_name: str,
     submodules: list[str],
-    extra_imports: Optional[list[tuple[str, list[str]]]] = None,
+    extra_imports: list[tuple[str, list[str]]] | None = None,
 ) -> None:
     """Generate the __init__.py file with explicit imports and __all__ list.
 
@@ -168,9 +169,9 @@ def _compute_module_exports(mod: types.ModuleType, source_for_magic: str) -> lis
     Returns:
         list[str]: Sorted list of exported symbol names.
     """
-    magic_from: Optional[re.Match[str]] = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
-    magic_auto: Optional[re.Match[str]] = re.search(r"#\s*auto-generate-all", source_for_magic)
-    magic_exclude: Optional[re.Match[str]] = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
+    magic_from: re.Match[str] | None = re.search(r"#\s*generate_exports_from:\s*(.+)", source_for_magic)
+    magic_auto: re.Match[str] | None = re.search(r"#\s*auto-generate-all", source_for_magic)
+    magic_exclude: re.Match[str] | None = re.search(r"#\s*exclude_exports:\s*(.+)", source_for_magic)
 
     exclude_set: set[str] = {m.strip() for m in magic_exclude.group(1).split(",")} if magic_exclude else set()
 

@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import mock_open, patch
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator, KerasSignatureBuilder, KerasTensorManipulator
 from ml_switcheroo_compiler.backends.keras.keras_mixins import KerasAudioVisitor, KerasVisionVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -28,35 +30,38 @@ class DummyNode:
 def test_keras_vision_visitor() -> None:
     """Test function test_keras_vision_visitor."""
     vis = KerasVisionVisitor()
-    assert cast("EagerCallableProtocol", vis.visit_ElasticTransform)(cast("EagerCallableProtocol", DummyNode)({"data_format": "df", "interpolation": "bicubic"}), ["a", "b"]) == "keras_elastic_transform(a, b, 'bicubic', 0.0, \"df\")"
-    assert cast("EagerCallableProtocol", vis.visit_ElasticTransform)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_elastic_transform(a, b, 'bilinear', 0.0, None)"
-    assert cast("EagerCallableProtocol", vis.visit_GaussianBlur)(cast("EagerCallableProtocol", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_gaussian_blur(a, 3, 1.0, 'same', \"df\")"
-    assert cast("EagerCallableProtocol", vis.visit_GaussianBlur)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_gaussian_blur(a, None, None, 'same', None)"
-    assert cast("EagerCallableProtocol", vis.visit_MedianFilter)(cast("EagerCallableProtocol", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_median_filter(a, 3, 'same', \"df\")"
-    assert cast("EagerCallableProtocol", vis.visit_MedianFilter)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_median_filter(a, None, 'same', None)"
-    assert cast("EagerCallableProtocol", vis.visit_IoU)(cast("EagerCallableProtocol", DummyNode)({"bounding_box_format": "cxywh"}), ["a", "b"]) == "keras_iou(a, b, 'cxywh')"
-    assert cast("EagerCallableProtocol", vis.visit_IoU)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_iou(a, b, 'xyxy')"
-    assert cast("EagerCallableProtocol", vis.visit_NonMaxSuppression)(cast("EagerCallableProtocol", DummyNode)({"max_output_size": 10}), ["a", "b"]) == "keras_nms(a, b, 10, 0.5, -inf)"
-    assert cast("EagerCallableProtocol", vis.visit_NonMaxSuppression)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_nms(a, b, None, 0.5, -inf)"
-    assert cast("EagerCallableProtocol", vis.visit_ResizeBicubic)(cast("EagerCallableProtocol", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'bicubic', True)"
-    assert cast("EagerCallableProtocol", vis.visit_ResizeBicubic)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_resize(a, None, 'bicubic', False)"
-    assert cast("EagerCallableProtocol", vis.visit_ResizeLanczos3)(cast("EagerCallableProtocol", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'lanczos3', True)"
-    assert cast("EagerCallableProtocol", vis.visit_ResizeLanczos3)(cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_resize(a, None, 'lanczos3', False)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_ElasticTransform)(typing.cast("EagerCallableProtocol", DummyNode)({"data_format": "df", "interpolation": "bicubic"}), ["a", "b"]) == "keras_elastic_transform(a, b, 'bicubic', 0.0, \"df\")"
+    assert typing.cast("EagerCallableProtocol", vis.visit_ElasticTransform)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_elastic_transform(a, b, 'bilinear', 0.0, None)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_GaussianBlur)(typing.cast("EagerCallableProtocol", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_gaussian_blur(a, 3, 1.0, 'same', \"df\")"
+    assert typing.cast("EagerCallableProtocol", vis.visit_GaussianBlur)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_gaussian_blur(a, None, None, 'same', None)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_MedianFilter)(typing.cast("EagerCallableProtocol", DummyNode)({"kernel_size": 3, "sigma": 1.0, "data_format": "df"}), ["a"]) == "keras_median_filter(a, 3, 'same', \"df\")"
+    assert typing.cast("EagerCallableProtocol", vis.visit_MedianFilter)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_median_filter(a, None, 'same', None)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_IoU)(typing.cast("EagerCallableProtocol", DummyNode)({"bounding_box_format": "cxywh"}), ["a", "b"]) == "keras_iou(a, b, 'cxywh')"
+    assert typing.cast("EagerCallableProtocol", vis.visit_IoU)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_iou(a, b, 'xyxy')"
+    assert typing.cast("EagerCallableProtocol", vis.visit_NonMaxSuppression)(typing.cast("EagerCallableProtocol", DummyNode)({"max_output_size": 10}), ["a", "b"]) == "keras_nms(a, b, 10, 0.5, -inf)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_NonMaxSuppression)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "keras_nms(a, b, None, 0.5, -inf)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_ResizeBicubic)(typing.cast("EagerCallableProtocol", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'bicubic', True)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_ResizeBicubic)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_resize(a, None, 'bicubic', False)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_ResizeLanczos3)(typing.cast("EagerCallableProtocol", DummyNode)({"size": 10, "align_corners": True}), ["a"]) == "keras_resize(a, 10, 'lanczos3', True)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_ResizeLanczos3)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "keras_resize(a, None, 'lanczos3', False)"
     assert (
-        cast("EagerCallableProtocol", vis.visit_ExtractBoundingBoxes)(cast("EagerCallableProtocol", DummyNode)({"crop_size": 10, "data_format": "df"}), ["a", "b", "c"])
+        typing.cast("EagerCallableProtocol", vis.visit_ExtractBoundingBoxes)(typing.cast("EagerCallableProtocol", DummyNode)({"crop_size": 10, "data_format": "df"}), ["a", "b", "c"])
         == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=10, interpolation='bilinear', extrapolation_value=0.0, data_format=\"df\"))"
     )
-    assert cast("EagerCallableProtocol", vis.visit_ExtractBoundingBoxes)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b", "c"]) == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=None, interpolation='bilinear', extrapolation_value=0.0, data_format=None))"
-    assert cast("EagerCallableProtocol", vis.visit_PerspectiveTransform)(cast("EagerCallableProtocol", DummyNode)({"data_format": "df"}), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=\"df\")"
-    assert cast("EagerCallableProtocol", vis.visit_PerspectiveTransform)(cast("EagerCallableProtocol", DummyNode)(), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=None)"
+    assert (
+        typing.cast("EagerCallableProtocol", vis.visit_ExtractBoundingBoxes)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a", "b", "c"])
+        == "keras_extract_bounding_boxes(a, b, c, BoundingBoxExtractionConfig(crop_size=None, interpolation='bilinear', extrapolation_value=0.0, data_format=None))"
+    )
+    assert typing.cast("EagerCallableProtocol", vis.visit_PerspectiveTransform)(typing.cast("EagerCallableProtocol", DummyNode)({"data_format": "df"}), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=\"df\")"
+    assert typing.cast("EagerCallableProtocol", vis.visit_PerspectiveTransform)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a", "b", "c"]) == "keras.ops.image.perspective_transform(a, b, c, interpolation='bilinear', fill_value=0.0, data_format=None)"
 
 
 def test_keras_audio_visitor() -> None:
     """Test function test_keras_audio_visitor."""
     vis = KerasAudioVisitor()
-    assert cast("EagerCallableProtocol", vis.visit_Istft)(cast("EagerCallableProtocol", DummyNode)({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "keras_istft(a, STFTConfig(frame_length=2048, frame_step=512, fft_length=None, window='hann', center=False))"
-    assert cast("EagerCallableProtocol", vis.visit_MelFilterbank)(cast("EagerCallableProtocol", DummyNode)({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4.0, 5.0)"
-    assert cast("EagerCallableProtocol", vis.visit_Mfcc)(cast("EagerCallableProtocol", DummyNode)({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3.0, 4.0, 5)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_Istft)(typing.cast("EagerCallableProtocol", DummyNode)({"frame_length": 2048, "frame_step": 512, "center": False}), ["a"]) == "keras_istft(a, STFTConfig(frame_length=2048, frame_step=512, fft_length=None, window='hann', center=False))"
+    assert typing.cast("EagerCallableProtocol", vis.visit_MelFilterbank)(typing.cast("EagerCallableProtocol", DummyNode)({"num_mel_bins": 1, "num_spectrogram_bins": 2, "sample_rate": 3, "lower_edge_hertz": 4, "upper_edge_hertz": 5}), ["a"]) == "keras_mel_filterbank(1, 2, 3, 4.0, 5.0)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_Mfcc)(typing.cast("EagerCallableProtocol", DummyNode)({"num_mel_bins": 1, "sample_rate": 2, "lower_edge_hertz": 3, "upper_edge_hertz": 4, "num_mfccs": 5}), ["a"]) == "keras_mfcc(a, 2, 1, 3.0, 4.0, 5)"
 
 
 class DummyIRNode:
@@ -77,15 +82,15 @@ class DummyIRNode:
 class DummyGraph:
     """Test class DummyGraph."""
 
-    nodes = cast("list[EagerTensorProtocol]", [])
+    nodes = typing.cast("list[EagerTensorProtocol]", [])
 
 
 def test_keras_signature_builder() -> None:
     """Test function test_keras_signature_builder."""
     node = DummyIRNode("in_0", (None, 3))
-    assert cast("EagerCallableProtocol", KerasSignatureBuilder.get_input_assignment)("var", node) == "var = keras.Input(shape=(None, 3), name='in_0')"
+    assert typing.cast("EagerCallableProtocol", KerasSignatureBuilder.get_input_assignment)("var", node) == "var = keras.Input(shape=(None, 3), name='in_0')"
     node2 = DummyIRNode("in_1")
-    assert cast("EagerCallableProtocol", KerasSignatureBuilder.get_input_assignment)("var2", node2) == "var2 = keras.Input(shape=(None,), name='in_1')"
+    assert typing.cast("EagerCallableProtocol", KerasSignatureBuilder.get_input_assignment)("var2", node2) == "var2 = keras.Input(shape=(None,), name='in_1')"
     assert KerasSignatureBuilder.get_return_block(["i1"], ["o1"]) == "return keras.Model(inputs=[i1], outputs=[o1])"
 
 
@@ -101,19 +106,19 @@ def test_keras_tensor_manipulator() -> None:
 
 def test_keras_generator() -> None:
     """Test function test_keras_generator."""
-    gen = cast("EagerCallableProtocol", KerasCodeGenerator)(cast("EagerCallableProtocol", DummyGraph)())
+    gen = typing.cast("EagerCallableProtocol", KerasCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
     assert gen.get_fallback_prefix() == "keras.ops"
     assert gen.get_fallback_prefix() == "keras.ops"
-    assert cast("EagerCallableProtocol", gen.visit_RaggedDot)(None, ["a", "b"]) == "keras_ragged_dot(a, b)"
+    assert typing.cast("EagerCallableProtocol", gen.visit_RaggedDot)(None, ["a", "b"]) == "keras_ragged_dot(a, b)"
     ops = gen.get_ops_map({})
     assert "Zeros" in ops
     assert "Transpose" in ops
-    cast("EagerCallableProtocol", gen._emit_input_assignment)("var1", cast("EagerCallableProtocol", DummyIRNode)("in"), "inputs", 0)
+    typing.cast("EagerCallableProtocol", gen._emit_input_assignment)("var1", typing.cast("EagerCallableProtocol", DummyIRNode)("in"), "inputs", 0)
     assert "var1 = keras.Input" in gen.code[-1]
     assert "var1" in gen.keras_input_vars
     gen._emit_body_return(["out1"])
     assert "out1" in gen.keras_output_vars
-    cast("EagerCallableProtocol", gen._emit_output_assignment)(None, ["out2"], "out2")
+    typing.cast("EagerCallableProtocol", gen._emit_output_assignment)(None, ["out2"], "out2")
     assert "out2" in gen.keras_output_vars
     assert gen._generate_file_header() == [gen.header.strip()]
     m_open = mock_open(read_data='imports: "import tmp"\nfunctions:\n  dummy: "def dummy(): pass"')
@@ -130,7 +135,7 @@ def test_keras_generator() -> None:
     setattr(gen, "keras_output_vars", ["o"])
     from ml_switcheroo_compiler.backends.keras.generator import KerasSignatureBuilder
 
-    cast("EagerCallableProtocol", gen.code.append)(cast("EagerCallableProtocol", KerasSignatureBuilder.get_return_block)(gen.keras_input_vars, gen.keras_output_vars))
+    typing.cast("EagerCallableProtocol", gen.code.append)(typing.cast("EagerCallableProtocol", KerasSignatureBuilder.get_return_block)(gen.keras_input_vars, gen.keras_output_vars))
     assert "return keras.Model(inputs=[i], outputs=[o])" in gen.code[-1]
 
 
@@ -148,8 +153,8 @@ def test_keras_generator_save_load(tmp_path: EagerTensorProtocol) -> None:
     filez = str(tmp_path / "dummy.npz")
     KerasCodeGenerator.savez(filez, arr, arg2=[4, 5])
     resz = KerasCodeGenerator.load(filez)
-    assert cast("EagerTensorProtocol", getattr(resz, "__getitem__")("arr_0")) == arr
-    assert cast("EagerTensorProtocol", getattr(resz, "__getitem__")("arg2")) == [4, 5]
+    assert typing.cast("EagerTensorProtocol", getattr(resz, "__getitem__")("arr_0")) == arr
+    assert typing.cast("EagerTensorProtocol", getattr(resz, "__getitem__")("arg2")) == [4, 5]
     filezc = str(tmp_path / "dummy_comp.npz")
     KerasCodeGenerator.savez_compressed(filezc, arr, arg2=[4, 5])
     import gzip
@@ -172,8 +177,8 @@ def test_keras_generator_conv_transpose() -> None:
 
         pass
 
-    assert cast("EagerCallableProtocol", gen.visit_ConvTranspose)(cast("EagerCallableProtocol", DummyNode)(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
-    assert cast("EagerCallableProtocol", gen.visit_RaggedDot)(cast("EagerCallableProtocol", DummyNode)(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"
+    assert typing.cast("EagerCallableProtocol", gen.visit_ConvTranspose)(typing.cast("EagerCallableProtocol", DummyNode)(), ["inp1", "inp2"]) == "keras_conv_transpose(inp1, inp2)"
+    assert typing.cast("EagerCallableProtocol", gen.visit_RaggedDot)(typing.cast("EagerCallableProtocol", DummyNode)(), ["inp1", "inp2"]) == "keras_ragged_dot(inp1, inp2)"
 
 
 def test_keras_generator_empty_prefix_yaml() -> None:
@@ -277,15 +282,15 @@ def test_keras_generator_compile_aot() -> None:
     with patch.object(gen, "generate", return_value="def get_model(): return lambda x, **kw: x + 1"):
         artifact = gen.compile_aot(graph)
         assert artifact(41) == 42
-        assert cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("backend")) == "keras"
+        assert typing.cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("backend")) == "keras"
     gen_no_get_model = KerasCodeGenerator(graph)
     with patch.object(gen_no_get_model, "generate", return_value="x_const = 10"):
         artifact_no_gm = gen_no_get_model.compile_aot(graph)
-        assert cast("EagerTensorProtocol", getattr(artifact_no_gm.metadata, "__getitem__")("model")) is None
+        assert typing.cast("EagerTensorProtocol", getattr(artifact_no_gm.metadata, "__getitem__")("model")) is None
     g_single = IRGraph()
     node_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[2])
     node_id = IRNode(id="out0", op_type="Identity", inputs=["in0"], shape_metadata=[2])
-    g_single.nodes = {"in0": node_in, "out0": node_id}
+    g_single.nodes = NodeDict({"in0": node_in, "out0": node_id})
     g_single.inputs = ["in0"]
     g_single.outputs = ["out0"]
 
@@ -303,10 +308,10 @@ def test_keras_generator_compile_aot() -> None:
     gen_single = KerasCodeGenerator(g_single)
     with patch.object(gen_single, "generate", return_value="invalid python syntax !!!"):
         art_single = gen_single.compile_aot(g_single)
-        res_single = cast("EagerCallableProtocol", art_single)(cast("EagerCallableProtocol", MockTensorWithData)(cast("EagerCallableProtocol", np.array)([1, 2])), "extra_arg")
-        assert cast("EagerCallableProtocol", np.array_equal)(res_single, cast("EagerCallableProtocol", np.array)([1, 2]))
+        res_single = typing.cast("EagerCallableProtocol", art_single)(typing.cast("EagerCallableProtocol", MockTensorWithData)(typing.cast("EagerCallableProtocol", np.array)([1, 2])), "extra_arg")
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(res_single, typing.cast("EagerCallableProtocol", np.array)([1, 2]))
     g_no_out = IRGraph()
-    g_no_out.nodes = {"in0": node_in}
+    g_no_out.nodes = NodeDict({"in0": node_in})
     g_no_out.inputs = ["in0"]
     g_no_out.outputs = []
     gen_no_out = KerasCodeGenerator(g_no_out)
@@ -317,13 +322,13 @@ def test_keras_generator_compile_aot() -> None:
     g_multi = IRGraph()
     node_out1 = IRNode(id="out1", op_type="Identity", inputs=["in0"], shape_metadata=[2])
     node_out2 = IRNode(id="out2", op_type="Identity", inputs=["in0"], shape_metadata=[2])
-    g_multi.nodes = {"in0": node_in, "out1": node_out1, "out2": node_out2}
+    g_multi.nodes = NodeDict({"in0": node_in, "out1": node_out1, "out2": node_out2})
     g_multi.inputs = ["in0"]
     g_multi.outputs = ["out1", "out2"]
     gen_multi = KerasCodeGenerator(g_multi)
     with patch.object(gen_multi, "generate", return_value="invalid syntax"):
         art_multi = gen_multi.compile_aot(g_multi)
         res_multi = art_multi(np.array([5, 6]))
-        assert cast("EagerCallableProtocol", len)(res_multi) == 2
-        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(0)), cast("EagerCallableProtocol", np.array)([5, 6]))
-        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(1)), cast("EagerCallableProtocol", np.array)([5, 6]))
+        assert typing.cast("EagerCallableProtocol", len)(res_multi) == 2
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(0)), typing.cast("EagerCallableProtocol", np.array)([5, 6]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(res_multi, "__getitem__")(1)), typing.cast("EagerCallableProtocol", np.array)([5, 6]))

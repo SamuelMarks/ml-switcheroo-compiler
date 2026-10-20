@@ -1,15 +1,18 @@
 """JAX backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import logging
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union, cast
+import typing
 
 import jax
 import jax.numpy as jnp
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -21,7 +24,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -49,7 +53,7 @@ def _extract_jax_peak_memory_mb() -> float:
 
 
 def _prepare_jax_inputs(
-    inputs: dict[str, Union[list[float], list[list[float]], jax.Array]],
+    inputs: dict[str, list[float] | list[list[float]] | jax.Array],
 ) -> tuple[dict[str, jax.Array], list[jax.Array]]:
     """Convert input values to JAX array representations.
 
@@ -68,7 +72,7 @@ def _prepare_jax_inputs(
     return jax_inputs_dict, list(jax_inputs_dict.values())
 
 
-def _sync_jax_result(result: Union[jax.Array, tuple[EagerValue, ...], list[EagerValue], dict[str, EagerValue], EagerValue]) -> None:
+def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValue] | dict[str, EagerValue] | EagerValue) -> None:
     """Force hardware device synchronization on all JAX leaf tensors using block_until_ready.
 
     Args:
@@ -96,14 +100,14 @@ def _sync_jax_result(result: Union[jax.Array, tuple[EagerValue, ...], list[Eager
 class JAXProfiler:
     """Provides genuine execution timing and peak memory profiling for JAX."""
 
-    def _compile_graph(self, graph: IRGraph) -> Callable[..., EagerValue]:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue]:
         """Compile an IRGraph into an executable JAX callable.
 
         Args:
             graph (IRGraph): The IR computation graph.
 
         Returns:
-            Callable[..., object]: JIT compiled forward callable.
+            TypedVariadicCallable[object]: JIT compiled forward callable.
 
         Raises:
             TypeError: If apply_model cannot be generated from IRGraph.
@@ -129,9 +133,9 @@ class JAXProfiler:
             return native_apply_model({}, *args)
 
         try:
-            return cast("Callable[..., EagerValue]", jax.jit(_raw_forward_step))
+            return typing.cast("TypedVariadicCallable[EagerValue]", jax.jit(_raw_forward_step))
         except Exception:
-            return _raw_forward_step
+            return typing.cast("TypedVariadicCallable[EagerValue]", _raw_forward_step)
 
     def _order_inputs(
         self,
@@ -156,11 +160,11 @@ class JAXProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], jax.Array]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | jax.Array],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on JAX with device synchronization.
 
         Args:
@@ -178,7 +182,7 @@ class JAXProfiler:
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         jax_inputs_dict, _ = _prepare_jax_inputs(inputs)
         jax_input_list: list[jax.Array] = self._order_inputs(graph, jax_inputs_dict)
-        compiled_fn: Optional[Callable[..., EagerValue]] = self._compile_graph(graph) if has_ops else None
+        compiled_fn: TypedVariadicCallable[EagerValue] | None = self._compile_graph(graph) if has_ops else None
 
         def _execute_step() -> EagerValue:
             """Execute a single forward evaluation step on JAX backend.

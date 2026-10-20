@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerOpRegistry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -26,7 +27,7 @@ def test_eager_registry() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1)
+        return typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", 1)
 
     assert r.get("foo") is foo
 
@@ -49,7 +50,7 @@ def test_eager_registry_fallback() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 2)
+        return typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", 2)
 
     assert r.dispatch("global_foo_test", 3) == 5
 
@@ -71,26 +72,26 @@ def test_decode_image_eager() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_decode_image_camel
 
     # Test empty args
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", _np_decode_image_camel)(None)) == 0
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", _np_decode_image_camel)(None)) == 0
 
     # Test not bytes
     with pytest.raises(RuntimeError, match="Expected bytes"):
-        _np_decode_image_camel(None, np.array([1, 2, 3]))
+        _np_decode_image_camel(typing.cast("BackendModuleProtocol", None), np.array([1, 2, 3]))
 
     # Construct valid 10x10 RGB PNG header
     png_bytes = b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR" + struct.pack(">IIBBBBB", 10, 10, 8, 2, 0, 0, 0)
 
     # Default channels
-    res = _np_decode_image_camel(None, png_bytes)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (10, 10, 3)
+    res = _np_decode_image_camel(typing.cast("BackendModuleProtocol", None), png_bytes)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (10, 10, 3)
 
     # Channels = 1
-    res1 = _np_decode_image_camel(None, png_bytes, channels=1)
-    assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (10, 10, 1)
+    res1 = _np_decode_image_camel(typing.cast("BackendModuleProtocol", None), png_bytes, channels=1)
+    assert typing.cast("EagerTensorProtocol", getattr(res1, "shape")) == (10, 10, 1)
 
     # Channels = 4
-    res4 = _np_decode_image_camel(None, png_bytes, channels=4)
-    assert cast("EagerTensorProtocol", getattr(res4, "shape")) == (10, 10, 4)
+    res4 = _np_decode_image_camel(typing.cast("BackendModuleProtocol", None), png_bytes, channels=4)
+    assert typing.cast("EagerTensorProtocol", getattr(res4, "shape")) == (10, 10, 4)
 
 
 def test_encode_image_eager() -> None:
@@ -98,23 +99,23 @@ def test_encode_image_eager() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_string_io import _np_encode_image_camel
 
     # Test empty args
-    res = _np_encode_image_camel(None)
-    assert cast("EagerTensorProtocol", getattr(res, "item"))() == b""
+    res = _np_encode_image_camel(typing.cast("BackendModuleProtocol", None))
+    assert typing.cast("EagerTensorProtocol", getattr(res, "item"))() == b""
 
     # Shape with 1 channel
     arr = np.ones((10, 10, 1), dtype=np.uint8)
-    res = _np_encode_image_camel(None, arr)
+    res = _np_encode_image_camel(typing.cast("BackendModuleProtocol", None), arr)
     assert isinstance(res, np.ndarray)
 
     # Non-uint8 dtype
     arr2 = np.ones((10, 10, 3), dtype=np.float32)
-    res2 = _np_encode_image_camel(None, arr2)
+    res2 = _np_encode_image_camel(typing.cast("BackendModuleProtocol", None), arr2)
     assert isinstance(res2, np.ndarray)
 
     # Trigger exception
     with patch("struct.pack", side_effect=Exception("mock error")):
         with pytest.raises(RuntimeError):
-            _np_encode_image_camel(None, arr2)
+            _np_encode_image_camel(typing.cast("BackendModuleProtocol", None), arr2)
 
 
 def test_load_vision_formats_missing() -> None:
@@ -140,7 +141,7 @@ def test_dynamic_fallback() -> None:
             """
             return 42
 
-    assert cast("EagerCallableProtocol", global_eager_registry.dispatch)("My_Op", cast("EagerCallableProtocol", DummyObj)()) == 42
+    assert typing.cast("EagerCallableProtocol", global_eager_registry.dispatch)("My_Op", typing.cast("EagerCallableProtocol", DummyObj)()) == 42
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -163,11 +164,11 @@ def test_dynamic_fallback() -> None:
             """
             return 44
 
-    assert cast("EagerCallableProtocol", global_eager_registry.dispatch)("My_Backend_Op", 1, backend_module=cast("EagerCallableProtocol", DummyBackend)()) == 43
-    assert cast("EagerCallableProtocol", global_eager_registry.dispatch)("sub", cast("EagerCallableProtocol", DummyBackend)(), backend_module=cast("EagerCallableProtocol", DummyBackend)()) == 44
+    assert typing.cast("EagerCallableProtocol", global_eager_registry.dispatch)("My_Backend_Op", 1, backend_module=typing.cast("EagerCallableProtocol", DummyBackend)()) == 43
+    assert typing.cast("EagerCallableProtocol", global_eager_registry.dispatch)("sub", typing.cast("EagerCallableProtocol", DummyBackend)(), backend_module=typing.cast("EagerCallableProtocol", DummyBackend)()) == 44
 
     with pytest.raises(ValueError, match="not found in registry and no universal fallback"):
-        cast("EagerCallableProtocol", global_eager_registry.dispatch)("missing_op_on_backend", backend_module=cast("EagerCallableProtocol", DummyBackend)())
+        typing.cast("EagerCallableProtocol", global_eager_registry.dispatch)("missing_op_on_backend", backend_module=typing.cast("EagerCallableProtocol", DummyBackend)())
 
 
 def test_custom_vjp_and_tuple() -> None:
@@ -184,7 +185,7 @@ def test_custom_vjp_and_tuple() -> None:
             res: Test parameter `res`.
             args: Test parameter `args`.
         """
-        return cast("EagerCallableProtocol", sum)(args)
+        return typing.cast("EagerCallableProtocol", sum)(args)
 
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn=my_bwd) == 3
     assert global_eager_registry.dispatch("ProcessCustomVJPCall", None, 1, 2, bwd_fn="not callable") is None

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Union
+import typing
 
-CoverageSummary = dict[str, Union[int, float]]
-CoverageEntry = dict[str, Union[CoverageSummary, dict[str, dict[str, CoverageSummary]]]]
+CoverageSummary = dict[str, typing.Union[int, "float"]]
+CoverageEntry = dict[str, typing.Union[CoverageSummary, "dict[str, dict[str, CoverageSummary]]"]]
 
 
 def _is_file_undercovered(file_data: CoverageEntry) -> tuple[bool, float, int, int]:
@@ -20,13 +20,13 @@ def _is_file_undercovered(file_data: CoverageEntry) -> tuple[bool, float, int, i
         tuple[bool, float, int, int]: (is_undercovered, pct, missing_lines, missing_branches).
     """
     raw_summary = file_data.get("summary", {})
-    summary: CoverageSummary = {k: v for k, v in raw_summary.items() if isinstance(v, (int, float))} if isinstance(raw_summary, dict) else {}
+    summary: CoverageSummary = {k: v for k, v in raw_summary.items() if isinstance(v, (int, float))}
     pct = float(summary.get("percent_covered", 0.0))
     missing_lines = int(summary.get("missing_lines", 0))
     missing_branches = int(summary.get("missing_branches", 0))
     partial_branches = int(summary.get("num_partial_branches", 0))
     raw_funcs = file_data.get("functions", {})
-    funcs_dict = raw_funcs if isinstance(raw_funcs, dict) else {}
+    funcs_dict = raw_funcs
     funcs_undercovered = any(isinstance(fn_data, dict) and isinstance(fn_data.get("summary"), dict) and (int(fn_data["summary"].get("missing_lines", 0)) > 0 or int(fn_data["summary"].get("missing_branches", 0)) > 0) for fn_data in funcs_dict.values())
     is_under = pct < 100.0 or missing_lines > 0 or missing_branches > 0 or partial_branches > 0 or funcs_undercovered
     return is_under, pct, missing_lines, missing_branches

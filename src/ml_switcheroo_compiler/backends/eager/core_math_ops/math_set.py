@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @global_eager_registry.register("Intersect1d")
-def _intersect1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _intersect1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager intersect1d operation on the active backend array.
 
     Args:
@@ -21,11 +22,11 @@ def _intersect1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, getattr(backend_module, "intersect1d")(*args, **kwargs))
+    return typing.cast("EagerValue", getattr(backend_module, "intersect1d")(*args, **kwargs))
 
 
 @global_eager_registry.register("Union1d")
-def _np_union1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_union1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np union1d operation on the active backend array.
 
     Args:
@@ -38,12 +39,12 @@ def _np_union1d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """
     func = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).union1d(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).union1d(*args, **kwargs)
 
 
 @global_eager_registry.register("Unique")
-def _np_unique(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np unique operation on the active backend array.
 
     Args:
@@ -56,12 +57,12 @@ def _np_unique(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     """
     func = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).unique(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).unique(*args, **kwargs)
 
 
 @global_eager_registry.register("UniqueAll")
-def _np_uniqueall(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_uniqueall(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np uniqueall operation on the active backend array.
 
     Args:
@@ -74,7 +75,7 @@ def _np_uniqueall(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """
     func = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     arr = mod.asarray(args[0]).flatten()
     values, indices = mod.unique(arr, return_index=True)
@@ -88,7 +89,7 @@ def _np_uniqueall(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
 
 @global_eager_registry.register("UniqueCounts")
-def _np_uniquecounts(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_uniquecounts(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np uniquecounts operation on the active backend array.
 
     Args:
@@ -101,7 +102,7 @@ def _np_uniquecounts(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     """
     func = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     arr = mod.asarray(args[0]).flatten()
     values = mod.unique(arr)
@@ -113,7 +114,7 @@ def _np_uniquecounts(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
 
 
 @global_eager_registry.register("UniqueValues")
-def _np_uniquevalues(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_uniquevalues(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np uniquevalues operation on the active backend array.
 
     Args:
@@ -126,5 +127,5 @@ def _np_uniquevalues(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     """
     func = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).unique(args[0]))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).unique(args[0])

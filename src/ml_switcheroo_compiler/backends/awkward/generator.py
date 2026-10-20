@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -48,11 +47,11 @@ class AwkwardGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
         """Retrieve operation formatting templates for Awkward operations.
 
         Args:
-            kwargs (dict[str, object]): Keyword arguments passed to the visitor.
+            kwargs (dict[str, object] | None): Keyword arguments passed to the visitor.
 
         Returns:
             dict[str, str]: Map from op_type to formatting template.
@@ -367,11 +366,11 @@ class AwkwardGenerator(PythonStringGenerator):
                     arg_val = w_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             inputs.update(w_kw)
-            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs), backend=generator_cls)
+            evaluated = evaluate_graph(graph, inputs=inputs, backend=generator_cls)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
-                    return cast(EagerValue, evaluated.get(graph.outputs[0]))
+                    return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return cast(EagerValue, evaluated)
+            return typing.cast(EagerValue, evaluated)
 
         return aot_awkward_runner

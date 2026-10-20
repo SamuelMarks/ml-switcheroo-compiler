@@ -1,13 +1,15 @@
 """Math stats ops."""
 
-from types import ModuleType
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("Average")
-def _np_average(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_average(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np average operation on the active backend array.
 
     Args:
@@ -18,11 +20,11 @@ def _np_average(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.average(*args, **kwargs))
+    return backend_module.average(*args, **kwargs)
 
 
 @numpy_eager_registry.register("CorrCoef")
-def _np_corrcoef(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_corrcoef(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return Pearson product-moment correlation coefficients.
 
     Args:
@@ -32,11 +34,11 @@ def _np_corrcoef(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.corrcoef(*args, **kwargs))
+    return backend_module.corrcoef(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Correlate")
-def _np_correlate(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_correlate(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Cross-correlation of two 1-dimensional sequences.
 
     Args:
@@ -46,11 +48,11 @@ def _np_correlate(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.correlate(*args, **kwargs))
+    return backend_module.correlate(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Cov")
-def _np_cov(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_cov(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Estimate a covariance matrix, given data and weights.
 
     Args:
@@ -60,11 +62,11 @@ def _np_cov(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.cov(*args, **kwargs))
+    return backend_module.cov(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Histogram")
-def _np_histogram_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_histogram_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Histogram via histogram.
 
     Args:
@@ -74,11 +76,11 @@ def _np_histogram_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.histogram(*args, **kwargs))
+    return backend_module.histogram(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Histogram2d")
-def _np_histogram2d_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_histogram2d_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Histogram2d via histogram2d.
 
     Args:
@@ -88,11 +90,11 @@ def _np_histogram2d_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.histogram2d(*args, **kwargs))
+    return backend_module.histogram2d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("HistogramBinEdges")
-def _np_histogram_bin_edges_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_histogram_bin_edges_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement HistogramBinEdges via histogram_bin_edges.
 
     Args:
@@ -102,11 +104,11 @@ def _np_histogram_bin_edges_(backend_module: ModuleType, *args: EagerValue, **kw
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.histogram_bin_edges(*args, **kwargs))
+    return backend_module.histogram_bin_edges(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Histogramdd")
-def _np_histogramdd_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_histogramdd_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Histogramdd via histogramdd.
 
     Args:
@@ -116,11 +118,11 @@ def _np_histogramdd_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.histogramdd(*args, **kwargs))
+    return backend_module.histogramdd(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Median")
-def _np_median_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_median_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Median via median.
 
     Args:
@@ -130,11 +132,11 @@ def _np_median_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.median(*args, **kwargs))
+    return backend_module.median(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ConfusionMatrix")
-def _np_confusion_matrix(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_confusion_matrix(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np confusion matrix operation on the active backend array.
 
     Args:
@@ -163,16 +165,20 @@ def _np_confusion_matrix(backend_module: ModuleType, *args: EagerValue, **kwargs
 
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
-        num_classes = cast("EagerCallableProtocol", max)(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
+        num_classes = typing.cast("EagerCallableProtocol", max)(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
 
     y_true = np.asarray(y_true).flatten()
     y_pred = np.asarray(y_pred).flatten()
 
-    return cast(EagerValue, getattr(getattr(np, "bincount")(cast(EagerTensorProtocol, y_true) * cast(EagerTensorProtocol, num_classes) + cast(EagerTensorProtocol, y_pred), minlength=cast(EagerTensorProtocol, num_classes) ** 2), "reshape")((num_classes, num_classes)))
+    y_true_t = typing.cast(EagerTensorProtocol, y_true)
+    y_pred_t = typing.cast(EagerTensorProtocol, y_pred)
+    num_classes_t = typing.cast(EagerTensorProtocol, num_classes)
+    bins = getattr(np, "bincount")(y_true_t * num_classes_t + y_pred_t, minlength=num_classes_t**2)
+    return typing.cast("EagerValue", getattr(bins, "reshape")((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Descriptive")
-def _np_descriptive(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_descriptive(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np descriptive operation on the active backend array.
 
     Args:
@@ -199,7 +205,7 @@ def _np_descriptive(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 
 @numpy_eager_registry.register("Distributions")
-def _np_distributions(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_distributions(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np distributions operation on the active backend array.
 
     Args:
@@ -216,7 +222,7 @@ def _np_distributions(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 
 @numpy_eager_registry.register("RandomCategorical")
-def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_randomcategorical(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np randomcategorical operation on the active backend array.
 
     Args:
@@ -229,6 +235,8 @@ def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwarg
     """
     import numpy as np
 
+    if len(args) == 1 and isinstance(args[0], str):
+        return args[0]
     try:
         logits = args[1]
     except IndexError:
@@ -244,11 +252,11 @@ def _np_randomcategorical(backend_module: ModuleType, *args: EagerValue, **kwarg
     # Simple choice using flat probabilities
     # Assuming logits are 1D or batched properly
     res = getattr(np, "zeros")(shape, dtype=np.int32)
-    return cast(EagerValue, res)
+    return typing.cast("EagerValue", res)
 
 
 @numpy_eager_registry.register("RandomPermutation")
-def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_randompermutation(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np randompermutation operation on the active backend array.
 
     Args:
@@ -261,6 +269,8 @@ def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwarg
     """
     import numpy as np
 
+    if len(args) == 1 and isinstance(args[0], str):
+        return args[0]
     try:
         x = args[1]
     except IndexError:
@@ -274,7 +284,7 @@ def _np_randompermutation(backend_module: ModuleType, *args: EagerValue, **kwarg
 
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
-def _np_randomtruncatednormal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_randomtruncatednormal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np randomtruncatednormal operation on the active backend array.
 
     Args:
@@ -286,11 +296,11 @@ def _np_randomtruncatednormal(backend_module: ModuleType, *args: EagerValue, **k
             tuple[int, ...]: Result.
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
-    return cast(EagerValue, backend_module.random.standard_normal(size=shape))
+    return backend_module.random.standard_normal(size=shape)
 
 
 @numpy_eager_registry.register("RandomBernoulli")
-def _np_randombernoulli(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_randombernoulli(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np randombernoulli operation on the active backend array.
 
     Args:
@@ -303,11 +313,11 @@ def _np_randombernoulli(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     p = kwargs.get("p", args[1] if len(args) > 1 else 0.5)
-    return cast(EagerValue, backend_module.random.binomial(1, p, size=shape))
+    return backend_module.random.binomial(1, p, size=shape)
 
 
 @numpy_eager_registry.register("RandomUniform")
-def _np_randomuniform(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_randomuniform(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np randomuniform operation on the active backend array.
 
     Args:
@@ -321,11 +331,11 @@ def _np_randomuniform(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     shape = kwargs.get("shape", args[0] if len(args) > 0 else None)
     low = kwargs.get("minval", args[1] if len(args) > 1 else 0.0)
     high = kwargs.get("maxval", args[2] if len(args) > 2 else 1.0)
-    return cast(EagerValue, backend_module.random.uniform(low=low, high=high, size=shape))
+    return backend_module.random.uniform(low=low, high=high, size=shape)
 
 
 @numpy_eager_registry.register("RandomChoice")
-def _np_randomchoice(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_randomchoice(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np randomchoice operation on the active backend array.
 
     Args:
@@ -348,11 +358,11 @@ def _np_randomchoice(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     if hasattr(p, "data") and p is not None:
         p = p.data
 
-    return cast(EagerValue, getattr(np.random, "choice")(a, size=shape, replace=replace, p=p))
+    return typing.cast("EagerValue", getattr(np.random, "choice")(a, size=shape, replace=replace, p=p))
 
 
 @numpy_eager_registry.register("RandomShuffle")
-def _np_randomshuffle(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_randomshuffle(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np randomshuffle operation on the active backend array.
 
     Args:
@@ -370,11 +380,11 @@ def _np_randomshuffle(backend_module: ModuleType, *args: EagerValue, **kwargs: E
         x = getattr(x, "data")
     x = getattr(np, "copy")(x)
     np.random.shuffle(x)
-    return cast(EagerValue, x)
+    return typing.cast("EagerValue", x)
 
 
 @numpy_eager_registry.register("Dirichlet")
-def _np_dirichlet(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_dirichlet(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np dirichlet operation on the active backend array.
 
     Args:
@@ -391,4 +401,4 @@ def _np_dirichlet(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     shape = kwargs.get("shape", ())
     if hasattr(alpha, "data"):
         alpha = getattr(alpha, "data")
-    return cast(EagerValue, getattr(np.random, "dirichlet")(alpha, size=shape))
+    return typing.cast("EagerValue", getattr(np.random, "dirichlet")(alpha, size=shape))

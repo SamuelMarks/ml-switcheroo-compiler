@@ -1,6 +1,8 @@
 """Linalg transform ops."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 import ml_switcheroo_compiler.ops.binary as _math
 import ml_switcheroo_compiler.ops.shape.joining as _joining
@@ -36,10 +38,10 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> TensorOrScalar:
 
         stacked = _joining.concatenate([res_plus, res_minus], axis=-2)
 
-        res = reshape(cast("Tensor", stacked), list(res.shape[:-3]) + [-1])
+        res = reshape(typing.cast("Tensor", stacked), list(res.shape[:-3]) + [-1])
         h *= 2
     if scale != 1.0:
-        res = _math.multiply(res, cast("EagerCallableProtocol", array)([scale], dtype="float32"))
+        res = _math.multiply(res, typing.cast("EagerCallableProtocol", array)([scale], dtype="float32"))
     return res
 
 

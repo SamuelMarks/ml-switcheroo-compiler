@@ -92,19 +92,6 @@ def compute_node_structural_hash(node: IRNode, canonical_inputs: list[str]) -> s
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _compute_node_signature(node: IRNode, canonical_inputs: list[str]) -> str:
-    """Legacy signature interface delegating to structural hashing.
-
-    Args:
-        node (IRNode): The node parameter.
-        canonical_inputs (list[str]): The canonical_inputs parameter.
-
-    Returns:
-        str: Result signature.
-    """
-    return compute_node_structural_hash(node, canonical_inputs)
-
-
 def cse_pass(graph: IRGraph) -> bool:
     """In-place Common Subexpression Elimination (CSE) via structural hashing.
 

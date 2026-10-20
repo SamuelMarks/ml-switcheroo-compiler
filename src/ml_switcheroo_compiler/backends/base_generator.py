@@ -5,15 +5,17 @@ from __future__ import annotations
 
 import logging
 import re
+import typing  # noqa: F401
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
 from types import ModuleType
-from typing import TYPE_CHECKING, Protocol, Union, cast  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
-class VisitorProtocol(Protocol):
+class VisitorProtocol(typing.Protocol):
     """Protocol for AST and IR visitor delegates."""
 
     def __repr__(self) -> str:
@@ -25,7 +27,7 @@ class VisitorProtocol(Protocol):
         ...
 
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.device import Device
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
@@ -37,8 +39,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from .generator_mixins import EagerExecutionMixin, GeneratorLifecycleMixin
 
 
-@dataclass
-class CompiledArtifact:
+class CompiledArtifact(pydantic.BaseModel):
     """Standardized ahead-of-time (AOT) compiled executable artifact container.
 
     Attributes:
@@ -48,6 +49,8 @@ class CompiledArtifact:
         metadata: Backend-specific compilation metadata, options, and schemas.
         temp_dir: Optional temporary directory managing compiled build artifacts.
     """
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     callable_fn: EagerValue | None = None
     binary_bytes: bytes = b""
@@ -70,7 +73,7 @@ class CompiledArtifact:
         """
         if self.callable_fn is None:
             raise RuntimeError("CompiledArtifact has no executable callable bound.")
-        return cast(Callable[..., EagerValue], self.callable_fn)(*args, **kwargs)
+        return typing.cast(TypedVariadicCallable[EagerValue], self.callable_fn)(*args, **kwargs)
 
     def cleanup(self) -> None:
         """Clean up associated temporary directory resources if active."""
@@ -93,7 +96,7 @@ class CompiledArtifact:
         if self.metadata is not None and item in self.metadata:
             return self.metadata[item]
         if hasattr(self, item):
-            return cast(EagerValue, getattr(self, item))
+            return typing.cast(EagerValue, getattr(self, item))
         raise KeyError(item)
 
 
@@ -118,9 +121,10 @@ class IRGraphWalker:
         visitor.generate_body(input_prefix)
 
 
-@dataclass
-class InputContext:
+class InputContext(pydantic.BaseModel):
     """Provide context for input assignment."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     var_name: str
     node: IRNode
@@ -281,7 +285,7 @@ class class_or_instance_method:
         """
         self.fn = fn
 
-    def __get__(self, obj: BaseGenerator | EagerValue, cls: type | None = None) -> Callable[..., CompiledArtifact]:
+    def __get__(self, obj: BaseGenerator | EagerValue, cls: type | None = None) -> TypedVariadicCallable[CompiledArtifact]:
         """Bind method to instance if present, else to class.
 
         Args:
@@ -289,10 +293,10 @@ class class_or_instance_method:
             cls (type | None): Owning class.
 
         Returns:
-            Callable[..., CompiledArtifact]: Bound callable.
+            TypedVariadicCallable[CompiledArtifact]: Bound callable.
         """
         target = obj if obj is not None else cls
-        return lambda *args, **kwargs: cast(Callable[..., CompiledArtifact], self.fn)(target, *args, **kwargs)
+        return lambda *args, **kwargs: typing.cast(TypedVariadicCallable[CompiledArtifact], self.fn)(target, *args, **kwargs)
 
 
 class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
@@ -300,11 +304,35 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
     input_idx: int
     module: ModuleType
-    get_module: Callable[..., ModuleType]
-    get_scipy_module: Callable[..., ModuleType]
-    get_numpy_rng: Callable[..., TensorLike]
-    load: Callable[..., EagerValue]
-    numpy: Callable[..., EagerValue]
+    get_numpy_rng: TypedVariadicCallable[TensorLike]
+    numpy: TypedVariadicCallable[EagerValue]
+
+    if typing.TYPE_CHECKING:
+
+        @classmethod
+        def get_module(cls) -> ModuleType:
+            """Return the underlying backend Python module."""
+            ...
+
+        @classmethod
+        def get_scipy_module(cls, submodule: str = "special") -> ModuleType:
+            """Return the underlying SciPy module."""
+            ...
+
+        @classmethod
+        def load(
+            cls,
+            filepath: str,
+            allow_pickle: bool = False,
+            fix_imports: bool = True,
+            encoding: str = "ASCII",
+        ) -> EagerValue:
+            """Load serialized array or checkpoint from filepath."""
+            ...
+
+        def __getattr__(self, name: str) -> TypedVariadicCallable[str]:
+            """Resolve dynamic visitor or mapping methods on generator instances."""
+            ...
 
     def __init__(
         self,
@@ -320,7 +348,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         self.graph = graph
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
-        self.visitors: list[VisitorProtocol] = [self] + (list(cast("Sequence[VisitorProtocol]", delegates)) if isinstance(delegates, (list, tuple)) else [])
+        self.visitors: list[VisitorProtocol] = [self] + (list(typing.cast("Sequence[VisitorProtocol]", delegates)) if isinstance(delegates, (list, tuple)) else [])
 
     def get_language(self) -> str:
         """Get the target programming language for code emission.
@@ -458,7 +486,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             call_str = ", ".join(call_args + kw_pairs)
             return f"{target_api}({call_str})"
 
-        return self.generic_visit(node, input_vars, **kwargs)
+        return self.generic_visit(node, input_vars, **translated_kwargs)
 
     def visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Visit a node and return the formatted code string for the operation.
@@ -476,40 +504,36 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         for visitor in getattr(self, "visitors", []):
             if hasattr(visitor, method_name):
                 method = getattr(visitor, method_name)
-                return cast(str, method(node, input_vars, **kwargs))
+                return typing.cast(str, method(node, input_vars, **kwargs))
         if hasattr(self, method_name) and method_name != "visit_OpNode":
             method = getattr(self, method_name)
-            return cast(str, method(node, input_vars, **kwargs))
+            return typing.cast(str, method(node, input_vars, **kwargs))
         if hasattr(self, "visit_OpNode"):
             return self.visit_OpNode(node, input_vars, **kwargs)
         return self.generic_visit(node, input_vars, **kwargs)
 
-    if TYPE_CHECKING:
-        get_ops_map: Callable[..., dict[str, str]]
-    else:
+    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
+        """Get the operation mapping dictionary.
 
-        def get_ops_map(self, kwargs: EagerValue) -> dict[str, str]:
-            """Get the operation mapping dictionary.
+        Args:
+            kwargs: Operation kwargs.
 
-            Args:
-                kwargs: Operation kwargs.
+        Returns:
+            Dictionary mapping operation type to format string.
+        """
+        from ml_switcheroo_compiler.ops.registry import backend_mapping_registry
 
-            Returns:
-                Dictionary mapping operation type to format string.
-            """
-            from ml_switcheroo_compiler.ops.registry import backend_mapping_registry
+        ops = {}
+        prefix = self.get_fallback_prefix()
+        for op_name in backend_mapping_registry.operations.keys():
+            fmt = backend_mapping_registry.get_generator_mapping(prefix, op_name)
+            if fmt is not None:
+                ops[op_name] = fmt
 
-            ops = {}
-            prefix = self.get_fallback_prefix()
-            for op_name in backend_mapping_registry.operations.keys():
-                fmt = backend_mapping_registry.get_generator_mapping(prefix, op_name)
-                if fmt is not None:
-                    ops[op_name] = fmt
+        if "OverlapAndAdd" not in ops:
+            ops["OverlapAndAdd"] = "tf.signal.overlap_and_add({0})"
 
-            if "OverlapAndAdd" not in ops:
-                ops["OverlapAndAdd"] = "tf.signal.overlap_and_add({0})"
-
-            return ops
+        return ops
 
     def get_fallback_prefix(self) -> str:
         """Get the fallback prefix for generic operations.
@@ -550,7 +574,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         if isinstance(self, type):
             instance = self(target_graph)
-            return cast(EagerValue, instance.compile_aot(target_graph, **kwargs))
+            return typing.cast(EagerValue, instance.compile_aot(target_graph, **kwargs))
 
         if not hasattr(self, "_aot_cache") or getattr(self, "_aot_cache", None) is None:
             self._aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], EagerValue] = {}
@@ -620,23 +644,26 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """
         return cls.get_logical_devices(device_type)
 
-    if TYPE_CHECKING:
-        get_memory_info: Callable[..., EagerValue]
-        generic_visit: Callable[..., str]
+    @classmethod
+    def get_memory_info(cls, device: EagerValue = None) -> dict[str, int]:
+        """Retrieve memory allocation statistics for the specified device.
+
+        Args:
+            device (EagerValue): Optional target device identifier.
+
+        Returns:
+            dict[str, int]: Dictionary containing 'current' and 'peak' memory in bytes.
+        """
+        del device
+        return {"current": 0, "peak": 0}
+
+    if typing.TYPE_CHECKING:
+
+        def generic_visit(self, node: IRNode, input_vars: list[str]) -> str:
+            """Fallback visit method for operations not explicitly handled."""
+            ...
+
     else:
-
-        @classmethod
-        def get_memory_info(cls, device: str | None = None) -> dict[str, int]:
-            """Retrieve memory allocation statistics for the specified device.
-
-            Args:
-                device (str | None): Optional target device identifier.
-
-            Returns:
-                dict[str, int]: Dictionary containing 'current' and 'peak' memory in bytes.
-            """
-            del device
-            return {"current": 0, "peak": 0}
 
         def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
             """Fallback visit method for operations not explicitly handled.

@@ -1,5 +1,7 @@
 """Distributed collective operations re-exported for edge distributed compatibility."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.edge.distributed_webrtc.collectives import (
     _BACKEND_COLLECTIVE_REGISTRY,
     DEFAULT_CHUNK_SIZE,

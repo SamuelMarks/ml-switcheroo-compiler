@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.serialization.formats.hdf5 import HDF5WeightLoader, HDF5WeightSaver
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -26,7 +26,7 @@ def test_hdf5_save_and_load() -> None:
         filepath = os.path.join(tmpdir, "model.h5")
 
         saver = HDF5WeightSaver()
-        cast("EagerCallableProtocol", saver.save)(weights, filepath)
+        typing.cast("EagerCallableProtocol", saver.save)(weights, filepath)
 
         assert os.path.exists(filepath)
 
@@ -36,7 +36,7 @@ def test_hdf5_save_and_load() -> None:
         assert len(loaded_weights) == 3
         for k, v in weights.items():
             assert k in loaded_weights
-            cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", getattr(loaded_weights, "__getitem__")(k)), v)
+            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerTensorProtocol", getattr(loaded_weights, "__getitem__")(k)), v)
 
 
 def test_hdf5_schema_validation() -> None:
@@ -44,7 +44,7 @@ def test_hdf5_schema_validation() -> None:
     from ml_switcheroo_compiler.serialization.formats.hdf5 import WeightSchema
 
     # Should construct successfully
-    schema = cast("EagerCallableProtocol", WeightSchema)(data={"a": cast("EagerCallableProtocol", np.array)([1, 2, 3])})
+    schema = typing.cast("EagerCallableProtocol", WeightSchema)(data={"a": typing.cast("EagerCallableProtocol", np.array)([1, 2, 3])})
     assert "a" in schema.data
 
 
@@ -65,7 +65,7 @@ def test_hdf5_missing_h5py(monkeypatch: EagerTensorProtocol) -> None:
 
     saver = hdf5_mod.HDF5WeightSaver()
     with pytest.raises(ImportError, match="h5py is required for HDF5 weight saving"):
-        cast("EagerCallableProtocol", saver.save)({"a": cast("EagerCallableProtocol", np.array)([1])}, "dummy.h5")
+        typing.cast("EagerCallableProtocol", saver.save)({"a": typing.cast("EagerCallableProtocol", np.array)([1])}, "dummy.h5")
 
 
 def test_h5_and_hdf5_import_error_coverage(tmp_path: EagerTensorProtocol) -> None:

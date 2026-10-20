@@ -1,5 +1,10 @@
 """Misc operations."""
 
+from __future__ import annotations
+
+import typing
+from collections.abc import Sequence
+
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -11,7 +16,7 @@ class Indices(OpDef):
 
     op_name = "Indices"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -25,7 +30,7 @@ class Indices(OpDef):
             return ()
         dimensions = args[0]
         dim_len = len(dimensions) if isinstance(dimensions, (list, tuple)) else 0
-        return (dim_len, *dimensions) if dim_len > 0 else ()
+        return (dim_len, *typing.cast("Sequence[int]", dimensions)) if dim_len > 0 else ()
 
 
 @register_op("Ix")

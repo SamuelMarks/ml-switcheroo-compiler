@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import cast
+import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerCallableProtocol,
+    EagerTensorProtocol,
+    EagerValue,
+    numpy_eager_registry,
+)
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[int]) -> list[int]:
@@ -54,7 +59,7 @@ def _dot_general(a: EagerValue, b: EagerValue, dimension_numbers: EagerValue) ->
             tuple[int, ...]: Result.
     """
     (a_dims, b_dims, out_dims) = _build_einsum_equation(getattr(a, "ndim"), getattr(b, "ndim"), dimension_numbers)
-    return cast(EagerValue, getattr(np, "einsum")(a, a_dims, b, b_dims, out_dims))
+    return typing.cast("EagerValue", getattr(np, "einsum")(a, a_dims, b, b_dims, out_dims))
 
 
 def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: EagerValue) -> tuple[list[int], list[int], list[int]]:
@@ -68,7 +73,7 @@ def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: EagerVal
     Returns:
             tuple[int, ...]: Result.
     """
-    (a_contracting, b_contracting, a_batch, b_batch) = _parse_dot_dimension_numbers(cast("tuple[tuple[list[int], list[int]], tuple[list[int], list[int]]]", dimension_numbers))
+    (a_contracting, b_contracting, a_batch, b_batch) = _parse_dot_dimension_numbers(typing.cast("tuple[tuple[list[int], list[int]], tuple[list[int], list[int]]]", dimension_numbers))
     a_dims: list[int] = list(range(a_ndim))
     b_dims: list[int] = list(range(a_ndim, a_ndim + b_ndim))
     for i, a_b in enumerate(a_batch):
@@ -82,7 +87,7 @@ def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: EagerVal
 
 
 @numpy_eager_registry.register("Trace")
-def _np_trace(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_trace(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np trace operation on the active backend array.
 
     Args:
@@ -93,11 +98,11 @@ def _np_trace(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np, "trace")(args[0], **kwargs))
+    return typing.cast("EagerValue", getattr(np, "trace")(args[0], **kwargs))
 
 
 @numpy_eager_registry.register("MatrixRank")
-def _np_matrix_rank(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_matrix_rank(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np matrix rank operation on the active backend array.
 
     Args:
@@ -108,11 +113,11 @@ def _np_matrix_rank(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np.linalg, "matrix_rank")(args[0], **kwargs))
+    return typing.cast("EagerValue", getattr(np.linalg, "matrix_rank")(args[0], **kwargs))
 
 
 @numpy_eager_registry.register("MatrixTranspose")
-def _np_matrix_transpose(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_matrix_transpose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np matrix transpose operation on the active backend array.
 
     Args:
@@ -123,7 +128,7 @@ def _np_matrix_transpose(backend_module: ModuleType, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np, "swapaxes")(args[0], -1, -2))
+    return typing.cast("EagerValue", getattr(np, "swapaxes")(args[0], -1, -2))
 
 
 @numpy_eager_registry.register("Sqrtm")
@@ -140,7 +145,7 @@ def _np_sqrtm(a: EagerValue) -> EagerValue:
 
 
 @numpy_eager_registry.register("Adjoint")
-def _np_adjoint(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_adjoint(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np adjoint operation on the active backend array.
 
     Args:
@@ -151,11 +156,11 @@ def _np_adjoint(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, np.conj(getattr(np, "swapaxes")(args[0], -1, -2)))
+    return typing.cast("EagerValue", np.conj(getattr(np, "swapaxes")(args[0], -1, -2)))
 
 
 @numpy_eager_registry.register("CholeskySolve")
-def _np_cholesky_solve(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_cholesky_solve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np cholesky solve operation on the active backend array.
 
     Args:
@@ -171,14 +176,14 @@ def _np_cholesky_solve(backend_module: ModuleType, *args: EagerValue, **kwargs: 
     if len(args) < 2:
         return args[0]
 
-    b: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.asarray(args[0])
-    u: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.asarray(args[1])
-    upper: bool = cast(bool, kwargs.get("upper", False))
-    return cast(EagerValue, backend_module.array(scipy.linalg.cho_solve((u, not upper), b)))
+    b: EagerTensorProtocol = backend_module.asarray(args[0])
+    u: EagerTensorProtocol = backend_module.asarray(args[1])
+    upper: bool = typing.cast(bool, kwargs.get("upper", False))
+    return backend_module.array(scipy.linalg.cho_solve((u, not upper), b))
 
 
 @numpy_eager_registry.register("EighTridiagonal")
-def _np_eigh_tridiagonal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_eigh_tridiagonal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np eigh tridiagonal operation on the active backend array.
 
     Args:
@@ -194,14 +199,14 @@ def _np_eigh_tridiagonal(backend_module: ModuleType, *args: EagerValue, **kwargs
     if len(args) < 2:
         return args[0]
 
-    alpha: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.asarray(args[0])
-    beta: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.asarray(args[1])
+    alpha: EagerTensorProtocol = backend_module.asarray(args[0])
+    beta: EagerTensorProtocol = backend_module.asarray(args[1])
     eigvals, eigvecs = scipy.linalg.eigh_tridiagonal(alpha, beta)
     return backend_module.array(eigvals), backend_module.array(eigvecs)
 
 
 @numpy_eager_registry.register("Qr")
-def _np_qr(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_qr(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np qr operation on the active backend array.
 
     Args:
@@ -212,11 +217,11 @@ def _np_qr(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) 
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.linalg.qr(args[0], mode=kwargs.get("mode", "reduced")))
+    return backend_module.linalg.qr(args[0], mode=kwargs.get("mode", "reduced"))
 
 
 @numpy_eager_registry.register("Cross")
-def _np_cross(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_cross(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np cross operation on the active backend array.
 
     Args:
@@ -227,16 +232,16 @@ def _np_cross(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    axes: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], kwargs.pop("axes", None))
+    axes: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], kwargs.pop("axes", None))
     if axes:
         kwargs.update({k: v for k, v in getattr(axes, "items")() if v is not None})
     if "axis" in kwargs and kwargs["axis"] is None:
         kwargs.pop("axis")
-    return cast(EagerValue, backend_module.cross(*args, **kwargs))
+    return backend_module.cross(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Slogdet")
-def _np_slogdet(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_slogdet(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np slogdet operation on the active backend array.
 
     Args:
@@ -249,7 +254,7 @@ def _np_slogdet(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
     """
     import numpy as np
 
-    return cast(EagerValue, getattr(np.linalg, "slogdet")(*args, **kwargs))
+    return typing.cast("EagerValue", getattr(np.linalg, "slogdet")(*args, **kwargs))
 
 
 for op_name in [
@@ -276,7 +281,7 @@ for op_name in [
             tuple[int, ...]: Result.
         """
 
-        def _wrapper(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        def _wrapper(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
             """Execute the eager wrapper operation on the active backend array.
 
             Args:
@@ -290,15 +295,15 @@ for op_name in [
             import numpy as np
 
             func = getattr(np.linalg, name.lower() if name.lower() != "multidot" else "multi_dot")
-            return cast(EagerValue, func(*args, **kwargs))
+            return typing.cast("EagerValue", func(*args, **kwargs))
 
         return _wrapper
 
-    getattr(numpy_eager_registry, "register")(op_name)(cast("EagerCallableProtocol", make_linalg_wrapper)(op_name))
+    getattr(numpy_eager_registry, "register")(op_name)(typing.cast("EagerCallableProtocol", make_linalg_wrapper)(op_name))
 
 
 @numpy_eager_registry.register("Lu")
-def _np_lu(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_lu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np lu operation on the active backend array.
 
     Args:
@@ -311,11 +316,11 @@ def _np_lu(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) 
     """
     import scipy.linalg
 
-    return cast(EagerValue, scipy.linalg.lu(args[0]))
+    return typing.cast("EagerValue", scipy.linalg.lu(args[0]))
 
 
 @numpy_eager_registry.register("LuFactor")
-def _np_lu_factor(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_lu_factor(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np lu factor operation on the active backend array.
 
     Args:
@@ -328,11 +333,11 @@ def _np_lu_factor(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     """
     import scipy.linalg
 
-    return cast(EagerValue, scipy.linalg.lu_factor(args[0]))
+    return typing.cast("EagerValue", scipy.linalg.lu_factor(args[0]))
 
 
 @numpy_eager_registry.register("LuSolve")
-def _np_lu_solve(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_lu_solve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np lu solve operation on the active backend array.
 
     Args:
@@ -345,11 +350,11 @@ def _np_lu_solve(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
     """
     import scipy.linalg
 
-    return cast(EagerValue, scipy.linalg.lu_solve((args[0], args[1]), args[2]))
+    return typing.cast("EagerValue", scipy.linalg.lu_solve((args[0], args[1]), args[2]))
 
 
 @numpy_eager_registry.register("LuPivotsToPermutation")
-def _np_lu_pivots(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_lu_pivots(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np lu pivots operation on the active backend array.
 
     Args:
@@ -362,8 +367,8 @@ def _np_lu_pivots(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     """
     import numpy as np
 
-    pivots: list[int] = cast(list[int], args[0])
-    n: int = int(cast(int, args[1]))
+    pivots: list[int] = typing.cast(list[int], args[0])
+    n: int = int(typing.cast(int, args[1]))
     perm: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.arange(n)
     for i, p in enumerate(pivots):
         perm[i], perm[p] = perm[p], perm[i]
@@ -371,7 +376,7 @@ def _np_lu_pivots(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
 
 
 @numpy_eager_registry.register("MatrixExponential")
-def _np_matrix_exponential(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_matrix_exponential(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np matrix exponential operation on the active backend array.
 
     Args:
@@ -384,11 +389,11 @@ def _np_matrix_exponential(backend_module: ModuleType, *args: EagerValue, **kwar
     """
     import scipy.linalg
 
-    return cast(EagerValue, scipy.linalg.expm(args[0]))
+    return typing.cast("EagerValue", scipy.linalg.expm(args[0]))
 
 
 @numpy_eager_registry.register("Hessenberg")
-def _np_hessenberg(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_hessenberg(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np hessenberg operation on the active backend array.
 
     Args:
@@ -401,11 +406,11 @@ def _np_hessenberg(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     """
     import scipy.linalg
 
-    return cast(EagerValue, scipy.linalg.hessenberg(args[0], calc_q=True))
+    return typing.cast("EagerValue", scipy.linalg.hessenberg(args[0], calc_q=True))
 
 
 @numpy_eager_registry.register("Tridiagonal")
-def _np_tridiagonal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_tridiagonal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np tridiagonal operation on the active backend array.
 
     Args:
@@ -418,7 +423,7 @@ def _np_tridiagonal(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     """
     import numpy as np
 
-    a: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
+    a: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
     diag: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.diagonal(a)
     off_diag: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.diagonal(a, offset=1)
     q: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.eye(a.shape[0])
@@ -426,7 +431,7 @@ def _np_tridiagonal(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 
 @numpy_eager_registry.register("TridiagonalSolve")
-def _np_tridiagonal_solve(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_tridiagonal_solve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np tridiagonal solve operation on the active backend array.
 
     Args:
@@ -440,11 +445,11 @@ def _np_tridiagonal_solve(backend_module: ModuleType, *args: EagerValue, **kwarg
     import scipy.linalg
 
     dl, d, du, b = args[0], args[1], args[2], args[3]
-    return cast(EagerValue, scipy.linalg.solve_banded((1, 1), [getattr(np, "concatenate")(([0], du)), d, getattr(np, "concatenate")((dl, [0]))], b))
+    return typing.cast("EagerValue", scipy.linalg.solve_banded((1, 1), [getattr(np, "concatenate")(([0], du)), d, getattr(np, "concatenate")((dl, [0]))], b))
 
 
 @numpy_eager_registry.register("CholeskyEx")
-def _np_cholesky_ex(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_cholesky_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np cholesky ex operation on the active backend array.
 
     Args:
@@ -464,7 +469,7 @@ def _np_cholesky_ex(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
 
 @numpy_eager_registry.register("InvEx")
-def _np_inv_ex(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_inv_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np inv ex operation on the active backend array.
 
     Args:
@@ -484,7 +489,7 @@ def _np_inv_ex(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
 
 
 @numpy_eager_registry.register("Pinv")
-def _np_pinv(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_pinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np pinv operation on the active backend array.
 
     Args:
@@ -497,11 +502,11 @@ def _np_pinv(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
     """
     import numpy as np
 
-    return cast(EagerValue, getattr(np.linalg, "pinv")(args[0], **kwargs))
+    return typing.cast("EagerValue", getattr(np.linalg, "pinv")(args[0], **kwargs))
 
 
 @numpy_eager_registry.register("Polar")
-def _np_polar(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_polar(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np polar operation on the active backend array.
 
     Args:
@@ -514,11 +519,11 @@ def _np_polar(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     """
     import scipy.linalg
 
-    return cast(EagerValue, scipy.linalg.polar(args[0], side=kwargs.get("side", "right")))
+    return typing.cast("EagerValue", scipy.linalg.polar(args[0], side=kwargs.get("side", "right")))
 
 
 @numpy_eager_registry.register("Qdwh")
-def _np_qdwh(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_qdwh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np qdwh operation on the active backend array.
 
     Args:
@@ -532,13 +537,13 @@ def _np_qdwh(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
     import numpy as np
     import scipy.linalg
 
-    a: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
+    a: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
     u, p = scipy.linalg.polar(a)
     return u, p, np.array(0, dtype=np.int32), np.array(True, dtype=bool)
 
 
 @numpy_eager_registry.register("SolveEx")
-def _np_solve_ex(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_solve_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np solve ex operation on the active backend array.
 
     Args:
@@ -558,7 +563,7 @@ def _np_solve_ex(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
 
 
 @numpy_eager_registry.register("Svd")
-def _np_svd(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np svd operation on the active backend array.
 
     Args:
@@ -573,11 +578,11 @@ def _np_svd(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
 
     full_matrices: bool = bool(kwargs.get("full_matrices", True))
     compute_uv: bool = bool(kwargs.get("compute_uv", True))
-    return cast(EagerValue, getattr(np.linalg, "svd")(args[0], full_matrices=full_matrices, compute_uv=compute_uv))
+    return typing.cast("EagerValue", getattr(np.linalg, "svd")(args[0], full_matrices=full_matrices, compute_uv=compute_uv))
 
 
 @numpy_eager_registry.register("Schur")
-def _np_schur(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_schur(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Compute Schur decomposition of a matrix via `scipy.linalg.schur`.
 
     Args:
@@ -591,11 +596,11 @@ def _np_schur(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     import scipy.linalg
 
     _ = backend_module
-    return cast(EagerValue, scipy.linalg.schur(*args, **kwargs))
+    return typing.cast("EagerValue", scipy.linalg.schur(*args, **kwargs))
 
 
 @numpy_eager_registry.register("BandedTriangularSolve")
-def _np_banded_triangular_solve(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_banded_triangular_solve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Solve a banded triangular linear system via `scipy.linalg.solve_banded`.
 
     Args:
@@ -611,5 +616,7 @@ def _np_banded_triangular_solve(backend_module: ModuleType, *args: EagerValue, *
     _ = (backend_module, kwargs)
     ab, b = np.asarray(args[0]), np.asarray(args[1])
     k = ab.shape[0] - 1
+    if k == 0:
+        return typing.cast("EagerValue", b / ab[0])
     l_and_u = (1, 1) if k == 2 else (k, 0)
-    return cast(EagerValue, scipy.linalg.solve_banded(l_and_u, ab, b))
+    return typing.cast("EagerValue", scipy.linalg.solve_banded(l_and_u, ab, b))

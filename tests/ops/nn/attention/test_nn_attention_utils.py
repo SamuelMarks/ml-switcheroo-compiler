@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -27,8 +27,8 @@ def _test_nn_attention_utils_coverage_part_1(_state: dict[str, EagerTensorProtoc
     config.eager_mode = True
     t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig(shape=(1, 1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert cast("EagerCallableProtocol", RopeOp)().infer_shape(t) == (1, 1, 2)
-    assert cast("EagerCallableProtocol", ScaledDotProductAttention)().infer_shape(t, t, t, None) == (1, 1, 2)
+    assert typing.cast("EagerCallableProtocol", RopeOp)().infer_shape(t) == (1, 1, 2)
+    assert typing.cast("EagerCallableProtocol", ScaledDotProductAttention)().infer_shape(t, t, t, None) == (1, 1, 2)
 
     assert rope(t, axis=2) is not None
 
@@ -55,7 +55,7 @@ class _MockAttentionBackend:
         if op_name == "Concatenate":
             tensors = args[0]
             axis = kwargs.get("axis", -1)
-            return cast("EagerCallableProtocol", np.concatenate)([cast("EagerCallableProtocol", np.atleast_1d)(arr) if cast("EagerCallableProtocol", np.ndim)(arr) == 0 else arr for arr in cast("EagerTensorProtocol", tensors)], axis=axis)
+            return typing.cast("EagerCallableProtocol", np.concatenate)([typing.cast("EagerCallableProtocol", np.atleast_1d)(arr) if typing.cast("EagerCallableProtocol", np.ndim)(arr) == 0 else arr for arr in typing.cast("EagerTensorProtocol", tensors)], axis=axis)
         return np.array([1.0])
 
     def asarray(self, x: EagerValue) -> EagerValue:
@@ -81,7 +81,7 @@ class _MockAttentionBackend:
             x: Test parameter `x`.
             axis: Test parameter `axis`.
         """
-        return cast("EagerCallableProtocol", np.expand_dims)(x, axis=axis)
+        return typing.cast("EagerCallableProtocol", np.expand_dims)(x, axis=axis)
 
     def multiply(self, x: EagerValue, y: EagerValue) -> EagerValue:
         """Test function multiply.
@@ -91,7 +91,7 @@ class _MockAttentionBackend:
             y: Test parameter `y`.
         """
         try:
-            return cast("EagerValue", cast("EagerCallableProtocol", np.multiply)(x, y))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.multiply)(x, y))
         except Exception:
             return x
 
@@ -103,7 +103,7 @@ class _MockAttentionBackend:
             y: Test parameter `y`.
         """
         try:
-            return cast("EagerValue", cast("EagerCallableProtocol", np.subtract)(x, y))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.subtract)(x, y))
         except Exception:
             return x
 
@@ -114,7 +114,7 @@ class _MockAttentionBackend:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
         """
-        return cast("EagerCallableProtocol", np.arange)(*args, **kwargs)
+        return typing.cast("EagerCallableProtocol", np.arange)(*args, **kwargs)
 
     def exp(self, x: EagerValue) -> EagerValue:
         """Test function exp.
@@ -122,7 +122,7 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerValue", cast("EagerCallableProtocol", np.exp)(x))
+        return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.exp)(x))
 
     def sin(self, x: EagerValue) -> EagerValue:
         """Test function sin.
@@ -130,7 +130,7 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerValue", cast("EagerCallableProtocol", np.sin)(x))
+        return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.sin)(x))
 
     def cos(self, x: EagerValue) -> EagerValue:
         """Test function cos.
@@ -138,7 +138,7 @@ class _MockAttentionBackend:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerValue", cast("EagerCallableProtocol", np.cos)(x))
+        return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.cos)(x))
 
     def concatenate(self, x: EagerValue, axis: EagerValue) -> EagerValue:
         """Test function concatenate.
@@ -148,7 +148,7 @@ class _MockAttentionBackend:
             axis: Test parameter `axis`.
         """
         try:
-            return cast("EagerCallableProtocol", np.concatenate)([cast("EagerCallableProtocol", np.atleast_1d)(arr) for arr in cast("EagerTensorProtocol", x)], axis=axis)
+            return typing.cast("EagerCallableProtocol", np.concatenate)([typing.cast("EagerCallableProtocol", np.atleast_1d)(arr) for arr in typing.cast("EagerTensorProtocol", x)], axis=axis)
         except Exception:
             return x
 
@@ -198,7 +198,7 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
     try:
         setattr(registry_mod, "get_active_backend", lambda: MockAttentionBackend())
 
-        cast("EagerCallableProtocol", rope)(t, axis=2)
+        typing.cast("EagerCallableProtocol", rope)(t, axis=2)
 
         config.eager_mode = False
         global_tracing_state.is_tracing = True
@@ -209,7 +209,7 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
             def __init__(self) -> None:
                 """Test function __init__."""
                 self.name = "dummy"
-                self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+                self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -221,7 +221,7 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
 
-        cast("EagerCallableProtocol", rope)(t, axis=2)
+        typing.cast("EagerCallableProtocol", rope)(t, axis=2)
     finally:
         config.eager_mode = False
         global_tracing_state.is_tracing = False

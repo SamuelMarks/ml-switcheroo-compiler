@@ -1,5 +1,7 @@
 """Backend code generators for ML Switcheroo Compiler."""
 
+from __future__ import annotations
+
 import logging
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator

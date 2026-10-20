@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import typing  # noqa: F401
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Optional, Union, cast  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
@@ -18,10 +19,11 @@ from ml_switcheroo_compiler.ops import (
     multiply,
     true_divide,
 )
-from ml_switcheroo_compiler.ops.base import OpDef, register_op
+from ml_switcheroo_compiler.ops.base import register_op
 from ml_switcheroo_compiler.ops.binary import add, divide, power, subtract
 from ml_switcheroo_compiler.ops.configs import WindowConfig
 from ml_switcheroo_compiler.ops.creation import full_like
+from ml_switcheroo_compiler.ops.normalization.basic import GroupNorm
 from ml_switcheroo_compiler.ops.reductions import (
     mean,
     reduce_window,
@@ -32,9 +34,10 @@ from ml_switcheroo_compiler.ops.shape.frontend import reshape
 from ml_switcheroo_compiler.ops.unary import sqrt
 
 
-@dataclass
-class LRNConfig:
+class LRNConfig(pydantic.BaseModel):
     """LRN Config."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     depth_radius: int = 5
     bias: float = 1.0
@@ -42,12 +45,13 @@ class LRNConfig:
     beta: float = 0.5
 
 
-@dataclass
-class BatchNormConfig:
+class BatchNormConfig(pydantic.BaseModel):
     """Batch normalization config."""
 
-    offset: Optional[Tensor] = None
-    scale: Optional[Tensor] = None
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    offset: Tensor | None = None
+    scale: Tensor | None = None
     epsilon: float = 1e-3
 
 
@@ -86,8 +90,8 @@ def batch_normalization(
     x: Tensor,
     mean: Tensor,
     variance: Tensor,
-    axis: Union[int, Sequence[int]],
-    config: Optional[BatchNormConfig] = None,
+    axis: int | Sequence[int],
+    config: BatchNormConfig | None = None,
 ) -> TensorOrScalar:
     """Batch normalization.
 
@@ -143,13 +147,14 @@ def rms_normalization(
     return multiply(normalized, scale)
 
 
-@dataclass
-class BatchNormGlobalConfig:
+class BatchNormGlobalConfig(pydantic.BaseModel):
     """Configuration for batch_norm_with_global_normalization."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     variance_epsilon: float = 1e-5
     scale_after_normalization: bool = True
-    name = None
+    name: str | None = None
 
 
 def batch_norm_with_global_normalization(
@@ -174,15 +179,11 @@ def batch_norm_with_global_normalization(
             tuple[int, ...]: Result.
     """
     config = kwargs.get("config", BatchNormGlobalConfig())
-    bn_config = BatchNormConfig(
-        offset=cast("Optional[Tensor]", beta),
-        scale=cast("Optional[Tensor]", gamma if getattr(config, "scale_after_normalization") else None),
-        epsilon=getattr(config, "variance_epsilon"),
-    )
+    bn_config = BatchNormConfig(offset=typing.cast("Tensor | None", beta), scale=typing.cast("Tensor | None", gamma if getattr(config, "scale_after_normalization") else None), epsilon=getattr(config, "variance_epsilon"))
     return batch_normalization(
-        cast("Tensor", t),
-        cast("Tensor", m),
-        cast("Tensor", v),
+        typing.cast("Tensor", t),
+        typing.cast("Tensor", m),
+        typing.cast("Tensor", v),
         axis=-1,  # Default to last axis if not provided
         config=bn_config,
     )
@@ -199,13 +200,13 @@ def lrn(input: TensorOrScalar, config: TensorOrScalar = None, name: TensorOrScal
     Returns:
             tuple[int, ...]: Result.
     """
-    config = cast(TensorOrScalar, config or LRNConfig())
+    config = typing.cast(TensorOrScalar, config or LRNConfig())
     depth_radius = getattr(config, "depth_radius")
     bias = getattr(config, "bias")
     alpha = getattr(config, "alpha")
     beta = getattr(config, "beta")
 
-    return local_response_normalization(cast("Tensor", input), depth_radius, bias, alpha, beta)
+    return local_response_normalization(typing.cast("Tensor", input), depth_radius, bias, alpha, beta)
 
 
 def l2_normalize(
@@ -282,7 +283,7 @@ def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_
         id=out_id_mean,
         op_type="NormalizeMoments",
         inputs=[str(getattr(counts, "id", counts)), str(getattr(mean_ss, "id", mean_ss)), str(getattr(variance_ss, "id", variance_ss)), str(getattr(shift, "id", shift))],
-        attributes=cast("Mapping[str, AttributeValue]", {"name": name, "secondary_id": out_id_variance}),
+        attributes=typing.cast("Mapping[str, AttributeValue]", {"name": name, "secondary_id": out_id_variance}),
         shape_metadata=getattr(counts, "shape", ()),
     )
     global_tracing_state.add_node(node)
@@ -333,7 +334,7 @@ def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: Tensor
         id=out_id_counts,
         op_type="SufficientStatistics",
         inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes))],
-        attributes=cast(
+        attributes=typing.cast(
             "Mapping[str, AttributeValue]",
             {"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]},
         ),
@@ -391,7 +392,7 @@ def weighted_moments(
         id=out_id_mean,
         op_type="WeightedMoments",
         inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes)), str(getattr(frequency_weights, "id", frequency_weights))],
-        attributes=cast("Mapping[str, AttributeValue]", {"name": name, "keepdims": keepdims, "secondary_id": out_id_variance}),
+        attributes=typing.cast("Mapping[str, AttributeValue]", {"name": name, "keepdims": keepdims, "secondary_id": out_id_variance}),
         shape_metadata=getattr(x, "shape", ()),
     )
     global_tracing_state.add_node(node)
@@ -421,8 +422,8 @@ def zero_fraction(value: TensorOrScalar, name: TensorOrScalar = None) -> TensorO
 def layer_norm(
     x: Tensor,
     normalized_shape: Sequence[int],
-    scale: Optional[Tensor] = None,
-    offset: Optional[Tensor] = None,
+    scale: Tensor | None = None,
+    offset: Tensor | None = None,
     epsilon: float = 1e-5,
 ) -> TensorOrScalar:
     """Layer normalization.
@@ -459,8 +460,8 @@ def layer_norm(
 def group_norm(
     x: Tensor,
     num_groups: int,
-    scale: Optional[Tensor] = None,
-    offset: Optional[Tensor] = None,
+    scale: Tensor | None = None,
+    offset: Tensor | None = None,
     epsilon: float = 1e-5,
 ) -> TensorOrScalar:
     """Group normalization.
@@ -503,8 +504,8 @@ def group_norm(
 
 def instance_norm(
     x: Tensor,
-    scale: Optional[Tensor] = None,
-    offset: Optional[Tensor] = None,
+    scale: Tensor | None = None,
+    offset: Tensor | None = None,
     epsilon: float = 1e-5,
 ) -> TensorOrScalar:
     """Instance normalization.
@@ -524,25 +525,6 @@ def instance_norm(
     return group_norm(x, num_groups=C, scale=scale, offset=offset, epsilon=epsilon)
 
 
-@register_op("Normalization")
-class Normalization(OpDef):
-    """Generic Normalization operation."""
-
-    op_name = "Normalization"
-
-    def infer_shape(self, *args: Tensor, **kwargs: Tensor | float | int | None) -> tuple[int, ...]:
-        """Infer output shape for Normalization.
-
-        Args:
-            *args: Positional arguments (first argument is input tensor).
-            **kwargs: Optional keyword arguments.
-
-        Returns:
-            tuple[int, ...]: Shape of the input tensor.
-        """
-        del kwargs
-        return getattr(args[0], "shape", ()) if args else ()
-
-
+Normalization = register_op("Normalization")(GroupNorm)
 batch_norm = batch_normalization
 rms_norm = rms_normalization

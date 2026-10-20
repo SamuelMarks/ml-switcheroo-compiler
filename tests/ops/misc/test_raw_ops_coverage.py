@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.ops.raw_ops import RawConv2D, RawMatMul, RawMerge, RawOp, RawSwitch
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -14,7 +14,7 @@ def test_raw_ops_definitions() -> None:
     """Verify RawOp base class and dynamic control flow raw operation definitions."""
     raw = RawOp()
     assert raw.infer_shape() == ()
-    assert cast("EagerCallableProtocol", raw.infer_shape)((1, 2), flag=True) == ()
+    assert typing.cast("EagerCallableProtocol", raw.infer_shape)((1, 2), flag=True) == ()
 
     assert RawSwitch().op_name == "RawSwitch"
     assert RawMerge().op_name == "RawMerge"

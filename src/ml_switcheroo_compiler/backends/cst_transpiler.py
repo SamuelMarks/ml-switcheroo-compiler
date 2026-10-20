@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import cast
+import typing
 
 import libcst as cst
 
@@ -292,29 +292,22 @@ class CSTTransformer(cst.CSTTransformer):
         if not updated_node.module or not self.target_config:
             return updated_node
 
-        src_module: str = ""
-        if isinstance(updated_node.module, cst.Name):
-            src_module = updated_node.module.value
-        elif isinstance(updated_node.module, cst.Attribute):
+        def _get_base_name(node: cst.BaseExpression) -> str:
+            """Extract the root module identifier from a nested CST attribute expression.
 
-            def _get_base_name(node: cst.BaseExpression) -> str:
-                """Extract the root module identifier from a nested CST attribute expression.
+            Args:
+                node (cst.BaseExpression): CST Name or Attribute node.
 
-                Args:
-                    node (cst.BaseExpression): CST Name or Attribute node.
+            Returns:
+                str: Root module name string.
+            """
+            if isinstance(node, cst.Name):
+                return node.value
+            if isinstance(node, cst.Attribute):
+                return _get_base_name(node.value)
+            return ""
 
-                Returns:
-                    str: Root module name string.
-                """
-                if isinstance(node, cst.Name):
-                    return node.value
-                elif isinstance(node, cst.Attribute):
-                    return _get_base_name(node.value)
-                return ""
-
-            src_module = _get_base_name(updated_node.module)
-        else:
-            return updated_node
+        src_module: str = _get_base_name(updated_node.module)
 
         remapped = self.matcher.match_import(src_module, self.target_framework)
         if remapped:
@@ -369,7 +362,7 @@ class CSTTransformer(cst.CSTTransformer):
             remapped = self.matcher.match_import(alias_full, self.target_framework)
             if remapped:
                 target_parts = remapped.split(".")
-                new_alias = alias.with_changes(name=cast(cst.Name, _build_attribute_chain(target_parts)))
+                new_alias = alias.with_changes(name=typing.cast(cst.Name, _build_attribute_chain(target_parts)))
                 new_names.append(new_alias)
                 mutated = True
                 continue
@@ -378,7 +371,7 @@ class CSTTransformer(cst.CSTTransformer):
             if base_mod in KNOWN_SOURCE_FRAMEWORKS:
                 if alias_full != target_module:
                     target_parts = target_module.split(".")
-                    new_alias = alias.with_changes(name=cast(cst.Name, _build_attribute_chain(target_parts)))
+                    new_alias = alias.with_changes(name=typing.cast(cst.Name, _build_attribute_chain(target_parts)))
                     new_names.append(new_alias)
                     mutated = True
                 else:
@@ -656,7 +649,7 @@ class CSTTransformer(cst.CSTTransformer):
                 ret1 = stmt1.body.body[0].body[0].value
                 ret2 = stmt2.body[0].value
                 if ret1 is not None and ret2 is not None:
-                    target_module_parts = self.target_config.module_path if self.target_config else ["jnp"]
+                    target_module_parts = getattr(self.target_config, "module_path", None) or ["jnp"]
                     where_func = _build_attribute_chain(target_module_parts + ["where"])
                     where_call = cst.Call(
                         func=where_func,
@@ -924,7 +917,7 @@ class StateLiftingTransformer(cst.CSTTransformer):
         tree.visit(InitExtractor())
 
         leaves, tree_def = tree_flatten(extracted_params)
-        reconstructed: dict[str, EagerValue] = cast("dict[str, EagerValue]", tree_unflatten(tree_def, leaves))
+        reconstructed: dict[str, EagerValue] = typing.cast("dict[str, EagerValue]", tree_unflatten(tree_def, leaves))
 
         transformer = cls(param_var_name=param_var_name)
         transformed_tree = tree.visit(transformer)

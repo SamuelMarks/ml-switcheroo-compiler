@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 from ml_switcheroo_compiler.backends.numba.eager import execute_op
 from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 from ml_switcheroo_compiler.backends.numba.types import array, asarray, item, zeros
@@ -16,7 +17,7 @@ from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -39,7 +40,7 @@ def test_numba_backend_registered() -> None:
 def test_numba_generator_initialization_and_options() -> None:
     """Test NumbaGenerator with various JIT flag combinations."""
     g = DummyGraph()
-    gen = cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=True, parallel=True, nogil=True, emit_safe_fallback=True)
+    gen = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=True, parallel=True, nogil=True, emit_safe_fallback=True)
     assert gen.get_fallback_prefix() == "np"
     assert gen.get_helper_functions() == []
 
@@ -48,21 +49,21 @@ def test_numba_generator_initialization_and_options() -> None:
     assert "parallel=True" in opts_str
     assert "nogil=True" in opts_str
 
-    gen_none = cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=False, parallel=False, nogil=False)
+    gen_none = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=False, parallel=False, nogil=False)
     assert gen_none._format_jit_options() == "()"
 
 
 def test_numba_generator_generate() -> None:
     """Test source code generation for Numba functions."""
     g = DummyGraph()
-    gen = cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=True, parallel=False, nogil=False, emit_safe_fallback=True)
+    gen = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=True, parallel=False, nogil=False, emit_safe_fallback=True)
     code = gen.generate()
     assert "import numba as nb" in code
     assert "_njit = nb.njit(fastmath=True) if nb is not None else (lambda fn: fn)" in code
     assert "@_njit" in code
     assert "def evaluate(args):" in code
 
-    gen_strict = cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=False, parallel=True, emit_safe_fallback=False)
+    gen_strict = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=False, parallel=True, emit_safe_fallback=False)
     code_strict = gen_strict.generate()
     assert "@nb.njit(parallel=True)" in code_strict
 
@@ -82,13 +83,13 @@ def test_numba_generator_compile_fn() -> None:
     assert callable(fn)
 
     res = fn([np.array([1.0, 2.0]), np.array([3.0, 4.0])])
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, cast("EagerCallableProtocol", np.array)([4.0, 6.0]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, typing.cast("EagerCallableProtocol", np.array)([4.0, 6.0]))
 
 
 def test_numba_generator_compile_fn_error() -> None:
     """Test compile_fn when generated code does not produce the expected callable."""
     g = DummyGraph()
-    gen = cast("EagerCallableProtocol", NumbaGenerator)(g)
+    gen = typing.cast("EagerCallableProtocol", NumbaGenerator)(g)
     with patch.object(gen, "generate", return_value="x = 42"):
         with pytest.raises(RuntimeError, match="Generated code did not produce callable"):
             gen.compile_fn()
@@ -97,7 +98,7 @@ def test_numba_generator_compile_fn_error() -> None:
 def test_numba_generator_generic_visit() -> None:
     """Test generic_visit method of NumbaGenerator."""
     g = DummyGraph()
-    gen = cast("EagerCallableProtocol", NumbaGenerator)(g)
+    gen = typing.cast("EagerCallableProtocol", NumbaGenerator)(g)
     node = IRNode(id="n1", op_type="Sin", inputs=["x"], attributes={})
     res = gen.generic_visit(node, ["x"])
     assert res == "np.sin(x)"
@@ -114,7 +115,7 @@ def test_numba_types() -> None:
     assert np.allclose(arr, [1.0, 2.0])
 
     arr_dtype = array([1.0, 2.0], dtype="float64")
-    assert cast("EagerTensorProtocol", getattr(arr_dtype, "dtype")) == np.float64
+    assert typing.cast("EagerTensorProtocol", getattr(arr_dtype, "dtype")) == np.float64
 
     as_arr = asarray([3.0, 4.0])
     assert isinstance(as_arr, np.ndarray)
@@ -126,16 +127,16 @@ def test_numba_types() -> None:
 def test_numba_eager_execute_op() -> None:
     """Test eager operation dispatch for Numba backend."""
     res_abs = execute_op("Abs", [-3.0, 4.0])
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_abs, [3.0, 4.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_abs, [3.0, 4.0])
 
     # Test non-list argument (direct ndarray)
     res_add = execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_add, [4.0, 6.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_add, [4.0, 6.0])
 
     # Test object where asarray raises exception inside schema operation
     with patch("ml_switcheroo_compiler.backends.numba.eager.kernels.asarray", side_effect=ValueError("bad array")):
         res_fallback_arg = execute_op("Abs", [1, 2])
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_fallback_arg, [1, 2])
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_fallback_arg, [1, 2])
 
     # Test dispatch_eager_op raising BackendNotSupportedError falling back to global_eager_registry
     def fallback_op(backend_mod: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> str:
@@ -205,7 +206,7 @@ def test_numba_control_flow_while_and_fori_loops() -> None:
     g = DummyGraph()
 
     # Standard loop generation
-    gen = cast("EagerCallableProtocol", NumbaGenerator)(g, parallel=False)
+    gen = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, parallel=False)
     node_while = IRNode(id="while_1", op_type="WhileLoop", inputs=["init_x"], attributes={"max_iters": 10})
     out_while = gen.visit_WhileLoop(node_while, ["init_x"])
     assert out_while == "v_while_1"
@@ -217,7 +218,7 @@ def test_numba_control_flow_while_and_fori_loops() -> None:
     assert any("for idx_fori_1 in range(0, 20, 2):" in line for line in gen.code)
 
     # Parallel loop generation with nb.prange
-    gen_par = cast("EagerCallableProtocol", NumbaGenerator)(g, parallel=True)
+    gen_par = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, parallel=True)
     gen_par.visit_ForiLoop(node_fori, ["init_y"])
     assert any("for idx_fori_1 in nb.prange(0, 20, 2):" in line for line in gen_par.code)
 
@@ -227,7 +228,7 @@ def test_numba_parallel_reduction_lowering_prange() -> None:
     g = DummyGraph()
 
     # Parallel mode with nb.prange
-    gen_par = cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=True, parallel=True)
+    gen_par = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, fastmath=True, parallel=True)
 
     n_sum = IRNode(id="sum_1", op_type="Sum", inputs=["arr_in"])
     out_sum = gen_par.visit_Sum(n_sum, ["arr_in"])
@@ -251,7 +252,7 @@ def test_numba_parallel_reduction_lowering_prange() -> None:
     assert out_min == "v_min_1"
 
     # Non-parallel fallback
-    gen_seq = cast("EagerCallableProtocol", NumbaGenerator)(g, parallel=False)
+    gen_seq = typing.cast("EagerCallableProtocol", NumbaGenerator)(g, parallel=False)
     gen_seq.visit_Sum(n_sum, ["arr_in"])
     assert any("v_sum_1 = np.sum(arr_in)" in line for line in gen_seq.code)
 
@@ -262,34 +263,36 @@ def test_numba_expanded_eager_operations_parity() -> None:
     arr2 = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
 
     # Trig and Hyperbolic
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Cos", arr1), cast("EagerCallableProtocol", np.cos)(arr1))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Tan", arr1), cast("EagerCallableProtocol", np.tan)(arr1))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Tanh", arr1), cast("EagerCallableProtocol", np.tanh)(arr1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Cos", arr1), typing.cast("EagerCallableProtocol", np.cos)(arr1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Tan", arr1), typing.cast("EagerCallableProtocol", np.tan)(arr1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Tanh", arr1), typing.cast("EagerCallableProtocol", np.tanh)(arr1))
 
     # Comparisons and Logic
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Greater", arr1, arr2), cast("EagerCallableProtocol", np.greater)(arr1, arr2))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Less", arr1, arr2), cast("EagerCallableProtocol", np.less)(arr1, arr2))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Equal", arr1, arr1), cast("EagerCallableProtocol", np.equal)(arr1, arr1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Greater", arr1, arr2), typing.cast("EagerCallableProtocol", np.greater)(arr1, arr2))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Less", arr1, arr2), typing.cast("EagerCallableProtocol", np.less)(arr1, arr2))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Equal", arr1, arr1), typing.cast("EagerCallableProtocol", np.equal)(arr1, arr1))
 
     # Reductions
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Var", arr1), cast("EagerCallableProtocol", np.var)(arr1))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Std", arr1), cast("EagerCallableProtocol", np.std)(arr1))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Cumsum", arr1), cast("EagerCallableProtocol", np.cumsum)(arr1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Var", arr1), typing.cast("EagerCallableProtocol", np.var)(arr1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Std", arr1), typing.cast("EagerCallableProtocol", np.std)(arr1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Cumsum", arr1), typing.cast("EagerCallableProtocol", np.cumsum)(arr1))
 
     # Array creation and shape
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Zeros", (2, 2)), cast("EagerCallableProtocol", np.zeros)((2, 2)))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Ones", (3,)), cast("EagerCallableProtocol", np.ones)(3))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Arange", 5), cast("EagerCallableProtocol", np.arange)(5))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Zeros", (2, 2)), typing.cast("EagerCallableProtocol", np.zeros)((2, 2)))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Ones", (3,)), typing.cast("EagerCallableProtocol", np.ones)(3))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Arange", 5), typing.cast("EagerCallableProtocol", np.arange)(5))
 
 
 def test_numba_aot_compilation_and_runner_execution() -> None:
     """Verify Numba ahead-of-time compilation, successful dispatch, and fallback branches."""
     # 1. Normal compilation and successful execution with single output
     g = IRGraph(name="test_nb_aot")
-    g.nodes = {
-        "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
-        "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
-    }
+    g.nodes = NodeDict(
+        {
+            "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
+            "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
+        }
+    )
     g.inputs = ["x"]
     g.outputs = ["y"]
     gen = NumbaGenerator(g)
@@ -300,39 +303,41 @@ def test_numba_aot_compilation_and_runner_execution() -> None:
 
     arr = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     res = artifact(arr)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, arr + arr)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, arr + arr)
 
     # 2. Multi-output execution with extra unused arguments
     g_multi = IRGraph(name="test_nb_aot_multi")
-    g_multi.nodes = {
-        "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
-        "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
-        "z": IRNode(id="z", op_type="Mul", inputs=["x", "y"], shape_metadata=(4,)),
-    }
+    g_multi.nodes = NodeDict(
+        {
+            "x": IRNode(id="x", op_type="Input", shape_metadata=(4,)),
+            "y": IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(4,)),
+            "z": IRNode(id="z", op_type="Mul", inputs=["x", "y"], shape_metadata=(4,)),
+        }
+    )
     g_multi.inputs = ["x"]
     g_multi.outputs = ["y", "z"]
     gen_multi = NumbaGenerator(g_multi)
     artifact_multi = gen_multi.compile_aot(g_multi)
     res_multi = artifact_multi(arr, "extra_arg")
     assert isinstance(res_multi, tuple) and len(res_multi) == 2
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[0], arr + arr)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[1], arr * (arr + arr))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[0], arr + arr)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[1], arr * (arr + arr))
 
     # 3. Fallback execution when compiled_fn fails to exec (syntax error in source_code)
     with patch.object(gen, "generate", return_value="def invalid python syntax !!!"):
         artifact_bad = gen._compile_aot_impl(g)
-        res_fallback = cast("EagerCallableProtocol", artifact_bad)(arr, "extra_arg")
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_fallback, arr + arr)
+        res_fallback = typing.cast("EagerCallableProtocol", artifact_bad)(arr, "extra_arg")
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_fallback, arr + arr)
 
     # 4. Fallback execution with empty outputs
     g_empty = IRGraph(name="test_nb_aot_empty")
-    g_empty.nodes = {"x": IRNode(id="x", op_type="Input", shape_metadata=(4,))}
+    g_empty.nodes = NodeDict({"x": IRNode(id="x", op_type="Input", shape_metadata=(4,))})
     g_empty.inputs = ["x"]
     g_empty.outputs = []
     with patch.object(gen, "generate", return_value="def invalid python syntax !!!"):
         artifact_empty = gen._compile_aot_impl(g_empty)
-        res_empty = cast("EagerCallableProtocol", artifact_empty)(arr)
-        assert isinstance(res_empty, dict)
+        res_empty = typing.cast("EagerCallableProtocol", artifact_empty)(arr)
+        assert isinstance(typing.cast("EagerValue", res_empty), dict)
 
     # 5. Fallback execution when compiled_fn raises exception inside runner
     def exploding_fn(*args: EagerValue) -> None:
@@ -346,5 +351,5 @@ def test_numba_aot_compilation_and_runner_execution() -> None:
     with patch.object(gen, "generate", return_value="def evaluate(args): pass"):
         with patch("builtins.exec", side_effect=lambda code, scope: scope.update({"evaluate": exploding_fn})):
             artifact_crash = gen._compile_aot_impl(g)
-            res_recovered = cast("EagerCallableProtocol", artifact_crash)(arr)
-            cast("EagerCallableProtocol", np.testing.assert_allclose)(res_recovered, arr + arr)
+            res_recovered = typing.cast("EagerCallableProtocol", artifact_crash)(arr)
+            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_recovered, arr + arr)

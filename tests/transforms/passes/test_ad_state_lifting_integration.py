@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 from ml_switcheroo_compiler.transforms.passes.lift_state import lift_state_pass
@@ -20,7 +22,7 @@ def test_ad_state_lifting_integration() -> None:
     # State write
     write_node = IRNode(id="write_state", op_type="AssignVariable", inputs=["loss"])
 
-    graph.nodes = {"state_val": read_node, "param": param_node, "loss": loss_node, "write_state": write_node}
+    graph.nodes = NodeDict({"state_val": read_node, "param": param_node, "loss": loss_node, "write_state": write_node})
     graph.inputs = ["param"]
     graph.outputs = ["loss"]
 

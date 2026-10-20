@@ -30,19 +30,18 @@ repos:
     require_serial: true
     types:
     - python
-  repo: local
-- hooks:
-  - additional_dependencies:
-    - types-requests
-    - types-PyYAML
-    - pydantic
-    - libcst
-    args:
-    - --ignore-missing-imports
+  - args:
+    - --config-file
+    - pyproject.toml
+    entry: mypy
     files: ^src/ml_switcheroo_compiler/.*\.py$
     id: mypy
-  repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v1.19.1
+    language: system
+    name: mypy
+    require_serial: true
+    types:
+    - python
+  repo: local
 - hooks:
   - entry: pytest -n auto --dist loadfile --cov=src/ml_switcheroo_compiler --cov-branch --cov-fail-under=100
     files: \.py$
@@ -104,25 +103,25 @@ repos:
     pass_filenames: false
   repo: local
 - hooks:
-  - entry: python3 scripts/validate_backend_mappings.py --snapshot-dir ../ml-framework-snapshots
+  - entry: python3 scripts/validate_backend_mappings.py --snapshot-dir ../ml-ecosystem-snapshots
     files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
     id: validate-backend-mappings
     language: system
     name: Validate Backend Mappings
     pass_filenames: false
-  - entry: python3 scripts/validate_parameters.py --snapshot-dir ../ml-framework-snapshots
+  - entry: python3 scripts/validate_parameters.py --snapshot-dir ../ml-ecosystem-snapshots
     files: ^src/ml_switcheroo_compiler/(backends|ops)/.*\.(py|yaml)$
     id: validate-parameters
     language: system
     name: Validate Zero Hallucinated Parameters
     pass_filenames: false
-  - entry: python3 scripts/validate_rules.py --snapshot-dir ../ml-framework-snapshots
+  - entry: python3 scripts/validate_rules.py --snapshot-dir ../ml-ecosystem-snapshots
     files: ^src/ml_switcheroo_compiler/backends/.*\.(py|yaml)$
     id: validate-rules
     language: system
     name: Validate Rule 4 (N-to-M utility)
     pass_filenames: false
-  - entry: python3 scripts/check_snapshot_drift.py --old ../ml-framework-snapshots
+  - entry: python3 scripts/check_snapshot_drift.py --old ../ml-ecosystem-snapshots
     files: ^src/ml_switcheroo_compiler/.*
     id: check-snapshot-drift
     language: system

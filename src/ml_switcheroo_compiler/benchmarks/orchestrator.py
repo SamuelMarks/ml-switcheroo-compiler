@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib
 import multiprocessing
 import pathlib
-from typing import Optional, Protocol, Union, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.benchmarks.config_models import (
@@ -19,18 +19,18 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-ProfilerMetrics = dict[str, Union[list[float], float]]
-BenchmarkResult = tuple[str, Union[ProfilerMetrics, str]]
+ProfilerMetrics = dict[str, typing.Union[list[float], "float"]]
+BenchmarkResult = tuple[str, typing.Union[ProfilerMetrics, "str"]]
 
 
-class _ProfilerProtocol(Protocol):
+class _ProfilerProtocol(typing.Protocol):
     """Internal protocol defining the profiling execution signature."""
 
     def profile_graph(
         self,
         graph: IRGraph,
         inputs: dict[str, EvalValue],
-        device: Optional[str] = None,
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
     ) -> ProfilerMetrics:
@@ -53,7 +53,7 @@ def _isolated_worker(
     profiler_cls_tuple: tuple[str, str],
     graph: IRGraph,
     inputs: dict[str, EvalValue],
-    device: Optional[str],
+    device: str | None,
     num_iters: int,
     warmup_iters: int,
     output_queue: multiprocessing.Queue[BenchmarkResult],
@@ -130,13 +130,13 @@ class BenchmarkOrchestrator:
         """
         canonical: str = "pytorch" if backend_name in ("torch", "pytorch") else backend_name
         profiles = load_backend_profiles()
-        profile: Optional[ProfilerProfileModel] = profiles.get(canonical.lower()) or profiles.get(backend_name.lower())
+        profile: ProfilerProfileModel | None = profiles.get(canonical.lower()) or profiles.get(backend_name.lower())
 
         if profile is not None and profile.profiler_module and profile.profiler_class:
             try:
                 mod = importlib.import_module(profile.profiler_module)
                 profiler_cls = getattr(mod, profile.profiler_class)
-                return cast(_ProfilerProtocol, profiler_cls())
+                return typing.cast(_ProfilerProtocol, profiler_cls())
             except ImportError as err:
                 raise BackendNotSupportedError(f"Profiler for backend '{backend_name}' could not be imported: {err}") from err
 
@@ -147,7 +147,7 @@ class BenchmarkOrchestrator:
         graph: IRGraph,
         backend_name: str,
         inputs: dict[str, EvalValue],
-        device: Optional[str] = None,
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
     ) -> ProfilerMetrics:
@@ -194,7 +194,7 @@ class BenchmarkOrchestrator:
         status, payload = queue.get()
         if status != "ok":
             raise RuntimeError(f"Isolated execution failed: {payload}")
-        return cast(ProfilerMetrics, payload)
+        return typing.cast(ProfilerMetrics, payload)
 
     def _run_single(
         self,
@@ -203,8 +203,8 @@ class BenchmarkOrchestrator:
         batch_size: int,
         num_iters: int,
         warmup_iters: int,
-        device: Optional[str] = None,
-        isolate: Optional[bool] = None,
+        device: str | None = None,
+        isolate: bool | None = None,
     ) -> ProfilerMetrics:
         """Run a single benchmark iteration measuring latency and memory.
 
@@ -248,10 +248,7 @@ class BenchmarkOrchestrator:
                 extra_dims: list[int] = self.plan.input_shapes.get(inp, node_shape if node_shape else [10])
                 full_shape = (batch_size, *extra_dims)
             if hasattr(np_backend, "execute_op"):
-                inputs_dict[inp] = cast(
-                    EvalValue,
-                    np_backend.execute_op("Cast", np_backend.execute_op("Randn", *full_shape), dtype="float32"),
-                )
+                inputs_dict[inp] = np_backend.execute_op("Cast", np_backend.execute_op("Randn", *full_shape), dtype="float32")
             else:
                 inputs_dict[inp] = [0.0]
 
@@ -319,14 +316,14 @@ class BenchmarkOrchestrator:
                     raw_latencies = metrics.get("latencies", [])
                     lat_list: list[float] = [float(x) for x in raw_latencies] if isinstance(raw_latencies, list) and raw_latencies else [0.0]
                     stat_metrics = compute_statistical_metrics(lat_list)
-                    mean_lat: float = float(cast(float, stat_metrics["mean_ms"]))
+                    mean_lat: float = float(typing.cast(float, stat_metrics["mean_ms"]))
 
                     peak_mem_raw = metrics.get("peak_memory_mb")
-                    peak_mem: Optional[float] = float(peak_mem_raw) if isinstance(peak_mem_raw, (int, float)) else None
+                    peak_mem: float | None = float(peak_mem_raw) if isinstance(peak_mem_raw, (int, float)) else None
 
-                    p50: float = float(cast(float, stat_metrics["p50_ms"]))
-                    p95: float = float(cast(float, stat_metrics["p95_ms"]))
-                    p99: float = float(cast(float, stat_metrics["p99_ms"]))
+                    p50: float = float(typing.cast(float, stat_metrics["p50_ms"]))
+                    p95: float = float(typing.cast(float, stat_metrics["p95_ms"]))
+                    p99: float = float(typing.cast(float, stat_metrics["p99_ms"]))
 
                     throughput: float = (1000.0 / mean_lat) * batch_size if mean_lat > 0.0 else 0.0
 

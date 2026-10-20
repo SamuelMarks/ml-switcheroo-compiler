@@ -6,7 +6,7 @@ of Zeros, Ones, Full, and Arange operations against their NumPy equivalents.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ import pytest
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.creation.basic import Arange, Full, Ones, Zeros
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -28,7 +28,7 @@ def test_creation_ops() -> None:
     ops = [(Zeros(), np.zeros), (Ones(), np.ones)]
     for op, np_func in ops:
         assert op.infer_shape(shape) == shape
-        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", op.eager_eval)(shape), cast("EagerCallableProtocol", np_func)(shape))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", op.eager_eval)(shape), typing.cast("EagerCallableProtocol", np_func)(shape))
 
 
 def test_full_op() -> None:
@@ -41,7 +41,7 @@ def test_full_op() -> None:
     shape = (2, 2)
     val = 5.0
     assert op.infer_shape(shape, val) == shape
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", op.eager_eval)(shape, val), cast("EagerCallableProtocol", np.full)(shape, val))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", op.eager_eval)(shape, val), typing.cast("EagerCallableProtocol", np.full)(shape, val))
 
 
 def test_arange_op() -> None:
@@ -52,7 +52,7 @@ def test_arange_op() -> None:
     """
     op = Arange()
     assert op.infer_shape(10) is None
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", op.eager_eval)(5), cast("EagerCallableProtocol", np.arange)(5))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", op.eager_eval)(5), typing.cast("EagerCallableProtocol", np.arange)(5))
 
 
 def test_rand_ops() -> None:
@@ -66,15 +66,15 @@ def test_rand_ops() -> None:
     assert op.infer_shape((2, 3)) == (2, 3)
     assert op.infer_shape(2, 3) == (2, 3)
     res = op.eager_eval(2, 3, dtype=np.float32)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(res, "dtype")) == np.float32
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == np.float32
     res_none = op.eager_eval(2, 3, dtype=None)
-    assert cast("EagerTensorProtocol", getattr(res_none, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res_none, "shape")) == (2, 3)
     op_randn = get_op("Randn")()
     res_randn = op_randn.eager_eval(2, 3, dtype=np.float32)
-    assert cast("EagerTensorProtocol", getattr(res_randn, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res_randn, "shape")) == (2, 3)
     res_randn_none = op_randn.eager_eval(2, 3, dtype=None)
-    assert cast("EagerTensorProtocol", getattr(res_randn_none, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res_randn_none, "shape")) == (2, 3)
     op_randint = get_op("Randint")()
     assert op_randint.infer_shape(size=(2, 3)) == (2, 3)
     assert op_randint.infer_shape(0, 10, (2, 3)) == (2, 3)
@@ -109,8 +109,8 @@ def test_creation_frontend_basic_eager_and_tracing() -> None:
 
             def __init__(self) -> None:
                 """Test function __init__."""
-                self.nodes = cast("dict[str, EagerTensorProtocol]", {})
-                self.outputs = cast("list[EagerTensorProtocol]", [])
+                self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+                self.outputs = typing.cast("list[EagerTensorProtocol]", [])
                 self.name = "dummy"
 
             def add_node(self, n: EagerValue) -> None:
@@ -139,13 +139,13 @@ def test_creation_frontend_basic_eager_and_tracing() -> None:
         convert_to_tensor(np.array(["a"], dtype=object))
         convert_to_tensor(1, dtype=DType.Int32)
         with pytest.raises(AttributeError):
-            cast("EagerCallableProtocol", convert_to_tensor)(1, dtype="int32")
+            typing.cast("EagerCallableProtocol", convert_to_tensor)(1, dtype="int32")
         config.eager_mode = True
         convert_to_tensor(np.array(["a"]))
         convert_to_tensor(np.array(["a"], dtype=object))
         convert_to_tensor(1, dtype=DType.Int32)
         with pytest.raises(AttributeError):
-            cast("EagerCallableProtocol", convert_to_tensor)(1, dtype="int32")
+            typing.cast("EagerCallableProtocol", convert_to_tensor)(1, dtype="int32")
     finally:
         config.eager_mode = orig_eager
         if "orig_is_tracing" in locals():
@@ -163,14 +163,14 @@ def test_creation_frontend_basic_internal_funcs() -> None:
 
         value = "int32"
 
-    cast("EagerCallableProtocol", _get_dtype_val)(cast("EagerCallableProtocol", DummyDtype)())
+    typing.cast("EagerCallableProtocol", _get_dtype_val)(typing.cast("EagerCallableProtocol", DummyDtype)())
 
     class DummyDtypeName:
         """Test class DummyDtypeName."""
 
         name = "int32"
 
-    cast("EagerCallableProtocol", _get_dtype_val)(cast("EagerCallableProtocol", DummyDtypeName)())
+    typing.cast("EagerCallableProtocol", _get_dtype_val)(typing.cast("EagerCallableProtocol", DummyDtypeName)())
 
     class DummyBackend:
         """Test class DummyBackend."""
@@ -188,16 +188,16 @@ def test_creation_frontend_basic_internal_funcs() -> None:
                 raise ValueError("bad obj")
             return obj
 
-    cast("EagerCallableProtocol", _try_create_array)(cast("EagerCallableProtocol", DummyBackend)(), "good", dtype_val=None)
-    cast("EagerCallableProtocol", _try_create_array)(cast("EagerCallableProtocol", DummyBackend)(), "bad_obj", dtype_val=None)
-    cast("EagerCallableProtocol", _try_create_array)(cast("EagerCallableProtocol", DummyBackend)(), "good", dtype_val="good_dtype")
-    cast("EagerCallableProtocol", _try_create_array)(cast("EagerCallableProtocol", DummyBackend)(), "good", dtype_val="bad_dtype")
+    typing.cast("EagerCallableProtocol", _try_create_array)(typing.cast("EagerCallableProtocol", DummyBackend)(), "good", dtype_val=None)
+    typing.cast("EagerCallableProtocol", _try_create_array)(typing.cast("EagerCallableProtocol", DummyBackend)(), "bad_obj", dtype_val=None)
+    typing.cast("EagerCallableProtocol", _try_create_array)(typing.cast("EagerCallableProtocol", DummyBackend)(), "good", dtype_val="good_dtype")
+    typing.cast("EagerCallableProtocol", _try_create_array)(typing.cast("EagerCallableProtocol", DummyBackend)(), "good", dtype_val="bad_dtype")
     with pytest.raises(ValueError):
-        cast("EagerCallableProtocol", _create_backend_array)("good", cast("EagerCallableProtocol", DummyDtype)())
-    cast("EagerCallableProtocol", _create_backend_array)([1], cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", _create_backend_array)("good", typing.cast("EagerCallableProtocol", DummyDtype)())
+    typing.cast("EagerCallableProtocol", _create_backend_array)([1], typing.cast("EagerCallableProtocol", DummyDtype)())
     array(1, dtype=DType.Int32)
     with pytest.raises(AttributeError):
-        cast("EagerCallableProtocol", array)(1, dtype="int32")
+        typing.cast("EagerCallableProtocol", array)(1, dtype="int32")
 
 
 def _test_creation_frontend_basic_tensor_inputs_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -227,13 +227,13 @@ def _test_creation_frontend_basic_tensor_inputs_part_1(_state: dict[str, EagerTe
             Args:
                 dtype: Test parameter `dtype`.
             """
-            return cast("EagerTensorProtocol", self)
+            return typing.cast("EagerTensorProtocol", self)
 
         def __array__(self) -> EagerValue:
             """Test function __array__."""
             return np.ones((2, 2))
 
-    t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyData)(), tc)
+    t = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyData)(), tc)
     asarray(t)
     with pytest.raises(RuntimeError):
         asarray(t, dtype=DType.Int32)
@@ -287,7 +287,7 @@ def _test_creation_frontend_basic_tensor_inputs_part_3(_state: dict[str, EagerTe
 
             dtype = "dummy"
 
-        cast("EagerCallableProtocol", _infer_dtype)(cast("EagerCallableProtocol", DummyDT)())
+        typing.cast("EagerCallableProtocol", _infer_dtype)(typing.cast("EagerCallableProtocol", DummyDT)())
 
 
 def test_creation_frontend_basic_tensor_inputs() -> None:
@@ -320,7 +320,7 @@ def test_creation_frontend_basic_unpack_shape() -> None:
 
         data = Data()
 
-    assert cast("EagerCallableProtocol", _unpack_shape)((cast("EagerCallableProtocol", DummyDataNoItem)(), cast("EagerCallableProtocol", DummyDataWithItem)())) == (5, 5)
+    assert typing.cast("EagerCallableProtocol", _unpack_shape)((typing.cast("EagerCallableProtocol", DummyDataNoItem)(), typing.cast("EagerCallableProtocol", DummyDataWithItem)())) == (5, 5)
 
 
 def test_creation_frontend_basic_full_eager() -> None:
@@ -328,7 +328,7 @@ def test_creation_frontend_basic_full_eager() -> None:
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.ops.creation.frontend_basic import _full_eager
 
-    cast("EagerCallableProtocol", _full_eager)((2, 2), 5, DType.Float32, None)
+    typing.cast("EagerCallableProtocol", _full_eager)((2, 2), 5, DType.Float32, None)
     assert callable(test_creation_frontend_basic_full_eager)
 
 
@@ -358,7 +358,7 @@ def test_creation_frontend_basic_eager_backends() -> None:
     orig_eager = config.eager_mode
     try:
         config.backend = "mock_ops"
-        cast("EagerCallableProtocol", BackendRegistry.register)("mock_ops", MockBackend)
+        typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_ops", MockBackend)
         config.eager_mode = True
 
         class DummyDtype:
@@ -366,16 +366,16 @@ def test_creation_frontend_basic_eager_backends() -> None:
 
             name = "dummy"
 
-        cast("EagerCallableProtocol", zeros)((2, 2), dtype=cast("EagerCallableProtocol", DummyDtype)())
-        cast("EagerCallableProtocol", ones)((2, 2), dtype=cast("EagerCallableProtocol", DummyDtype)())
-        cast("EagerCallableProtocol", full)((2, 2), 5, dtype=cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", zeros)((2, 2), dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", ones)((2, 2), dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", full)((2, 2), 5, dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
         pass
         pass
         pass
         pass
         pass
         pass
-        cast("EagerCallableProtocol", empty)((2, 2), dtype=cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", empty)((2, 2), dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
         with pytest.raises(ValueError):
             from ml_switcheroo_compiler.ops.creation.frontend_basic import _infer_dtype
 
@@ -384,7 +384,7 @@ def test_creation_frontend_basic_eager_backends() -> None:
 
                 dtype = "float"
 
-            cast("EagerCallableProtocol", _infer_dtype)(cast("EagerCallableProtocol", DummyDT)())
+            typing.cast("EagerCallableProtocol", _infer_dtype)(typing.cast("EagerCallableProtocol", DummyDT)())
     finally:
         config.backend = orig_backend
         config.eager_mode = orig_eager
@@ -406,8 +406,8 @@ def test_creation_frontend_basic_frombuffer() -> None:
 
             def __init__(self) -> None:
                 """Test function __init__."""
-                self.nodes = cast("dict[str, EagerTensorProtocol]", {})
-                self.outputs = cast("list[EagerTensorProtocol]", [])
+                self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+                self.outputs = typing.cast("list[EagerTensorProtocol]", [])
                 self.name = "dummy"
 
             def add_node(self, n: EagerValue) -> None:
@@ -442,8 +442,8 @@ def test_creation_frontend_basic_misc() -> None:
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
-        cast("EagerCallableProtocol", convert_to_numpy)(1)
-        cast("EagerCallableProtocol", convert_to_numpy)(cast("EagerCallableProtocol", np.ones)(1))
+        typing.cast("EagerCallableProtocol", convert_to_numpy)(1)
+        typing.cast("EagerCallableProtocol", convert_to_numpy)(typing.cast("EagerCallableProtocol", np.ones)(1))
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
         class MockBackendFromBuf:
@@ -463,14 +463,14 @@ def test_creation_frontend_basic_misc() -> None:
         orig_backend = config.backend
         try:
             config.backend = "mock_frombuf"
-            cast("EagerCallableProtocol", BackendRegistry.register)("mock_frombuf", MockBackendFromBuf)
+            typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_frombuf", MockBackendFromBuf)
 
             class DummyDtype:
                 """Test class DummyDtype."""
 
                 name = "dummy"
 
-            cast("EagerCallableProtocol", frombuffer)(b"hello", dtype=cast("EagerCallableProtocol", DummyDtype)())
+            typing.cast("EagerCallableProtocol", frombuffer)(b"hello", dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
         finally:
             config.backend = orig_backend
     finally:
@@ -499,8 +499,8 @@ def test_creation_frontend_basic_extract_fill() -> None:
 
         data = Data()
 
-    assert cast("EagerCallableProtocol", _extract_fill_value)(cast("EagerCallableProtocol", DummyDataNoItem)()) == 5
-    assert cast("EagerCallableProtocol", _extract_fill_value)(cast("EagerCallableProtocol", DummyDataWithItem)()) == 5
+    assert typing.cast("EagerCallableProtocol", _extract_fill_value)(typing.cast("EagerCallableProtocol", DummyDataNoItem)()) == 5
+    assert typing.cast("EagerCallableProtocol", _extract_fill_value)(typing.cast("EagerCallableProtocol", DummyDataWithItem)()) == 5
     assert _extract_fill_value(5) == 5
 
 
@@ -534,7 +534,7 @@ def test_creation_frontend_basic_like_funcs_str_dtype() -> None:
                 """
                 return np.ones((2, 2))
 
-        cast("EagerCallableProtocol", BackendRegistry.register)("mock_ops_like", MockLikeBackend)
+        typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_ops_like", MockLikeBackend)
         tc = TensorConfig(shape=(2, 2), dtype=DType.Float32, device=None)
 
         class DummyData:
@@ -550,22 +550,22 @@ def test_creation_frontend_basic_like_funcs_str_dtype() -> None:
                 Args:
                     dtype: Test parameter `dtype`.
                 """
-                return cast("EagerTensorProtocol", self)
+                return typing.cast("EagerTensorProtocol", self)
 
             def __array__(self) -> EagerValue:
                 """Test function __array__."""
                 return np.ones((2, 2))
 
-        t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyData)(), tc)
+        t = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyData)(), tc)
 
         class DummyDtype:
             """Test class DummyDtype."""
 
             name = "float32"
 
-        cast("EagerCallableProtocol", zeros_like)(t, dtype=cast("EagerCallableProtocol", DummyDtype)())
-        cast("EagerCallableProtocol", ones_like)(t, dtype=cast("EagerCallableProtocol", DummyDtype)())
-        cast("EagerCallableProtocol", full_like)(t, 5, dtype=cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", zeros_like)(t, dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", ones_like)(t, dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
+        typing.cast("EagerCallableProtocol", full_like)(t, 5, dtype=typing.cast("EagerCallableProtocol", DummyDtype)())
     finally:
         config.eager_mode = orig_eager
         config.backend = orig_backend
@@ -586,7 +586,7 @@ def test_creation_frontend_basic_unpack_shape_item_missing() -> None:
 
         data = DummyItemLess()
 
-    assert id(cast("EagerCallableProtocol", type)(cast("EagerCallableProtocol", _unpack_shape)((cast("EagerCallableProtocol", DummyWithItemLess)(),))[0])) == id(DummyItemLess)
+    assert id(typing.cast("EagerCallableProtocol", type)(typing.cast("EagerCallableProtocol", _unpack_shape)((typing.cast("EagerCallableProtocol", DummyWithItemLess)(),))[0])) == id(DummyItemLess)
 
 
 def test_creation_frontend_basic_unpack_shape_elif_item() -> None:
@@ -600,7 +600,7 @@ def test_creation_frontend_basic_unpack_shape_elif_item() -> None:
             """Test function item."""
             return 5
 
-    assert cast("EagerCallableProtocol", _unpack_shape)((cast("EagerCallableProtocol", DummyItem2)(),)) == (5,)
+    assert typing.cast("EagerCallableProtocol", _unpack_shape)((typing.cast("EagerCallableProtocol", DummyItem2)(),)) == (5,)
 
 
 def test_creation_frontend_basic_array_eager() -> None:

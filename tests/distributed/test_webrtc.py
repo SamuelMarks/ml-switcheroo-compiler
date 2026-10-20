@@ -1,5 +1,7 @@
 """Unit tests for edge WebRTC collective emitter routines."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_init, emit_webrtc_op
 
 

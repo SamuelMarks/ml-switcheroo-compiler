@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -11,28 +11,30 @@ import ml_switcheroo_compiler.backends.eager as eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_generator, _np_affine_grid, _np_affine_transform, _np_elastic_transform, _np_extract_bounding_boxes, _np_iou, _np_nms, _np_perspective_transform
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_np_affine_generator() -> None:
     """Test function test_np_affine_generator."""
-    res = _np_affine_generator(np, 2, None, None, None)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 8)
+    res = _np_affine_generator(
+        np, 2, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None)
+    )
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 8)
 
 
 def test_np_elastic_transform() -> None:
     """Test function test_np_elastic_transform."""
     images = np.ones((2, 2))
-    res = _np_elastic_transform(np, images, None)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
+    res = _np_elastic_transform(np, images, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_np_extract_bounding_boxes() -> None:
     """Test function test_np_extract_bounding_boxes."""
     images = np.ones((2, 2))
-    res = _np_extract_bounding_boxes(np, images, None, None)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
+    res = _np_extract_bounding_boxes(np, images, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_np_iou() -> None:
@@ -51,7 +53,7 @@ def test_np_iou() -> None:
         return np.ones((1,))
 
     with pytest.raises(IndexError):
-        _np_iou(np, None, None)
+        _np_iou(np, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None))
 
 
 def test_np_nms() -> None:
@@ -71,29 +73,29 @@ def test_np_nms() -> None:
         return np.ones((1,))
 
     with pytest.raises(TypeError):
-        _np_nms(np, None, None, 1)
+        _np_nms(np, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None), 1)
 
 
 def test_np_perspective_transform() -> None:
     """Test function test_np_perspective_transform."""
     images = np.ones((2, 2))
-    res = _np_perspective_transform(np, images, None, None, None)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
+    res = _np_perspective_transform(np, images, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None), None)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_np_affine_grid() -> None:
     """Test function test_np_affine_grid."""
     res1 = _np_affine_grid(np, np.ones((2, 2)), (2, 2))
-    assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (2, 2, 2)
-    res2 = _np_affine_grid(np, "dummy", (2, 2))
+    assert typing.cast("EagerTensorProtocol", getattr(res1, "shape")) == (2, 2, 2)
+    res2 = _np_affine_grid(np, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float", "dummy"), (2, 2))
     assert res2 == "dummy"
 
 
 def test_np_affine_transform() -> None:
     """Test function test_np_affine_transform."""
     images = np.ones((2, 2))
-    res = _np_affine_transform(np, images, None)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
+    res = _np_affine_transform(np, images, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", None))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, images)
 
 
 def test_numpy_vision_geometry_eager_extra() -> None:

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY, get_jvp, register_jvp
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY, JVPRuleCallable, get_jvp, register_jvp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -21,7 +21,6 @@ def test_jvp_registry_coverage_brute() -> None:
     if "fake_op" in _JVP_REGISTRY:
         del _JVP_REGISTRY["fake_op"]
 
-    @register_jvp("fake_op")
     def fake_jvp() -> None:
         """Evaluate and process the fake jvp operation.
 
@@ -29,13 +28,14 @@ def test_jvp_registry_coverage_brute() -> None:
             TensorOrScalar: The evaluated or processed output.
         """
 
+    register_jvp("fake_op")(typing.cast("JVPRuleCallable", fake_jvp))
+
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value=None):
-        assert get_jvp("fake_op") == fake_jvp
+        assert get_jvp("fake_op") == typing.cast("JVPRuleCallable", fake_jvp)
     with pytest.raises(ValueError, match="already registered"):
 
-        @register_jvp("fake_op")
         def fake_jvp2() -> None:
             """Evaluate and process the fake jvp2 operation.
 
@@ -43,13 +43,15 @@ def test_jvp_registry_coverage_brute() -> None:
                 TensorOrScalar: The evaluated or processed output.
             """
 
+        register_jvp("fake_op")(typing.cast("JVPRuleCallable", fake_jvp2))
+
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value=None):
         with pytest.raises(ValueError, match="No JVP rule"):
             get_jvp("NonExistentOp")
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value="data_jvp"):
-        assert cast("EagerTensorProtocol", get_jvp("fake_op_2")) == cast("EagerTensorProtocol", "data_jvp")
+        assert typing.cast("EagerTensorProtocol", get_jvp("fake_op_2")) == typing.cast("EagerTensorProtocol", "data_jvp")
     from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import has_jvp
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value=None):
@@ -82,7 +84,7 @@ def test_jvp_registry_full_branches() -> None:
         return None
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", side_effect=mock_get_data):
-        assert cast("EagerTensorProtocol", get_jvp("lazy_op_jvp")) == cast("EagerTensorProtocol", "lazy_jvp_result")
+        assert typing.cast("EagerTensorProtocol", get_jvp("lazy_op_jvp")) == typing.cast("EagerTensorProtocol", "lazy_jvp_result")
     with patch("os.path.exists", return_value=False):
         rules_none = load_primitive_jvp_rules(path="/nonexistent/path/jvp.yaml")
         assert rules_none == {}

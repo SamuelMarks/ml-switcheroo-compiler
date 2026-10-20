@@ -1,5 +1,7 @@
 """Apply normalization operations package."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.base import get_op  # noqa: F401
 
 from .basic import GroupMean, GroupNorm, GroupVariance  # noqa: F401

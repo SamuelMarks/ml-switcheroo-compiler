@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.shape_inference import (
@@ -19,7 +20,7 @@ from ml_switcheroo_compiler.transforms.passes.shape_inference import (
     shape_inference_pass,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -69,7 +70,7 @@ def test_infer_op_shape() -> None:
             return (1, 2)
 
     with mock.patch("ml_switcheroo_compiler.transforms.passes.shape_inference.get_op", return_value=lambda: MockOp()):
-        assert cast("EagerCallableProtocol", _infer_op_shape)(node1, shapes) == (1, 2)
+        assert typing.cast("EagerCallableProtocol", _infer_op_shape)(node1, shapes) == (1, 2)
 
 
 def test_determine_node_shape() -> None:
@@ -231,12 +232,12 @@ def test_annotate_learned_shapes_feedback_loop() -> None:
     graph = IRGraph(name="learned_test", nodes={"in1": node1, "add": node2}, outputs=["add"])
 
     # First annotation updates in1
-    modified = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
+    modified = typing.cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"in1": (8, 16), "missing_node": (1, 2)})
     assert bool(modified) is True
     assert graph.nodes["in1"].shape_metadata == (8, 16)
 
     # Subsequent annotation with identical shape does not modify
-    modified_again = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"in1": (8, 16)})
+    modified_again = typing.cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"in1": (8, 16)})
     assert bool(modified_again) is False
 
 
@@ -381,7 +382,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
     modified = annotate_learned_shapes(graph, packet_pass1)
     assert modified is True
     assert graph.nodes["inp"].shape_metadata == (8, 32)
-    assert bool(cast("EagerTensorProtocol", getattr(graph, "annotations"))["convergence_converged"]) is True
+    assert bool(typing.cast("EagerTensorProtocol", getattr(graph, "annotations"))["convergence_converged"]) is True
 
     # Multi-pass: second observation with different batch size
     packet_pass2 = RuntimeShapePacket(
@@ -402,7 +403,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
 
     # ShapeTracker telemetry resolution integration
     telemetry = {"inp": [16, 32], "add": [16, 32]}
-    resolved = cast("EagerCallableProtocol", ShapeTracker.update_from_feedback)(telemetry)
+    resolved = typing.cast("EagerCallableProtocol", ShapeTracker.update_from_feedback)(telemetry)
     assert resolved["inp"] == (16, 32)
     assert resolved["add"] == (16, 32)
 
@@ -416,12 +417,12 @@ def test_shape_inference_annotation_branches() -> None:
     graph = LogicalGraph(name="test_graph")
     node = LogicalNode(id="n1", op_type="Relu", shape_metadata=(4, 4))
     graph.nodes[node.id] = node
-    setattr(graph, "annotations", "invalid_annotations")
-    res1 = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"n1": (4, 4)})
+    object.__setattr__(graph, "annotations", "invalid_annotations")
+    res1 = typing.cast("EagerCallableProtocol", annotate_learned_shapes)(graph, {"n1": (4, 4)})
     assert bool(res1) is False
-    assert isinstance(cast("EagerTensorProtocol", getattr(graph, "annotations")), dict)
-    assert bool(cast("EagerTensorProtocol", getattr(graph, "annotations")).get("convergence_converged")) is True
-    res2 = cast("EagerCallableProtocol", annotate_learned_shapes)(graph, None)
+    assert isinstance(typing.cast("EagerTensorProtocol", getattr(graph, "annotations")), dict)
+    assert bool(typing.cast("EagerTensorProtocol", getattr(graph, "annotations")).get("convergence_converged")) is True
+    res2 = typing.cast("EagerCallableProtocol", annotate_learned_shapes)(graph, None)
     assert bool(res2) is False
 
 
@@ -472,9 +473,9 @@ def test_normalize_shape_edge_cases() -> None:
     assert _normalize_shape_tuple([1, 2, 3]) == (1, 2, 3)
     assert _normalize_shape_tuple((4, 5)) == (4, 5)
     assert _normalize_shape_tuple(["invalid", "str"]) is None
-    assert cast("EagerCallableProtocol", _normalize_shape_tuple)(12345) is None
-    assert cast("EagerCallableProtocol", _normalize_shape_tuple)("not_a_list") is None
-    assert _normalize_shape_tuple([object()]) is None
+    assert typing.cast("EagerCallableProtocol", _normalize_shape_tuple)(12345) is None
+    assert typing.cast("EagerCallableProtocol", _normalize_shape_tuple)("not_a_list") is None
+    assert typing.cast("EagerCallableProtocol", _normalize_shape_tuple)([[]]) is None
 
 
 def test_shape_inference_subgraphs() -> None:

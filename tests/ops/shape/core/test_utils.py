@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -49,7 +49,7 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             """Test function __init__."""
             self.value = "int32"
 
-    cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), cast("EagerCallableProtocol", FakeDtype1)())
+    typing.cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), typing.cast("EagerCallableProtocol", FakeDtype1)())
 
     class FakeDtype2:
         """Test class FakeDtype2."""
@@ -62,14 +62,14 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             """Test function __str__."""
             return "int64"
 
-    cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), cast("EagerCallableProtocol", FakeDtype2)())
+    typing.cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), typing.cast("EagerCallableProtocol", FakeDtype2)())
 
     class FakeDtype3:
         """Test class FakeDtype3."""
 
         pass
 
-    cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), cast("EagerCallableProtocol", FakeDtype3)())
+    typing.cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), typing.cast("EagerCallableProtocol", FakeDtype3)())
 
     class FakeNumpyDtype:
         """Test class FakeNumpyDtype."""
@@ -87,7 +87,7 @@ def test_emit_shape_node(mocker: EagerTensorProtocol) -> None:
             """Test function __init__."""
             self.name = "float64"
 
-    res = cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), cast("EagerCallableProtocol", dtype)())
+    res = typing.cast("EagerCallableProtocol", _emit_shape_node)("Op", [t], {}, (2, 3), typing.cast("EagerCallableProtocol", dtype)())
     assert res is not None
 
 

@@ -6,14 +6,14 @@ import os
 import runpy
 import sys
 import tempfile
-from typing import TYPE_CHECKING
+import typing
 from unittest.mock import patch
 
 import yaml
 
 from scripts.validate_rules import main, validate_n_to_m
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 

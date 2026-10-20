@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.sparse import kernels
 from ml_switcheroo_compiler.backends.sparse.eager import _dispatch_sparse_linalg, execute_op
 from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
@@ -16,7 +18,7 @@ from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, C
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -47,31 +49,31 @@ def test_sparse_dense_and_sparse_sparse_linalg_parity() -> None:
     csr_a = coo_a.to_csr()
     csc_a = coo_a.to_csc()
     dense_b = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]], dtype=np.float32)
-    expected_spmm = cast("EagerTensorProtocol", dense_a) @ cast("EagerTensorProtocol", dense_b)
+    expected_spmm = typing.cast("EagerTensorProtocol", dense_a) @ typing.cast("EagerTensorProtocol", dense_b)
     res_coo_dense = execute_op(SparseGenerator, "MatMul", coo_a, dense_b)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_coo_dense, expected_spmm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_coo_dense, expected_spmm, rtol=1e-05, atol=1e-05)
     res_csr_dense = execute_op(SparseGenerator, "matmul", csr_a, dense_b)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csr_dense, expected_spmm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csr_dense, expected_spmm, rtol=1e-05, atol=1e-05)
     res_csc_dense = execute_op(SparseGenerator, "Dot", csc_a, dense_b)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csc_dense, expected_spmm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_csc_dense, expected_spmm, rtol=1e-05, atol=1e-05)
     dense_left = dense_b.T
-    expected_dense_spmm = cast("EagerTensorProtocol", dense_left) @ cast("EagerTensorProtocol", dense_a)
+    expected_dense_spmm = typing.cast("EagerTensorProtocol", dense_left) @ typing.cast("EagerTensorProtocol", dense_a)
     res_dense_coo = execute_op(SparseGenerator, "matmul", dense_left, coo_a)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense_coo, expected_dense_spmm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense_coo, expected_dense_spmm, rtol=1e-05, atol=1e-05)
     res_dense_csr = execute_op(SparseGenerator, "Dot", dense_left, csr_a)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense_csr, expected_dense_spmm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense_csr, expected_dense_spmm, rtol=1e-05, atol=1e-05)
     res_dense_csc = execute_op(SparseGenerator, "MatMul", dense_left, csc_a)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense_csc, expected_dense_spmm, rtol=1e-05, atol=1e-05)
-    expected_spgemm = cast("EagerTensorProtocol", dense_a) @ cast("EagerTensorProtocol", dense_a)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_dense_csc, expected_dense_spmm, rtol=1e-05, atol=1e-05)
+    expected_spgemm = typing.cast("EagerTensorProtocol", dense_a) @ typing.cast("EagerTensorProtocol", dense_a)
     res_spgemm_coo = execute_op(SparseGenerator, "MatMul", coo_a, coo_a)
     assert isinstance(res_spgemm_coo, COOTensor)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_spgemm_coo.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", res_spgemm_coo.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
     res_spgemm_csr = execute_op(SparseGenerator, "matmul", csr_a, csr_a)
     assert isinstance(res_spgemm_csr, CSRTensor)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_spgemm_csr.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", res_spgemm_csr.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
     res_spgemm_csc = execute_op(SparseGenerator, "Dot", csc_a, csc_a)
     assert isinstance(res_spgemm_csc, CSCTensor)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", res_spgemm_csc.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", res_spgemm_csc.to_dense)(), expected_spgemm, rtol=1e-05, atol=1e-05)
 
 
 def test_csr_and_csc_arithmetic() -> None:
@@ -82,13 +84,13 @@ def test_csr_and_csc_arithmetic() -> None:
     (csr_1, csr_2) = (coo_1.to_csr(), coo_2.to_csr())
     (csc_1, csc_2) = (coo_1.to_csc(), coo_2.to_csc())
     res_csr_add = execute_op(SparseGenerator, "Add", csr_1, csr_2)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_csr_add, "to_dense")))(), cast("EagerTensorProtocol", dense_1) + cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_csr_add, "to_dense")))(), typing.cast("EagerTensorProtocol", dense_1) + typing.cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
     res_csr_sub = execute_op(SparseGenerator, "Sub", csr_1, csr_2)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_csr_sub, "to_dense")))(), cast("EagerTensorProtocol", dense_1) - cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_csr_sub, "to_dense")))(), typing.cast("EagerTensorProtocol", dense_1) - typing.cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
     res_csc_add = execute_op(SparseGenerator, "add", csc_1, csc_2)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_csc_add, "to_dense")))(), cast("EagerTensorProtocol", dense_1) + cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_csc_add, "to_dense")))(), typing.cast("EagerTensorProtocol", dense_1) + typing.cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
     res_csc_sub = execute_op(SparseGenerator, "sub", csc_1, csc_2)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res_csc_sub, "to_dense")))(), cast("EagerTensorProtocol", dense_1) - cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_csc_sub, "to_dense")))(), typing.cast("EagerTensorProtocol", dense_1) - typing.cast("EagerTensorProtocol", dense_2), rtol=1e-05, atol=1e-05)
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
     empty_csr = empty_coo.to_csr()
     empty_csc = empty_coo.to_csc()
@@ -110,9 +112,9 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     attn_dense = attn_coo.to_dense()
     for r in range(4):
         if np.any(dense_adj[r] != 0):
-            assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", np.sum)(cast("EagerTensorProtocol", getattr(attn_dense, "__getitem__")(r))), 1.0, atol=1e-05)
+            assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerCallableProtocol", np.sum)(typing.cast("EagerTensorProtocol", getattr(attn_dense, "__getitem__")(r))), 1.0, atol=1e-05)
         else:
-            assert cast("EagerCallableProtocol", np.isclose)(cast("EagerCallableProtocol", np.sum)(cast("EagerTensorProtocol", getattr(attn_dense, "__getitem__")(r))), 0.0)
+            assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerCallableProtocol", np.sum)(typing.cast("EagerTensorProtocol", getattr(attn_dense, "__getitem__")(r))), 0.0)
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
     assert kernels.sparse_softmax(empty_coo).nnz == 0
     masked_softmax = kernels.sparse_softmax(coo_adj, mask=coo_adj)
@@ -124,15 +126,15 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     deg_hat = np.sum(a_hat, axis=1)
     deg_inv_sqrt = np.diag(1.0 / np.sqrt(deg_hat))
     expected_norm_adj = deg_inv_sqrt @ a_hat @ deg_inv_sqrt
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", norm_adj.to_dense)(), expected_norm_adj, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", norm_adj.to_dense)(), expected_norm_adj, rtol=1e-05, atol=1e-05)
     norm_adj_no_loops = kernels.graph_norm_adjacency(coo_adj, add_self_loops=False)
     assert norm_adj_no_loops.shape == (4, 4)
     node_features = np.array([[1.0, 0.5], [0.2, 0.8], [1.5, 0.1], [0.7, 0.9]], dtype=np.float32)
     agg_out = kernels.gnn_spmm_attention(coo_adj, node_features)
-    assert cast("EagerTensorProtocol", getattr(agg_out, "shape")) == (4, 2)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(agg_out, cast("EagerTensorProtocol", dense_adj) @ cast("EagerTensorProtocol", node_features), rtol=1e-05, atol=1e-05)
+    assert typing.cast("EagerTensorProtocol", getattr(agg_out, "shape")) == (4, 2)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(agg_out, typing.cast("EagerTensorProtocol", dense_adj) @ typing.cast("EagerTensorProtocol", node_features), rtol=1e-05, atol=1e-05)
     agg_attn_out = kernels.gnn_spmm_attention(coo_adj, node_features, attention_weights=coo_adj)
-    assert cast("EagerTensorProtocol", getattr(agg_attn_out, "shape")) == (4, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(agg_attn_out, "shape")) == (4, 2)
     dropped = kernels.sparse_dropout(coo_adj, drop_rate=0.5, training=True, seed=42)
     assert isinstance(dropped, COOTensor)
     assert dropped.shape == coo_adj.shape
@@ -184,13 +186,13 @@ def test_sparse_profiler_and_memory_metrics() -> None:
     g = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2, 2])
     n_sum = IRNode(id="out", op_type="Sum", inputs=["x"], shape_metadata=[2, 2])
-    g.nodes = {"x": n_in, "out": n_sum}
+    g.nodes = NodeDict({"x": n_in, "out": n_sum})
     g.inputs = ["x"]
     g.outputs = ["out"]
     profiler = SparseProfiler()
     metrics = profiler.profile_graph(g, inputs={"x": [[1.0, 2.0], [3.0, 4.0]]}, num_iters=3, warmup_iters=1)
     assert "latencies" in metrics
-    assert cast("EagerCallableProtocol", len)(metrics["latencies"]) == 3
+    assert typing.cast("EagerCallableProtocol", len)(metrics["latencies"]) == 3
     assert getattr(metrics, "__getitem__")("latency_ms") >= 0.0
     assert getattr(metrics, "__getitem__")("p50_ms") >= 0.0
     assert getattr(metrics, "__getitem__")("p95_ms") >= 0.0
@@ -200,7 +202,7 @@ def test_sparse_profiler_and_memory_metrics() -> None:
         assert _get_process_memory_mb() > 0.0
     empty_graph = IRGraph()
     metrics_empty = profiler.profile_graph(empty_graph, inputs={}, num_iters=2, warmup_iters=1)
-    assert cast("EagerCallableProtocol", len)(metrics_empty["latencies"]) == 2
+    assert typing.cast("EagerCallableProtocol", len)(metrics_empty["latencies"]) == 2
 
     class MockAddTensor:
         """Test class MockAddTensor."""
@@ -211,17 +213,17 @@ def test_sparse_profiler_and_memory_metrics() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return cast("EagerTensorProtocol", self)
+            return typing.cast("EagerTensorProtocol", self)
 
     class MockNonAddTensor:
         """Test class MockNonAddTensor."""
 
         pass
 
-    metrics_add = cast("EagerCallableProtocol", profiler.profile_graph)(empty_graph, inputs={"a": cast("EagerCallableProtocol", MockAddTensor)(), "b": cast("EagerCallableProtocol", MockAddTensor)()}, num_iters=2)
-    assert cast("EagerCallableProtocol", len)(metrics_add["latencies"]) == 2
-    metrics_non_add = cast("EagerCallableProtocol", profiler.profile_graph)(empty_graph, inputs={"a": cast("EagerCallableProtocol", MockNonAddTensor)(), "b": cast("EagerCallableProtocol", MockNonAddTensor)()}, num_iters=2)
-    assert cast("EagerCallableProtocol", len)(metrics_non_add["latencies"]) == 2
+    metrics_add = typing.cast("EagerCallableProtocol", profiler.profile_graph)(empty_graph, inputs={"a": typing.cast("EagerCallableProtocol", MockAddTensor)(), "b": typing.cast("EagerCallableProtocol", MockAddTensor)()}, num_iters=2)
+    assert typing.cast("EagerCallableProtocol", len)(metrics_add["latencies"]) == 2
+    metrics_non_add = typing.cast("EagerCallableProtocol", profiler.profile_graph)(empty_graph, inputs={"a": typing.cast("EagerCallableProtocol", MockNonAddTensor)(), "b": typing.cast("EagerCallableProtocol", MockNonAddTensor)()}, num_iters=2)
+    assert typing.cast("EagerCallableProtocol", len)(metrics_non_add["latencies"]) == 2
 
 
 def test_sparse_eager_dispatch_coverage() -> None:
@@ -282,24 +284,24 @@ def _test_sparse_edge_cases_and_branch_coverage_part_2(_state: dict[str, EagerTe
     """
     (coo_adj, csc_adj, csr_adj, dense_adj) = (_state["coo_adj"], _state["csc_adj"], _state["csr_adj"], _state["dense_adj"])
     (empty_csc, empty_csr, sub_csr_res) = (_state["empty_csc"], _state["empty_csr"], _state["sub_csr_res"])
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", sub_csr_res.to_dense)(), -dense_adj)
-    sub_csr_b_empty = cast("EagerCallableProtocol", kernels.csr_sub)(csr_adj, empty_csr)
-    assert sub_csr_b_empty is csr_adj
-    sub_csc_res = cast("EagerCallableProtocol", kernels.csc_sub)(empty_csc, csc_adj)
-    assert isinstance(sub_csc_res, CSCTensor)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", sub_csc_res.to_dense)(), -dense_adj)
-    sub_csc_b_empty = cast("EagerCallableProtocol", kernels.csc_sub)(csc_adj, empty_csc)
-    assert cast("EagerTensorProtocol", sub_csc_b_empty) is cast("EagerTensorProtocol", csc_adj)
-    csr_100 = cast("EagerCallableProtocol", kernels.sparse_dropout)(csr_adj, drop_rate=1.0)
-    assert isinstance(csr_100, CSRTensor)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", sub_csr_res.to_dense)(), -dense_adj)
+    sub_csr_b_empty = typing.cast("EagerCallableProtocol", kernels.csr_sub)(csr_adj, empty_csr)
+    assert typing.cast("EagerValue", sub_csr_b_empty) is csr_adj
+    sub_csc_res = typing.cast("EagerCallableProtocol", kernels.csc_sub)(empty_csc, csc_adj)
+    assert isinstance(typing.cast("EagerValue", sub_csc_res), CSCTensor)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", sub_csc_res.to_dense)(), -dense_adj)
+    sub_csc_b_empty = typing.cast("EagerCallableProtocol", kernels.csc_sub)(csc_adj, empty_csc)
+    assert sub_csc_b_empty is csc_adj
+    csr_100 = typing.cast("EagerCallableProtocol", kernels.sparse_dropout)(csr_adj, drop_rate=1.0)
+    assert isinstance(typing.cast("EagerValue", csr_100), CSRTensor)
     assert csr_100.nnz == 0
-    csc_100 = cast("EagerCallableProtocol", kernels.sparse_dropout)(csc_adj, drop_rate=1.0)
-    assert isinstance(csc_100, CSCTensor)
+    csc_100 = typing.cast("EagerCallableProtocol", kernels.sparse_dropout)(csc_adj, drop_rate=1.0)
+    assert isinstance(typing.cast("EagerValue", csc_100), CSCTensor)
     assert csc_100.nnz == 0
     fake_rng = mock.MagicMock()
     fake_rng.uniform.return_value = np.ones(coo_adj.nnz)
     with mock.patch("numpy.random.default_rng", return_value=fake_rng):
-        drop_all = cast("EagerCallableProtocol", kernels.sparse_dropout)(coo_adj, drop_rate=0.5)
+        drop_all = typing.cast("EagerCallableProtocol", kernels.sparse_dropout)(coo_adj, drop_rate=0.5)
         assert drop_all.nnz == 0
     profiler = SparseProfiler()
     g = IRGraph()
@@ -326,7 +328,7 @@ def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTe
     g_sum = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2, 2])
     n_out = IRNode(id="out", op_type="Sum", inputs=["x"], shape_metadata=[2, 2])
-    g_sum.nodes = {"x": n_in, "out": n_out}
+    g_sum.nodes = NodeDict({"x": n_in, "out": n_out})
     g_sum.inputs = ["x"]
     g_sum.outputs = ["out"]
     with mock.patch.object(profiler, "_compile_graph", side_effect=RuntimeError("compile failed")):
@@ -344,7 +346,7 @@ def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTe
         """
         if name == "sparse":
             raise ImportError("no sparse module")
-        return cast("EagerCallableProtocol", real_import)(name, *args, **kwargs)
+        return typing.cast("EagerCallableProtocol", real_import)(name, *args, **kwargs)
 
     getattr(_state, "update")({"fake_sparse_import": fake_sparse_import, "g_sum": g_sum, "metrics_fail": metrics_fail, "n_in": n_in})
     getattr(_state, "update")({"n_out": n_out, "real_import": real_import})

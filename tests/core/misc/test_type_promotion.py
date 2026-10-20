@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -41,7 +41,7 @@ def test_promote_types() -> None:
     assert promote_types(DType.Float64, DType.Complex64) == DType.Complex128
     assert promote_types(DType.Float64, DType.Float32) == DType.Float64
     with pytest.raises(DTypePromotionError):
-        cast("EagerCallableProtocol", promote_types)("unknown", DType.Float32)
+        typing.cast("EagerCallableProtocol", promote_types)("unknown", DType.Float32)
     config.jax_enable_x64 = False
 
 
@@ -55,7 +55,7 @@ def test_bool_promotion() -> None:
     """Test boolean promotion."""
     assert promote_types(DType.Bool, DType.Bool) == DType.Bool
     with pytest.raises(DTypePromotionError):
-        cast("EagerCallableProtocol", promote_types)("bool", "bool")
+        typing.cast("EagerCallableProtocol", promote_types)("bool", "bool")
 
 
 def test_promote_complex128_downcast() -> None:
@@ -84,7 +84,7 @@ def test_type_promotion_129() -> None:
             """Test function __hash__."""
             return hash(DType.Bool)
 
-    res = cast("EagerCallableProtocol", tp.promote_types)(cast("EagerCallableProtocol", FakeType)(), cast("EagerCallableProtocol", FakeType)())
+    res = typing.cast("EagerCallableProtocol", tp.promote_types)(typing.cast("EagerCallableProtocol", FakeType)(), typing.cast("EagerCallableProtocol", FakeType)())
     assert isinstance(res, FakeType)
 
 

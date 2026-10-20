@@ -1,5 +1,7 @@
 """Decompositions."""
 
+from __future__ import annotations
+
 from .cholesky import cholesky as cholesky
 from .cholesky import cholesky_ex as cholesky_ex
 from .det import det as det

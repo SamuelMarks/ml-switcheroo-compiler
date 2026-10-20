@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import (
     config,
     disable_compile,
@@ -16,7 +17,7 @@ from ml_switcheroo_compiler.core.config import (
 )
 from ml_switcheroo_compiler.core.device import Device, DeviceType, Stream, StreamContext, exporter, get_logical_devices, get_memory_info, get_physical_devices
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -89,32 +90,32 @@ def test_stream_context_extra() -> None:
 def test_config_methods_extra() -> None:
     """Test."""
     config.seed = 42
-    assert config.seed == 42
+    assert typing.cast("EagerValue", config.seed) == 42
 
     config.backend = "numpy"
-    assert config.backend == "numpy"
+    assert typing.cast("EagerValue", config.backend) == "numpy"
 
     config.current_stream = "main"
-    assert config.current_stream == "main"
+    assert typing.cast("EagerValue", config.current_stream) == "main"
 
     config.layout_map = "layout"
-    assert config.layout_map == "layout"
+    assert typing.cast("EagerValue", config.layout_map) == "layout"
 
     config.jax_enable_x64 = True
-    assert config.jax_enable_x64
+    assert typing.cast("EagerValue", config.jax_enable_x64)
     config.jax_enable_x64 = False
 
     config.op_determinism = True
-    assert config.op_determinism
+    assert typing.cast("EagerValue", config.op_determinism)
 
     config.tensor_float_32_execution = True
-    assert config.tensor_float_32_execution
+    assert typing.cast("EagerValue", config.tensor_float_32_execution)
 
     disable_compile()
-    assert config.eager_mode
+    assert typing.cast("EagerValue", config.eager_mode)
 
     enable_compile()
-    assert not config.eager_mode
+    assert not typing.cast("EagerValue", config.eager_mode)
 
     enable_op_determinism()
     assert config.op_determinism
@@ -131,10 +132,10 @@ def test_eager_mode_with_tracing_state_extra() -> None:
 
     orig = global_tracing_state.is_tracing
     global_tracing_state.is_tracing = True
-    assert not config.eager_mode
+    assert not typing.cast("EagerValue", config.eager_mode)
 
     global_tracing_state.is_tracing = False
-    assert config.eager_mode
+    assert typing.cast("EagerValue", config.eager_mode)
     global_tracing_state.is_tracing = orig
 
 
@@ -146,9 +147,9 @@ def test_config_context_exceptions_extra() -> None:
     with pytest.raises(ValueError):
         with ConfigContext(unknown_key="val"):
             pass
-    with cast("EagerTensorProtocol", EagerMode()):
+    with typing.cast("EagerTensorProtocol", EagerMode()):
         pass
-    with cast("EagerTensorProtocol", ConfigStreamContext("stream_name")):
+    with typing.cast("EagerTensorProtocol", ConfigStreamContext("stream_name")):
         pass
 
 

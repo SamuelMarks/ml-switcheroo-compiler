@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import typing
+
 # ruff: noqa: E501
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.lstm import lstm_cell
@@ -21,6 +24,6 @@ def test_lstm_coverage() -> None:
     b = Tensor(np.array([1.0] * 8), TensorConfig(shape=(8,), dtype=DType("float32"), device=Device("cpu")))
 
     res_h, res_c = lstm_cell(t_in, (t_h, t_c), w, rw, b)
-    assert res_h is not None and res_c is not None
+    assert typing.cast("EagerValue", res_h) is not None and res_c is not None
     res_h, res_c = lstm_cell(t_in, (t_h, t_c), w, rw)
-    assert res_h is not None and res_c is not None
+    assert typing.cast("EagerValue", res_h) is not None and res_c is not None

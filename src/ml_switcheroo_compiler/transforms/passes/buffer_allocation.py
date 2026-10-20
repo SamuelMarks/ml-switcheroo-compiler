@@ -30,7 +30,7 @@ def _get_node_byte_size(node: IRNode) -> int | str:
 
     cost_model = DefaultCostModel()
     cost = cost_model.get_memory_cost(node)
-    return cost if isinstance(cost, (int, str)) else str(cost)
+    return str(cost) if isinstance(cost, float) else cost
 
 
 class GreedyOffsetAllocator:
@@ -574,7 +574,7 @@ class BufferAllocationPass:
         graph_attrs = getattr(graph, "attributes", None)
         if graph_attrs is None:
             graph_attrs = {}
-            setattr(graph, "attributes", graph_attrs)
+            object.__setattr__(graph, "attributes", graph_attrs)
 
         node_sizes: dict[str, int | str] = {node.id: _get_node_byte_size(node) for node in sorted_nodes}
 
@@ -585,7 +585,7 @@ class BufferAllocationPass:
         allocator = GreedyOffsetAllocator()
         modified = False
 
-        setattr(graph, "attributes", getattr(graph, "attributes", {}))
+        object.__setattr__(graph, "attributes", getattr(graph, "attributes", {}))
         getattr(graph, "attributes")["dynamic_memory_schema"] = {"dynamic_offsets": []}
 
         for i, node in enumerate(sorted_nodes):

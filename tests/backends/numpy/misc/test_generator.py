@@ -2,18 +2,19 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 import ml_switcheroo_compiler.backends.numpy.generator as gen
 from ml_switcheroo_compiler.backends.cupy.generator import CupyGenerator
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.formatters import FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -73,7 +74,7 @@ def test_numpy_generator_kwargs_only() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     op_type = "Zeros"
-    input_vars = cast("list[EagerTensorProtocol]", [])
+    input_vars = typing.cast("list[EagerTensorProtocol]", [])
     kwargs = {"shape": "(2, 2)"}
 
     class Gen(gen.NumpyGenerator):
@@ -88,7 +89,7 @@ def test_numpy_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    res = cast("EagerCallableProtocol", OpFormatter.format_generic_fallback)(cast("EagerCallableProtocol", FormatterContext)("out", op_type, input_vars, kwargs))
+    res = typing.cast("EagerCallableProtocol", OpFormatter.format_generic_fallback)(typing.cast("EagerCallableProtocol", FormatterContext)(prefix="out", op_type=op_type, input_vars=input_vars, kwargs=kwargs))
     assert "zeros" in str(res)
 
 
@@ -111,7 +112,7 @@ def test_cupy_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    OpFormatter.format_generic_fallback(FormatterContext("out", "Zeros", [], {"shape": "(2, 2)"}))
+    OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
     assert callable(test_cupy_generator_kwargs_only)
 
 
@@ -134,7 +135,7 @@ def test_dask_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    OpFormatter.format_generic_fallback(FormatterContext("out", "Zeros", [], {"shape": "(2, 2)"}))
+    OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
     assert callable(test_dask_generator_kwargs_only)
 
 
@@ -157,7 +158,7 @@ def test_cupy_generator_fallback_empty_args_str_with_kwargs() -> None:
             pass
 
     Gen()
-    OpFormatter.format_generic_fallback(FormatterContext("out", "Zeros", [], {"shape": "(2, 2)"}))
+    OpFormatter.format_generic_fallback(FormatterContext(prefix="out", op_type="Zeros", input_vars=[], kwargs={"shape": "(2, 2)"}))
     assert callable(test_cupy_generator_fallback_empty_args_str_with_kwargs)
 
 
@@ -180,27 +181,27 @@ def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
             """
             self.op_type = op_type
             self.id = id
-            self.attributes = cast("dict[str, EagerTensorProtocol]", {})
+            self.attributes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
     class DummyGraph:
         """Test class DummyGraph."""
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("list[EagerTensorProtocol]", [])
+            self.nodes = typing.cast("list[EagerTensorProtocol]", [])
 
-    assert NumpyTypeTranslator.get_fallback_prefix() == "np"
-    assert NumpyASTVisitor._format_kwargs({"a": 1}) == "a=1"
-    assert cast("EagerCallableProtocol", NumpyASTVisitor.generic_visit)(cast("EagerCallableProtocol", DummyNode)("Unknown"), []) == "np.unknown()"
-    gen = cast("EagerCallableProtocol", NumpyGenerator)(cast("EagerCallableProtocol", DummyGraph)())
+    assert typing.cast("EagerValue", NumpyTypeTranslator.get_fallback_prefix()) == "np"
+    assert typing.cast("EagerValue", NumpyASTVisitor._format_kwargs({"a": 1})) == "a=1"
+    assert typing.cast("EagerCallableProtocol", NumpyASTVisitor.generic_visit)(typing.cast("EagerCallableProtocol", DummyNode)("Unknown"), []) == "np.unknown()"
+    gen = typing.cast("EagerCallableProtocol", NumpyGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
     DummyNode("Einsum")
     DummyNode("PowerIteration")
-    assert gen.get_fallback_prefix() == "np"
+    assert typing.cast("EagerValue", gen.get_fallback_prefix()) == "np"
     ops = gen.get_ops_map({})
-    assert isinstance(ops, dict)
-    assert gen.get_fallback_prefix() == "np"
+    assert isinstance(typing.cast("EagerValue", ops), dict)
+    assert typing.cast("EagerValue", gen.get_fallback_prefix()) == "np"
     helpers = gen.get_helper_functions()
-    assert isinstance(helpers, list)
+    assert isinstance(typing.cast("EagerValue", helpers), list)
     with pytest.raises(Exception, match=".*"):
         NumpyGenerator.load("")
     dummy_npy = str(tmp_path / "dummy.npy")

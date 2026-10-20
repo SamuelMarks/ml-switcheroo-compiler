@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -45,9 +45,9 @@ def to_numpy(tensor: TensorLike) -> TensorLike:
         TensorLike: Converted array.
     """
     if hasattr(tensor, "numpy"):
-        return cast(TensorLike, tensor.numpy())
+        return typing.cast(TensorLike, tensor.numpy())
     if hasattr(tensor, "data") and hasattr(tensor.data, "numpy"):
-        return cast(TensorLike, tensor.data.numpy())
+        return typing.cast(TensorLike, tensor.data.numpy())
 
     try:
         return tensor.tolist() if hasattr(tensor, "tolist") else tensor
@@ -66,7 +66,7 @@ def concatenate_arrays(arrays: list[TensorLike]) -> TensorLike:
     """
     from ml_switcheroo_compiler import ops
 
-    return cast(TensorLike, getattr(ops, "concatenate")(arrays, axis=0))
+    return typing.cast(TensorLike, getattr(ops, "concatenate")(arrays, axis=0))
 
 
 def is_numpy_array(array: TensorOrScalar) -> bool:
@@ -111,7 +111,7 @@ def _dtype_to_descr(dtype: TensorOrScalar) -> str:
             if k.value == dtype:
                 return v
     elif hasattr(dtype, "value"):
-        return cast(str, getattr(mapping, "get")(dtype, "<f4"))
+        return typing.cast(str, getattr(mapping, "get")(dtype, "<f4"))
     return "<f4"
 
 
@@ -156,9 +156,9 @@ def _extract_arr_bytes(arr: TensorOrScalar) -> bytes:
         bytes: The raw data bytes.
     """
     if hasattr(arr, "tobytes"):
-        return cast(bytes, getattr(arr, "tobytes")())
+        return typing.cast(bytes, getattr(arr, "tobytes")())
     if hasattr(arr, "data") and hasattr(getattr(arr, "data"), "tobytes"):
-        return cast(bytes, getattr(arr, "data").tobytes())
+        return typing.cast(bytes, getattr(arr, "data").tobytes())
     return b""
 
 
@@ -174,9 +174,9 @@ def _get_data_bytes(tensor: TensorOrScalar) -> bytes:
     if hasattr(tensor, "eval"):
         return _extract_arr_bytes(getattr(tensor, "eval")())
     if hasattr(tensor, "numpy"):
-        return cast(bytes, getattr(tensor, "numpy")().tobytes())
+        return typing.cast(bytes, getattr(tensor, "numpy")().tobytes())
     if hasattr(tensor, "data") and hasattr(getattr(tensor, "data"), "numpy"):
-        return cast(bytes, getattr(tensor, "data").numpy().tobytes())
+        return typing.cast(bytes, getattr(tensor, "data").numpy().tobytes())
     return b""
 
 
@@ -191,7 +191,7 @@ def _tensor_to_npy_bytes(tensor: TensorOrScalar) -> bytes:
     """
     import struct
 
-    shape, dtype = cast("Callable[..., tuple[tuple[int, ...], str]]", _get_shape_and_dtype)(tensor)
+    shape, dtype = typing.cast("TypedVariadicCallable[tuple[tuple[int, ...], str]]", _get_shape_and_dtype)(tensor)
     data_bytes = _get_data_bytes(tensor)
     dtype_str = _dtype_to_descr(dtype)
 
@@ -222,7 +222,7 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
 
     backend = get_active_backend()
     if hasattr(backend, "get_npz_bytes"):
-        return cast(bytes, backend.get_npz_bytes(weights))
+        return typing.cast(bytes, backend.get_npz_bytes(weights))
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_STORED) as zf:
@@ -268,7 +268,7 @@ def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:
     backend = get_active_backend()
     if hasattr(backend, "load_npz"):
         try:
-            return cast(list[TensorLike], backend.load_npz(file_obj))
+            return typing.cast(list[TensorLike], backend.load_npz(file_obj))
         except Exception as e:
             import logging
 

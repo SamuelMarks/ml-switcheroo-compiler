@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_utils import _emit_creation_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -22,7 +22,7 @@ def test_frontend_utils() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -34,7 +34,7 @@ def test_frontend_utils() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -56,7 +56,7 @@ def test_frontend_utils_constant() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -68,7 +68,7 @@ def test_frontend_utils_constant() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
@@ -116,7 +116,7 @@ def test_frontend_utils_constant_scalar() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -128,7 +128,7 @@ def test_frontend_utils_constant_scalar() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
@@ -173,7 +173,7 @@ def test_frontend_utils_missing_3() -> None:
 
         shape = (10,)
 
-    assert cast("EagerCallableProtocol", _multinomial_shape)(cast("EagerCallableProtocol", MockTensor)(), size=5) == (5,)
+    assert typing.cast("EagerCallableProtocol", _multinomial_shape)(typing.cast("EagerCallableProtocol", MockTensor)(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)
 

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import math
 import random
-from collections.abc import Callable, Iterator, Sized
+import typing
+from collections.abc import Iterator, Sized
 from enum import Enum
-from typing import Optional, Union, cast
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
@@ -39,8 +39,8 @@ class Options:
 
     def __init__(self) -> None:
         """Initialize default pipeline execution options."""
-        self.autotune_algorithm: Optional[AutotuneAlgorithm] = None
-        self.deterministic: Optional[bool] = None
+        self.autotune_algorithm: AutotuneAlgorithm | None = None
+        self.deterministic: bool | None = None
         self.experimental_optimization: dict[str, bool] = {}
         self.experimental_distribute = {"auto_shard_policy": AutoShardPolicy.AUTO}
         self.threading: dict[str, int] = {}
@@ -184,7 +184,7 @@ class Dataset:
         self,
         map_func: TensorOrScalar,
         batch_size: int,
-        num_parallel_batches: Optional[int] = None,
+        num_parallel_batches: int | None = None,
         drop_remainder: bool = False,
     ) -> Dataset:
         """Apply a fused element mapping function and batching stage.
@@ -209,7 +209,7 @@ class Dataset:
         key_func: TensorOrScalar,
         reduce_func: TensorOrScalar,
         window_size: int,
-        window_shift: Optional[int] = None,
+        window_shift: int | None = None,
         window_stride: int = 1,
     ) -> Dataset:
         """Group stream elements by key and reduce them in sliding windows.
@@ -231,8 +231,8 @@ class Dataset:
         self,
         class_func: TensorOrScalar,
         target_dist: list[float],
-        initial_dist: Optional[list[float]] = None,
-        seed: Optional[int] = None,
+        initial_dist: list[float] | None = None,
+        seed: int | None = None,
     ) -> Dataset:
         """Resample stream elements via rejection sampling to match `target_dist`.
 
@@ -254,7 +254,7 @@ class Dataset:
         cycle_length: int,
         block_length: int = 1,
         slack: int = 0,
-        prefetch_input_elements: Optional[int] = None,
+        prefetch_input_elements: int | None = None,
     ) -> Dataset:
         """Interleave elements from multiple mapped streams in parallel.
 
@@ -271,7 +271,7 @@ class Dataset:
         _ = (map_func, cycle_length, block_length, slack, prefetch_input_elements)
         return self
 
-    def prefetch_to_device(self, device: str, buffer_size: Optional[int] = None) -> Dataset:
+    def prefetch_to_device(self, device: str, buffer_size: int | None = None) -> Dataset:
         """Stage prefetched batches onto a target execution device.
 
         Args:
@@ -287,8 +287,8 @@ class Dataset:
     def shuffle(
         self,
         buffer_size: int,
-        seed: Optional[int] = None,
-        reshuffle_each_iteration: Optional[bool] = None,
+        seed: int | None = None,
+        reshuffle_each_iteration: bool | None = None,
     ) -> Dataset:
         """Randomly shuffle elements of this stream using a reservoir buffer.
 
@@ -331,7 +331,7 @@ class Dataset:
     def snapshot(
         self,
         path: str,
-        compression: Optional[str] = None,
+        compression: str | None = None,
         reader_func: TensorOrScalar = None,
         shard_func: TensorOrScalar = None,
     ) -> Dataset:
@@ -349,7 +349,7 @@ class Dataset:
         _ = (path, compression, reader_func, shard_func)
         return self
 
-    def save(self, path: str, compression: Optional[str] = None, shard_func: TensorOrScalar = None) -> Dataset:
+    def save(self, path: str, compression: str | None = None, shard_func: TensorOrScalar = None) -> Dataset:
         """Materialize the dataset stream to disk at `path`.
 
         Args:
@@ -368,7 +368,7 @@ class Dataset:
         cls,
         path: str,
         element_spec: AttrValue = None,
-        compression: Optional[str] = None,
+        compression: str | None = None,
         reader_func: TensorOrScalar = None,
     ) -> Dataset:
         """Load a materialized dataset stream from `path`.
@@ -398,7 +398,7 @@ class Dataset:
         indices = self._indices.copy()
         if self._shuffle:
             if hasattr(self, "_seed") and self._seed is not None:
-                random.seed(cast("int | float | str | bytes | bytearray | None", self._seed))
+                random.seed(typing.cast("int | float | str | bytes | bytearray | None", self._seed))
             random.shuffle(indices)
 
         num_batches = math.ceil(self.length / self._batch_size)
@@ -424,10 +424,10 @@ class Dataset:
                 for t in self.tensors:
                     from ml_switcheroo_compiler.ops.shape.indexing import take
 
-                    batch_tensors.append(cast(Tensor, take(t, batch_idx_tensor, axis=0)))
+                    batch_tensors.append(typing.cast(Tensor, take(t, batch_idx_tensor, axis=0)))
 
             if hasattr(self, "_map_func"):
-                yield cast("Callable[..., tuple[Tensor, ...]]", self._map_func)(*batch_tensors)
+                yield typing.cast("TypedVariadicCallable[tuple[Tensor, ...]]", self._map_func)(*batch_tensors)
             else:
                 yield tuple(batch_tensors)
 
@@ -495,14 +495,14 @@ class CsvDataset(Dataset):
 
     def __init__(
         self,
-        filenames: Union[str, list[str]],
-        record_defaults: Optional[list[Union[int, float, str]]] = None,
-        compression_type: Optional[str] = None,
-        buffer_size: Optional[int] = None,
+        filenames: str | list[str],
+        record_defaults: list[int | float | str] | None = None,
+        compression_type: str | None = None,
+        buffer_size: int | None = None,
         header: bool = False,
         field_delim: str = ",",
-        *args: Union[bool, str, list[int], None],
-        **kwargs: Union[bool, str, list[int], None],
+        *args: bool | str | list[int] | None,
+        **kwargs: bool | str | list[int] | None,
     ) -> None:
         """Initialize CsvDataset.
 
@@ -548,10 +548,10 @@ class BinaryRecordReader(Dataset):
 
     def __init__(
         self,
-        filenames: Union[str, list[str]],
-        compression_type: Optional[str] = None,
-        buffer_size: Optional[int] = None,
-        num_parallel_reads: Optional[int] = None,
+        filenames: str | list[str],
+        compression_type: str | None = None,
+        buffer_size: int | None = None,
+        num_parallel_reads: int | None = None,
     ) -> None:
         """Initialize BinaryRecordReader.
 
@@ -574,7 +574,7 @@ class ImageDataset(Dataset):
     def __init__(
         self,
         *tensors: Tensor,
-        target_size: Optional[tuple[int, int]] = None,
+        target_size: tuple[int, int] | None = None,
         normalize: bool = False,
     ) -> None:
         """Initialize ImageDataset.
@@ -605,9 +605,9 @@ class ImageDataset(Dataset):
             with ConfigContext(eager_mode=True):
                 for t in batch:
                     if self.target_size is not None and len(t.shape) == 4:
-                        t = cast(
+                        t = typing.cast(
                             Tensor,
-                            cast("EagerCallableProtocol", upsample_bilinear)(t, size=self.target_size),
+                            typing.cast("EagerCallableProtocol", upsample_bilinear)(t, size=self.target_size),
                         )
                     if self.normalize:
                         t = true_divide(t, 255.0)
@@ -635,7 +635,7 @@ class AudioDataset(Dataset):
 class TextDataset(Dataset):
     """Dataset stream for tokenized text tensors."""
 
-    def __init__(self, *tensors: Tensor, vocab_size: Optional[int] = None) -> None:
+    def __init__(self, *tensors: Tensor, vocab_size: int | None = None) -> None:
         """Initialize TextDataset.
 
         Args:

@@ -1,5 +1,7 @@
 """Tests for test_eig."""
 
+from __future__ import annotations
+
 # ruff: noqa: E501
 import sys
 from unittest.mock import patch

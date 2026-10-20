@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, get_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -46,18 +47,18 @@ def test_dynamic_infer_shape() -> None:
         d2 = Dummy()
         setattr(d2, "shape", (2, 2))
 
-        assert op.infer_shape(d1) == (2, 2)
-        assert op.infer_shape(inputs=[d2]) == (2, 2)
+        assert op.infer_shape(typing.cast("EagerValue", d1)) == (2, 2)
+        assert op.infer_shape(inputs=[typing.cast("EagerValue", d2)]) == (2, 2)
 
         # 2. list of ints
         assert op.infer_shape([[2, 3]]) == (2, 3)
-        assert cast("EagerTensorProtocol", getattr(op, "get_yaml_data"))() == {"operation": "FakeShapeOp"}
+        assert typing.cast("EagerTensorProtocol", getattr(op, "get_yaml_data"))() == {"operation": "FakeShapeOp"}
 
         # 3. broadcast
-        assert op.infer_shape(d1, inputs=[d2]) == (2, 2)
+        assert op.infer_shape(typing.cast("EagerValue", d1), inputs=[typing.cast("EagerValue", d2)]) == (2, 2)
 
         # 4. no shapes
-        assert op.infer_shape(Dummy()) == ()
+        assert op.infer_shape(typing.cast("EagerValue", Dummy())) == ()
 
         # 5. Broadcast mismatch raises ValueError
         d3 = Dummy()
@@ -65,7 +66,7 @@ def test_dynamic_infer_shape() -> None:
         d4 = Dummy()
         setattr(d4, "shape", (2, 2))
         with pytest.raises(ValueError):
-            op.infer_shape(d3, d4)
+            op.infer_shape(typing.cast("EagerValue", d3), typing.cast("EagerValue", d4))
 
     finally:
         if original is None:
@@ -134,10 +135,11 @@ def test_registry_shim_methods() -> None:
 
 def test_register_op_duplicate() -> None:
     """Test function test_register_op_duplicate."""
+    from ml_switcheroo_compiler.ops.base import OpDef
     from ml_switcheroo_compiler.ops.registry import register_op
 
     @register_op("TestDupOp")
-    class TestDup1:
+    class TestDup1(OpDef):
         """Test class TestDup1."""
 
         pass
@@ -145,10 +147,12 @@ def test_register_op_duplicate() -> None:
     with pytest.raises(ValueError):
 
         @register_op("TestDupOp")
-        class TestDup2:
+        class TestDup2(OpDef):
             """Test class TestDup2."""
 
             pass
+
+    _OP_REGISTRY.pop("TestDupOp", None)
 
 
 def test_util_registry() -> None:

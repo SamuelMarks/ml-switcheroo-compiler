@@ -6,13 +6,14 @@ import json
 import os
 import struct
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -26,7 +27,7 @@ def test_safetensors_format() -> None:
     }
     with tempfile.TemporaryDirectory() as temp_dir:
         filepath = os.path.join(temp_dir, "weights.safetensors")
-        cast("EagerCallableProtocol", fmt.save)(data, filepath)
+        typing.cast("EagerCallableProtocol", fmt.save)(data, filepath)
 
         loaded = fmt.load(filepath)
         assert "a" in loaded
@@ -35,9 +36,9 @@ def test_safetensors_format() -> None:
 
         # In our implementation, since we might not have a backend, it returns dicts
         # with 'buffer', 'dtype', 'shape' or directly backends.
-        if isinstance(loaded["a"], dict):
-            assert loaded["a"]["dtype"] == "F32"
-            assert loaded["b"]["dtype"] == "I32"
+        if isinstance(typing.cast("EagerValue", loaded["a"]), dict):
+            assert typing.cast("EagerValue", loaded["a"]["dtype"]) == "F32"
+            assert typing.cast("EagerValue", loaded["b"]["dtype"]) == "I32"
 
 
 def test_safetensors_invalid_header() -> None:
@@ -92,7 +93,7 @@ def test_safetensors_with_backend_mock(mocker: EagerTensorProtocol) -> None:
             """
             return "mocked_tensor"
 
-    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=cast("EagerCallableProtocol", MockBackend)())
+    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=typing.cast("EagerCallableProtocol", MockBackend)())
 
     data = {
         "a": np.array([1.0, 2.0], dtype=np.float32),
@@ -102,7 +103,7 @@ def test_safetensors_with_backend_mock(mocker: EagerTensorProtocol) -> None:
         fmt.save(data, filepath)
 
         loaded = fmt.load(filepath)
-        assert cast("EagerTensorProtocol", loaded["a"]) == cast("EagerTensorProtocol", "mocked_tensor")
+        assert typing.cast("EagerTensorProtocol", loaded["a"]) == typing.cast("EagerTensorProtocol", "mocked_tensor")
 
 
 def test_safetensors_missing_attrs() -> None:
@@ -132,5 +133,5 @@ def test_safetensors_missing_attrs() -> None:
     }
     with tempfile.TemporaryDirectory() as temp_dir:
         filepath = os.path.join(temp_dir, "weights_missing.safetensors")
-        cast("EagerCallableProtocol", fmt.save)(data, filepath)
+        typing.cast("EagerCallableProtocol", fmt.save)(data, filepath)
         assert os.path.exists(filepath)

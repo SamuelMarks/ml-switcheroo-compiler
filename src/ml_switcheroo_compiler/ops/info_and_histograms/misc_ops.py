@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Protocol, Union
+import typing
 
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ops.dispatcher import DispatchArg
 
 
-class HasShape(Protocol):
+class HasShape(typing.Protocol):
     """Protocol for objects providing a shape attribute."""
 
     shape: tuple[int, ...]
 
 
-MiscArg = Union[
+MiscArg = typing.Union[
     "Tensor",
     HasShape,
-    Callable[..., Union["Tensor", int, float, str, bool, None]],
+    TypedVariadicCallable[typing.Union["Tensor", int, float, str, bool, None]],
     int,
     float,
     str,
@@ -109,7 +110,7 @@ class AxisIndex(OpDef):
 def infeed(
     *args: MiscArg,
     **kwargs: MiscArg,
-) -> Union[Tensor, DispatchArg, tuple[Union[Tensor, DispatchArg], ...]]:
+) -> Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]:
     """Read from the infeed queue.
 
     Args:
@@ -127,7 +128,7 @@ def infeed(
 def vectorize(
     *args: MiscArg,
     **kwargs: MiscArg,
-) -> Union[Tensor, DispatchArg, tuple[Union[Tensor, DispatchArg], ...]]:
+) -> Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]:
     """Vectorize a python function.
 
     Args:

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
+
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
 
 class ControlFlowASTVisitor(CommonASTVisitor):
@@ -111,7 +114,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         cond_gen = self.generator.__class__(cond_graph)
         cond_gen.formatter.indent_level = self.generator.indent_level
-        visitor_cond: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(cond_gen)
+        visitor_cond: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", cond_gen))
         visitor_cond.generate_body("state")
         for line in cond_gen.code[1:]:
             self.generator.add_line(line)
@@ -122,7 +125,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         body_gen = self.generator.__class__(body_graph)
         body_gen.formatter.indent_level = self.generator.indent_level
-        visitor_body: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(body_gen)
+        visitor_body: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", body_gen))
         visitor_body.generate_body("state")
         for line in body_gen.code[1:]:
             self.generator.add_line(line)
@@ -158,7 +161,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         true_gen = self.generator.__class__(true_graph)
         true_gen.formatter.indent_level = self.generator.indent_level
-        visitor_true: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(true_gen)
+        visitor_true: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", true_gen))
         visitor_true.generate_body()
         for line in true_gen.code[1:]:
             self.generator.add_line(line)
@@ -169,7 +172,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         false_gen = self.generator.__class__(false_graph)
         false_gen.formatter.indent_level = self.generator.indent_level
-        visitor_false: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(false_gen)
+        visitor_false: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", false_gen))
         visitor_false.generate_body()
         for line in false_gen.code[1:]:
             self.generator.add_line(line)
@@ -200,7 +203,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         body_gen = self.generator.__class__(body_graph)
         body_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(body_gen)
+        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", body_gen))
         # Assuming args passed as list [i, state]
         visitor.generate_body("[i, state]")
         for line in body_gen.code[1:]:
@@ -235,7 +238,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         f_gen = self.generator.__class__(f_graph)
         f_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(f_gen)
+        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", f_gen))
         visitor.generate_body("[x]")
         for line in f_gen.code[1:]:
             self.generator.add_line(line)
@@ -266,7 +269,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         self.generator.indent_level += 1
         f_gen = self.generator.__class__(f_graph)
         f_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = cast("Callable[..., CodeGeneratorVisitor]", CodeGeneratorVisitor)(f_gen)
+        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", f_gen))
         visitor.generate_body("[acc, x]")
         for line in f_gen.code[1:]:
             self.generator.add_line(line)

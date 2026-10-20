@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.optimizers.updates import ApplyAdagrad, ApplyAdam, ApplyFtrl, ApplyRMSProp, apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -42,13 +42,13 @@ def test_updates_extras_old() -> None:
 def test_opdefs() -> None:
     """Test function test_opdefs."""
     op1 = ApplyAdam()
-    assert cast("EagerCallableProtocol", op1.infer_shape)(None, None, None) == ()
+    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(None, None, None) == ()
     op2 = ApplyAdagrad()
-    assert cast("EagerCallableProtocol", op2.infer_shape)(None, None) == ()
+    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(None, None) == ()
     op3 = ApplyFtrl()
-    assert cast("EagerCallableProtocol", op3.infer_shape)(None, None, None) == ()
+    assert typing.cast("EagerCallableProtocol", op3.infer_shape)(None, None, None) == ()
     op4 = ApplyRMSProp()
-    assert cast("EagerCallableProtocol", op4.infer_shape)(None, None, None) == ()
+    assert typing.cast("EagerCallableProtocol", op4.infer_shape)(None, None, None) == ()
 
 
 def _test_updates_extras_full_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -60,23 +60,23 @@ def _test_updates_extras_full_sub_1(_state: dict[str, EagerTensorProtocol]) -> N
     (DType, Device, Tensor, TensorConfig) = (_state["DType"], _state["Device"], _state["Tensor"], _state["TensorConfig"])
     (np, updates) = (_state["np"], _state["updates"])
     t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig((2, 1, 2), DType("float32"), Device("cpu")))
-    updates.sgd_update(t, t, updates.SGDConfig(0.1))
-    updates.sgd_update(t, t, updates.SGDConfig(0.1, weight_decay=0.01, momentum=0.9, nesterov=True))
-    updates.sgd_update(t, t, updates.SGDConfig(0.1, momentum=0.9), state={"momentum_buffer": t})
-    updates.adam_update(t, t, updates.AdamHyperparams(0.1, weight_decay=0.01), state={"m": t, "v": t})
-    updates.adam_update(t, t, updates.AdamHyperparams(0.1))
-    updates.adamw_update(t, t, updates.AdamWHyperparams(0.1), state={"m": t, "v": t})
-    updates.adamw_update(t, t, updates.AdamWHyperparams(0.1))
-    updates.adagrad_update(t, t, updates.AdagradConfig(0.1, weight_decay=0.01), state={"accum": t})
-    updates.adagrad_update(t, t, updates.AdagradConfig(0.1))
-    updates.rmsprop_update(t, t, updates.RMSPropHyperparams(0.1, weight_decay=0.01, momentum=0.9), state={"ms": t, "mom": t})
-    updates.rmsprop_update(t, t, updates.RMSPropHyperparams(0.1, centered=True), state={"ms": t, "mom": t, "mg": t})
-    updates.rmsprop_update(t, t, updates.RMSPropHyperparams(0.1))
-    updates.adadelta_update(t, t, updates.AdadeltaConfig(0.1, weight_decay=0.01), state={"accum": t, "accum_update": t})
-    updates.adadelta_update(t, t, updates.AdadeltaConfig(0.1))
-    updates.adamax_update(t, t, updates.AdamaxHyperparams(0.1, weight_decay=0.01), state={"m": t, "u": t})
-    updates.adamax_update(t, t, updates.AdamaxHyperparams(0.1))
-    updates.lion_update(t, t, updates.LionConfig(0.1, weight_decay=0.01), state={"m": t})
+    updates.sgd_update(t, t, updates.SGDConfig(lr=0.1))
+    updates.sgd_update(t, t, updates.SGDConfig(lr=0.1, weight_decay=0.01, momentum=0.9, nesterov=True))
+    updates.sgd_update(t, t, updates.SGDConfig(lr=0.1, momentum=0.9), state={"momentum_buffer": t})
+    updates.adam_update(t, t, updates.AdamHyperparams(lr=0.1, weight_decay=0.01), state={"m": t, "v": t})
+    updates.adam_update(t, t, updates.AdamHyperparams(lr=0.1))
+    updates.adamw_update(t, t, updates.AdamWHyperparams(lr=0.1), state={"m": t, "v": t})
+    updates.adamw_update(t, t, updates.AdamWHyperparams(lr=0.1))
+    updates.adagrad_update(t, t, updates.AdagradConfig(lr=0.1, weight_decay=0.01), state={"accum": t})
+    updates.adagrad_update(t, t, updates.AdagradConfig(lr=0.1))
+    updates.rmsprop_update(t, t, updates.RMSPropHyperparams(lr=0.1, weight_decay=0.01, momentum=0.9), state={"ms": t, "mom": t})
+    updates.rmsprop_update(t, t, updates.RMSPropHyperparams(lr=0.1, centered=True), state={"ms": t, "mom": t, "mg": t})
+    updates.rmsprop_update(t, t, updates.RMSPropHyperparams(lr=0.1))
+    updates.adadelta_update(t, t, updates.AdadeltaConfig(lr=0.1, weight_decay=0.01), state={"accum": t, "accum_update": t})
+    updates.adadelta_update(t, t, updates.AdadeltaConfig(lr=0.1))
+    updates.adamax_update(t, t, updates.AdamaxHyperparams(lr=0.1, weight_decay=0.01), state={"m": t, "u": t})
+    updates.adamax_update(t, t, updates.AdamaxHyperparams(lr=0.1))
+    updates.lion_update(t, t, updates.LionConfig(lr=0.1, weight_decay=0.01), state={"m": t})
     getattr(_state, "update")({"t": t})
     _state.update(locals())
 
@@ -88,7 +88,7 @@ def _test_updates_extras_full_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
         _state: Shared test state dictionary.
     """
     (config, t, updates) = (_state["config"], _state["t"], _state["updates"])
-    updates.lion_update(t, t, updates.LionConfig(0.1))
+    updates.lion_update(t, t, updates.LionConfig(lr=0.1))
     updates.adafactor_update(t, t, 0.1, state={"step": t, "exp_avg_sq_row": t, "exp_avg_sq_col": t})
     updates.muon_update(t, t, 0.1, state={"momentum": t})
     updates.adafactor_update(t, t, 0.1)
@@ -127,13 +127,13 @@ def _test_updates_extras_full_sub_3(_state: dict[str, EagerTensorProtocol]) -> N
 
     import ml_switcheroo_compiler.ops.optimizers.updates as updates
 
-    orig_get = cast("EagerTensorProtocol", getattr(updates, "get_active_backend"))
+    orig_get = typing.cast("EagerTensorProtocol", getattr(updates, "get_active_backend"))
     setattr(updates, "get_active_backend", lambda: MockBackend())
     try:
-        cast("EagerCallableProtocol", updates.apply_adam)(t, t, t, t, 0.1)
-        cast("EagerCallableProtocol", updates.apply_adagrad)(t, t, t, 0.1)
-        cast("EagerCallableProtocol", updates.apply_ftrl)(t, t, t, t, 0.1)
-        cast("EagerCallableProtocol", updates.apply_rmsprop)(t, t, t, t, 0.1)
+        typing.cast("EagerCallableProtocol", updates.apply_adam)(t, t, t, t, 0.1)
+        typing.cast("EagerCallableProtocol", updates.apply_adagrad)(t, t, t, 0.1)
+        typing.cast("EagerCallableProtocol", updates.apply_ftrl)(t, t, t, t, 0.1)
+        typing.cast("EagerCallableProtocol", updates.apply_rmsprop)(t, t, t, t, 0.1)
     finally:
         setattr(updates, "get_active_backend", orig_get)
     getattr(_state, "update")({"MockBackend": MockBackend, "orig_get": orig_get, "updates": updates})

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
@@ -63,7 +63,7 @@ class Hessenberg(OpDef):
 class HouseholderProduct(OpDef):
     """HouseholderProduct Operation Definition."""
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape for HouseholderProduct.
 
         Args:
@@ -131,9 +131,9 @@ def qr(input: Tensor, mode: str = "reduced") -> TensorOrScalar:
         backend = get_active_backend()
         res = backend.execute_op("Qr", input.data, mode=mode)
         if mode == "r":
-            res_t = cast("TensorLike", res)
+            res_t = typing.cast("TensorLike", res)
             return Tensor(res_t, TensorConfig(res_t.shape, input.dtype, input.device))
-        q, r = cast("tuple[TensorLike, TensorLike]", res)
+        q, r = typing.cast("tuple[TensorLike, TensorLike]", res)
         return (
             Tensor(q, TensorConfig(q.shape, input.dtype, input.device)),
             Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
@@ -163,7 +163,7 @@ def hessenberg(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        h, q = cast("tuple[TensorLike, TensorLike]", backend.execute_op("Hessenberg", a.data))
+        h, q = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("Hessenberg", a.data))
         return (
             Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
@@ -185,7 +185,7 @@ def householder_product(a: Tensor, tau: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = cast("TensorLike", backend.execute_op("HouseholderProduct", a.data, tau.data))
+        data = typing.cast("TensorLike", backend.execute_op("HouseholderProduct", a.data, tau.data))
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
@@ -203,7 +203,7 @@ def schur(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        t, z = cast("tuple[TensorLike, TensorLike]", backend.execute_op("Schur", a.data))
+        t, z = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("Schur", a.data))
         return (
             Tensor(t, TensorConfig(t.shape, a.dtype, a.device)),
             Tensor(z, TensorConfig(z.shape, a.dtype, a.device)),
@@ -224,7 +224,7 @@ def tridiagonal(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        diag, off_diag, q = cast("tuple[TensorLike, TensorLike, TensorLike]", backend.execute_op("Tridiagonal", a.data))
+        diag, off_diag, q = typing.cast("tuple[TensorLike, TensorLike, TensorLike]", backend.execute_op("Tridiagonal", a.data))
         return (
             Tensor(diag, TensorConfig(diag.shape, a.dtype, a.device)),
             Tensor(off_diag, TensorConfig(off_diag.shape, a.dtype, a.device)),
@@ -267,7 +267,7 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Ten
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        q, h, num_iters, is_converged = cast(
+        q, h, num_iters, is_converged = typing.cast(
             "tuple[TensorLike, TensorLike, TensorLike, TensorLike]",
             backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations),
         )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 from pytest import CaptureFixture
@@ -16,7 +16,7 @@ from scripts.lint_numpy_leak import (
     main,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -171,7 +171,7 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
         if "scripts.lint_dependencies" in name and first_call:
             first_call = False
             raise ImportError("Mocked initial import error")
-        return cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
+        return typing.cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
 
     saved_mod = sys.modules.pop("scripts.lint_dependencies", None)
     try:

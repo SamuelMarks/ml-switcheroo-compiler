@@ -1,5 +1,7 @@
 """Transform and Pass Manager package."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.transforms.autodiff import grad, hvp, jvp
 from ml_switcheroo_compiler.transforms.pass_manager import (
     DAGTopologicalSorter,

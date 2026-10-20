@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import os
-from typing import Union
+import typing
 
 import yaml
 from pydantic import BaseModel
 
-MetadataValue = Union[str, int, float, bool, list[str], list[dict[str, Union[str, bool]]]]
+MetadataValue = typing.Union[str, int, float, "bool", list[str], list[dict[str, typing.Union[str, "bool"]]]]
 
 
 class TypeDefinition(BaseModel):

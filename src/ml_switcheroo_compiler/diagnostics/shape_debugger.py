@@ -7,8 +7,8 @@ well as export logical graphs to Graphviz DOT and HTML formats for visualization
 from __future__ import annotations
 
 import os
+import typing
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 _FORMATTERS: dict[str, dict[str, str]] = {}

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -13,9 +13,9 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.jvp_vjp import hvp, jacfwd, jacrev, jvp, vjp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
-GradOptions = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad.jvp_vjp"), "GradOptions"))
+GradOptions = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad.jvp_vjp"), "GradOptions"))
 
 
 def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tensor:
@@ -46,10 +46,10 @@ def test_jvp_has_aux_and_backend_execution() -> None:
         """
         return x * x, "aux_info"
 
-    (val, aux), out_tan = cast("EagerCallableProtocol", jvp)(f_aux, cast("EagerCallableProtocol", _make_tensor)([2.0]), cast("EagerCallableProtocol", _make_tensor)([1.0]), has_aux=True)
+    (val, aux), out_tan = typing.cast("EagerCallableProtocol", jvp)(f_aux, typing.cast("EagerCallableProtocol", _make_tensor)([2.0]), typing.cast("EagerCallableProtocol", _make_tensor)([1.0]), has_aux=True)
     assert aux == "aux_info"
-    assert cast("EagerTensorProtocol", getattr(val, "item"))() == 4.0
-    assert cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 4.0
+    assert typing.cast("EagerTensorProtocol", getattr(val, "item"))() == 4.0
+    assert typing.cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 4.0
 
     # 2. backend with execute_graph
     mock_backend_exec = MagicMock()
@@ -57,7 +57,7 @@ def test_jvp_has_aux_and_backend_execution() -> None:
     mock_backend_exec.asarray = np.asarray
 
     with patch("ml_switcheroo_compiler.grad.jvp_vjp.get_active_backend", return_value=mock_backend_exec):
-        val_exec, out_tan_exec = cast("EagerCallableProtocol", jvp)(lambda x: x * 2.0, cast("EagerCallableProtocol", _make_tensor)([2.0]), cast("EagerCallableProtocol", _make_tensor)([1.0]))
+        val_exec, out_tan_exec = typing.cast("EagerCallableProtocol", jvp)(lambda x: x * 2.0, typing.cast("EagerCallableProtocol", _make_tensor)([2.0]), typing.cast("EagerCallableProtocol", _make_tensor)([1.0]))
         assert mock_backend_exec.execute_graph.called
 
     # 3. backend with compile_graph
@@ -66,7 +66,7 @@ def test_jvp_has_aux_and_backend_execution() -> None:
     mock_backend_comp.asarray = np.asarray
 
     with patch("ml_switcheroo_compiler.grad.jvp_vjp.get_active_backend", return_value=mock_backend_comp):
-        val_comp, out_tan_comp = cast("EagerCallableProtocol", jvp)(lambda x: x * 2.0, cast("EagerCallableProtocol", _make_tensor)([2.0]), cast("EagerCallableProtocol", _make_tensor)([1.0]))
+        val_comp, out_tan_comp = typing.cast("EagerCallableProtocol", jvp)(lambda x: x * 2.0, typing.cast("EagerCallableProtocol", _make_tensor)([2.0]), typing.cast("EagerCallableProtocol", _make_tensor)([1.0]))
         assert mock_backend_comp.compile_graph.called
 
 
@@ -78,8 +78,8 @@ def test_vjp_backend_execution() -> None:
     mock_backend_exec.asarray = np.asarray
 
     with patch("ml_switcheroo_compiler.grad.jvp_vjp.get_active_backend", return_value=mock_backend_exec):
-        val_exec, vjp_fn_exec = cast("EagerCallableProtocol", vjp)(lambda x: x * 2.0, cast("EagerCallableProtocol", _make_tensor)([2.0]))
-        cast("EagerCallableProtocol", vjp_fn_exec)(cast("EagerCallableProtocol", _make_tensor)([1.0]))
+        val_exec, vjp_fn_exec = typing.cast("EagerCallableProtocol", vjp)(lambda x: x * 2.0, typing.cast("EagerCallableProtocol", _make_tensor)([2.0]))
+        typing.cast("EagerCallableProtocol", vjp_fn_exec)(typing.cast("EagerCallableProtocol", _make_tensor)([1.0]))
         assert mock_backend_exec.execute_graph.called
 
     # 2. backend with compile_graph
@@ -88,8 +88,8 @@ def test_vjp_backend_execution() -> None:
     mock_backend_comp.asarray = np.asarray
 
     with patch("ml_switcheroo_compiler.grad.jvp_vjp.get_active_backend", return_value=mock_backend_comp):
-        val_comp, vjp_fn_comp = cast("EagerCallableProtocol", vjp)(lambda x: x * 2.0, cast("EagerCallableProtocol", _make_tensor)([2.0]))
-        cast("EagerCallableProtocol", vjp_fn_comp)(cast("EagerCallableProtocol", _make_tensor)([1.0]))
+        val_comp, vjp_fn_comp = typing.cast("EagerCallableProtocol", vjp)(lambda x: x * 2.0, typing.cast("EagerCallableProtocol", _make_tensor)([2.0]))
+        typing.cast("EagerCallableProtocol", vjp_fn_comp)(typing.cast("EagerCallableProtocol", _make_tensor)([1.0]))
         assert mock_backend_comp.compile_graph.called
 
 
@@ -105,10 +105,10 @@ def test_hvp_has_aux_and_projected_tangents() -> None:
         """
         return x * x * x, "aux_meta"
 
-    (val, aux), out_tan = cast("EagerCallableProtocol", hvp)(f_aux, cast("EagerCallableProtocol", _make_tensor)([2.0]), cast("EagerCallableProtocol", _make_tensor)([1.0]), has_aux=True)
+    (val, aux), out_tan = typing.cast("EagerCallableProtocol", hvp)(f_aux, typing.cast("EagerCallableProtocol", _make_tensor)([2.0]), typing.cast("EagerCallableProtocol", _make_tensor)([1.0]), has_aux=True)
     assert aux == "aux_meta"
-    assert cast("EagerTensorProtocol", getattr(val, "item"))() == 8.0
-    assert cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 12.0
+    assert typing.cast("EagerTensorProtocol", getattr(val, "item"))() == 8.0
+    assert typing.cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 12.0
 
     # 2. projected_tangents as a single Tensor
     def f_cube(x: Tensor) -> Tensor:
@@ -119,23 +119,23 @@ def test_hvp_has_aux_and_projected_tangents() -> None:
         """
         return x * x * x
 
-    val_pt, out_tan_pt = cast("EagerCallableProtocol", hvp)(
+    val_pt, out_tan_pt = typing.cast("EagerCallableProtocol", hvp)(
         f_cube,
         _make_tensor([2.0]),
         _make_tensor([1.0]),
         projected_tangents=_make_tensor([1.0]),
     )
-    assert cast("EagerTensorProtocol", getattr(val_pt, "item"))() == 8.0
+    assert typing.cast("EagerTensorProtocol", getattr(val_pt, "item"))() == 8.0
     assert out_tan_pt is not None
 
     # 3. projected_tangents as a tuple of Tensors
-    val_pt2, out_tan_pt2 = cast("EagerCallableProtocol", hvp)(
+    val_pt2, out_tan_pt2 = typing.cast("EagerCallableProtocol", hvp)(
         f_cube,
         _make_tensor([2.0]),
         _make_tensor([1.0]),
         projected_tangents=(_make_tensor([1.0]),),
     )
-    assert cast("EagerTensorProtocol", getattr(val_pt2, "item"))() == 8.0
+    assert typing.cast("EagerTensorProtocol", getattr(val_pt2, "item"))() == 8.0
     assert out_tan_pt2 is not None
 
 
@@ -151,8 +151,8 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
         """
         return x[0]
 
-    j_fwd = cast("EagerCallableProtocol", jacfwd)(f_scalar)(cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
-    assert cast("EagerTensorProtocol", getattr(j_fwd, "shape")) == (1, 2)
+    j_fwd = typing.cast("EagerCallableProtocol", jacfwd)(f_scalar)(typing.cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
+    assert typing.cast("EagerTensorProtocol", getattr(j_fwd, "shape")) == (1, 2)
 
     # 2. jacfwd with has_aux=True
     def f_aux_fwd(x: Tensor) -> tuple[Tensor, str]:
@@ -164,8 +164,8 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
         return x * x, "aux_info_fwd"
 
     opts_fwd = GradOptions(has_aux=True)
-    j_fwd_aux = cast("EagerCallableProtocol", jacfwd)(f_aux_fwd, options=opts_fwd)(cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
-    assert cast("EagerTensorProtocol", getattr(j_fwd_aux, "shape")) == (2, 2)
+    j_fwd_aux = typing.cast("EagerCallableProtocol", jacfwd)(f_aux_fwd, options=opts_fwd)(typing.cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
+    assert typing.cast("EagerTensorProtocol", getattr(j_fwd_aux, "shape")) == (2, 2)
 
     # 3. jacrev with has_aux=True
     def f_aux_rev(x: Tensor) -> tuple[Tensor, str]:
@@ -177,8 +177,8 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
         return x * x, "aux_info"
 
     opts_rev = GradOptions(has_aux=True)
-    j_rev_aux = cast("EagerCallableProtocol", jacrev)(f_aux_rev, options=opts_rev)(cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
-    assert cast("EagerTensorProtocol", getattr(j_rev_aux, "shape")) == (2, 2)
+    j_rev_aux = typing.cast("EagerCallableProtocol", jacrev)(f_aux_rev, options=opts_rev)(typing.cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
+    assert typing.cast("EagerTensorProtocol", getattr(j_rev_aux, "shape")) == (2, 2)
 
     # 4. jacrev with multi-output
     def f_multi(x: Tensor) -> tuple[Tensor, Tensor]:
@@ -189,9 +189,9 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
         """
         return x * 2.0, x * 3.0
 
-    j_multi = cast("EagerCallableProtocol", jacrev)(f_multi)(cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
-    assert cast("EagerTensorProtocol", getattr(j_multi, "shape")) == (4, 2)
+    j_multi = typing.cast("EagerCallableProtocol", jacrev)(f_multi)(typing.cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
+    assert typing.cast("EagerTensorProtocol", getattr(j_multi, "shape")) == (4, 2)
 
     # 5. jacrev with scalar output
-    j_rev_scalar = cast("EagerCallableProtocol", jacrev)(f_scalar)(cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
-    assert cast("EagerTensorProtocol", getattr(j_rev_scalar, "shape")) == (2,)
+    j_rev_scalar = typing.cast("EagerCallableProtocol", jacrev)(f_scalar)(typing.cast("EagerCallableProtocol", _make_tensor)([2.0, 3.0]))
+    assert typing.cast("EagerTensorProtocol", getattr(j_rev_scalar, "shape")) == (2,)

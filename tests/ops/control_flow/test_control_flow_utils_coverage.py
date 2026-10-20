@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import LogicalGraph
+from ml_switcheroo_ir import LogicalGraph, NodeDict
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -16,8 +17,8 @@ from ml_switcheroo_compiler.ops.control_flow_utils import (
     _wrap_proxy_inputs,
 )
 
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class _PayloadWithId:
@@ -35,7 +36,7 @@ class _PayloadWithId:
 def test_control_flow_utils_wrap_proxy_inputs_tuple() -> None:
     """Cover _wrap_proxy_inputs branch when arg is a tuple."""
     graph = LogicalGraph(name="test_graph")
-    graph.nodes = {}
+    graph.nodes = NodeDict({})
     graph.input_specs = {}
 
     cfg = TensorConfig(shape=(2,), dtype=DType.Float32, device=Device("cpu"))
@@ -43,17 +44,17 @@ def test_control_flow_utils_wrap_proxy_inputs_tuple() -> None:
     t2 = Tensor(np.array([3.0, 4.0], dtype=np.float32), cfg)
 
     nested_args = ((t1, t2), "non_tensor")
-    input_ids, proxy_args = cast("EagerCallableProtocol", _wrap_proxy_inputs)(nested_args, graph)
+    input_ids, proxy_args = typing.cast("EagerCallableProtocol", _wrap_proxy_inputs)(nested_args, graph)
 
     assert len(input_ids) == 2
-    assert isinstance(proxy_args[0], tuple)
-    assert cast("EagerTensorProtocol", proxy_args[1]) == cast("EagerTensorProtocol", "non_tensor")
+    assert isinstance(typing.cast("EagerValue", proxy_args[0]), tuple)
+    assert proxy_args[1] == "non_tensor"
 
 
 def test_control_flow_utils_wrap_proxy_inputs_no_input_specs() -> None:
     """Cover _wrap_proxy_inputs branch when subgraph does not have input_specs."""
     graph = LogicalGraph(name="test_graph_no_specs")
-    graph.nodes = {}
+    graph.nodes = NodeDict({})
     if hasattr(graph, "input_specs"):
         delattr(graph, "input_specs")
 
@@ -71,7 +72,7 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
 
     # Nested tensor unwrapping (cur.data is a Tensor)
     inner_payload = _PayloadWithId("inner_id_42")
-    inner_t = cast("EagerCallableProtocol", Tensor)(inner_payload, cfg)
+    inner_t = typing.cast("EagerCallableProtocol", Tensor)(inner_payload, cfg)
     outer_t = Tensor(inner_t, cfg)
     ids_nested = _get_tensor_ids(outer_t)
     assert ids_nested == ["inner_id_42"]
@@ -88,8 +89,8 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
     assert isinstance(ids_uuid[0], str)
 
     # list/tuple of tensors
-    t_a = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", _PayloadWithId)("a"), cfg)
-    t_b = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", _PayloadWithId)("b"), cfg)
+    t_a = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", _PayloadWithId)("a"), cfg)
+    t_b = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", _PayloadWithId)("b"), cfg)
     ids_list = _get_tensor_ids([t_a, (t_b,)])
     assert ids_list == ["a", "b"]
 

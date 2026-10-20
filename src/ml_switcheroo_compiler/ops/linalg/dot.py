@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import Callable, cast
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -89,8 +89,8 @@ class Dot(OpDef):
         if inp_a is None or inp_b is None:
             return ()
 
-        shape_a = cast("Callable[..., tuple[int, ...]]", _extract_dot_operand_shape)(inp_a)
-        shape_b = cast("Callable[..., tuple[int, ...]]", _extract_dot_operand_shape)(inp_b)
+        shape_a = typing.cast("TypedVariadicCallable[tuple[int, ...]]", _extract_dot_operand_shape)(inp_a)
+        shape_b = typing.cast("TypedVariadicCallable[tuple[int, ...]]", _extract_dot_operand_shape)(inp_b)
         return _compute_dot_contraction_shape(shape_a, shape_b)
 
 

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import typing
 from enum import Enum
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_compiler.core.errors import DTypeValidationError as DTypeValidationError
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
 
     class DType(str, Enum):
         """Canonical DType enumeration with lowercase and PascalCase members."""

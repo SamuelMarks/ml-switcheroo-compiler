@@ -1,9 +1,12 @@
 """Pass to lower complex polyfilled operations into simpler IR primitives."""
 
+from __future__ import annotations
+
 import os
-from typing import cast
+import typing
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -141,9 +144,7 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     body_graph.nodes["false_violations"] = IRNode(id="false_violations", op_type="Constant", inputs=[], attributes={"value": False})
     body_graph.outputs = ["array", "next_idx", "false_violations"]
 
-    from ml_switcheroo_ir import AttributeValue
-
-    node.attributes = cast("dict[str, AttributeValue]", {"cond": cond_graph, "body": body_graph})
+    node.attributes = typing.cast("dict[str, AttributeValue]", {"cond": cond_graph, "body": body_graph})
 
     return node
 
@@ -158,7 +159,7 @@ def _load_poly_rules() -> dict[str, dict[str, str]]:
     if not os.path.exists(yaml_path):
         return {}
     with open(yaml_path) as f:
-        return cast(dict[str, dict[str, str]], yaml.safe_load(f).get("rules", {}))
+        return typing.cast(dict[str, dict[str, str]], yaml.safe_load(f).get("rules", {}))
 
 
 def polyfill_lowering_pass(graph: IRGraph) -> bool:
@@ -190,13 +191,16 @@ def polyfill_lowering_pass(graph: IRGraph) -> bool:
                     modified = True
             elif rule["type"] == "rewrite":
                 node.op_type = str(rule.get("op_type", node.op_type))
-                if "attributes" in rule and isinstance(rule["attributes"], dict):
-                    for k, v in rule["attributes"].items():
+                rule_attrs: AttributeValue = rule.get("attributes")
+                if isinstance(rule_attrs, dict):
+                    for k, v in rule_attrs.items():
                         node.attributes[str(k)] = v
                 modified = True
 
         new_nodes[node.id] = node
 
     if modified:
-        graph.nodes = new_nodes
+        from ml_switcheroo_ir import NodeDict
+
+        graph.nodes = NodeDict(new_nodes)
     return modified

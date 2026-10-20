@@ -5,18 +5,18 @@ Bitcast, and Frexp
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, Union  # noqa: F401
+import typing  # noqa: F401
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ir.core import IRNode
 
 
-class HasShape(Protocol):
+class HasShape(typing.Protocol):
     """Protocol for objects exposing a shape attribute."""
 
     shape: tuple[int, ...]

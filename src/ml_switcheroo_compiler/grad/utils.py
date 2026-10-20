@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
 from collections.abc import Callable, Sequence
-from typing import Protocol, cast, runtime_checkable
 
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -19,8 +19,8 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 from .options import GradOptions
 
 
-@runtime_checkable
-class GradTensorProtocol(Protocol):
+@typing.runtime_checkable
+class GradTensorProtocol(typing.Protocol):
     """Protocol defining the structural type contract for tensors participating in gradient evaluation."""
 
     @property
@@ -73,15 +73,15 @@ GradValue = TensorOrScalar
 
 
 def value_and_grad_wrt_vars(
-    fun: Callable[..., GradValue],
-) -> Callable[..., tuple[GradValue, dict[str, GradValue]]]:
+    fun: GradValue,
+) -> TypedVariadicCallable[tuple[GradValue, dict[str, GradValue]]]:
     """Create a function that evaluates both the primal value and variable gradients.
 
     Args:
-        fun (Callable[..., GradValue]): Original function to wrap.
+        fun (GradValue): Original function to wrap.
 
     Returns:
-        Callable[..., tuple[GradValue, dict[str, GradValue]]]: Wrapped callable returning `(value, grads_dict)`.
+        TypedVariadicCallable[tuple[GradValue, dict[str, GradValue]]]: Wrapped callable returning `(value, grads_dict)`.
     """
 
     def wrapped(*args: GradValue, **kwargs: GradValue) -> tuple[GradValue, dict[str, GradValue]]:
@@ -94,7 +94,7 @@ def value_and_grad_wrt_vars(
         Returns:
             tuple[GradValue, dict[str, GradValue]]: Primal output value and variable gradient dictionary.
         """
-        val = fun(*args, **kwargs)
+        val = typing.cast(TypedVariadicCallable[GradValue], fun)(*args, **kwargs)
         grads: dict[str, GradValue] = {}
         return (val, grads)
 
@@ -218,7 +218,7 @@ def _convert_to_tensors(primals: Sequence[GradValue]) -> list[Tensor]:
         if isinstance(p, Tensor):
             tensor_primals.append(p)
         else:
-            arr = cast(BackendArray, get_active_backend().asarray(p))
+            arr = typing.cast(BackendArray, get_active_backend().asarray(p))
             dt = DType.Float32
             if str(arr.dtype) == "float64":
                 dt = DType.Float64
@@ -230,33 +230,35 @@ def _convert_to_tensors(primals: Sequence[GradValue]) -> list[Tensor]:
     return tensor_primals
 
 
-def _get_fun_primal(fun: Callable[..., GradValue], has_aux: bool) -> Callable[..., GradValue]:
+def _get_fun_primal(fun: GradValue, has_aux: bool) -> TypedVariadicCallable[GradValue]:
     """Return a wrapper extracting only the primal output when `has_aux` is True.
 
     Args:
-        fun (Callable[..., GradValue]): Target function.
+        fun (GradValue): Target function.
         has_aux (bool): Whether `fun` returns `(primal, aux)`.
 
     Returns:
-        Callable[..., GradValue]: Primal-only callable.
+        TypedVariadicCallable[GradValue]: Primal-only callable.
     """
+    fn = typing.cast(TypedVariadicCallable[GradValue], fun)
     if has_aux:
 
-        def fun_primal(*args: GradValue) -> GradValue:
+        def fun_primal(*args: GradValue, **kwargs: GradValue) -> GradValue:
             """Evaluate `fun` and return the first element of `(primal, aux)`.
 
             Args:
                 *args (GradValue): Positional arguments.
+                **kwargs (GradValue): Keyword arguments.
 
             Returns:
                 GradValue: Primary output value.
             """
-            out_val: GradValue = fun(*args)
+            out_val: GradValue = fn(*args, **kwargs)
             return out_val[0] if isinstance(out_val, tuple) else out_val
 
         return fun_primal
 
-    return fun
+    return fn
 
 
 def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
@@ -273,7 +275,7 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
         return val
 
     if isinstance(orig, Tensor):
-        arr = cast(BackendArray, get_active_backend().asarray(val))
+        arr = typing.cast(BackendArray, get_active_backend().asarray(val))
         dt = DType.Float32
         if str(arr.dtype) == "float64":
             dt = DType.Float64
@@ -287,14 +289,14 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
 
 
 def _compute_grad_and_value(
-    fun: Callable[..., GradValue],
+    fun: GradValue,
     options: GradOptions,
     args: tuple[GradValue, ...],
 ) -> tuple[GradValue, GradValue]:
     """Compute both the primal output and selected argument gradients of `fun` at `args`.
 
     Args:
-        fun (Callable[..., GradValue]): Function to differentiate.
+        fun (GradValue): Function to differentiate.
         options (GradOptions): Differentiation configuration (`argnums`, `has_aux`).
         args (tuple[GradValue, ...]): Tuple of primal arguments.
 
@@ -304,10 +306,10 @@ def _compute_grad_and_value(
     from .jvp_vjp import _unpack_pair, vjp
 
     val, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=getattr(options, "has_aux", False)))
-    vjp_fn = cast("Callable[[GradValue], GradValue]", vjp_fn_raw)
+    vjp_fn = typing.cast("Callable[[GradValue], GradValue]", vjp_fn_raw)
 
     if getattr(options, "has_aux", False):
-        primal_val, _ = cast(tuple[GradValue, GradValue], val)
+        primal_val, _ = typing.cast(tuple[GradValue, GradValue], val)
     else:
         primal_val = val
 
@@ -335,9 +337,9 @@ def _compute_grad_and_value(
     if isinstance(argnums, int):
         res_grad = _to_original_type(grads_seq[argnums], args[argnums])
     elif isinstance(argnums, (tuple, list)):
-        res_grad = cast(
+        res_grad = typing.cast(
             GradValue,
-            tuple(_to_original_type(grads_seq[idx], args[idx]) for idx in cast(tuple[int, ...], argnums)),
+            tuple(_to_original_type(grads_seq[idx], args[idx]) for idx in typing.cast(tuple[int, ...], argnums)),
         )
     else:
         res_grad = _to_original_type(grads_seq[0], args[0])

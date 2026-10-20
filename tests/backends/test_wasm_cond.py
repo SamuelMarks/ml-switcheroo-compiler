@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import typing
+
+from ml_switcheroo_ir import AttributeValue, NodeDict
+
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -29,7 +33,13 @@ def test_wasm_cond_generation() -> None:
     false_graph.outputs = ["false_sub"]
     false_graph.inputs = ["false_in"]
 
-    node_cond = IRNode(id="node_cond", op_type="Cond", inputs=["node_in", "node_in", "node_in"], attributes={"dtype": "float32", "branch_graphs": [true_graph, false_graph]}, shape_metadata=[3])
+    node_cond = IRNode(
+        id="node_cond",
+        op_type="Cond",
+        inputs=["node_in", "node_in", "node_in"],
+        attributes=typing.cast("dict[str, AttributeValue]", {"dtype": "float32", "branch_graphs": [true_graph, false_graph]}),
+        shape_metadata=(3,),
+    )
 
     graph.nodes["node_in"] = node_in
     graph.nodes["node_cond"] = node_cond
@@ -68,7 +78,7 @@ def test_wasm_generate_wat_and_control_flow() -> None:
     x = IRNode(id="x", op_type="Input")
     y = IRNode(id="y", op_type="Mul", inputs=["x", "x"])
     z = IRNode(id="z", op_type="Neg", inputs=["y"])
-    g.nodes = {"x": x, "y": y, "z": z}
+    g.nodes = NodeDict({"x": x, "y": y, "z": z})
     g.inputs = ["x"]
     g.outputs = ["z"]
 
@@ -88,7 +98,7 @@ def test_wasm_generate_wat_and_control_flow() -> None:
         inputs=["in0"],
         attributes={"comparator": "<", "threshold": "50.0", "max_iters": 5},
     )
-    g_loop.nodes = {"in0": in_loop, "loop": loop_node}
+    g_loop.nodes = NodeDict({"in0": in_loop, "loop": loop_node})
     g_loop.inputs = ["in0"]
     g_loop.outputs = ["loop"]
 
@@ -105,7 +115,7 @@ def test_wasm_generate_wat_and_control_flow() -> None:
         inputs=["s0"],
         attributes={"init_val": "1.0", "scan_op_expr": "acc * 2.0f"},
     )
-    g_scan.nodes = {"s0": in_scan, "scan": scan_node}
+    g_scan.nodes = NodeDict({"s0": in_scan, "scan": scan_node})
     g_scan.inputs = ["s0"]
     g_scan.outputs = ["scan"]
 

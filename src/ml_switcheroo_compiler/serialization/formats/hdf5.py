@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from types import ModuleType
-from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -18,7 +18,7 @@ try:
 except ImportError:
     h5py = None
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     import h5py as h5py_types
 
 

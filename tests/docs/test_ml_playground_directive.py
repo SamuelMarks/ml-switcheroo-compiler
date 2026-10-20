@@ -5,12 +5,12 @@ from __future__ import annotations
 import importlib
 import os
 import sys
-from typing import TYPE_CHECKING
+import typing
 from unittest import mock
 
 import pytest
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 pytest.importorskip("docutils")

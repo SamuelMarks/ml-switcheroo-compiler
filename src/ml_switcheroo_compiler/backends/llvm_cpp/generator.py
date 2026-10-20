@@ -12,20 +12,12 @@ import ctypes
 import os
 import subprocess
 import tempfile
-from typing import Callable, Optional, Union, cast  # noqa: F401
+import typing
+from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-AttrType = Union[
-    int,
-    float,
-    str,
-    bool,
-    list["AttrType"],
-    tuple["AttrType", ...],
-    dict[str, "AttrType"],
-    None,
-]
+AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
 
 import yaml
 
@@ -76,7 +68,7 @@ class CppGenerator(BaseGenerator):
             use_openmp (bool): The use_openmp parameter.
             strict (bool): Whether to raise UnimplementedMathError on unsupported operations.
         """
-        super().__init__(graph=cast("IRGraph", graph))
+        super().__init__(graph=typing.cast("IRGraph", graph))
         self.use_simd = use_simd
         self.use_openmp = use_openmp
         self.strict = strict
@@ -234,7 +226,7 @@ class CppGenerator(BaseGenerator):
         cond_var: str = node.inputs[0]
 
         then_lines: list[str] = []
-        then_graph: IRGraph | None = cast("IRGraph | None", node.attributes.get("then_branch"))
+        then_graph: IRGraph | None = typing.cast("IRGraph | None", node.attributes.get("then_branch"))
         if then_graph:
             old_lines = self.lines
             self.lines = then_lines
@@ -243,7 +235,7 @@ class CppGenerator(BaseGenerator):
             self.lines = old_lines
 
         else_lines: list[str] = []
-        else_graph: IRGraph | None = cast("IRGraph | None", node.attributes.get("else_branch"))
+        else_graph: IRGraph | None = typing.cast("IRGraph | None", node.attributes.get("else_branch"))
         if else_graph:
             old_lines = self.lines
             self.lines = else_lines
@@ -310,11 +302,11 @@ class CppGenerator(BaseGenerator):
         attrs: dict[str, AttrType] = getattr(node, "attributes", {})
         self._emit_loop_annotations(attrs)
 
-        raw_cond = attrs.get("cond")
+        raw_cond: EagerValue = attrs.get("cond")
         cond_graph: IRGraph | None = raw_cond if isinstance(raw_cond, IRGraph) else None
         cond_lines = self._collect_subgraph_lines(cond_graph, graph_to_use)
 
-        raw_body = attrs.get("body")
+        raw_body: EagerValue = attrs.get("body")
         body_graph: IRGraph | None = raw_body if isinstance(raw_body, IRGraph) else None
         body_lines = self._collect_subgraph_lines(body_graph, graph_to_use)
 
@@ -352,7 +344,7 @@ class CppGenerator(BaseGenerator):
             shape = [1] * (4 - len(shape)) + shape
 
         attrs: dict[str, AttrType] = getattr(node, "attributes", {})
-        stride: int | tuple[int, ...] | list[int] = cast("int | tuple[int, ...] | list[int]", attrs.get("stride", 1))
+        stride: int | tuple[int, ...] | list[int] = typing.cast("int | tuple[int, ...] | list[int]", attrs.get("stride", 1))
         stride_h: int = int(stride[0]) if isinstance(stride, (tuple, list)) else int(stride)
         stride_w: int = int(stride[1]) if isinstance(stride, (tuple, list)) else int(stride)
 
@@ -447,7 +439,7 @@ class CppGenerator(BaseGenerator):
             shape = [1] * (5 - len(shape)) + shape
 
         attrs: dict[str, AttrType] = getattr(node, "attributes", {})
-        stride: int | tuple[int, ...] | list[int] = cast("int | tuple[int, ...] | list[int]", attrs.get("stride", [1, 1, 1]))
+        stride: int | tuple[int, ...] | list[int] = typing.cast("int | tuple[int, ...] | list[int]", attrs.get("stride", [1, 1, 1]))
         if isinstance(stride, int):
             stride_d = stride_h = stride_w = stride
         elif len(stride) >= 3:
@@ -500,11 +492,11 @@ class CppGenerator(BaseGenerator):
             shape = [1] * (5 - len(shape)) + shape
 
         attrs: dict[str, AttrType] = getattr(node, "attributes", {})
-        ksize: int | tuple[int, ...] | list[int] = cast("int | tuple[int, ...] | list[int]", attrs.get("kernel_size", [2, 2, 2]))
+        ksize: int | tuple[int, ...] | list[int] = typing.cast("int | tuple[int, ...] | list[int]", attrs.get("kernel_size", [2, 2, 2]))
         kd: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 else 2
         kh: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 else 2
         kw: int = int(ksize[2]) if isinstance(ksize, (list, tuple)) and len(ksize) > 2 else 2
-        stride: int | tuple[int, ...] | list[int] = cast("int | tuple[int, ...] | list[int]", attrs.get("stride", [kd, kh, kw]))
+        stride: int | tuple[int, ...] | list[int] = typing.cast("int | tuple[int, ...] | list[int]", attrs.get("stride", [kd, kh, kw]))
         stride_d: int = int(stride[0]) if isinstance(stride, (list, tuple)) and len(stride) > 0 else kd
         stride_h: int = int(stride[1]) if isinstance(stride, (list, tuple)) and len(stride) > 1 else kh
         stride_w: int = int(stride[2]) if isinstance(stride, (list, tuple)) and len(stride) > 2 else kw
@@ -552,11 +544,11 @@ class CppGenerator(BaseGenerator):
             shape = [1] * (5 - len(shape)) + shape
 
         attrs: dict[str, AttrType] = getattr(node, "attributes", {})
-        ksize: int | tuple[int, ...] | list[int] = cast("int | tuple[int, ...] | list[int]", attrs.get("kernel_size", [2, 2, 2]))
+        ksize: int | tuple[int, ...] | list[int] = typing.cast("int | tuple[int, ...] | list[int]", attrs.get("kernel_size", [2, 2, 2]))
         kd: int = int(ksize[0]) if isinstance(ksize, (list, tuple)) and len(ksize) > 0 else 2
         kh: int = int(ksize[1]) if isinstance(ksize, (list, tuple)) and len(ksize) > 1 else 2
         kw: int = int(ksize[2]) if isinstance(ksize, (list, tuple)) and len(ksize) > 2 else 2
-        stride: int | tuple[int, ...] | list[int] = cast("int | tuple[int, ...] | list[int]", attrs.get("stride", [kd, kh, kw]))
+        stride: int | tuple[int, ...] | list[int] = typing.cast("int | tuple[int, ...] | list[int]", attrs.get("stride", [kd, kh, kw]))
         stride_d: int = int(stride[0]) if isinstance(stride, (list, tuple)) and len(stride) > 0 else kd
         stride_h: int = int(stride[1]) if isinstance(stride, (list, tuple)) and len(stride) > 1 else kh
         stride_w: int = int(stride[2]) if isinstance(stride, (list, tuple)) and len(stride) > 2 else kw
@@ -704,8 +696,8 @@ class CppGenerator(BaseGenerator):
         shape: list[int] = self._get_shape(node)
         rank: int = len(shape)
         attrs: dict[str, AttrType] = getattr(node, "attributes", {})
-        starts: int | list[int] = cast("int | list[int]", attrs.get("starts", [0] * rank))
-        strides: int | list[int] = cast("int | list[int]", attrs.get("strides", [1] * rank))
+        starts: int | list[int] = typing.cast("int | list[int]", attrs.get("starts", [0] * rank))
+        strides: int | list[int] = typing.cast("int | list[int]", attrs.get("strides", [1] * rank))
         starts_list: list[int] = [starts] * rank if isinstance(starts, int) else list(starts[:rank])
         strides_list: list[int] = [strides] * rank if isinstance(strides, int) else list(strides[:rank])
 
@@ -738,8 +730,8 @@ class CppGenerator(BaseGenerator):
         shape: list[int] = self._get_shape(node)
         rank: int = len(shape)
         attrs: dict[str, AttrType] = getattr(node, "attributes", {})
-        paddings: int | list[int] = cast("int | list[int]", attrs.get("paddings", [0] * rank))
-        pad_val: float = float(cast(float, attrs.get("constant_value", 0.0)))
+        paddings: int | list[int] = typing.cast("int | list[int]", attrs.get("paddings", [0] * rank))
+        pad_val: float = float(typing.cast(float, attrs.get("constant_value", 0.0)))
         pad_low: list[int] = []
         if isinstance(paddings, int):
             pad_low = [paddings] * rank
@@ -1321,8 +1313,7 @@ class CppGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider import get_cpp_operation
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
-        raw_op_def = OPS_REGISTRY.get(op, {})
-        op_def = raw_op_def if isinstance(raw_op_def, dict) else {}
+        op_def = OPS_REGISTRY.get(op, {})
         raw_variants = op_def.get("variants")
         variants = raw_variants if isinstance(raw_variants, dict) else {}
         raw_llvm = variants.get("llvm_cpp")

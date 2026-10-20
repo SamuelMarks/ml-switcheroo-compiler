@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import typing
+
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -72,14 +74,14 @@ def save(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
     Returns:
         Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
-    from typing import cast
+    import typing
 
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast("Tensor | None", get_active_backend().execute_op("Save", *args, **kwargs))
+        return typing.cast("Tensor | None", get_active_backend().execute_op("Save", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Save", list(args), kwargs, (), "float32")
@@ -95,14 +97,12 @@ def save_gguf(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
     Returns:
         Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
-    from typing import cast
-
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast("Tensor | None", get_active_backend().execute_op("SaveGguf", *args, **kwargs))
+        return typing.cast("Tensor | None", get_active_backend().execute_op("SaveGguf", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")
@@ -128,14 +128,12 @@ def savez(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
     Returns:
         Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
-    from typing import cast
-
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast("Tensor | None", get_active_backend().execute_op("Savez", *args, **kwargs))
+        return typing.cast("Tensor | None", get_active_backend().execute_op("Savez", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
@@ -151,14 +149,12 @@ def savez_compressed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor 
     Returns:
         Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
-    from typing import cast
-
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast("Tensor | None", get_active_backend().execute_op("SavezCompressed", *args, **kwargs))
+        return typing.cast("Tensor | None", get_active_backend().execute_op("SavezCompressed", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SavezCompressed", list(args), kwargs, (), "float32")

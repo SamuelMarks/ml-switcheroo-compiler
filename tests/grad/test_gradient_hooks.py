@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -26,7 +26,7 @@ def test_gradient_hooks() -> None:
         Args:
             x: Test parameter `x`.
         """
-        y = cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0)
+        y = typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2.0)
 
         # multiply gradient by 10
         def my_hook(grad: EagerValue) -> EagerValue:
@@ -35,10 +35,10 @@ def test_gradient_hooks() -> None:
             Args:
                 grad: Test parameter `grad`.
             """
-            return cast("EagerTensorProtocol", grad) * cast("EagerTensorProtocol", 10.0)
+            return typing.cast("EagerTensorProtocol", grad) * typing.cast("EagerTensorProtocol", 10.0)
 
         y_hooked = hook_gradient(y, my_hook)
-        return cast("EagerTensorProtocol", y_hooked) * cast("EagerTensorProtocol", 3.0)
+        return typing.cast("EagerTensorProtocol", y_hooked) * typing.cast("EagerTensorProtocol", 3.0)
 
     vg = value_and_grad(my_fun)
 
@@ -46,7 +46,7 @@ def test_gradient_hooks() -> None:
 
     from ml_switcheroo_compiler.grad.jit import jit
 
-    jitted = cast("EagerCallableProtocol", jit)(vg)
+    jitted = typing.cast("EagerCallableProtocol", jit)(vg)
 
     v1, g1 = jitted(x)
 
@@ -56,5 +56,5 @@ def test_gradient_hooks() -> None:
     # hook multiplies by 10.0 -> 30.0
     # grad of x = 30.0 * 2.0 = 60.0
 
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(v1, "numpy")))(), cast("EagerCallableProtocol", np.array)([12.0], dtype=np.float32))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(g1, "numpy")))(), cast("EagerCallableProtocol", np.array)([60.0], dtype=np.float32))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(v1, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([12.0], dtype=np.float32))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(g1, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([60.0], dtype=np.float32))

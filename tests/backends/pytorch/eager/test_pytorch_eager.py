@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 import pytest
@@ -21,26 +21,26 @@ except ImportError:
     pytest.skip("PyTorch not available", allow_module_level=True)
 except RuntimeError as e:
     pytest.skip(f"PyTorch not available: {e}", allow_module_level=True)
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_pytorch_eager_coverage() -> None:
     """Test function test_pytorch_eager_coverage."""
     t = torch.tensor([1, 2, 3])
-    assert cast("EagerCallableProtocol", torch.equal)(cast("EagerCallableProtocol", _execute_cummax)(t, dim=0), cast("EagerCallableProtocol", torch.tensor)([1, 2, 3]))
-    assert cast("EagerCallableProtocol", torch.equal)(cast("EagerCallableProtocol", _execute_cummin)(t, dim=0), cast("EagerCallableProtocol", torch.tensor)([1, 1, 1]))
+    assert typing.cast("EagerCallableProtocol", torch.equal)(typing.cast("EagerCallableProtocol", _execute_cummax)(t, dim=0), typing.cast("EagerCallableProtocol", torch.tensor)([1, 2, 3]))
+    assert typing.cast("EagerCallableProtocol", torch.equal)(typing.cast("EagerCallableProtocol", _execute_cummin)(t, dim=0), typing.cast("EagerCallableProtocol", torch.tensor)([1, 1, 1]))
     t_float = torch.tensor([1.0, 2.0, 3.0])
     res = _execute_cumlogsumexp(t_float, dim=0)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3,)
-    assert cast("EagerCallableProtocol", execute_op)(None, "Add", cast("EagerCallableProtocol", torch.tensor)(1), cast("EagerCallableProtocol", torch.tensor)(2)) == 3
-    assert cast("EagerCallableProtocol", execute_op)(None, "Amax", cast("EagerCallableProtocol", torch.tensor)([1, 2])) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3,)
+    assert typing.cast("EagerCallableProtocol", execute_op)(None, "Add", typing.cast("EagerCallableProtocol", torch.tensor)(1), typing.cast("EagerCallableProtocol", torch.tensor)(2)) == 3
+    assert typing.cast("EagerCallableProtocol", execute_op)(None, "Amax", typing.cast("EagerCallableProtocol", torch.tensor)([1, 2])) == 2
     with pytest.raises((BackendNotSupportedError, NotImplementedError, ValueError, TypeError)):
-        cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", cast("EagerCallableProtocol", torch.tensor)(1))
-    assert cast("EagerCallableProtocol", zeros)(None, (2,)) is not None
-    assert cast("EagerCallableProtocol", array)(None, [1, 2]) is not None
-    assert cast("EagerCallableProtocol", asarray)(None, [3, 4]) is not None
-    assert cast("EagerCallableProtocol", item)(None, cast("EagerCallableProtocol", torch.tensor)([5])) == 5
+        typing.cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", typing.cast("EagerCallableProtocol", torch.tensor)(1))
+    assert typing.cast("EagerCallableProtocol", zeros)(None, (2,)) is not None
+    assert typing.cast("EagerCallableProtocol", array)(None, [1, 2]) is not None
+    assert typing.cast("EagerCallableProtocol", asarray)(None, [3, 4]) is not None
+    assert typing.cast("EagerCallableProtocol", item)(None, typing.cast("EagerCallableProtocol", torch.tensor)([5])) == 5
 
 
 def test_execute_power_iteration() -> None:
@@ -63,9 +63,9 @@ def test_execute_one_hot() -> None:
 
     indices = torch.tensor([0, 1, 2])
     res = _execute_one_hot(indices, 3)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
     res2 = _execute_one_hot(indices, 3, on_value=2.0, off_value=1.0, axis=0)
-    assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (3, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (3, 3)
 
 
 def test_execute_ragged_tensor_to_dense() -> None:
@@ -76,58 +76,58 @@ def test_execute_ragged_tensor_to_dense() -> None:
 
     rt = [torch.tensor([1, 2]), torch.tensor([1])]
     res = _execute_ragged_tensor_to_dense(rt)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
 def test_pytorch_eager_global_registry() -> None:
     """Test global registry fallback in execute_op."""
     global_eager_registry.register("MyFakeGlobalOp")(lambda backend, *args, **kwargs: "global_hit")
-    assert cast("EagerCallableProtocol", execute_op)(None, "MyFakeGlobalOp") == "global_hit"
+    assert typing.cast("EagerCallableProtocol", execute_op)(None, "MyFakeGlobalOp") == "global_hit"
 
 
 def test_pytorch_eager_snake_case_fallback() -> None:
     """Test snake_case fallback for F/linalg/fft/torch modules."""
     t = torch.tensor([1.0, 2.0])
-    res = cast("EagerCallableProtocol", execute_op)(None, "LogSoftmax", t, dim=0)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+    res = typing.cast("EagerCallableProtocol", execute_op)(None, "LogSoftmax", t, dim=0)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
 
 
 def test_pytorch_eager_not_supported() -> None:
     """Test BackendNotSupportedError."""
     with pytest.raises(BackendNotSupportedError, match="Operation 'TotallyFakeOp' is not implemented"):
-        cast("EagerCallableProtocol", execute_op)(None, "TotallyFakeOp")
+        typing.cast("EagerCallableProtocol", execute_op)(None, "TotallyFakeOp")
 
 
 def test_pytorch_eager_fallback_exception() -> None:
     """Test exception during execution in fallback logic."""
     with pytest.raises(TypeError):
-        cast("EagerCallableProtocol", execute_op)(None, "LogSoftmax", "not_a_tensor", dim=0)
+        typing.cast("EagerCallableProtocol", execute_op)(None, "LogSoftmax", "not_a_tensor", dim=0)
 
 
 def test_pytorch_eager_coverage_2() -> None:
     """Test function test_pytorch_eager_coverage_2."""
     res = pytorch_eager._execute_accumulate_n([torch.tensor(1), torch.tensor(2)])
-    assert cast("EagerCallableProtocol", int)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "item")))() if cast("EagerCallableProtocol", hasattr)(res, "item") else res) == 3
+    assert typing.cast("EagerCallableProtocol", int)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "item")))() if typing.cast("EagerCallableProtocol", hasattr)(res, "item") else res) == 3
     res = pytorch_eager._execute_accumulate_n(inputs=[torch.tensor(1), torch.tensor(2)])
-    assert cast("EagerCallableProtocol", int)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "item")))() if cast("EagerCallableProtocol", hasattr)(res, "item") else res) == 3
+    assert typing.cast("EagerCallableProtocol", int)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "item")))() if typing.cast("EagerCallableProtocol", hasattr)(res, "item") else res) == 3
     with pytest.raises(ValueError):
         pytorch_eager._execute_accumulate_n(inputs=[])
     tensor = torch.zeros(2, 2)
     indices = torch.tensor([[0, 0]])
     updates = torch.tensor([1.0])
     res = pytorch_eager._execute_tensor_scatter_max(tensor, indices, updates)
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1.0
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1.0
     res = pytorch_eager._execute_tensor_scatter_min(tensor, indices, updates)
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 0.0
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 0.0
     res = pytorch_eager._execute_tensor_scatter_update(tensor, indices, updates)
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1.0
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1.0
     res = pytorch_eager._execute_tensor_scatter_add(tensor, indices, updates)
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1.0
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1.0
     w = torch.eye(2).unsqueeze(0)
     res = pytorch_eager._execute_power_iteration(w)
-    assert cast("EagerCallableProtocol", len)(res) == 3
+    assert typing.cast("EagerCallableProtocol", len)(res) == 3
     res = pytorch_eager._execute_broadcast_to(torch.tensor([1.0]), shape=(2,))
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
     res = pytorch_eager._execute_cummax(torch.tensor([1, 2]), dim=0)
     assert res is not None
     res = pytorch_eager._execute_cummin(torch.tensor([1, 2]), dim=0)
@@ -142,8 +142,8 @@ def test_pytorch_eager_coverage_2() -> None:
     assert res is not None
     res = pytorch_eager._torch_tensordot(torch.tensor([1.0]), torch.tensor([1.0]), axes=1)
     assert res is not None
-    res = cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Add", cast("EagerCallableProtocol", torch.tensor)([1.0]), cast("EagerCallableProtocol", torch.tensor)([1.0]))
-    res = cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Cumlogsumexp", cast("EagerCallableProtocol", torch.tensor)([1.0, 2.0]), dim=0)
+    res = typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Add", typing.cast("EagerCallableProtocol", torch.tensor)([1.0]), typing.cast("EagerCallableProtocol", torch.tensor)([1.0]))
+    res = typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Cumlogsumexp", typing.cast("EagerCallableProtocol", torch.tensor)([1.0, 2.0]), dim=0)
     assert res is not None
     with pytest.raises((BackendNotSupportedError, NotImplementedError, ValueError, TypeError)):
-        cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "UnknownOp")
+        typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "UnknownOp")

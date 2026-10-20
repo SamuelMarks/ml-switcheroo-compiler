@@ -1,18 +1,17 @@
 """Module graph_scheduling.py."""
 
 from __future__ import annotations  # noqa: I001
-from typing import cast
+import typing
 
 
 import os
 import yaml
 from ml_switcheroo_compiler.transforms.passes.config_models import CostModelConfig
-from typing import Protocol
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-class CostModel(Protocol):
+class CostModel(typing.Protocol):
     """Backend-agnostic Cost Model interface for nodes."""
 
     @property
@@ -122,7 +121,7 @@ class DefaultCostModel:
 
         shape = getattr(node, "shape_metadata", None)
         if shape is None:
-            return cast("int | str", dtype_size)
+            return typing.cast("int | str", dtype_size)
 
         is_dynamic = getattr(node, "is_dynamic_shape", False)
         has_symbolic_dim = any(isinstance(d, str) for d in shape)
@@ -131,13 +130,13 @@ class DefaultCostModel:
             size = 1
             for dim in shape:
                 size *= max(1, int(dim))
-            return cast("int | str", size * dtype_size)
+            return typing.cast("int | str", size * dtype_size)
 
         dims = [str(d) for d in shape]
         if dims:
             symbolic_math = " * ".join(dims) + f" * {dtype_size}"
             return symbolic_math
-        return cast("int | str", dtype_size)
+        return typing.cast("int | str", dtype_size)
 
     def get_compute_cost(self, node: IRNode) -> int:
         """Calculate compute cost.

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import cast  # noqa: F401
+import typing  # noqa: F401
 
 import torch
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
 def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -29,7 +29,7 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     res = getattr(inputs, "__getitem__")(0)
     for i in range(1, getattr(inputs, "__len__")()):
         res = res + getattr(inputs, "__getitem__")(i)
-    return cast(EagerValue, res)
+    return typing.cast(EagerValue, res)
 
 
 def _execute_tensor_scatter_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -47,10 +47,10 @@ def _execute_tensor_scatter_max(*args: EagerValue, **kwargs: EagerValue) -> Eage
         args[1],
         args[2],
     )
-    flat_idx = sum(cast(EagerTensorProtocol, indices)[..., i] * getattr(tensor, "stride")(i) for i in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
+    flat_idx = sum(typing.cast(EagerTensorProtocol, indices)[..., i] * getattr(tensor, "stride")(i) for i in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res = getattr(getattr(tensor, "clone")(), "flatten")()
     res.scatter_reduce_(0, getattr(flat_idx, "flatten")(), getattr(updates, "flatten")(), reduce="amax", include_self=True)
-    return cast(EagerValue, res.reshape(getattr(tensor, "shape")))
+    return typing.cast(EagerValue, res.reshape(getattr(tensor, "shape")))
 
 
 def _execute_tensor_scatter_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -68,10 +68,10 @@ def _execute_tensor_scatter_min(*args: EagerValue, **kwargs: EagerValue) -> Eage
         args[1],
         args[2],
     )
-    flat_idx = sum(cast(EagerTensorProtocol, indices)[..., i] * getattr(tensor, "stride")(i) for i in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
+    flat_idx = sum(typing.cast(EagerTensorProtocol, indices)[..., i] * getattr(tensor, "stride")(i) for i in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res = getattr(getattr(tensor, "clone")(), "flatten")()
     res.scatter_reduce_(0, getattr(flat_idx, "flatten")(), getattr(updates, "flatten")(), reduce="amin", include_self=True)
-    return cast(EagerValue, res.reshape(getattr(tensor, "shape")))
+    return typing.cast(EagerValue, res.reshape(getattr(tensor, "shape")))
 
 
 def _execute_tensor_scatter_update(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -84,7 +84,7 @@ def _execute_tensor_scatter_update(*args: EagerValue, **kwargs: EagerValue) -> E
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(getattr(args[0], "clone")(), "index_put_")(tuple(getattr(args[1], "unbind")(-1)), args[2]))
+    return typing.cast(EagerValue, getattr(getattr(args[0], "clone")(), "index_put_")(tuple(getattr(args[1], "unbind")(-1)), args[2]))
 
 
 def _execute_tensor_scatter_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -97,7 +97,7 @@ def _execute_tensor_scatter_add(*args: EagerValue, **kwargs: EagerValue) -> Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(getattr(args[0], "clone")(), "index_put_")(tuple(getattr(args[1], "unbind")(-1)), args[2], accumulate=True))
+    return typing.cast(EagerValue, getattr(getattr(args[0], "clone")(), "index_put_")(tuple(getattr(args[1], "unbind")(-1)), args[2], accumulate=True))
 
 
 def _execute_power_iteration(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -115,7 +115,7 @@ def _execute_power_iteration(*args: EagerValue, **kwargs: EagerValue) -> EagerVa
     u = kwargs.get("u", None)
     if u is None:
         u = torch.ones(getattr(w, "shape")[:-2] + (getattr(w, "shape")[-2], 1), dtype=getattr(w, "dtype"), device=getattr(w, "device"))
-    for _ in range(cast("int", num_iters)):
+    for _ in range(typing.cast("int", num_iters)):
         w_t = getattr(w, "transpose")(-1, -2)
         v = getattr(torch, "matmul")(w_t, u)
         v = v / (torch.linalg.norm(v, dim=-2, keepdim=True) + 1e-12)
@@ -135,7 +135,7 @@ def _execute_broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(args[0], "expand")(kwargs["shape"]))
+    return typing.cast(EagerValue, getattr(args[0], "expand")(kwargs["shape"]))
 
 
 def _execute_one_hot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -161,10 +161,10 @@ def _execute_one_hot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     dtype_map = {"float32": torch.float32, "float64": torch.float64, "int32": torch.int32, "int64": torch.int64}
     res = getattr(res, "to")(getattr(dtype_map, "get")(dtype_str, torch.float32))
     if on_value != 1.0 or off_value != 0.0:
-        res = res * (cast(EagerTensorProtocol, on_value) - cast(EagerTensorProtocol, off_value)) + cast(EagerTensorProtocol, off_value)
+        res = res * (typing.cast(EagerTensorProtocol, on_value) - typing.cast(EagerTensorProtocol, off_value)) + typing.cast(EagerTensorProtocol, off_value)
     if axis != -1 and axis != res.ndim - 1:
         res = res.transpose(axis, res.ndim - 1)
-    return cast(EagerValue, res)
+    return typing.cast(EagerValue, res)
 
 
 def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -192,7 +192,7 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         dt = torch.float16
     else:
         dt = getattr(torch, dt_str, None)
-    return cast(EagerValue, getattr(tensor, "to")(dt))
+    return typing.cast(EagerValue, getattr(tensor, "to")(dt))
 
 
 def _execute_cummax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -205,7 +205,7 @@ def _execute_cummax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(torch, "cummax")(*args, **kwargs)[0])
+    return typing.cast(EagerValue, getattr(torch, "cummax")(*args, **kwargs)[0])
 
 
 def _execute_cummin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -218,7 +218,7 @@ def _execute_cummin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(torch, "cummin")(*args, **kwargs)[0])
+    return typing.cast(EagerValue, getattr(torch, "cummin")(*args, **kwargs)[0])
 
 
 def _execute_cumlogsumexp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -231,7 +231,7 @@ def _execute_cumlogsumexp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(torch, "logcumsumexp")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(torch, "logcumsumexp")(*args, **kwargs))
 
 
 def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -252,13 +252,13 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     # 1. If it's a NestedTensor
     if getattr(rt, "is_nested", False):
         # Nested tensors have a built-in to_padded_tensor
-        return cast(EagerValue, getattr(rt, "to_padded_tensor")(padding=default_value))
+        return typing.cast(EagerValue, getattr(rt, "to_padded_tensor")(padding=default_value))
 
     # 2. If it's a list of tensors (e.g., from unbind or raw input)
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], torch.Tensor):
         from torch.nn.utils.rnn import pad_sequence
 
-        return pad_sequence(list(rt), batch_first=True, padding_value=float(cast(float, default_value if default_value is not None else 0.0)))
+        return pad_sequence(list(rt), batch_first=True, padding_value=float(typing.cast(float, default_value if default_value is not None else 0.0)))
 
     # 3. If it's a dictionary or namedtuple with 'values' and 'row_splits' (standard ragged encoding)
     values = None
@@ -277,7 +277,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
 
         # Calculate padding
         dense_shape = [num_rows, max_len] + list(values.shape[1:])
-        dense_tensor = torch.full(dense_shape, float(cast(float, default_value if default_value is not None else 0.0)), dtype=values.dtype, device=values.device)
+        dense_tensor = torch.full(dense_shape, float(typing.cast(float, default_value if default_value is not None else 0.0)), dtype=values.dtype, device=values.device)
 
         for i in range(num_rows):
             start = int(row_splits[i].item())
@@ -291,7 +291,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     return rt
 
 
-def _get_custom_torch_op_map() -> dict[str, Callable[..., EagerValue]]:
+def _get_custom_torch_op_map() -> dict[str, TypedVariadicCallable[EagerValue]]:
     """Retrieve the custom torch op map property or mapping.
 
     Returns:
@@ -330,7 +330,7 @@ def _torch_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
             tuple[int, ...]: Result.
     """
     kwargs.setdefault("correction", kwargs.pop("ddof", 0))
-    return cast(EagerValue, getattr(torch, "var")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(torch, "var")(*args, **kwargs))
 
 
 def _torch_tensordot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -345,7 +345,7 @@ def _torch_tensordot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """
     if "axes" in kwargs:
         kwargs["dims"] = kwargs.pop("axes")
-    return cast(EagerValue, getattr(torch, "tensordot")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(torch, "tensordot")(*args, **kwargs))
 
 
 def _get_torch_reduce_op(op_type: str) -> EagerValue:
@@ -360,23 +360,23 @@ def _get_torch_reduce_op(op_type: str) -> EagerValue:
 
     op_type = op_type.lower()
     if op_type == "sum":
-        return cast(EagerValue, dist.ReduceOp.SUM)
+        return typing.cast(EagerValue, dist.ReduceOp.SUM)
     elif op_type == "prod":
-        return cast(EagerValue, dist.ReduceOp.PRODUCT)
+        return typing.cast(EagerValue, dist.ReduceOp.PRODUCT)
     elif op_type == "min":
-        return cast(EagerValue, dist.ReduceOp.MIN)
+        return typing.cast(EagerValue, dist.ReduceOp.MIN)
     elif op_type == "max":
-        return cast(EagerValue, dist.ReduceOp.MAX)
+        return typing.cast(EagerValue, dist.ReduceOp.MAX)
     elif op_type == "avg" or op_type == "mean":
-        return cast(EagerValue, dist.ReduceOp.AVG)
-    return cast(EagerValue, dist.ReduceOp.SUM)
+        return typing.cast(EagerValue, dist.ReduceOp.AVG)
+    return typing.cast(EagerValue, dist.ReduceOp.SUM)
 
 
-def _torch_all_gather(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tensor:
+def _torch_all_gather(*args: EagerValue, **kwargs: EagerValue) -> torch.Tensor:
     """Execute torch distributed AllGather.
 
     Args:
-        tensor (torch.Tensor): The input tensor.
+        *args (EagerValue): Positional args, first is input tensor.
         **kwargs (EagerValue): Additional args.
 
     Returns:
@@ -384,19 +384,20 @@ def _torch_all_gather(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tenso
     """
     import torch.distributed as dist
 
+    tensor = typing.cast(torch.Tensor, args[0])
     if not dist.is_initialized():
         return torch.stack([tensor])
     tensor_list = [torch.empty_like(tensor) for _ in range(dist.get_world_size())]
     dist.all_gather(tensor_list, tensor)
-    axis = kwargs.get("axis", 0)
+    axis = int(typing.cast(int, kwargs.get("axis", 0)))
     return torch.cat(tensor_list, dim=axis)
 
 
-def _torch_all_reduce(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tensor:
+def _torch_all_reduce(*args: EagerValue, **kwargs: EagerValue) -> torch.Tensor:
     """Execute torch distributed AllReduce.
 
     Args:
-        tensor (torch.Tensor): The input tensor.
+        *args (EagerValue): Positional args, first is input tensor.
         **kwargs (EagerValue): Additional args.
 
     Returns:
@@ -404,19 +405,20 @@ def _torch_all_reduce(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tenso
     """
     import torch.distributed as dist
 
+    tensor = typing.cast(torch.Tensor, args[0])
     if not dist.is_initialized():
         return tensor
     res = tensor.clone()
     op_type = kwargs.get("op_type", "sum")
-    dist.all_reduce(res, op=_get_torch_reduce_op(cast("str", op_type)))
+    dist.all_reduce(res, op=_get_torch_reduce_op(typing.cast("str", op_type)))
     return res
 
 
-def _torch_reduce_scatter(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tensor:
+def _torch_reduce_scatter(*args: EagerValue, **kwargs: EagerValue) -> torch.Tensor:
     """Execute torch distributed ReduceScatter.
 
     Args:
-        tensor (torch.Tensor): The input tensor.
+        *args (EagerValue): Positional args, first is input tensor.
         **kwargs (EagerValue): Additional args.
 
     Returns:
@@ -424,21 +426,22 @@ def _torch_reduce_scatter(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.T
     """
     import torch.distributed as dist
 
+    tensor = typing.cast(torch.Tensor, args[0])
     if not dist.is_initialized():
         return tensor
     op_type = kwargs.get("op_type", "sum")
-    axis = kwargs.get("axis", 0)
+    axis = int(typing.cast(int, kwargs.get("axis", 0)))
     tensor_list = list(getattr(torch, "tensor_split")(tensor, dist.get_world_size(), dim=axis))
     res = torch.empty_like(tensor_list[0])
-    dist.reduce_scatter(res, tensor_list, op=_get_torch_reduce_op(cast("str", op_type)))
+    dist.reduce_scatter(res, tensor_list, op=_get_torch_reduce_op(typing.cast("str", op_type)))
     return res
 
 
-def _torch_all_to_all(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tensor:
+def _torch_all_to_all(*args: EagerValue, **kwargs: EagerValue) -> torch.Tensor:
     """Execute torch distributed AllToAll.
 
     Args:
-        tensor (torch.Tensor): The input tensor.
+        *args (EagerValue): Positional args, first is input tensor.
         **kwargs (EagerValue): Additional args.
 
     Returns:
@@ -446,11 +449,12 @@ def _torch_all_to_all(tensor: torch.Tensor, **kwargs: EagerValue) -> torch.Tenso
     """
     import torch.distributed as dist
 
+    tensor = typing.cast(torch.Tensor, args[0])
     if not dist.is_initialized():
         return tensor
     # Assuming input is pre-split along axis 0
-    split_dim = kwargs.get("split_axis", 0)
-    concat_dim = kwargs.get("concat_axis", 0)
+    split_dim = int(typing.cast(int, kwargs.get("split_axis", 0)))
+    concat_dim = int(typing.cast(int, kwargs.get("concat_axis", 0)))
     input_tensor_list = list(getattr(torch, "tensor_split")(tensor, dist.get_world_size(), dim=split_dim))
     output_tensor_list = [torch.empty_like(input_tensor_list[0]) for _ in range(dist.get_world_size())]
     dist.all_to_all(output_tensor_list, input_tensor_list)
@@ -480,13 +484,13 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
 
         func = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
         if func:
-            return cast(Callable[..., EagerValue], func)(*args, **kwargs)
+            return typing.cast(TypedVariadicCallable[EagerValue], func)(*args, **kwargs)
     custom_op_map = _get_custom_torch_op_map()
     if op_type in custom_op_map:
         return custom_op_map[op_type](*args, **kwargs)
     try:
         func = getattr(torch, op_type.lower())
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast(EagerValue, func(*args, **kwargs))
     except AttributeError:
         from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -505,7 +509,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
                 func = getattr(mod, snake)
                 break
         if func is not None:
-            return cast(EagerValue, func(*args, **kwargs))
+            return typing.cast(EagerValue, func(*args, **kwargs))
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
         raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

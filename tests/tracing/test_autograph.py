@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, do_not_convert, set_loop_options
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -33,10 +33,10 @@ def test_do_not_convert() -> None:
         """
         return x + 1
 
-    assert cast("EagerCallableProtocol", dummy_func)(5) == 6
-    assert bool(cast("EagerTensorProtocol", getattr(dummy_func, "__wrapped__"))._autograph_do_not_convert) is True
+    assert typing.cast("EagerCallableProtocol", dummy_func)(5) == 6
+    assert bool(typing.cast("EagerTensorProtocol", getattr(dummy_func, "__wrapped__"))._autograph_do_not_convert) is True
 
-    @cast("EagerCallableProtocol", do_not_convert)()
+    @typing.cast("EagerCallableProtocol", do_not_convert)()
     def dummy_func2(x: int) -> int:
         """Test function dummy_func2.
 

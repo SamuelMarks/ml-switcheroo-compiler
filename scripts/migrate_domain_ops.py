@@ -3,12 +3,31 @@
 from __future__ import annotations
 
 import os
-from typing import cast
 
+import pydantic
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ops.config_models import DomainOperationsModel, OperationDefinitionModel
+
+
+class DomainOpMigrationSpec(pydantic.BaseModel):
+    """Pydantic model for declarative domain operation migration specs.
+
+    Attributes:
+        domain (str): Target domain identifier.
+        ops (list[str]): List of operation names in the domain.
+        inputs (list[str]): Default input tensor names.
+        is_binary (bool): Whether operations in the domain are binary.
+    """
+
+    model_config = pydantic.ConfigDict(extra="forbid")
+
+    domain: str
+    ops: list[str]
+    inputs: list[str] = pydantic.Field(default_factory=lambda: ["x"])
+    is_binary: bool = False
+
 
 BASE_DIR: str = "src/ml_switcheroo_compiler/ops/definitions"
 
@@ -330,16 +349,18 @@ def migrate_domain(filename: str, spec: dict[str, AttributeValue]) -> dict[str, 
     Returns:
         dict[str, AttributeValue]: Complete validated domain operations dictionary.
     """
-    domain: str = str(spec["domain"])
-    ops: list[str] = cast("list[str]", spec["ops"])
-    is_binary: bool = bool(spec.get("is_binary", False))
-    default_inputs: list[str] = cast("list[str]", spec.get("inputs", ["x"]))
+    parsed_spec = DomainOpMigrationSpec.model_validate(spec)
+    domain: str = parsed_spec.domain
+    ops: list[str] = parsed_spec.ops
+    is_binary: bool = parsed_spec.is_binary
+    default_inputs: list[str] = parsed_spec.inputs
 
     domain_dict: dict[str, AttributeValue] = {}
 
     for op in ops:
         base_data = _load_base_op(op)
-        variants = cast("dict[str, dict[str, str]]", base_data.get("variants", {}))
+        raw_variants = base_data.get("variants")
+        variants: dict[str, dict[str, AttributeValue]] = {str(k): dict(v) for k, v in raw_variants.items() if isinstance(v, dict)} if isinstance(raw_variants, dict) else {}
 
         # Enrich llvm_cpp scalar expression if known
         cpp_expr = CPP_SCALAR_EXPR.get(op) or CPP_SCALAR_EXPR.get(NAME_ALIASES.get(op, ""))

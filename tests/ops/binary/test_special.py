@@ -1,5 +1,7 @@
 """Tests for test_special."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.binary.special import Atan2, Divmod, Isclose
 
 

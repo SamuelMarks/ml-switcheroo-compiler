@@ -4,17 +4,18 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import yaml
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.hardware_config_models import HardwareTemplatesConfig
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -32,23 +33,23 @@ def test_msl_templates_consolidation() -> None:
     # Unary ops
     for op in ("abs", "cos", "exp", "gelu", "log", "neg", "relu", "sigmoid", "silu", "sin", "sqrt", "tanh"):
         assert op in templates
-        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
-        assert len(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "workgroup_size"))) == 3
+        assert "kernel void" in typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
+        assert len(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "workgroup_size"))) == 3
 
     # Binary ops
     for op in ("add", "sub", "mul", "div", "pow", "maximum", "minimum"):
         assert op in templates
-        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
+        assert "kernel void" in typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
 
     # Reductions
     for op in ("reducesum", "reducemean", "reducemax", "reducemin", "sum"):
         assert op in templates
-        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
+        assert "kernel void" in typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
 
     # Matrix multiplication and vision
     for op in ("matmul", "batchmatmul", "conv2d", "depthwise_conv2d", "maxpool2d", "avgpool2d", "multihead_attention"):
         assert op in templates
-        assert "kernel void" in cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
+        assert "kernel void" in typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")(op)), "body"))
 
 
 def test_metal_code_generator_comprehensive() -> None:
@@ -58,7 +59,7 @@ def test_metal_code_generator_comprehensive() -> None:
     n_add = IRNode(id="n_add", op_type="Add", inputs=["in_a", "in_b"], shape_metadata=[1024])
     n_relu = IRNode(id="n_relu", op_type="Relu", inputs=["n_add"], shape_metadata=[1024])
     n_conv = IRNode(id="n_conv", op_type="Conv2D", inputs=["n_relu"], shape_metadata=[1024])
-    graph.nodes = {"n_add": n_add, "n_relu": n_relu, "n_conv": n_conv}
+    graph.nodes = NodeDict({"n_add": n_add, "n_relu": n_relu, "n_conv": n_conv})
 
     gen = MetalCodeGenerator(graph)
     msl = gen.generate()
@@ -119,8 +120,8 @@ def test_metal_runner_ctypes_buffer_and_execution() -> None:
         in_b = np.array([4.0, 5.0, 6.0], dtype=np.float32)
         res = runner.execute_kernel("kernel_source", "add_kernel", in_a, in_b)
 
-        assert cast("EagerCallableProtocol", len)(res) == 3
-        assert cast("EagerCallableProtocol", np.allclose)(res, [10.0, 20.0, 30.0])
+        assert typing.cast("EagerCallableProtocol", len)(res) == 3
+        assert typing.cast("EagerCallableProtocol", np.allclose)(res, [10.0, 20.0, 30.0])
         assert mock_enc.dispatchThreads_threadsPerThreadgroup_.called
         assert mock_cmd.commit.called
         assert mock_cmd.waitUntilCompleted.called
@@ -197,7 +198,7 @@ def test_metal_generator_unsupported_op_error() -> None:
 
     g = IRGraph()
     bad_node = IRNode(id="n_bad", op_type="UnsupportedMetalOp", inputs=[])
-    g.nodes = {"n_bad": bad_node}
+    g.nodes = NodeDict({"n_bad": bad_node})
     gen = MetalCodeGenerator(g)
     with pytest.raises(BackendNotSupportedError, match="not supported by metal backend"):
         gen.generate()

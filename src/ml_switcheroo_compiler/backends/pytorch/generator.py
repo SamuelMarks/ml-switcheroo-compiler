@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Callable
-from typing import cast
+import typing
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -13,7 +12,7 @@ from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor  # noqa: F401
@@ -82,7 +81,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         Returns:
             str: The generated PyTorch code string.
         """
-        return super().visit(cast("LogicalNode", node), input_vars, **kwargs)
+        return super().visit(typing.cast("LogicalNode", node), input_vars, **kwargs)
 
     def visit_PowerIteration(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate PyTorch code for a power iteration operation.
@@ -245,7 +244,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         import torch
 
-        return cast(EagerValue, torch.load(filepath, weights_only=not allow_pickle))
+        return typing.cast(EagerValue, torch.load(filepath, weights_only=not allow_pickle))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -321,14 +320,14 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
                     if i < len(fn_args):
                         arg_val = fn_args[i]
                         inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-                evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
+                evaluated = evaluate_graph(graph, inputs=inputs)
                 if hasattr(graph, "outputs") and graph.outputs:
                     if len(graph.outputs) == 1:
-                        return cast(EagerValue, evaluated.get(graph.outputs[0]))
+                        return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return cast(EagerValue, evaluated)
+                return typing.cast(EagerValue, evaluated)
 
-        return GraphModule()
+        return typing.cast(EagerValue, GraphModule())
 
     def _wrap_pytorch_runner(self, compiled_fn: EagerValue, torch_mod: EagerValue) -> EagerValue:
         """Wrap a compiled or traced PyTorch callable to convert inputs via torch.as_tensor.
@@ -354,7 +353,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             """
             del w_kwargs
             pt_args = [getattr(torch_mod, "as_tensor")(a.data if isinstance(a, Tensor) else a) for a in w_args]
-            return cast(Callable[..., EagerValue], compiled_fn)(*pt_args)
+            return typing.cast(TypedVariadicCallable[EagerValue], compiled_fn)(*pt_args)
 
         return runner
 
@@ -386,7 +385,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
             if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)):
                 pt_samples = [torch.as_tensor(x) for x in sample_inputs]
-                traced = cast(Callable[..., EagerValue], getattr(torch.jit, "trace"))(mod, pt_samples)
+                traced = typing.cast(TypedVariadicCallable[EagerValue], getattr(torch.jit, "trace"))(mod, pt_samples)
                 return self._wrap_pytorch_runner(traced, torch)
 
             return mod

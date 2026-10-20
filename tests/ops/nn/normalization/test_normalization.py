@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.normalization import (
@@ -35,7 +36,7 @@ from ml_switcheroo_compiler.ops.normalization.basic import GroupMean, GroupNorm,
 from ml_switcheroo_compiler.ops.normalization.frontend import group_mean, group_variance, spectral_normalization
 from ml_switcheroo_compiler.ops.normalization.frontend import group_norm as frontend_group_norm
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -44,9 +45,9 @@ def test_normalization_coverage() -> None:
     config.eager_mode = True
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert cast("EagerCallableProtocol", GroupMean)().infer_shape(t) == (1, 2)
-    assert cast("EagerCallableProtocol", GroupVariance)().infer_shape(t) == (1, 2)
-    assert cast("EagerCallableProtocol", GroupNorm)().infer_shape(t) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", GroupMean)().infer_shape(t) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", GroupVariance)().infer_shape(t) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", GroupNorm)().infer_shape(t) == (1, 2)
 
     import sys
 
@@ -69,9 +70,9 @@ def test_normalization_coverage() -> None:
     orig_get_op = norm_frontend.get_op
     setattr(norm_frontend, "get_op", lambda x: DummyOp)
     try:
-        assert cast("EagerTensorProtocol", group_mean(t, 1)) == cast("EagerTensorProtocol", "normed")
-        assert cast("EagerTensorProtocol", group_variance(t, 1)) == cast("EagerTensorProtocol", "normed")
-        assert cast("EagerTensorProtocol", frontend_group_norm(t, 1)) == cast("EagerTensorProtocol", "normed")
+        assert typing.cast("EagerTensorProtocol", group_mean(t, 1)) == typing.cast("EagerTensorProtocol", "normed")
+        assert typing.cast("EagerTensorProtocol", group_variance(t, 1)) == typing.cast("EagerTensorProtocol", "normed")
+        assert typing.cast("EagerTensorProtocol", frontend_group_norm(t, 1)) == typing.cast("EagerTensorProtocol", "normed")
     finally:
         setattr(norm_frontend, "get_op", orig_get_op)
 
@@ -92,23 +93,23 @@ def test_tracing_normalization_ops() -> None:
 
     try:
         # Test normalize_moments tracing
-        mean, variance = cast("EagerCallableProtocol", normalize_moments)(t, t, t, t)
-        assert isinstance(mean, Tensor)
-        assert isinstance(variance, Tensor)
+        mean, variance = typing.cast("EagerCallableProtocol", normalize_moments)(t, t, t, t)
+        assert isinstance(typing.cast("EagerValue", mean), Tensor)
+        assert isinstance(typing.cast("EagerValue", variance), Tensor)
         assert mean.shape == (1, 2)
         assert variance.shape == (1, 2)
 
         # Test sufficient_statistics tracing
-        counts, mean_ss, variance_ss, shift = cast("EagerCallableProtocol", sufficient_statistics)(t, 1)
-        assert isinstance(counts, Tensor)
-        assert isinstance(mean_ss, Tensor)
-        assert isinstance(variance_ss, Tensor)
-        assert isinstance(shift, Tensor)
+        counts, mean_ss, variance_ss, shift = typing.cast("EagerCallableProtocol", sufficient_statistics)(t, 1)
+        assert isinstance(typing.cast("EagerValue", counts), Tensor)
+        assert isinstance(typing.cast("EagerValue", mean_ss), Tensor)
+        assert isinstance(typing.cast("EagerValue", variance_ss), Tensor)
+        assert isinstance(typing.cast("EagerValue", shift), Tensor)
 
         # Test weighted_moments tracing
-        w_mean, w_variance = cast("EagerTensorProtocol", cast("EagerCallableProtocol", weighted_moments)(t, 1, t))
-        assert isinstance(w_mean, Tensor)
-        assert isinstance(w_variance, Tensor)
+        w_mean, w_variance = typing.cast("EagerCallableProtocol", weighted_moments)(t, 1, t)
+        assert isinstance(typing.cast("EagerValue", w_mean), Tensor)
+        assert isinstance(typing.cast("EagerValue", w_variance), Tensor)
         assert w_mean.shape == (1, 2)
         assert w_variance.shape == (1, 2)
     finally:

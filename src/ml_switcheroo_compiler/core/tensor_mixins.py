@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
 from collections.abc import Callable, Iterator
-from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
     from .tensor import ArrayAtIndexer, Tensor
@@ -54,7 +54,7 @@ class TensorPropertiesMixin:
             if isinstance(s, str):
                 return None
             else:
-                prod *= int(cast(int, s))
+                prod *= int(typing.cast(int, s))
         return prod
 
     @property
@@ -64,7 +64,7 @@ class TensorPropertiesMixin:
         Returns:
             tuple[int, ...]: The shape tuple of the tensor.
         """
-        return cast("tuple[int, ...]", self._shape)
+        return typing.cast("tuple[int, ...]", self._shape)
 
     @property
     def dtype(self) -> DType:
@@ -103,7 +103,7 @@ class TensorPropertiesMixin:
         return self._data
 
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     _ConversionBase = TensorPropertiesMixin
 else:
     _ConversionBase = object
@@ -112,7 +112,7 @@ else:
 class TensorConversionMixin(_ConversionBase):
     """Tensor conversion mixin."""
 
-    if TYPE_CHECKING:
+    if typing.TYPE_CHECKING:
         eval: Callable[[], Tensor]
 
     def numpy(self) -> TensorOrScalar:
@@ -230,10 +230,10 @@ class TensorConversionMixin(_ConversionBase):
         for i in range(shape[0]):
             from .tensor import Tensor, TensorConfig
 
-            yield Tensor(cast(EagerTensorProtocol, arr)[i], TensorConfig(getattr(cast(EagerTensorProtocol, arr)[i], "shape", ()), self.dtype, self.device))
+            yield Tensor(typing.cast(EagerTensorProtocol, arr)[i], TensorConfig(getattr(typing.cast(EagerTensorProtocol, arr)[i], "shape", ()), self.dtype, self.device))
 
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     _IndexingBase = TensorConversionMixin
 else:
     _IndexingBase = object
@@ -262,7 +262,7 @@ class TensorIndexingMixin(_IndexingBase):
             key = tuple(getattr(k, "data", k) for k in key)
 
         try:
-            res = cast(EagerTensorProtocol, arr)[tuple(key) if isinstance(key, list) else key]
+            res = typing.cast(EagerTensorProtocol, arr)[tuple(key) if isinstance(key, list) else key]
             res_shape = getattr(res, "shape", ())
         except IndexError as e:
             if config.eager_mode:
@@ -307,7 +307,7 @@ class TensorIndexingMixin(_IndexingBase):
         """
         if config.eager_mode:
             val = getattr(value, "data", value)
-            cast(EagerTensorProtocol, self.data)[key] = val
+            typing.cast(EagerTensorProtocol, self.data)[key] = val
         else:
             msg = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."
             raise TypeError(msg)
@@ -321,4 +321,4 @@ class TensorIndexingMixin(_IndexingBase):
         """
         from .tensor import ArrayAtIndexer
 
-        return ArrayAtIndexer(cast("Tensor", self))
+        return ArrayAtIndexer(typing.cast("Tensor", self))

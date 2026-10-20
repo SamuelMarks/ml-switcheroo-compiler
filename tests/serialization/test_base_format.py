@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
@@ -23,7 +23,7 @@ def test_base_format() -> None:
             Args:
                 filepath: Test parameter `filepath`.
             """
-            return cast("dict[str, TensorLike]", cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(super(), "load")))(filepath))
+            return typing.cast("dict[str, TensorLike]", typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(super(), "load")))(filepath))
 
     class DummySaver(WeightSaver):
         """Test class DummySaver."""
@@ -35,10 +35,10 @@ def test_base_format() -> None:
                 weights_np: Test parameter `weights_np`.
                 filepath: Test parameter `filepath`.
             """
-            return cast("None", cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(super(), "save")))(weights_np, filepath))
+            return typing.cast("None", typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(super(), "save")))(weights_np, filepath))
 
     assert DummyLoader().load("dummy") is None
-    assert cast("EagerCallableProtocol", DummySaver)().save({}, "dummy") is None
+    assert typing.cast("EagerCallableProtocol", DummySaver)().save({}, "dummy") is None
 
 
 def test_base_format_coverage() -> None:
@@ -53,7 +53,7 @@ def test_base_format_coverage() -> None:
             Args:
                 filepath: Test parameter `filepath`.
             """
-            return cast("dict[str, TensorLike]", cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(super(), "load")))(filepath))
+            return typing.cast("dict[str, TensorLike]", typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(super(), "load")))(filepath))
 
     class DummySaver(WeightSaver):
         """Test class DummySaver."""
@@ -65,7 +65,7 @@ def test_base_format_coverage() -> None:
                 weights_np: Test parameter `weights_np`.
                 filepath: Test parameter `filepath`.
             """
-            return cast("None", cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(super(), "save")))(weights_np, filepath))
+            return typing.cast("None", typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(super(), "save")))(weights_np, filepath))
 
-    assert cast("EagerCallableProtocol", DummySaver)().save({}, "test.txt") is None
+    assert typing.cast("EagerCallableProtocol", DummySaver)().save({}, "test.txt") is None
     assert DummyLoader().load("test.txt") is None

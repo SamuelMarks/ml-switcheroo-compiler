@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.random_ops as ro
+from ml_switcheroo_compiler.backends.numpy.eager.random_ops import LookupTableProtocol, RandomDistributionConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -25,9 +26,9 @@ def test_random_ops_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t"):
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
             else:
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
         with pytest.raises(TypeError):
             op(*args_to_pass)
         try:
@@ -46,7 +47,7 @@ def test_missing_random_ops() -> None:
         minval = None
         maxval = None
 
-    ro._np_uniform(np, shape=(2,), dtype="float32", config=DummyConfig())
+    ro._np_uniform(np, shape=(2,), dtype="float32", config=typing.cast("RandomDistributionConfig", DummyConfig()))
     ro._np_stateless_split(np, seed=np.array(["test"]), num=2)
     ro._np_stateless_split(np, seed=np.array(["not_int", "other"]), num=2)
 
@@ -61,7 +62,7 @@ def test_missing_random_ops() -> None:
             """
             return keys
 
-    ro._np_lookup(np, DummyTable(), np.array([1, 2]))
+    ro._np_lookup(np, typing.cast("dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int", DummyTable()), np.array([1, 2]))
 
     class BadStr:
         """Test class BadStr."""

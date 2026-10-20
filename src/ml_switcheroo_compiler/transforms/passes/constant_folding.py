@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, EagerCallableProtocol, get_active_backend
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -61,8 +62,8 @@ def _evaluate_constant_node(
     outputs = evaluate_graph(subgraph, {}, backend=backend)
     val = outputs[node.id]
     if (hasattr(val, "size") and getattr(val, "size") == 1) or (hasattr(val, "numel") and getattr(val, "numel")() == 1):
-        if backend is not None and hasattr(backend, "item"):
-            val = backend.item(val)
+        if hasattr(backend, "item"):
+            val = getattr(backend, "item")(val)
         elif hasattr(val, "item"):
             val = getattr(val, "item")()
     return val
@@ -74,7 +75,7 @@ def _resolve_folding_backend() -> type | None:
     Returns:
         type | None: Backend class or None if unavailable.
     """
-    backend = get_active_backend()
+    backend: type | None = get_active_backend()
     if backend is None:
         try:
             backend = BackendRegistry.get("numpy")
@@ -108,9 +109,9 @@ def _try_fold_single_node(
     try:
         from ml_switcheroo_ir import AttributeValue
 
-        val = cast("EagerCallableProtocol", _evaluate_constant_node)(node, canonical_inputs, graph, backend)
+        val = typing.cast("EagerCallableProtocol", _evaluate_constant_node)(node, canonical_inputs, graph, backend)
         graph.nodes[node.id].op_type = "Constant"
-        graph.nodes[node.id].attributes = cast("dict[str, AttributeValue]", {"value": val})
+        graph.nodes[node.id].attributes = typing.cast("dict[str, AttributeValue]", {"value": val})
         graph.nodes[node.id].inputs = []
         return True
     except (ValueError, TypeError, RuntimeError) as e:
@@ -137,7 +138,7 @@ def _fold_nested_subgraphs(graph: IRGraph) -> bool:
         for sub in getattr(node, "subgraphs", {}).values():
             if isinstance(sub, LogicalGraph) and constant_folding_pass(sub):
                 modified = True
-        for attr_val in node.attributes.values():
+        for attr_val in typing.cast("dict[str, TensorOrScalar]", node.attributes).values():
             if isinstance(attr_val, LogicalGraph) and constant_folding_pass(attr_val):
                 modified = True
     return modified

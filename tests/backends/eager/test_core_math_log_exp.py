@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -16,8 +16,9 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_log_exp import (
     _slogdet,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -39,7 +40,7 @@ def _test_math_log_exp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             """
             return "expm1_val"
 
-    assert _expm1(Expm1Backend(), 1.0) == "expm1_val"
+    assert _expm1(typing.cast("BackendModuleProtocol", Expm1Backend()), 1.0) == "expm1_val"
 
     # Case B: backend lacks expm1 -> fallback to backend.exp(x) - 1.0
     class ExpBackend:
@@ -53,7 +54,7 @@ def _test_math_log_exp_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             """
             return 2.0
 
-    assert _expm1(ExpBackend(), 1.0) == 1.0
+    assert _expm1(typing.cast("BackendModuleProtocol", ExpBackend()), 1.0) == 1.0
 
     # 2. _float_power
     class FloatPowerBackend:
@@ -100,7 +101,7 @@ def _test_math_log_exp_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
     eb = EmptyBackend()
     assert _float_power(FloatPowerBackend(), 2.0, 3.0) == "float_power_val"
     assert _float_power(PowerBackend(), 2.0, 3.0) == "power_val"
-    assert _float_power(eb, 2.0, 3.0) is None
+    assert _float_power(typing.cast("BackendModuleProtocol", eb), 2.0, 3.0) is None
 
     # 3. _frexp and _ldexp
     class FrexpBackend:
@@ -125,10 +126,10 @@ def _test_math_log_exp_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             return "ldexp_val"
 
     fb = FrexpBackend()
-    assert _frexp(fb, 3.0) == "frexp_val"
-    assert _ldexp(fb, 0.75, 2) == "ldexp_val"
-    assert _frexp(eb, 8.0) == (0.5, 4)
-    assert _ldexp(eb, 0.5, 4) == 8.0
+    assert _frexp(typing.cast("BackendModuleProtocol", fb), 3.0) == "frexp_val"
+    assert _ldexp(typing.cast("BackendModuleProtocol", fb), 0.75, 2) == "ldexp_val"
+    assert _frexp(typing.cast("BackendModuleProtocol", eb), 8.0) == (0.5, 4)
+    assert _ldexp(typing.cast("BackendModuleProtocol", eb), 0.5, 4) == 8.0
     getattr(_state, "update")({"EmptyBackend": EmptyBackend, "FrexpBackend": FrexpBackend, "eb": eb, "fb": fb})
     _state.update(locals())
 
@@ -157,7 +158,7 @@ def _test_math_log_exp_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
 
         linalg = LinalgSlogdet()
 
-    assert _slogdet(BackendLinalg(), [[1, 2], [3, 4]]) == "linalg_slogdet"
+    assert _slogdet(typing.cast("BackendModuleProtocol", BackendLinalg()), [[1, 2], [3, 4]]) == "linalg_slogdet"
 
     # Case B: backend has slogdet on root
     class BackendRootSlogdet:
@@ -172,7 +173,7 @@ def _test_math_log_exp_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             """
             return "root_slogdet"
 
-    assert _slogdet(BackendRootSlogdet(), [[1, 2], [3, 4]]) == "root_slogdet"
+    assert _slogdet(typing.cast("BackendModuleProtocol", BackendRootSlogdet()), [[1, 2], [3, 4]]) == "root_slogdet"
     getattr(_state, "update")({"BackendLinalg": BackendLinalg, "BackendRootSlogdet": BackendRootSlogdet, "LinalgSlogdet": LinalgSlogdet})
     _state.update(locals())
 
@@ -219,7 +220,7 @@ def _test_math_log_exp_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -
             """
             return np.asarray(x)
 
-    assert _slogdet(BackendProxyLinalg(), [[1, 0], [0, 1]]) == "fallback_slogdet_arr"
+    assert _slogdet(typing.cast("BackendModuleProtocol", BackendProxyLinalg()), [[1, 0], [0, 1]]) == "fallback_slogdet_arr"
     getattr(_state, "update")({"BackendProxyLinalg": BackendProxyLinalg, "LinalgProxy": LinalgProxy})
     _state.update(locals())
 
@@ -244,12 +245,12 @@ def _test_math_log_exp_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -
             """
             return "xlog1py_val"
 
-    assert _np_xlog1py(Xlog1pyBackend(), 1.0, 2.0) == "xlog1py_val"
+    assert _np_xlog1py(typing.cast("BackendModuleProtocol", Xlog1pyBackend()), 1.0, 2.0) == "xlog1py_val"
 
     # Case B: fallback to numpy
     res_xlog1py = _np_xlog1py(eb, np.array([0.0, 2.0]), np.array([1.0, 1.0]))
-    assert cast("EagerTensorProtocol", getattr(res_xlog1py, "__getitem__")(0)) == 0.0
-    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(res_xlog1py, "__getitem__")(1)), 2.0 * cast("EagerCallableProtocol", np.log1p)(1.0))
+    assert typing.cast("EagerTensorProtocol", getattr(res_xlog1py, "__getitem__")(0)) == 0.0
+    assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerTensorProtocol", getattr(res_xlog1py, "__getitem__")(1)), 2.0 * typing.cast("EagerCallableProtocol", np.log1p)(1.0))
 
     # 6. _np_xlogy
     # Case A: backend has xlogy
@@ -265,12 +266,12 @@ def _test_math_log_exp_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -
             """
             return "xlogy_val"
 
-    assert _np_xlogy(XlogyBackend(), 1.0, 2.0) == "xlogy_val"
+    assert _np_xlogy(typing.cast("BackendModuleProtocol", XlogyBackend()), 1.0, 2.0) == "xlogy_val"
 
     # Case B: fallback to numpy
     res_xlogy = _np_xlogy(eb, np.array([0.0, 2.0]), np.array([1.0, 2.0]))
-    assert cast("EagerTensorProtocol", getattr(res_xlogy, "__getitem__")(0)) == 0.0
-    assert cast("EagerCallableProtocol", np.isclose)(cast("EagerTensorProtocol", getattr(res_xlogy, "__getitem__")(1)), 2.0 * cast("EagerCallableProtocol", np.log)(2.0))
+    assert typing.cast("EagerTensorProtocol", getattr(res_xlogy, "__getitem__")(0)) == 0.0
+    assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerTensorProtocol", getattr(res_xlogy, "__getitem__")(1)), 2.0 * typing.cast("EagerCallableProtocol", np.log)(2.0))
 
     # Registry verification
     for name in ["Expm1", "FloatPower", "Frexp", "Ldexp", "Slogdet", "Xlog1py", "Xlogy"]:

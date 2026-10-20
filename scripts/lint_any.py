@@ -1,4 +1,4 @@
-"""AST-based linter to detect Any, object annotations, and disguised Any aliases in src/."""
+"""AST-based linter to detect Any, object annotations, disguised Any aliases, and stringified Any/object casts across src/, scripts/, and tests/."""
 
 from __future__ import annotations
 
@@ -6,6 +6,13 @@ import argparse
 import ast
 import os
 import sys
+import typing
+
+DEFAULT_TARGET_DIRS: tuple[str, ...] = (
+    "src/ml_switcheroo_compiler",
+    "scripts",
+    "tests",
+)
 
 
 def _annotation_contains_any_or_object(node: ast.AST | None) -> list[str]:
@@ -55,8 +62,31 @@ def _check_function_annotations(file_path: str, node: ast.FunctionDef | ast.Asyn
     return violations
 
 
+def _check_cast_call(file_path: str, node: ast.Call) -> list[str]:
+    """Inspect a typing.cast(...) call for prohibited Any/object string-literal casts.
+
+    Args:
+        file_path (str): Source file path.
+        node (ast.Call): Call AST node.
+
+    Returns:
+        list[str]: Violations found in cast target type.
+    """
+    is_cast = (isinstance(node.func, ast.Name) and node.func.id == "cast") or (isinstance(node.func, ast.Attribute) and node.func.attr == "cast")
+    if not is_cast or not node.args:
+        return []
+    first_arg = node.args[0]
+    if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
+        try:
+            parsed = ast.parse(first_arg.value, mode="eval")
+        except SyntaxError:
+            return []
+        return [f"{file_path}:{node.lineno}: prohibited string-literal cast '{hit}'" for hit in _annotation_contains_any_or_object(parsed)]
+    return [f"{file_path}:{node.lineno}: prohibited cast '{hit}'" for hit in _annotation_contains_any_or_object(first_arg)]
+
+
 def scan_file_for_any(file_path: str) -> list[str]:
-    """Scan a single Python source file for Any imports, annotations, or disguised aliases.
+    """Scan a single Python source file for Any imports, annotations, disguised aliases, or prohibited casts.
 
     Args:
         file_path (str): Path to the Python file to scan.
@@ -74,7 +104,7 @@ def scan_file_for_any(file_path: str) -> list[str]:
 
     violations: list[str] = []
     norm_parts = os.path.normpath(file_path).split(os.sep)
-    is_outside_backends = "ml_switcheroo_compiler" in norm_parts and "backends" not in norm_parts
+    is_outside_backends = "ml_switcheroo_compiler" in norm_parts and "backends" not in norm_parts and "tests" not in norm_parts
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
@@ -87,6 +117,8 @@ def scan_file_for_any(file_path: str) -> list[str]:
             violations.extend(_check_function_annotations(file_path, node))
         elif isinstance(node, ast.AnnAssign):
             violations.extend(f"{file_path}:{node.lineno}: prohibited variable annotation '{hit}'" for hit in _annotation_contains_any_or_object(node.annotation))
+        elif isinstance(node, ast.Call):
+            violations.extend(_check_cast_call(file_path, node))
         elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "typing" and node.attr == "Any":
             violations.append(f"{file_path}:{node.lineno}: prohibited usage 'typing.Any'")
 
@@ -114,21 +146,24 @@ def scan_directory_for_any(target_dir: str = "src/ml_switcheroo_compiler") -> li
     return all_violations
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Execute the AST-based Any/object linter CLI.
+def main(argv: typing.Sequence[str] | None = None) -> int:
+    """Execute the AST-based Any/object linter CLI across src/, scripts/, and tests/.
 
     Args:
-        argv (list[str] | None): Optional CLI arguments. Defaults to sys.argv[1:].
+        argv (typing.Sequence[str] | None): Optional CLI arguments. Defaults to sys.argv[1:].
 
     Returns:
         int: Process exit code (0 on pass, 1 when violations exceed max-count).
     """
     parser = argparse.ArgumentParser(description="Lint Python ASTs for Any and object annotations.")
     parser.add_argument("--max-count", type=int, default=0, help="Maximum allowed Any/object occurrences.")
-    parser.add_argument("--target-dir", type=str, default="src/ml_switcheroo_compiler", help="Target directory to scan.")
-    args = parser.parse_args(argv)
+    parser.add_argument("--target-dir", type=str, default=None, help="Optional single target directory to scan.")
+    args = parser.parse_args(list(argv) if argv is not None else None)
 
-    violations: list[str] = scan_directory_for_any(args.target_dir)
+    dirs_to_scan: tuple[str, ...] = (args.target_dir,) if args.target_dir is not None else DEFAULT_TARGET_DIRS
+    violations: list[str] = []
+    for target_dir in dirs_to_scan:
+        violations.extend(scan_directory_for_any(target_dir))
     count: int = len(violations)
 
     if count > args.max_count:

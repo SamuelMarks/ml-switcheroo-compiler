@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import cast
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -30,7 +30,7 @@ def _emit_signal_node(
     Returns:
         Tensor: Symbolic `Tensor` wrapping the emitted `LogicalNode`.
     """
-    return cast(Tensor, _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype]))
+    return typing.cast(Tensor, _emit_linalg_node(op_type, inputs, attrs, [out_shape], [dtype]))
 
 
 def _calculate_padding(mode: str, boundary: str, fillvalue: float) -> dict[str, str | float]:

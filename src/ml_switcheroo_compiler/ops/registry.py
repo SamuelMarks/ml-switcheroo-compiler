@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable
-from typing import TypeVar
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ops.base import OpDef
 
 _REGISTRY: dict[str, type[OpDef]] = {}
 _YAML_REGISTRY: dict[str, dict[str, dict[str, dict[str, str]]]] = {}
-_UTIL_REGISTRY: dict[str, Callable[..., TensorOrScalar]] = {}
+_UTIL_REGISTRY: dict[str, TypedVariadicCallable[TensorOrScalar]] = {}
 
 
 def _load_yaml_registry(force: bool = False) -> None:
@@ -58,7 +58,7 @@ def register_op(name: str) -> Callable[[type], type]:
     return decorator
 
 
-F = TypeVar("F", bound=Callable[..., TensorOrScalar])
+F = typing.TypeVar("F", bound=CallableObjectProtocol)
 
 
 def register_util(name: str) -> Callable[[F], F]:
@@ -80,20 +80,20 @@ def register_util(name: str) -> Callable[[F], F]:
         Returns:
             F: The registered function.
         """
-        _UTIL_REGISTRY[name] = func
+        _UTIL_REGISTRY[name] = typing.cast(TypedVariadicCallable[TensorOrScalar], func)
         return func
 
     return decorator
 
 
-def get_util(name: str) -> Callable[..., TensorOrScalar]:
+def get_util(name: str) -> TypedVariadicCallable[TensorOrScalar]:
     """Retrieve a registered utility function by name.
 
     Args:
         name (str): Identifier of the utility function.
 
     Returns:
-        Callable[..., TensorOrScalar]: Registered utility callable.
+        TypedVariadicCallable[TensorOrScalar]: Registered utility callable.
 
     Raises:
         KeyError: If the utility function is not registered.
@@ -308,7 +308,7 @@ class _RegistryShimFix(_RegistryShim):
             return None
         variants = op.get("variants", {})
         backend = variants.get(prefix, {})
-        return backend.get("eager")
+        return backend.get("eager") or backend.get("generator") or backend.get("target_api")
 
     def get_op(self, op_name: str) -> dict[str, dict[str, dict[str, str]]] | None:
         """Retrieve raw operation entry from the registry.

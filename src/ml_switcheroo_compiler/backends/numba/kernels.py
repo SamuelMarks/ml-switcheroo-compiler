@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
@@ -15,7 +15,7 @@ def _resolve_dense_backend() -> EagerValue:
     """
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-    return cast(EagerValue, BackendRegistry.get("numpy").get_module())
+    return typing.cast(EagerValue, BackendRegistry.get("numpy").get_module())
 
 
 def asarray(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
@@ -30,8 +30,8 @@ def asarray(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     """
     backend = _resolve_dense_backend()
     if dtype is not None:
-        return cast(EagerValue, getattr(backend, "asarray")(data, dtype=dtype))
-    return cast(EagerValue, getattr(backend, "asarray")(data))
+        return typing.cast(EagerValue, getattr(backend, "asarray")(data, dtype=dtype))
+    return typing.cast(EagerValue, getattr(backend, "asarray")(data))
 
 
 def array(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
@@ -46,8 +46,8 @@ def array(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     """
     backend = _resolve_dense_backend()
     if dtype is not None:
-        return cast(EagerValue, getattr(backend, "array")(data, dtype=dtype))
-    return cast(EagerValue, getattr(backend, "array")(data))
+        return typing.cast(EagerValue, getattr(backend, "array")(data, dtype=dtype))
+    return typing.cast(EagerValue, getattr(backend, "array")(data))
 
 
 def zeros(shape: tuple[int, ...] | int, dtype: EagerValue = "float32") -> EagerValue:
@@ -61,7 +61,7 @@ def zeros(shape: tuple[int, ...] | int, dtype: EagerValue = "float32") -> EagerV
         EagerValue: Zero-initialized array buffer.
     """
     backend = _resolve_dense_backend()
-    return cast(EagerValue, getattr(backend, "zeros")(shape, dtype=dtype))
+    return typing.cast(EagerValue, getattr(backend, "zeros")(shape, dtype=dtype))
 
 
 def zeros_like(arr: EagerValue) -> EagerValue:
@@ -74,7 +74,7 @@ def zeros_like(arr: EagerValue) -> EagerValue:
         EagerValue: Zero-initialized array buffer.
     """
     backend = _resolve_dense_backend()
-    return cast(EagerValue, getattr(backend, "zeros_like")(arr))
+    return typing.cast(EagerValue, getattr(backend, "zeros_like")(arr))
 
 
 def add(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -88,7 +88,7 @@ def add(a: EagerValue, b: EagerValue) -> EagerValue:
         EagerValue: Elementwise sum.
     """
     backend = _resolve_dense_backend()
-    return cast(EagerValue, getattr(backend, "add")(a, b))
+    return typing.cast(EagerValue, getattr(backend, "add")(a, b))
 
 
 def __getattr__(name: str) -> EagerValue:
@@ -105,5 +105,5 @@ def __getattr__(name: str) -> EagerValue:
     """
     backend = _resolve_dense_backend()
     if hasattr(backend, name):
-        return cast(EagerValue, getattr(backend, name))
+        return typing.cast(EagerValue, getattr(backend, name))
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

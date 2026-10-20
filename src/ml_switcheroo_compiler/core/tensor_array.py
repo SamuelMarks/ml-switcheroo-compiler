@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
-from typing import cast
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -43,7 +43,7 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = int(cast(int, get_active_backend().asarray(index.data)))
+            idx = int(typing.cast(int, get_active_backend().asarray(index.data)))
             val = self._data[idx]
             if val is None:
                 val = get_active_backend().execute_op("Zeros", self.element_shape)
@@ -74,7 +74,7 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = int(cast(int, get_active_backend().asarray(index.data)))
+            idx = int(typing.cast(int, get_active_backend().asarray(index.data)))
             self._data[idx] = value.data
             return self
 

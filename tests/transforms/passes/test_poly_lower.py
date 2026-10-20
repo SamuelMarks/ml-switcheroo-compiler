@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.poly_lower import polyfill_lowering_pass
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -76,7 +78,7 @@ def test_rest_poly_lowering() -> None:
     n_dil = IRNode(id="dil", op_type="Dilation2d", inputs=[], attributes={})
     n_ero = IRNode(id="ero", op_type="Erosion2d", inputs=[], attributes={})
 
-    g.nodes = {"iso": n_iso, "ct": n_ct, "dwf": n_dwf, "dwi": n_dwi, "dil": n_dil, "ero": n_ero}
+    g.nodes = NodeDict({"iso": n_iso, "ct": n_ct, "dwf": n_dwf, "dwi": n_dwi, "dil": n_dil, "ero": n_ero})
 
     modified = polyfill_lowering_pass(g)
     assert modified
@@ -123,7 +125,7 @@ def test_poly_lower_edge_rules(monkeypatch: EagerTensorProtocol) -> None:
     n1 = IRNode(id="n1", op_type="CustomPythonMissing", inputs=[])
     n2 = IRNode(id="n2", op_type="CustomUnknownType", inputs=[])
     n3 = IRNode(id="n3", op_type="CustomRewriteNoAttrs", inputs=[])
-    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    g.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3})
 
     modified = poly_lower.polyfill_lowering_pass(g)
     assert modified

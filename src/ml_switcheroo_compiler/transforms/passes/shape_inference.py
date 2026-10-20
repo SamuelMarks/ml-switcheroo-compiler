@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import typing
-from typing import cast
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 
@@ -118,14 +117,10 @@ def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[Attribut
     if raw_shape is None:
         return None
     if isinstance(raw_shape, (list, tuple)):
-        from ml_switcheroo_compiler.ops.shape_inference import S
-
         if any(isinstance(x, str) for x in raw_shape):
             return None
         try:
-            from typing import cast
-
-            return cast("tuple[int, ...]", tuple(int(x) if isinstance(x, (int, float, str)) and not isinstance(x, S) else x for x in raw_shape))
+            return typing.cast("tuple[int, ...]", tuple(x if hasattr(x, "name") else int(typing.cast(int, x)) for x in raw_shape))
         except (ValueError, TypeError):
             return None
     return None
@@ -145,7 +140,7 @@ def _infer_input_shape(
         tuple[int, ...] | None: Normalized shape.
     """
     del shapes
-    return cast("tuple[int, ...] | None", cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
+    return typing.cast("tuple[int, ...] | None", typing.cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
 
 
 _SPECIAL_OP_HANDLERS: dict[
@@ -177,10 +172,10 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     try:
         return _infer_op_shape(node, shapes)
     except (KeyError, AttributeError):
-        return cast("tuple[int, ...] | None", cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
+        return typing.cast("tuple[int, ...] | None", typing.cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
     except ValueError as e:
         if "Operation" in str(e) and "not found" in str(e):
-            return cast("tuple[int, ...] | None", cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
+            return typing.cast("tuple[int, ...] | None", typing.cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
     except (TypeError, Exception) as e:
@@ -240,13 +235,13 @@ def _apply_inferred_shape(node: IRNode, out_shape: tuple[int, ...]) -> bool:
 
     modified = False
     if node.shape_metadata != out_shape:
-        node.shape_metadata = out_shape
+        object.__setattr__(node, "shape_metadata", out_shape)
         modified = True
     strides = compute_contiguous_strides(out_shape)
     node.attributes["strides"] = strides
     try:
-        setattr(node, "strides", strides)
-    except AttributeError:
+        object.__setattr__(node, "strides", strides)
+    except (AttributeError, TypeError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return modified
 
@@ -323,7 +318,7 @@ def record_runtime_observation(
     node.shape_metadata = norm_shape
 
     if not hasattr(graph, "annotations") or not isinstance(getattr(graph, "annotations", None), dict):
-        setattr(graph, "annotations", {})
+        object.__setattr__(graph, "annotations", {})
 
     history: list[dict[str, str | tuple[int, ...]]] = getattr(graph, "annotations").setdefault("learned_shapes_history", [])
     history.append(
@@ -367,7 +362,7 @@ def annotate_learned_shapes(
                 modified = True
 
     if not hasattr(graph, "annotations") or not isinstance(getattr(graph, "annotations", None), dict):
-        setattr(graph, "annotations", {})
+        object.__setattr__(graph, "annotations", {})
     getattr(graph, "annotations")["convergence_converged"] = True
 
     if modified:

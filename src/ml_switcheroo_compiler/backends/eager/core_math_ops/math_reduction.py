@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import builtins  # noqa: F401
 import typing  # noqa: F401
-from types import ModuleType
-from typing import Callable, Optional, Protocol, Union, cast  # noqa: F401
+from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -13,12 +12,13 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
     global_eager_registry,
 )
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 from .math_nn import _global_adaptive_pool
 
 
 @global_eager_registry.register("Psum")
-def _psum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _psum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager psum operation on the active backend array.
 
     Args:
@@ -29,11 +29,11 @@ def _psum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).array(args[0]))
+    return backend_module.array(args[0])
 
 
 @global_eager_registry.register("ReduceSum")
-def _reduce_sum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate reduce sum.
 
     Args:
@@ -47,12 +47,12 @@ def _reduce_sum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
     if hasattr(backend_module, "sum"):
-        return cast(EagerValue, cast(ModuleType, backend_module).sum(args[0], axis=axis, keepdims=keepdims))
+        return backend_module.sum(args[0], axis=axis, keepdims=keepdims)
     return args[0]
 
 
 @global_eager_registry.register("ReduceMean")
-def _reduce_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_mean(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate reduce mean.
 
     Args:
@@ -66,12 +66,12 @@ def _reduce_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
     if hasattr(backend_module, "mean"):
-        return cast(EagerValue, cast(ModuleType, backend_module).mean(args[0], axis=axis, keepdims=keepdims))
+        return backend_module.mean(args[0], axis=axis, keepdims=keepdims)
     return args[0]
 
 
 @global_eager_registry.register("ReduceProd")
-def _reduce_prod(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_prod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate reduce product.
 
     Args:
@@ -85,12 +85,12 @@ def _reduce_prod(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
     if hasattr(backend_module, "prod"):
-        return cast(EagerValue, cast(ModuleType, backend_module).prod(args[0], axis=axis, keepdims=keepdims))
+        return backend_module.prod(args[0], axis=axis, keepdims=keepdims)
     return args[0]
 
 
 @global_eager_registry.register("ReduceMax")
-def _reduce_max(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_max(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate reduce max.
 
     Args:
@@ -104,12 +104,12 @@ def _reduce_max(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
     if hasattr(backend_module, "max"):
-        return cast(EagerValue, cast(ModuleType, backend_module).max(args[0], axis=axis, keepdims=keepdims))
+        return backend_module.max(args[0], axis=axis, keepdims=keepdims)
     return args[0]
 
 
 @global_eager_registry.register("ReduceMin")
-def _reduce_min(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _reduce_min(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate reduce min.
 
     Args:
@@ -123,12 +123,12 @@ def _reduce_min(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     axis = kwargs.get("axis", None)
     keepdims = kwargs.get("keepdims", False)
     if hasattr(backend_module, "min"):
-        return cast(EagerValue, cast(ModuleType, backend_module).min(args[0], axis=axis, keepdims=keepdims))
+        return backend_module.min(args[0], axis=axis, keepdims=keepdims)
     return args[0]
 
 
 @global_eager_registry.register("Norm")
-def _norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate Frobenius or Euclidean norm.
 
     Args:
@@ -139,14 +139,14 @@ def _norm(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     Returns:
         EagerValue: Norm result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     if hasattr(backend_module, "linalg") and hasattr(mod.linalg, "norm"):
-        return cast(EagerValue, mod.linalg.norm(*args, **kwargs))
-    return cast(EagerValue, mod.sqrt(mod.sum(cast(EagerTensorProtocol, args[0]) ** 2)))
+        return mod.linalg.norm(*args, **kwargs)
+    return mod.sqrt(mod.sum(typing.cast(EagerTensorProtocol, args[0]) ** 2))
 
 
 @global_eager_registry.register("Numel")
-def _numel(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _numel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate numel (total number of elements).
 
     Args:
@@ -160,14 +160,14 @@ def _numel(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     del kwargs
     x = args[0]
     if hasattr(x, "size"):
-        return float(cast(EagerTensorProtocol, x).size)
+        return float(typing.cast(EagerTensorProtocol, x).size)
     if hasattr(x, "numel"):
-        return float(cast(ModuleType, x).numel())
+        return float(typing.cast(BackendModuleProtocol, x).numel())
     return float(_resolve_eager_mod(backend_module).asarray(x).size)
 
 
 @global_eager_registry.register("Pmean")
-def _pmean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _pmean(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager pmean operation on the active backend array.
 
     Args:
@@ -178,11 +178,11 @@ def _pmean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).array(args[0]))
+    return backend_module.array(args[0])
 
 
 @global_eager_registry.register("BroadcastReduce")
-def _broadcast_reduce(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _broadcast_reduce(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Reduce cotangent tensor along dimensions that were broadcast relative to target.
 
     Args:
@@ -196,7 +196,7 @@ def _broadcast_reduce(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     del kwargs
     if len(args) < 2:
         return args[0] if args else None
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     cot = args[0]
     tgt = args[1]
     cot_shape = getattr(cot, "shape", ())
@@ -217,7 +217,7 @@ def _broadcast_reduce(backend_module: EagerValue, *args: EagerValue, **kwargs: E
 
 
 @global_eager_registry.register("BroadcastLike")
-def _broadcast_like(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _broadcast_like(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Broadcast source tensor to match the shape of target tensor.
 
     Args:
@@ -237,12 +237,12 @@ def _broadcast_like(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
     if getattr(src, "shape", ()) == tgt_shape:
         return src
     if hasattr(backend_module, "broadcast_to"):
-        return cast(EagerValue, cast(ModuleType, backend_module).broadcast_to(src, tgt_shape))
+        return backend_module.broadcast_to(src, tgt_shape)
     return src
 
 
 @global_eager_registry.register("SegmentSum")
-def _segment_sum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _segment_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager segment sum operation on the active backend array.
 
     Args:
@@ -253,7 +253,7 @@ def _segment_sum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     if len(args) < 2:
         return mod.asarray(args[0]) if args else None
     data: EagerTensorProtocol = mod.asarray(args[0])
@@ -262,10 +262,10 @@ def _segment_sum(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
     out = mod.zeros((num_segments,) + data.shape[1:], dtype=data.dtype)
     mod.add.at(out, segment_ids, data)
-    return cast(EagerValue, mod.asarray(out))
+    return mod.asarray(out)
 
 
-def _apply_softmax(backend_module: EagerValue, scores: EagerValue) -> EagerValue:
+def _apply_softmax(backend_module: BackendModuleProtocol, scores: EagerValue) -> EagerValue:
     """Apply softmax to attention scores.
 
     Args:
@@ -275,19 +275,19 @@ def _apply_softmax(backend_module: EagerValue, scores: EagerValue) -> EagerValue
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     if hasattr(backend_module, "softmax"):
-        return cast(EagerValue, mod.softmax(scores, axis=-1))
+        return mod.softmax(scores, axis=-1)
     if hasattr(backend_module, "nn") and hasattr(mod.nn, "softmax"):
-        return cast(EagerValue, mod.nn.softmax(scores, axis=-1))
+        return mod.nn.softmax(scores, axis=-1)
     if hasattr(backend_module, "exp") and hasattr(backend_module, "sum") and hasattr(backend_module, "max"):
-        exps: EagerTensorProtocol = mod.exp(cast(EagerTensorProtocol, scores) - mod.max(scores, axis=-1, keepdims=True))
-        return cast(EagerValue, exps / mod.sum(exps, axis=-1, keepdims=True))
+        exps: EagerTensorProtocol = mod.exp(typing.cast(EagerTensorProtocol, scores) - mod.max(scores, axis=-1, keepdims=True))
+        return exps / mod.sum(exps, axis=-1, keepdims=True)
     return scores
 
 
 @global_eager_registry.register("Fmax")
-def _fmax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fmax operation on the active backend array.
 
     Args:
@@ -303,7 +303,7 @@ def _fmax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 
 @global_eager_registry.register("Fmin")
-def _fmin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fmin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fmin operation on the active backend array.
 
     Args:
@@ -319,7 +319,7 @@ def _fmin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 
 @global_eager_registry.register("AdaptiveMaxPool2D")
-def _adaptive_max_pool2d(backend_module: EagerValue, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_max_pool2d(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager adaptive max pool2d operation on the active backend array.
 
     Args:
@@ -335,7 +335,7 @@ def _adaptive_max_pool2d(backend_module: EagerValue, operand: EagerValue, output
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D")
-def _adaptive_max_pool3d(backend_module: EagerValue, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_max_pool3d(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager adaptive max pool3d operation on the active backend array.
 
     Args:
@@ -351,7 +351,7 @@ def _adaptive_max_pool3d(backend_module: EagerValue, operand: EagerValue, output
 
 
 @global_eager_registry.register("AdaptiveMaxPool3D_Indices")
-def _adaptive_max_pool3d_indices(backend_module: EagerValue, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_max_pool3d_indices(backend_module: BackendModuleProtocol, operand: EagerValue, output_size: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager adaptive max pool3d indices operation on the active backend array.
 
     Args:
@@ -368,7 +368,7 @@ def _adaptive_max_pool3d_indices(backend_module: EagerValue, operand: EagerValue
 
 
 @global_eager_registry.register("AdaptiveLogSoftmaxWithLoss")
-def _adaptive_log_softmax_with_loss(backend_module: EagerValue, input: EagerValue, target: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _adaptive_log_softmax_with_loss(backend_module: BackendModuleProtocol, input: EagerValue, target: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager adaptive log softmax with loss operation on the active backend array.
 
     Args:
@@ -381,12 +381,12 @@ def _adaptive_log_softmax_with_loss(backend_module: EagerValue, input: EagerValu
     Returns:
             EagerValue: Result.
     """
-    loss = cast(ModuleType, backend_module).zeros((), dtype=getattr(target, "dtype", None)) if hasattr(backend_module, "zeros") else 0.0
+    loss = backend_module.zeros((), dtype=getattr(target, "dtype", None)) if hasattr(backend_module, "zeros") else 0.0
     return (target, loss)
 
 
 @global_eager_registry.register("HouseholderProduct")
-def _householder_product(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _householder_product(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager householder product operation on the active backend array.
 
     Args:
@@ -397,12 +397,12 @@ def _householder_product(backend_module: EagerValue, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "householder_product"):
-        return cast(EagerValue, func.householder_product(*args, **kwargs))
+        return typing.cast("EagerValue", func.householder_product(*args, **kwargs))
     if hasattr(backend_module, "householder_product"):
-        return cast(EagerValue, mod.householder_product(*args, **kwargs))
+        return mod.householder_product(*args, **kwargs)
 
     v, tau = mod.asarray(args[0]), mod.asarray(args[1])
     m, n = v.shape[-2:]
@@ -425,11 +425,11 @@ def _householder_product(backend_module: EagerValue, *args: EagerValue, **kwargs
         h_i = identity - tau_i * (v_i_expanded @ v_i_h)
         q = q @ h_i
 
-    return cast(EagerValue, q[..., :n])
+    return q[..., :n]
 
 
 @global_eager_registry.register("Cummax")
-def _cummax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager cummax operation on the active backend array.
 
     Args:
@@ -440,16 +440,16 @@ def _cummax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "maximum", None)
     if func and hasattr(func, "accumulate"):
-        return cast(EagerValue, func.accumulate(*args, **kwargs))
+        return typing.cast("EagerValue", func.accumulate(*args, **kwargs))
 
-    return cast(EagerValue, mod.maximum.accumulate(mod.asarray(args[0]), **kwargs))
+    return mod.maximum.accumulate(mod.asarray(args[0]), **kwargs)
 
 
 @global_eager_registry.register("Cummin")
-def _cummin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager cummin operation on the active backend array.
 
     Args:
@@ -460,16 +460,16 @@ def _cummin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "minimum", None)
     if func and hasattr(func, "accumulate"):
-        return cast(EagerValue, func.accumulate(*args, **kwargs))
+        return typing.cast("EagerValue", func.accumulate(*args, **kwargs))
 
-    return cast(EagerValue, mod.minimum.accumulate(mod.asarray(args[0]), **kwargs))
+    return mod.minimum.accumulate(mod.asarray(args[0]), **kwargs)
 
 
 @global_eager_registry.register("Cumlogsumexp")
-def _cumlogsumexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager cumlogsumexp operation on the active backend array.
 
     Args:
@@ -480,19 +480,19 @@ def _cumlogsumexp(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "cumlogsumexp", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
 
     x = mod.asarray(args[0])
     axis = kwargs.get("axis", 0) if hasattr(kwargs, "get") else 0
 
-    return cast(EagerValue, mod.ufunc.accumulate(mod.logaddexp, x, axis=axis))
+    return mod.ufunc.accumulate(mod.logaddexp, x, axis=axis)
 
 
 @global_eager_registry.register("CumulativeLogsumexp")
-def _cumulative_logsumexp(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _cumulative_logsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager cumulative logsumexp operation on the active backend array.
 
     Args:
@@ -507,7 +507,7 @@ def _cumulative_logsumexp(backend_module: EagerValue, *args: EagerValue, **kwarg
 
 
 @global_eager_registry.register("PsumScatter")
-def _psumscatter(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _psumscatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager psumscatter operation on the active backend array.
 
     Args:
@@ -518,14 +518,14 @@ def _psumscatter(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     if hasattr(backend_module, "lax") and hasattr(mod.lax, "psum_scatter"):
-        return cast(EagerValue, mod.lax.psum_scatter(*args, **kwargs))
+        return mod.lax.psum_scatter(*args, **kwargs)
     return args[0] if args else None
 
 
 @global_eager_registry.register("Fmax")
-def _np_fmax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np fmax operation on the active backend array.
 
     Args:
@@ -538,12 +538,12 @@ def _np_fmax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     """
     func = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).fmax(args[0], args[1]))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).fmax(args[0], args[1])
 
 
 @global_eager_registry.register("ScatterMax")
-def _np_scattermax(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scattermax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np scattermax operation on the active backend array.
 
     Args:
@@ -556,12 +556,12 @@ def _np_scattermax(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """
     func = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
     return args[0]
 
 
 @global_eager_registry.register("ScatterMin")
-def _np_scattermin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scattermin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np scattermin operation on the active backend array.
 
     Args:
@@ -574,12 +574,12 @@ def _np_scattermin(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """
     func = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
     return args[0]
 
 
 @global_eager_registry.register("WeibullMin")
-def _np_weibullmin(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_weibullmin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np weibullmin operation on the active backend array.
 
     Args:
@@ -592,12 +592,12 @@ def _np_weibullmin(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     """
     func = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).random.weibull(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).random.weibull(*args, **kwargs)
 
 
 @global_eager_registry.register("WindowHamming")
-def _np_windowhamming(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_windowhamming(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np windowhamming operation on the active backend array.
 
     Args:
@@ -610,5 +610,5 @@ def _np_windowhamming(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     """
     func = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).hamming(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).hamming(*args, **kwargs)

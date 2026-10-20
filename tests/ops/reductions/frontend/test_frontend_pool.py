@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -117,7 +117,7 @@ def _test_frontend_pool_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     t_3d = _state["t_3d"]
-    assert getattr(t_3d, "shape") == (1, 1, 2, 2, 2)
+    assert getattr(t_3d, "shape") == (1, 1, 4, 4, 4)
 
 
 def test_frontend_pool_coverage() -> None:

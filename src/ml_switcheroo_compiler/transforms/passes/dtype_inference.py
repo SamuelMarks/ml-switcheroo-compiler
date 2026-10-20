@@ -1,6 +1,8 @@
 """DType Inference Pass."""
 
-from typing import Optional, cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -11,7 +13,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
-def _get_value_dtype(val: TensorOrScalar) -> Optional[DType]:
+def _get_value_dtype(val: TensorOrScalar) -> DType | None:
     """Get the dtype from a constant value.
 
     Args:
@@ -51,7 +53,7 @@ def _infer_constant_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
             return True
         return False
 
-    dtypes[node.id] = cast(str, node.attributes.get("dtype", DType.Float32.value))
+    dtypes[node.id] = typing.cast(str, node.attributes.get("dtype", DType.Float32.value))
     return False
 
 
@@ -65,7 +67,7 @@ def _infer_input_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     Returns:
         bool: True if node was modified.
     """
-    dtypes[node.id] = cast(str, node.attributes.get("dtype", DType.Float32.value))
+    dtypes[node.id] = typing.cast(str, node.attributes.get("dtype", DType.Float32.value))
     return False
 
 
@@ -111,7 +113,7 @@ def _get_promoted_dtype(valid_dtypes: list[str]) -> str:
         return valid_dtypes[0]
 
 
-def _handle_cast_dtype(node: LogicalNode, valid_dtypes: list[str]) -> Optional[str]:
+def _handle_cast_dtype(node: LogicalNode, valid_dtypes: list[str]) -> str | None:
     """Resolve output dtype for Cast and Bitcast nodes.
 
     Args:

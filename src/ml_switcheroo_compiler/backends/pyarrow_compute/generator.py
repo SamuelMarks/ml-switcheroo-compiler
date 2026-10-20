@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -68,11 +67,11 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
         """Retrieve operation formatting templates for PyArrow Compute operations.
 
         Args:
-            kwargs (dict[str, object]): Keyword arguments passed to the visitor.
+            kwargs (dict[str, object] | None): Keyword arguments passed to the visitor.
 
         Returns:
             dict[str, str]: Map from op_type to formatting template.
@@ -243,14 +242,14 @@ class PyArrowComputeGenerator(PythonStringGenerator):
             for k, val in w_kw.items():
                 inputs[k] = _unwrap_input_val(val)
 
-            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
+            evaluated = evaluate_graph(graph, inputs=inputs)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
                     res = evaluated.get(graph.outputs[0])
                     if zero_copy and is_arrow_object(w_args[0] if w_args else None):
                         return to_arrow(res, target_type="tensor")
-                    return cast(EagerValue, res)
+                    return res
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return cast(EagerValue, evaluated)
+            return typing.cast(EagerValue, evaluated)
 
         return aot_arrow_runner

@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import json
-from typing import TYPE_CHECKING, Callable, Union, cast
+import typing
 
 import numpy as np
 import pytest
@@ -14,14 +14,15 @@ import yaml
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
 import ml_switcheroo_compiler.benchmarks.metrics as metrics_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
-MetricsVal = Union[list[float], float]
+MetricsVal = typing.Union[list[float], "float"]
 
-ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, None]
+ProcessArg = typing.Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, "None"]
 
 
 class MockSimpleProfiler:
@@ -61,13 +62,13 @@ class MockBackendClass:
 class MockDeterministicQueue:
     """Deterministic queue mock avoiding multiprocessing pipe latency."""
 
-    def __init__(self, items: list[tuple[str, Union[dict[str, MetricsVal], str]]]) -> None:
+    def __init__(self, items: list[tuple[str, dict[str, MetricsVal] | str]]) -> None:
         """Initialize mock queue with payload items.
 
         Args:
             items (list[tuple[str, Union[dict[str, MetricsVal], str]]]): Items to queue.
         """
-        self.items: list[tuple[str, Union[dict[str, MetricsVal], str]]] = list(items)
+        self.items: list[tuple[str, dict[str, MetricsVal] | str]] = list(items)
 
     def empty(self) -> bool:
         """Check if queue is empty.
@@ -77,7 +78,7 @@ class MockDeterministicQueue:
         """
         return len(self.items) == 0
 
-    def get(self) -> tuple[str, Union[dict[str, MetricsVal], str]]:
+    def get(self) -> tuple[str, dict[str, MetricsVal] | str]:
         """Retrieve next item.
 
         Returns:
@@ -85,7 +86,7 @@ class MockDeterministicQueue:
         """
         return self.items.pop(0)
 
-    def put(self, item: tuple[str, Union[dict[str, MetricsVal], str]]) -> None:
+    def put(self, item: tuple[str, dict[str, MetricsVal] | str]) -> None:
         """Put item into queue.
 
         Args:
@@ -97,14 +98,14 @@ class MockDeterministicQueue:
 class MockProcessOk:
     """Mock multiprocessing process simulating clean execution."""
 
-    def __init__(self, target: Callable[..., None], args: tuple[ProcessArg, ...]) -> None:
+    def __init__(self, target: TypedVariadicCallable[None], args: tuple[ProcessArg, ...]) -> None:
         """Initialize mock process.
 
         Args:
-            target (Callable[..., None]): Target function.
+            target (TypedVariadicCallable[None]): Target function.
             args (tuple[ProcessArg, ...]): Process arguments.
         """
-        self._target: Callable[..., None] = target
+        self._target: TypedVariadicCallable[None] = target
         self._args: tuple[ProcessArg, ...] = args
 
     def start(self) -> None:
@@ -214,8 +215,8 @@ def test_metrics_empty_and_single() -> None:
     res_single = metrics_mod.compute_statistical_metrics([12.5], batch_size=2, total_flops=1e9, total_bytes_accessed=1e6)
     assert res_single["std_latency_ms"] == 0.0
     assert res_single["mean_latency_ms"] == 12.5
-    assert cast("EagerCallableProtocol", float)(res_single["gflops"]) > 0.0
-    assert cast("EagerCallableProtocol", float)(res_single["bandwidth_gb_s"]) > 0.0
+    assert typing.cast("EagerCallableProtocol", float)(res_single["gflops"]) > 0.0
+    assert typing.cast("EagerCallableProtocol", float)(res_single["bandwidth_gb_s"]) > 0.0
 
     # 3. Multiple latencies with percentiles
     lats = [5.0, 10.0, 15.0, 20.0, 25.0]
@@ -223,7 +224,7 @@ def test_metrics_empty_and_single() -> None:
     assert res_multi["min_latency_ms"] == 5.0
     assert res_multi["max_latency_ms"] == 25.0
     assert res_multi["p50_latency_ms"] == 15.0
-    assert cast("EagerCallableProtocol", float)(res_multi["std_latency_ms"]) > 0.0
+    assert typing.cast("EagerCallableProtocol", float)(res_multi["std_latency_ms"]) > 0.0
     assert res_multi["warmup_iterations"] == 1
 
 

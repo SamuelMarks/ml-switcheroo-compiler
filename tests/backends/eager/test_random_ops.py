@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends.eager.random_ops import prng_key, rand, randint, randn, random_fold_in, random_split
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -57,7 +58,7 @@ class DummyBackend:
             self.rand = lambda *s: "rand_direct"
             self.randn = lambda *s: "randn_direct"
 
-        self.arrays = cast("list[EagerTensorProtocol]", [])
+        self.arrays = typing.cast("list[EagerTensorProtocol]", [])
 
     def array(self, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
         """Test function array.
@@ -66,7 +67,7 @@ class DummyBackend:
             data: Test parameter `data`.
             dtype: Test parameter `dtype`.
         """
-        cast("EagerCallableProtocol", self.arrays.append)((data, dtype))
+        typing.cast("EagerCallableProtocol", self.arrays.append)((data, dtype))
         return "array_res"
 
 
@@ -75,27 +76,27 @@ def test_random_ops() -> None:
     bk_arr = DummyBackend()
     bk_no_arr = object()
 
-    assert prng_key(bk_arr, 42) == "array_res"
+    assert prng_key(typing.cast("EagerValue", bk_arr), 42) == "array_res"
     assert bk_arr.arrays[-1] == ([0, 42], "uint32")
-    assert prng_key(bk_no_arr, 42) == [0, 42]
+    assert prng_key(typing.cast("EagerValue", bk_no_arr), 42) == [0, 42]
 
-    res1 = random_split(bk_arr, None, 2)
+    res1 = random_split(typing.cast("EagerValue", bk_arr), None, 2)
     assert res1 == "array_res"
     assert len(bk_arr.arrays[-1][0]) == 2
 
-    res2 = random_split(bk_no_arr, None, 2)
-    assert cast("EagerCallableProtocol", len)(res2) == 2
+    res2 = random_split(typing.cast("EagerValue", bk_no_arr), None, 2)
+    assert typing.cast("EagerCallableProtocol", len)(res2) == 2
 
-    assert random_fold_in(bk_arr, [1, 2], 3) == "array_res"
+    assert random_fold_in(typing.cast("EagerValue", bk_arr), [1, 2], 3) == "array_res"
     assert bk_arr.arrays[-1] == ([4, 2], "uint32")
-    assert random_fold_in(bk_no_arr, [1, 2], 3) == [4, 2]
-    assert random_fold_in(bk_no_arr, object(), 3) == [3, 0]  # non subscriptable
+    assert random_fold_in(typing.cast("EagerValue", bk_no_arr), [1, 2], 3) == [4, 2]
+    assert random_fold_in(typing.cast("EagerValue", bk_no_arr), typing.cast("EagerValue", object()), 3) == [3, 0]  # non subscriptable
 
     # Rand
     bk_rand1 = DummyBackend(use_random=True)
-    assert rand(bk_rand1, (2, 2)) == "rand"
+    assert rand(typing.cast("EagerValue", bk_rand1), (2, 2)) == "rand"
     bk_rand2 = DummyBackend(use_method=True)
-    assert rand(bk_rand2, shape=(2, 2)) == "rand_direct"
+    assert rand(typing.cast("EagerValue", bk_rand2), shape=(2, 2)) == "rand_direct"
 
     import pytest
 
@@ -105,18 +106,18 @@ def test_random_ops() -> None:
         pass
 
     with pytest.raises(AttributeError):
-        rand(DummyFallback(), (2, 2))
+        rand(typing.cast("EagerValue", DummyFallback()), (2, 2))
 
     # Randn
-    assert randn(bk_rand1, (2, 2)) == "randn"
-    assert randn(bk_rand2, shape=(2, 2)) == "randn_direct"
+    assert randn(typing.cast("EagerValue", bk_rand1), (2, 2)) == "randn"
+    assert randn(typing.cast("EagerValue", bk_rand2), shape=(2, 2)) == "randn_direct"
     with pytest.raises(AttributeError):
-        randn(DummyFallback(), (2, 2))
+        randn(typing.cast("EagerValue", DummyFallback()), (2, 2))
 
     # Randint
-    assert randint(bk_rand1, 0, 10, (2, 2)) == "randint"
+    assert randint(typing.cast("EagerValue", bk_rand1), 0, 10, (2, 2)) == "randint"
     with pytest.raises(AttributeError):
-        randint(DummyFallback(), 0, 10, (2, 2))
+        randint(typing.cast("EagerValue", DummyFallback()), 0, 10, (2, 2))
 
 
 def test_rand_coverage_auto() -> None:
@@ -133,7 +134,7 @@ def test_rand_coverage_auto() -> None:
             """
             return "uniform_" + str(size)
 
-    assert rand(ModUniform(), shape=(2,)) == "uniform_(2,)"
+    assert rand(typing.cast("EagerValue", ModUniform()), shape=(2,)) == "uniform_(2,)"
 
     class ModRand:
         """Test class ModRand."""
@@ -153,7 +154,7 @@ def test_rand_coverage_auto() -> None:
             """
             return "rand_" + str(args)
 
-    assert rand(ModRand(), shape=(2, 3)) == "rand_(2, 3)"
+    assert rand(typing.cast("EagerValue", ModRand()), shape=(2, 3)) == "rand_(2, 3)"
 
 
 def test_randn_coverage_auto() -> None:
@@ -170,7 +171,7 @@ def test_randn_coverage_auto() -> None:
             """
             return "normal_" + str(size)
 
-    assert randn(ModNormal(), shape=(2,)) == "normal_(2,)"
+    assert randn(typing.cast("EagerValue", ModNormal()), shape=(2,)) == "normal_(2,)"
 
     class ModRandn:
         """Test class ModRandn."""
@@ -190,7 +191,7 @@ def test_randn_coverage_auto() -> None:
             """
             return "randn_" + str(args)
 
-    assert randn(ModRandn(), shape=(2, 3)) == "randn_(2, 3)"
+    assert randn(typing.cast("EagerValue", ModRandn()), shape=(2, 3)) == "randn_(2, 3)"
 
 
 def test_rand_uniform() -> None:

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, cast
+import typing
 
 import yaml
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
@@ -16,7 +17,7 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     NodePattern,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -62,20 +63,20 @@ def test_subgraph_pattern_matcher_wildcard_and_commutativity() -> None:
     n_const = IRNode(id="c", op_type="Constant")
     # Order reversed: inputs are [Input, Constant]
     n_add = IRNode(id="add_node", op_type="Add", inputs=["x", "c"])
-    graph.nodes = {"x": n_in, "c": n_const, "add_node": n_add}
+    graph.nodes = NodeDict({"x": n_in, "c": n_const, "add_node": n_add})
 
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import match_pattern
 
     cap_map: dict[str, str | IRNode] = {}
     assert match_pattern(graph, "add_node", p_add, cap_map)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cap_map, "__getitem__")("c0")), "id")) == "c"
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cap_map, "__getitem__")("c1")), "id")) == "x"
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(cap_map, "__getitem__")("c0")), "id")) == "c"
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(cap_map, "__getitem__")("c1")), "id")) == "x"
 
     # Wildcard pattern
     p_wild = NodePattern(op_type="*", capture="any_op")
     cap_wild: dict[str, str | IRNode] = {}
     assert match_pattern(graph, "add_node", p_wild, cap_wild)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cap_wild, "__getitem__")("any_op")), "id")) == "add_node"
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(cap_wild, "__getitem__")("any_op")), "id")) == "add_node"
 
 
 def test_dynamic_buffer_allocation_symbolic_batch() -> None:
@@ -83,7 +84,7 @@ def test_dynamic_buffer_allocation_symbolic_batch() -> None:
     graph = IRGraph()
     n_in = IRNode(id="in_0", op_type="Input", shape_metadata=("B", 64, 64), attributes={"shape": ("B", 64, 64), "dtype": "float32"})
     n_out = IRNode(id="out_0", op_type="Relu", inputs=["in_0"], shape_metadata=("B", 64, 64), attributes={"shape": ("B", 64, 64), "dtype": "float32"})
-    graph.nodes = {"in_0": n_in, "out_0": n_out}
+    graph.nodes = NodeDict({"in_0": n_in, "out_0": n_out})
     graph.outputs = ["out_0"]
 
     alloc_pass = BufferAllocationPass(alignment=64)
@@ -95,7 +96,7 @@ def test_dynamic_buffer_allocation_symbolic_batch() -> None:
     modified = alloc_pass.run(graph)
     assert modified is True
     assert "buffer_offset_symbolic" in n_in.attributes
-    assert "dynamic_memory_schema" in cast("EagerTensorProtocol", getattr(graph, "attributes"))
+    assert "dynamic_memory_schema" in typing.cast("EagerTensorProtocol", getattr(graph, "attributes"))
 
 
 def test_pass_manager_optimization_levels_and_fixpoint() -> None:
@@ -113,7 +114,7 @@ def test_pass_manager_optimization_levels_and_fixpoint() -> None:
     graph = IRGraph()
     n_in = IRNode(id="x", op_type="Input", shape_metadata=(4, 4), attributes={"shape": (4, 4), "dtype": "float32"})
     n_relu = IRNode(id="r", op_type="Relu", inputs=["x"], shape_metadata=(4, 4), attributes={"shape": (4, 4), "dtype": "float32"})
-    graph.nodes = {"x": n_in, "r": n_relu}
+    graph.nodes = NodeDict({"x": n_in, "r": n_relu})
     graph.outputs = ["r"]
 
     pm = PassManager()

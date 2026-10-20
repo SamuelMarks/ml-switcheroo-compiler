@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import pathlib
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.mapping_loader import (
     _MAPPING_CACHE,
     BackendMappingSchema,
@@ -25,7 +26,7 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -80,22 +81,22 @@ def test_read_and_merge_variations(tmp_path: EagerTensorProtocol) -> None:
     # Dict with operations key
     f1 = tmp_path / "f1.yaml"
     f1.write_text("operations:\n  op1:\n    target_api: a.b\n", encoding="utf-8")
-    t1 = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _read_and_merge)(cast("EagerCallableProtocol", str)(f1), t1)
+    t1 = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _read_and_merge)(typing.cast("EagerCallableProtocol", str)(f1), t1)
     assert "op1" in t1
 
     # Dict without operations key
     f2 = tmp_path / "f2.yaml"
     f2.write_text("op2:\n  target_api: c.d\n", encoding="utf-8")
-    t2 = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _read_and_merge)(cast("EagerCallableProtocol", str)(f2), t2)
+    t2 = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _read_and_merge)(typing.cast("EagerCallableProtocol", str)(f2), t2)
     assert "op2" in t2
 
     # Non-dict data (e.g. list)
     f3 = tmp_path / "f3.yaml"
     f3.write_text("- item1\n- item2\n", encoding="utf-8")
-    t3 = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _read_and_merge)(cast("EagerCallableProtocol", str)(f3), t3)
+    t3 = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _read_and_merge)(typing.cast("EagerCallableProtocol", str)(f3), t3)
     assert t3 == {}
 
 
@@ -110,20 +111,20 @@ def test_load_yaml_dir(tmp_path: EagerTensorProtocol) -> None:
     (d / "ignored.txt").write_text("hello", encoding="utf-8")
     (d / "valid.yaml").write_text("opX: {target_api: x.y}\n", encoding="utf-8")
 
-    res = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _load_yaml_dir)(cast("EagerCallableProtocol", str)(d), res)
+    res = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _load_yaml_dir)(typing.cast("EagerCallableProtocol", str)(d), res)
     assert "opX" in res
 
     # Non-directory
-    empty_res = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _load_yaml_dir)(cast("EagerCallableProtocol", str)(tmp_path / "not_a_dir"), empty_res)
+    empty_res = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _load_yaml_dir)(typing.cast("EagerCallableProtocol", str)(tmp_path / "not_a_dir"), empty_res)
     assert empty_res == {}
 
 
 def test_resolve_custom_code() -> None:
     """Test _resolve_custom_code branches."""
     res = _resolve_custom_code("lambda x: x * 2", None)
-    assert cast("EagerCallableProtocol", res)(5) == 10
+    assert typing.cast("EagerCallableProtocol", res)(5) == 10
 
     # With backend_module having globals and property raising error
     class MockBackend:
@@ -136,8 +137,8 @@ def test_resolve_custom_code() -> None:
             """Test function err."""
             raise RuntimeError("Property access failed")
 
-    res2 = _resolve_custom_code("lambda x: x + MY_VAR", MockBackend())
-    assert cast("EagerCallableProtocol", res2)(3) == 10
+    res2 = _resolve_custom_code("lambda x: x + MY_VAR", typing.cast("EagerValue", MockBackend()))
+    assert typing.cast("EagerCallableProtocol", res2)(3) == 10
 
     # Invalid code
     assert _resolve_custom_code("lambda invalid syntax", None) is None
@@ -172,21 +173,21 @@ def test_resolve_from_backend_module() -> None:
     mod = ParentMod()
 
     # Successfully traverse sub_parts (line 169)
-    res1 = _resolve_from_backend_module("torch.sub.my_target", mod)
+    res1 = _resolve_from_backend_module("torch.sub.my_target", typing.cast("EagerValue", mod))
     assert callable(res1)
     assert res1() == 42
 
     # Miss sub_parts, but backend_module has parts[-1] (line 166 branch 1)
-    res2 = _resolve_from_backend_module("torch.missing.direct_target", mod)
+    res2 = _resolve_from_backend_module("torch.missing.direct_target", typing.cast("EagerValue", mod))
     assert callable(res2)
     assert res2() == 100
 
     # Miss sub_parts, and backend_module does NOT have parts[-1] (line 166 branch 2)
-    res3 = _resolve_from_backend_module("torch.missing.nonexistent", mod)
+    res3 = _resolve_from_backend_module("torch.missing.nonexistent", typing.cast("EagerValue", mod))
     assert res3 is None
 
     # Single-part api_str to exercise else: sub_parts = parts (line 163)
-    res_single = _resolve_from_backend_module("direct_target", mod)
+    res_single = _resolve_from_backend_module("direct_target", typing.cast("EagerValue", mod))
     assert callable(res_single)
     assert res_single() == 100
 
@@ -199,7 +200,7 @@ def test_resolve_from_backend_module() -> None:
             return "dask_sum"
 
     dask_mod = MockDaskMod()
-    res_dask = _resolve_from_backend_module("dask.array.my_sum", dask_mod)
+    res_dask = _resolve_from_backend_module("dask.array.my_sum", typing.cast("EagerValue", dask_mod))
     assert callable(res_dask)
     assert res_dask() == "dask_sum"
 
@@ -208,7 +209,7 @@ def test_resolve_target_api() -> None:
     """Test resolve_target_api paths and branches."""
     # custom_op
     res = resolve_target_api("custom_op", custom_code="lambda x: x * 2")
-    assert cast("EagerCallableProtocol", res)(5) == 10
+    assert typing.cast("EagerCallableProtocol", res)(5) == 10
 
     # Empty api_str
     assert resolve_target_api("") is None
@@ -240,8 +241,8 @@ def test_resolve_target_api() -> None:
             """Test function my_func."""
             return 5
 
-    res3 = resolve_target_api("some.prefix.my_func", backend_module=MockBackend())
-    assert cast("EagerTensorProtocol", getattr(res3, "__name__")) == "my_func"
+    res3 = resolve_target_api("some.prefix.my_func", backend_module=typing.cast("EagerValue", MockBackend()))
+    assert typing.cast("EagerTensorProtocol", getattr(res3, "__name__")) == "my_func"
 
     # backend_module has nested structure without root attribute (lines 198-200)
     class InnerMod:
@@ -258,7 +259,7 @@ def test_resolve_target_api() -> None:
             """Test function __init__."""
             self.inner = InnerMod()
 
-    res_mod_res = resolve_target_api("inner.target", backend_module=OuterMod())
+    res_mod_res = resolve_target_api("inner.target", backend_module=typing.cast("EagerValue", OuterMod()))
     assert callable(res_mod_res)
     assert res_mod_res() == 999
 
@@ -338,9 +339,9 @@ def test_dispatch_eager_op() -> None:
     res_m = dispatch_eager_op(
         "test_backend_dispatch",
         "MethodOp",
-        [c_obj, 5],
+        [typing.cast("EagerValue", c_obj), 5],
         {},
-        backend_module=c_obj,
+        backend_module=typing.cast("EagerValue", c_obj),
     )
     assert res_m == 50
 
@@ -350,7 +351,7 @@ def test_dispatch_eager_op() -> None:
     res_fb = dispatch_eager_op(
         "test_backend_dispatch",
         "MethodOpFallback",
-        [object()],
+        [typing.cast("EagerValue", object())],
         {},
         backend_module=mock_fallback_mod,
     )

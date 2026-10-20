@@ -1,11 +1,11 @@
 """Broadcast Explicitizer Pass."""
 
+from __future__ import annotations
+
+import typing
 import uuid
-from collections.abc import Sequence  # noqa: F401
-from typing import (  # noqa: F401
-    Callable,
-    Optional,
-    Union,
+from collections.abc import (
+    Sequence,  # noqa: F401
 )
 
 from ml_switcheroo_ir import LogicalNode
@@ -41,7 +41,7 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     return new_id
 
 
-def _needs_broadcast(shape1: Optional[tuple[int, ...]], shape2: Optional[tuple[int, ...]]) -> Optional[tuple[int, ...]]:
+def _needs_broadcast(shape1: tuple[int, ...] | None, shape2: tuple[int, ...] | None) -> tuple[int, ...] | None:
     """Execute needs broadcast for compiler processing.
 
     Args:
@@ -77,11 +77,9 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
     if len(node.inputs) != BINARY_OP_ARITY:
         return False
 
-    from typing import cast
-
     in1, in2 = node.inputs
-    shape1 = cast("Optional[tuple[int, ...]]", graph.nodes[in1].shape_metadata)
-    shape2 = cast("Optional[tuple[int, ...]]", graph.nodes[in2].shape_metadata)
+    shape1 = typing.cast("tuple[int, ...] | None", graph.nodes[in1].shape_metadata)
+    shape2 = typing.cast("tuple[int, ...] | None", graph.nodes[in2].shape_metadata)
 
     target_shape = _needs_broadcast(shape1, shape2)
     if target_shape is None:

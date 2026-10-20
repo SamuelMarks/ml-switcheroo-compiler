@@ -67,22 +67,26 @@ def test_backend_utils_exhaustive() -> None:
     assert backend_utils.format_shape_metadata(node_no_meta, {}) is None
 
     node_empty_meta = IRNode("node_relu_empty", "Relu")
-    node_empty_meta.shape_metadata = []
+    node_empty_meta.shape_metadata = ()
     assert backend_utils.format_shape_metadata(node_empty_meta, {}) is None
 
     # 3. format_shape_metadata with single dimension (trailing comma)
     node_single_dim = IRNode("node_reshape", "Reshape")
-    node_single_dim.shape_metadata = [32]
+    node_single_dim.shape_metadata = (32,)
     assert backend_utils.format_shape_metadata(node_single_dim, {}) == "(32,)"
 
     # 4. format_shape_metadata with multiple dimensions (no trailing comma) and mixed types
     node_multi_dim = IRNode("node_conv", "Conv")
-    node_multi_dim.shape_metadata = [
-        _MockDimWithId("batch_sym"),
-        _MockDimWithId("unmapped_sym"),
-        "dynamic_channel",
-        64,
-    ]
+    object.__setattr__(
+        node_multi_dim,
+        "shape_metadata",
+        (
+            _MockDimWithId("batch_sym"),
+            _MockDimWithId("unmapped_sym"),
+            "dynamic_channel",
+            64,
+        ),
+    )
     var_names = {"batch_sym": "N"}
     formatted = backend_utils.format_shape_metadata(node_multi_dim, var_names)
     assert formatted == "(N, unmapped_sym, 'dynamic_channel', 64)"

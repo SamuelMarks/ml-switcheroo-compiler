@@ -8,22 +8,44 @@ operations, enabling the computation of gradients during the backward pass.
 from __future__ import annotations
 
 import os
+import typing
 from collections.abc import Callable, Sequence
-from typing import Optional, Union
 
 import yaml
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
-VJPRuleCallable = Callable[..., Sequence[Union[str, UnconnectedGradients, None]]]
+
+class VJPRuleCallable(typing.Protocol):
+    """Protocol for Vector-Jacobian Product (VJP) rule callables."""
+
+    def __call__(
+        self,
+        graph: LogicalGraph,
+        node: LogicalNode,
+        cotangent: str,
+        /,
+    ) -> Sequence[str | UnconnectedGradients | None] | str:
+        """Evaluate the VJP rule for a node.
+
+        Args:
+            graph (LogicalGraph): Target IR graph.
+            node (LogicalNode): Target IR node.
+            cotangent (str): Incoming cotangent node ID.
+
+        Returns:
+            Sequence[str | UnconnectedGradients | None] | str: Input adjoints.
+        """
+        ...
 
 
 class VJPRuleModel(BaseModel):
     """Declarative Vector-Jacobian Product (VJP) rule specification."""
 
     vjp: list[str] = Field(description="List of symbolic derivative expressions for each input operand.")
-    description: Optional[str] = Field(default=None, description="Human-readable description of the rule.")
+    description: str | None = Field(default=None, description="Human-readable description of the rule.")
 
 
 class PrimitiveVJPsModel(BaseModel):
@@ -32,10 +54,10 @@ class PrimitiveVJPsModel(BaseModel):
     rules: dict[str, VJPRuleModel] = Field(default_factory=dict, description="Mapping of op_name to VJP rule.")
 
 
-_DECLARATIVE_VJP_CACHE: Optional[dict[str, VJPRuleModel]] = None
+_DECLARATIVE_VJP_CACHE: dict[str, VJPRuleModel] | None = None
 
 
-def load_primitive_vjp_rules(path: Optional[str] = None) -> dict[str, VJPRuleModel]:
+def load_primitive_vjp_rules(path: str | None = None) -> dict[str, VJPRuleModel]:
     """Load and validate declarative primitive VJP rules via Pydantic model.
 
     Args:
@@ -118,9 +140,9 @@ def get_vjp(op_name: str) -> VJPRuleCallable:
     data_vjp = get_vjp_from_data(op_name)
     if data_vjp:
         return data_vjp
-    if op_name not in _VJP_REGISTRY:
-        raise ValueError(f"No VJP rule registered for operation: {op_name}")
-    return _VJP_REGISTRY[op_name]
+    if op_name in _VJP_REGISTRY:
+        return _VJP_REGISTRY[op_name]
+    raise ValueError(f"No VJP rule registered for operation: {op_name}")
 
 
 def has_vjp(op_name: str) -> bool:
@@ -134,6 +156,4 @@ def has_vjp(op_name: str) -> bool:
     """
     if op_name in _VJP_REGISTRY:
         return True
-    if get_vjp_from_data(op_name) is not None:
-        return True
-    return op_name in _VJP_REGISTRY
+    return get_vjp_from_data(op_name) is not None

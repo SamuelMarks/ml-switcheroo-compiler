@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 import pytest
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.utils.operation_utils import (
     get_source_inputs,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -65,7 +65,7 @@ def test_shape_inference_strategy_base() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", cast("EagerCallableProtocol", super().__call__)(*args, **kwargs))
+            return typing.cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", typing.cast("EagerCallableProtocol", super().__call__)(*args, **kwargs))
 
     strategy = DummyStrategy()
     assert strategy((1,), (), {}) is None

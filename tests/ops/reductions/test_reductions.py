@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from unittest.mock import patch
@@ -13,7 +13,7 @@ import ml_switcheroo_compiler.ops.reductions.frontend as rd
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -37,7 +37,7 @@ def test_reductions_coverage() -> None:
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = cast("dict[str, EagerTensorProtocol]", {})
+            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Callable, Union, cast
+import typing
 
 import numpy as np
 import pytest
@@ -11,14 +11,15 @@ import pytest
 import ml_switcheroo_compiler.backends.edge.profiler as edge_prof_mod
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
-MetricsVal = Union[list[float], float]
+MetricsVal = typing.Union[list[float], "float"]
 
-ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, None]
+ProcessArg = typing.Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, "None"]
 
 
 class MockSimpleProfiler:
@@ -58,13 +59,13 @@ class MockBackendClass:
 class MockDeterministicQueue:
     """Deterministic queue mock avoiding multiprocessing pipe latency."""
 
-    def __init__(self, items: list[tuple[str, Union[dict[str, MetricsVal], str]]]) -> None:
+    def __init__(self, items: list[tuple[str, dict[str, MetricsVal] | str]]) -> None:
         """Initialize mock queue with payload items.
 
         Args:
             items (list[tuple[str, Union[dict[str, MetricsVal], str]]]): Items to queue.
         """
-        self.items: list[tuple[str, Union[dict[str, MetricsVal], str]]] = list(items)
+        self.items: list[tuple[str, dict[str, MetricsVal] | str]] = list(items)
 
     def empty(self) -> bool:
         """Check if queue is empty.
@@ -74,7 +75,7 @@ class MockDeterministicQueue:
         """
         return len(self.items) == 0
 
-    def get(self) -> tuple[str, Union[dict[str, MetricsVal], str]]:
+    def get(self) -> tuple[str, dict[str, MetricsVal] | str]:
         """Retrieve next item.
 
         Returns:
@@ -82,7 +83,7 @@ class MockDeterministicQueue:
         """
         return self.items.pop(0)
 
-    def put(self, item: tuple[str, Union[dict[str, MetricsVal], str]]) -> None:
+    def put(self, item: tuple[str, dict[str, MetricsVal] | str]) -> None:
         """Put item into queue.
 
         Args:
@@ -94,14 +95,14 @@ class MockDeterministicQueue:
 class MockProcessOk:
     """Mock multiprocessing process simulating clean execution."""
 
-    def __init__(self, target: Callable[..., None], args: tuple[ProcessArg, ...]) -> None:
+    def __init__(self, target: TypedVariadicCallable[None], args: tuple[ProcessArg, ...]) -> None:
         """Initialize mock process.
 
         Args:
-            target (Callable[..., None]): Target function.
+            target (TypedVariadicCallable[None]): Target function.
             args (tuple[ProcessArg, ...]): Process arguments.
         """
-        self._target: Callable[..., None] = target
+        self._target: TypedVariadicCallable[None] = target
         self._args: tuple[ProcessArg, ...] = args
 
     def start(self) -> None:
@@ -225,7 +226,7 @@ def test_edge_profiler_coverage() -> None:
     # 3. profile_graph
     profiler = edge_prof_mod.EdgeProfiler()
     inputs = {"x": np.ones((1, 10), dtype=np.float32)}
-    res = cast("EagerCallableProtocol", profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
+    res = typing.cast("EagerCallableProtocol", profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
     assert "latency_ms" in res
     assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
 
@@ -233,10 +234,10 @@ def test_edge_profiler_coverage() -> None:
     failing_graph = IRGraph(name="failing")
     failing_graph.nodes["bad"] = IRNode(id="bad", op_type="NonexistentOp", inputs=["x"])
     failing_graph.inputs = ["x"]
-    res_fallback = cast("EagerCallableProtocol", profiler.profile_graph)(failing_graph, inputs, num_iters=1, warmup_iters=1)
+    res_fallback = typing.cast("EagerCallableProtocol", profiler.profile_graph)(failing_graph, inputs, num_iters=1, warmup_iters=1)
     assert "latency_ms" in res_fallback
 
     # Mismatched inputs fallback
     mismatched_inputs = {"other_key": np.ones((1, 10), dtype=np.float32)}
-    prepared = cast("EagerCallableProtocol", profiler._prepare_inputs)(graph, mismatched_inputs)
+    prepared = typing.cast("EagerCallableProtocol", profiler._prepare_inputs)(graph, mismatched_inputs)
     assert len(prepared) == 1

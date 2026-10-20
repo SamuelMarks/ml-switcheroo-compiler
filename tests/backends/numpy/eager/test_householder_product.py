@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -31,7 +31,7 @@ def test_householder_product_coverage() -> None:
             """
             return np.array([[1, 0], [0, 1]])
 
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _householder_product)(MockBackend, v, tau), v)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _householder_product)(MockBackend, v, tau), v)
 
     class MockBackendLinalg:
         """Test class MockBackendLinalg."""
@@ -49,4 +49,4 @@ def test_householder_product_coverage() -> None:
                 """
                 return np.array([[1, 0], [0, 1]])
 
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _householder_product)(MockBackendLinalg, v, tau), v)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _householder_product)(MockBackendLinalg, v, tau), v)

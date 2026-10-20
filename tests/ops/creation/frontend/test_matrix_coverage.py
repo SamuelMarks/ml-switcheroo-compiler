@@ -3,20 +3,21 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.ops.creation.frontend_matrix as matrix_mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
@@ -64,9 +65,9 @@ def _test_frontend_matrix_coverage_sub_2(_state: dict[str, EagerTensorProtocol])
     mock_backend = _state["mock_backend"]
     with patch("ml_switcheroo_compiler.ops.creation.frontend_matrix.get_active_backend", return_value=mock_backend):
         e1 = matrix_mod.eye(3)
-        assert cast("EagerTensorProtocol", getattr(e1, "shape")) == (3, 3)
+        assert typing.cast("EagerTensorProtocol", getattr(e1, "shape")) == (3, 3)
         e2 = matrix_mod.eye(3, m=4, k=1, dtype=DType.Float64, device=Device("cpu"))
-        assert cast("EagerTensorProtocol", getattr(e2, "shape")) == (3, 4)
+        assert typing.cast("EagerTensorProtocol", getattr(e2, "shape")) == (3, 4)
 
         # custom dtype without .value
         class DummyDtypeWithoutValue:
@@ -74,23 +75,23 @@ def _test_frontend_matrix_coverage_sub_2(_state: dict[str, EagerTensorProtocol])
 
             name: str = "float32"
 
-        e3 = cast("EagerCallableProtocol", matrix_mod.eye)(2, dtype=cast("EagerCallableProtocol", DummyDtypeWithoutValue)())
-        assert cast("EagerTensorProtocol", getattr(e3, "shape")) == (2, 2)
+        e3 = typing.cast("EagerCallableProtocol", matrix_mod.eye)(2, dtype=typing.cast("EagerCallableProtocol", DummyDtypeWithoutValue)())
+        assert typing.cast("EagerTensorProtocol", getattr(e3, "shape")) == (2, 2)
 
         # identity
         i1 = matrix_mod.identity(4)
-        assert cast("EagerTensorProtocol", getattr(i1, "shape")) == (4, 4)
+        assert typing.cast("EagerTensorProtocol", getattr(i1, "shape")) == (4, 4)
 
         # _diag_eager with data having shape and raw dtype
         raw_input = np.array([[1.0, 2.0], [3.0, 4.0]])
-        d1 = cast("EagerCallableProtocol", matrix_mod._diag_eager)(raw_input, 0, cast("EagerCallableProtocol", Device)("cpu"), None)
-        assert isinstance(d1, Tensor)
+        d1 = typing.cast("EagerCallableProtocol", matrix_mod._diag_eager)(raw_input, 0, typing.cast("EagerCallableProtocol", Device)("cpu"), None)
+        assert isinstance(typing.cast("EagerValue", d1), Tensor)
 
         # _diag_eager with tensor input and data lacking shape
         mock_data_no_shape = 123.0
         setattr(mock_backend.execute_op, "return_value", mock_data_no_shape)
         d2 = matrix_mod._diag_eager(Tensor(raw_input, TensorConfig((2, 2), DType.Float32, Device("cpu"))), 0, Device("cpu"), DType.Float32)
-        assert cast("EagerTensorProtocol", getattr(d2, "shape")) == ()
+        assert typing.cast("EagerTensorProtocol", getattr(d2, "shape")) == ()
 
         # diag in eager mode
         setattr(mock_backend.execute_op, "return_value", np.array([1.0, 4.0]))
@@ -124,7 +125,7 @@ def _test_frontend_matrix_coverage_sub_3(_state: dict[str, EagerTensorProtocol])
     # 2. not tracing
     with patch.object(global_tracing_state, "is_tracing", False):
         with pytest.raises(RuntimeError, match="Cannot emit diag node outside of a tracing context."):
-            cast("EagerCallableProtocol", matrix_mod.diag)(t_matrix)
+            typing.cast("EagerCallableProtocol", matrix_mod.diag)(t_matrix)
     getattr(_state, "update")({"res_graph_eye": res_graph_eye, "t_1d": t_1d})
     _state.update(locals())
 
@@ -143,9 +144,9 @@ def _test_frontend_matrix_coverage_sub_4(_state: dict[str, EagerTensorProtocol])
 
                 id: str = "tensor_input_id"
 
-            t_traced = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", MockDataWithId)(), cast("EagerCallableProtocol", TensorConfig)((3, 3), DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
-            res_traced = cast("EagerCallableProtocol", matrix_mod.diag)(t_traced, 1)
-            assert cast("EagerTensorProtocol", getattr(res_traced, "shape")) == (2,)
+            t_traced = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockDataWithId)(), typing.cast("EagerCallableProtocol", TensorConfig)((3, 3), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+            res_traced = typing.cast("EagerCallableProtocol", matrix_mod.diag)(t_traced, 1)
+            assert typing.cast("EagerTensorProtocol", getattr(res_traced, "shape")) == (2,)
             mock_add_node.assert_called_once()
 
             # With input having id directly and dtype lacking value
@@ -158,8 +159,8 @@ def _test_frontend_matrix_coverage_sub_4(_state: dict[str, EagerTensorProtocol])
                 device: None = None
 
             mock_add_node.reset_mock()
-            res_traced2 = cast("EagerCallableProtocol", matrix_mod.diag)(cast("EagerCallableProtocol", MockInputDirectId)(), 0)
-            assert cast("EagerTensorProtocol", getattr(res_traced2, "shape")) == (4,)
+            res_traced2 = typing.cast("EagerCallableProtocol", matrix_mod.diag)(typing.cast("EagerCallableProtocol", MockInputDirectId)(), 0)
+            assert typing.cast("EagerTensorProtocol", getattr(res_traced2, "shape")) == (4,)
             mock_add_node.assert_called_once()
     getattr(_state, "update")({"MockDataWithId": MockDataWithId, "MockInputDirectId": MockInputDirectId, "mock_add_node": mock_add_node, "res_traced": res_traced})
     getattr(_state, "update")({"res_traced2": res_traced2, "t_traced": t_traced})

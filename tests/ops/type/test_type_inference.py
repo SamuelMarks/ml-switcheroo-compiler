@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype, resolve_output_dtype_and_device
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -38,11 +38,11 @@ class MockData:
 
 def test_resolve_dtype() -> None:
     """Test function test_resolve_dtype."""
-    assert cast("EagerCallableProtocol", resolve_dtype)(cast("EagerCallableProtocol", MockData)("dtype('int32')"), None) == DType.Int32
-    assert cast("EagerCallableProtocol", resolve_dtype)(cast("EagerCallableProtocol", MockData)("dtype_something"), None) == DType.Float32
-    assert cast("EagerCallableProtocol", resolve_dtype)(cast("EagerCallableProtocol", MockData)("dtype=float32"), None) == DType.Float32
-    assert cast("EagerCallableProtocol", resolve_dtype)(cast("EagerCallableProtocol", MockData)("invalid"), None) == DType.Float32
-    assert cast("EagerCallableProtocol", resolve_dtype)(None, cast("EagerCallableProtocol", MockTensor)(DType.Int64)) == DType.Int64
+    assert typing.cast("EagerCallableProtocol", resolve_dtype)(typing.cast("EagerCallableProtocol", MockData)("dtype('int32')"), None) == DType.Int32
+    assert typing.cast("EagerCallableProtocol", resolve_dtype)(typing.cast("EagerCallableProtocol", MockData)("dtype_something"), None) == DType.Float32
+    assert typing.cast("EagerCallableProtocol", resolve_dtype)(typing.cast("EagerCallableProtocol", MockData)("dtype=float32"), None) == DType.Float32
+    assert typing.cast("EagerCallableProtocol", resolve_dtype)(typing.cast("EagerCallableProtocol", MockData)("invalid"), None) == DType.Float32
+    assert typing.cast("EagerCallableProtocol", resolve_dtype)(None, typing.cast("EagerCallableProtocol", MockTensor)(DType.Int64)) == DType.Int64
     assert resolve_dtype(None, None) == DType.Float32
 
 
@@ -56,6 +56,6 @@ def test_resolve_output_dtype_and_device() -> None:
         device = "cpu"
 
     t = MockTensorWithDevice()
-    assert cast("EagerCallableProtocol", resolve_output_dtype_and_device)(t, {"dtype": DType.Float64}) == (DType.Float64, "cpu")
-    assert cast("EagerCallableProtocol", resolve_output_dtype_and_device)(t, {}) == (DType.Int32, "cpu")
+    assert typing.cast("EagerCallableProtocol", resolve_output_dtype_and_device)(t, {"dtype": DType.Float64}) == (DType.Float64, "cpu")
+    assert typing.cast("EagerCallableProtocol", resolve_output_dtype_and_device)(t, {}) == (DType.Int32, "cpu")
     assert resolve_output_dtype_and_device(None, {}) == (DType.Float32, None)

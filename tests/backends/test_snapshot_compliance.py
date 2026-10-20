@@ -1,4 +1,4 @@
-"""Tests verifying backend mappings compliance against ml-framework-snapshots."""
+"""Tests verifying backend mappings compliance against ml-ecosystem-snapshots."""
 
 from __future__ import annotations
 
@@ -6,13 +6,13 @@ import ast
 import glob
 import os
 import re
-from typing import TYPE_CHECKING
+import typing
 
 import yaml
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import SnapshotGroundingEngine
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 DEPRECATED_APIS: set[str] = {

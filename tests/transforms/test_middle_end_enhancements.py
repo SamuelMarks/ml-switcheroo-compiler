@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import typing
+
+from ml_switcheroo_ir import AttributeValue, NodeDict
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
 from ml_switcheroo_compiler.transforms.passes.cse import (
@@ -25,14 +29,14 @@ def test_dce_nested_subgraph_and_side_effect_free_loop() -> None:
     b_in = IRNode(id="b_in", op_type="Input")
     b_dead = IRNode(id="b_dead", op_type="Constant", attributes={"value": 42})
     b_add = IRNode(id="b_add", op_type="Add", inputs=["b_in", "b_in"])
-    body.nodes = {"b_in": b_in, "b_dead": b_dead, "b_add": b_add}
+    body.nodes = NodeDict({"b_in": b_in, "b_dead": b_dead, "b_add": b_add})
     body.outputs = ["b_add"]
 
     # Loop node whose output is never consumed and has no side effects
-    dead_loop = IRNode(id="dead_loop", op_type="WhileLoop", inputs=["x"], attributes={"body": body})
+    dead_loop = IRNode(id="dead_loop", op_type="WhileLoop", inputs=["x"], attributes=typing.cast("dict[str, AttributeValue]", {"body": body}))
     used_add = IRNode(id="used_add", op_type="Add", inputs=["x", "y"])
 
-    graph.nodes = {"x": x, "y": y, "dead_loop": dead_loop, "used_add": used_add}
+    graph.nodes = NodeDict({"x": x, "y": y, "dead_loop": dead_loop, "used_add": used_add})
     graph.outputs = ["used_add"]
 
     assert dce_pass(graph) is True
@@ -51,11 +55,11 @@ def test_dce_preserves_subgraph_with_side_effects() -> None:
     body = IRGraph()
     b_in = IRNode(id="b_in", op_type="Input")
     b_print = IRNode(id="b_print", op_type="Print", inputs=["b_in"])
-    body.nodes = {"b_in": b_in, "b_print": b_print}
+    body.nodes = NodeDict({"b_in": b_in, "b_print": b_print})
     body.outputs = ["b_in"]
 
-    side_effect_loop = IRNode(id="se_loop", op_type="WhileLoop", inputs=["x"], attributes={"body": body})
-    graph.nodes = {"x": x, "se_loop": side_effect_loop}
+    side_effect_loop = IRNode(id="se_loop", op_type="WhileLoop", inputs=["x"], attributes=typing.cast("dict[str, AttributeValue]", {"body": body}))
+    graph.nodes = NodeDict({"x": x, "se_loop": side_effect_loop})
     graph.outputs = []  # No graph outputs, but loop has side effect
 
     assert dce_pass(graph) is False
@@ -72,7 +76,7 @@ def test_cse_commutative_structural_hashing() -> None:
     add2 = IRNode(id="add2", op_type="Add", inputs=["b", "a"])
     mul = IRNode(id="mul", op_type="Mul", inputs=["add1", "add2"])
 
-    graph.nodes = {"a": a, "b": b, "add1": add1, "add2": add2, "mul": mul}
+    graph.nodes = NodeDict({"a": a, "b": b, "add1": add1, "add2": add2, "mul": mul})
     graph.outputs = ["mul"]
 
     assert cse_pass(graph) is True
@@ -83,15 +87,15 @@ def test_cse_commutative_structural_hashing() -> None:
 def test_cse_nested_subgraph_structural_hashing() -> None:
     """Test CSE structural hashing hashes nested IRGraph attributes."""
     g1 = IRGraph()
-    g1.nodes = {"in1": IRNode(id="in1", op_type="Input"), "c1": IRNode(id="c1", op_type="Constant", attributes={"value": 1})}
+    g1.nodes = NodeDict({"in1": IRNode(id="in1", op_type="Input"), "c1": IRNode(id="c1", op_type="Constant", attributes={"value": 1})})
     g1.outputs = ["c1"]
 
     g2 = IRGraph()
-    g2.nodes = {"in2": IRNode(id="in2", op_type="Input"), "c2": IRNode(id="c2", op_type="Constant", attributes={"value": 1})}
+    g2.nodes = NodeDict({"in2": IRNode(id="in2", op_type="Input"), "c2": IRNode(id="c2", op_type="Constant", attributes={"value": 1})})
     g2.outputs = ["c2"]
 
-    n1 = IRNode(id="n1", op_type="CustomOp", inputs=["in_common"], attributes={"sub": g1})
-    n2 = IRNode(id="n2", op_type="CustomOp", inputs=["in_common"], attributes={"sub": g2})
+    n1 = IRNode(id="n1", op_type="CustomOp", inputs=["in_common"], attributes=typing.cast("dict[str, AttributeValue]", {"sub": g1}))
+    n2 = IRNode(id="n2", op_type="CustomOp", inputs=["in_common"], attributes=typing.cast("dict[str, AttributeValue]", {"sub": g2}))
 
     hash1 = compute_node_structural_hash(n1, ["in_common"])
     hash2 = compute_node_structural_hash(n2, ["in_common"])
@@ -107,7 +111,7 @@ def test_constant_folding_multi_level_fixpoint() -> None:
     c3 = IRNode(id="c3", op_type="Constant", attributes={"value": 2})
     mul = IRNode(id="mul", op_type="Mul", inputs=["add", "c3"])
 
-    graph.nodes = {"c1": c1, "c2": c2, "add": add, "c3": c3, "mul": mul}
+    graph.nodes = NodeDict({"c1": c1, "c2": c2, "add": add, "c3": c3, "mul": mul})
     graph.outputs = ["mul"]
 
     assert constant_folding_pass(graph) is True
@@ -126,7 +130,7 @@ def test_operator_fusion_linear_relu_and_swiglu() -> None:
     b = IRNode(id="b", op_type="Input")
     linear = IRNode(id="linear", op_type="Linear", inputs=["x", "w", "b"])
     relu = IRNode(id="relu", op_type="Relu", inputs=["linear"])
-    graph_lr.nodes = {"x": x, "w": w, "b": b, "linear": linear, "relu": relu}
+    graph_lr.nodes = NodeDict({"x": x, "w": w, "b": b, "linear": linear, "relu": relu})
     graph_lr.outputs = ["relu"]
 
     assert operator_fusion_pass(graph_lr) is True
@@ -138,7 +142,7 @@ def test_operator_fusion_linear_relu_and_swiglu() -> None:
     y_in = IRNode(id="y_in", op_type="Input")
     silu = IRNode(id="silu", op_type="SiLU", inputs=["s_in"])
     mul = IRNode(id="mul", op_type="Multiply", inputs=["silu", "y_in"])
-    graph_swiglu.nodes = {"s_in": s_in, "y_in": y_in, "silu": silu, "mul": mul}
+    graph_swiglu.nodes = NodeDict({"s_in": s_in, "y_in": y_in, "silu": silu, "mul": mul})
     graph_swiglu.outputs = ["mul"]
 
     assert operator_fusion_pass(graph_swiglu) is True
@@ -149,7 +153,7 @@ def test_dce_prunes_dead_output_ids() -> None:
     """Test DCE prunes non-existent or unreferenced nodes from graph outputs."""
     graph = IRGraph()
     x = IRNode(id="x", op_type="Input")
-    graph.nodes = {"x": x}
+    graph.nodes = NodeDict({"x": x})
     # Output list contains a dangling node ID that was removed or doesn't exist
     graph.outputs = ["x", "non_existent_output"]
 
@@ -157,17 +161,13 @@ def test_dce_prunes_dead_output_ids() -> None:
     assert graph.outputs == ["x"]
 
 
-def test_cse_dict_and_list_attributes_and_legacy_signature() -> None:
-    """Test CSE structural hashing of dict and list attributes and legacy signature compatibility."""
-    from ml_switcheroo_compiler.transforms.passes.cse import _compute_node_signature
-
+def test_cse_dict_and_list_attributes_structural_hash() -> None:
+    """Test CSE structural hashing of dict and list attributes."""
     n_dict = IRNode(id="nd", op_type="Custom", attributes={"nested": {"k": "v"}, "seq": [1, 2, 3]})
     hash_val = compute_node_structural_hash(n_dict, [])
     assert isinstance(hash_val, str)
     assert len(hash_val) == 64
-
-    # Test legacy signature wrapper
-    assert _compute_node_signature(n_dict, []) == hash_val
+    assert compute_node_structural_hash(n_dict, []) == hash_val
 
 
 def test_constant_folding_backend_item_and_exception_handling() -> None:
@@ -179,7 +179,7 @@ def test_constant_folding_backend_item_and_exception_handling() -> None:
     c2 = IRNode(id="c2", op_type="Constant", attributes={"value": 2})
     op_fail = IRNode(id="op_fail", op_type="FaultyOp", inputs=["c1", "c2"])
 
-    graph.nodes = {"c1": c1, "c2": c2, "op_fail": op_fail}
+    graph.nodes = NodeDict({"c1": c1, "c2": c2, "op_fail": op_fail})
     graph.outputs = ["op_fail"]
 
     # Test ValueError/RuntimeError during constant folding is gracefully handled
@@ -191,7 +191,7 @@ def test_constant_folding_backend_item_and_exception_handling() -> None:
     c1 = IRNode(id="c1", op_type="Constant", attributes={"value": 1})
     c2 = IRNode(id="c2", op_type="Constant", attributes={"value": 2})
     add = IRNode(id="add", op_type="Add", inputs=["c1", "c2"])
-    graph_ok.nodes = {"c1": c1, "c2": c2, "add": add}
+    graph_ok.nodes = NodeDict({"c1": c1, "c2": c2, "add": add})
     graph_ok.outputs = ["add"]
 
     import numpy as np
@@ -230,7 +230,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     x = IRNode(id="x", op_type="Input")
     ag_node = IRNode(id="ag_in", op_type="Identity", inputs=["x"], attributes={"inject_collective": "AllGather"})
     setattr(ag_node, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
-    g_ag.nodes = {"x": x, "ag_in": ag_node}
+    g_ag.nodes = NodeDict({"x": x, "ag_in": ag_node})
     g_ag.outputs = ["ag_in"]
 
     assert spmd_partitioning_pass(g_ag) is True
@@ -242,7 +242,7 @@ def test_spmd_all_gather_and_all_to_all_injection() -> None:
     x2 = IRNode(id="x2", op_type="Input")
     a2a_node = IRNode(id="a2a_in", op_type="Identity", inputs=["x2"], attributes={"inject_collective": "AllToAll"})
     setattr(a2a_node, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp"]))
-    g_a2a.nodes = {"x2": x2, "a2a_in": a2a_node}
+    g_a2a.nodes = NodeDict({"x2": x2, "a2a_in": a2a_node})
     g_a2a.outputs = ["a2a_in"]
 
     assert spmd_partitioning_pass(g_a2a) is True

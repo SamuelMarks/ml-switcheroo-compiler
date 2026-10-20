@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, cast
+import typing
 
 import yaml
 
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.distributed.config_models import (
     StageCommunicationConfig,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -30,7 +30,7 @@ def test_pipeline_config_model() -> None:
             "stage_communication": {"protocol": "p2p_queue"},
         }
     }
-    config = cast("EagerCallableProtocol", PipelineTopologiesConfig)(root=data)
+    config = typing.cast("EagerCallableProtocol", PipelineTopologiesConfig)(root=data)
     default_config = config.get("default")
     assert default_config is not None
     assert default_config.microbatch_splitting.num_microbatches == 4

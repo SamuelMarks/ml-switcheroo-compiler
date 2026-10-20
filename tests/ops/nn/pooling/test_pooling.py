@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -36,7 +36,7 @@ from ml_switcheroo_compiler.ops.nn.pooling import (
     pool3d,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -56,8 +56,8 @@ def test_pooling_coverage() -> None:
     assert pool3d(t3, (2, 2, 2)) is not None
     assert pool3d(t3, (2, 2, 2), pool_mode="avg") is not None
     assert average_pool(t1, (2,)) is not None
-    pc_avg = PoolingConfig(SpatialConfig((2,), (1,), "VALID"), PoolingBehaviorConfig(pooling_type="AVG"))
-    pc_max = PoolingConfig(SpatialConfig((2,), (1,), "VALID"), PoolingBehaviorConfig(pooling_type="MAX"))
+    pc_avg = PoolingConfig(window=SpatialConfig(ksize=(2,), strides=(1,), padding="VALID"), behavior=PoolingBehaviorConfig(pooling_type="AVG"))
+    pc_max = PoolingConfig(window=SpatialConfig(ksize=(2,), strides=(1,), padding="VALID"), behavior=PoolingBehaviorConfig(pooling_type="MAX"))
     assert avg_pool1d(t1, pc_avg) is not None
     assert avg_pool2d(t2, pc_avg) is not None
     assert avg_pool3d(t3, pc_avg) is not None
@@ -66,13 +66,13 @@ def test_pooling_coverage() -> None:
     assert max_pool3d(t3, pc_max) is not None
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         max_pool_with_argmax(t2, pc_max)
-    pc_frac = PoolingConfig(SpatialConfig((2,), (1,), "VALID"), PoolingBehaviorConfig(pooling_type="AVG", pooling_ratio=(1.5,)))
+    pc_frac = PoolingConfig(window=SpatialConfig(ksize=(2,), strides=(1,), padding="VALID"), behavior=PoolingBehaviorConfig(pooling_type="AVG", pooling_ratio=(1.5,)))
     fractional_avg_pool(t2, pc_frac)
     fractional_max_pool(t2, pc_frac)
     assert pool(t1, pc_avg) is not None
     assert pool(t1, pc_max) is not None
-    assert cast("EagerCallableProtocol", FractionalAvgPool)().infer_shape(t1, (1.5,)) == t1.shape
-    assert cast("EagerCallableProtocol", FractionalMaxPool)().infer_shape(t1, (1.5,)) == t1.shape
+    assert typing.cast("EagerCallableProtocol", FractionalAvgPool)().infer_shape(t1, (1.5,)) == t1.shape
+    assert typing.cast("EagerCallableProtocol", FractionalMaxPool)().infer_shape(t1, (1.5,)) == t1.shape
 
 
 def _test_pooling_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -89,11 +89,11 @@ def _test_pooling_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     t1_3d = Tensor(np.random.rand(8, 8, 8).astype(np.float32), TensorConfig((8, 8, 8), "float32", "cpu"))
     c1 = _prepare_pool_config(4, 2, (2, 2), (2, 2), "VALID")
     c2 = _prepare_pool_config(4, 2, (2, 2), (2, 2), "SAME")
-    c3 = cast("EagerCallableProtocol", _prepare_pool_config)(4, 2, (2, 2), (2, 2), ((1, 1), (1, 1)))
+    c3 = typing.cast("EagerCallableProtocol", _prepare_pool_config)(4, 2, (2, 2), (2, 2), ((1, 1), (1, 1)))
     c4 = _prepare_pool_config(4, 2, (2, 2), (2, 2), (1, 1))
     _compute_pool_out_shape((2, 4, 8, 8), c1)
     _compute_pool_out_shape((2, 4, 8, 8), c2)
-    cast("EagerCallableProtocol", _compute_pool_out_shape)((2, 4, 8, 8), c3)
+    typing.cast("EagerCallableProtocol", _compute_pool_out_shape)((2, 4, 8, 8), c3)
     _compute_pool_out_shape((2, 4, 8, 8), c4)
     max_pool(t1, (2, 2))
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
@@ -111,12 +111,12 @@ def _test_pooling_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     (t1_1d, t1_2d) = (_state["t1_1d"], _state["t1_2d"])
-    cast("EagerCallableProtocol", pool1d)(t1_1d, 2, pool_mode="max")
-    cast("EagerCallableProtocol", pool1d)(t1_1d, 2, pool_mode="avg")
+    typing.cast("EagerCallableProtocol", pool1d)(t1_1d, 2, pool_mode="max")
+    typing.cast("EagerCallableProtocol", pool1d)(t1_1d, 2, pool_mode="avg")
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", pool1d)(t1_1d, 2, pool_mode="sum")
-    cast("EagerCallableProtocol", pool2d)(t1_2d, (2, 2), pool_mode="max")
-    cast("EagerCallableProtocol", pool2d)(t1_2d, (2, 2), pool_mode="avg")
+        typing.cast("EagerCallableProtocol", pool1d)(t1_1d, 2, pool_mode="sum")
+    typing.cast("EagerCallableProtocol", pool2d)(t1_2d, (2, 2), pool_mode="max")
+    typing.cast("EagerCallableProtocol", pool2d)(t1_2d, (2, 2), pool_mode="avg")
     _state.update(locals())
 
 
@@ -128,12 +128,12 @@ def _test_pooling_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (t1, t1_2d, t1_3d) = (_state["t1"], _state["t1_2d"], _state["t1_3d"])
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", pool2d)(t1_2d, (2, 2), pool_mode="sum")
-    cast("EagerCallableProtocol", pool3d)(t1_3d, (2, 2, 2), pool_mode="max")
-    cast("EagerCallableProtocol", pool3d)(t1_3d, (2, 2, 2), pool_mode="avg")
+        typing.cast("EagerCallableProtocol", pool2d)(t1_2d, (2, 2), pool_mode="sum")
+    typing.cast("EagerCallableProtocol", pool3d)(t1_3d, (2, 2, 2), pool_mode="max")
+    typing.cast("EagerCallableProtocol", pool3d)(t1_3d, (2, 2, 2), pool_mode="avg")
     with pytest.raises(Exception, match=".*"):
-        cast("EagerCallableProtocol", pool3d)(t1_3d, (2, 2, 2), pool_mode="sum")
-    cast("EagerCallableProtocol", average_pool)(t1, (2, 2))
+        typing.cast("EagerCallableProtocol", pool3d)(t1_3d, (2, 2, 2), pool_mode="sum")
+    typing.cast("EagerCallableProtocol", average_pool)(t1, (2, 2))
     p_conf = PoolingConfig(window=SpatialConfig(ksize=(2, 2), strides=(2, 2), padding="VALID"), behavior=PoolingBehaviorConfig(pooling_type="AVG", pooling_ratio=(0.5, 0.5)))
     p_conf_max = PoolingConfig(window=SpatialConfig(ksize=(2, 2), strides=(2, 2), padding="VALID"), behavior=PoolingBehaviorConfig(pooling_type="MAX", pooling_ratio=(0.5, 0.5)))
     getattr(_state, "update")({"p_conf": p_conf, "p_conf_max": p_conf_max})
@@ -149,10 +149,10 @@ def _test_pooling_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     (p_conf, p_conf_max, t1_1d, t1_2d) = (_state["p_conf"], _state["p_conf_max"], _state["t1_1d"], _state["t1_2d"])
     t1_3d = _state["t1_3d"]
     avg_pool1d(t1_1d, PoolingConfig(window=SpatialConfig(ksize=(2,), strides=(2,), padding="VALID"), behavior=PoolingBehaviorConfig()))
-    cast("EagerCallableProtocol", avg_pool2d)(t1_2d, p_conf)
+    typing.cast("EagerCallableProtocol", avg_pool2d)(t1_2d, p_conf)
     avg_pool3d(t1_3d, PoolingConfig(window=SpatialConfig(ksize=(2, 2, 2), strides=(2, 2, 2), padding="VALID"), behavior=PoolingBehaviorConfig()))
     max_pool1d(t1_1d, PoolingConfig(window=SpatialConfig(ksize=(2,), strides=(2,), padding="VALID"), behavior=PoolingBehaviorConfig()))
-    cast("EagerCallableProtocol", max_pool2d)(t1_2d, p_conf_max)
+    typing.cast("EagerCallableProtocol", max_pool2d)(t1_2d, p_conf_max)
     _state.update(locals())
 
 
@@ -165,9 +165,9 @@ def _test_pooling_brute_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
     (p_conf, p_conf_max, t1, t1_3d) = (_state["p_conf"], _state["p_conf_max"], _state["t1"], _state["t1_3d"])
     max_pool3d(t1_3d, PoolingConfig(window=SpatialConfig(ksize=(2, 2, 2), strides=(2, 2, 2), padding="VALID"), behavior=PoolingBehaviorConfig()))
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        cast("EagerCallableProtocol", max_pool_with_argmax)(t1, p_conf_max)
-    cast("EagerCallableProtocol", fractional_avg_pool)(t1, p_conf)
-    cast("EagerCallableProtocol", fractional_max_pool)(t1, p_conf_max)
+        typing.cast("EagerCallableProtocol", max_pool_with_argmax)(t1, p_conf_max)
+    typing.cast("EagerCallableProtocol", fractional_avg_pool)(t1, p_conf)
+    typing.cast("EagerCallableProtocol", fractional_max_pool)(t1, p_conf_max)
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -184,16 +184,16 @@ def _test_pooling_brute_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (global_tracing_state, p_conf, p_conf_max, t1) = (_state["global_tracing_state"], _state["p_conf"], _state["p_conf_max"], _state["t1"])
     try:
-        cast("EagerCallableProtocol", max_pool)(t1, (2, 2), return_indices=True)
-        cast("EagerCallableProtocol", fractional_avg_pool)(t1, p_conf)
-        cast("EagerCallableProtocol", fractional_max_pool)(t1, p_conf_max)
+        typing.cast("EagerCallableProtocol", max_pool)(t1, (2, 2), return_indices=True)
+        typing.cast("EagerCallableProtocol", fractional_avg_pool)(t1, p_conf)
+        typing.cast("EagerCallableProtocol", fractional_max_pool)(t1, p_conf_max)
         FractionalAvgPool().infer_shape(t1, p_conf.behavior.pooling_ratio)
         FractionalMaxPool().infer_shape(t1, p_conf_max.behavior.pooling_ratio)
     finally:
         setattr(global_tracing_state, "is_tracing", False)
     with pytest.raises(RuntimeError):
-        cast("EagerCallableProtocol", pool)(t1, p_conf)
-    cast("EagerCallableProtocol", pool)(t1, p_conf_max)
+        typing.cast("EagerCallableProtocol", pool)(t1, p_conf)
+    typing.cast("EagerCallableProtocol", pool)(t1, p_conf_max)
     from unittest.mock import patch
 
     config.eager_mode = True
@@ -231,7 +231,7 @@ def _test_pooling_brute_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
                 return x
 
         setattr(mock_backend, "return_value", DummyBackend())
-        cast("EagerCallableProtocol", max_pool)(t1, (2, 2), return_indices=True)
+        typing.cast("EagerCallableProtocol", max_pool)(t1, (2, 2), return_indices=True)
     config.eager_mode = False
     getattr(_state, "update")({"DummyBackend": DummyBackend, "mock_backend": mock_backend})
     _state.update(locals())
@@ -245,9 +245,9 @@ def _test_pooling_brute_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (p_conf, p_conf_max, patch, t1) = (_state["p_conf"], _state["p_conf_max"], _state["patch"], _state["t1"])
     with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node"), patch("ml_switcheroo_compiler.ops.linalg.utils._emit_linalg_node"):
-        cast("EagerCallableProtocol", max_pool)(t1, (2, 2), return_indices=True)
-        cast("EagerCallableProtocol", fractional_avg_pool)(t1, p_conf)
-        cast("EagerCallableProtocol", fractional_max_pool)(t1, p_conf_max)
+        typing.cast("EagerCallableProtocol", max_pool)(t1, (2, 2), return_indices=True)
+        typing.cast("EagerCallableProtocol", fractional_avg_pool)(t1, p_conf)
+        typing.cast("EagerCallableProtocol", fractional_max_pool)(t1, p_conf_max)
 
 
 def test_pooling_brute() -> None:

@@ -4,18 +4,20 @@ from __future__ import annotations
 
 import os
 import random
+import typing
 from collections.abc import Iterable, Iterator, Sequence
-from dataclasses import dataclass, field
-from typing import Union, cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
-DatasetElement = Union[int, float, str, bool, list[int], list[float], list[str], tuple[int, ...], tuple[float, ...]]
+DatasetElement = typing.Union[int, float, str, bool, list[int], list[float], list[str], tuple[int, ...], "tuple[float, ...]"]
 
 
-@dataclass
-class TimeseriesConfig:
+class TimeseriesConfig(pydantic.BaseModel):
     """Configuration for timeseries sliding-window extraction."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     sequence_length: int
     sampling_rate: int
@@ -24,18 +26,20 @@ class TimeseriesConfig:
     end_index: int | None
 
 
-@dataclass
-class BatchConfig:
+class BatchConfig(pydantic.BaseModel):
     """Configuration for batching and shuffling data."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     batch_size: int = 32
     shuffle: bool = True
     seed: int | None = None
 
 
-@dataclass
-class IOConfig:
+class IOConfig(pydantic.BaseModel):
     """Configuration for file I/O operations."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     labels: str | Sequence[int] = "inferred"
     label_mode: str = "int"
@@ -45,9 +49,10 @@ class IOConfig:
     subset: str | None = None
 
 
-@dataclass
-class DataAugmentationConfig:
+class DataAugmentationConfig(pydantic.BaseModel):
     """Configuration for data augmentation and image properties."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     color_mode: str = "rgb"
     image_size: tuple[int, int] = (256, 256)
@@ -55,9 +60,10 @@ class DataAugmentationConfig:
     crop_to_aspect_ratio: bool = False
 
 
-@dataclass
-class DataLoaderConfig:
+class DataLoaderConfig(pydantic.BaseModel):
     """Configuration for data loader sequences and timing."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     sampling_rate: int | None = None
     output_sequence_length: int | None = None
@@ -67,14 +73,15 @@ class DataLoaderConfig:
     end_index: int | None = None
 
 
-@dataclass
-class DatasetConfig:
+class DatasetConfig(pydantic.BaseModel):
     """Dataset configuration options."""
 
-    batch_config: BatchConfig = field(default_factory=BatchConfig)
-    io_config: IOConfig = field(default_factory=IOConfig)
-    augmentation: DataAugmentationConfig = field(default_factory=DataAugmentationConfig)
-    loader: DataLoaderConfig = field(default_factory=DataLoaderConfig)
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    batch_config: BatchConfig = pydantic.Field(default_factory=BatchConfig)
+    io_config: IOConfig = pydantic.Field(default_factory=IOConfig)
+    augmentation: DataAugmentationConfig = pydantic.Field(default_factory=DataAugmentationConfig)
+    loader: DataLoaderConfig = pydantic.Field(default_factory=DataLoaderConfig)
 
 
 class NumpyDataset:
@@ -397,9 +404,9 @@ def timeseries_dataset_from_array(
         {"sequence_length": sequence_length, "sampling_rate": sampling_rate},
         (start, stop, stride),
     )
-    return cast(
+    return typing.cast(
         NumpyDataset,
-        cast("EagerCallableProtocol", NumpyDataset)(
+        typing.cast("EagerCallableProtocol", NumpyDataset)(
             x,
             y,
             config=BatchConfig(

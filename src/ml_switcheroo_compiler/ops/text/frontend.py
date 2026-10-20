@@ -1,13 +1,17 @@
 """Text and Categorical operations."""
 
+from __future__ import annotations
+
+import typing
 import uuid
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Optional, cast  # noqa: F401
+from collections.abc import Callable  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 from ml_switcheroo_ir import LogicalNode
@@ -21,15 +25,20 @@ from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
 
-@dataclass
-class AsStringConfig:
+class AsStringConfig(pydantic.BaseModel):
     """AsString Config."""
 
-    precision: int = -1
-    scientific: bool = False
-    shortest: bool = False
-    width: int = -1
-    fill: str = ""
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    precision: int | TensorOrScalar = -1
+    scientific: bool | TensorOrScalar = False
+    shortest: bool | TensorOrScalar = False
+    width: int | TensorOrScalar = -1
+    fill: str | TensorOrScalar = ""
+
+    def __init__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
+        """Initialize AsStringConfig from positional or keyword arguments."""
+        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 
 def string_to_hash(input_tensor: Tensor, num_buckets: int) -> TensorOrScalar:
@@ -45,7 +54,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringToHash", input_tensor.data, num_buckets=num_buckets)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.Int32, input_tensor.device),
@@ -73,7 +82,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> TensorOrS
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RegexReplace", input_tensor.data, pattern=pattern, rewrite=rewrite)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.String, input_tensor.device),
@@ -100,7 +109,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("RegexFullMatch", input_tensor.data, pattern=pattern)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.Bool, input_tensor.device),
@@ -127,7 +136,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringJoin", [t.data for t in inputs], separator=separator)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.String, inputs[0].device),
@@ -153,7 +162,7 @@ def string_length(input_tensor: Tensor) -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringLength", input_tensor.data)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.Int32, input_tensor.device),
@@ -181,7 +190,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringSubstr", input_tensor.data, pos=pos, len=len)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.String, input_tensor.device),
@@ -206,9 +215,9 @@ def _string_split_eager(input_tensor: Tensor, delimiter: str) -> TensorOrScalar:
         tuple: Result.
     """
     backend = get_active_backend()
-    tokens, lengths = cast("tuple[TensorOrScalar, TensorOrScalar]", backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
-    tokens_arr = cast("TensorLike", backend.array(tokens))
-    lengths_arr = cast("TensorLike", backend.array(lengths))
+    tokens, lengths = typing.cast("tuple[TensorOrScalar, TensorOrScalar]", backend.execute_op("StringSplit", input_tensor.data, delimiter=delimiter))
+    tokens_arr = typing.cast("TensorLike", backend.array(tokens))
+    lengths_arr = typing.cast("TensorLike", backend.array(lengths))
     return (
         Tensor(
             tokens_arr,
@@ -242,7 +251,7 @@ def _string_split_trace(input_tensor: Tensor, delimiter: str) -> TensorOrScalar:
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs((input_tensor,))
 
-    node = cast("Callable[..., LogicalNode]", LogicalNode)(
+    node = typing.cast("TypedVariadicCallable[LogicalNode]", LogicalNode)(
         id=out_id_tokens,
         op_type="StringSplit",
         inputs=input_ids,
@@ -288,7 +297,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Lookup", input_tensor.data, vocabulary=vocabulary.data)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.Int32, input_tensor.device),
@@ -315,7 +324,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: TensorOrScalar) -> Tensor
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("TextVectorization", input_tensor.data, **kwargs)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.Int32, input_tensor.device),
@@ -342,7 +351,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tens
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringToNumber", input_tensor.data, dtype=dtype)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, dtype, input_tensor.device),
@@ -368,7 +377,7 @@ def string_lower(input_tensor: Tensor) -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringLower", input_tensor.data)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.String, input_tensor.device),
@@ -394,7 +403,7 @@ def string_upper(input_tensor: Tensor) -> TensorOrScalar:
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("StringUpper", input_tensor.data)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.String, input_tensor.device),
@@ -422,7 +431,7 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
     if global_config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("EditDistance", hypothesis.data, truth.data, normalize=normalize)
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.Float32, hypothesis.device),
@@ -436,7 +445,7 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
     )
 
 
-def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> TensorOrScalar:
+def _as_string_config_to_dict(conf: AsStringConfig | None) -> TensorOrScalar:
     """Convert AsStringConfig to a dictionary.
 
     Args:
@@ -446,7 +455,7 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> TensorOrScalar:
             tuple[int, ...]: Result.
     """
     conf = conf if conf is not None else AsStringConfig()
-    return cast(
+    return typing.cast(
         TensorOrScalar,
         {
             "precision": conf.precision,
@@ -460,7 +469,7 @@ def _as_string_config_to_dict(conf: Optional[AsStringConfig]) -> TensorOrScalar:
 
 def as_string(
     input_tensor: Tensor,
-    config: Optional[AsStringConfig] = None,
+    config: AsStringConfig | None = None,
 ) -> TensorOrScalar:
     """Convert a numeric tensor to a string tensor.
 
@@ -474,15 +483,15 @@ def as_string(
     kwargs = _as_string_config_to_dict(config)
     if global_config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("AsString", input_tensor.data, **cast("dict[str, TensorOrScalar]", kwargs))
-        arr = cast("TensorLike", backend.array(data))
+        data = backend.execute_op("AsString", input_tensor.data, **typing.cast("dict[str, TensorOrScalar]", kwargs))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, DType.String, input_tensor.device),
         )
-    return cast(
+    return typing.cast(
         TensorOrScalar,
-        cast("EagerCallableProtocol", _emit_shape_node)(
+        typing.cast("EagerCallableProtocol", _emit_shape_node)(
             "AsString",
             [input_tensor],
             kwargs,

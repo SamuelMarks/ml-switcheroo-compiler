@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Callable, Iterable
-from typing import cast
+from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -24,7 +23,7 @@ def _get_node_items(block: LogicalGraph) -> Iterable[tuple[str, LogicalNode]]:
     """
     if not hasattr(block, "nodes"):
         return []
-    nodes: typing.Union[list[LogicalNode], dict[str, LogicalNode]] = block.nodes
+    nodes: list[LogicalNode] | dict[str, LogicalNode] = block.nodes
     if isinstance(nodes, dict):
         return list(nodes.items())
     return [(n.id, n) for n in nodes]
@@ -84,7 +83,7 @@ def _lift_block(block: LogicalGraph) -> bool:
     return block_mod
 
 
-StateEntry = typing.Union[Tensor, int, float, str, bool, list["StateEntry"], tuple["StateEntry", ...], dict[str, "StateEntry"], None]
+StateEntry = typing.Union[Tensor, int, float, str, bool, list["StateEntry"], tuple["StateEntry", ...], dict[str, "StateEntry"], "None"]
 
 
 def _get_val(curr_obj: TensorOrScalar, key: str) -> StateEntry:
@@ -236,7 +235,7 @@ class StateLiftingPass:
                 id=nid,
                 op_type="Input",
                 inputs=[],
-                shape_metadata={"shape": tuple(shape_meta)},
+                shape_metadata=tuple(shape_meta),
                 attributes={
                     "name": name,
                     "param_name": name,
@@ -246,19 +245,20 @@ class StateLiftingPass:
                     "dtype": str(dtype_meta),
                 },
             )
+            object.__setattr__(node, "shape_metadata", {"shape": tuple(shape_meta)})
             graph.nodes[nid] = node
             graph.inputs.append(nid)
 
         return combined_state, graph
 
-    def functionalize(self, container: Callable[..., TensorOrScalar]) -> tuple[dict[str, StateEntry], Callable[..., tuple[StateEntry, dict[str, StateEntry]]]]:
+    def functionalize(self, container: TypedVariadicCallable[TensorOrScalar]) -> tuple[dict[str, StateEntry], TypedVariadicCallable[tuple[StateEntry, dict[str, StateEntry]]]]:
         """Convert a stateful callable container into a pure function accepting and returning state.
 
         Args:
-            container (Callable[..., TensorOrScalar]): The stateful callable container.
+            container (TypedVariadicCallable[TensorOrScalar]): The stateful callable container.
 
         Returns:
-            tuple[dict[str, StateEntry], Callable[..., tuple[StateEntry, dict[str, StateEntry]]]]: Initial state dictionary and pure function.
+            tuple[dict[str, StateEntry], TypedVariadicCallable[tuple[StateEntry, dict[str, StateEntry]]]]: Initial state dictionary and pure function.
         """
         params, buffers = self.extract_state(container)
         current_state = {**params, **buffers}
@@ -293,14 +293,14 @@ class StateLiftingPass:
                     parent = _navigate(container, parts[:-1])
                     new_state[k] = _get_val(parent, parts[-1])
 
-                return cast(tuple[StateEntry, dict[str, StateEntry]], (out, new_state))
+                return typing.cast(tuple[StateEntry, dict[str, StateEntry]], (out, new_state))
             finally:
                 for k, v in backup.items():
                     parts = k.split(".")
                     parent = _navigate(container, parts[:-1])
                     _set_val(parent, parts[-1], v)
 
-        return current_state, pure_fn
+        return current_state, typing.cast("TypedVariadicCallable[tuple[StateEntry, dict[str, StateEntry]]]", pure_fn)
 
     def run(self, graph: IRGraph) -> bool:
         """Run in-place state lifting pass on IRGraph.

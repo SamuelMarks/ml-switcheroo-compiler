@@ -1,6 +1,8 @@
 """Distributed AST Mixin."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor, FallbackPrefixProtocol
@@ -17,7 +19,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         Args:
             generator: The generator instance.
         """
-        super().__init__(generator=cast("FallbackPrefixProtocol", generator))
+        super().__init__(generator=typing.cast("FallbackPrefixProtocol", generator))
 
     def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Generate code for the Send operation.
@@ -30,7 +32,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         Returns:
             str: Generated code.
         """
-        target: int = int(cast(int, node.attributes.get("target_stage", 0)))
+        target: int = int(typing.cast(int, node.attributes.get("target_stage", 0)))
         self.generator.code.append(f"    # Send tensor to pipeline stage {target}")
         gen_class_name = self.generator.__class__.__name__.replace("CodeGenerator", "").replace("Generator", "").lower()
         if gen_class_name == "numpy":
@@ -56,7 +58,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         Returns:
             str: Generated code.
         """
-        source: int = int(cast(int, node.attributes.get("source_stage", 0)))
+        source: int = int(typing.cast(int, node.attributes.get("source_stage", 0)))
         shape = node.shape_metadata
         dtype: str = getattr(node, "dtype", "float32")
         self.generator.code.append(f"    # Recv tensor from pipeline stage {source}")

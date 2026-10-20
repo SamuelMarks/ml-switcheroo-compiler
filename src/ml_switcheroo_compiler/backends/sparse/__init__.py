@@ -1,8 +1,10 @@
 """Sparse COO Code Generator and Execution Package."""
 
+from __future__ import annotations
+
 import importlib.util
 import sys
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
@@ -48,7 +50,7 @@ type.__setattr__(SparseGenerator, "zeros", classmethod(zeros))
 type.__setattr__(SparseGenerator, "array", classmethod(array))
 type.__setattr__(SparseGenerator, "asarray", classmethod(asarray))
 type.__setattr__(SparseGenerator, "item", classmethod(item))
-type.__setattr__(SparseGenerator, "execute_op", cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(SparseGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))
 
 __all__ = [
     "COOTensor",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -22,12 +22,12 @@ def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tup
             tuple[int, ...]: Result.
     """
     if hasattr(k, "__array__") and not isinstance(k, tuple):
-        k = cast(Tensor, getattr(k, "__array__")())
+        k = typing.cast(Tensor, getattr(k, "__array__")())
     if hasattr(k, "item"):
         k = int(getattr(k, "item")())
     else:
         try:
-            k = int(cast(int, k))
+            k = int(typing.cast(int, k))
         except (ValueError, TypeError):
             return k
     return k
@@ -52,12 +52,12 @@ class TopK(OpDef):
         """
         if k is None:
             k = kwargs.get("k", 1)
-        k = cast("EagerCallableProtocol", _normalize_k)(k)
+        k = typing.cast("EagerCallableProtocol", _normalize_k)(k)
 
         if not hasattr(x, "shape") or not x.shape:
             return (None,)
         out_shape = list(x.shape)
-        out_shape[-1] = cast(int, k)
+        out_shape[-1] = typing.cast(int, k)
         return tuple(out_shape)
 
 
@@ -69,7 +69,7 @@ class Argsort(OpDef):
 
     def infer_shape(
         self,
-        x: EagerTensorProtocol,
+        x: TensorOrScalar,
         dimension: TensorOrScalar = -1,
         is_stable: TensorOrScalar = True,
         **kwargs: TensorOrScalar,
@@ -86,8 +86,8 @@ class Argsort(OpDef):
             tuple[int, ...]: Result.
         """
         if isinstance(x, tuple) and hasattr(x, "shape"):
-            return x.shape
-        return getattr(x, "shape", ())
+            return typing.cast("tuple[int, ...]", getattr(x, "shape"))
+        return typing.cast("tuple[int, ...]", getattr(x, "shape", ()))
 
 
 @register_op("Sort")
@@ -98,7 +98,7 @@ class Sort(OpDef):
 
     def infer_shape(
         self,
-        x: EagerTensorProtocol,
+        x: TensorOrScalar,
         dimension: TensorOrScalar = -1,
         is_stable: TensorOrScalar = True,
         **kwargs: TensorOrScalar,
@@ -361,7 +361,7 @@ class AssignSub(OpDef):
 class TensorScatterUpdate(OpDef):
     """Operator to scatter updates into a new tensor using multi-dimensional indices."""
 
-    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for scattered multidimensional updates.
 
         Args:
@@ -426,7 +426,7 @@ class Compress(OpDef):
     op_name = "Compress"
     np_op_name = "compress"
 
-    def infer_shape(self, condition: EagerTensorProtocol, a: EagerTensorProtocol, axis: TensorOrScalar = None, out: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, condition: TensorOrScalar, a: TensorOrScalar, axis: TensorOrScalar = None, out: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the compressed array.
 
         Args:
@@ -449,7 +449,7 @@ class Diagonal(OpDef):
     op_name = "Diagonal"
     np_op_name = "diagonal"
 
-    def infer_shape(self, a: EagerTensorProtocol, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: TensorOrScalar, offset: int = 0, axis1: int = 0, axis2: int = 1, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the diagonal extraction.
 
         Args:
@@ -472,7 +472,7 @@ class Diagflat(OpDef):
     op_name = "Diagflat"
     np_op_name = "diagflat"
 
-    def infer_shape(self, v: EagerTensorProtocol, k: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, v: TensorOrScalar, k: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the flattened diagonal matrix.
 
         Args:
@@ -514,7 +514,7 @@ class DiagIndicesFrom(OpDef):
     op_name = "DiagIndicesFrom"
     np_op_name = "diag_indices_from"
 
-    def infer_shape(self, arr: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, arr: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the n-dimensional diagonal indices.
 
         Args:
@@ -532,7 +532,7 @@ class BooleanMask(OpDef):
 
     op_name = "BooleanMask"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, mask: EagerTensorProtocol, axis: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: TensorOrScalar, mask: TensorOrScalar, axis: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the boolean masked array.
 
         Args:
@@ -554,7 +554,7 @@ class InvertPermutation(OpDef):
 
     op_name = "InvertPermutation"
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the inverted permutation.
 
         Args:

@@ -1,16 +1,19 @@
 """Dask backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import resource
 import sys
 import time
+import typing
 from types import ModuleType
-from typing import Callable, Optional, Union, cast
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-da: Optional[ModuleType]
+da: ModuleType | None
 try:
     import dask.array as _da
 
@@ -26,12 +29,13 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
 
-def _sync_dask_result(result: Union[EagerValue, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue]]) -> EagerValue:
+def _sync_dask_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ...] | dict[str, EagerValue]) -> EagerValue:
     """Force computation and synchronization of Dask computation graph.
 
     Args:
@@ -49,7 +53,7 @@ def _sync_dask_result(result: Union[EagerValue, list[EagerValue], tuple[EagerVal
         return type(result)(computed)
     if hasattr(result, "compute") and callable(getattr(result, "compute")):
         try:
-            return cast(EagerValue, getattr(result, "compute")())
+            return typing.cast(EagerValue, getattr(result, "compute")())
         except Exception:
             return result
     return result
@@ -61,7 +65,7 @@ class DaskProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
     ) -> list[EagerValue]:
         """Convert input structures into topologically ordered Dask arrays.
 
@@ -88,14 +92,14 @@ class DaskProfiler:
             return [da_inputs_dict[k] for k in input_keys]
         return list(da_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., EagerValue]]:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
         """Compile an IRGraph into an executable Dask function.
 
         Args:
             graph (IRGraph): The IR computation graph.
 
         Returns:
-            Optional[Callable[..., object]]: Evaluator function.
+            Optional[TypedVariadicCallable[object]]: Evaluator function.
 
         Raises:
             TypeError: If evaluate cannot be loaded from the generated code.
@@ -113,11 +117,11 @@ class DaskProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on Dask backend with concrete computation.
 
         Args:
@@ -147,7 +151,7 @@ class DaskProfiler:
         da_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Optional[Callable[..., EagerValue]] = None
+        compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)

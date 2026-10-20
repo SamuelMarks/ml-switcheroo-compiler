@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 import yaml
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import (
@@ -20,7 +21,7 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     _discover_fusion_patterns,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -40,12 +41,12 @@ def test_pass_manager_coverage_branches() -> None:
             self.outputs = ["n1"]
 
     lg = MockListGraph()
-    snap = cast("EagerCallableProtocol", _snapshot_graph)(lg)
+    snap = typing.cast("EagerCallableProtocol", _snapshot_graph)(lg)
     assert "n1" in snap["nodes"]
 
     # Restore onto list graph
     lg_target = MockListGraph()
-    cast("EagerCallableProtocol", _restore_graph)(lg_target, snap)
+    typing.cast("EagerCallableProtocol", _restore_graph)(lg_target, snap)
     assert len(lg_target.nodes) == 1
 
     # 2. load_from_config with plain execution_order
@@ -103,7 +104,7 @@ def test_buffer_allocation_gap_reuse() -> None:
     n_dyn = IRNode(id="n_dyn", op_type="Add", shape_metadata=("B", 10))
     n_dyn.attributes["dtype"] = "float32"
 
-    g.nodes = {"n1": n1, "n2": n2, "n3": n3, "n4": n4, "n_dyn": n_dyn}
+    g.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3, "n4": n4, "n_dyn": n_dyn})
     g.outputs = ["n4"]
 
     offsets = alloc_pass.calculate_arena_offsets(g, alignment=16)

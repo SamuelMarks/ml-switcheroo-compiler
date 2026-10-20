@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+from ml_switcheroo_ir import AttributeValue
+
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_wasm_missing_methods_extra() -> None:
@@ -59,12 +61,13 @@ def test_wasm_line_coverage_extra() -> None:
     n_avgpool = IRNode(id="n_avgpool", op_type="AvgPool2D", inputs=["n_dummy_none"], shape_metadata=[])
 
     n_matmul_int = IRNode(id="n_matmul_int", op_type="MatMul", inputs=["n_dummy_int", "n_dummy_int"], shape_metadata=[])
-    n_dummy_int = IRNode(id="n_dummy_int", op_type="Input", inputs=[], shape_metadata=1)
+    n_dummy_int = IRNode(id="n_dummy_int", op_type="Input", inputs=[])
+    object.__setattr__(n_dummy_int, "shape_metadata", 1)
 
     n_cond_unmapped = IRNode(id="n_cond", op_type="Cond", inputs=["dummy"], shape_metadata=[])
-    n_cond_unmapped.attributes["then_branch"] = IRGraph()
+    n_cond_unmapped.attributes["then_branch"] = typing.cast("AttributeValue", IRGraph())
     setattr(getattr(getattr(n_cond_unmapped, "attributes"), "__getitem__")("then_branch"), "inputs", ["not_in_parent"])
-    getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(n_cond_unmapped.attributes, "__getitem__")("then_branch")), "nodes")), "__setitem__")("sub", cast("EagerCallableProtocol", IRNode)("sub", "Add", ["not_in_parent"]))
+    getattr(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(n_cond_unmapped.attributes, "__getitem__")("then_branch")), "nodes")), "__setitem__")("sub", IRNode("sub", "Add", inputs=["not_in_parent"]))
 
     for n in [n_conv2d, n_dummy, n_dummy_none, n_avgpool, n_matmul_int, n_dummy_int, n_cond_unmapped]:
         g.nodes[n.id] = n

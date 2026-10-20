@@ -1,22 +1,21 @@
 """Math Ops."""
 
+from __future__ import annotations
+
+import typing
 from collections.abc import Sequence  # noqa: F401
-from types import ModuleType
-from typing import (
-    Optional,  # noqa: F401
-    cast,
-)
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 from .math_general import _get_np_arg, _get_sc  # noqa: F401
 
 
 @numpy_eager_registry.register("Clz")
-def _np_clz(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_clz(backend_module: BackendModuleProtocol, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Count the number of leading zero bits in the integer representation of the input.
 
     Args:
@@ -45,17 +44,17 @@ def _np_clz(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwar
         Returns:
             int: Result.
         """
-        val_i: int = int(cast(int, val))
+        val_i: int = int(typing.cast(int, val))
         if val_i < 0:
             val_i = val_i & (1 << int(bit_width)) - 1
         return int(bit_width) - val_i.bit_length()
 
     res = np.vectorize(_clz_scalar)(x_arr)
-    return cast(EagerValue, res.astype(x_arr.dtype))
+    return typing.cast(EagerValue, res.astype(x_arr.dtype))
 
 
 @numpy_eager_registry.register("BitcastConvertType")
-def _np_bitcast_convert_type(backend_module: ModuleType, x: EagerValue, new_dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_bitcast_convert_type(backend_module: BackendModuleProtocol, x: EagerValue, new_dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Bitcast a tensor from one type to another without changing its underlying memory.
 
     Args:
@@ -72,7 +71,7 @@ def _np_bitcast_convert_type(backend_module: ModuleType, x: EagerValue, new_dtyp
 
 
 @numpy_eager_registry.register("Packbits")
-def _np_packbits(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Pack the elements of a binary-valued array into bits in a uint8 array.
 
     Args:
@@ -82,11 +81,11 @@ def _np_packbits(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(np, "packbits")(np.asarray(args[0]), **kwargs))
+    return typing.cast(EagerValue, getattr(np, "packbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("Unpackbits")
-def _np_unpackbits(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Unpack elements of a uint8 array into a binary-valued output array.
 
     Args:
@@ -96,11 +95,11 @@ def _np_unpackbits(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(np, "unpackbits")(np.asarray(args[0]), **kwargs))
+    return typing.cast(EagerValue, getattr(np, "unpackbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("BitwiseCount")
-def _np_bitwise_count(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_bitwise_count(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np bitwise count operation on the active backend array.
 
     Args:

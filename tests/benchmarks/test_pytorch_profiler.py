@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_ir import LogicalGraph
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 if "torch" in sys.modules and hasattr(sys.modules["torch"], "Tensor"):
@@ -54,7 +57,7 @@ def _test_pytorch_profiler_exhaustive_part_1(_state: dict[str, EagerTensorProtoc
     # 4. Existing torch.Tensor input branch
     t_in = torch.tensor([1.0, 2.0], dtype=torch.float32)
     res_tensor = profiler.profile_graph(IRGraph(), {"t": t_in, "list": [3.0, 4.0]}, num_iters=2, warmup_iters=1)
-    assert cast("EagerCallableProtocol", len)(res_tensor["latencies"]) == 2
+    assert typing.cast("EagerCallableProtocol", len)(res_tensor["latencies"]) == 2
 
     # 5. Empty inputs branch
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
@@ -147,14 +150,14 @@ def _test_pytorch_profiler_exhaustive_part_4(_state: dict[str, EagerTensorProtoc
     g_no_out, g_ops, profiler = _state["g_no_out"], _state["g_ops"], _state["profiler"]
     g_no_out.nodes["y"] = IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(2,))
     setattr(g_no_out, "outputs", [])
-    tgm_no_out = cast("EagerCallableProtocol", TorchGraphModule)(g_no_out)
+    tgm_no_out = typing.cast("EagerCallableProtocol", TorchGraphModule)(g_no_out)
     out_no_out = tgm_no_out.forward({"x": torch.tensor([1.0, 2.0])})
-    assert out_no_out is None
+    assert typing.cast("EagerValue", out_no_out) is None
 
     # TorchGraphModule TypeError when generator doesn't produce Module
     with patch("ml_switcheroo_compiler.backends.pytorch.generator.PyTorchCodeGenerator.generate", return_value="# empty"):
         with pytest.raises(TypeError, match="Failed to generate valid torch.nn.Module"):
-            TorchGraphModule(g_ops)
+            TorchGraphModule(typing.cast("LogicalGraph", g_ops))
 
     # Fallback when torch has non-callable compile attribute
     with patch.object(torch, "compile", None):

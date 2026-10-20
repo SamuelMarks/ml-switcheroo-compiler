@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING
+import typing
 from unittest.mock import patch
 
 import pytest
@@ -22,7 +22,7 @@ from scripts.validate_backend_mappings import (
     validate_mappings,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 

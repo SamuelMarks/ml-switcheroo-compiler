@@ -2,7 +2,10 @@
 
 """Define shape manipulation operations for the ML Switcheroo framework."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
+from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -27,10 +30,8 @@ class Concatenate(OpDef):
             tuple[int, ...]: The inferred shape of the concatenated output tensor.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            from typing import cast
-
-            shapes = cast("list[tuple[int, ...]] | tuple[tuple[int, ...], ...]", args[0])
-            axis = int(cast(int, kwargs.get("axis", 0)))
+            shapes = typing.cast("list[tuple[int, ...]] | tuple[tuple[int, ...], ...]", args[0])
+            axis = int(typing.cast(int, kwargs.get("axis", 0)))
             if not shapes:
                 return ()
             res = list(shapes[0])
@@ -159,7 +160,7 @@ class Hstack(OpDef):
     This operator stacks arrays in sequence horizontally (column wise).
     """
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -170,7 +171,7 @@ class Hstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
             if not shapes:
                 return ()
             # Hstack: if 1D, sum sizes. if >1D, sum along axis 1.
@@ -189,7 +190,7 @@ class Vstack(OpDef):
     This operator stacks arrays in sequence vertically (row wise).
     """
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -200,7 +201,7 @@ class Vstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
             if not shapes:
                 return ()
             # Vstack: if 1D, stack as rows => (N, M). if >1D, sum along axis 0.
@@ -219,7 +220,7 @@ class Dstack(OpDef):
     This operator stacks arrays in sequence depth wise (along third axis).
     """
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -230,7 +231,7 @@ class Dstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
             if not shapes:
                 return ()
             # Dstack: if 1D => (1, M, N). if 2D => (N, M, P). if 3D, sum along axis 2.
@@ -251,7 +252,7 @@ class ColumnStack(OpDef):
     This operator stacks 1-D arrays as columns into a 2-D array.
     """
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -262,7 +263,7 @@ class ColumnStack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [s.shape if hasattr(s, "shape") else s for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
             if not shapes:
                 return ()
             # ColumnStack: 1D arrays are treated as 2D columns (N, 1) and stacked horizontally.
@@ -302,7 +303,7 @@ class Argwhere(OpDef):
     op_name = "Argwhere"
     np_op_name = "argwhere"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape for the Argwhere operation.
 
         Args:
@@ -336,7 +337,7 @@ class Append(OpDef):
         axis = kwargs.get("axis")
         if axis is not None:
             res = list(args[0].shape)
-            cast(EagerTensorProtocol, res)[axis] += getattr(getattr(args, "__getitem__")(1).shape, "__getitem__")(axis) if len(args) > 1 and hasattr(getattr(args, "__getitem__")(1), "shape") else 1
+            typing.cast(EagerTensorProtocol, res)[axis] += getattr(getattr(args, "__getitem__")(1).shape, "__getitem__")(axis) if len(args) > 1 and hasattr(getattr(args, "__getitem__")(1), "shape") else 1
             return tuple(res)
         import math
 

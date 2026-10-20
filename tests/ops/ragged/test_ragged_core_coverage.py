@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import ml_switcheroo_compiler.ops.ragged.core as ragged_core_mod
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -49,21 +49,21 @@ def test_ragged_core_coverage() -> None:
 
     # shape_a variations:
     # 1. a is raw list/tuple
-    assert cast("EagerTensorProtocol", getattr(dot_op.infer_shape([3, 5], None), "__getitem__")(0)) == 3
+    assert typing.cast("EagerTensorProtocol", getattr(dot_op.infer_shape([3, 5], None), "__getitem__")(0)) == 3
 
     # 2. len(shape_a) <= 1 (ragged_dim uses SymVar fallback)
     t_1d = DummyWithShape((7,))
     out_1d = dot_op.infer_shape(t_1d, None)
-    assert cast("EagerTensorProtocol", getattr(out_1d, "__getitem__")(0)) == 7
-    assert str(cast("EagerTensorProtocol", getattr(out_1d, "__getitem__")(1))) == "ragged_dim"
-    assert cast("EagerTensorProtocol", getattr(out_1d, "__getitem__")(2)) == 1  # len(shape_a) <= 2, len(shape_b) == 0 fallback
+    assert typing.cast("EagerTensorProtocol", getattr(out_1d, "__getitem__")(0)) == 7
+    assert str(typing.cast("EagerTensorProtocol", getattr(out_1d, "__getitem__")(1))) == "ragged_dim"
+    assert typing.cast("EagerTensorProtocol", getattr(out_1d, "__getitem__")(2)) == 1  # len(shape_a) <= 2, len(shape_b) == 0 fallback
 
     # 3. len(shape_a) == 0 (batch fallback to 1)
     t_0d = DummyWithShape(())
     out_0d = dot_op.infer_shape(t_0d, None)
-    assert cast("EagerTensorProtocol", getattr(out_0d, "__getitem__")(0)) == 1
+    assert typing.cast("EagerTensorProtocol", getattr(out_0d, "__getitem__")(0)) == 1
 
     # 4. len(shape_b) == 0, len(shape_a) > 2 (out_features falls back to shape_a[-1])
     t_3d = DummyWithShape((2, 3, 9))
     out_3d = dot_op.infer_shape(t_3d, None)
-    assert cast("EagerTensorProtocol", getattr(out_3d, "__getitem__")(2)) == 9
+    assert typing.cast("EagerTensorProtocol", getattr(out_3d, "__getitem__")(2)) == 9

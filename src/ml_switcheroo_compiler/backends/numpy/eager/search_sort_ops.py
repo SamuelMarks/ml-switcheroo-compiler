@@ -1,16 +1,18 @@
 """Numpy Search and Sort Ops."""
 
-from types import ModuleType
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("SortKeyVal")
-def _np_sort_key_val(backend_module: ModuleType, keys: EagerValue, values: EagerValue, axis: int = -1, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sort_key_val(backend_module: BackendModuleProtocol, keys: EagerValue, values: EagerValue, axis: int = -1, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np sort key val operation on the active backend array.
 
     Args:
@@ -33,7 +35,7 @@ def _np_sort_key_val(backend_module: ModuleType, keys: EagerValue, values: Eager
 
 
 @numpy_eager_registry.register("Partition")
-def _np_partition(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Partition op.
 
     Args:
@@ -44,11 +46,11 @@ def _np_partition(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np, "partition")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return typing.cast("EagerValue", getattr(np, "partition")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Percentile")
-def _np_percentile(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_percentile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Percentile op.
 
     Args:
@@ -59,11 +61,11 @@ def _np_percentile(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np, "percentile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return typing.cast("EagerValue", getattr(np, "percentile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Quantile")
-def _np_quantile(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_quantile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Quantile op.
 
     Args:
@@ -74,11 +76,11 @@ def _np_quantile(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np, "quantile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return typing.cast("EagerValue", getattr(np, "quantile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Unique")
-def _np_unique(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Compute unique op.
 
     Args:
@@ -89,11 +91,11 @@ def _np_unique(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np, "unique")(getattr(np, "asarray")(args[0]), *args[1:], **kwargs))
+    return typing.cast("EagerValue", getattr(np, "unique")(getattr(np, "asarray")(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("ArgSort")
-def _np_argsort(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_argsort(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np argsort operation on the active backend array.
 
     Args:
@@ -104,11 +106,11 @@ def _np_argsort(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.argsort(*args, **kwargs))
+    return backend_module.argsort(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Sort")
-def _np_sort(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sort(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np sort operation on the active backend array.
 
     Args:
@@ -121,11 +123,11 @@ def _np_sort(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
     """
     is_stable = kwargs.pop("is_stable", True)
     kwargs["kind"] = "stable" if is_stable else "quicksort"
-    return cast(EagerValue, backend_module.sort(*args, **kwargs))
+    return backend_module.sort(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TopK")
-def _np_top_k(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_top_k(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np top k operation on the active backend array.
 
     Args:
@@ -136,11 +138,11 @@ def _np_top_k(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", _top_k)(*args, **kwargs))
+    return typing.cast("EagerCallableProtocol", _top_k)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SearchSorted")
-def _np_search_sorted(backend_module: ModuleType, x: EagerValue, v: EagerValue, side: str = "left") -> EagerValue:
+def _np_search_sorted(backend_module: BackendModuleProtocol, x: EagerValue, v: EagerValue, side: str = "left") -> EagerValue:
     """Execute the eager np search sorted operation on the active backend array.
 
     Args:
@@ -152,11 +154,11 @@ def _np_search_sorted(backend_module: ModuleType, x: EagerValue, v: EagerValue, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.searchsorted(x, v, side=side))
+    return backend_module.searchsorted(x, v, side=side)
 
 
 @numpy_eager_registry.register("Setdiff1d")
-def _np_setdiff1d(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_setdiff1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np setdiff1d operation on the active backend array.
 
     Args:
@@ -167,11 +169,11 @@ def _np_setdiff1d(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.setdiff1d(*args, **kwargs))
+    return backend_module.setdiff1d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Setxor1d")
-def _np_setxor1d(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_setxor1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np setxor1d operation on the active backend array.
 
     Args:
@@ -182,11 +184,11 @@ def _np_setxor1d(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.setxor1d(*args, **kwargs))
+    return backend_module.setxor1d(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SortComplex")
-def _np_sort_complex(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sort_complex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np sort complex operation on the active backend array.
 
     Args:
@@ -197,4 +199,4 @@ def _np_sort_complex(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.sort_complex(*args, **kwargs))
+    return backend_module.sort_complex(*args, **kwargs)

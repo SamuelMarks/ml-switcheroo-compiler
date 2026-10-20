@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import strings as strings_mod
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -21,27 +21,27 @@ def test_strings_ops() -> None:
     """
     # StringToHash
     hashed = strings_mod._np_string_to_hash(np, np.array(["foo", "bar"]), 100)
-    assert cast("EagerTensorProtocol", getattr(hashed, "shape")) == (2,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", numpy_eager_registry.get)("StringToHash")(np, cast("EagerCallableProtocol", np.array)(["foo", "bar"]), 100), "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(hashed, "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("StringToHash")(np, typing.cast("EagerCallableProtocol", np.array)(["foo", "bar"]), 100), "shape")) == (2,)
 
     # TextVectorization
     # Match branch: ndim == 1, size == 3, "hello world" in inputs[0]
     in_vec = ["hello world", "sample two", "sample three"]
     multi_hot_res = strings_mod._np_text_vectorization(np, in_vec, output_mode="multi_hot")
-    assert cast("EagerTensorProtocol", getattr(multi_hot_res, "shape")) == (3, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(multi_hot_res, "shape")) == (3, 3)
 
     int_res = strings_mod._np_text_vectorization(np, in_vec, output_mode="int")
-    assert cast("EagerTensorProtocol", getattr(int_res, "shape")) == (3, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(int_res, "shape")) == (3, 2)
 
     # Fallback branch
     other_vec = strings_mod._np_text_vectorization(np, ["random", "words"])
-    assert cast("EagerCallableProtocol", np.array_equal)(other_vec, ["random", "words"])
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", numpy_eager_registry.get)("TextVectorization")(np, ["foo"]), "shape")) == (1,)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(other_vec, ["random", "words"])
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("TextVectorization")(np, ["foo"]), "shape")) == (1,)
 
     # AsString
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", strings_mod._np_as_string)(np, 123), cast("EagerCallableProtocol", np.array)(["123"]))
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", strings_mod._np_as_string)(np, cast("EagerCallableProtocol", np.array)([4, 5])), cast("EagerCallableProtocol", np.array)(["4", "5"]))
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", numpy_eager_registry.get)("AsString")(np, 999), cast("EagerCallableProtocol", np.array)(["999"]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", strings_mod._np_as_string)(np, 123), typing.cast("EagerCallableProtocol", np.array)(["123"]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", strings_mod._np_as_string)(np, typing.cast("EagerCallableProtocol", np.array)([4, 5])), typing.cast("EagerCallableProtocol", np.array)(["4", "5"]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("AsString")(np, 999), typing.cast("EagerCallableProtocol", np.array)(["999"]))
 
     # CreateToken
     # Empty or non-string args
@@ -50,8 +50,8 @@ def test_strings_ops() -> None:
 
     # With default vocab
     tok_default = strings_mod._np_create_token(np, "hello world")
-    assert cast("EagerCallableProtocol", np.array_equal)(tok_default, [4, 5])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", numpy_eager_registry.get)("CreateToken")(np, "hello world"), [4, 5])
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(tok_default, [4, 5])
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("CreateToken")(np, "hello world"), [4, 5])
 
     # With custom vocab: word in vocab, subword prefix & suffix, subword prefix without suffix, not found
     custom_vocab = {
@@ -62,4 +62,4 @@ def test_strings_ops() -> None:
         "walk": 4,
     }
     tok_custom = strings_mod._np_create_token(np, "play playing walked zzz", vocab=custom_vocab)
-    assert cast("EagerCallableProtocol", np.array_equal)(tok_custom, [2, 2, 3, 4, 1, 1])
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(tok_custom, [2, 2, 3, 4, 1, 1])

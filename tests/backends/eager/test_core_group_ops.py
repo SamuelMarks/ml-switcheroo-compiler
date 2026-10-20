@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -37,13 +37,13 @@ def test_invoke_grouped_op_coverage() -> None:
                 raise TypeError()
             return "torch_var"
 
-    assert cast("EagerCallableProtocol", _invoke_grouped_op)(cast("EagerCallableProtocol", TorchMock)(), "mean", None, None) == "torch_mean"
-    assert cast("EagerCallableProtocol", _invoke_grouped_op)(cast("EagerCallableProtocol", TorchMock)(), "variance", None, None) == "torch_var"
+    assert typing.cast("EagerCallableProtocol", _invoke_grouped_op)(typing.cast("EagerCallableProtocol", TorchMock)(), "mean", None, None) == "torch_mean"
+    assert typing.cast("EagerCallableProtocol", _invoke_grouped_op)(typing.cast("EagerCallableProtocol", TorchMock)(), "variance", None, None) == "torch_var"
 
     import pytest
 
     with pytest.raises(ValueError):
-        cast("EagerCallableProtocol", _invoke_grouped_op)(cast("EagerCallableProtocol", TorchMock)(), "unknown", None, None)
+        typing.cast("EagerCallableProtocol", _invoke_grouped_op)(typing.cast("EagerCallableProtocol", TorchMock)(), "unknown", None, None)
 
 
 def test_group_norm_positive_axis_coverage() -> None:
@@ -58,4 +58,4 @@ def test_group_norm_positive_axis_coverage() -> None:
     mean = np.mean(reshaped, axis=(1, 2, 4), keepdims=True)
     var = np.var(reshaped, axis=(1, 2, 4), keepdims=True)
     expected = ((reshaped - mean) / np.sqrt(var + 1e-05)).reshape(x.shape)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(out, expected, rtol=1e-05, atol=1e-05)

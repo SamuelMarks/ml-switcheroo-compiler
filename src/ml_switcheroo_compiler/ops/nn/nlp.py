@@ -1,7 +1,10 @@
 """NLP operations."""
 
-from dataclasses import dataclass, field
-from typing import Optional, cast
+from __future__ import annotations
+
+import typing
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -13,8 +16,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor as CoreTensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-@dataclass
-class SamplingConfig:
+class SamplingConfig(pydantic.BaseModel):
     """Configuration for sampling operations.
 
     Contains the domain configuration and state for sampling operations,
@@ -22,39 +24,43 @@ class SamplingConfig:
     whether samples should be unique, and other parameters.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     num_true: int = 1
     num_sampled: int = 1
     unique: bool = False
-    range_max: Optional[int] = None
-    seed: Optional[int] = None
+    range_max: int | None = None
+    seed: int | None = None
 
 
-@dataclass
-class EmbeddingConfig:
+class EmbeddingConfig(pydantic.BaseModel):
     """Configuration for embedding operations.
 
     Specifies parameters such as partition strategy, whether to validate
     indices, maximum norm, and the combiner function for embeddings.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     partition_strategy: str = "mod"
     validate_indices: bool = True
-    max_norm: Optional[float] = None
+    max_norm: float | None = None
     combiner: str = "mean"
-    default_id: Optional[int] = None
+    default_id: int | None = None
 
 
-@dataclass
-class NLPOpsConfig:
+class NLPOpsConfig(pydantic.BaseModel):
     """Configuration for NLP operations.
 
     Groups together sampling and embedding configurations for use in
     various NLP-related operations.
     """
 
-    sampling: SamplingConfig = field(default_factory=SamplingConfig)
-    embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
-    name: Optional[str] = None
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    sampling: SamplingConfig = pydantic.Field(default_factory=SamplingConfig)
+    embedding: EmbeddingConfig = pydantic.Field(default_factory=EmbeddingConfig)
+    name: str | None = None
 
 
 def all_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) -> TensorOrScalar:
@@ -75,7 +81,7 @@ def all_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) ->
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sampled, true_exp, sampled_exp = cast(
+        sampled, true_exp, sampled_exp = typing.cast(
             "tuple[TensorOrScalar, TensorOrScalar, TensorOrScalar]",
             backend.execute_op(
                 "AllCandidateSampler",
@@ -125,51 +131,54 @@ def compute_accidental_hits(true_classes: TensorOrScalar, sampled_candidates: Te
     return indices, ids, weights
 
 
-@dataclass
-class VocabConfig:
+class VocabConfig(pydantic.BaseModel):
     """Configuration for vocabulary settings.
 
     Specifies the vocabulary file, number of reserved IDs, and unigrams
     used for vocabulary-based operations.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     vocab_file: str = ""
     num_reserved_ids: int = 0
-    unigrams = ()
+    unigrams: TensorOrScalar = ()
 
 
-@dataclass
-class SamplingStrategyConfig:
+class SamplingStrategyConfig(pydantic.BaseModel):
     """Configuration for sampling strategy.
 
     Defines parameters for sampling strategy such as distortion,
     number of shards, current shard, and random seed.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     distortion: float = 1.0
     num_shards: int = 1
     shard: int = 0
-    seed: Optional[int] = None
+    seed: int | None = None
 
 
-@dataclass
-class SamplerConfig:
+class SamplerConfig(pydantic.BaseModel):
     """Configuration for candidate samplers.
 
     Groups vocabulary and sampling strategy configurations along with
     the maximum range for candidate IDs.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     range_max: int
-    vocab: VocabConfig = field(default_factory=VocabConfig)
-    strategy: SamplingStrategyConfig = field(default_factory=SamplingStrategyConfig)
-    name: Optional[str] = None
+    vocab: VocabConfig = pydantic.Field(default_factory=VocabConfig)
+    strategy: SamplingStrategyConfig = pydantic.Field(default_factory=SamplingStrategyConfig)
+    name: str | None = None
 
 
 def fixed_unigram_candidate_sampler(
     true_classes: TensorOrScalar,
     config: NLPOpsConfig,
-    sampler_config: Optional[SamplerConfig] = None,
+    sampler_config: SamplerConfig | None = None,
 ) -> TensorOrScalar:
     """Sample candidates using a fixed unigram distribution.
 
@@ -234,18 +243,19 @@ def uniform_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig
     return all_candidate_sampler(true_classes, config)
 
 
-@dataclass
-class NCELossConfig:
+class NCELossConfig(pydantic.BaseModel):
     """Configuration for noise-contrastive estimation (NCE) loss.
 
     Contains parameters such as the number of sampled candidates,
     total number of classes, and whether to remove accidental hits.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values = None
+    sampled_values: TensorOrScalar = None
     remove_accidental_hits: bool = False
     name: str = "nce_loss"
 
@@ -275,20 +285,21 @@ def nce_loss(
     return Tensor([0.0], TensorConfig((1,), "float32", "cpu"))
 
 
-@dataclass
-class SampledSoftmaxConfig:
+class SampledSoftmaxConfig(pydantic.BaseModel):
     """Configuration for sampled softmax loss.
 
     Specifies parameters such as the number of sampled candidates,
     total number of classes, and whether to remove accidental hits.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     num_sampled: int
     num_classes: int
     num_true: int = 1
-    sampled_values = None
+    sampled_values: TensorOrScalar = None
     remove_accidental_hits: bool = True
-    seed: Optional[int] = None
+    seed: int | None = None
     name: str = "sampled_softmax_loss"
 
 
@@ -345,7 +356,7 @@ def ctc_beam_search_decoder(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        decoded, log_probs = cast(
+        decoded, log_probs = typing.cast(
             "tuple[TensorOrScalar, TensorOrScalar]",
             backend.execute_op(
                 "CtcBeamSearchDecoder",
@@ -388,18 +399,19 @@ def ctc_greedy_decoder(
     return ctc_beam_search_decoder(inputs, sequence_length, beam_width=1, top_paths=1, merge_repeated=merge_repeated)
 
 
-@dataclass
-class CTCLossOptions:
+class CTCLossOptions(pydantic.BaseModel):
     """Configuration options for CTC Loss computation.
 
     Specifies optional parameters such as whether logits are time-major,
     unique labels, and the index of the blank class.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     logits_time_major: bool = True
-    unique = None
-    blank_index: Optional[int] = None
-    name: Optional[str] = None
+    unique: TensorOrScalar = None
+    blank_index: int | None = None
+    name: str | None = None
 
 
 def ctc_loss(
@@ -407,7 +419,7 @@ def ctc_loss(
     logits: Tensor,
     label_length: Tensor,
     logit_length: Tensor,
-    options: Optional[CTCLossOptions] = None,
+    options: CTCLossOptions | None = None,
 ) -> TensorOrScalar:
     """Compute the Connectionist Temporal Classification (CTC) Loss.
 
@@ -461,7 +473,7 @@ def ctc_unique_labels(labels: TensorOrScalar, name: TensorOrScalar = None) -> Te
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        unique, indices = cast(
+        unique, indices = typing.cast(
             "tuple[TensorOrScalar, TensorOrScalar]",
             backend.execute_op("CtcUniqueLabels", getattr(labels, "data", labels), name=name),
         )

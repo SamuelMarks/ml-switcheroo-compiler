@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -17,13 +17,13 @@ def test_sparse_ops_coverage() -> None:
     a = np.array([[1, 2], [3, 4]])
     b = np.array([[1, 0], [0, 1]])
 
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_raggeddot)(np, a, b), a)
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_sparsemapvalues)(np, lambda x: x * 2, a), a * 2)
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_sparsereducemax)(np, a), cast("EagerCallableProtocol", np.array)([2, 4]))
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_sparsereshape)(np, a, (4,)), cast("EagerCallableProtocol", np.array)([1, 2, 3, 4]))
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_sparsesampledadd)(np, a, b), a + b)
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_sparsesegmentsum)(np, a, cast("EagerCallableProtocol", np.array)([0, 1]), cast("EagerCallableProtocol", np.array)([0, 0])), cast("EagerCallableProtocol", np.array)([[4, 6]]))
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_sparsetranspose)(np, a), a.T)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_raggeddot)(np, a, b), a)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_sparsemapvalues)(np, lambda x: x * 2, a), a * 2)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_sparsereducemax)(np, a), typing.cast("EagerCallableProtocol", np.array)([2, 4]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_sparsereshape)(np, a, (4,)), typing.cast("EagerCallableProtocol", np.array)([1, 2, 3, 4]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_sparsesampledadd)(np, a, b), a + b)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_sparsesegmentsum)(np, a, typing.cast("EagerCallableProtocol", np.array)([0, 1]), typing.cast("EagerCallableProtocol", np.array)([0, 0])), typing.cast("EagerCallableProtocol", np.array)([[4, 6]]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_sparsetranspose)(np, a), a.T)
 
 
 def test_ragged_tensor_to_dense_jax() -> None:

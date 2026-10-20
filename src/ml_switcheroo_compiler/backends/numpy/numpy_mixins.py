@@ -1,5 +1,7 @@
 """Mixins."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.common.audio_utils import (
     extract_mel_attributes,  # noqa: F401
     extract_stft_attributes,  # noqa: F401

@@ -8,41 +8,42 @@ intermediate representation (IR) graph for compilation
 
 from __future__ import annotations
 
+import typing
 import uuid
-from typing import Callable, cast
+from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import TensorSpec
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
+
 
 def _wrap_proxy_inputs(
-    args: tuple[Tensor | tuple[Tensor, ...] | int | float | bool | None, ...],
+    args: Sequence[TensorOrScalar],
     subgraph: LogicalGraph,
-) -> tuple[list[str], list[Tensor | tuple[Tensor, ...] | int | float | bool | None]]:
+) -> tuple[list[str], list[TensorOrScalar]]:
     """Compute the wrap proxy inputs tensor operation.
 
     Args:
-        args (tuple[Tensor | tuple[Tensor, ...] | int | float | bool | None, ...]): The args parameter.
+        args (Sequence[TensorOrScalar]): The args parameter.
         subgraph (LogicalGraph): The subgraph parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        tuple[list[str], list[TensorOrScalar]]: Result.
     """
-    proxy_args: list[Tensor | tuple[Tensor, ...] | int | float | bool | None] = []
+    proxy_args: list[TensorOrScalar] = []
     input_ids: list[str] = []
     for _i, arg in enumerate(args):
         if isinstance(arg, tuple):
-            from typing import cast
-
             sub_ids, sub_args = _wrap_proxy_inputs(arg, subgraph)
             input_ids.extend(sub_ids)
-            proxy_args.append(cast("tuple[Tensor, ...]", tuple(sub_args)))
+            proxy_args.append(tuple(sub_args))
         elif isinstance(arg, Tensor):
             in_id = str(uuid.uuid4())
             node = LogicalNode(
@@ -54,7 +55,10 @@ def _wrap_proxy_inputs(
             subgraph.nodes[in_id] = node
             input_ids.append(in_id)
             if hasattr(subgraph, "input_specs"):
-                subgraph.input_specs[in_id] = TensorSpec(shape=arg.shape, dtype=arg.dtype)
+                from ml_switcheroo_ir.types import DType as IRDType
+
+                ir_dt: IRDType | str = IRDType(arg.dtype.value) if arg.dtype.value in IRDType._value2member_map_ else str(arg.dtype.value)
+                subgraph.input_specs[in_id] = TensorSpec(shape=arg.shape, dtype=ir_dt)
             proxy = ProxyTensor(id=in_id, shape=arg.shape, dtype=arg.dtype.value)
             proxy.concrete_value = arg.data
             proxy_tensor = Tensor(proxy, TensorConfig(arg.shape, arg.dtype, arg.device))
@@ -71,19 +75,19 @@ def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
         obj (TensorOrScalar): The obj parameter.
 
     Returns:
-            tuple[int, ...]: Result.
+        list[str]: Result.
 
     Raises:
         TypeError: An exception.
     """
     if isinstance(obj, Tensor):
-        cur = obj
+        cur: TensorOrScalar = obj
         while isinstance(cur, Tensor) and isinstance(getattr(cur, "data", None), Tensor):
-            cur = cast(Tensor, cur.data)
-        if hasattr(cur, "data") and hasattr(cur.data, "id"):
-            return [str(getattr(cur.data, "id"))]
+            cur = getattr(cur, "data")
+        if hasattr(cur, "data") and hasattr(getattr(cur, "data"), "id"):
+            return [str(getattr(getattr(cur, "data"), "id"))]
         if hasattr(cur, "id"):
-            return [str(cur.id)]
+            return [str(getattr(cur, "id"))]
         return [str(uuid.uuid4())]
     if isinstance(obj, (tuple, list)):
         ids = []
@@ -95,11 +99,11 @@ def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
     raise TypeError(msg)
 
 
-def _process_trace_outputs(out: Tensor | tuple[Tensor, ...] | list[Tensor], subgraph: LogicalGraph) -> str:
+def _process_trace_outputs(out: TensorOrScalar, subgraph: LogicalGraph) -> str:
     """Compute the process trace outputs tensor operation.
 
     Args:
-        out: The out parameter.
+        out (TensorOrScalar): The out parameter.
         subgraph (LogicalGraph): The subgraph parameter.
 
     Returns:
@@ -118,12 +122,12 @@ def _process_trace_outputs(out: Tensor | tuple[Tensor, ...] | list[Tensor], subg
     return str(out_node.id)
 
 
-def _trace_function(func: Callable[..., Tensor | tuple[Tensor, ...] | list[Tensor]], args: tuple[Tensor, ...], name: str) -> LogicalGraph:
+def _trace_function(func: TensorOrScalar, args: Sequence[TensorOrScalar], name: str) -> LogicalGraph:
     """Trace a Python function's execution into a LogicalGraph.
 
     Args:
-        func (Callable): The func parameter.
-        args (tuple): The args parameter.
+        func (TensorOrScalar): The func parameter.
+        args (Sequence[TensorOrScalar]): The args parameter.
         name (str): The name parameter.
 
     Returns:
@@ -136,14 +140,15 @@ def _trace_function(func: Callable[..., Tensor | tuple[Tensor, ...] | list[Tenso
     prev_eager = compiler_config.eager_mode
 
     compiler_config.eager_mode = False
-    cast("EagerCallableProtocol", increment_trace_count)(func)
+    increment_trace_count(func)
 
     subgraph = global_tracing_state.start_tracing(name=name)
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)
     subgraph.inputs = input_ids
 
     try:
-        out = func(*proxy_args)
+        call_fn: VariadicCallableProtocol = func  # type: ignore[assignment]
+        out = call_fn(*proxy_args)
         out_node_id = _process_trace_outputs(out, subgraph)
     finally:
         global_tracing_state.stop_tracing()
@@ -151,6 +156,6 @@ def _trace_function(func: Callable[..., Tensor | tuple[Tensor, ...] | list[Tenso
         global_tracing_state.is_tracing = is_tracing
         compiler_config.eager_mode = prev_eager
 
-    setattr(subgraph, "id", name)
+    object.__setattr__(subgraph, "id", name)
     subgraph.outputs = [out_node_id]
     return subgraph

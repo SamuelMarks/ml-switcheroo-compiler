@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import os  # noqa: F401
 import time
+import typing
 from multiprocessing.connection import Client, Connection, Listener
-from types import ModuleType
-from typing import Optional, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("AxisIndex")
-def _np_axis_index(backend_module: ModuleType, **kwargs: EagerValue) -> EagerValue:
+def _np_axis_index(backend_module: BackendModuleProtocol, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np axis index operation on the active backend array.
 
     Args:
@@ -46,9 +46,9 @@ class TCPDistributedContext:
         self.port = port
         self.topology = topology
         self.authkey = b"ml_switcheroo"
-        self.listener: Optional[Listener] = None
-        self.recv_conns: list[Connection] = []
-        self.send_conns: list[Connection] = []
+        self.listener: Listener | None = None
+        self.recv_conns: list[Connection[EagerValue, EagerValue]] = []
+        self.send_conns: list[Connection[EagerValue, EagerValue]] = []
 
         import os  # noqa: F811
 
@@ -100,7 +100,7 @@ class TCPDistributedContext:
 
         t.join()
 
-    def all_reduce_ring(self, tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]], op_type: str = "sum", backend_module: EagerValue = np) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def all_reduce_ring(self, tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]], op_type: str = "sum", backend_module: BackendModuleProtocol = np) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Evaluate all_reduce_ring.
 
         Args:
@@ -123,7 +123,7 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            recv_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = self.recv_conns[0].recv() if self.recv_conns else None
+            recv_data = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None", self.recv_conns[0].recv()) if self.recv_conns else None
 
             if op_type == "sum":
                 chunks[recv_chunk_idx] = chunks[recv_chunk_idx] + recv_data
@@ -143,7 +143,7 @@ class TCPDistributedContext:
                 self.send_conns[0].send(chunks[send_chunk_idx])
             chunks[recv_chunk_idx] = self.recv_conns[0].recv() if self.recv_conns else None
 
-        return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(backend_module, "concatenate")(chunks))
+        return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(backend_module, "concatenate")(chunks))
 
     def all_gather_tensors(self, tensor: EagerValue) -> list[EagerValue]:
         """Perform AllGather over TCP Ring.
@@ -202,7 +202,7 @@ def set_np_distributed_context(world_size: int, rank: int, addr: str = "localhos
 @numpy_eager_registry.register("AllReduce")
 @numpy_eager_registry.register("NcclAllReduce")
 @numpy_eager_registry.register("HierarchicalCopyAllReduce")
-def _np_all_reduce(backend_module: ModuleType, tensor: EagerValue, op_type: str = "sum", *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_all_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, op_type: str = "sum", *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager eval _np_all_reduce.
 
     Args:
@@ -219,11 +219,11 @@ def _np_all_reduce(backend_module: ModuleType, tensor: EagerValue, op_type: str 
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    return cast(EagerValue, getattr(_tcp_dist_ctx, "all_reduce_ring")(tensor, op_type, backend_module))
+    return typing.cast("EagerValue", getattr(_tcp_dist_ctx, "all_reduce_ring")(tensor, op_type, backend_module))
 
 
 @numpy_eager_registry.register("AllGather")
-def _np_all_gather(backend_module: ModuleType, tensor: EagerValue, axis: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_all_gather(backend_module: BackendModuleProtocol, tensor: EagerValue, axis: int | None = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager eval _np_all_gather.
 
     Args:
@@ -238,14 +238,14 @@ def _np_all_gather(backend_module: ModuleType, tensor: EagerValue, axis: int = 0
     """
     tensor = backend_module.array(tensor)
     if _tcp_dist_ctx.world_size <= 1:
-        return cast(EagerValue, backend_module.expand_dims(tensor, axis=axis) if axis is not None else tensor)
+        return backend_module.expand_dims(tensor, axis=axis) if axis is not None else tensor
 
     all_tensors: list[EagerValue] = _tcp_dist_ctx.all_gather_tensors(tensor)
-    return cast(EagerValue, backend_module.concatenate(all_tensors, axis=axis if axis is not None else 0))
+    return backend_module.concatenate(all_tensors, axis=axis if axis is not None else 0)
 
 
 @numpy_eager_registry.register("Broadcast")
-def _np_broadcast(backend_module: ModuleType, tensor: EagerValue, root_rank: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_broadcast(backend_module: BackendModuleProtocol, tensor: EagerValue, root_rank: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager eval _np_broadcast.
 
     Args:
@@ -267,7 +267,7 @@ def _np_broadcast(backend_module: ModuleType, tensor: EagerValue, root_rank: int
 
 
 @numpy_eager_registry.register("ReduceScatter")
-def _np_reduce_scatter(backend_module: ModuleType, tensor: EagerValue, op_type: str = "sum", axis: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_reduce_scatter(backend_module: BackendModuleProtocol, tensor: EagerValue, op_type: str = "sum", axis: int = 0, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager eval _np_reduce_scatter.
 
     Args:
@@ -285,7 +285,7 @@ def _np_reduce_scatter(backend_module: ModuleType, tensor: EagerValue, op_type: 
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    all_tensors: list[EagerTensorProtocol] = cast("list[EagerTensorProtocol]", _tcp_dist_ctx.all_gather_tensors(tensor))
+    all_tensors: list[EagerTensorProtocol] = typing.cast("list[EagerTensorProtocol]", _tcp_dist_ctx.all_gather_tensors(tensor))
 
     if op_type == "sum":
         reduced: EagerTensorProtocol = backend_module.sum(all_tensors, axis=0)
@@ -300,12 +300,12 @@ def _np_reduce_scatter(backend_module: ModuleType, tensor: EagerValue, op_type: 
     else:
         reduced = backend_module.sum(all_tensors, axis=0)
 
-    chunks: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.array_split(reduced, _tcp_dist_ctx.world_size, axis=axis)
-    return cast(EagerValue, chunks[_tcp_dist_ctx.rank])
+    chunks: EagerTensorProtocol = backend_module.array_split(reduced, _tcp_dist_ctx.world_size, axis=axis)
+    return typing.cast("EagerValue", chunks[_tcp_dist_ctx.rank])
 
 
 @numpy_eager_registry.register("Reduce")
-def _np_reduce(backend_module: ModuleType, tensor: EagerValue, root_rank: int = 0, op_type: str = "sum", *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, root_rank: int = 0, op_type: str = "sum", *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager eval _np_reduce.
 
     Args:
@@ -323,7 +323,7 @@ def _np_reduce(backend_module: ModuleType, tensor: EagerValue, root_rank: int = 
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    all_tensors: list[EagerTensorProtocol] = cast("list[EagerTensorProtocol]", _tcp_dist_ctx.all_gather_tensors(tensor))
+    all_tensors: list[EagerTensorProtocol] = typing.cast("list[EagerTensorProtocol]", _tcp_dist_ctx.all_gather_tensors(tensor))
 
     if op_type == "sum":
         reduced: EagerTensorProtocol = backend_module.sum(all_tensors, axis=0)
@@ -342,7 +342,7 @@ def _np_reduce(backend_module: ModuleType, tensor: EagerValue, root_rank: int = 
 
 
 @numpy_eager_registry.register("AllToAll")
-def _np_all_to_all(backend_module: ModuleType, tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_all_to_all(backend_module: BackendModuleProtocol, tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager eval AllToAll.
 
     Args:
@@ -365,7 +365,7 @@ def _np_all_to_all(backend_module: ModuleType, tensor: EagerValue, *args: EagerV
 
 
 @numpy_eager_registry.register("ShardTensor")
-def _np_shard_tensor(backend_module: ModuleType, tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_shard_tensor(backend_module: BackendModuleProtocol, tensor: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Eager eval _np_shard_tensor.
 
     Args:
@@ -377,4 +377,4 @@ def _np_shard_tensor(backend_module: ModuleType, tensor: EagerValue, *args: Eage
     Returns:
         EagerValue: Computed result.
     """
-    return cast(EagerValue, backend_module.array(tensor))
+    return backend_module.array(tensor)

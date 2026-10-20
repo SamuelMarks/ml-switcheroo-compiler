@@ -1,6 +1,8 @@
 """Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.cupy.types`)."""
 
-from typing import Optional, cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -29,7 +31,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     return generic_zeros(cp, shape)
 
 
-def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
+def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
     """Create a tensor from data.
 
     Args:
@@ -40,7 +42,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
     Returns:
         EagerValue: The array tensor.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(cp, data, dtype))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(cp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -53,7 +55,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: The array tensor.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_asarray)(cp, data))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_asarray)(cp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -66,4 +68,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return cast(float, cast("EagerCallableProtocol", generic_item)(cp, data))
+    return typing.cast(float, typing.cast("EagerCallableProtocol", generic_item)(cp, data))

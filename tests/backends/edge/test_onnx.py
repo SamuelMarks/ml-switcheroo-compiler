@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
+from ml_switcheroo_ir import AttributeValue, LogicalNode, NodeDict
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -22,16 +25,16 @@ def test_onnx_code_generator_instantiation() -> None:
 def test_onnx_generate_mocked() -> None:
     """Test function test_onnx_generate_mocked."""
     graph = IRGraph()
-    node = cast("EagerCallableProtocol", IRNode)("add_1", "Add", ["in1", "in2"], shape_metadata=[2, 2])
+    node = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
     graph.nodes["add_1"] = node
-    setattr(graph, "sorted_nodes", [node])
+    object.__setattr__(graph, "sorted_nodes", [node])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"Add": "Add"}}
 
     # We test generic_visit manually
-    res = cast("EagerCallableProtocol", generator.generic_visit)(node, ["in1", "in2"])
+    res = typing.cast("EagerCallableProtocol", generator.generic_visit)(node, ["in1", "in2"])
     assert res == "add_1"
 
     # We test missing dependencies fallback
@@ -54,33 +57,33 @@ def test_onnx_proto_type() -> None:
         INT64 = 7
         BOOL = 9
 
-    assert cast("EagerCallableProtocol", generator._get_proto_type)("float32", MockTensorProto) == MockTensorProto.FLOAT
-    assert cast("EagerCallableProtocol", generator._get_proto_type)("int32", MockTensorProto) == MockTensorProto.INT32
-    assert cast("EagerCallableProtocol", generator._get_proto_type)("bool", MockTensorProto) == MockTensorProto.BOOL
-    assert cast("EagerCallableProtocol", generator._get_proto_type)("unknown", MockTensorProto) == MockTensorProto.FLOAT
+    assert typing.cast("EagerCallableProtocol", generator._get_proto_type)("float32", MockTensorProto) == MockTensorProto.FLOAT
+    assert typing.cast("EagerCallableProtocol", generator._get_proto_type)("int32", MockTensorProto) == MockTensorProto.INT32
+    assert typing.cast("EagerCallableProtocol", generator._get_proto_type)("bool", MockTensorProto) == MockTensorProto.BOOL
+    assert typing.cast("EagerCallableProtocol", generator._get_proto_type)("unknown", MockTensorProto) == MockTensorProto.FLOAT
 
 
 def test_onnx_build_methods() -> None:
     """Test function test_onnx_build_methods."""
     graph = IRGraph()
-    node1 = cast("EagerCallableProtocol", IRNode)("in1", "Input", [], shape_metadata=[2, 2])
-    node2 = cast("EagerCallableProtocol", IRNode)("in2", "Input", [], shape_metadata=[2, 2])
-    node3 = cast("EagerCallableProtocol", IRNode)("add_1", "Add", ["in1", "in2"], shape_metadata=[2, 2])
+    node1 = IRNode("in1", "Input", inputs=[], shape_metadata=[2, 2])
+    node2 = IRNode("in2", "Input", inputs=[], shape_metadata=[2, 2])
+    node3 = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
     setattr(node3, "attributes", {"axis": 1})
 
     # Let's add nodes for constant and control flow
-    node4 = cast("EagerCallableProtocol", IRNode)("c_1", "Constant", [], shape_metadata=[1])
+    node4 = IRNode("c_1", "Constant", inputs=[], shape_metadata=[1])
     setattr(node4, "attributes", {"value": 1.0})
 
-    node5 = cast("EagerCallableProtocol", IRNode)("if_1", "If", [], shape_metadata=[1])
+    node5 = IRNode("if_1", "If", inputs=[], shape_metadata=[1])
     subgraph = IRGraph()
-    setattr(node5, "attributes", {"then_branch": subgraph, "else_branch": subgraph})
+    object.__setattr__(node5, "attributes", {"then_branch": subgraph, "else_branch": subgraph})
 
-    node6 = cast("EagerCallableProtocol", IRNode)("loop_1", "Loop", [], shape_metadata=[1])
-    setattr(node6, "attributes", {"body": subgraph})
+    node6 = IRNode("loop_1", "Loop", inputs=[], shape_metadata=[1])
+    object.__setattr__(node6, "attributes", {"body": subgraph})
 
-    graph.nodes = {"in1": node1, "in2": node2, "add_1": node3, "c_1": node4, "if_1": node5, "loop_1": node6}
-    setattr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
+    graph.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"in1": node1, "in2": node2, "add_1": node3, "c_1": node4, "if_1": node5, "loop_1": node6}))
+    object.__setattr__(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
@@ -115,7 +118,6 @@ def test_onnx_build_methods() -> None:
                 kwargs: Test parameter `kwargs`.
             """
             return f"node({op_type}, {name})"
-            return f"node({op_type}, {inputs}, {outputs}, {name})"
 
         def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
             """Test function make_tensor.
@@ -149,7 +151,7 @@ def test_onnx_build_methods() -> None:
                     """
                     self.name = n
 
-            return cast("EagerTensorProtocol", Graph(name))
+            return typing.cast("EagerTensorProtocol", Graph(name))
 
         def make_model(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
             """Test function make_model.
@@ -166,8 +168,7 @@ def test_onnx_build_methods() -> None:
                     """Test function SerializeToString."""
                     return b"model"
 
-            return cast("EagerTensorProtocol", Model())
-            return f"model({graph})"
+            return typing.cast("EagerTensorProtocol", Model())
 
         def printable_graph(self, graph: EagerValue) -> EagerValue:
             """Test function printable_graph.
@@ -176,7 +177,6 @@ def test_onnx_build_methods() -> None:
                 graph: Test parameter `graph`.
             """
             return f"printable({graph})"
-            return f"model({graph})"
 
     class MockNumpyHelper:
         """Test class MockNumpyHelper."""
@@ -194,17 +194,17 @@ def test_onnx_build_methods() -> None:
 
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            v1 = cast("EagerCallableProtocol", generator._build_single_value_info)(node1, None, MockTensorProto, False)
+            v1 = typing.cast("EagerCallableProtocol", generator._build_single_value_info)(node1, None, MockTensorProto, False)
             assert v1 is not None
 
             setattr(node1, "id", "in1")
             dyn_axes = {"in1": {0: "batch"}}
-            cast("EagerCallableProtocol", generator._build_single_value_info)(node1, dyn_axes, MockTensorProto, False)
+            typing.cast("EagerCallableProtocol", generator._build_single_value_info)(node1, dyn_axes, MockTensorProto, False)
 
-            cast("EagerCallableProtocol", generator._build_single_value_info)("missing", None, MockTensorProto, False)
+            typing.cast("EagerCallableProtocol", generator._build_single_value_info)("missing", None, MockTensorProto, False)
 
             # Test _build_onnx_nodes
-            nodes = cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
+            nodes = typing.cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
             assert any("node(" in n for n in nodes)
             assert any("Constant" in n for n in nodes)
             assert any("If" in n for n in nodes)
@@ -254,7 +254,6 @@ def test_onnx_export_and_missing() -> None:
                 kwargs: Test parameter `kwargs`.
             """
             return f"node({op_type}, {name})"
-            return f"node({op_type}, {inputs}, {outputs}, {name})"
 
         def make_tensor(self, name: EagerValue, data_type: EagerValue, dims: EagerValue, vals: EagerValue) -> EagerValue:
             """Test function make_tensor.
@@ -288,7 +287,7 @@ def test_onnx_export_and_missing() -> None:
                     """
                     self.name = n
 
-            return cast("EagerTensorProtocol", Graph(name))
+            return typing.cast("EagerTensorProtocol", Graph(name))
 
         def make_model(self, graph: EagerValue, **kwargs: EagerValue) -> EagerValue:
             """Test function make_model.
@@ -305,8 +304,7 @@ def test_onnx_export_and_missing() -> None:
                     """Test function SerializeToString."""
                     return b"model"
 
-            return cast("EagerTensorProtocol", Model())
-            return f"model({graph})"
+            return typing.cast("EagerTensorProtocol", Model())
 
     class MockChecker:
         """Test class MockChecker."""
@@ -367,18 +365,18 @@ def test_onnx_build_single_value_info_missing() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         # Tests missing node ID fallback
-        v = cast("EagerCallableProtocol", generator._build_single_value_info)("non_existent_node", None, MockTensorProto, is_output=False)
+        v = typing.cast("EagerCallableProtocol", generator._build_single_value_info)("non_existent_node", None, MockTensorProto, is_output=False)
         assert "value_info(" in v
 
 
 def test_onnx_generate_text_fallback() -> None:
     """Test function test_onnx_generate_text_fallback."""
     graph = IRGraph()
-    node = cast("EagerCallableProtocol", IRNode)("Input", "in_1", [], shape_metadata=[2, 2])
+    node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
     setattr(node, "dtype", "float32")
-    node2 = cast("EagerCallableProtocol", IRNode)("Add", "add_1", ["in_1", "in_1"])
-    graph.nodes = {"in_1": node, "add_1": node2}
-    setattr(graph, "sorted_nodes", [node, node2])
+    node2 = IRNode("Add", "add_1", inputs=["in_1", "in_1"])
+    graph.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"in_1": node, "add_1": node2}))
+    object.__setattr__(graph, "sorted_nodes", [node, node2])
     graph.outputs = ["add_1"]
 
     generator = ONNXCodeGenerator(graph, [])
@@ -391,16 +389,16 @@ def test_onnx_node_attributes() -> None:
     """Test function test_onnx_node_attributes."""
     graph = IRGraph()
     # Test all branches of attributes conversion in _build_onnx_nodes
-    node_const = cast("EagerCallableProtocol", IRNode)("Constant", "c_1", [], shape_metadata=[1])
+    node_const = IRNode("Constant", "c_1", inputs=[], shape_metadata=[1])
     setattr(node_const, "attributes", {"value": 5.0})
 
-    node_if = cast("EagerCallableProtocol", IRNode)("If", "if_1", [])
-    setattr(node_if, "attributes", {"then_branch": cast("EagerCallableProtocol", IRGraph)(), "else_branch": cast("EagerCallableProtocol", IRGraph)()})
+    node_if = IRNode("If", "if_1", inputs=[])
+    object.__setattr__(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
 
-    node_loop = cast("EagerCallableProtocol", IRNode)("Loop", "loop_1", [])
-    setattr(node_loop, "attributes", {"body": cast("EagerCallableProtocol", IRGraph)()})
+    node_loop = IRNode("Loop", "loop_1", inputs=[])
+    object.__setattr__(node_loop, "attributes", {"body": IRGraph()})
 
-    setattr(graph, "sorted_nodes", [node_const, node_if, node_loop])
+    object.__setattr__(graph, "sorted_nodes", [node_const, node_if, node_loop])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -433,7 +431,6 @@ def test_onnx_node_attributes() -> None:
                 kwargs: Test parameter `kwargs`.
             """
             return f"node({op_type}, {name})"
-            return f"node({op_type}, {name})"
 
         def make_graph(self, nodes: EagerValue, name: EagerValue, inputs: EagerValue, outputs: EagerValue) -> EagerValue:
             """Test function make_graph.
@@ -456,7 +453,7 @@ def test_onnx_node_attributes() -> None:
                     """
                     self.name = n
 
-            return cast("EagerTensorProtocol", Graph(name))
+            return typing.cast("EagerTensorProtocol", Graph(name))
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -467,7 +464,7 @@ def test_onnx_node_attributes() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
+            nodes = typing.cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) >= 0
             pass
             pass
@@ -476,7 +473,7 @@ def test_onnx_node_attributes() -> None:
 def test_onnx_value_infos() -> None:
     """Test function test_onnx_value_infos."""
     graph = IRGraph()
-    node_a = cast("EagerCallableProtocol", IRNode)("A", "a_1", [])
+    node_a = IRNode("A", "a_1", inputs=[])
     setattr(node_a, "dtype", "bool")
     generator = ONNXCodeGenerator(graph, [])
 
@@ -506,12 +503,12 @@ def test_onnx_value_infos() -> None:
 
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
-        vis = cast("EagerCallableProtocol", generator._build_onnx_value_infos)([node_a], None, MockTensorProto)
+        vis = typing.cast("EagerCallableProtocol", generator._build_onnx_value_infos)([node_a], None, MockTensorProto)
         assert len(vis) == 1
 
         # Test dict lookup
-        graph.nodes = {"a_1": node_a}
-        vis2 = cast("EagerCallableProtocol", generator._build_onnx_value_infos)(["a_1"], None, MockTensorProto)
+        graph.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"a_1": node_a}))
+        vis2 = typing.cast("EagerCallableProtocol", generator._build_onnx_value_infos)(["a_1"], None, MockTensorProto)
         assert len(vis2) == 1
 
 
@@ -519,29 +516,29 @@ def test_onnx_node_attributes_2() -> None:
     """Test function test_onnx_node_attributes_2."""
     graph = IRGraph()
     # Test op specific logic
-    node1 = cast("EagerCallableProtocol", IRNode)("BatchNorm", "bn_1", [])
+    node1 = IRNode("BatchNorm", "bn_1", inputs=[])
     setattr(node1, "attributes", {"epsilon": 1e-5, "momentum": 0.9})
 
-    node2 = cast("EagerCallableProtocol", IRNode)("RandomUniform", "ru_1", [])
-    setattr(node2, "shape_metadata", [2, 2])
+    node2 = IRNode("RandomUniform", "ru_1", inputs=[])
+    object.__setattr__(node2, "shape_metadata", [2, 2])
     setattr(node2, "dtype", "float32")
 
-    node3 = cast("EagerCallableProtocol", IRNode)("Split", "split_1", [])
+    node3 = IRNode("Split", "split_1", inputs=[])
     setattr(node3, "attributes", {"axis": 1, "split": [1, 1]})
 
-    node4 = cast("EagerCallableProtocol", IRNode)("Cast", "cast_1", [])
+    node4 = IRNode("Cast", "cast_1", inputs=[])
     setattr(node4, "attributes", {"to": "int32"})
 
-    node5 = cast("EagerCallableProtocol", IRNode)("MaxPool2D", "max_1", [])
+    node5 = IRNode("MaxPool2D", "max_1", inputs=[])
     setattr(node5, "attributes", {"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
 
-    node6 = cast("EagerCallableProtocol", IRNode)("Reshape", "res_1", [])
-    setattr(node6, "shape_metadata", [4])
+    node6 = IRNode("Reshape", "res_1", inputs=[])
+    object.__setattr__(node6, "shape_metadata", [4])
 
-    node7 = cast("EagerCallableProtocol", IRNode)("BroadcastTo", "br_1", [])
-    setattr(node7, "shape_metadata", [2, 2])
+    node7 = IRNode("BroadcastTo", "br_1", inputs=[])
+    object.__setattr__(node7, "shape_metadata", [2, 2])
 
-    setattr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6, node7])
+    object.__setattr__(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6, node7])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -585,7 +582,7 @@ def test_onnx_node_attributes_2() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
+            nodes = typing.cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) >= 0
 
 
@@ -593,25 +590,25 @@ def test_onnx_node_attributes_3() -> None:
     """Test function test_onnx_node_attributes_3."""
     graph = IRGraph()
     # Test more ops
-    node1 = cast("EagerCallableProtocol", IRNode)("Dropout", "dr_1", [])
+    node1 = IRNode("Dropout", "dr_1", inputs=[])
     setattr(node1, "attributes", {"rate": 0.5})
 
-    node2 = cast("EagerCallableProtocol", IRNode)("LayerNorm", "ln_1", [])
+    node2 = IRNode("LayerNorm", "ln_1", inputs=[])
     setattr(node2, "attributes", {"epsilon": 1e-5, "axis": -1})
 
-    node3 = cast("EagerCallableProtocol", IRNode)("Transpose", "tr_1", [])
+    node3 = IRNode("Transpose", "tr_1", inputs=[])
     setattr(node3, "attributes", {"axes": [1, 0]})
 
-    node4 = cast("EagerCallableProtocol", IRNode)("Slice", "sl_1", [])
+    node4 = IRNode("Slice", "sl_1", inputs=[])
     setattr(node4, "attributes", {"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
 
-    node5 = cast("EagerCallableProtocol", IRNode)("Gather", "ga_1", [])
+    node5 = IRNode("Gather", "ga_1", inputs=[])
     setattr(node5, "attributes", {"axis": 0})
 
-    node6 = cast("EagerCallableProtocol", IRNode)("Conv2D", "conv_1", [])
+    node6 = IRNode("Conv2D", "conv_1", inputs=[])
     setattr(node6, "attributes", {"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
 
-    setattr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
+    object.__setattr__(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -655,22 +652,22 @@ def test_onnx_node_attributes_3() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
+            nodes = typing.cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) >= 0
 
 
 def test_onnx_full_build_nodes() -> None:
     """Test function test_onnx_full_build_nodes."""
     graph = IRGraph()
-    node_const = cast("EagerCallableProtocol", IRNode)("c_1", "Constant", [])
-    setattr(node_const, "shape_metadata", [2])
+    node_const = IRNode("c_1", "Constant", inputs=[])
+    object.__setattr__(node_const, "shape_metadata", [2])
     setattr(node_const, "attributes", {"value": 3.14})
-    node_if = cast("EagerCallableProtocol", IRNode)("if_1", "If", [])
-    setattr(node_if, "attributes", {"then_branch": cast("EagerCallableProtocol", IRGraph)(), "else_branch": cast("EagerCallableProtocol", IRGraph)()})
-    node_loop = cast("EagerCallableProtocol", IRNode)("loop_1", "Loop", [])
-    setattr(node_loop, "attributes", {"body": cast("EagerCallableProtocol", IRGraph)()})
-    graph.nodes = {"c_1": node_const, "if_1": node_if, "loop_1": node_loop}
-    setattr(graph, "sorted_nodes", [node_const, node_if, node_loop])
+    node_if = IRNode("if_1", "If", inputs=[])
+    object.__setattr__(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
+    node_loop = IRNode("loop_1", "Loop", inputs=[])
+    object.__setattr__(node_loop, "attributes", {"body": IRGraph()})
+    graph.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"c_1": node_const, "if_1": node_if, "loop_1": node_loop}))
+    object.__setattr__(graph, "sorted_nodes", [node_const, node_if, node_loop])
 
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"Constant": "Constant", "If": "If", "Loop": "Loop"}}
@@ -727,7 +724,7 @@ def test_onnx_full_build_nodes() -> None:
                     """
                     self.name = n
 
-            return cast("EagerTensorProtocol", Graph(name))
+            return typing.cast("EagerTensorProtocol", Graph(name))
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -738,7 +735,7 @@ def test_onnx_full_build_nodes() -> None:
     mock_onnx = MockOnnx()
     with patch.dict("sys.modules", {"onnx": mock_onnx}):
         with patch("importlib.import_module", return_value=mock_onnx):
-            nodes = cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
+            nodes = typing.cast("EagerCallableProtocol", generator._build_onnx_nodes)(MockTensorProto)
             assert len(nodes) == 3
 
 
@@ -758,7 +755,7 @@ def test_onnx_generic_visit_none() -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     gen = ONNXCodeGenerator(IRGraph(), [])
-    assert cast("EagerCallableProtocol", gen.generic_visit)(None, []) == "onnx_op"
+    assert typing.cast("EagerCallableProtocol", gen.generic_visit)(None, []) == "onnx_op"
 
 
 def test_onnx_text_fallback_input() -> None:
@@ -768,7 +765,7 @@ def test_onnx_text_fallback_input() -> None:
 
     graph = IRGraph()
     # The problem was that IRNode assigns name to node.id usually, but let's be explicit
-    node = cast("EagerCallableProtocol", IRNode)("Input", "in_1", [], shape_metadata=[2, 2])
+    node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
     setattr(node, "id", "in_1")
     setattr(node, "dtype", "float32")
     setattr(node, "op_type", "Input")
@@ -787,7 +784,7 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
     graph = IRGraph()
-    node = cast("EagerCallableProtocol", IRNode)("test_1", "TestOp", [])
+    node = IRNode("test_1", "TestOp", inputs=[])
 
     gen = ONNXCodeGenerator(graph, [])
     setattr(gen, "sorted_nodes", [node])
@@ -824,7 +821,7 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
     try:
         with patch.dict("sys.modules", {"onnx": MockOnnx()}):
             with patch("importlib.import_module", return_value=MockOnnx()):
-                nodes = cast("EagerCallableProtocol", gen._build_onnx_nodes)(MockTensorProto)
+                nodes = typing.cast("EagerCallableProtocol", gen._build_onnx_nodes)(MockTensorProto)
                 assert nodes[0] == "TestOp"
     finally:
         OPS_REGISTRY.clear()
@@ -838,32 +835,32 @@ def test_onnx_build_onnx_nodes_branches() -> None:
 
     graph = IRGraph()
 
-    node_input = cast("EagerCallableProtocol", IRNode)("Input", "in_1", [])
+    node_input = IRNode("Input", "in_1", inputs=[])
     setattr(node_input, "op_type", "Input")
 
-    node_constant = cast("EagerCallableProtocol", IRNode)("Constant", "c_1", [])
+    node_constant = IRNode("Constant", "c_1", inputs=[])
     setattr(node_constant, "op_type", "Constant")
-    setattr(node_constant, "shape_metadata", [2, 2])
+    object.__setattr__(node_constant, "shape_metadata", [2, 2])
     setattr(node_constant, "attributes", {"value": 1.0})
 
     # If without then_branch
-    node_if_no_then = cast("EagerCallableProtocol", IRNode)("If", "if_1", [])
+    node_if_no_then = IRNode("If", "if_1", inputs=[])
     setattr(node_if_no_then, "op_type", "If")
-    setattr(node_if_no_then, "attributes", {"else_branch": cast("EagerCallableProtocol", IRGraph)()})
+    object.__setattr__(node_if_no_then, "attributes", {"else_branch": IRGraph()})
 
     # If without else_branch
-    node_if_no_else = cast("EagerCallableProtocol", IRNode)("If", "if_2", [])
+    node_if_no_else = IRNode("If", "if_2", inputs=[])
     setattr(node_if_no_else, "op_type", "If")
-    setattr(node_if_no_else, "attributes", {"then_branch": cast("EagerCallableProtocol", IRGraph)()})
+    object.__setattr__(node_if_no_else, "attributes", {"then_branch": IRGraph()})
 
     # Loop without body
-    node_loop_no_body = cast("EagerCallableProtocol", IRNode)("Loop", "loop_1", [])
+    node_loop_no_body = IRNode("Loop", "loop_1", inputs=[])
     setattr(node_loop_no_body, "op_type", "Loop")
     setattr(node_loop_no_body, "attributes", {})
 
-    node_loop_with_body = cast("EagerCallableProtocol", IRNode)("Loop", "loop_2", [])
+    node_loop_with_body = IRNode("Loop", "loop_2", inputs=[])
     setattr(node_loop_with_body, "op_type", "Loop")
-    setattr(node_loop_with_body, "attributes", {"body": cast("EagerCallableProtocol", IRGraph)()})
+    object.__setattr__(node_loop_with_body, "attributes", {"body": IRGraph()})
 
     gen = ONNXCodeGenerator(graph, [])
     setattr(gen, "sorted_nodes", [node_input, node_constant, node_if_no_then, node_if_no_else, node_loop_no_body, node_loop_with_body])
@@ -912,7 +909,7 @@ def test_onnx_build_onnx_nodes_branches() -> None:
 
                 name = "test"
 
-            return cast("EagerTensorProtocol", M())
+            return typing.cast("EagerTensorProtocol", M())
 
     class MockOnnx:
         """Test class MockOnnx."""
@@ -922,7 +919,7 @@ def test_onnx_build_onnx_nodes_branches() -> None:
 
     with patch.dict("sys.modules", {"onnx": MockOnnx()}):
         with patch("importlib.import_module", return_value=MockOnnx()):
-            cast("EagerCallableProtocol", gen._build_onnx_nodes)(MockTensorProto)
+            typing.cast("EagerCallableProtocol", gen._build_onnx_nodes)(MockTensorProto)
     assert gen is not None
 
 
@@ -1023,7 +1020,7 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
     graph = IRGraph()
-    node = cast("EagerCallableProtocol", IRNode)("TestOp2", "test_2", [])
+    node = IRNode("TestOp2", "test_2", inputs=[])
     setattr(node, "id", "test_2")
     setattr(node, "op_type", "TestOp2")
 
@@ -1061,7 +1058,7 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
     try:
         with patch.dict("sys.modules", {"onnx": MockOnnx()}):
             with patch("importlib.import_module", return_value=MockOnnx()):
-                nodes = cast("EagerCallableProtocol", gen._build_onnx_nodes)(MockTensorProto)
+                nodes = typing.cast("EagerCallableProtocol", gen._build_onnx_nodes)(MockTensorProto)
                 assert nodes[0] == "MyCustomGen"
     finally:
         OPS_REGISTRY.clear()
@@ -1085,7 +1082,7 @@ def test_onnx_remaining_serialization_branches() -> None:
             """Test function __str__."""
             return "custom_val"
 
-    attr_custom = cast("EagerCallableProtocol", serialize_attribute)("custom_attr", cast("EagerCallableProtocol", CustomNonPrimitive)())
+    attr_custom = typing.cast("EagerCallableProtocol", serialize_attribute)("custom_attr", typing.cast("EagerCallableProtocol", CustomNonPrimitive)())
     assert len(attr_custom) > 0
 
     # 2. Dynamic axes out of range (lines 578->577 and 591->590) and attributes with skipped keys (lines 649-651)
@@ -1094,7 +1091,7 @@ def test_onnx_remaining_serialization_branches() -> None:
     n_out = LogicalNode(id="out_1", op_type="Relu", inputs=["in_1"], attributes={"dtype": "float32", "custom_float": 1.5}, shape_metadata=(2,))
     g.inputs = ["in_1"]
     g.outputs = ["out_1"]
-    g.nodes = {"in_1": n_in, "out_1": n_out}
+    g.nodes = NodeDict({"in_1": n_in, "out_1": n_out})
 
     gen = ONNXCodeGenerator(g)
     dyn_axes = {
@@ -1110,7 +1107,7 @@ def test_onnx_remaining_serialization_branches() -> None:
     n_loop = LogicalNode(id="loop_1", op_type="Loop", inputs=["in_1"], attributes={})
     g_ctrl.inputs = ["in_1"]
     g_ctrl.outputs = ["if_1", "loop_1"]
-    g_ctrl.nodes = {"in_1": n_in, "if_1": n_if, "loop_1": n_loop}
+    g_ctrl.nodes = NodeDict({"in_1": n_in, "if_1": n_if, "loop_1": n_loop})
     gen_ctrl = ONNXCodeGenerator(g_ctrl)
     res_ctrl = gen_ctrl.serialize_model_to_bytes()
     assert len(res_ctrl) > 0
@@ -1120,13 +1117,13 @@ def test_onnx_remaining_serialization_branches() -> None:
     sub_n = LogicalNode(id="sub_n", op_type="Relu", inputs=["in_1"], attributes={"dtype": "float32", "alpha": 0.5})
     sub.inputs = ["in_1"]
     sub.outputs = ["sub_n"]
-    sub.nodes = {"in_1": n_in, "sub_n": sub_n}
+    sub.nodes = NodeDict({"in_1": n_in, "sub_n": sub_n})
 
     g_sub = LogicalGraph(name="g_sub")
-    n_if_sub = LogicalNode(id="if_sub", op_type="If", inputs=["in_1"], attributes={"then_branch": sub})
+    n_if_sub = LogicalNode(id="if_sub", op_type="If", inputs=["in_1"], attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": sub}))
     g_sub.inputs = ["in_1"]
     g_sub.outputs = ["if_sub"]
-    g_sub.nodes = {"in_1": n_in, "if_sub": n_if_sub}
+    g_sub.nodes = NodeDict({"in_1": n_in, "if_sub": n_if_sub})
     gen_sub = ONNXCodeGenerator(g_sub)
     res_sub = gen_sub.serialize_model_to_bytes()
     assert len(res_sub) > 0
@@ -1144,10 +1141,10 @@ def test_onnx_aot_compilation_and_runner() -> None:
     n_y = IRNode(id="y", op_type="Relu", inputs=["x"], shape_metadata=[2, 2], attributes={"dtype": "float32"})
     g.inputs = ["x"]
     g.outputs = ["y"]
-    g.nodes = {"x": n_x, "y": n_y}
+    g.nodes = NodeDict({"x": n_x, "y": n_y})
 
     gen = ONNXCodeGenerator(g)
-    runner = gen.compile_aot(g, dynamic_axes={"x": {0: "batch"}}, opset_version=18)
+    runner = gen.compile_aot(g, dynamic_axes=typing.cast("EagerValue", {"x": {0: "batch"}}), opset_version=18)
     assert callable(runner)
 
     inp_data = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
@@ -1170,7 +1167,7 @@ def test_onnx_aot_compilation_and_runner() -> None:
     n_sub = IRNode(id="out_sub", op_type="Sub", inputs=["a", "b"], shape_metadata=[2], attributes={"dtype": "float32"})
     g_multi.inputs = ["a", "b"]
     g_multi.outputs = ["out_add", "out_sub"]
-    g_multi.nodes = {"a": n_a, "b": n_b, "out_add": n_add, "out_sub": n_sub}
+    g_multi.nodes = NodeDict({"a": n_a, "b": n_b, "out_add": n_add, "out_sub": n_sub})
 
     gen_multi = ONNXCodeGenerator(g_multi)
     # Force exception inside try block to activate fallback_runner
@@ -1188,7 +1185,7 @@ def test_onnx_aot_compilation_and_runner() -> None:
     # Single output branch
     g_multi.outputs = ["out_add"]
     fb_res_single = fb_runner(a_val, b=b_val)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(fb_res_single, a_val + b_val)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(fb_res_single, a_val + b_val)
 
     # No outputs branch
     g_multi.outputs = []

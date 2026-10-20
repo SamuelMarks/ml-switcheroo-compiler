@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Callable, cast
+import typing
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 
@@ -63,8 +64,8 @@ def approx_max_k(
         "recall_target": recall_target,
     }
 
-    val = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMaxK", [operand], attributes, (), operand.dtype)
-    idx = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
+    val = typing.cast("TypedVariadicCallable[Tensor]", _emit_reduction_node)("ApproxMaxK", [operand], attributes, (), operand.dtype)
+    idx = typing.cast("TypedVariadicCallable[Tensor]", _emit_reduction_node)("ApproxMaxKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
@@ -92,8 +93,8 @@ def approx_min_k(
         "recall_target": recall_target,
     }
 
-    val = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMinK", [operand], attributes, (), operand.dtype)
-    idx = cast("Callable[..., Tensor]", _emit_reduction_node)("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
+    val = typing.cast("TypedVariadicCallable[Tensor]", _emit_reduction_node)("ApproxMinK", [operand], attributes, (), operand.dtype)
+    idx = typing.cast("TypedVariadicCallable[Tensor]", _emit_reduction_node)("ApproxMinKIndices", [operand], attributes, (), DType.Int32)
     return val, idx
 
 
@@ -143,7 +144,7 @@ def corrcoef(
         [x, y] if y is not None else [x],
         {"rowvar": rowvar, "bias": bias, "ddof": ddof},
         (None, None),
-        cast("DType", "float32"),
+        typing.cast("DType", "float32"),
     )
 
 
@@ -163,7 +164,7 @@ def correlate(
     Returns:
         Tensor: Cross-correlation result.
     """
-    return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), cast("DType", "float32"))
+    return _emit_reduction_node("Correlate", [a, v], {"mode": mode}, (None,), typing.cast("DType", "float32"))
 
 
 @dispatch_eager("Cov")
@@ -201,5 +202,5 @@ def cov(
         [m, y] if y is not None else [m],
         {"rowvar": rowvar, "bias": bias, "ddof": ddof, "fweights": fweights, "aweights": aweights},
         (None, None),
-        cast("DType", "float32"),
+        typing.cast("DType", "float32"),
     )

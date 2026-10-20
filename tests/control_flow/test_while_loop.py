@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -14,7 +15,7 @@ from ml_switcheroo_compiler.ops.control_flow import while_loop
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 device = Device(DeviceType.CPU, 0)
 
@@ -36,7 +37,7 @@ def test_while_loop_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return cast("EagerCallableProtocol", Tensor)(cast("EagerTensorProtocol", val) < cast("EagerTensorProtocol", 5), cast("EagerCallableProtocol", TensorConfig)((), DType.Bool, device))
+            return typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerTensorProtocol", val) < typing.cast("EagerTensorProtocol", 5), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Bool, device))
 
         def body_fn(val: EagerValue) -> EagerValue:
             """Body fn.
@@ -47,9 +48,9 @@ def test_while_loop_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return cast("EagerTensorProtocol", val) + cast("EagerTensorProtocol", 1)
+            return typing.cast("EagerTensorProtocol", val) + typing.cast("EagerTensorProtocol", 1)
 
-        res = cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, 0)
+        res = typing.cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, 0)
         assert res == 5
 
 
@@ -85,7 +86,7 @@ def test_while_loop_trace() -> None:
 
         init_val = Tensor(ProxyTensor(id="mock", shape=(), dtype="float32"), TensorConfig((), DType.Float32, device))
         global_tracing_state.start_tracing()
-        res = cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, init_val)
+        res = typing.cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, init_val)
         assert res.dtype == DType.Float32
         global_tracing_state.stop_tracing()
 
@@ -109,8 +110,8 @@ def test_while_loop_tuple_init() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            (v1, _v2) = cast("EagerTensorProtocol", state)
-            return Tensor(cast("EagerTensorProtocol", getattr(v1, "data")) < 2, TensorConfig((), DType.Bool, device))
+            (v1, _v2) = typing.cast("EagerTensorProtocol", state)
+            return Tensor(typing.cast("EagerTensorProtocol", getattr(v1, "data")) < 2, TensorConfig((), DType.Bool, device))
 
         def body_fn(state: EagerValue) -> EagerValue:
             """Body fn.
@@ -121,10 +122,10 @@ def test_while_loop_tuple_init() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            (v1, v2) = cast("EagerTensorProtocol", state)
-            return (Tensor(cast("EagerTensorProtocol", getattr(v1, "data")) + 1, TensorConfig((), DType.Int32, device)), v2)
+            (v1, v2) = typing.cast("EagerTensorProtocol", state)
+            return (Tensor(typing.cast("EagerTensorProtocol", getattr(v1, "data")) + 1, TensorConfig((), DType.Int32, device)), v2)
 
-        (res1, _res2) = cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, (t1, t2))
+        (res1, _res2) = typing.cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, (t1, t2))
         assert res1.data == 2
     with ConfigContext(eager_mode=False):
         pt1 = Tensor(ProxyTensor(id="mock1", shape=(), dtype="int32"), TensorConfig((), DType.Int32, device))
@@ -156,8 +157,8 @@ def test_while_loop_tuple_init() -> None:
 
         global_tracing_state.start_tracing()
         try:
-            res_trace = cast("EagerCallableProtocol", while_loop)(cond_fn_trace, body_fn_trace, [pt1, pt2])
-            assert isinstance(res_trace, list)
+            res_trace = typing.cast("EagerCallableProtocol", while_loop)(cond_fn_trace, body_fn_trace, [pt1, pt2])
+            assert isinstance(typing.cast("EagerValue", res_trace), list)
             assert len(res_trace) == 2
         finally:
             global_tracing_state.stop_tracing()

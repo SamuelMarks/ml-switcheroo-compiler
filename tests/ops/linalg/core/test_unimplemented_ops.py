@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import ml_switcheroo_compiler.ops.linalg as mod
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -30,9 +30,9 @@ def test_linalg_dummy_ops_infer_shape() -> None:
     vec = MockTensor((2, 3))
 
     # Test infer_shape with args
-    assert cast("EagerCallableProtocol", mod.Vecdot)().infer_shape(t1, t2) == (2,)
-    assert cast("EagerCallableProtocol", mod.CustomLinearSolve)().infer_shape(mat, vec) == (2, 3)
-    assert cast("EagerCallableProtocol", mod.CustomRoot)().infer_shape(None, t1) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", mod.Vecdot)().infer_shape(t1, t2) == (2,)
+    assert typing.cast("EagerCallableProtocol", mod.CustomLinearSolve)().infer_shape(mat, vec) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", mod.CustomRoot)().infer_shape(None, t1) == (2, 3)
 
     # Test infer_shape without args (the missing branches)
     assert mod.Vecdot().infer_shape() == ()

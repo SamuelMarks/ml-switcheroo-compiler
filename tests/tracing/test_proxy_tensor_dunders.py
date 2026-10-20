@@ -7,6 +7,8 @@ on ProxyTensor objects during active tracing, ensure that operations are blocked
 of tracing contexts, and verify error handling for invalid operations.
 """
 
+from __future__ import annotations
+
 import pytest
 from ml_switcheroo_ir import LogicalNode
 

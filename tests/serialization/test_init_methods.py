@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -30,7 +30,7 @@ def test_keras_np_serialization() -> None:
             """Test function __init__."""
             self.layers = [FakeLayer()]
 
-    cast("EagerCallableProtocol", save_model)(cast("EagerCallableProtocol", FakeModel)(), test_file)
+    typing.cast("EagerCallableProtocol", save_model)(typing.cast("EagerCallableProtocol", FakeModel)(), test_file)
     model = load_model(test_file)
     assert hasattr(model, "config")
     if os.path.exists(test_file):

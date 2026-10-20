@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
-if TYPE_CHECKING:
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -30,9 +33,9 @@ def test_mlx_all_to_all_fallback(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    typing.cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
-    assert _mlx_all_to_all(None, "tensor") == "tensor"
+    assert _mlx_all_to_all(typing.cast("BackendModuleProtocol", None), "tensor") == "tensor"
 
 
 def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
@@ -88,9 +91,9 @@ def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    typing.cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
-    res = _mlx_reduce_scatter(DummyMLX.core, "tensor", group=DummyGroup())
+    res = _mlx_reduce_scatter(typing.cast("BackendModuleProtocol", DummyMLX.core), "tensor", group=typing.cast("EagerValue", DummyGroup()))
     assert res == "sliced"
 
 
@@ -115,7 +118,7 @@ def test_mlx_reduce_scatter_not_supported(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    typing.cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         _mlx_reduce_scatter(None, "tensor")

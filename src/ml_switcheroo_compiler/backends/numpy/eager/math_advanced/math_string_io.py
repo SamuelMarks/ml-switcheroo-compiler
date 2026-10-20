@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence  # noqa: F401
-from types import ModuleType
-from typing import cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 def _parse_scanop_args(
@@ -33,7 +33,7 @@ def _parse_scanop_args(
 
 
 @numpy_eager_registry.register("SparseDenseMatMul")
-def _np_sparsedensematmul(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sparsedensematmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseDenseMatMul.
 
     Args:
@@ -45,12 +45,12 @@ def _np_sparsedensematmul(backend_module: ModuleType, *args: EagerValue, **kwarg
         tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "sparsedensematmul"):
-        return cast(EagerValue, backend_module.sparsedensematmul(*args, **kwargs))
-    return cast(EagerValue, getattr(np, "matmul")(args[0], args[1]))
+        return typing.cast(EagerValue, backend_module.sparsedensematmul(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseMapValues")
-def _np_sparsemapvalues(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sparsemapvalues(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseMapValues.
 
     Args:
@@ -63,11 +63,11 @@ def _np_sparsemapvalues(backend_module: ModuleType, *args: EagerValue, **kwargs:
     """
     fn = args[0]
     sp_input = args[1]
-    return cast(EagerValue, cast("EagerCallableProtocol", fn)(cast("EagerCallableProtocol", backend_module.array)(sp_input)))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", fn)(typing.cast("EagerCallableProtocol", backend_module.array)(sp_input)))
 
 
 @numpy_eager_registry.register("SparseReshape")
-def _np_sparsereshape(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sparsereshape(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseReshape.
 
     Args:
@@ -78,11 +78,11 @@ def _np_sparsereshape(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.reshape(args[0], args[1]))
+    return typing.cast(EagerValue, backend_module.reshape(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseSampledAdd")
-def _np_sparsesampledadd(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sparsesampledadd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseSampledAdd.
 
     Args:
@@ -93,11 +93,11 @@ def _np_sparsesampledadd(backend_module: ModuleType, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.add(args[0], args[1]))
+    return typing.cast(EagerValue, backend_module.add(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseTranspose")
-def _np_sparsetranspose(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_sparsetranspose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement SparseTranspose.
 
     Args:
@@ -108,11 +108,11 @@ def _np_sparsetranspose(backend_module: ModuleType, *args: EagerValue, **kwargs:
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.transpose(args[0]))
+    return typing.cast(EagerValue, backend_module.transpose(args[0]))
 
 
 @numpy_eager_registry.register("decode_csv")
-def _np_decode_csv(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_decode_csv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np decode csv operation on the active backend array.
 
     Args:
@@ -127,7 +127,7 @@ def _np_decode_csv(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
 
 
 @numpy_eager_registry.register("decode_image")
-def _np_decode_image(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_decode_image(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np decode image operation on the active backend array.
 
     Args:
@@ -142,7 +142,7 @@ def _np_decode_image(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 
 @numpy_eager_registry.register("parse_example")
-def _np_parse_example(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_parse_example(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np parse example operation on the active backend array.
 
     Args:
@@ -157,7 +157,7 @@ def _np_parse_example(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 
 @numpy_eager_registry.register("parse_tensor")
-def _np_parse_tensor(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_parse_tensor(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np parse tensor operation on the active backend array.
 
     Args:
@@ -172,7 +172,7 @@ def _np_parse_tensor(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 
 @numpy_eager_registry.register("read_file")
-def _np_read_file(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_read_file(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np read file operation on the active backend array.
 
     Args:
@@ -187,7 +187,7 @@ def _np_read_file(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
 
 
 @numpy_eager_registry.register("write_file")
-def _np_write_file(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_write_file(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np write file operation on the active backend array.
 
     Args:
@@ -201,7 +201,7 @@ def _np_write_file(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     return _np_write_file_camel(backend_module, *args, **kwargs)
 
 
-def _parse_csv_row(row: list[str], record_defaults: EagerValue, np: ModuleType) -> EagerValue:
+def _parse_csv_row(row: list[str], record_defaults: EagerValue, np: BackendModuleProtocol) -> EagerValue:
     """Parse a single CSV row, applying defaults on parse error or missing elements.
 
     Args:
@@ -228,7 +228,7 @@ def _parse_csv_row(row: list[str], record_defaults: EagerValue, np: ModuleType) 
     return row_out
 
 
-def _get_csv_data(args: EagerValue, np: ModuleType) -> str:
+def _get_csv_data(args: EagerValue, np: BackendModuleProtocol) -> str:
     """Extract and decode the CSV data string from arguments.
 
     Args:
@@ -262,7 +262,7 @@ def _get_csv_defaults(
 
 
 @numpy_eager_registry.register("DecodeCsv")
-def _np_decode_csv_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_decode_csv_camel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np decode csv camel operation on the active backend array.
 
     Args:
@@ -332,7 +332,7 @@ def _decode_png_bytes(data: bytes) -> tuple[int, int, int]:
 @numpy_eager_registry.register("DecodeImage")
 @numpy_eager_registry.register("DecodeJpeg")
 @numpy_eager_registry.register("DecodePng")
-def _np_decode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_decode_image_camel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np decode image camel operation on the active backend array.
 
     Args:
@@ -357,7 +357,7 @@ def _np_decode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwar
             raise ValueError("Expected bytes for image decoding.")
 
         height, width, src_channels = _decode_png_bytes(bytes(data))
-        channels = int(cast(int, kwargs.get("channels", 0)))
+        channels = int(typing.cast(int, kwargs.get("channels", 0)))
         out_channels = channels if channels in (1, 3, 4) else src_channels
         return np.zeros((height, width, out_channels), dtype=np.uint8)
     except Exception as e:
@@ -366,7 +366,7 @@ def _np_decode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwar
 
 @numpy_eager_registry.register("EncodeJpeg")
 @numpy_eager_registry.register("EncodePng")
-def _np_encode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_encode_image_camel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np encode image camel operation on the active backend array.
 
     Args:
@@ -408,7 +408,7 @@ def _np_encode_image_camel(backend_module: ModuleType, *args: EagerValue, **kwar
 
 
 @numpy_eager_registry.register("ParseExample")
-def _np_parse_example_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_parse_example_camel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np parse example camel operation on the active backend array.
 
     Args:
@@ -446,7 +446,7 @@ def _np_parse_example_camel(backend_module: ModuleType, *args: EagerValue, **kwa
 
 
 @numpy_eager_registry.register("ParseTensor")
-def _np_parse_tensor_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_parse_tensor_camel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np parse tensor camel operation on the active backend array.
 
     Args:
@@ -469,13 +469,13 @@ def _np_parse_tensor_camel(backend_module: ModuleType, *args: EagerValue, **kwar
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
     dtype = kwargs.get("out_type", np.float32)
     try:
-        return cast(EagerValue, getattr(np, "array")(pickle.loads(data), dtype=dtype))
+        return typing.cast(EagerValue, getattr(np, "array")(pickle.loads(data), dtype=dtype))
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 
 
 @numpy_eager_registry.register("ReadFile")
-def _np_read_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_read_file_camel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np read file camel operation on the active backend array.
 
     Args:
@@ -502,7 +502,7 @@ def _np_read_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs:
 
 
 @numpy_eager_registry.register("WriteFile")
-def _np_write_file_camel(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> None:
+def _np_write_file_camel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Execute the eager np write file camel operation on the active backend array.
 
     Args:

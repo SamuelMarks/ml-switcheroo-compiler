@@ -2,22 +2,20 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Union, cast
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_gaussian_blur, _np_sharpen
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("RandomGaussianBlur")
 def _np_random_gaussian_blur(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     kernel_size: tuple[int, int] | int,
     sigma: tuple[float, float] | float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np random gaussian blur operation on the active backend array.
 
@@ -31,18 +29,15 @@ def _np_random_gaussian_blur(
     Returns:
         np.ndarray: Blurred images array.
     """
-    return cast(
-        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-        _np_gaussian_blur(backend_module, images, kernel_size=kernel_size, sigma=sigma, **kwargs),
-    )
+    return _np_gaussian_blur(backend_module, images, kernel_size=kernel_size, sigma=sigma, **kwargs)
 
 
 @numpy_eager_registry.register("RandomSharpness")
 def _np_random_sharpness(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     factor: float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np random sharpness operation on the active backend array.
 
@@ -55,7 +50,4 @@ def _np_random_sharpness(
     Returns:
         np.ndarray: Sharpened images array.
     """
-    return cast(
-        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-        _np_sharpen(backend_module, images, factor=factor, **kwargs),
-    )
+    return _np_sharpen(backend_module, images, factor=factor, **kwargs)

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 from unittest.mock import patch
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms as vt
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 

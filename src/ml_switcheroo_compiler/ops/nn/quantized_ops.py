@@ -1,8 +1,11 @@
 """Implementation of quantized ops operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.nn.quantized_ops`)."""
 
+from __future__ import annotations
+
 import typing
-from dataclasses import dataclass
-from typing import Callable, Optional, Union, cast  # noqa: F401
+from collections.abc import Callable  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config as compiler_config
@@ -19,7 +22,7 @@ from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 class QuantizeOp(OpDef):
     """Operation definition for quantizing a floating-point weight tensor."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the quantize operation.
 
         Args:
@@ -35,7 +38,7 @@ class QuantizeOp(OpDef):
 class QuantizedMatmulOp(OpDef):
     """Operation definition for performing a matrix multiplication with quantized weights."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the quantized matmul operation.
 
         Args:
@@ -51,7 +54,7 @@ class QuantizedMatmulOp(OpDef):
 class GatherQMMOp(OpDef):
     """Operation definition for combined gathering and quantized matrix multiplication."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the gather and quantized matmul operation.
 
         Args:
@@ -67,7 +70,7 @@ class GatherQMMOp(OpDef):
 class FakeQuantWithMinMaxVarsOp(OpDef):
     """Operation definition for simulating quantization using minimum and maximum variables."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the fake quantization operation.
 
         Args:
@@ -83,7 +86,7 @@ class FakeQuantWithMinMaxVarsOp(OpDef):
 class QuantizeAndDequantizeOp(OpDef):
     """Operation definition for sequentially quantizing and then dequantizing a tensor."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the quantize and dequantize operation.
 
         Args:
@@ -99,7 +102,7 @@ class QuantizeAndDequantizeOp(OpDef):
 class AbsMaxQuantizeOp(OpDef):
     """Operation definition for performing absolute maximum-based quantization."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the absolute max quantize operation.
 
         Args:
@@ -115,7 +118,7 @@ class AbsMaxQuantizeOp(OpDef):
 class ComputeFloat8AmaxHistoryOp(OpDef):
     """Operation definition for computing the absolute maximum history for float8 quantization."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the float8 amax history computation.
 
         Args:
@@ -131,7 +134,7 @@ class ComputeFloat8AmaxHistoryOp(OpDef):
 class ComputeFloat8ScaleOp(OpDef):
     """Operation definition for computing the scale factor for float8 quantization."""
 
-    def infer_shape(self, *args: typing.Union["Tensor", int, float, str], **kwargs: typing.Union["Tensor", int, float, str]) -> tuple[int, ...]:
+    def infer_shape(self, *args: Tensor | int | float | str, **kwargs: Tensor | int | float | str) -> tuple[int, ...]:
         """Infers the shape of the output tensor for the float8 scale computation.
 
         Args:
@@ -193,37 +196,13 @@ def fake_quant_with_min_max_vars(
 
 
 @register_op("FakeQuantizePerChannelAffine")
-class FakeQuantizePerChannelAffineOp(OpDef):
+class FakeQuantizePerChannelAffineOp(FakeQuantWithMinMaxVarsOp):
     """Fake quantization per channel."""
-
-    def infer_shape(self, *args: Tensor, **kwargs: int) -> tuple[int, ...]:
-        """Infer shape.
-
-        Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
-
-        Returns:
-            tuple[int, ...]: Computed result.
-        """
-        return getattr(args[0], "shape", ())
 
 
 @register_op("FakeQuantizePerTensorAffine")
-class FakeQuantizePerTensorAffineOp(OpDef):
+class FakeQuantizePerTensorAffineOp(FakeQuantWithMinMaxVarsOp):
     """Fake quantization per tensor."""
-
-    def infer_shape(self, *args: Tensor, **kwargs: Union[float, int]) -> tuple[int, ...]:
-        """Infer shape.
-
-        Args:
-            *args: The args parameter.
-            **kwargs: The kwargs parameter.
-
-        Returns:
-            tuple[int, ...]: Computed result.
-        """
-        return getattr(args[0], "shape", ())
 
 
 def fake_quantize_per_channel_affine(
@@ -261,8 +240,8 @@ def fake_quantize_per_channel_affine(
         zp = zero_point
         for i in range(ndims):
             if i != axis:
-                sc = cast(Tensor, expand_dims(sc, axis=i))
-                zp = cast(Tensor, expand_dims(zp, axis=i))
+                sc = typing.cast(Tensor, expand_dims(sc, axis=i))
+                zp = typing.cast(Tensor, expand_dims(zp, axis=i))
 
         zp = op_cast(zp, input.dtype)
 
@@ -308,23 +287,24 @@ def fake_quantize_per_tensor_affine(
     return _emit_shape_node("FakeQuantizePerTensorAffine", [input], attrs, input.shape, input.dtype)
 
 
-@dataclass
-class QuantizationParams:
+class QuantizationParams(pydantic.BaseModel):
     """Parameters for quantization operations."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     signed_input: bool = True
     num_bits: int = 8
     range_given: bool = False
     round_mode: str = "HALF_TO_EVEN"
     narrow_range: bool = False
-    axis: Optional[int] = None
+    axis: int | None = None
 
 
 def quantize_and_dequantize(
     input: Tensor,
     input_min: Tensor,
     input_max: Tensor,
-    params: Optional[QuantizationParams] = None,
+    params: QuantizationParams | None = None,
 ) -> TensorOrScalar:
     """Quantizes and then dequantizes a tensor to simulate lower precision.
 
@@ -359,7 +339,7 @@ def quantize_and_dequantize(
 
 def abs_max_quantize(
     input: Tensor,
-    axis: Optional[int] = None,
+    axis: int | None = None,
 ) -> TensorOrScalar:
     """Quantizes an input tensor using absolute maximum quantization scaling.
 
@@ -461,25 +441,27 @@ def quantize(
     return qw, scales, biases
 
 
-@dataclass
-class QuantizationConfig:
+class QuantizationConfig(pydantic.BaseModel):
     """Configuration for quantized operations."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     group_size: int = 64
     bits: int = 4
     transpose: bool = True
 
 
-@dataclass
-class QuantizedOpsConfig:
+class QuantizedOpsConfig(pydantic.BaseModel):
     """Grouped attributes for quantized operations."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     weight: Tensor
     scales: Tensor
-    biases: Optional[Tensor] = None
-    zeros: Optional[Tensor] = None
-    indices: Optional[Tensor] = None
-    q_config: Optional[QuantizationConfig] = None
+    biases: Tensor | None = None
+    zeros: Tensor | None = None
+    indices: Tensor | None = None
+    q_config: QuantizationConfig | None = None
 
 
 def quantized_matmul(
@@ -567,7 +549,7 @@ def quantized_linear(
 
         w_val = typing.cast(EagerTensorProtocol, backend.asarray(config.weight.data))
         scales_val = typing.cast(EagerTensorProtocol, backend.asarray(config.scales.data))
-        zeros_val: Union[EagerTensorProtocol, float]
+        zeros_val: EagerTensorProtocol | float
         if config.zeros is not None:
             zeros_val = typing.cast(EagerTensorProtocol, backend.asarray(config.zeros.data))
         elif config.biases is not None:
@@ -606,7 +588,7 @@ def quantized_embedding(
 
         w_val = typing.cast(EagerTensorProtocol, backend.asarray(config.weight.data))
         scales_val = typing.cast(EagerTensorProtocol, backend.asarray(config.scales.data))
-        zeros_val: Union[EagerTensorProtocol, float]
+        zeros_val: EagerTensorProtocol | float
         if config.zeros is not None:
             zeros_val = typing.cast(EagerTensorProtocol, backend.asarray(config.zeros.data))
         elif config.biases is not None:
@@ -628,7 +610,7 @@ def quantized_embedding(
 def dequantize(
     input: Tensor,
     scales: Tensor,
-    biases: Optional[Tensor] = None,
+    biases: Tensor | None = None,
     group_size: int = 64,
     bits: int = 4,
 ) -> TensorOrScalar:

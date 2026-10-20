@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Callable, Optional, cast  # noqa: F401
+import typing
+from collections.abc import Callable  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -14,14 +16,19 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-@dataclass
-class ExtractPatchesOptions:
+class ExtractPatchesOptions(pydantic.BaseModel):
     """Options for extracting patches."""
 
-    strides: int | tuple[int, int] | list[int] | None = None
-    dilation_rate: int | tuple[int, int] | list[int] | None = None
-    padding: str = "valid"
-    data_format: str | None = None
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    strides: int | tuple[int, int] | list[int] | TensorOrScalar | None = None
+    dilation_rate: int | tuple[int, int] | list[int] | TensorOrScalar | None = None
+    padding: str | TensorOrScalar = "valid"
+    data_format: str | TensorOrScalar | None = None
+
+    def __init__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
+        """Initialize ExtractPatchesOptions from positional or keyword arguments."""
+        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 
 def crop_and_resize(
@@ -124,13 +131,10 @@ def extract_bounding_boxes(
         crop_size = kwargs.get("crop_size", (0, 0))
         if isinstance(crop_size, int):
             crop_size = (crop_size, crop_size)
-        config_obj = cast(
+        config_obj = typing.cast(
             TensorOrScalar,
-            cast("EagerCallableProtocol", BBoxConfig)(
-                crop_size=crop_size,
-                interpolation=cast("str", kwargs.get("interpolation", "bilinear")),
-                extrapolation_value=cast("float", kwargs.get("extrapolation_value", 0.0)),
-                data_format=cast("Optional[str]", kwargs.get("data_format", None)),
+            typing.cast("EagerCallableProtocol", BBoxConfig)(
+                crop_size=crop_size, interpolation=typing.cast("str", kwargs.get("interpolation", "bilinear")), extrapolation_value=typing.cast("float", kwargs.get("extrapolation_value", 0.0)), data_format=typing.cast("str | None", kwargs.get("data_format", None))
             ),
         )
 

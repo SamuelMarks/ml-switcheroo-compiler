@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 import ctypes
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner, _calculate_node_bytes, _extract_kernel_name
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_rocm_generator() -> None:
     """Test ROCm code generation."""
     graph = IRGraph()
-    graph.nodes = {"matmul": IRNode(id="matmul", op_type="MatMul", inputs=[])}
+    graph.nodes = NodeDict({"matmul": IRNode(id="matmul", op_type="MatMul", inputs=[])})
     gen = RocmCodeGenerator(graph)
     out = gen.generate()
     assert "matmul" in out
@@ -29,7 +30,7 @@ def test_rocm_generator() -> None:
 def test_rocm_generator_coverage() -> None:
     """Test ROCm generator coverage."""
     graph = IRGraph()
-    graph.nodes = {"input": IRNode(id="input", op_type="Input", inputs=[])}
+    graph.nodes = NodeDict({"input": IRNode(id="input", op_type="Input", inputs=[])})
     gen = RocmCodeGenerator(graph)
     out = gen.generate()
     assert "matmul" not in out
@@ -53,13 +54,13 @@ def test_rocm_missing_yaml(monkeypatch: EagerTensorProtocol) -> None:
 def test_calculate_node_bytes_branches() -> None:
     """Test all branches of _calculate_node_bytes."""
     node_64 = IRNode(id="n1", op_type="Custom", inputs=[], attributes={"dtype": "float64"})
-    node_64.shape_metadata = [2, 3]
+    node_64.shape_metadata = (2, 3)
     assert _calculate_node_bytes(node_64) == (6, 48)
     node_16 = IRNode(id="n2", op_type="Custom", inputs=[], attributes={"dtype": "float16"})
-    node_16.shape_metadata = [4]
+    node_16.shape_metadata = (4,)
     assert _calculate_node_bytes(node_16) == (4, 8)
     node_8 = IRNode(id="n3", op_type="Custom", inputs=[], attributes={"dtype": "int8"})
-    node_8.shape_metadata = [5]
+    node_8.shape_metadata = (5,)
     assert _calculate_node_bytes(node_8) == (5, 5)
     node_def = IRNode(id="n4", op_type="Custom", inputs=[])
     assert _calculate_node_bytes(node_def) == (1024, 4096)
@@ -98,7 +99,7 @@ def test_rocm_generate_missing_template_branches() -> None:
     """Test generate with op_type missing from templates raises BackendNotSupportedError."""
     graph = IRGraph()
     graph.inputs = ["in_0"]
-    graph.nodes = {"unmapped_op": IRNode(id="unmapped_op", op_type="UnsupportedCustomOp", inputs=["in_0"])}
+    graph.nodes = NodeDict({"unmapped_op": IRNode(id="unmapped_op", op_type="UnsupportedCustomOp", inputs=["in_0"])})
     gen = RocmCodeGenerator(graph)
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         gen.generate()
@@ -138,7 +139,7 @@ def test_rocm_marshall_kernel_params() -> None:
             self.value = val
 
     args = [ctypes.c_void_p(123), 42, 3.14, CustomVal(999), "100"]
-    res = cast("EagerCallableProtocol", _marshall_kernel_params)(args)
+    res = typing.cast("EagerCallableProtocol", _marshall_kernel_params)(args)
     assert res is not None
     assert len(res) == 5
 
@@ -222,12 +223,14 @@ def test_rocm_expanded_templates() -> None:
     """Test code generation for newly added ROCm templates."""
     graph = IRGraph()
     graph.inputs = ["x", "w"]
-    graph.nodes = {
-        "conv3d": IRNode(id="conv3d", op_type="Conv3D", inputs=["x", "w"]),
-        "layernorm": IRNode(id="layernorm", op_type="LayerNorm", inputs=["x"]),
-        "attention": IRNode(id="attention", op_type="Attention", inputs=["x"]),
-        "bcast": IRNode(id="bcast", op_type="Broadcast_Elementwise", inputs=["x", "w"]),
-    }
+    graph.nodes = NodeDict(
+        {
+            "conv3d": IRNode(id="conv3d", op_type="Conv3D", inputs=["x", "w"]),
+            "layernorm": IRNode(id="layernorm", op_type="LayerNorm", inputs=["x"]),
+            "attention": IRNode(id="attention", op_type="Attention", inputs=["x"]),
+            "bcast": IRNode(id="bcast", op_type="Broadcast_Elementwise", inputs=["x", "w"]),
+        }
+    )
     gen = RocmCodeGenerator(graph)
     out = gen.generate()
     assert "conv3d" in out
@@ -245,14 +248,14 @@ def _test_rocm_additional_coverage_part_1(_state: dict[str, EagerTensorProtocol]
     g = IRGraph()
     n = IRNode(id="fused_0", op_type="FusedElementwise", inputs=["ghost_input"], attributes={"scalar_expr": "1.0f"})
     n.shape_metadata = (4,)
-    g.nodes = {"fused_0": n}
+    g.nodes = NodeDict({"fused_0": n})
     gen = RocmCodeGenerator(g)
     code = gen.generate()
     assert "kernel_0" in code
     g_empty = IRGraph()
     n_empty = IRNode(id="fused_empty", op_type="FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
     n_empty.shape_metadata = (4,)
-    g_empty.nodes = {"fused_empty": n_empty}
+    g_empty.nodes = NodeDict({"fused_empty": n_empty})
     assert "kernel_0" in RocmCodeGenerator(g_empty).generate()
     runner = ROCmRunner()
     runner.mode = "ctypes"
@@ -312,7 +315,7 @@ def _test_rocm_additional_coverage_part_3(_state: dict[str, EagerTensorProtocol]
                 assert bool(runner_avail.is_available()) is False
             mock_dev_zero = MagicMock()
             mock_dev_zero.hipInit.return_value = 0
-            mock_dev_zero.hipGetDeviceCount.side_effect = lambda ptr: (cast("EagerCallableProtocol", setattr)(getattr(ptr, "_obj"), "value", 0), 0)[1]
+            mock_dev_zero.hipGetDeviceCount.side_effect = lambda ptr: (typing.cast("EagerCallableProtocol", setattr)(getattr(ptr, "_obj"), "value", 0), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_dev_zero):
                 assert bool(runner_avail.is_available()) is False
     getattr(_state, "update")({"mock_dev_lib": mock_dev_lib, "mock_dev_zero": mock_dev_zero, "mock_init_fail": mock_init_fail})
@@ -329,8 +332,8 @@ def _test_rocm_additional_coverage_part_4(_state: dict[str, EagerTensorProtocol]
     mock_hiprtc = MagicMock(spec=["hiprtcCreateProgram", "hiprtcCompileProgram", "hiprtcGetProgramLogSize", "hiprtcGetProgramLog", "hiprtcDestroyProgram"])
     mock_hiprtc.hiprtcCreateProgram.return_value = 0
     mock_hiprtc.hiprtcCompileProgram.return_value = 2
-    mock_hiprtc.hiprtcGetProgramLogSize.side_effect = lambda prog, size_ptr: (cast("EagerCallableProtocol", setattr)(getattr(size_ptr, "_obj"), "value", 16), 0)[1]
-    mock_hiprtc.hiprtcGetProgramLog.side_effect = lambda prog, buf: (cast("EagerCallableProtocol", setattr)(buf, "value", b"err"), 0)[1]
+    mock_hiprtc.hiprtcGetProgramLogSize.side_effect = lambda prog, size_ptr: (typing.cast("EagerCallableProtocol", setattr)(getattr(size_ptr, "_obj"), "value", 16), 0)[1]
+    mock_hiprtc.hiprtcGetProgramLog.side_effect = lambda prog, buf: (typing.cast("EagerCallableProtocol", setattr)(buf, "value", b"err"), 0)[1]
     with patch("ctypes.cdll.LoadLibrary", return_value=mock_hiprtc):
         with pytest.raises(RuntimeError, match="HIPRTC compilation failed"):
             runner_compile.compile_hip_to_code("src")
@@ -352,8 +355,8 @@ def _test_rocm_additional_coverage_part_5(_state: dict[str, EagerTensorProtocol]
     mock_hiprtc_ok = MagicMock(spec=["hiprtcCreateProgram", "hiprtcCompileProgram", "hiprtcGetCodeSize", "hiprtcGetCode"])
     mock_hiprtc_ok.hiprtcCreateProgram.return_value = 0
     mock_hiprtc_ok.hiprtcCompileProgram.return_value = 0
-    mock_hiprtc_ok.hiprtcGetCodeSize.side_effect = lambda prog, size_ptr: (cast("EagerCallableProtocol", setattr)(getattr(size_ptr, "_obj"), "value", 8), 0)[1]
-    mock_hiprtc_ok.hiprtcGetCode.side_effect = lambda prog, buf: (cast("EagerCallableProtocol", setattr)(buf, "raw", b"code_bin"), 0)[1]
+    mock_hiprtc_ok.hiprtcGetCodeSize.side_effect = lambda prog, size_ptr: (typing.cast("EagerCallableProtocol", setattr)(getattr(size_ptr, "_obj"), "value", 8), 0)[1]
+    mock_hiprtc_ok.hiprtcGetCode.side_effect = lambda prog, buf: (typing.cast("EagerCallableProtocol", setattr)(buf, "raw", b"code_bin"), 0)[1]
     with patch("ctypes.cdll.LoadLibrary", return_value=mock_hiprtc_ok):
         assert runner_compile.compile_hip_to_code("src") == b"code_bin"
     runner_sync = ROCmRunner()
@@ -403,14 +406,14 @@ def _test_rocm_additional_coverage_part_7(_state: dict[str, EagerTensorProtocol]
     """
     (runner_sync, unmapped_node) = (_state["runner_sync"], _state["unmapped_node"])
     gen_rocm = RocmCodeGenerator(IRGraph())
-    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_rocm, None, {})
+    typing.cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_rocm, None, {})
     mapped_node = IRNode("mapped", "Relu", inputs=[])
     setattr(getattr(getattr(gen_rocm.config, "templates"), "__getitem__")("relu"), "workgroup_size", [16, 16, 2])
-    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_rocm, "/tmp/mock.co", {})
+    typing.cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_rocm, "/tmp/mock.co", {})
     fused_node = IRNode("fused", "FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
-    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(fused_node, 0, gen_rocm, "/tmp/mock.co", {})
+    typing.cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(fused_node, 0, gen_rocm, "/tmp/mock.co", {})
     g_unmapped = IRGraph()
-    g_unmapped.nodes = {"unmapped": unmapped_node}
+    g_unmapped.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"unmapped": unmapped_node}))
     with patch.object(runner_sync, "compile_hip_to_code", return_value=b"CO"):
         with pytest.raises(BackendNotSupportedError, match="not supported"):
             runner_sync.execute_graph(g_unmapped, {})
@@ -437,13 +440,13 @@ def _test_rocm_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     gen = RocmCodeGenerator(IRGraph())
-    lines = cast("list[EagerTensorProtocol]", [])
+    lines = typing.cast("list[EagerTensorProtocol]", [])
     fused_node = IRNode("fused_node", "FusedElementwise", inputs=["x", "y"], attributes={"scalar_expr": "in0 + in1"})
-    cast("EagerCallableProtocol", gen._emit_node)(fused_node, 0, {"x": "d_x", "y": "d_y"}, {"x": "fused_node", "y": "other"}, outputs_set=set(), inputs_set={"y"}, hip=lines)
+    typing.cast("EagerCallableProtocol", gen._emit_node)(fused_node, 0, {"x": "d_x", "y": "d_y"}, {"x": "fused_node", "y": "other"}, outputs_set=set(), inputs_set={"y"}, hip=lines)
     assert any("hipFree(d_x)" in line for line in lines)
     lines.clear()
     relu_node = IRNode("relu_node", "Relu", inputs=["a", "b", "c"])
-    cast("EagerCallableProtocol", gen._emit_node)(relu_node, 0, {"a": "d_a", "b": "d_b"}, {"a": "relu_node", "b": "relu_node", "c": "relu_node"}, outputs_set={"b"}, inputs_set=set(), hip=lines)
+    typing.cast("EagerCallableProtocol", gen._emit_node)(relu_node, 0, {"a": "d_a", "b": "d_b"}, {"a": "relu_node", "b": "relu_node", "c": "relu_node"}, outputs_set={"b"}, inputs_set=set(), hip=lines)
     assert any("hipFree(d_a)" in line for line in lines)
     runner = ROCmRunner()
     runner.mode = "ctypes"
@@ -489,7 +492,7 @@ def _test_rocm_full_coverage_branches_part_2(_state: dict[str, EagerTensorProtoc
     setattr(runner_valid, "free_buffer", lambda ptr: freed.append(ptr))
     g_exec = IRGraph()
     inp_node = IRNode("inp", "Input")
-    inp_node.shape_metadata = [4]
+    inp_node.shape_metadata = (4,)
     calc_node = IRNode("calc", "Relu", inputs=["inp"])
     getattr(_state, "update")({"calc_node": calc_node, "freed": freed, "g_exec": g_exec, "inp_node": inp_node})
     getattr(_state, "update")({"runner_unavail": runner_unavail, "runner_valid": runner_valid})
@@ -577,17 +580,17 @@ def test_rocm_synthesized_kernels_and_fused_elementwise() -> None:
     n_unary = IRNode(id="n_un", op_type="CustomSynthUnary", inputs=["in0"])
     n_bin = IRNode(id="n_bin", op_type="CustomSynthBinary", inputs=["in0", "in1"])
     n_tri = IRNode(id="n_tri", op_type="CustomSynthTernary", inputs=["in0", "in1", "in2"])
-    g.nodes = {"n_un": n_unary, "n_bin": n_bin, "n_tri": n_tri}
+    g.nodes = NodeDict({"n_un": n_unary, "n_bin": n_bin, "n_tri": n_tri})
     gen = RocmCodeGenerator(g)
     tpl_unary = gen._ensure_template(n_unary, 0)
     assert tpl_unary is not None
-    assert "customsynthunary_kernel" in cast("EagerTensorProtocol", getattr(tpl_unary, "body"))
+    assert "customsynthunary_kernel" in typing.cast("EagerTensorProtocol", getattr(tpl_unary, "body"))
     tpl_bin = gen._ensure_template(n_bin, 1)
     assert tpl_bin is not None
-    assert "customsynthbinary_kernel" in cast("EagerTensorProtocol", getattr(tpl_bin, "body"))
+    assert "customsynthbinary_kernel" in typing.cast("EagerTensorProtocol", getattr(tpl_bin, "body"))
     tpl_tri = gen._ensure_template(n_tri, 2)
     assert tpl_tri is not None
-    assert "customsynthternary_kernel" in cast("EagerTensorProtocol", getattr(tpl_tri, "body"))
+    assert "customsynthternary_kernel" in typing.cast("EagerTensorProtocol", getattr(tpl_tri, "body"))
     n_unsup = IRNode(id="n_unsup", op_type="UnsupportedCustomOp", inputs=["in0"])
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         gen._ensure_template(n_unsup, 3)
@@ -610,7 +613,7 @@ def test_rocm_synthesized_kernels_and_fused_elementwise() -> None:
     assert any("d_out_1_1" in ln for ln in multi_lines)
     g_custom = IRGraph()
     n_custom = IRNode(id="n_c", op_type="CustomNoTpl", inputs=[])
-    g_custom.nodes = {"n_c": n_custom}
+    g_custom.nodes = NodeDict({"n_c": n_custom})
     gen_custom = RocmCodeGenerator(g_custom)
     with patch.object(gen_custom, "_ensure_template", return_value=None):
         code = gen_custom.generate()
@@ -640,7 +643,7 @@ def test_rocm_prepare_input_buffers() -> None:
     mv_raw = memoryview(b"memoryview_data")
     wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
     list_raw = [1, 2, 3]
-    buffers = cast("EagerCallableProtocol", _prepare_rocm_input_buffers)(graph, (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw))
+    buffers = typing.cast("EagerCallableProtocol", _prepare_rocm_input_buffers)(graph, (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw))
     assert buffers["x"] == arr.tobytes()
     assert buffers["y"] == b_raw
     assert buffers["in_2"] == bytes(ba_raw)
@@ -667,25 +670,25 @@ def test_rocm_evaluate_fallback() -> None:
     g_single = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
     n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_single.nodes = {"x": n_in, "out": n_exp}
+    g_single.nodes = NodeDict({"x": n_in, "out": n_exp})
     g_single.inputs = ["x"]
     g_single.outputs = ["out"]
     arr = np.array([1.0, 2.0], dtype=np.float32)
     res_single = _evaluate_rocm_fallback(g_single, (arr,))
     assert res_single is not None
-    res_wrapper = cast("EagerCallableProtocol", _evaluate_rocm_fallback)(g_single, (cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
+    res_wrapper = typing.cast("EagerCallableProtocol", _evaluate_rocm_fallback)(g_single, (typing.cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
     assert res_wrapper is not None
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.nodes = NodeDict({"x": n_in, "out1": n_out1, "out2": n_out2})
     g_multi.inputs = ["x"]
     g_multi.outputs = ["out1", "out2"]
     res_multi = _evaluate_rocm_fallback(g_multi, (arr,))
     assert isinstance(res_multi, tuple)
     assert len(res_multi) == 2
     g_empty = IRGraph()
-    g_empty.nodes = {"x": n_in}
+    g_empty.nodes = NodeDict({"x": n_in})
     g_empty.inputs = ["x"]
     g_empty.outputs = []
     res_empty = _evaluate_rocm_fallback(g_empty, (arr,))
@@ -700,7 +703,7 @@ def test_rocm_compile_and_runner_dispatch() -> None:
     graph = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
     n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    graph.nodes = {"x": n_in, "out": n_exp}
+    graph.nodes = NodeDict({"x": n_in, "out": n_exp})
     graph.inputs = ["x"]
     graph.outputs = ["out"]
     gen = RocmCodeGenerator(graph)
@@ -709,7 +712,7 @@ def test_rocm_compile_and_runner_dispatch() -> None:
         artifact = gen.compile_aot(graph, compile_options=["-O3"])
         assert isinstance(artifact, CompiledArtifact)
         assert artifact.binary_bytes == b"hsaco code object"
-        assert cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "hipcc"
+        assert typing.cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "hipcc"
     mock_comp_empty = HardwareCompilationResult(success=False, assembly_or_ptx="", compiler_cli="hipcc")
     with patch("ml_switcheroo_compiler.backends.hardware_compilers.HIPCompiler.compile", return_value=mock_comp_empty):
         artifact_empty = gen.compile_aot(graph, compile_options="not-a-list")
@@ -718,12 +721,12 @@ def test_rocm_compile_and_runner_dispatch() -> None:
     mock_runner.execute_graph.return_value = {"out": np.array([42.0])}
     with patch.object(ROCmRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.rocm.rocm.ROCmRunner", return_value=mock_runner):
-            res_avail = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
-            assert cast("EagerCallableProtocol", np.array_equal)(res_avail, cast("EagerCallableProtocol", np.array)([42.0]))
+            res_avail = typing.cast("EagerCallableProtocol", artifact.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            assert typing.cast("EagerCallableProtocol", np.array_equal)(res_avail, typing.cast("EagerCallableProtocol", np.array)([42.0]))
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.nodes = NodeDict({"x": n_in, "out1": n_out1, "out2": n_out2})
     g_multi.inputs = ["x"]
     g_multi.outputs = ["out1", "out2"]
     gen_multi = RocmCodeGenerator(g_multi)
@@ -733,14 +736,14 @@ def test_rocm_compile_and_runner_dispatch() -> None:
     mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
     with patch.object(ROCmRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.rocm.rocm.ROCmRunner", return_value=mock_runner_multi):
-            res_m = cast("EagerCallableProtocol", art_multi.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            res_m = typing.cast("EagerCallableProtocol", art_multi.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_m == (100, 200)
     mock_runner_err = MagicMock()
     mock_runner_err.execute_graph.side_effect = RuntimeError("ROCm crash")
     with patch.object(ROCmRunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.rocm.rocm.ROCmRunner", return_value=mock_runner_err):
-            res_err = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            res_err = typing.cast("EagerCallableProtocol", artifact.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_err is not None
     with patch.object(ROCmRunner, "is_available", return_value=False):
-        res_fallback = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+        res_fallback = typing.cast("EagerCallableProtocol", artifact.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
         assert res_fallback is not None

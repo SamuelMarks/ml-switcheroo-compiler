@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 with patch.dict(sys.modules, {"tensorflow": MagicMock()}):
@@ -22,7 +22,7 @@ def test_tf_types() -> None:
     setattr(mod, "generic_asarray", MagicMock(return_value="asarray"))
     setattr(mod, "generic_item", MagicMock(return_value="item"))
 
-    assert cast("EagerCallableProtocol", zeros)(None, (2, 2)) == "zeros"
-    assert cast("EagerCallableProtocol", array)(None, [1]) == "array"
-    assert cast("EagerCallableProtocol", asarray)(None, [1]) == "asarray"
-    assert cast("EagerCallableProtocol", item)(None, [1]) == "item"
+    assert typing.cast("EagerCallableProtocol", zeros)(None, (2, 2)) == "zeros"
+    assert typing.cast("EagerCallableProtocol", array)(None, [1]) == "array"
+    assert typing.cast("EagerCallableProtocol", asarray)(None, [1]) == "asarray"
+    assert typing.cast("EagerCallableProtocol", item)(None, [1]) == "item"

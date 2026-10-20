@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import builtins
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -22,7 +22,7 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -46,7 +46,7 @@ def test_get_keras_module_branches() -> None:
         """
         if name == "keras":
             raise ImportError("no keras")
-        return cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
+        return typing.cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
 
     clean_modules = {k: v for k, v in sys.modules.items() if k != "keras"}
     with patch.dict(sys.modules, clean_modules, clear=True):
@@ -93,7 +93,7 @@ def test_try_dispatch_mapped_op_branches() -> None:
         assert _try_dispatch_mapped_op(op_non_callable, None, [], {}) is None
 
     # Function dispatch with kwarg translations
-    called_args = cast("list[EagerTensorProtocol]", [])
+    called_args = typing.cast("list[EagerTensorProtocol]", [])
     called_kwargs = {}
 
     def dummy_func(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -103,7 +103,7 @@ def test_try_dispatch_mapped_op_branches() -> None:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
         """
-        cast("EagerCallableProtocol", called_args.extend)(args)
+        typing.cast("EagerCallableProtocol", called_args.extend)(args)
         called_kwargs.update(kwargs)
         return "func_result"
 
@@ -139,7 +139,7 @@ def test_try_dispatch_mapped_op_branches() -> None:
     )
     with patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=dummy_func):
         # Successful method dispatch
-        res = cast("EagerCallableProtocol", _try_dispatch_mapped_op)(op_method, None, [mock_obj, "extra"], {})
+        res = typing.cast("EagerCallableProtocol", _try_dispatch_mapped_op)(op_method, None, [mock_obj, "extra"], {})
         assert res == "method_called"
 
         # is_method is True but args is empty
@@ -147,7 +147,7 @@ def test_try_dispatch_mapped_op_branches() -> None:
         assert res == "func_result"
 
         # is_method is True but args[0] does not have method or it is not callable
-        res = cast("EagerCallableProtocol", _try_dispatch_mapped_op)(op_method, None, [cast("EagerCallableProtocol", object)()], {})
+        res = typing.cast("EagerCallableProtocol", _try_dispatch_mapped_op)(op_method, None, [typing.cast("EagerCallableProtocol", object)()], {})
         assert res == "func_result"
 
 
@@ -155,7 +155,7 @@ def test_keras_eager_execute_op() -> None:
     """Test execute_op success and failure cases."""
     # Unknown op raises BackendNotSupportedError
     with pytest.raises(BackendNotSupportedError):
-        cast("EagerCallableProtocol", execute_op)(None, "UnknownKerasOpThatDoesNotExist")
+        typing.cast("EagerCallableProtocol", execute_op)(None, "UnknownKerasOpThatDoesNotExist")
 
     # Global eager registry fallback
     @global_eager_registry.register("KerasGlobalDummy")
@@ -170,7 +170,7 @@ def test_keras_eager_execute_op() -> None:
         return "keras_global"
 
     try:
-        res = cast("EagerCallableProtocol", execute_op)(None, "KerasGlobalDummy")
+        res = typing.cast("EagerCallableProtocol", execute_op)(None, "KerasGlobalDummy")
         assert res == "keras_global"
     finally:
         global_eager_registry._registry.pop("KerasGlobalDummy", None)
@@ -181,7 +181,7 @@ def test_keras_eager_execute_op() -> None:
         operations={"TestOp": OpMappingSchema(target_api="custom_op", custom_code="lambda *a, **k: 'mapped_ok'")},
     )
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings", return_value=mock_schema):
-        res = cast("EagerCallableProtocol", execute_op)(None, "TestOp", [1, 2])
+        res = typing.cast("EagerCallableProtocol", execute_op)(None, "TestOp", [1, 2])
         assert res == "mapped_ok"
 
     # Mapped op where _try_dispatch_mapped_op returns None falls through
@@ -189,4 +189,4 @@ def test_keras_eager_execute_op() -> None:
     mock_schema_none = type("DummySchemaNone", (), {"operations": {"TestOpNone": mock_op_none}})()
     with patch("ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings", return_value=mock_schema_none):
         with pytest.raises(BackendNotSupportedError):
-            cast("EagerCallableProtocol", execute_op)(None, "TestOpNone")
+            typing.cast("EagerCallableProtocol", execute_op)(None, "TestOpNone")

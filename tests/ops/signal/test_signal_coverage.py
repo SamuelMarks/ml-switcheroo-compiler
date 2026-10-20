@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.signal.common_ops import _calculate_padding, _emit_signal_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -18,5 +18,5 @@ def test_signal_common_ops() -> None:
 
     with patch("ml_switcheroo_compiler.ops.signal.common_ops._emit_linalg_node", return_value="mock_node") as mock_emit:
         res = _emit_signal_node("Convolve2D", [], {}, (3, 3), "float32")
-        assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "mock_node")
+        assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "mock_node")
         mock_emit.assert_called_once_with("Convolve2D", [], {}, [(3, 3)], ["float32"])

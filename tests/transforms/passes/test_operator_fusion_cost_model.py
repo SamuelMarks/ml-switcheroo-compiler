@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -14,28 +14,28 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     match_pattern,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
 def test_operator_fusion_memory_aware() -> None:
     """Verify memory-aware cost model validation with thresholds and symbolic shapes."""
     config: dict[str, EagerValue] = {"max_fusion_memory_bytes": 1024, "memory_sizes": {"float32": 4}}
-    cost = cast("EagerCallableProtocol", MemoryAwareCostModel)(config)
+    cost = typing.cast("EagerCallableProtocol", MemoryAwareCostModel)(config)
 
-    node = cast("EagerCallableProtocol", IRNode)("mul1", "Multiply", ["a", "b"], {}, shape_metadata=[1024])
+    node = IRNode("mul1", "Multiply", inputs=["a", "b"], attributes={}, shape_metadata=(1024,))
     node.attributes["dtype"] = "float32"
     assert bool(cost.is_fusion_valid({"mul1": node})) is False
 
-    node2 = cast("EagerCallableProtocol", IRNode)("mul2", "Multiply", ["a", "b"], {}, shape_metadata=[10])
+    node2 = IRNode("mul2", "Multiply", inputs=["a", "b"], attributes={}, shape_metadata=(10,))
     node2.attributes["dtype"] = "float32"
     assert bool(cost.is_fusion_valid({"mul2": node2})) is True
 
-    node3 = cast("EagerCallableProtocol", IRNode)("mul3", "Multiply", ["a", "b"], {}, shape_metadata=["symbolic"])
+    node3 = IRNode("mul3", "Multiply", inputs=["a", "b"], attributes={}, shape_metadata=("symbolic",))
     assert bool(cost.is_fusion_valid({"mul3": node3})) is True
 
     cost2 = MemoryAwareCostModel(None)
-    assert bool(cast("EagerCallableProtocol", cost2.is_fusion_valid)({"mul1": node})) is True
+    assert bool(typing.cast("EagerCallableProtocol", cost2.is_fusion_valid)({"mul1": node})) is True
 
 
 def test_commutative_pattern_matching() -> None:

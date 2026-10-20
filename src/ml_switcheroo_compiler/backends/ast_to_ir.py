@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import os
+import typing
 import uuid
 from collections.abc import Sequence
-from typing import Optional, cast
 
 import libcst as cst
 
@@ -20,7 +20,7 @@ _CONFIG = load_transpiler_config(_CONFIG_PATH)
 class ASTToIRVisitor(cst.CSTVisitor):
     """Parses framework-specific AST nodes into the Unified IRGraph."""
 
-    def __init__(self, parent_scope: Optional[dict[str, str]] = None) -> None:
+    def __init__(self, parent_scope: dict[str, str] | None = None) -> None:
         """Initialize the visitor.
 
         Args:
@@ -30,8 +30,8 @@ class ASTToIRVisitor(cst.CSTVisitor):
         self.graph = IRGraph()
         self.current_id = 0
         self.var_table: dict[str, str] = {}
-        self.last_node_id: Optional[str] = None
-        self.parent_scope: Optional[dict[str, str]] = parent_scope
+        self.last_node_id: str | None = None
+        self.parent_scope: dict[str, str] | None = parent_scope
 
     def _lookup_var(self, name: str) -> str:
         """Lookup variable name, capturing from parent closure scope if necessary.
@@ -94,7 +94,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         """
         if isinstance(target.value, cst.Name) and target.value.value == "self":
             attr_name = target.attr.value
-            val: Optional[int | float] = None
+            val: int | float | None = None
             if isinstance(node.value, cst.Integer):
                 val = int(node.value.value)
             elif isinstance(node.value, cst.Float):
@@ -146,7 +146,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
                 self.graph.nodes[item_node_id] = item_node
                 self._recursive_unpack(element.value, item_node_id, idx_str)
 
-    def _resolve_target_val_node_id(self, node: cst.Assign) -> Optional[str]:
+    def _resolve_target_val_node_id(self, node: cst.Assign) -> str | None:
         """Resolve node ID of the RHS value expression in an assignment.
 
         Args:
@@ -206,6 +206,19 @@ class ASTToIRVisitor(cst.CSTVisitor):
             return True
         return False
 
+    def _visit_and_get_last_id(self, cst_node: cst.CSTNode) -> str | None:
+        """Reset last_node_id, visit `cst_node`, and return the resulting last_node_id.
+
+        Args:
+            cst_node (cst.CSTNode): CST node to visit.
+
+        Returns:
+            str | None: Node ID produced by visiting `cst_node`, if any.
+        """
+        self.last_node_id = None
+        cst_node.visit(self)
+        return self.last_node_id
+
     def visit_Assign(self, node: cst.Assign) -> bool:
         """Visit assignment to track variable references and container unpacks.
 
@@ -221,14 +234,13 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if self._handle_unpack_assign(first_target, node):
             return False
 
-        self.last_node_id = None
-        node.value.visit(self)
-        if self.last_node_id:
+        last_id = self._visit_and_get_last_id(node.value)
+        if last_id:
             for target in node.targets:
                 if isinstance(target.target, cst.Name):
                     var_name = target.target.value
-                    self.var_table[var_name] = self.last_node_id
-                    self.graph.nodes[self.last_node_id].attributes["var_name"] = var_name
+                    self.var_table[var_name] = last_id
+                    self.graph.nodes[last_id].attributes["var_name"] = var_name
 
         return False
 
@@ -246,9 +258,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
             ret_id = self.var_table[node.value.value]
             self.graph.outputs.append(ret_id)
         elif node.value:
-            node.value.visit(self)
-            if self.last_node_id:
-                self.graph.outputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(node.value)
+            if last_id:
+                self.graph.outputs.append(last_id)
         return False
 
     def _resolve_call_arg(self, arg_val: cst.BaseExpression, inputs: list[str]) -> None:
@@ -264,10 +276,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
             attr_name = self._get_base_name(arg_val)
             inputs.append(self._lookup_var(attr_name))
         elif isinstance(arg_val, cst.Call):
-            self.last_node_id = None
-            arg_val.visit(self)
-            if self.last_node_id:
-                inputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(arg_val)
+            if last_id:
+                inputs.append(last_id)
         elif isinstance(arg_val, (cst.Integer, cst.Float)):
             val = int(arg_val.value) if isinstance(arg_val, cst.Integer) else float(arg_val.value)
             const_id = f"const_{self.current_id}_{uuid.uuid4().hex[:6]}"
@@ -305,7 +316,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
                 self._resolve_call_arg(arg.value, inputs)
             elif arg.keyword:
                 kw = arg.keyword.value
-                val: Optional[EagerValue] = None
+                val: EagerValue | None = None
                 if isinstance(arg.value, cst.Integer):
                     val = int(arg.value.value)
                 elif isinstance(arg.value, cst.Float):
@@ -350,7 +361,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
 
         from ml_switcheroo_ir import AttributeValue
 
-        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=typing.cast("Mapping[str, AttributeValue]", attributes))
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
         return False
@@ -368,26 +379,23 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if isinstance(node.test, cst.Name) and node.test.value in self.var_table:
             inputs.append(self.var_table[node.test.value])
         else:
-            self.last_node_id = None
-            node.test.visit(self)
-            if self.last_node_id:
-                inputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(node.test)
+            if last_id:
+                inputs.append(last_id)
 
         if isinstance(node.body, cst.Name) and node.body.value in self.var_table:
             inputs.append(self.var_table[node.body.value])
         else:
-            self.last_node_id = None
-            node.body.visit(self)
-            if self.last_node_id:
-                inputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(node.body)
+            if last_id:
+                inputs.append(last_id)
 
         if isinstance(node.orelse, cst.Name) and node.orelse.value in self.var_table:
             inputs.append(self.var_table[node.orelse.value])
         else:
-            self.last_node_id = None
-            node.orelse.visit(self)
-            if self.last_node_id:
-                inputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(node.orelse)
+            if last_id:
+                inputs.append(last_id)
 
         ir_node = IRNode(id=node_id, op_type="Cond", inputs=inputs, attributes={"is_ternary": True})
         self.graph.nodes[node_id] = ir_node
@@ -406,10 +414,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if isinstance(node.for_in.iter, cst.Name) and node.for_in.iter.value in self.var_table:
             iter_name = self.var_table[node.for_in.iter.value]
         else:
-            self.last_node_id = None
-            node.for_in.iter.visit(self)
-            if self.last_node_id:
-                iter_name = self.last_node_id
+            last_id = self._visit_and_get_last_id(node.for_in.iter)
+            if last_id:
+                iter_name = last_id
 
         inputs = [iter_name] if iter_name else []
         ir_node = IRNode(
@@ -434,17 +441,16 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if isinstance(node.test, cst.Name) and node.test.value in self.var_table:
             inputs.append(self.var_table[node.test.value])
         else:
-            self.last_node_id = None
-            node.test.visit(self)
-            if self.last_node_id:
-                inputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(node.test)
+            if last_id:
+                inputs.append(last_id)
 
         true_visitor = ASTToIRVisitor()
         true_visitor.var_table = dict(self.var_table)
         node.body.visit(true_visitor)
         true_branch = true_visitor.graph
 
-        false_branch: Optional[IRGraph] = None
+        false_branch: IRGraph | None = None
         if node.orelse is not None:
             false_visitor = ASTToIRVisitor()
             false_visitor.var_table = dict(self.var_table)
@@ -455,15 +461,11 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        from collections.abc import Mapping
-
         from ml_switcheroo_ir import AttributeValue
 
-        attributes: dict[str, EagerValue] = {
-            "true_branch": true_branch,
-            "false_branch": false_branch,
-        }
-        ir_node: IRNode = IRNode(id=node_id, op_type="Cond", inputs=inputs, attributes=cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type="Cond", inputs=inputs, attributes={})
+        ir_node.attributes["true_branch"] = typing.cast(AttributeValue, true_branch)
+        ir_node.attributes["false_branch"] = typing.cast(AttributeValue, false_branch)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -480,10 +482,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if isinstance(node.test, cst.Name) and node.test.value in self.var_table:
             inputs.append(self.var_table[node.test.value])
         else:
-            self.last_node_id = None
-            node.test.visit(self)
-            if self.last_node_id:
-                inputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(node.test)
+            if last_id:
+                inputs.append(last_id)
 
         body_visitor = ASTToIRVisitor()
         body_visitor.var_table = dict(self.var_table)
@@ -494,14 +495,10 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        from collections.abc import Mapping
-
         from ml_switcheroo_ir import AttributeValue
 
-        attributes: dict[str, EagerValue] = {
-            "body_subgraph": body_subgraph,
-        }
-        ir_node: IRNode = IRNode(id=node_id, op_type="WhileLoop", inputs=inputs, attributes=cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type="WhileLoop", inputs=inputs, attributes={})
+        ir_node.attributes["body_subgraph"] = typing.cast(AttributeValue, body_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -518,10 +515,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if isinstance(node.iter, cst.Name) and node.iter.value in self.var_table:
             inputs.append(self.var_table[node.iter.value])
         else:
-            self.last_node_id = None
-            node.iter.visit(self)
-            if self.last_node_id:
-                inputs.append(self.last_node_id)
+            last_id = self._visit_and_get_last_id(node.iter)
+            if last_id:
+                inputs.append(last_id)
 
         target_name = node.target.value if isinstance(node.target, cst.Name) else "elem"
         body_visitor = ASTToIRVisitor()
@@ -530,15 +526,10 @@ class ASTToIRVisitor(cst.CSTVisitor):
         node.body.visit(body_visitor)
         body_subgraph = body_visitor.graph
 
-        from collections.abc import Mapping
-
         from ml_switcheroo_ir import AttributeValue
 
-        attributes: dict[str, EagerValue] = {
-            "body_subgraph": body_subgraph,
-            "target_var": target_name,
-        }
-        ir_node: IRNode = IRNode(id=node_id, op_type="Scan", inputs=inputs, attributes=cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type="Scan", inputs=inputs, attributes={"target_var": target_name})
+        ir_node.attributes["body_subgraph"] = typing.cast(AttributeValue, body_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -555,7 +546,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         node.body.visit(try_visitor)
         try_subgraph = try_visitor.graph
 
-        fallback_subgraph: Optional[IRGraph] = None
+        fallback_subgraph: IRGraph | None = None
         if node.handlers:
             handler_visitor = ASTToIRVisitor(parent_scope=dict(self.var_table))
             node.handlers[0].body.visit(handler_visitor)
@@ -565,15 +556,11 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        from collections.abc import Mapping
-
         from ml_switcheroo_ir import AttributeValue
 
-        attributes: dict[str, EagerValue] = {
-            "try_subgraph": try_subgraph,
-            "fallback_subgraph": fallback_subgraph,
-        }
-        ir_node: IRNode = IRNode(id=node_id, op_type="TryExcept", inputs=[], attributes=cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type="TryExcept", inputs=[], attributes={})
+        ir_node.attributes["try_subgraph"] = typing.cast(AttributeValue, try_subgraph)
+        ir_node.attributes["fallback_subgraph"] = typing.cast(AttributeValue, fallback_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -632,10 +619,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if isinstance(child, cst.Name) and child.value in self.var_table:
                 inputs.append(self.var_table[child.value])
             else:
-                self.last_node_id = None
-                child.visit(self)
-                if self.last_node_id:
-                    inputs.append(self.last_node_id)
+                last_id = self._visit_and_get_last_id(child)
+                if last_id:
+                    inputs.append(last_id)
 
         ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs)
         self.graph.nodes[node_id] = ir_node
@@ -704,7 +690,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
 
         from ml_switcheroo_ir import AttributeValue
 
-        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=typing.cast("Mapping[str, AttributeValue]", attributes))
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 

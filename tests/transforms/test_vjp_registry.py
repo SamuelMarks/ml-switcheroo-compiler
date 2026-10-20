@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 import pytest
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp, register_vjp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -22,7 +22,7 @@ def test_vjp_registry_coverage() -> None:
     if "fake_op" in _VJP_REGISTRY:
         del _VJP_REGISTRY["fake_op"]
 
-    @cast("EagerCallableProtocol", register_vjp)("fake_op")
+    @typing.cast("EagerCallableProtocol", register_vjp)("fake_op")
     def fake_vjp() -> None:
         """Evaluate and process the fake vjp operation.
 
@@ -32,7 +32,7 @@ def test_vjp_registry_coverage() -> None:
 
     with pytest.raises(ValueError, match="already registered"):
 
-        @cast("EagerCallableProtocol", register_vjp)("fake_op")
+        @typing.cast("EagerCallableProtocol", register_vjp)("fake_op")
         def fake_vjp2() -> None:
             """Evaluate and process the fake vjp2 operation.
 
@@ -50,7 +50,7 @@ def test_vjp_registry_coverage() -> None:
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="data_vjp"):
-        assert cast("EagerTensorProtocol", get_vjp("fake_op_2")) == cast("EagerTensorProtocol", "data_vjp")
+        assert typing.cast("EagerTensorProtocol", get_vjp("fake_op_2")) == typing.cast("EagerTensorProtocol", "data_vjp")
 
     # Test get_vjp_from_data and has_vjp
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
@@ -79,7 +79,7 @@ def test_vjp_registry_lazy_load() -> None:
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data):
         res = get_vjp("test_lazy_op")
-        assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "lazy_loaded_vjp")
+        assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "lazy_loaded_vjp")
 
 
 def test_has_vjp_not_in_registry_or_data() -> None:

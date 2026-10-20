@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import cast
+import typing
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
@@ -51,7 +51,7 @@ def get_wgsl_op_mapping(op_name: str) -> dict[str, str | int | float | None]:
     if isinstance(mappings, dict) and op_name in mappings:
         val = mappings[op_name]
         if isinstance(val, dict):
-            return cast("dict[str, str | int | float | None]", val)
+            return typing.cast("dict[str, str | int | float | None]", val)
     return {}
 
 
@@ -130,7 +130,7 @@ def _load_templates() -> None:
                 getattr(loaded.setdefault("templates", {}), "update")(k_templates)
             k_bindings = kernels.get("bindings")
             if isinstance(k_bindings, dict) and k_bindings.get("global_bindings") and not loaded.get("global_bindings"):
-                loaded["global_bindings"] = cast("str | None", k_bindings["global_bindings"])
+                loaded["global_bindings"] = typing.cast("str | None", k_bindings["global_bindings"])
         _WGSL_TEMPLATES = loaded
 
 
@@ -148,9 +148,7 @@ def get_wgsl_template(name: str) -> dict[str, AttributeValue]:
     if isinstance(templates_dict, dict):
         tpl = templates_dict.get(name, {})
         if isinstance(tpl, dict):
-            from typing import cast
-
-            return cast(dict[str, AttributeValue], tpl)
+            return typing.cast(dict[str, AttributeValue], tpl)
     return {}
 
 

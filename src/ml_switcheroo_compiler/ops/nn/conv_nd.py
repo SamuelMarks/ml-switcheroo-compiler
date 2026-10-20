@@ -1,11 +1,9 @@
 """Convolution operations."""
 
+from __future__ import annotations
+
 import typing
 from collections.abc import Sequence
-from typing import (
-    Union,  # noqa: F401
-    cast,
-)
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -23,8 +21,8 @@ from .conv_utils import GenericConvConfig
 def conv_transpose(
     lhs: Tensor,
     rhs: Tensor,
-    strides: Union[Sequence[int], int] = 1,
-    padding: Union[str, Sequence[tuple[int, int]]] = "VALID",
+    strides: Sequence[int] | int = 1,
+    padding: str | Sequence[tuple[int, int]] = "VALID",
 ) -> TensorOrScalar:
     """Convolution transpose.
 
@@ -56,7 +54,7 @@ def conv_transpose(
 def conv(
     inputs: Tensor,
     kernel: Tensor,
-    config: typing.Optional[GenericConvConfig] = None,
+    config: GenericConvConfig | None = None,
 ) -> Tensor:
     """Provide generic N-D convolution.
 
@@ -74,7 +72,7 @@ def conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return cast(
+        return typing.cast(
             Tensor,
             conv1d(
                 inputs,
@@ -86,7 +84,7 @@ def conv(
             ),
         )
     elif spatial_rank == MATRIX_RANK:
-        return cast(
+        return typing.cast(
             Tensor,
             conv2d(
                 inputs,
@@ -98,7 +96,7 @@ def conv(
             ),
         )
     elif spatial_rank == MIN_CONV_RANK:
-        return cast(
+        return typing.cast(
             Tensor,
             conv3d(
                 inputs,
@@ -116,7 +114,7 @@ def conv(
 def depthwise_conv(
     inputs: Tensor,
     kernel: Tensor,
-    config: typing.Optional[GenericConvConfig] = None,
+    config: GenericConvConfig | None = None,
 ) -> Tensor:
     """Provide generic depthwise convolution.
 
@@ -134,7 +132,7 @@ def depthwise_conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return cast(
+        return typing.cast(
             Tensor,
             depthwise_conv1d(
                 inputs,
@@ -146,7 +144,7 @@ def depthwise_conv(
             ),
         )
     elif spatial_rank == MATRIX_RANK:
-        return cast(
+        return typing.cast(
             Tensor,
             depthwise_conv2d(
                 inputs,
@@ -166,7 +164,7 @@ def separable_conv(
     inputs: Tensor,
     depthwise_kernel: Tensor,
     pointwise_kernel: Tensor,
-    config: typing.Optional[GenericConvConfig] = None,
+    config: GenericConvConfig | None = None,
 ) -> Tensor:
     """Provide generic separable convolution.
 
@@ -185,7 +183,7 @@ def separable_conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return cast(
+        return typing.cast(
             Tensor,
             separable_conv1d(
                 inputs,
@@ -198,7 +196,7 @@ def separable_conv(
             ),
         )
     elif spatial_rank == MATRIX_RANK:
-        return cast(
+        return typing.cast(
             Tensor,
             separable_conv2d(
                 inputs,

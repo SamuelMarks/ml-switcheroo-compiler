@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.loss import (
@@ -30,7 +31,7 @@ from ml_switcheroo_compiler.ops.nn.loss import (
     tversky_loss,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -44,15 +45,17 @@ def test_loss_coverage() -> None:
     assert categorical_generalized_cross_entropy(t_true, t_pred) is not None
     assert _compute_circle_margins(0.25) == (1.25, -0.25, 0.75, 0.25)
 
-    lp, ln = cast("EagerCallableProtocol", _compute_circle_logits)(t_pred, 0.25, 256.0)
-    assert lp is not None and ln is not None
+    lp, ln = typing.cast("EagerCallableProtocol", _compute_circle_logits)(t_pred, 0.25, 256.0)
+    assert typing.cast("EagerValue", lp) is not None and ln is not None
 
     assert (
-        cast("EagerCallableProtocol", _compute_circle_loss_reduction)(
+        typing.cast("EagerCallableProtocol", _compute_circle_loss_reduction)(
             lp,
             ln,
             t_true,
-            cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", np.array)([[0.0, 1.0]]), cast("EagerCallableProtocol", TensorConfig)(shape=(1, 2), dtype=cast("EagerCallableProtocol", DType)("float32"), device=cast("EagerCallableProtocol", Device)("cpu"))),
+            typing.cast("EagerCallableProtocol", Tensor)(
+                typing.cast("EagerCallableProtocol", np.array)([[0.0, 1.0]]), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(1, 2), dtype=typing.cast("EagerCallableProtocol", DType)("float32"), device=typing.cast("EagerCallableProtocol", Device)("cpu"))
+            ),
         )
         is not None
     )

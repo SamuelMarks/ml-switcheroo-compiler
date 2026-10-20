@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 
 from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.export.aot import compile_function
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 

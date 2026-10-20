@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # File: build_web_assets.sh
 # Description: Builds wheel distributions for ml-switcheroo-compiler, ml-switcheroo-ir,
-# ml-framework-snapshots, and zero-* ecosystem packages.
+# ml-ecosystem-snapshots, and zero-* ecosystem packages.
 # Prefers local checkouts in parent directory if they exist; otherwise fetches from GitHub.
 # Copies built wheels to docs/_static/, generates wheels.json manifest, and verifies SHA256 checksums.
 
@@ -50,7 +50,7 @@ if [ "$#" -gt 0 ]; then
 else
     TARGET_REPOS=(
         "ml-switcheroo-ir"
-        "ml-framework-snapshots"
+        "ml-ecosystem-snapshots"
         "zero-jax"
         "zero-pytorch"
         "zero-tensorflow"

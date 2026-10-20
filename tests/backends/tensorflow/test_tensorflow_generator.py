@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 import tensorflow as tf
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeG
 from ml_switcheroo_compiler.backends.tensorflow.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 pytest.importorskip("tensorflow")
 
@@ -51,15 +51,15 @@ def test_tensorflow_generator_coverage() -> None:
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with pytest.raises((NotImplementedError, BackendNotSupportedError)):
-        cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", 1)
-    cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 1)
-    assert cast("EagerCallableProtocol", zeros)(None, (2,)) is not None
+        typing.cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", 1)
+    typing.cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 1)
+    assert typing.cast("EagerCallableProtocol", zeros)(None, (2,)) is not None
     with pytest.raises(AttributeError):
-        cast("EagerCallableProtocol", array)(None, [1, 2])
+        typing.cast("EagerCallableProtocol", array)(None, [1, 2])
     with pytest.raises(AttributeError):
-        cast("EagerCallableProtocol", asarray)(None, [3, 4])
+        typing.cast("EagerCallableProtocol", asarray)(None, [3, 4])
     with pytest.raises(AttributeError):
-        cast("EagerCallableProtocol", item)(None, cast("EagerCallableProtocol", tf.constant)([5]))
+        typing.cast("EagerCallableProtocol", item)(None, typing.cast("EagerCallableProtocol", tf.constant)([5]))
 
 
 def test_tensorflow_generator_methods(tmp_path: EagerTensorProtocol) -> None:

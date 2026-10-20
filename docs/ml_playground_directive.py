@@ -5,12 +5,14 @@ and execution console. It allows users to write, compile, and run ML code (e.g.,
 PyTorch, TensorFlow) directly in the browser using Pyodide, WebGPU, and WASM.
 """
 
+from __future__ import annotations
+
 import glob
 import json
 import os
-from typing import TYPE_CHECKING, Union
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     import sphinx.application
 
 from docutils import nodes
@@ -155,7 +157,7 @@ var require = { paths: { 'vs':
         return [nodes.raw("", rendered_html, format="html")]
 
 
-def setup(app: "sphinx.application.Sphinx") -> dict[str, Union[str, bool]]:
+def setup(app: sphinx.application.Sphinx) -> dict[str, str | bool]:
     """Initializes the Sphinx extension.
 
     Registers the `ml-playground` directive and associates the required

@@ -1,5 +1,7 @@
 """Tests for diagnostics extras."""
 
+from __future__ import annotations
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig

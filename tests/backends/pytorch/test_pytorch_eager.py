@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import torch
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -35,7 +35,7 @@ def test_pytorch_ragged_tensor_to_tensor_eager() -> None:
             """
             return "nested_padded"
 
-    assert cast("EagerCallableProtocol", _execute_ragged_tensor_to_dense)(cast("EagerCallableProtocol", MockNested)()) == "nested_padded"
+    assert typing.cast("EagerCallableProtocol", _execute_ragged_tensor_to_dense)(typing.cast("EagerCallableProtocol", MockNested)()) == "nested_padded"
 
     # 2. List of tensors
     list_tensors = [torch.tensor([1, 2]), torch.tensor([3])]
@@ -47,7 +47,7 @@ def test_pytorch_ragged_tensor_to_tensor_eager() -> None:
     dict_named = {"values": torch.tensor([1, 2, 3]), "row_splits": torch.tensor([0, 2, 3])}
 
     res2 = _execute_ragged_tensor_to_dense(dict_named, default_value=0.0)
-    assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
 
     # 4. Named tuple ragged encoding
     class MockNamed:
@@ -56,10 +56,10 @@ def test_pytorch_ragged_tensor_to_tensor_eager() -> None:
         values = torch.tensor([1, 2, 3])
         row_splits = torch.tensor([0, 2, 3])
 
-    res3 = cast("EagerCallableProtocol", _execute_ragged_tensor_to_dense)(cast("EagerCallableProtocol", MockNamed)(), default_value=0.0)
-    assert cast("EagerTensorProtocol", getattr(res3, "shape")) == (2, 2)
+    res3 = typing.cast("EagerCallableProtocol", _execute_ragged_tensor_to_dense)(typing.cast("EagerCallableProtocol", MockNamed)(), default_value=0.0)
+    assert typing.cast("EagerTensorProtocol", getattr(res3, "shape")) == (2, 2)
 
     # 5. Length <= 0
     dict_named_empty = {"values": torch.tensor([]), "row_splits": torch.tensor([0, 0, 0])}
     res4 = _execute_ragged_tensor_to_dense(dict_named_empty, default_value=0.0)
-    assert cast("EagerTensorProtocol", getattr(res4, "shape")) == (2, 0)
+    assert typing.cast("EagerTensorProtocol", getattr(res4, "shape")) == (2, 0)

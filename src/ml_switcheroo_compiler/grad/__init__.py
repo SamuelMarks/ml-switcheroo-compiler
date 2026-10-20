@@ -1,5 +1,7 @@
 """Public package exports and initialization for `ml_switcheroo_compiler.grad`."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
 from .api import (

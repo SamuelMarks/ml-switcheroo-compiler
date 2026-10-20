@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from types import ModuleType
-from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
@@ -17,7 +17,7 @@ try:
 except ImportError:
     h5py = None
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     import h5py as h5py_types
 
 
@@ -40,7 +40,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
 
         backend = get_active_backend()
         if hasattr(backend, "load_h5"):
-            return cast(dict[str, TensorLike], backend.load_h5(filepath))
+            return typing.cast(dict[str, TensorLike], backend.load_h5(filepath))
 
         if h5py is None:
             raise ImportError("h5py is required for H5 weight loading. Please install h5py.")

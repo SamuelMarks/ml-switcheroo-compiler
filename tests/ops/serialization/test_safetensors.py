@@ -7,11 +7,11 @@ import json
 import os
 import struct
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -48,24 +48,24 @@ def test_safetensors_load_save(mocker: EagerTensorProtocol) -> None:
         assert fmt.load(f.name) == {}
     with tempfile.NamedTemporaryFile() as f:
         weights = {"a": MockNumpy(b"data1", "float32", (1,)), "b": MockNumpy(b"data2", "float64", (1,)), "c": MockNumpy(b"data3", "unknown", (1,)), "skip_me": "not_numpy"}
-        cast("EagerCallableProtocol", fmt.save)(weights, f.name)
+        typing.cast("EagerCallableProtocol", fmt.save)(weights, f.name)
         mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
         del mock_backend.from_buffer
         loaded = fmt.load(f.name)
         assert "a" in loaded
-        assert cast("EagerTensorProtocol", loaded["a"]["buffer"]) == cast("EagerTensorProtocol", b"data1")
-        assert cast("EagerTensorProtocol", loaded["a"]["dtype"]) == cast("EagerTensorProtocol", "F32")
-        assert cast("EagerTensorProtocol", loaded["a"]["shape"]) == cast("EagerTensorProtocol", [1])
+        assert typing.cast("EagerTensorProtocol", loaded["a"]["buffer"]) == typing.cast("EagerTensorProtocol", b"data1")
+        assert typing.cast("EagerTensorProtocol", loaded["a"]["dtype"]) == typing.cast("EagerTensorProtocol", "F32")
+        assert typing.cast("EagerTensorProtocol", loaded["a"]["shape"]) == typing.cast("EagerTensorProtocol", [1])
         assert "b" in loaded
-        assert cast("EagerTensorProtocol", loaded["b"]["dtype"]) == cast("EagerTensorProtocol", "F64")
+        assert typing.cast("EagerTensorProtocol", loaded["b"]["dtype"]) == typing.cast("EagerTensorProtocol", "F64")
         assert "c" in loaded
-        assert cast("EagerTensorProtocol", loaded["c"]["dtype"]) == cast("EagerTensorProtocol", "F32")
+        assert typing.cast("EagerTensorProtocol", loaded["c"]["dtype"]) == typing.cast("EagerTensorProtocol", "F32")
     with tempfile.NamedTemporaryFile() as f:
-        cast("EagerCallableProtocol", fmt.save)(weights, f.name)
+        typing.cast("EagerCallableProtocol", fmt.save)(weights, f.name)
         mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
         setattr(mock_backend.from_buffer, "side_effect", lambda b, dtype, shape: {"buf": b, "type": dtype, "sh": shape})
         loaded2 = fmt.load(f.name)
-        assert cast("EagerTensorProtocol", loaded2["a"]["buf"]) == cast("EagerTensorProtocol", b"data1")
+        assert typing.cast("EagerTensorProtocol", loaded2["a"]["buf"]) == typing.cast("EagerTensorProtocol", b"data1")
     with tempfile.NamedTemporaryFile() as f:
         header = {"__metadata__": {"foo": "bar"}, "a": {"dtype": "F32", "shape": [1], "data_offsets": [0, 5]}}
         header_bytes = json.dumps(header).encode("utf-8")
@@ -117,5 +117,5 @@ def test_safetensors_save_continue() -> None:
                 """Return empty bytes."""
                 return b""
 
-        cast("EagerCallableProtocol", fmt.save)({"a": cast("EagerCallableProtocol", MissingAttr1)(), "b": cast("EagerCallableProtocol", MissingAttr2)(), "c": cast("EagerCallableProtocol", MissingAttr3)(), "d": cast("EagerCallableProtocol", MissingAttr4)()}, f.name)
+        typing.cast("EagerCallableProtocol", fmt.save)({"a": typing.cast("EagerCallableProtocol", MissingAttr1)(), "b": typing.cast("EagerCallableProtocol", MissingAttr2)(), "c": typing.cast("EagerCallableProtocol", MissingAttr3)(), "d": typing.cast("EagerCallableProtocol", MissingAttr4)()}, f.name)
         assert os.path.exists(f.name)

@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import builtins
+import typing
 from collections.abc import Callable, Generator, Iterable, Sequence
-from types import ModuleType
-from typing import TYPE_CHECKING, Optional, Protocol, Union, cast, runtime_checkable
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_ir import AttributeValue
+
+from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar
 
 
-@runtime_checkable
-class DataclassProtocol(Protocol):
+@typing.runtime_checkable
+class DataclassProtocol(typing.Protocol):
     """Protocol matching any dataclass configuration or metadata object."""
 
     @property
@@ -24,12 +25,12 @@ class DataclassProtocol(Protocol):
         ...
 
 
-@runtime_checkable
-class ShapeProtocol(Protocol):
+@typing.runtime_checkable
+class ShapeProtocol(typing.Protocol):
     """Protocol for any array-like object exposing a shape tuple."""
 
     @property
-    def shape(self) -> Sequence[Union[int, str]]:
+    def shape(self) -> Sequence[int | str]:
         """Get the shape of the array.
 
         Returns:
@@ -38,16 +39,34 @@ class ShapeProtocol(Protocol):
         ...
 
 
-@runtime_checkable
-class EagerCallableProtocol(Protocol):
+@typing.runtime_checkable
+class EagerCallableProtocol(typing.Protocol):
     """Protocol for dynamic backend callables and factories returning an `EagerTensorProtocol`."""
 
-    def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
+    if typing.TYPE_CHECKING:
+
+        def __getattr__(self, name: str) -> EagerCallableProtocol:
+            """Resolve nested callable or attribute on a callable namespace."""
+            ...
+
+        def __getitem__(self, key: EagerValue) -> EagerTensorProtocol:
+            """Index into an indexable helper object (e.g. r_, c_, s_, at)."""
+            ...
+
+        def __iter__(self) -> Generator[EagerTensorProtocol, None, None]:
+            """Iterate over elements when attribute is an iterable."""
+            ...
+
+    def __call__(
+        self,
+        *args: StructuralOperandProtocol | EagerValue,
+        **kwargs: StructuralOperandProtocol | EagerValue,
+    ) -> EagerTensorProtocol:
         """Invoke the callable with arbitrary eager operands.
 
         Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
+            *args (StructuralOperandProtocol | EagerValue): Positional arguments.
+            **kwargs (StructuralOperandProtocol | EagerValue): Keyword arguments.
 
         Returns:
             EagerTensorProtocol: Result of invoking the callable.
@@ -55,69 +74,39 @@ class EagerCallableProtocol(Protocol):
         ...
 
 
-EagerOperand = Union[
-    int,
-    float,
-    complex,
-    str,
-    bool,
-    slice,
-    type,
-    ModuleType,
-    "builtins.ellipsis",
-    "EagerTensorProtocol",
-    ShapeProtocol,
-    Sequence[Union[int, float, str, slice, "builtins.ellipsis", "EagerTensorProtocol", None]],
-    None,
-]
+if typing.TYPE_CHECKING:
+    SliceType = slice[int | float | str | None, int | float | str | None, int | float | str | None]
+    EagerOperand = TensorOrScalar
+else:
+    SliceType = slice
+    EagerOperand = AttributeValue
 
 
-@runtime_checkable
-class EagerTensorProtocol(Protocol):
+@typing.runtime_checkable
+class EagerTensorProtocol(typing.Protocol):
     """Protocol defining the structural type contract for eager backend array/tensor objects."""
 
-    if TYPE_CHECKING:
-        size: int
-        ndim: int
-        T: EagerTensorProtocol
-        real: EagerTensorProtocol
-        imag: EagerTensorProtocol
-        flat: EagerTensorProtocol
-        copy: Callable[[], EagerTensorProtocol]
-        astype: Callable[..., EagerTensorProtocol]
-        reshape: Callable[..., EagerTensorProtocol]
-        transpose: Callable[..., EagerTensorProtocol]
-        swapaxes: Callable[..., EagerTensorProtocol]
-        flatten: Callable[[], EagerTensorProtocol]
-        ravel: Callable[[], EagerTensorProtocol]
-        tolist: Callable[[], EagerOperand]
-        tobytes: Callable[[], bytes]
-        item: Callable[..., float | int | bool | complex]
-        sum: Callable[..., EagerTensorProtocol]
-        mean: Callable[..., EagerTensorProtocol]
-        max: Callable[..., EagerTensorProtocol]
-        min: Callable[..., EagerTensorProtocol]
-        prod: Callable[..., EagerTensorProtocol]
-        std: Callable[..., EagerTensorProtocol]
-        var: Callable[..., EagerTensorProtocol]
-        conj: Callable[..., EagerTensorProtocol]
-        conjugate: Callable[..., EagerTensorProtocol]
-        squeeze: Callable[..., EagerTensorProtocol]
-        clip: Callable[..., EagerTensorProtocol]
-        dot: Callable[..., EagerTensorProtocol]
-        argsort: Callable[..., EagerTensorProtocol]
+    if not typing.TYPE_CHECKING:
 
-        def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-            """Call operator when protocol represents a callable backend function.
+        @classmethod
+        def __get_pydantic_core_schema__(
+            cls,
+            source_type: EagerValue,
+            handler: EagerValue,
+        ) -> EagerValue:
+            """Return core_schema.any_schema() for runtime EagerTensorProtocol field preservation.
 
             Args:
-                *args (EagerValue): Positional arguments.
-                **kwargs (EagerValue): Keyword arguments.
+                source_type (EagerValue): Annotated source type.
+                handler (EagerValue): Pydantic core schema handler.
 
             Returns:
-                EagerTensorProtocol: Result.
+                EagerValue: Pydantic CoreSchema instance.
             """
-            ...
+            del source_type
+            return typing.cast("EagerValue", getattr(handler, "generate_schema")(AttributeValue))
+
+    if typing.TYPE_CHECKING:
 
         def __getattr__(self, name: str) -> EagerTensorProtocol:
             """Dynamic attribute access.
@@ -127,6 +116,107 @@ class EagerTensorProtocol(Protocol):
 
             Returns:
                 EagerTensorProtocol: Attribute value.
+            """
+            ...
+
+        def __call__(
+            self,
+            *args: StructuralOperandProtocol | EagerValue,
+            **kwargs: StructuralOperandProtocol | EagerValue,
+        ) -> EagerTensorProtocol:
+            """Call operator when protocol represents a callable backend function.
+
+            Args:
+                *args (StructuralOperandProtocol | EagerValue): Positional arguments.
+                **kwargs (StructuralOperandProtocol | EagerValue): Keyword arguments.
+
+            Returns:
+                EagerTensorProtocol: Result.
+            """
+            ...
+
+        size: int
+        ndim: int
+        T: EagerTensorProtocol
+        real: EagerTensorProtocol
+        imag: EagerTensorProtocol
+        flat: EagerTensorProtocol
+        copy: Callable[[], EagerTensorProtocol]
+        flatten: Callable[[], EagerTensorProtocol]
+        ravel: Callable[[], EagerTensorProtocol]
+        tolist: Callable[[], list[int]]
+        tobytes: Callable[[], bytes]
+        conj: Callable[[], EagerTensorProtocol]
+        conjugate: Callable[[], EagerTensorProtocol]
+
+        def astype(self, dtype: EagerOperand = None, copy: bool = True) -> EagerTensorProtocol:
+            """Cast array to specified dtype."""
+            ...
+
+        def reshape(self, *shape: int | Sequence[int]) -> EagerTensorProtocol:
+            """Reshape array to target dimensions."""
+            ...
+
+        def transpose(self, *axes: int | Sequence[int] | None) -> EagerTensorProtocol:
+            """Permute array dimensions."""
+            ...
+
+        def swapaxes(self, axis1: int, axis2: int) -> EagerTensorProtocol:
+            """Interchange two axes of an array."""
+            ...
+
+        def sum(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, keepdims: bool = False) -> EagerTensorProtocol:
+            """Sum of array elements over a given axis."""
+            ...
+
+        def mean(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, keepdims: bool = False) -> EagerTensorProtocol:
+            """Compute the arithmetic mean along the specified axis."""
+            ...
+
+        def max(self, axis: int | Sequence[int] | None = None, keepdims: bool = False) -> EagerTensorProtocol:
+            """Return the maximum along a given axis."""
+            ...
+
+        def min(self, axis: int | Sequence[int] | None = None, keepdims: bool = False) -> EagerTensorProtocol:
+            """Return the minimum along a given axis."""
+            ...
+
+        def prod(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, keepdims: bool = False) -> EagerTensorProtocol:
+            """Return the product of array elements over a given axis."""
+            ...
+
+        def std(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, ddof: int = 0, keepdims: bool = False) -> EagerTensorProtocol:
+            """Compute the standard deviation along the specified axis."""
+            ...
+
+        def var(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, ddof: int = 0, keepdims: bool = False) -> EagerTensorProtocol:
+            """Compute the variance along the specified axis."""
+            ...
+
+        def squeeze(self, axis: int | Sequence[int] | None = None) -> EagerTensorProtocol:
+            """Remove axes of length one."""
+            ...
+
+        def clip(self, a_min: EagerOperand = None, a_max: EagerOperand = None) -> EagerTensorProtocol:
+            """Clip (limit) the values in an array."""
+            ...
+
+        def dot(self, b: EagerOperand) -> EagerTensorProtocol:
+            """Dot product of two arrays."""
+            ...
+
+        def argsort(self, axis: int | None = -1, kind: str | None = None) -> EagerTensorProtocol:
+            """Return the indices that would sort an array."""
+            ...
+
+        def item(self, *args: int) -> float | int | bool | complex | str | bytes:
+            """Extract scalar Python value from array.
+
+            Args:
+                *args (int): Optional flat or multi-index coordinates.
+
+            Returns:
+                float | int | bool | complex | str | bytes: Extracted scalar.
             """
             ...
 
@@ -456,22 +546,12 @@ class EagerTensorProtocol(Protocol):
 
     def __getitem__(
         self,
-        key: Union[
-            int,
-            slice,
-            tuple[EagerOperand, ...],
-            list[EagerOperand],
-            str,
-            builtins.ellipsis,
-            EagerTensorProtocol,
-            EagerValue,
-            None,
-        ],
+        key: EagerOperand | tuple[EagerOperand, ...] | list[EagerOperand],
     ) -> EagerTensorProtocol:
         """Get an item or slice from the array.
 
         Args:
-            key (Union[int, slice, tuple, list, str, builtins.ellipsis, EagerTensorProtocol, None]): Indexing key or slice.
+            key (Union[EagerOperand, tuple[EagerOperand, ...], list[EagerOperand]]): Indexing key or slice.
 
         Returns:
             EagerTensorProtocol: Indexed tensor view or copy.
@@ -480,23 +560,13 @@ class EagerTensorProtocol(Protocol):
 
     def __setitem__(
         self,
-        key: Union[
-            int,
-            slice,
-            tuple[EagerOperand, ...],
-            list[EagerOperand],
-            str,
-            builtins.ellipsis,
-            EagerTensorProtocol,
-            EagerValue,
-            None,
-        ],
+        key: EagerOperand | tuple[EagerOperand, ...] | list[EagerOperand],
         value: EagerValue,
     ) -> None:
         """Set an item or slice in the array.
 
         Args:
-            key (Union[int, slice, tuple, list, str, builtins.ellipsis, EagerTensorProtocol, None]): Target index or slice.
+            key (Union[EagerOperand, tuple[EagerOperand, ...], list[EagerOperand]]): Target index or slice.
             value (EagerValue): Value to assign.
         """
         ...
@@ -637,6 +707,7 @@ class EagerTensorProtocol(Protocol):
 
 BackendArray = EagerTensorProtocol
 EagerValue = TensorOrScalar
+_F = typing.TypeVar("_F")
 
 
 class EagerOpRegistry:
@@ -644,40 +715,40 @@ class EagerOpRegistry:
 
     def __init__(self) -> None:
         """Initialize the registry."""
-        self._registry: dict[str, Callable[..., EagerValue]] = {}
+        self._registry: dict[str, EagerCallableProtocol] = {}
 
-    def register(self, op_type: str) -> Callable[[Callable[..., EagerValue]], Callable[..., EagerValue]]:
+    def register(self, op_type: str) -> Callable[[_F], _F]:
         """Register an eager operation.
 
         Args:
             op_type (str): The op_type parameter.
 
         Returns:
-            Callable[[Callable[..., EagerValue]], Callable[..., EagerValue]]: Result.
+            Callable[[_F], _F]: Result.
         """
 
-        def decorator(func: Callable[..., EagerValue]) -> Callable[..., EagerValue]:
+        def decorator(func: _F) -> _F:
             """Execute the eager decorator operation on the active backend array.
 
             Args:
-                func (Callable): The func parameter.
+                func (_F): The func parameter.
 
             Returns:
-                Callable: Result.
+                _F: Result.
             """
-            self._registry[op_type] = func
+            self._registry[op_type] = typing.cast("EagerCallableProtocol", func)
             return func
 
         return decorator
 
-    def get(self, op_type: str) -> Optional[Callable[..., EagerValue]]:
+    def get(self, op_type: str) -> EagerCallableProtocol | None:
         """Get an eager operation.
 
         Args:
             op_type (str): The name of the operation.
 
         Returns:
-            Optional[Callable[..., EagerValue]]: The eager function or None.
+            Optional[EagerCallableProtocol]: The eager function or None.
         """
         return self._registry.get(op_type)
 
@@ -711,7 +782,7 @@ class EagerOpRegistry:
         # N-to-M universal utility rule natively on the target tensor backend.
         if args and hasattr(args[0], op_type.lower()):
             # e.g., np.sin() fallback
-            return cast(EagerValue, getattr(args[0], op_type.lower())(*args[1:], **kwargs))
+            return typing.cast(EagerValue, getattr(args[0], op_type.lower())(*args[1:], **kwargs))
 
         backend = kwargs.get("backend_module")
         if backend is None and len(args) > 0:
@@ -724,12 +795,12 @@ class EagerOpRegistry:
             # Map common names
             op_name = op_type.lower()
             if hasattr(backend, op_name):
-                return cast(EagerValue, getattr(backend, op_name)(*op_args, **kwargs))
+                return typing.cast(EagerValue, getattr(backend, op_name)(*op_args, **kwargs))
 
             # Alternative common mappings
             mapping = {"matmul": "matmul", "add": "add", "sub": "subtract", "mul": "multiply", "div": "divide", "truedivide": "divide"}
             if op_name in mapping and hasattr(backend, mapping[op_name]):
-                return cast(EagerValue, getattr(backend, mapping[op_name])(*op_args, **kwargs))
+                return typing.cast(EagerValue, getattr(backend, mapping[op_name])(*op_args, **kwargs))
 
         msg = f"Operation '{op_type}' not found in registry and no universal fallback could be inferred for backend {backend}."
         raise ValueError(msg)
@@ -793,7 +864,7 @@ def _eager_process_custom_vjp_call(backend_module: EagerValue, *args: EagerValue
     """
     bwd_fn = kwargs["bwd_fn"]
     if callable(bwd_fn):
-        return cast(Callable[..., EagerValue], bwd_fn)(None, *args)
+        return typing.cast("EagerCallableProtocol", bwd_fn)(None, *args)
     return None
 
 
@@ -811,16 +882,17 @@ def _eager_process_custom_jvp_call(backend_module: EagerValue, *args: EagerValue
     """
     jvp_rule = kwargs.get("jvp_rule")
     num_primals = kwargs.get("num_primals", len(args) // 2)
-    primals = args[: cast("int | None", num_primals)]
-    tangents = args[cast("int | None", num_primals) :]
+    primals = args[: typing.cast("int | None", num_primals)]
+    tangents = args[typing.cast("int | None", num_primals) :]
     if callable(jvp_rule):
         from ml_switcheroo_compiler.core.config import ConfigContext
 
         with ConfigContext(eager_mode=True):
+            jvp_fn = typing.cast("EagerCallableProtocol", jvp_rule)
             try:
-                res = jvp_rule(primals, tangents)
+                res: EagerValue = jvp_fn(primals, tangents)
             except TypeError:
-                res = jvp_rule(*primals, *tangents)
+                res = jvp_fn(*primals, *tangents)
         if isinstance(res, (tuple, list)) and len(res) == 2:
             return res
         return (None, res)
@@ -841,5 +913,5 @@ def _eager_tuple_get_item(backend_module: EagerValue, *args: EagerValue, **kwarg
     """
     index: int = int(getattr(kwargs.get("index", 0), "__int__", lambda: 0)())
     if isinstance(args[0], (tuple, list)):
-        return cast(EagerValue, args[0][index])
+        return typing.cast(EagerValue, args[0][index])
     return None

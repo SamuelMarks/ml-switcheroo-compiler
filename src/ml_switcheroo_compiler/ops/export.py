@@ -1,5 +1,7 @@
 """Graph export utilities."""
 
+from __future__ import annotations
+
 import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -47,7 +49,7 @@ class _DotGraphVisitor:
             self.visit(inp_id)
 
 
-def export_to_dot(file: typing.Union[str, typing.IO[str]], *arrays: Tensor, **kwargs: TensorOrScalar) -> None:
+def export_to_dot(file: str | typing.IO[str], *arrays: Tensor, **kwargs: TensorOrScalar) -> None:
     """Export the computation graph of the given arrays to a DOT format file.
 
     Args:

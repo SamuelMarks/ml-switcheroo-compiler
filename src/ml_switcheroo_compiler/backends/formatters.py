@@ -1,13 +1,16 @@
 """Formatting utilities for backend code generators."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
-@dataclass
-class FormatterContext:
+class FormatterContext(pydantic.BaseModel):
     """Provide a context object for the formatter."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     prefix: str
     op_type: str

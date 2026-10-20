@@ -1,5 +1,7 @@
 """Diagnostics and profiling package."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.diagnostics.flop_counter import estimate_flops
 from ml_switcheroo_compiler.diagnostics.memory_profiler import memory_profiler
 from ml_switcheroo_compiler.diagnostics.numerical_anomaly import (

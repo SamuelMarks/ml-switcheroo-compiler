@@ -6,7 +6,7 @@ import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import DType, TensorSpec
 
-from ml_switcheroo_compiler.ir.core import IRBlock, IRGraph, IRNode, NoTangent, ZeroTangent, clone_logical_node
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, NoTangent, ZeroTangent, clone_logical_node
 
 
 def test_clone_logical_node() -> None:
@@ -40,11 +40,8 @@ def test_clone_logical_node() -> None:
     node2.attributes["attr1"] = "mutated"
     assert node.attributes["attr1"] == "val1"
 
-    # Test clone with minimal node (covering None defaults)
+    # Test clone with minimal node
     node_min = LogicalNode(id="min1", op_type="min_op")
-    setattr(node_min, "outputs", None)
-    setattr(node_min, "output_specs", None)
-    setattr(node_min, "subgraphs", None)
     cloned_min = clone_logical_node(node_min)
     assert cloned_min.id == "min1"
 
@@ -85,19 +82,17 @@ def test_tensorspec() -> None:
         _ = s_dyn.static_shape
 
 
-def test_irblock() -> None:
-    """Verify legacy IRBlock container properties."""
-    with pytest.deprecated_call():
-        b = IRBlock("b1")
-    assert b.id == "b1"
+def test_logical_graph_subgraph() -> None:
+    """Verify LogicalGraph nested subgraph container properties."""
+    b = LogicalGraph(name="b1")
+    assert b.name == "b1"
     assert isinstance(b, LogicalGraph)
     assert b.nodes == {}
     assert b.inputs == []
     assert b.outputs == []
 
     node = LogicalNode(id="n1", op_type="Add")
-    with pytest.deprecated_call():
-        b2 = IRBlock("b2", nodes=[node], inputs=["in1"], outputs=["out1"])
+    b2 = LogicalGraph(name="b2", nodes={"n1": node}, inputs=["in1"], outputs=["out1"])
     assert b2.nodes["n1"] == node
     assert b2.inputs == ["in1"]
     assert b2.outputs == ["out1"]

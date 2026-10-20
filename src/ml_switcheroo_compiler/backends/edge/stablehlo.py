@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import typing
 import uuid
 from collections.abc import Iterable
-from typing import cast
 
 import yaml
 
@@ -15,7 +15,6 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -28,11 +27,7 @@ def _iter_ints(val: EagerValue) -> list[int]:
     Returns:
         list[int]: Extracted integer list.
     """
-    if isinstance(val, int):
-        return [val]
-    if isinstance(val, Iterable) and not isinstance(val, (str, bytes)):
-        return [int(cast(int, x)) for x in cast("Iterable[EagerValue]", val)]
-    return []
+    return [val] if isinstance(val, int) else [int(typing.cast(int, x)) for x in typing.cast("Iterable[EagerValue]", val or ())]
 
 
 def verify_stablehlo_mlir(mlir_text: str, mlir_opt_path: str | None = None) -> bool:
@@ -98,7 +93,7 @@ class StableHLOCodeGenerator(BaseGenerator):
         else:
             self.schema = {}
 
-    def _map_type(self, shape: tuple[int | str, ...], dtype: str) -> str:
+    def _map_type(self, shape: tuple[int | str | None, ...], dtype: str) -> str:
         """Map shape and dtype to StableHLO tensor type string.
 
         Args:
@@ -261,14 +256,14 @@ class StableHLOCodeGenerator(BaseGenerator):
         if isinstance(pads_val, int):
             pads = [[pads_val, pads_val], [pads_val, pads_val]]
         elif isinstance(pads_val, (list, tuple)) and len(pads_val) == 2 and isinstance(pads_val[0], int):
-            p0, p1 = pads_val[0], int(cast(int, pads_val[1]))
+            p0, p1 = pads_val[0], int(typing.cast(int, pads_val[1]))
             pads = [[p0, p0], [p1, p1]]
         elif isinstance(pads_val, (list, tuple)) and len(pads_val) == 4 and isinstance(pads_val[0], int):
             p0, p1, p2, p3 = (
                 pads_val[0],
-                int(cast(int, pads_val[1])),
-                int(cast(int, pads_val[2])),
-                int(cast(int, pads_val[3])),
+                int(typing.cast(int, pads_val[1])),
+                int(typing.cast(int, pads_val[2])),
+                int(typing.cast(int, pads_val[3])),
             )
             pads = [[p0, p1], [p2, p3]]
         elif isinstance(pads_val, (list, tuple)):
@@ -282,8 +277,8 @@ class StableHLOCodeGenerator(BaseGenerator):
         rhs_dil_val = attrs.get("rhs_dilation", attrs.get("dilation", [1, 1]))
         rhs_dil: list[int] = [rhs_dil_val, rhs_dil_val] if isinstance(rhs_dil_val, int) else _iter_ints(rhs_dil_val)
 
-        feature_group_count: int = int(cast(int, attrs.get("feature_group_count", attrs.get("groups", 1))))
-        batch_group_count: int = int(cast(int, attrs.get("batch_group_count", 1)))
+        feature_group_count: int = int(typing.cast(int, attrs.get("feature_group_count", attrs.get("groups", 1))))
+        batch_group_count: int = int(typing.cast(int, attrs.get("batch_group_count", 1)))
 
         strides_str: str = ", ".join(str(s) for s in strides)
         pads_str: str = ", ".join(f"[{p[0]}, {p[1]}]" for p in pads)
@@ -333,14 +328,18 @@ class StableHLOCodeGenerator(BaseGenerator):
         win_dims: list[int] = (
             [1, win_dims_val, win_dims_val, 1]
             if isinstance(win_dims_val, int)
-            else ([1, int(cast(int, win_dims_val[0])), int(cast(int, win_dims_val[1])), 1] if isinstance(win_dims_val, (list, tuple)) and len(win_dims_val) == 2 else [int(cast(int, x)) for x in (win_dims_val if isinstance(win_dims_val, (list, tuple)) else [1, 2, 2, 1])])
+            else ([1, int(typing.cast(int, win_dims_val[0])), int(typing.cast(int, win_dims_val[1])), 1] if isinstance(win_dims_val, (list, tuple)) and len(win_dims_val) == 2 else [int(typing.cast(int, x)) for x in (win_dims_val if isinstance(win_dims_val, (list, tuple)) else [1, 2, 2, 1])])
         )
 
         win_strides_val = attrs.get("window_strides", attrs.get("strides", attrs.get("stride", [1, 2, 2, 1])))
         win_strides: list[int] = (
             [1, win_strides_val, win_strides_val, 1]
             if isinstance(win_strides_val, int)
-            else ([1, int(cast(int, win_strides_val[0])), int(cast(int, win_strides_val[1])), 1] if isinstance(win_strides_val, (list, tuple)) and len(win_strides_val) == 2 else [int(cast(int, x)) for x in (win_strides_val if isinstance(win_strides_val, (list, tuple)) else [1, 2, 2, 1])])
+            else (
+                [1, int(typing.cast(int, win_strides_val[0])), int(typing.cast(int, win_strides_val[1])), 1]
+                if isinstance(win_strides_val, (list, tuple)) and len(win_strides_val) == 2
+                else [int(typing.cast(int, x)) for x in (win_strides_val if isinstance(win_strides_val, (list, tuple)) else [1, 2, 2, 1])]
+            )
         )
 
         pads_val = attrs.get("padding", attrs.get("pads", [[0, 0], [0, 0], [0, 0], [0, 0]]))
@@ -447,7 +446,7 @@ class StableHLOCodeGenerator(BaseGenerator):
             pad_val_type: str = in_types[1]
         else:
             pad_val_var = f"%c_pad_{nid.replace('-', '_')}"
-            val = float(cast(float, attrs.get("value", 0.0)))
+            val = float(typing.cast(float, attrs.get("value", 0.0)))
             self.add_line(f'  {pad_val_var} = "stablehlo.constant"() {{value = dense<{val}> : tensor<{elem_t}>}} : () -> tensor<{elem_t}>')
             pad_val_type = f"tensor<{elem_t}>"
 
@@ -523,7 +522,7 @@ class StableHLOCodeGenerator(BaseGenerator):
                     self.var_map[getattr(inp_node, "id", "")] = f"%iter_arg_{idx}"
             for sn in branch.sorted_nodes:
                 if getattr(sn, "op_type", "") != "Input":
-                    ret_var = self.generic_visit(sn, [])
+                    ret_var = self.generic_visit(typing.cast(IRNode, sn), [])
         return ret_var
 
     def _emit_while(
@@ -687,7 +686,7 @@ class StableHLOCodeGenerator(BaseGenerator):
         """
         func_args: list[str] = []
         for idx, node in enumerate(input_nodes):
-            t_type: str = self._get_node_type(cast(IRNode, node))
+            t_type: str = self._get_node_type(typing.cast(IRNode, node))
             arg_name: str = f"%arg{idx}"
             self.var_map[getattr(node, "id", "")] = arg_name
             func_args.append(f"{arg_name}: {t_type}")
@@ -889,11 +888,11 @@ class StableHLOCodeGenerator(BaseGenerator):
                         arg_val = args[i]
                         inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
                 inputs.update(kw)
-                evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
+                evaluated = evaluate_graph(graph, inputs=inputs)
                 if hasattr(graph, "outputs") and graph.outputs:
                     if len(graph.outputs) == 1:
-                        return cast(EagerValue, evaluated.get(graph.outputs[0]))
+                        return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return cast(EagerValue, evaluated)
+                return typing.cast(EagerValue, evaluated)
 
         return StableHLOModuleArtifact(mlirbc_bytes, mlir_text)

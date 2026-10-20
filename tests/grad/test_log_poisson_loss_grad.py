@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 from ml_switcheroo_ir import LogicalNode
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
     log_poisson_loss_vjp,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -46,16 +46,16 @@ def test_log_poisson_loss_eager_modes() -> None:
     # log_input=True: exp(pred) - targets * pred
     loss_log = _np_log_poisson_loss(np, targets, predictions, log_input=True)
     expected_log = np.exp(predictions) - targets * predictions
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(loss_log, expected_log, rtol=1e-5)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(loss_log, expected_log, rtol=1e-5)
 
     # log_input=False: pred - targets * log(pred)
     loss_nonlog = _np_log_poisson_loss(np, targets, predictions, log_input=False)
     expected_nonlog = predictions - targets * np.log(predictions)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(loss_nonlog, expected_nonlog, rtol=1e-5)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(loss_nonlog, expected_nonlog, rtol=1e-5)
 
     # compute_full_loss=True
     loss_full = _np_log_poisson_loss(np, targets, predictions, log_input=True, compute_full_loss=True)
-    assert cast("EagerCallableProtocol", np.all)(cast("EagerTensorProtocol", loss_full) >= cast("EagerTensorProtocol", loss_log))
+    assert typing.cast("EagerCallableProtocol", np.all)(typing.cast("EagerTensorProtocol", loss_full) >= typing.cast("EagerTensorProtocol", loss_log))
 
 
 def test_log_poisson_loss_vjp_rule() -> None:
@@ -76,8 +76,8 @@ def test_log_poisson_loss_vjp_rule() -> None:
 
     assert target_grad_id in graph.nodes
     assert pred_grad_id in graph.nodes
-    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(target_grad_id)).op_type == "ZerosLike"
-    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(pred_grad_id)).op_type == "Mul"
+    assert typing.cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(target_grad_id)).op_type == "ZerosLike"
+    assert typing.cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(pred_grad_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_vjp_nonlog_rule() -> None:
@@ -95,7 +95,7 @@ def test_log_poisson_loss_vjp_nonlog_rule() -> None:
     vjp_ids = log_poisson_loss_vjp(graph, node, "cotangent_2")
     assert len(vjp_ids) == 2
     assert vjp_ids[1] in graph.nodes
-    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(cast("EagerTensorProtocol", getattr(vjp_ids, "__getitem__")(1)))).op_type == "Mul"
+    assert typing.cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(typing.cast("EagerTensorProtocol", getattr(vjp_ids, "__getitem__")(1)))).op_type == "Mul"
 
 
 def test_log_poisson_loss_jvp_rule() -> None:
@@ -112,7 +112,7 @@ def test_log_poisson_loss_jvp_rule() -> None:
 
     jvp_id = log_poisson_loss_jvp(graph, node, ["tan_targets", "tan_log_inputs"])
     assert jvp_id in graph.nodes
-    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
+    assert typing.cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_jvp_nonlog_rule() -> None:
@@ -129,7 +129,7 @@ def test_log_poisson_loss_jvp_nonlog_rule() -> None:
 
     jvp_id = log_poisson_loss_jvp(graph, node, ["tan_targets", "tan_inputs"])
     assert jvp_id in graph.nodes
-    assert cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
+    assert typing.cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_numerical_gradcheck() -> None:
@@ -148,8 +148,8 @@ def test_log_poisson_loss_numerical_gradcheck() -> None:
         minus = log_input.copy()
         plus[i] += eps
         minus[i] -= eps
-        l_plus = cast("EagerCallableProtocol", np.sum)(cast("EagerCallableProtocol", _np_log_poisson_loss)(np, targets, plus, log_input=True))
-        l_minus = cast("EagerCallableProtocol", np.sum)(cast("EagerCallableProtocol", _np_log_poisson_loss)(np, targets, minus, log_input=True))
+        l_plus = typing.cast("EagerCallableProtocol", np.sum)(typing.cast("EagerCallableProtocol", _np_log_poisson_loss)(np, targets, plus, log_input=True))
+        l_minus = typing.cast("EagerCallableProtocol", np.sum)(typing.cast("EagerCallableProtocol", _np_log_poisson_loss)(np, targets, minus, log_input=True))
         numerical_grad[i] = (l_plus - l_minus) / (2.0 * eps)
 
     np.testing.assert_allclose(analytical_grad, numerical_grad, rtol=1e-4, atol=1e-4)

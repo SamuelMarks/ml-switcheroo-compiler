@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+from ml_switcheroo_ir import NodeDict
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -49,7 +51,7 @@ def test_shape_debugger() -> None:
         """
         return x
 
-    res = cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
+    res = typing.cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" in res
     assert "| output | (2, 2) |" in res
@@ -63,7 +65,7 @@ def test_shape_debugger() -> None:
         """
         raise RuntimeError("boom")
 
-    res = cast("EagerTensorProtocol", debug_shapes(error_model, (2, 2)))
+    res = typing.cast("EagerTensorProtocol", debug_shapes(error_model, (2, 2)))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" not in res  # because error happens and it resets
 
@@ -80,16 +82,16 @@ def test_shape_debugger() -> None:
 
             pass
 
-        return cast("EagerTensorProtocol", Dummy())
+        return typing.cast("EagerTensorProtocol", Dummy())
 
-    res = cast("EagerCallableProtocol", debug_shapes)(unknown_model, (2, 2))
+    res = typing.cast("EagerCallableProtocol", debug_shapes)(unknown_model, (2, 2))
     assert "| output | unknown |" in res
 
     # Test to_graphviz
     g = LogicalGraph()
     n1 = LogicalNode(id="n1", op_type="Input")
     n2 = LogicalNode(id="n2", op_type="Add", inputs=["n1"])
-    g.nodes = {"n1": n1, "n2": n2}
+    g.nodes = NodeDict({"n1": n1, "n2": n2})
 
     dot = to_graphviz(g)
     assert "digraph G {" in dot

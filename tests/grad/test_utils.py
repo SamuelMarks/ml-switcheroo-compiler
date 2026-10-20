@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import gc
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.utils import _compute_grad_and_value, _convert_to_tensors, _get_inputs_dict, value_and_grad_wrt_vars
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -27,7 +27,7 @@ def test_value_and_grad_wrt_vars() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
+        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2)
 
     wrapped = value_and_grad_wrt_vars(dummy_fun)
     val, grads = wrapped(5)
@@ -67,7 +67,7 @@ def test_get_inputs_dict() -> None:
 def test_convert_to_tensors_types() -> None:
     """Test function test_convert_to_tensors_types."""
     primals = [np.array(5.0, dtype=np.float64), np.array(5, dtype=np.int32), np.array(True, dtype=np.bool_)]
-    res = cast("EagerCallableProtocol", _convert_to_tensors)(primals)
+    res = typing.cast("EagerCallableProtocol", _convert_to_tensors)(primals)
     assert res[0].config.dtype == DType.Float64
     assert res[1].config.dtype == DType.Int32
     assert res[2].config.dtype == DType.Bool
@@ -83,7 +83,7 @@ def test_compute_grad_and_value_argnums() -> None:
             x: Test parameter `x`.
             y: Test parameter `y`.
         """
-        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", y)
+        return typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", y)
 
     options = MagicMock()
     options.has_aux = False
@@ -129,9 +129,9 @@ def test_grad_utils_extra() -> None:
     class MockTensorProxy:
         """Test class MockTensorProxy."""
 
-        _data = cast("EagerCallableProtocol", ProxyTensor)(None, (1,))
+        _data = typing.cast("EagerCallableProtocol", ProxyTensor)(None, (1,))
 
-    assert cast("EagerCallableProtocol", _get_concrete_val)(cast("EagerCallableProtocol", MockTensorProxy)()) is None
+    assert typing.cast("EagerCallableProtocol", _get_concrete_val)(typing.cast("EagerCallableProtocol", MockTensorProxy)()) is None
 
     class MockProxy(ProxyTensor):
         """Test class MockProxy."""
@@ -143,17 +143,17 @@ def test_grad_utils_extra() -> None:
     mock_proxy = MockProxy()
     mock_proxy.concrete_value = 5.0
     mock_tensor_proxy2 = MockTensorProxy()
-    mock_tensor_proxy2._data = cast("EagerTensorProtocol", mock_proxy)
-    assert cast("EagerCallableProtocol", _get_concrete_val)(mock_tensor_proxy2) == 5.0
+    mock_tensor_proxy2._data = typing.cast("EagerTensorProtocol", mock_proxy)
+    assert typing.cast("EagerCallableProtocol", _get_concrete_val)(mock_tensor_proxy2) == 5.0
 
     class MockGraph:
         """Test class MockGraph."""
 
         inputs = ["in1"]
-        nodes = cast("dict[str, EagerTensorProtocol]", {})
+        nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
     with pytest.raises(ValueError, match="Missing input"):
-        cast("EagerCallableProtocol", _get_inputs_dict)(cast("EagerCallableProtocol", MockGraph)())
+        typing.cast("EagerCallableProtocol", _get_inputs_dict)(typing.cast("EagerCallableProtocol", MockGraph)())
 
     t = Tensor(1.0, TensorConfig((1,), "float32", "cpu"))
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:

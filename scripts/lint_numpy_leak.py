@@ -1,5 +1,7 @@
 """Linting script to enforce the No NumPy Fallback rule and Architectural Boundaries."""
 
+from __future__ import annotations
+
 import glob
 import re
 import sys

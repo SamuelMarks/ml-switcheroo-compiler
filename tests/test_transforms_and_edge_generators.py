@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import mock_open, patch
+
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import load_yaml_dir
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
@@ -41,7 +43,7 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
     vectorize_graph,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -90,7 +92,7 @@ def test_control_flow_opt_branches() -> None:
         id="cond_node",
         op_type="Cond",
         inputs=["pred_const"],
-        attributes={"true_branch": None, "false_branch": f_block},
+        attributes=typing.cast("dict[str, AttributeValue]", {"true_branch": None, "false_branch": f_block}),
     )
     res_graph = control_flow_optimization_pass(g_opt)
     assert res_graph is not None
@@ -106,7 +108,7 @@ def test_control_flow_opt_branches() -> None:
         id="cond_dyn",
         op_type="Cond",
         inputs=["pred_dyn"],
-        attributes={"true_branch": b1, "false_branch": b2},
+        attributes=typing.cast("dict[str, AttributeValue]", {"true_branch": b1, "false_branch": b2}),
     )
     res_no_hoist = control_flow_optimization_pass(g_no_hoist)
     assert res_no_hoist is not None
@@ -124,7 +126,7 @@ def test_parallel_scan_branches() -> None:
     b_graph = IRGraph()
     b_graph.nodes["unknown_op"] = IRNode(id="unknown_op", op_type="CustomUnsupportedOp")
     rules = {"associative_ops": {"Add": {"parallel_primitive": "CumSum"}}}
-    assert cast("EagerCallableProtocol", detect_associative_reduction)(b_graph, rules) is None
+    assert typing.cast("EagerCallableProtocol", detect_associative_reduction)(b_graph, rules) is None
 
     # 3. parallel_scan_pass: node is Scan but reduction is not associative
     g_scan = IRGraph()
@@ -132,7 +134,7 @@ def test_parallel_scan_branches() -> None:
         id="scan_unassoc",
         op_type="Scan",
         inputs=["init", "xs"],
-        attributes={"body": b_graph},
+        attributes=typing.cast("dict[str, AttributeValue]", {"body": b_graph}),
     )
     res_scan = parallel_scan_pass(g_scan)
     assert "scan_unassoc" in res_scan.nodes
@@ -189,13 +191,13 @@ def test_vectorization_branches() -> None:
         id="vmap_node",
         op_type="Vmap",
         inputs=["inp_short_shape"],
-        attributes={"in_axes": 5, "body": g_shift},
+        attributes=typing.cast("dict[str, AttributeValue]", {"in_axes": 5, "body": g_shift}),
     )
     g_vmap_wrapper.nodes["vmap_ghost"] = IRNode(
         id="vmap_ghost",
         op_type="Vmap",
         inputs=["ghost_not_in_graph"],
-        attributes={"in_axes": 0, "body": g_shift},
+        attributes=typing.cast("dict[str, AttributeValue]", {"in_axes": 0, "body": g_shift}),
     )
     v_wrapper = vectorization_pass(g_vmap_wrapper)
     assert "vmap_node" in v_wrapper.nodes and "vmap_ghost" in v_wrapper.nodes
@@ -237,9 +239,9 @@ def test_autodiff_provider_branches() -> None:
     jvp_id = _fallback_finite_difference_jvp(g, node_multi_in, ["tan1"])
     assert jvp_id in g.nodes
 
-    # 7. _load_autodiff_rule fallback to autodiff_rules.yaml (lines 241->244 and 242)
+    # 7. _load_autodiff_rule lookup in modular rules/*.yaml
     with patch("os.path.exists") as mock_exists:
-        mock_exists.side_effect = lambda p: p.endswith("autodiff_rules.yaml")
+        mock_exists.side_effect = lambda p: p.endswith("LegacyFoundOp.yaml")
         with patch("builtins.open", mock_open(read_data="LegacyFoundOp:\n  vjp: {rule: 1}\n")):
             with patch("yaml.safe_load", return_value={"LegacyFoundOp": {"vjp": {"rule": 1}}}):
                 assert _load_autodiff_rule("MissingOp", "vjp") is None
@@ -271,8 +273,8 @@ def test_webgl_custom_setup_empty_inputs() -> None:
     g.outputs = ["test_node"]
 
     gen = WebGLCodeGenerator(g)
-    js = cast("list[EagerTensorProtocol]", [])
-    w, h = cast("EagerCallableProtocol", gen._emit_node)(node, {}, js)
+    js = typing.cast("list[EagerTensorProtocol]", [])
+    w, h = typing.cast("EagerCallableProtocol", gen._emit_node)(node, {}, js)
     assert w > 0 and h > 0
     assert any("kDim" in line or "32" in line for line in js)
 
@@ -372,15 +374,15 @@ def test_webgpu_generator_branches() -> None:
         gen.sorted_nodes.extend([g.nodes["x4d"], g.nodes["w4d"]])
 
         mm_node = IRNode(id="mm", op_type="MatMul", inputs=["x", "x"], shape_metadata=(4, 4))
-        wgsl_mm, _, _, _ = cast("EagerCallableProtocol", gen._get_wgsl_for_op)(mm_node, (4, 4), 16, "mm")
+        wgsl_mm, _, _, _ = typing.cast("EagerCallableProtocol", gen._get_wgsl_for_op)(mm_node, (4, 4), 16, "mm")
         assert wgsl_mm is not None
 
         conv_node = IRNode(id="conv", op_type="Conv2D", inputs=["x4d", "w4d"], shape_metadata=(1, 1, 4, 4))
-        wgsl_conv, _, _, _ = cast("EagerCallableProtocol", gen._get_wgsl_for_op)(conv_node, (1, 1, 4, 4), 16, "conv")
+        wgsl_conv, _, _, _ = typing.cast("EagerCallableProtocol", gen._get_wgsl_for_op)(conv_node, (1, 1, 4, 4), 16, "conv")
         assert wgsl_conv is not None
 
         pool_node = IRNode(id="pool", op_type="MaxPool2D", inputs=["x4d"], shape_metadata=(1, 1, 4, 4), attributes={"window_size": (2, 2)})
-        wgsl_pool, _, _, _ = cast("EagerCallableProtocol", gen._get_wgsl_for_op)(pool_node, (1, 1, 4, 4), 16, "pool")
+        wgsl_pool, _, _, _ = typing.cast("EagerCallableProtocol", gen._get_wgsl_for_op)(pool_node, (1, 1, 4, 4), 16, "pool")
         assert wgsl_pool is not None
 
         # 3. _compile_aot_impl with graph == self.graph and graph != self.graph

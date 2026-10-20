@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Union
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-LookupInput = Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[Union[int, str]], int, str]
+LookupInput = typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[typing.Union[int, "str"]], int, "str"]
 
 
 @numpy_eager_registry.register("Hashing")
 def _np_hashing(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     inputs: LookupInput,
     num_bins: int,
-    **kwargs: Union[float, int, str, bool, None],
+    **kwargs: float | int | str | bool | None,
 ) -> LookupInput:
     """Execute the eager np hashing operation on the active backend array.
 
@@ -35,9 +35,9 @@ def _np_hashing(
 
 @numpy_eager_registry.register("IntegerLookup")
 def _np_integer_lookup(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     inputs: LookupInput,
-    **kwargs: Union[float, int, str, bool, None],
+    **kwargs: float | int | str | bool | None,
 ) -> LookupInput:
     """Execute the eager np integer lookup operation on the active backend array.
 
@@ -54,10 +54,10 @@ def _np_integer_lookup(
 
 @numpy_eager_registry.register("Lookup")
 def _np_lookup(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     inputs: LookupInput,
     vocabulary: LookupInput,
-    **kwargs: Union[float, int, str, bool, None],
+    **kwargs: float | int | str | bool | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np lookup operation on the active backend array.
 
@@ -81,9 +81,9 @@ def _np_lookup(
 
 @numpy_eager_registry.register("StringLookup")
 def _np_string_lookup(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     inputs: LookupInput,
-    **kwargs: Union[float, int, str, bool, None],
+    **kwargs: float | int | str | bool | None,
 ) -> LookupInput:
     """Execute the eager np string lookup operation on the active backend array.
 

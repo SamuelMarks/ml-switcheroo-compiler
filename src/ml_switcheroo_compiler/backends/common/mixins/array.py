@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRNode
@@ -252,7 +252,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         Returns:
             A string containing the backend-specific code for the slice operation.
         """
-        dim = int(cast(int, node.attributes.get("dim", 0)))
+        dim = int(typing.cast(int, node.attributes.get("dim", 0)))
         start = node.attributes.get("start")
         end = node.attributes.get("end")
         step = node.attributes.get("step", 1)

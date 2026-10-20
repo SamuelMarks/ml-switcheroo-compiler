@@ -1,6 +1,8 @@
 """Pydantic models for WASM SIMD configuration."""
 
-from typing import Literal, Optional
+from __future__ import annotations
+
+import typing
 
 from pydantic import BaseModel, ConfigDict
 
@@ -34,9 +36,9 @@ class LaneArithmeticConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     lanes: int = 4
-    element_type: Literal["f32", "i32", "i16", "i8", "f64"] = "f32"
+    element_type: typing.Literal["f32", "i32", "i16", "i8", "f64"] = "f32"
     simd_intrinsic: str = ""
-    lane_mask: Optional[str] = None
+    lane_mask: str | None = None
 
 
 class WasmTemplateConfig(BaseModel):
@@ -53,12 +55,12 @@ class WasmTemplateConfig(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    simd_unroll_factor: Optional[int] = None
-    body: Optional[str] = None
-    peel_loop: Optional[str] = None
-    global_code: Optional[str] = None
-    alignment: Optional[MemoryAlignmentConfig] = None
-    lane_arithmetic: Optional[LaneArithmeticConfig] = None
+    simd_unroll_factor: int | None = None
+    body: str | None = None
+    peel_loop: str | None = None
+    global_code: str | None = None
+    alignment: MemoryAlignmentConfig | None = None
+    lane_arithmetic: LaneArithmeticConfig | None = None
 
 
 class WasmTemplatesConfig(BaseModel):
@@ -90,11 +92,11 @@ class WasmIntrinsicConfig(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    macro_name: Optional[str] = None
-    simd_expr: Optional[str] = None
-    scalar_fallback: Optional[str] = None
-    alignment: Optional[MemoryAlignmentConfig] = None
-    lane_arithmetic: Optional[LaneArithmeticConfig] = None
+    macro_name: str | None = None
+    simd_expr: str | None = None
+    scalar_fallback: str | None = None
+    alignment: MemoryAlignmentConfig | None = None
+    lane_arithmetic: LaneArithmeticConfig | None = None
 
 
 class WasmIntrinsicsConfig(BaseModel):
@@ -108,4 +110,4 @@ class WasmIntrinsicsConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     intrinsics: dict[str, WasmIntrinsicConfig]
-    scalars: Optional[dict[str, str]] = None
+    scalars: dict[str, str] | None = None

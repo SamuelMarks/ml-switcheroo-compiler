@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import os
+import typing
 from multiprocessing.connection import Client, Listener
-from typing import TYPE_CHECKING, Optional, Union, cast
 
 import numpy as np
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 import numpy.typing as npt
 
 # A generic payload type that could be transmitted via IPC
-IpcPayload = Union[npt.NDArray[np.generic], str, int, float, list[int], tuple[int, Union[npt.NDArray[np.generic], str, int, float, bool, bytes]], bool, bytes]
+IpcPayload = typing.Union[npt.NDArray[np.generic], str, int, float, list[int], tuple[int, typing.Union[npt.NDArray[np.generic], str, int, float, bool, "bytes"]], bool, "bytes"]
 
 
 BASE_PORT = 15200
@@ -134,7 +134,7 @@ def _exchange_ipc_data(rank: int, size: int, tensor_data: IpcPayload) -> list[Ip
         return _exchange_ipc_data_worker(rank, size, tensor_data, timeout, retry_interval)
 
 
-def _ipc_all_gather(tensor: IpcPayload, axis: Optional[int], mesh: Optional[DeviceMesh] = None) -> IpcPayload:
+def _ipc_all_gather(tensor: IpcPayload, axis: int | None, mesh: DeviceMesh | None = None) -> IpcPayload:
     """Execute ipc all gather for compiler processing.
 
     Args:
@@ -155,12 +155,12 @@ def _ipc_all_gather(tensor: IpcPayload, axis: Optional[int], mesh: Optional[Devi
 
         # Execute real IPC data exchange
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
-        return cast(IpcPayload, getattr(np, "concatenate")(exchanged, axis=axis if axis is not None else 0))
+        return typing.cast(IpcPayload, getattr(np, "concatenate")(exchanged, axis=axis if axis is not None else 0))
 
     return np.expand_dims(t, axis=axis) if axis is not None else t
 
 
-def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: Optional[DeviceMesh] = None) -> IpcPayload:
+def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: DeviceMesh | None = None) -> IpcPayload:
     """Execute ipc reduce scatter for compiler processing.
 
     Args:
@@ -200,7 +200,7 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: Optional[int], mesh: 
     return t
 
 
-def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: Optional[DeviceMesh] = None) -> IpcPayload:
+def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None) -> IpcPayload:
     """Execute ipc all reduce for compiler processing.
 
     Args:
@@ -224,12 +224,12 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: Optional[DeviceMesh] = No
 
         # Perform reduction and return same result on all workers
         if op == "sum":
-            return cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
+            return typing.cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
         elif op == "max":
-            return cast(IpcPayload, getattr(np.maximum, "reduce")(exchanged))
+            return typing.cast(IpcPayload, getattr(np.maximum, "reduce")(exchanged))
         elif op == "min":
-            return cast(IpcPayload, getattr(np.minimum, "reduce")(exchanged))
+            return typing.cast(IpcPayload, getattr(np.minimum, "reduce")(exchanged))
         else:
-            return cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
+            return typing.cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
 
     return t

@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Union, cast
+import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("SegmentSum")
 def _np_segment_sum(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     data: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     segment_ids: np.ndarray[tuple[int, ...], np.dtype[np.int64]],
     num_segments: int | None = None,
-    **kwargs: Union[int, float, str, None],
+    **kwargs: int | float | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np segment sum operation on the active backend array.
 
@@ -38,9 +38,9 @@ def _np_segment_sum(
 
 @numpy_eager_registry.register("SparseSegmentSum")
 def _np_sparsesegmentsum(
-    backend_module: ModuleType,
-    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[float], list[int]],
-    **kwargs: Union[int, float, str, None],
+    backend_module: BackendModuleProtocol,
+    *args: EagerValue,
+    **kwargs: int | float | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement SparseSegmentSum.
 
@@ -53,4 +53,4 @@ def _np_sparsesegmentsum(
         np.ndarray: Summed tensor result.
     """
     data = backend_module.asarray(args[0])
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.sum(data, axis=0, keepdims=True))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.sum(data, axis=0, keepdims=True))

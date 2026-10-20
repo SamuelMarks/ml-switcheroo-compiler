@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+import typing
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.ops.eager_evaluator import EagerEvaluator
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 DispatchArg = TensorOrScalar
@@ -18,9 +18,9 @@ DispatchArg = TensorOrScalar
 
 def dispatch_op(
     op_type: str,
-    *args: Union[Tensor, DispatchArg],
-    **kwargs: Union[Tensor, DispatchArg],
-) -> Union[Tensor, DispatchArg, tuple[Union[Tensor, DispatchArg], ...]]:
+    *args: Tensor | DispatchArg,
+    **kwargs: Tensor | DispatchArg,
+) -> Tensor | DispatchArg | tuple[Tensor | DispatchArg, ...]:
     """Route operation to eager or tracing handler.
 
     Args:

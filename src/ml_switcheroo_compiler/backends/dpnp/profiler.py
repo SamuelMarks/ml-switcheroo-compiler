@@ -7,9 +7,9 @@ import logging
 import resource
 import sys
 import time
-from typing import Callable
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -21,7 +21,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -123,7 +124,7 @@ class DpnpProfiler:
             return [dpnp_inputs[k] for k in input_keys]
         return list(dpnp_inputs.values())
 
-    def _compile_runner(self, graph: IRGraph, device: str = "auto") -> Callable[..., EagerValue] | None:
+    def _compile_runner(self, graph: IRGraph, device: str = "auto") -> TypedVariadicCallable[EagerValue] | None:
         """Compile computational graph into a DPNP executable runner.
 
         Args:
@@ -131,7 +132,7 @@ class DpnpProfiler:
             device (str): SYCL target device.
 
         Returns:
-            Callable[..., object] | None: Executable runner if compiled.
+            TypedVariadicCallable[object] | None: Executable runner if compiled.
         """
         from ml_switcheroo_compiler.backends.dpnp.generator import DPNPGenerator
 

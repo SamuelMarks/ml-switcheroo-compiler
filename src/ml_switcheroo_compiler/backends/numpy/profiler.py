@@ -5,7 +5,7 @@ from __future__ import annotations
 import resource
 import sys
 import time
-from typing import Optional, Union, cast
+import typing
 
 import numpy as np
 
@@ -21,7 +21,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -32,11 +33,11 @@ class NumpyProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on NumPy backend.
 
         Args:
@@ -72,7 +73,7 @@ class NumpyProfiler:
                 from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
                 from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-                return cast(EagerValue, evaluate_graph(graph, cast("dict[str, EvalValue]", np_inputs_dict), backend=NumpyGenerator))
+                return typing.cast(EagerValue, evaluate_graph(graph, typing.cast("dict[str, EvalValue]", np_inputs_dict), backend=NumpyGenerator))
             if not np_input_list:
                 return np.zeros((1,), dtype=np.float32)
             accum = np.zeros_like(np_input_list[0])

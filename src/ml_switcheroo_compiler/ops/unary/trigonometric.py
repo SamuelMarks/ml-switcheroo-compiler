@@ -1,5 +1,7 @@
 """Implementation of trigonometric operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.trigonometric`)."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.base import register_op
 
 from .base import UnaryMathOp

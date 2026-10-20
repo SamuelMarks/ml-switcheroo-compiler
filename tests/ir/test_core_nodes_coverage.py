@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import warnings
-from typing import TYPE_CHECKING
+import typing
 
 import ml_switcheroo_compiler.ir.core as ir_core
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
@@ -100,7 +99,7 @@ def _sample_shape_fn(a: int, b: int) -> tuple[int, int]:
 
 
 def test_ir_core_all_nodes() -> None:
-    """Verify all IR node types, IRBlock deprecation, and clone_logical_node in ir.core."""
+    """Verify all IR node types, LogicalGraph subgraphs, and clone_logical_node in ir.core."""
     node = ir_core.LogicalNode(id="n1", op_type="CustomOp")
     assert node.id == "n1"
     assert node.op_type == "CustomOp"
@@ -126,13 +125,10 @@ def test_ir_core_all_nodes() -> None:
     assert cloned_full.outputs == ["out1"]
     assert "body" in cloned_full.subgraphs
 
-    # IRBlock with deprecation warning
-    with warnings.catch_warnings(record=True) as recorded_warnings:
-        warnings.simplefilter("always")
-        block = ir_core.IRBlock(id="blk1", nodes=[node], inputs=["in1"], outputs=["out1"])
-        assert any(issubclass(w.category, DeprecationWarning) for w in recorded_warnings)
-        assert block.id == "blk1"
-        assert block.name == "blk1"
+    # LogicalGraph nested subgraph
+    block = ir_core.LogicalGraph(name="blk1", nodes={"n1": node}, inputs=["in1"], outputs=["out1"])
+    assert block.name == "blk1"
+    assert "n1" in block.nodes
 
     # ZeroTangent and NoTangent
     zt = ir_core.ZeroTangent("zt1", shape_metadata=(2, 3))

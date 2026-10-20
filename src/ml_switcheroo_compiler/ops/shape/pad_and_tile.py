@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import Optional, Union, cast
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
@@ -33,7 +33,7 @@ def tile(input: Tensor, reps: Sequence[int]) -> TensorOrScalar:
         return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device))
     inputs = [input]
     in_shape = list(inputs[0].shape) if inputs[0].shape else [1]
-    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(cast(int, reps))]
+    rep_list = list(reps) if isinstance(reps, (list, tuple)) else [int(typing.cast(int, reps))]
     while len(in_shape) < len(rep_list):
         in_shape.insert(0, 1)
     while len(rep_list) < len(in_shape):
@@ -217,7 +217,7 @@ def _compute_pad_dim(dim: int, pw: TensorOrScalar) -> int:
     if isinstance(pw, int):
         return dim + pw * 2
     if isinstance(pw, tuple) and len(pw) == 2:
-        return dim + int(cast(int, pw[0])) + int(cast(int, pw[1]))
+        return dim + int(typing.cast(int, pw[0])) + int(typing.cast(int, pw[1]))
     return dim
 
 
@@ -227,7 +227,7 @@ class Pad(OpDef):
 
     op_name = "Pad"
 
-    def infer_shape(self, array: EagerTensorProtocol, pad_width: EagerTensorProtocol, mode: str = "constant", **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, array: TensorOrScalar, pad_width: TensorOrScalar, mode: str = "constant", **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -274,7 +274,7 @@ def pad(
     out_shape = getattr(op, "infer_shape")(array, pad_width, mode, **kwargs)
     attributes = {"pad_width": pad_width, "mode": mode}
     attributes.update(kwargs)
-    return _emit_shape_node("Pad", [array], attributes, cast("Sequence[Union[int, str]]", out_shape), getattr(array, "dtype", None))
+    return _emit_shape_node("Pad", [array], attributes, typing.cast("Sequence[int | str]", out_shape), getattr(array, "dtype", None))
 
 
 @dispatch_eager("TopK")
@@ -380,7 +380,7 @@ def image_resize(image: Tensor, shape: tuple[int, int], method: str = "bilinear"
 class DynamicShape(OpDef):
     """DynamicShape op."""
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -399,7 +399,7 @@ class Rank(OpDef):
 
     op_name = "Rank"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -419,7 +419,7 @@ class Size(OpDef):
 
     op_name = "Size"
 
-    def infer_shape(self, a: EagerTensorProtocol, axis: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: TensorOrScalar, axis: TensorOrScalar = None, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -496,7 +496,7 @@ class Flatnonzero(OpDef):
 
     op_name = "Flatnonzero"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -517,7 +517,7 @@ class Lexsort(OpDef):
 
     op_name = "Lexsort"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -542,7 +542,7 @@ class Nonzero(OpDef):
 
     op_name = "Nonzero"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -597,7 +597,7 @@ class Percentile(OpDef):
 
     op_name = "Percentile"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -611,7 +611,7 @@ class Percentile(OpDef):
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, cast("bool", keepdims))
+        return _infer_shape_percentile_quantile(a, q, axis, typing.cast("bool", keepdims))
 
 
 @register_op("Quantile")
@@ -620,7 +620,7 @@ class Quantile(OpDef):
 
     op_name = "Quantile"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -634,7 +634,7 @@ class Quantile(OpDef):
         q = args[1] if len(args) > 1 else None
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
-        return _infer_shape_percentile_quantile(a, q, axis, cast("bool", keepdims))
+        return _infer_shape_percentile_quantile(a, q, axis, typing.cast("bool", keepdims))
 
 
 @register_op("RavelMultiIndex")
@@ -643,7 +643,7 @@ class RavelMultiIndex(OpDef):
 
     op_name = "RavelMultiIndex"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer shape.
 
         Args:
@@ -682,7 +682,7 @@ def _repeat_infer_no_axis(
         if s is None:
             size = None
             break
-        size = int(cast(int, size)) * s
+        size = int(typing.cast(int, size)) * s
     if isinstance(repeats, int) and size is not None:
         return (size * repeats,)
     if isinstance(repeats, (list, tuple)):
@@ -696,7 +696,7 @@ class Repeat(OpDef):
 
     op_name = "Repeat"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -711,14 +711,16 @@ class Repeat(OpDef):
         axis = kwargs.get("axis", None)
         in_shape = getattr(a, "shape", ())
         if axis is None:
-            return cast(TensorOrScalar, cast("EagerCallableProtocol", _repeat_infer_no_axis)(in_shape, repeats))
-        out_shape = list(in_shape)
+            return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _repeat_infer_no_axis)(in_shape, repeats))
+        out_shape: list[int | None] = list(in_shape)
+        ax = int(typing.cast(int, axis))
         if isinstance(repeats, int):
-            out_shape[axis] = out_shape[axis] * repeats if out_shape[axis] is not None else None
+            cur_dim = out_shape[ax]
+            out_shape[ax] = cur_dim * repeats if cur_dim is not None else None
         elif isinstance(repeats, (list, tuple)):
-            out_shape[axis] = sum(repeats)
+            out_shape[ax] = int(typing.cast(int, sum(typing.cast("Sequence[int]", repeats))))
         else:
-            cast(EagerTensorProtocol, out_shape)[axis] = None
+            out_shape[ax] = None
         return tuple(out_shape)
 
 
@@ -728,7 +730,7 @@ class Searchsorted(OpDef):
 
     op_name = "Searchsorted"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -757,7 +759,7 @@ class SortComplex(OpDef):
 
     op_name = "SortComplex"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape strictly preserving input tensor shape.
 
         Args:
@@ -801,7 +803,7 @@ class Tile(OpDef):
 
     op_name = "Tile"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -817,10 +819,10 @@ class Tile(OpDef):
             return ()
         in_shape = getattr(A, "shape", ())
         if isinstance(reps, int):
-            reps = (reps,)
+            reps_tuple: tuple[int, ...] = (reps,)
         else:
-            reps = cast(EagerTensorProtocol, tuple(reps))
-        return cast(TensorOrScalar, cast("EagerCallableProtocol", _compute_tile_shape)(in_shape, reps))
+            reps_tuple = tuple(typing.cast("Sequence[int]", reps))
+        return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _compute_tile_shape)(in_shape, reps_tuple))
 
 
 def _get_unique_inverse_shape(axis: int | None, in_shape: TensorOrScalar) -> TensorOrScalar:
@@ -850,7 +852,7 @@ class Unique(OpDef):
 
     op_name = "Unique"
 
-    def infer_shape(self, *args: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -872,13 +874,13 @@ class Unique(OpDef):
             ret_shape = (SymVar("unique_count"),)
         else:
             ret_shape_list = list(in_shape)
-            cast(EagerTensorProtocol, ret_shape_list)[axis] = SymVar("unique_count")
+            typing.cast(EagerTensorProtocol, ret_shape_list)[axis] = SymVar("unique_count")
             ret_shape = tuple(ret_shape_list)
         ret = [ret_shape]
         if return_index:
             ret.append((SymVar("unique_count"),) if axis is None else (getattr(in_shape, "__getitem__")(axis),))
         if return_inverse:
-            getattr(ret, "append")(_get_unique_inverse_shape(cast("Optional[int]", axis), in_shape))
+            getattr(ret, "append")(_get_unique_inverse_shape(typing.cast("int | None", axis), in_shape))
         if return_counts:
             ret.append((SymVar("unique_count"),))
         if len(ret) == 1:

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
@@ -61,7 +63,7 @@ from ml_switcheroo_compiler.ops.signal import (
     window_hann,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -83,21 +85,21 @@ class MockTensor:
 def test_signal_classes_infer_shape() -> None:
     """Test function test_signal_classes_infer_shape."""
     t = MockTensor((2, 3))
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", Convolve2d)().infer_shape)(t, t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", Fftconvolve)().infer_shape)(t, t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", Welch)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Convolve2d)().infer_shape)(t, t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Fftconvolve)().infer_shape)(t, t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Welch)().infer_shape)(t) == (2, 3)
     for Cls in [Fft, Ifft, Fftn, Ifftn, Rfftn, Irfftn, Ifft2, Rfft2, Irfft2, Fftnd, Ifftnd, Rfftnd, Irfftnd, Fftshift, Ifftshift, Hfft, Rfftfreq]:
-        assert Cls().infer_shape(t) == (2, 3)
-    assert cast("EagerCallableProtocol", Fftfreq)().infer_shape(5) == (5,)
+        assert Cls().infer_shape(typing.cast("EagerValue", t)) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", Fftfreq)().infer_shape(5) == (5,)
     assert WindowHann().infer_shape(5) == (5,)
     assert WindowHamming().infer_shape(5) == (5,)
-    assert cast("EagerCallableProtocol", Stft)().infer_shape(cast("EagerCallableProtocol", MockTensor)((10,)), 4) == (3, 2)
-    assert cast("EagerCallableProtocol", Istft)().infer_shape(cast("EagerCallableProtocol", MockTensor)((3, 5)), 4) == (20,)
+    assert typing.cast("EagerCallableProtocol", Stft)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((10,)), 4) == (3, 2)
+    assert typing.cast("EagerCallableProtocol", Istft)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((3, 5)), 4) == (20,)
 
 
 def test_validate_conv2d_args() -> None:
     """Test function test_validate_conv2d_args."""
-    cast("EagerCallableProtocol", _validate_conv2d_args)(cast("EagerCallableProtocol", MockTensor)((2, 3)), cast("EagerCallableProtocol", MockTensor)((2, 3)))
+    typing.cast("EagerCallableProtocol", _validate_conv2d_args)(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), typing.cast("EagerCallableProtocol", MockTensor)((2, 3)))
     assert callable(_validate_conv2d_args)
 
 
@@ -117,8 +119,6 @@ def _test_signal_funcs_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     config.eager_mode = False
     mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops._emit_signal_node", return_value="node")
     mocker.patch("ml_switcheroo_compiler.ops.signal.fft_ops._emit_signal_node", return_value="node")
-    mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops._emit_signal_node", return_value="node")
-    mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops._emit_linalg_node", return_value="node")
     mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops._emit_linalg_node", return_value=("node", "node"))
     mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops._emit_shape_node", return_value="node")
     assert convolve2d(t, t) == "node"
@@ -147,28 +147,28 @@ def _test_signal_funcs_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     mocker, t = _state["mocker"], _state["t"]
-    assert cast("EagerCallableProtocol", fftnd)(t) == "node"
-    assert cast("EagerCallableProtocol", ifftnd)(t) == "node"
-    assert cast("EagerCallableProtocol", rfftnd)(t) == "node"
-    assert cast("EagerCallableProtocol", irfftnd)(t) == "node"
-    assert cast("EagerCallableProtocol", fftshift)(t) == "node"
-    assert cast("EagerCallableProtocol", ifftshift)(t) == "node"
-    assert cast("EagerCallableProtocol", hfft)(t) == "node"
-    assert cast("EagerCallableProtocol", rfftfreq)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", fftnd)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", ifftnd)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", rfftnd)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", irfftnd)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", fftshift)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", ifftshift)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", hfft)(t) == "node"
+    assert typing.cast("EagerCallableProtocol", rfftfreq)(t) == "node"
     assert window_hann(5) == "node"
     assert window_hamming(5) == "node"
-    assert cast("EagerCallableProtocol", stft)(t, 4) == "node"
-    assert cast("EagerCallableProtocol", istft)(t, 4) == "node"
+    assert typing.cast("EagerCallableProtocol", stft)(t, 4) == "node"
+    assert typing.cast("EagerCallableProtocol", istft)(t, 4) == "node"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops.get_active_backend").return_value
     mocker.patch("ml_switcheroo_compiler.ops.signal.fft_ops.get_active_backend", return_value=mock_backend)
     mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops.get_active_backend", return_value=mock_backend)
     setattr(mock_backend.execute_op, "return_value", MockTensor((10,)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((10,)))
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", fft)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", ifft)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", fftn)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", ifftn)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", fft)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", ifft)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", fftn)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", ifftn)(t), "config")).shape == (10,)
     getattr(_state, "update")({"mock_backend": mock_backend})
     _state.update(locals())
 
@@ -180,23 +180,23 @@ def _test_signal_funcs_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rfftn)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", irfftn)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", ifft2)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rfft2)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", irfft2)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", fftnd)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", ifftnd)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rfftnd)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", irfftnd)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", fftshift)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", ifftshift)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", hfft)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", rfftfreq)(t), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(window_hann(5), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(window_hamming(5), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", stft)(t, 4), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", istft)(t, 4), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", rfftn)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", irfftn)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", ifft2)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", rfft2)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", irfft2)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", fftnd)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", ifftnd)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", rfftnd)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", irfftnd)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", fftshift)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", ifftshift)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", hfft)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", rfftfreq)(t), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(window_hann(5), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(window_hamming(5), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", stft)(t, 4), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", istft)(t, 4), "config")).shape == (10,)
 
 
 def test_signal_funcs(mocker: EagerTensorProtocol) -> None:
@@ -225,11 +225,11 @@ def test_signal_funcs_eager_extra(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops.get_active_backend", return_value=mock_backend)
     setattr(mock_backend.execute_op, "return_value", MockTensor((10,)))
     res1 = convolve2d(t, t)
-    assert cast("EagerTensorProtocol", getattr(res1, "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(res1, "config")).shape == (10,)
     setattr(mock_backend.execute_op, "return_value", MockTensor((10,)))
     res2 = fftconvolve(t, t)
-    assert cast("EagerTensorProtocol", getattr(res2, "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(res2, "config")).shape == (10,)
     setattr(mock_backend.execute_op, "return_value", (MockTensor((10,)), MockTensor((10,))))
     res3 = welch(t)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res3, "__getitem__")(0)), "config")).shape == (10,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res3, "__getitem__")(1)), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res3, "__getitem__")(0)), "config")).shape == (10,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res3, "__getitem__")(1)), "config")).shape == (10,)

@@ -4,16 +4,17 @@ from __future__ import annotations
 
 # ruff: noqa: E501
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.norms import _norm_out_shape, matrix_exp, matrix_exponential, matrix_power, norm, power_iteration
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -40,10 +41,10 @@ def test_norms_eager() -> None:
         res = matrix_exp(t)
         assert isinstance(res, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2,)), np.zeros((2,)), np.zeros(()))
-        (res1, res2, res3) = cast("EagerCallableProtocol", power_iteration)(t, num_iters=1, u=None)
-        assert isinstance(res1, Tensor)
-        (res1, res2, res3) = cast("EagerCallableProtocol", power_iteration)(t, num_iters=1, u=t)
-        assert isinstance(res1, Tensor)
+        (res1, res2, res3) = typing.cast("EagerCallableProtocol", power_iteration)(t, num_iters=1, u=None)
+        assert isinstance(typing.cast("EagerValue", res1), Tensor)
+        (res1, res2, res3) = typing.cast("EagerCallableProtocol", power_iteration)(t, num_iters=1, u=t)
+        assert isinstance(typing.cast("EagerValue", res1), Tensor)
 
 
 def test_norms_trace() -> None:

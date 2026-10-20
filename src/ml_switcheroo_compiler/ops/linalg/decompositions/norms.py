@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
@@ -28,7 +28,7 @@ def matrix_power(input: Tensor, n: int) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = cast("TensorLike", backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n))
+        data = typing.cast("TensorLike", backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n))
         return Tensor(data, TensorConfig(data.shape, getattr(input, "dtype", None), getattr(input, "device", None)))
     return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [getattr(input, "dtype", None)])
 
@@ -93,7 +93,7 @@ def matrix_exponential(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = cast("TensorLike", backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a)))
+        data = typing.cast("TensorLike", backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a)))
         return Tensor(data, TensorConfig(data.shape, getattr(a, "dtype", None), getattr(a, "device", None)))
     return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])
 
@@ -129,7 +129,7 @@ def _power_iteration_eager(
 
     backend = get_active_backend()
 
-    v_data, u_data, sigma_data = cast(
+    v_data, u_data, sigma_data = typing.cast(
         "tuple[TensorLike, TensorLike, TensorLike]",
         backend.execute_op(
             "PowerIteration",

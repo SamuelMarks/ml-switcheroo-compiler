@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -28,7 +30,7 @@ def test_wasm_simd_activations_codegen() -> None:
         graph = IRGraph(name=f"test_{op_type}")
         in_node = IRNode(id="in_0", op_type="Input", shape_metadata=(16,))
         op_node = IRNode(id=nid, op_type=op_type, inputs=["in_0"], shape_metadata=(16,))
-        graph.nodes = {"in_0": in_node, nid: op_node}
+        graph.nodes = NodeDict({"in_0": in_node, nid: op_node})
         graph.inputs = ["in_0"]
         graph.outputs = [nid]
 
@@ -55,7 +57,7 @@ def test_wasm_simd_unary_math_codegen() -> None:
         graph = IRGraph(name=f"test_{op_type}")
         in_node = IRNode(id="in_0", op_type="Input", shape_metadata=(16,))
         op_node = IRNode(id=nid, op_type=op_type, inputs=["in_0"], shape_metadata=(16,))
-        graph.nodes = {"in_0": in_node, nid: op_node}
+        graph.nodes = NodeDict({"in_0": in_node, nid: op_node})
         graph.inputs = ["in_0"]
         graph.outputs = [nid]
 
@@ -86,7 +88,7 @@ def test_wasm_simd_comparisons_and_logic() -> None:
         in_a = IRNode(id="in_a", op_type="Input", shape_metadata=(16,))
         in_b = IRNode(id="in_b", op_type="Input", shape_metadata=(16,))
         op_node = IRNode(id=nid, op_type=op_type, inputs=["in_a", "in_b"], shape_metadata=(16,))
-        graph.nodes = {"in_a": in_a, "in_b": in_b, nid: op_node}
+        graph.nodes = NodeDict({"in_a": in_a, "in_b": in_b, nid: op_node})
         graph.inputs = ["in_a", "in_b"]
         graph.outputs = [nid]
 
@@ -101,7 +103,7 @@ def test_wasm_scalar_polyfills_for_unmapped_simd() -> None:
     graph = IRGraph(name="test_polyfills")
     in_node = IRNode(id="in_0", op_type="Input", shape_metadata=(16,))
     bessel_node = IRNode(id="bessel", op_type="bessel_j0", inputs=["in_0"], shape_metadata=(16,))
-    graph.nodes = {"in_0": in_node, "bessel": bessel_node}
+    graph.nodes = NodeDict({"in_0": in_node, "bessel": bessel_node})
     graph.inputs = ["in_0"]
     graph.outputs = ["bessel"]
 
@@ -127,7 +129,7 @@ def test_wasm_while_loop_annotations_and_aliases() -> None:
             "shape_invariants": "[4]",
         },
     )
-    graph.nodes = {"in_0": in_node, "loop_op": loop_node}
+    graph.nodes = NodeDict({"in_0": in_node, "loop_op": loop_node})
     graph.inputs = ["in_0"]
     graph.outputs = ["loop_op"]
 
@@ -148,7 +150,7 @@ def test_wasm_while_loop_annotations_and_aliases() -> None:
         shape_metadata=(4,),
     )
     graph_alias = IRGraph(name="test_loop_alias")
-    graph_alias.nodes = {"in_0": in_node, "loop_alias": alias_node}
+    graph_alias.nodes = NodeDict({"in_0": in_node, "loop_alias": alias_node})
     graph_alias.inputs = ["in_0"]
     graph_alias.outputs = ["loop_alias"]
     gen_alias = WasmCodeGenerator(graph_alias)
@@ -166,7 +168,7 @@ def test_wasm_unimplemented_and_binary_simd_fallbacks() -> None:
     graph_unknown = IRGraph(name="test_unknown")
     in_node = IRNode(id="in_0", op_type="Input", shape_metadata=(4,))
     unknown_node = IRNode(id="unknown", op_type="CompletelyUnknownOpXYZ", inputs=["in_0"], shape_metadata=(4,))
-    graph_unknown.nodes = {"in_0": in_node, "unknown": unknown_node}
+    graph_unknown.nodes = NodeDict({"in_0": in_node, "unknown": unknown_node})
     graph_unknown.inputs = ["in_0"]
     graph_unknown.outputs = ["unknown"]
 
@@ -179,7 +181,7 @@ def test_wasm_unimplemented_and_binary_simd_fallbacks() -> None:
     in_a = IRNode(id="in_a", op_type="Input", shape_metadata=(4,))
     in_b = IRNode(id="in_b", op_type="Input", shape_metadata=(4,))
     node = IRNode(id="atan2_op", op_type="atan2", inputs=["in_a", "in_b"], shape_metadata=(4,))
-    graph_binary.nodes = {"in_a": in_a, "in_b": in_b, "atan2_op": node}
+    graph_binary.nodes = NodeDict({"in_a": in_a, "in_b": in_b, "atan2_op": node})
     graph_binary.inputs = ["in_a", "in_b"]
     graph_binary.outputs = ["atan2_op"]
 
@@ -189,7 +191,7 @@ def test_wasm_unimplemented_and_binary_simd_fallbacks() -> None:
 
     # 3. Direct invocation of _generate_binary_simd_op for fallback binary_scalars mapping
     gen_direct = WasmCodeGenerator(graph_binary)
-    cast("EagerCallableProtocol", gen_direct._generate_binary_simd_op)(node, "add", "add_direct", ["in_a", "in_b"], (4,), 4)
+    typing.cast("EagerCallableProtocol", gen_direct._generate_binary_simd_op)(node, "add", "add_direct", ["in_a", "in_b"], (4,), 4)
     assert any("buf_in_a[i_add_direct] + buf_in_b[i_add_direct]" in line for line in gen_direct.code)
 
 
@@ -219,7 +221,7 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_1(_state: dict[str, E
         },
     )
     g_loop = IRGraph(name="test_while_no_inputs")
-    g_loop.nodes = {"loop_no_inputs": node_loop_no_inputs}
+    g_loop.nodes = NodeDict({"loop_no_inputs": node_loop_no_inputs})
     g_loop.outputs = ["loop_no_inputs"]
     gen_loop = WasmCodeGenerator(g_loop)
     src_loop = gen_loop.generate()
@@ -235,7 +237,7 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_1(_state: dict[str, E
         attributes={"max_iters": None},
     )
     g_none = IRGraph(name="test_while_none")
-    g_none.nodes = {"loop_none": node_loop_none}
+    g_none.nodes = NodeDict({"loop_none": node_loop_none})
     g_none.outputs = ["loop_none"]
     gen_none = WasmCodeGenerator(g_none)
     src_none = gen_none.generate()
@@ -257,7 +259,7 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state: dict[str, E
         g_missing_yaml = IRGraph(name="t")
         in_0 = IRNode(id="in_0", op_type="Input", shape_metadata=(4,))
         node_unmapped = IRNode(id="op", op_type="NonExistentOpWithoutTemplate", inputs=["in_0"], shape_metadata=(4,))
-        g_missing_yaml.nodes = {"in_0": in_0, "op": node_unmapped}
+        g_missing_yaml.nodes = NodeDict({"in_0": in_0, "op": node_unmapped})
         g_missing_yaml.inputs = ["in_0"]
         g_missing_yaml.outputs = ["op"]
         gen_missing = WasmCodeGenerator(g_missing_yaml)
@@ -269,7 +271,7 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state: dict[str, E
         g_no_body = IRGraph(name="t_no_body")
         in_0 = IRNode(id="in_0", op_type="Input", shape_metadata=(4,))
         node_alibi = IRNode(id="op", op_type="Acos", inputs=["in_0"], shape_metadata=(4,))
-        g_no_body.nodes = {"in_0": in_0, "op": node_alibi}
+        g_no_body.nodes = NodeDict({"in_0": in_0, "op": node_alibi})
         g_no_body.inputs = ["in_0"]
         g_no_body.outputs = ["op"]
         gen_no_body = WasmCodeGenerator(g_no_body)
@@ -306,7 +308,7 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state: dict[str, E
         in_a = IRNode(id="in_a", op_type="Input", shape_metadata=(4,))
         in_b = IRNode(id="in_b", op_type="Input", shape_metadata=(4,))
         node_custom = IRNode(id="op", op_type="custom_simd_op", inputs=["in_a", "in_b"], shape_metadata=(4,))
-        g_custom.nodes = {"in_a": in_a, "in_b": in_b, "op": node_custom}
+        g_custom.nodes = NodeDict({"in_a": in_a, "in_b": in_b, "op": node_custom})
         g_custom.inputs = ["in_a", "in_b"]
         g_custom.outputs = ["op"]
         gen_custom = WasmCodeGenerator(g_custom)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -25,8 +25,9 @@ from ml_switcheroo_compiler.backends.numpy.eager.io_ops import (
     _np_serialize_tensor,
     _np_write_file,
 )
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -70,37 +71,37 @@ def test_read_write_file(tmp_path: EagerTensorProtocol) -> None:
     f = str(tmp_path / "test.txt")
     _np_write_file(np, f, b"hello")
     res = _np_read_file(np, f)
-    assert cast("EagerTensorProtocol", getattr(res, "data")) == b"hello"
+    assert typing.cast("EagerTensorProtocol", getattr(res, "data")) == b"hello"
 
 
 def test_decode_image() -> None:
     """Test function test_decode_image."""
     res = _np_decode_image(np, None, dtype="uint8")
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "config")).dtype, "value")) == "uint8"
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "config")).dtype, "value")) == "uint8"
 
 
 def test_decode_csv() -> None:
     """Test function test_decode_csv."""
     res = _np_decode_csv(np, None, record_defaults=[1, 2])
-    assert cast("EagerCallableProtocol", len)(res) == 2
+    assert typing.cast("EagerCallableProtocol", len)(res) == 2
 
 
 def test_parse_example() -> None:
     """Test function test_parse_example."""
     res = _np_parse_example(np, None, features={"a": 1})
-    assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res)
+    assert typing.cast("EagerTensorProtocol", "a") in typing.cast("EagerTensorProtocol", res)
 
 
 def test_serialize_tensor() -> None:
     """Test function test_serialize_tensor."""
     res = _np_serialize_tensor(np, None)
-    assert cast("EagerTensorProtocol", getattr(res, "data")) == b""
+    assert typing.cast("EagerTensorProtocol", getattr(res, "data")) == b""
 
 
 def test_parse_tensor() -> None:
     """Test function test_parse_tensor."""
     res = _np_parse_tensor(np, None, out_type="float32")
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "config")).dtype, "value")) == "float32"
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "config")).dtype, "value")) == "float32"
 
 
 def test_base64() -> None:
@@ -109,14 +110,14 @@ def test_base64() -> None:
 
     b = b"hello"
     enc = _np_encode_base64(np, b, pad=True)
-    assert cast("EagerTensorProtocol", getattr(enc, "data")) == base64.b64encode(b)
-    dec = _np_decode_base64(np, cast("EagerTensorProtocol", getattr(enc, "data")))
-    assert cast("EagerTensorProtocol", getattr(dec, "data")) == b
+    assert typing.cast("EagerTensorProtocol", getattr(enc, "data")) == base64.b64encode(b)
+    dec = _np_decode_base64(np, typing.cast("EagerTensorProtocol", getattr(enc, "data")))
+    assert typing.cast("EagerTensorProtocol", getattr(dec, "data")) == b
 
 
 def test_parse_sequence_example() -> None:
     """Test function test_parse_sequence_example."""
-    (r1, r2) = cast("EagerCallableProtocol", _np_parse_sequence_example)(np, None)
+    (r1, r2) = typing.cast("EagerCallableProtocol", _np_parse_sequence_example)(np, None)
     assert r1 == {} and r2 == {}
 
 
@@ -157,7 +158,7 @@ def test_savez_kwargs(tmp_path: EagerTensorProtocol) -> None:
 def test_read_file_invalid() -> None:
     """Test function test_read_file_invalid."""
     res = _np_read_file(np, 123)
-    assert cast("EagerTensorProtocol", getattr(res, "data")) is None
+    assert typing.cast("EagerTensorProtocol", getattr(res, "data")) is None
 
 
 def test_missing_io_coverage() -> None:
@@ -166,7 +167,7 @@ def test_missing_io_coverage() -> None:
 
     _np_encode_base64(np, np.array([b"hello world"]))
     decoded = _np_decode_base64(np, np.array([b"aGVsbG8gd29ybGQ="]))
-    assert "hello world" in str(cast("EagerTensorProtocol", getattr(decoded, "numpy"))() if hasattr(decoded, "numpy") else decoded)
+    assert "hello world" in str(typing.cast("EagerTensorProtocol", getattr(decoded, "numpy"))() if hasattr(decoded, "numpy") else decoded)
     res = _np_parse_sequence_example(np, "serialized")
     assert "dummy" in getattr(res, "__getitem__")(0)
 
@@ -199,23 +200,23 @@ def _test_io_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
 
     bk = DummyBackend()
     p = tmp_path / "f.npy"
-    mod._np_save(bk, str(p), np.array([1.0]))
-    mod._np_save(bk, filepath=str(p), arr=np.array([1.0]))
-    mod._np_save(bk, file=str(p), arr=np.array([1.0]))
-    mod._np_save(bk)
-    assert mod._np_load(bk, str(p)) is not None
+    mod._np_save(typing.cast("BackendModuleProtocol", bk), str(p), np.array([1.0]))
+    mod._np_save(typing.cast("BackendModuleProtocol", bk), filepath=str(p), arr=np.array([1.0]))
+    mod._np_save(typing.cast("BackendModuleProtocol", bk), file=str(p), arr=np.array([1.0]))
+    mod._np_save(typing.cast("BackendModuleProtocol", bk))
+    assert mod._np_load(typing.cast("BackendModuleProtocol", bk), str(p)) is not None
     with pytest.raises(ValueError, match="Format not supported"):
-        mod._np_load(bk, str(tmp_path / "nonexistent.xyz"))
+        mod._np_load(typing.cast("BackendModuleProtocol", bk), str(tmp_path / "nonexistent.xyz"))
     pz = tmp_path / "fz.npz"
-    mod._np_savez(bk, str(pz), np.array([1.0]), a=np.array([2.0]))
-    mod._np_savez(bk, file=str(pz), args=[np.array([1.0])], kwds={"a": np.array([2.0])})
-    mod._np_savez_compressed(bk, str(pz), np.array([1.0]), a=np.array([2.0]))
-    mod._np_savez_compressed(bk, file=str(pz), args=[np.array([1.0])], kwds={"a": np.array([2.0])})
-    res = mod._np_load(bk, str(pz))
+    mod._np_savez(typing.cast("BackendModuleProtocol", bk), str(pz), np.array([1.0]), a=np.array([2.0]))
+    mod._np_savez(typing.cast("BackendModuleProtocol", bk), file=str(pz), args=[np.array([1.0])], kwds={"a": np.array([2.0])})
+    mod._np_savez_compressed(typing.cast("BackendModuleProtocol", bk), str(pz), np.array([1.0]), a=np.array([2.0]))
+    mod._np_savez_compressed(typing.cast("BackendModuleProtocol", bk), file=str(pz), args=[np.array([1.0])], kwds={"a": np.array([2.0])})
+    res = mod._np_load(typing.cast("BackendModuleProtocol", bk), str(pz))
     assert res is not None
-    mod._np_load(bk, file=str(pz))
+    mod._np_load(typing.cast("BackendModuleProtocol", bk), file=str(pz))
     p_file = tmp_path / "f.txt"
-    mod._np_write_file(bk, str(p_file), b"hello")
+    mod._np_write_file(typing.cast("BackendModuleProtocol", bk), str(p_file), b"hello")
     getattr(_state, "update")({"DummyBackend": DummyBackend, "bk": bk, "p": p, "p_file": p_file})
     getattr(_state, "update")({"pz": pz, "res": res})
     _state.update(locals())
@@ -301,14 +302,14 @@ def test_math_string_io_decode_image_branches() -> None:
 
         pass
 
-    res1 = _np_decode_image(DummyBackend(), data, channels=1)
-    assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (10, 10, 1)
-    res3 = _np_decode_image(DummyBackend(), data, channels=3)
-    assert cast("EagerTensorProtocol", getattr(res3, "shape")) == (10, 10, 3)
-    res4 = _np_decode_image(DummyBackend(), data, channels=4)
-    assert cast("EagerTensorProtocol", getattr(res4, "shape")) == (10, 10, 4)
-    res0 = _np_decode_image(DummyBackend(), data, channels=0)
-    assert cast("EagerTensorProtocol", getattr(res0, "shape")) == (10, 10, 1)
+    res1 = _np_decode_image(typing.cast("BackendModuleProtocol", DummyBackend()), data, channels=1)
+    assert typing.cast("EagerTensorProtocol", getattr(res1, "shape")) == (10, 10, 1)
+    res3 = _np_decode_image(typing.cast("BackendModuleProtocol", DummyBackend()), data, channels=3)
+    assert typing.cast("EagerTensorProtocol", getattr(res3, "shape")) == (10, 10, 3)
+    res4 = _np_decode_image(typing.cast("BackendModuleProtocol", DummyBackend()), data, channels=4)
+    assert typing.cast("EagerTensorProtocol", getattr(res4, "shape")) == (10, 10, 4)
+    res0 = _np_decode_image(typing.cast("BackendModuleProtocol", DummyBackend()), data, channels=0)
+    assert typing.cast("EagerTensorProtocol", getattr(res0, "shape")) == (10, 10, 1)
 
 
 def _test_math_string_io_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -348,15 +349,15 @@ def _test_math_string_io_coverage_part_1(_state: dict[str, EagerTensorProtocol])
     _parse_scanop_args((1, 2, 3), {})
     _parse_scanop_args((), {"fn": 1, "elems": 2})
     with pytest.raises(IndexError):
-        _np_sparsedensematmul(DummyBackend())
+        _np_sparsedensematmul(typing.cast("BackendModuleProtocol", DummyBackend()))
     with pytest.raises(IndexError):
-        _np_sparsemapvalues(DummyBackend())
+        _np_sparsemapvalues(typing.cast("BackendModuleProtocol", DummyBackend()))
     with pytest.raises(AttributeError):
-        _np_sparsereshape(DummyBackend())
+        _np_sparsereshape(typing.cast("BackendModuleProtocol", DummyBackend()))
     with pytest.raises(AttributeError):
-        _np_sparsesampledadd(DummyBackend())
+        _np_sparsesampledadd(typing.cast("BackendModuleProtocol", DummyBackend()))
     with pytest.raises(AttributeError):
-        _np_sparsetranspose(DummyBackend())
+        _np_sparsetranspose(typing.cast("BackendModuleProtocol", DummyBackend()))
     getattr(_state, "update")({"DummyBackend": DummyBackend, "_np_decode_csv": _np_decode_csv, "_np_decode_csv_camel": _np_decode_csv_camel, "_np_decode_image": _np_decode_image})
     getattr(_state, "update")({"_np_decode_image_camel": _np_decode_image_camel, "_np_encode_image_camel": _np_encode_image_camel, "_np_parse_example": _np_parse_example, "_np_parse_example_camel": _np_parse_example_camel})
     getattr(_state, "update")({"_np_parse_tensor": _np_parse_tensor, "_np_parse_tensor_camel": _np_parse_tensor_camel, "_np_read_file": _np_read_file, "_np_read_file_camel": _np_read_file_camel})
@@ -431,13 +432,13 @@ def test_math_string_io_encode_image_branches() -> None:
         pass
 
     arr_3d = np.zeros((10, 10, 1), dtype=np.uint8)
-    res = _np_encode_image_camel(DummyBackend(), arr_3d, op_name="EncodeJpeg")
+    res = _np_encode_image_camel(typing.cast("BackendModuleProtocol", DummyBackend()), arr_3d, op_name="EncodeJpeg")
     assert res is not None
     arr_f32 = np.zeros((10, 10), dtype=np.float32)
-    res2 = _np_encode_image_camel(DummyBackend(), arr_f32, op_name="EncodePng")
+    res2 = _np_encode_image_camel(typing.cast("BackendModuleProtocol", DummyBackend()), arr_f32, op_name="EncodePng")
     assert res2 is not None
     with pytest.raises(RuntimeError):
-        _np_encode_image_camel(DummyBackend(), None)
+        _np_encode_image_camel(typing.cast("BackendModuleProtocol", DummyBackend()), None)
 
 
 def test_math_string_io_parse_example_camel() -> None:
@@ -453,15 +454,15 @@ def test_math_string_io_parse_example_camel() -> None:
 
     features = {"a": type("DummyFeature", (), {"dtype": float})()}
     data_str = json.dumps({"a": [1.0, 2.0]})
-    res = _np_parse_example_camel(DummyBackend(), data_str, features=features)
-    assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res)
-    res2 = _np_parse_example_camel(DummyBackend(), data_str.encode("utf-8"), features=features)
-    assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res2)
+    res = _np_parse_example_camel(typing.cast("BackendModuleProtocol", DummyBackend()), data_str, features=features)
+    assert typing.cast("EagerTensorProtocol", "a") in typing.cast("EagerTensorProtocol", res)
+    res2 = _np_parse_example_camel(typing.cast("BackendModuleProtocol", DummyBackend()), data_str.encode("utf-8"), features=features)
+    assert typing.cast("EagerTensorProtocol", "a") in typing.cast("EagerTensorProtocol", res2)
     data_str2 = json.dumps({"b": [1.0, 2.0]})
-    res3 = _np_parse_example_camel(DummyBackend(), data_str2, features=features)
-    assert cast("EagerTensorProtocol", "a") in cast("EagerTensorProtocol", res3)
+    res3 = _np_parse_example_camel(typing.cast("BackendModuleProtocol", DummyBackend()), data_str2, features=features)
+    assert typing.cast("EagerTensorProtocol", "a") in typing.cast("EagerTensorProtocol", res3)
     with pytest.raises(RuntimeError):
-        _np_parse_example_camel(DummyBackend(), "{invalid json}", features=features)
+        _np_parse_example_camel(typing.cast("BackendModuleProtocol", DummyBackend()), "{invalid json}", features=features)
 
 
 def test_math_string_io_read_file_camel() -> None:
@@ -474,7 +475,7 @@ def test_math_string_io_read_file_camel() -> None:
         pass
 
     with pytest.raises(RuntimeError):
-        _np_read_file_camel(DummyBackend(), "missing_file.txt")
+        _np_read_file_camel(typing.cast("BackendModuleProtocol", DummyBackend()), "missing_file.txt")
 
 
 def test_math_string_io_write_file_camel(tmp_path: EagerTensorProtocol) -> None:
@@ -493,9 +494,9 @@ def test_math_string_io_write_file_camel(tmp_path: EagerTensorProtocol) -> None:
         pass
 
     test_file = tmp_path / "test.txt"
-    _np_write_file_camel(DummyBackend(), str(test_file), np.array(b"data"))
+    _np_write_file_camel(typing.cast("BackendModuleProtocol", DummyBackend()), str(test_file), np.array(b"data"))
     with pytest.raises(OSError):
-        _np_write_file_camel(DummyBackend(), "/invalid/path/test.txt", "data")
+        _np_write_file_camel(typing.cast("BackendModuleProtocol", DummyBackend()), "/invalid/path/test.txt", "data")
 
 
 def test_math_string_io_parse_tensor_camel() -> None:
@@ -510,10 +511,10 @@ def test_math_string_io_parse_tensor_camel() -> None:
         pass
 
     data_bytes = pickle.dumps([1.0, 2.0])
-    res = _np_parse_tensor_camel(DummyBackend(), data_bytes)
+    res = _np_parse_tensor_camel(typing.cast("BackendModuleProtocol", DummyBackend()), data_bytes)
     assert res is not None
     with pytest.raises(RuntimeError):
-        _np_parse_tensor_camel(DummyBackend(), b"{invalid pickle}")
+        _np_parse_tensor_camel(typing.cast("BackendModuleProtocol", DummyBackend()), b"{invalid pickle}")
 
 
 def test_math_string_io_decode_csv_camel() -> None:
@@ -527,10 +528,10 @@ def test_math_string_io_decode_csv_camel() -> None:
 
     records = ["1.0,2.0", "3.0,4.0"]
     defaults = [0.0, 0.0]
-    res = _np_decode_csv_camel(DummyBackend(), records, record_defaults=defaults)
+    res = _np_decode_csv_camel(typing.cast("BackendModuleProtocol", DummyBackend()), records, record_defaults=defaults)
     assert res is not None
     with pytest.raises(IndexError):
-        _np_decode_csv_camel(DummyBackend(), [])
+        _np_decode_csv_camel(typing.cast("BackendModuleProtocol", DummyBackend()), [])
 
 
 def test_math_string_io_sparsemapvalues() -> None:
@@ -550,8 +551,8 @@ def test_math_string_io_sparsemapvalues() -> None:
             """
             return np.array(x)
 
-    res = _np_sparsemapvalues(DummyBackend(), lambda x: x * 2, [1, 2, 3])
-    assert cast("EagerCallableProtocol", np.array_equal)(res, [2, 4, 6])
+    res = _np_sparsemapvalues(typing.cast("BackendModuleProtocol", DummyBackend()), lambda x: x * 2, [1, 2, 3])
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, [2, 4, 6])
 
 
 def test_math_string_io_sparsedensematmul_fallback() -> None:
@@ -572,7 +573,7 @@ def test_math_string_io_sparsedensematmul_fallback() -> None:
             """
             return "hit_bk"
 
-    assert _np_sparsedensematmul(DummyBackend(), np.ones((2, 2)), np.ones((2, 2))) == "hit_bk"
+    assert _np_sparsedensematmul(typing.cast("BackendModuleProtocol", DummyBackend()), np.ones((2, 2)), np.ones((2, 2))) == "hit_bk"
 
     class EmptyBackend:
         """Test class EmptyBackend."""
@@ -581,8 +582,8 @@ def test_math_string_io_sparsedensematmul_fallback() -> None:
 
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     b = np.array([[5.0, 6.0], [7.0, 8.0]])
-    res = _np_sparsedensematmul(EmptyBackend(), a, b)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, a @ b)
+    res = _np_sparsedensematmul(typing.cast("BackendModuleProtocol", EmptyBackend()), a, b)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, a @ b)
 
 
 def test_math_string_io_csv_edge_cases() -> None:
@@ -594,8 +595,8 @@ def test_math_string_io_csv_edge_cases() -> None:
     with pytest.raises(RuntimeError):
         _parse_csv_row(["invalid"], [0.0], np)
     res = _parse_csv_row(["1.0"], [0.0, 2.0], np)
-    assert cast("EagerCallableProtocol", len)(res) == 2
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 2.0
+    assert typing.cast("EagerCallableProtocol", len)(res) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 2.0
     res2 = _get_csv_data((), np)
     assert res2 == ""
 
@@ -613,8 +614,8 @@ def test_math_string_io_csv_exception() -> None:
 
     with patch("csv.reader", side_effect=Exception("Test")):
         with pytest.raises(ValueError):
-            _np_decode_csv_camel(DummyBackend(), ["1.0,2.0"])
-    res = _np_decode_csv_camel(DummyBackend(), [""], record_defaults=[0.0])
+            _np_decode_csv_camel(typing.cast("BackendModuleProtocol", DummyBackend()), ["1.0,2.0"])
+    res = _np_decode_csv_camel(typing.cast("BackendModuleProtocol", DummyBackend()), [""], record_defaults=[0.0])
     assert res is not None
 
 
@@ -642,14 +643,14 @@ def test_math_string_io_decode_image_exceptions() -> None:
         pass
 
     with pytest.raises(RuntimeError):
-        _np_decode_image_camel(DummyBackend(), "not_bytes")
+        _np_decode_image_camel(typing.cast("BackendModuleProtocol", DummyBackend()), "not_bytes")
     with pytest.raises(RuntimeError):
-        _np_decode_image_camel(DummyBackend(), b"invalid_image_data")
+        _np_decode_image_camel(typing.cast("BackendModuleProtocol", DummyBackend()), b"invalid_image_data")
     buf = io.BytesIO()
     Image.new("RGB", (10, 10)).save(buf, format="PNG")
     png_bytes = buf.getvalue()
-    res_zero = _np_decode_image_camel(DummyBackend(), png_bytes, channels=0)
-    assert cast("EagerTensorProtocol", getattr(res_zero, "shape")) == (10, 10, 3)
+    res_zero = _np_decode_image_camel(typing.cast("BackendModuleProtocol", DummyBackend()), png_bytes, channels=0)
+    assert typing.cast("EagerTensorProtocol", getattr(res_zero, "shape")) == (10, 10, 3)
 
 
 def test_math_string_io_read_write_file_camel_success(tmp_path: EagerTensorProtocol) -> None:
@@ -668,6 +669,6 @@ def test_math_string_io_read_write_file_camel_success(tmp_path: EagerTensorProto
         pass
 
     test_file = tmp_path / "test.bin"
-    _np_write_file_camel(DummyBackend(), str(test_file), np.array([1, 2, 3], dtype=np.int32))
-    res = _np_read_file_camel(DummyBackend(), str(test_file))
+    _np_write_file_camel(typing.cast("BackendModuleProtocol", DummyBackend()), str(test_file), np.array([1, 2, 3], dtype=np.int32))
+    res = _np_read_file_camel(typing.cast("BackendModuleProtocol", DummyBackend()), str(test_file))
     assert res is not None

@@ -1,13 +1,13 @@
 """Numpy Variable Ops."""
 
-from types import ModuleType
-from typing import cast
+from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("Assign")
-def _np_assign(backend_module: ModuleType, x: EagerValue, y: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_assign(backend_module: BackendModuleProtocol, x: EagerValue, y: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np assign operation on the active backend array.
 
     Args:
@@ -24,7 +24,7 @@ def _np_assign(backend_module: ModuleType, x: EagerValue, y: EagerValue, *args: 
 
 
 @numpy_eager_registry.register("Cast")
-def _np_cast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_cast(backend_module: BackendModuleProtocol, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np cast operation on the active backend array.
 
     Args:
@@ -43,11 +43,11 @@ def _np_cast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args
             dt = "float32"
         elif "int4" in dt:
             dt = "int8"
-    return cast(EagerValue, backend_module.asarray(x).astype(dt))
+    return backend_module.asarray(x).astype(dt)
 
 
 @numpy_eager_registry.register("Bitcast")
-def _np_bitcast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_bitcast(backend_module: BackendModuleProtocol, x: EagerValue, dtype: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np bitcast operation on the active backend array.
 
     Args:
@@ -60,11 +60,11 @@ def _np_bitcast(backend_module: ModuleType, x: EagerValue, dtype: EagerValue, *a
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.asarray(x).view(getattr(dtype, "value", dtype)))
+    return backend_module.asarray(x).view(getattr(dtype, "value", dtype))
 
 
 @numpy_eager_registry.register("ReadVariable")
-def _np_read_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_read_variable(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np read variable operation on the active backend array.
 
     Args:
@@ -79,7 +79,7 @@ def _np_read_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: E
 
 
 @numpy_eager_registry.register("AssignVariable")
-def _np_assign_variable(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_assign_variable(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np assign variable operation on the active backend array.
 
     Args:

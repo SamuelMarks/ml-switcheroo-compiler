@@ -1,5 +1,7 @@
 """Implementation of complex types operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.unary.complex_types`)."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.base import register_op
 
 from .base import UnaryMathOp

@@ -7,7 +7,7 @@ name = "ml-switcheroo-compiler"
 version = "0.1.0"
 description = "Abstract ML Machine Compiler for Reverse-Mode AD, Optimization, and Graph Functionalization."
 authors = [{ name = "Samuel Marks" }]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dynamic = ["dependencies", "optional-dependencies"]
 
 [tool.hatch.metadata]
@@ -34,11 +34,11 @@ sparse = ["requirements-backend-sparse.txt"]
 packages = ["src/ml_switcheroo_compiler"]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 exclude = ["ml-switcheroo-ir"]
 line-length = 300
 lint.select = ["E", "F", "UP", "B", "I", "C901", "PLR09", "D"]
-lint.ignore = ["B905", "UP007", "UP045", "B009", "B010"]
+lint.ignore = ["B905", "B009", "B010"]
 
 [tool.ruff.lint.pylint]
 max-args = 8
@@ -53,11 +53,24 @@ max-complexity = 10
 convention = "google"
 
 [tool.mypy]
+python_version = "3.10"
+plugins = ["pydantic.mypy"]
 strict = true
+disallow_any_explicit = true
+disallow_any_generics = true
 disallow_untyped_defs = true
-disallow_subclassing_any = false
+disallow_subclassing_any = true
 ignore_missing_imports = true
 warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
 
 
 [tool.coverage.run]
@@ -72,6 +85,10 @@ omit = [
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]
 omit = [
     "ml-switcheroo-ir/*",
     "tests/*",

@@ -1,9 +1,11 @@
 """Distributed execution and sharding primitives."""
 
+from __future__ import annotations
+
 import contextlib
+import typing
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
-from typing import Optional, cast
 
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
@@ -68,9 +70,9 @@ class ModelParallel(Distribution):
 
     def __init__(
         self,
-        device_mesh: Optional[DeviceMesh] = None,
-        layout_map: Optional[LayoutMap] = None,
-        batch_dim_name: Optional[str] = None,
+        device_mesh: DeviceMesh | None = None,
+        layout_map: LayoutMap | None = None,
+        batch_dim_name: str | None = None,
         *args: TensorOrScalar,
         **kwargs: AttrValue,
     ) -> None:
@@ -110,7 +112,7 @@ def TensorLayout(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
         TensorOrScalar: TensorLayoutClass instance.
     """
     axes = kwargs.get("axes", args[0] if args else ())
-    return cast(TensorOrScalar, TensorLayoutClass(axes))
+    return typing.cast(TensorOrScalar, TensorLayoutClass(axes))
 
 
 def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
@@ -146,14 +148,14 @@ def list_devices(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
     _ = (args, kwargs)
     from ml_switcheroo_compiler.core.device import get_physical_devices
 
-    return cast(TensorOrScalar, get_physical_devices())
+    return typing.cast(TensorOrScalar, get_physical_devices())
 
 
-_dist: Optional[Distribution] = None
-_DIST_STATE: dict[str, Optional[Distribution]] = {"dist": None}
+_dist: Distribution | None = None
+_DIST_STATE: dict[str, Distribution | None] = {"dist": None}
 
 
-def distribution(*args: TensorOrScalar, **kwargs: AttrValue) -> Optional[Distribution]:
+def distribution(*args: TensorOrScalar, **kwargs: AttrValue) -> Distribution | None:
     """Get the current distribution.
 
     Args:
@@ -195,7 +197,7 @@ def distribute_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrSca
     if config.eager_mode:
         return args[0] if args else kwargs.get("tensor")
 
-    return cast(TensorOrScalar, getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
+    return typing.cast(TensorOrScalar, getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
 
 
 __all__ = [

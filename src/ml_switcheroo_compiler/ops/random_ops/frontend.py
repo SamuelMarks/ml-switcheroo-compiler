@@ -1,5 +1,7 @@
 """Generate random ops frontend."""
 
+from __future__ import annotations
+
 import uuid
 
 from ml_switcheroo_ir import LogicalNode

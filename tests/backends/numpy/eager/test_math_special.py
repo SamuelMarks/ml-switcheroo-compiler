@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as ma
 import ml_switcheroo_compiler.backends.numpy.eager.math_special as ms
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -25,9 +25,9 @@ def test_math_advanced_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("n",):
-                cast("EagerCallableProtocol", args_to_pass.append)(1)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(1)
             else:
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -50,9 +50,9 @@ def test_math_special_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("n",):
-                cast("EagerCallableProtocol", args_to_pass.append)(1)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(1)
             else:
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -62,5 +62,5 @@ def test_math_special_coverage() -> None:
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
     ms._np_expint(np, np.array([1.0, 2.0]))
-    ms._np_expint(np, x=np.array([1.0, 2.0]), n=1)
+    typing.cast("EagerCallableProtocol", ms._np_expint)(np, x=np.array([1.0, 2.0]), n=1)
     assert callable(test_math_special_coverage)

@@ -349,7 +349,7 @@ def format_params_via_ecosystem(
     """
     clean_params: list[dict[str, AttributeValue]] = []
     for p in params:
-        if isinstance(p, dict) and p.get("name"):
+        if hasattr(p, "get") and p.get("name"):
             clean_params.append(
                 {
                     "name": p["name"],

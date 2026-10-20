@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -18,7 +18,7 @@ def test_autodiff_provider_parse_expression() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
     class DummyNode:
         """Test class DummyNode."""
@@ -36,62 +36,62 @@ def test_autodiff_provider_parse_expression() -> None:
         mock_emit.return_value = "res_id"
 
         # Test cotangent
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "$cotangent", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "$cotangent", node, cotangent="C")
         assert res == "C"
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "ZerosLike($x)", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "ZerosLike($x)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "ZerosLike"
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Mul($cotangent, 2)", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Mul($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Mul", "Multiply")
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Add(1, $cotangent)", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Add(1, $cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Add"
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Sub($cotangent, $in0)", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Sub($cotangent, $in0)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Sub", "Subtract")
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Div($in0, $cotangent)", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Div($in0, $cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Div", "TrueDivide")
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Neg($cotangent)", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Neg($cotangent)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] in ("Neg", "Negative")
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Pow($cotangent, 2)", node, cotangent="C")
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Pow($cotangent, 2)", node, cotangent="C")
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Pow"
 
         # Test tangents
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "$tangent[0]", node, tangents=["T0", "T1"])
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "$tangent[0]", node, tangents=["T0", "T1"])
         assert res == "T0"
 
         # Input
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "$input[1]", node)
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "$input[1]", node)
         assert res == "in1"
 
         # Nested Parens
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Func(Arg(1))", node)
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Func(Arg(1))", node)
         assert mock_emit.call_args[0][1] == "Func"
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "ReduceSum($in0)", node)
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "ReduceSum($in0)", node)
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "ReduceSum"
 
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Exp($in0)", node)
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Exp($in0)", node)
         assert res == "res_id"
         assert mock_emit.call_args[0][1] == "Exp"
 
         # Attributes
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "$attr", node)
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "$attr", node)
         assert res == "$attr"
 
         # Constants
-        res = cast("EagerCallableProtocol", _parse_expression)(graph, "Constant(1.5)", node)
+        res = typing.cast("EagerCallableProtocol", _parse_expression)(graph, "Constant(1.5)", node)
         assert res.startswith("cst_ad")
 
 
@@ -108,10 +108,10 @@ def test_get_vjp_from_data() -> None:
                     assert callable(vjp_fn)
 
         graph = IRGraph()
-        node = cast("EagerCallableProtocol", IRNode)("n1", "MyOp", ["in0", "in1"])
+        node = IRNode("n1", "MyOp", inputs=["in0", "in1"])
 
         with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression", return_value="parsed"):
-            res = cast("EagerCallableProtocol", vjp_fn)(graph, node, "C")
+            res = typing.cast("EagerCallableProtocol", vjp_fn)(graph, node, "C")
             assert len(res) == 2
             assert list(res) == ["parsed", "parsed"]
 
@@ -146,7 +146,7 @@ def test_get_jvp_from_data() -> None:
         assert callable(jvp_fn)
 
         graph = IRGraph()
-        node = cast("EagerCallableProtocol", IRNode)("n1", "MyOp", ["in0"])
+        node = IRNode("n1", "MyOp", inputs=["in0"])
 
         with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._parse_expression", return_value="parsed"):
             res = jvp_fn(graph, node, ["T0"])

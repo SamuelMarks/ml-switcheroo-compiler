@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -31,11 +31,9 @@ def decode_image(
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
-        from typing import cast
-
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast(
+        return typing.cast(
             Tensor,
             get_active_backend().execute_op(
                 "DecodeImage",
@@ -115,7 +113,7 @@ def decode_jpeg(
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_jpeg"):
-        return cast(Tensor, backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio))
+        return typing.cast(Tensor, backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio))
     return _decode_image_with_pil(contents, channels)
 
 
@@ -138,7 +136,7 @@ def decode_png(
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_png"):
-        return cast(Tensor, backend_cls.decode_png(contents, channels=channels, dtype=dtype))
+        return typing.cast(Tensor, backend_cls.decode_png(contents, channels=channels, dtype=dtype))
     return _decode_image_with_pil(contents, channels)
 
 
@@ -155,7 +153,7 @@ def decode_gif(contents: Tensor | bytes | str | None) -> Tensor:
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_gif"):
-        return cast(Tensor, backend_cls.decode_gif(contents))
+        return typing.cast(Tensor, backend_cls.decode_gif(contents))
     return _decode_image_with_pil(contents)
 
 
@@ -176,7 +174,7 @@ def decode_bmp(
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_bmp"):
-        return cast(Tensor, backend_cls.decode_bmp(contents, channels=channels))
+        return typing.cast(Tensor, backend_cls.decode_bmp(contents, channels=channels))
     return _decode_image_with_pil(contents, channels)
 
 

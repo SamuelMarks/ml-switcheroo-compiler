@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -40,5 +40,5 @@ def test_missing_optimizers_coverage() -> None:
         shape = (1,)
 
     with pytest.raises(TypeError):
-        cast("EagerCallableProtocol", ApplyRMSProp)().infer_shape(cast("EagerCallableProtocol", DummyShape)())
-    cast("EagerCallableProtocol", AdamaxHyperparamsOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)())
+        typing.cast("EagerCallableProtocol", ApplyRMSProp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)())
+    typing.cast("EagerCallableProtocol", AdamaxHyperparamsOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)())

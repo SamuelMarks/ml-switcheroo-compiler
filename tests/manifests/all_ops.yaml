@@ -1706,7 +1706,6 @@ all_ops:
 - SVD
 - SVDResult
 - SWIZZLE_32_4_4
-- Saddmm
 - Save
 - SaveGguf
 - SaveSafetensors
@@ -2999,7 +2998,6 @@ all_ops:
 - elastic_transform
 - elementwise
 - elementwise_affine
-- eliminate_deprecated_list_indexing
 - elu_
 - ema
 - embed_dim

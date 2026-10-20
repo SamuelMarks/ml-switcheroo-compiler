@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.image import ImageASTVisitor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -37,26 +37,26 @@ def test_image_mixin() -> None:
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert cast("EagerCallableProtocol", vis.visit_AdjustBrightness)(node, ["a"], delta=0.5) == "bk_adjust_brightness(a, 0.5)"
-    assert cast("EagerCallableProtocol", vis.visit_AdjustBrightness)(node, ["a"]) == "bk_adjust_brightness(a, 0.0)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustBrightness)(node, ["a"], delta=0.5) == "bk_adjust_brightness(a, 0.5)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustBrightness)(node, ["a"]) == "bk_adjust_brightness(a, 0.0)"
 
-    assert cast("EagerCallableProtocol", vis.visit_AdjustContrast)(node, ["a"], contrast_factor=2.0) == "bk_adjust_contrast(a, 2.0)"
-    assert cast("EagerCallableProtocol", vis.visit_AdjustContrast)(node, ["a"]) == "bk_adjust_contrast(a, 1.0)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustContrast)(node, ["a"], contrast_factor=2.0) == "bk_adjust_contrast(a, 2.0)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustContrast)(node, ["a"]) == "bk_adjust_contrast(a, 1.0)"
 
-    assert cast("EagerCallableProtocol", vis.visit_AdjustHue)(node, ["a"], delta=0.2) == "bk_adjust_hue(a, 0.2)"
-    assert cast("EagerCallableProtocol", vis.visit_AdjustHue)(node, ["a"]) == "bk_adjust_hue(a, 0.0)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustHue)(node, ["a"], delta=0.2) == "bk_adjust_hue(a, 0.2)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustHue)(node, ["a"]) == "bk_adjust_hue(a, 0.0)"
 
-    assert cast("EagerCallableProtocol", vis.visit_AdjustSaturation)(node, ["a"], saturation_factor=1.5) == "bk_adjust_saturation(a, 1.5)"
-    assert cast("EagerCallableProtocol", vis.visit_AdjustSaturation)(node, ["a"]) == "bk_adjust_saturation(a, 1.0)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustSaturation)(node, ["a"], saturation_factor=1.5) == "bk_adjust_saturation(a, 1.5)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AdjustSaturation)(node, ["a"]) == "bk_adjust_saturation(a, 1.0)"
 
-    assert cast("EagerCallableProtocol", vis.visit_AffineGenerator)(node, ["a"], batch_size=2) == "bk_affine_generator(2, a)"
-    assert cast("EagerCallableProtocol", vis.visit_AffineGenerator)(node, ["a"]) == "bk_affine_generator(1, a)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AffineGenerator)(node, ["a"], batch_size=2) == "bk_affine_generator(2, a)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AffineGenerator)(node, ["a"]) == "bk_affine_generator(1, a)"
 
-    assert cast("EagerCallableProtocol", vis.visit_AffineGrid)(node, ["a"], size=(1, 2), align_corners=True) == "bk_affine_grid(a, size=(1, 2), align_corners=True)"
-    assert cast("EagerCallableProtocol", vis.visit_AffineGrid)(node, ["a"]) == "bk_affine_grid(a, size=(), align_corners=False)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AffineGrid)(node, ["a"], size=(1, 2), align_corners=True) == "bk_affine_grid(a, size=(1, 2), align_corners=True)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AffineGrid)(node, ["a"]) == "bk_affine_grid(a, size=(), align_corners=False)"
 
-    assert cast("EagerCallableProtocol", vis.visit_AffineTransform)(node, ["a", "b"], interpolation="bilinear") == "bk_affine_transform(a, b, interpolation='bilinear')"
-    assert cast("EagerCallableProtocol", vis.visit_AffineTransform)(node, ["a", "b"]) == "bk_affine_transform(a, b, interpolation='nearest')"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AffineTransform)(node, ["a", "b"], interpolation="bilinear") == "bk_affine_transform(a, b, interpolation='bilinear')"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AffineTransform)(node, ["a", "b"]) == "bk_affine_transform(a, b, interpolation='nearest')"
 
-    assert cast("EagerCallableProtocol", vis.visit_AugMix)(node, ["a"]) == "bk_augmix(a)"
-    assert cast("EagerCallableProtocol", vis.visit_AutoContrast)(node, ["a"]) == "bk_auto_contrast(a)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AugMix)(node, ["a"]) == "bk_augmix(a)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AutoContrast)(node, ["a"]) == "bk_auto_contrast(a)"

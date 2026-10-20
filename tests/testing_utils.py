@@ -1,5 +1,7 @@
 """Shared utilities for tests."""
 
+from __future__ import annotations
+
 
 class DummyDimSpecs:
     """Dummy dimension specifications for convolution tests."""

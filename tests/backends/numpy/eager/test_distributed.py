@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_np_distributed_context
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -29,7 +30,7 @@ def test_np_all_reduce_threads() -> None:
         Args:
             ctx: Test parameter `ctx`.
         """
-        cast("EagerTensorProtocol", getattr(ctx, "initialize"))()
+        typing.cast("EagerTensorProtocol", getattr(ctx, "initialize"))()
 
     t1 = threading.Thread(target=init_ctx, args=(ctx1,))
     t2 = threading.Thread(target=init_ctx, args=(ctx2,))
@@ -51,18 +52,18 @@ def test_np_all_reduce_threads() -> None:
             tensor: Test parameter `tensor`.
             op: Test parameter `op`.
         """
-        return cast("EagerTensorProtocol", getattr(ctx, "all_reduce_ring"))(tensor, op, np)
+        return typing.cast("EagerTensorProtocol", getattr(ctx, "all_reduce_ring"))(tensor, op, np)
 
     import concurrent.futures
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        f1 = cast("EagerCallableProtocol", executor.submit)(run_all_reduce, ctx1, arr, "sum")
-        f2 = cast("EagerCallableProtocol", executor.submit)(run_all_reduce, ctx2, arr, "sum")
+        f1 = typing.cast("EagerCallableProtocol", executor.submit)(run_all_reduce, ctx1, arr, "sum")
+        f2 = typing.cast("EagerCallableProtocol", executor.submit)(run_all_reduce, ctx2, arr, "sum")
         res1 = f1.result()
         res2 = f2.result()
 
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res1, cast("EagerCallableProtocol", np.array)([2, 4]))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, cast("EagerCallableProtocol", np.array)([2, 4]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res1, typing.cast("EagerCallableProtocol", np.array)([2, 4]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, typing.cast("EagerCallableProtocol", np.array)([2, 4]))
 
     ctx1.shutdown()
     ctx2.shutdown()
@@ -107,7 +108,7 @@ def test_all_gather_np_coverage9() -> None:
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerTensorProtocol", getattr(tensors, "__getitem__")(0))
+                return typing.cast("EagerTensorProtocol", getattr(tensors, "__getitem__")(0))
 
         class minimum:
             """Test class minimum."""
@@ -119,7 +120,7 @@ def test_all_gather_np_coverage9() -> None:
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerTensorProtocol", getattr(tensors, "__getitem__")(0))
+                return typing.cast("EagerTensorProtocol", getattr(tensors, "__getitem__")(0))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -129,7 +130,7 @@ def test_all_gather_np_coverage9() -> None:
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", [arr]) * cast("EagerTensorProtocol", indices)
+            return typing.cast("EagerTensorProtocol", [arr]) * typing.cast("EagerTensorProtocol", indices)
 
         def concatenate(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function concatenate.
@@ -138,7 +139,7 @@ def test_all_gather_np_coverage9() -> None:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
+            return typing.cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.
@@ -152,39 +153,39 @@ def test_all_gather_np_coverage9() -> None:
     import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
 
     # Try with list of lists to bypass item
-    res = dmod._np_all_reduce(MockNP(), [2.0], op_type="sum")
+    res = dmod._np_all_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="sum")
 
-    res = dmod._np_all_reduce(MockNP(), [2.0], op_type="prod")
+    res = dmod._np_all_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="prod")
 
-    res = dmod._np_all_reduce(MockNP(), [2.0], op_type="max")
+    res = dmod._np_all_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="max")
 
-    res = dmod._np_all_reduce(MockNP(), [2.0], op_type="min")
+    res = dmod._np_all_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="min")
 
-    res = dmod._np_all_reduce(MockNP(), [2.0], op_type="unknown")
+    res = dmod._np_all_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="unknown")
 
-    res = dmod._np_reduce_scatter(MockNP(), [2.0], op_type="sum", axis=0)
-    res = dmod._np_reduce_scatter(MockNP(), [2.0], op_type="prod", axis=0)
-    res = dmod._np_reduce_scatter(MockNP(), [2.0], op_type="max", axis=0)
-    res = dmod._np_reduce_scatter(MockNP(), [2.0], op_type="min", axis=0)
-    res = dmod._np_reduce_scatter(MockNP(), [2.0], op_type="unknown", axis=0)
+    res = dmod._np_reduce_scatter(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="sum", axis=0)
+    res = dmod._np_reduce_scatter(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="prod", axis=0)
+    res = dmod._np_reduce_scatter(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="max", axis=0)
+    res = dmod._np_reduce_scatter(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="min", axis=0)
+    res = dmod._np_reduce_scatter(typing.cast("BackendModuleProtocol", MockNP()), [2.0], op_type="unknown", axis=0)
 
-    res = dmod._np_reduce(MockNP(), [2.0], root_rank=0, op_type="sum")
-    res = dmod._np_reduce(MockNP(), [2.0], root_rank=0, op_type="prod")
-    res = dmod._np_reduce(MockNP(), [2.0], root_rank=0, op_type="max")
-    res = dmod._np_reduce(MockNP(), [2.0], root_rank=0, op_type="min")
-    res = dmod._np_reduce(MockNP(), [2.0], root_rank=0, op_type="unknown")
+    res = dmod._np_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], root_rank=0, op_type="sum")
+    res = dmod._np_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], root_rank=0, op_type="prod")
+    res = dmod._np_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], root_rank=0, op_type="max")
+    res = dmod._np_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], root_rank=0, op_type="min")
+    res = dmod._np_reduce(typing.cast("BackendModuleProtocol", MockNP()), [2.0], root_rank=0, op_type="unknown")
 
     _tcp_dist_ctx.world_size = 1
-    dmod._np_all_gather(MockNP(), [2.0], axis=0)
-    dmod._np_all_gather(MockNP(), [2.0], axis=None)
+    dmod._np_all_gather(typing.cast("BackendModuleProtocol", MockNP()), [2.0], axis=0)
+    dmod._np_all_gather(typing.cast("BackendModuleProtocol", MockNP()), [2.0], axis=None)
 
-    dmod._np_all_to_all(MockNP(), [2.0])
+    dmod._np_all_to_all(typing.cast("BackendModuleProtocol", MockNP()), [2.0])
 
     _tcp_dist_ctx.world_size = 2
-    dmod._np_all_gather(MockNP(), [2.0], axis=0)
-    dmod._np_all_to_all(MockNP(), [2.0])
+    dmod._np_all_gather(typing.cast("BackendModuleProtocol", MockNP()), [2.0], axis=0)
+    dmod._np_all_to_all(typing.cast("BackendModuleProtocol", MockNP()), [2.0])
 
-    dmod._np_shard_tensor(MockNP(), [2.0])
+    dmod._np_shard_tensor(typing.cast("BackendModuleProtocol", MockNP()), [2.0])
     assert res is not None
 
 
@@ -227,7 +228,7 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) + cast("EagerTensorProtocol", getattr(other, "val", other))))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) + typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
 
         def __radd__(self, other: EagerValue) -> EagerValue:
             """Test function __radd__.
@@ -236,8 +237,8 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
                 other: Test parameter `other`.
             """
             if other == 0:
-                return cast("EagerTensorProtocol", self)
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) + cast("EagerTensorProtocol", getattr(other, "val", other))))
+                return typing.cast("EagerTensorProtocol", self)
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) + typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -246,12 +247,12 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
                 other: Test parameter `other`.
             """
             if hasattr(other, "val"):
-                return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) * cast("EagerTensorProtocol", getattr(other, "val", other))))
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) * cast("EagerTensorProtocol", other)))
+                return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) * typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) * typing.cast("EagerTensorProtocol", other)))
 
         def copy(self) -> EagerValue:
             """Test function copy."""
-            return cast("EagerTensorProtocol", ArrayMock(self.val))
+            return typing.cast("EagerTensorProtocol", ArrayMock(self.val))
 
     getattr(_state, "update")({"ArrayMock": ArrayMock})
     _state.update(locals())
@@ -307,7 +308,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerCallableProtocol", ArrayMock)(cast("EagerCallableProtocol", max)([cast("EagerTensorProtocol", getattr(x, "val")) for x in cast("EagerTensorProtocol", tensors)]))
+                return typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerCallableProtocol", max)([typing.cast("EagerTensorProtocol", getattr(x, "val")) for x in typing.cast("EagerTensorProtocol", tensors)]))
 
         class minimum:
             """Test class minimum."""
@@ -319,7 +320,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerCallableProtocol", ArrayMock)(cast("EagerCallableProtocol", min)([cast("EagerTensorProtocol", getattr(x, "val")) for x in cast("EagerTensorProtocol", tensors)]))
+                return typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerCallableProtocol", min)([typing.cast("EagerTensorProtocol", getattr(x, "val")) for x in typing.cast("EagerTensorProtocol", tensors)]))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -329,7 +330,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", [cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", getattr(arr, "val")) / cast("EagerTensorProtocol", indices))]) * cast("EagerTensorProtocol", indices)
+            return typing.cast("EagerTensorProtocol", [typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", getattr(arr, "val")) / typing.cast("EagerTensorProtocol", indices))]) * typing.cast("EagerTensorProtocol", indices)
 
         def concatenate(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function concatenate.
@@ -338,7 +339,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
+            return typing.cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.
@@ -462,7 +463,7 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) + cast("EagerTensorProtocol", getattr(other, "val", other))))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) + typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
 
         def __radd__(self, other: EagerValue) -> EagerValue:
             """Test function __radd__.
@@ -471,8 +472,8 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
                 other: Test parameter `other`.
             """
             if other == 0:
-                return cast("EagerTensorProtocol", self)
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) + cast("EagerTensorProtocol", getattr(other, "val", other))))
+                return typing.cast("EagerTensorProtocol", self)
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) + typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -481,12 +482,12 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
                 other: Test parameter `other`.
             """
             if hasattr(other, "val"):
-                return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) * cast("EagerTensorProtocol", getattr(other, "val", other))))
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) * cast("EagerTensorProtocol", other)))
+                return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) * typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) * typing.cast("EagerTensorProtocol", other)))
 
         def copy(self) -> EagerValue:
             """Test function copy."""
-            return cast("EagerTensorProtocol", ArrayMock(self.val))
+            return typing.cast("EagerTensorProtocol", ArrayMock(self.val))
 
     getattr(_state, "update")({"ArrayMock": ArrayMock})
     _state.update(locals())
@@ -542,7 +543,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerCallableProtocol", ArrayMock)(cast("EagerCallableProtocol", max)([cast("EagerTensorProtocol", getattr(x, "val")) for x in cast("EagerTensorProtocol", tensors)]))
+                return typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerCallableProtocol", max)([typing.cast("EagerTensorProtocol", getattr(x, "val")) for x in typing.cast("EagerTensorProtocol", tensors)]))
 
         class minimum:
             """Test class minimum."""
@@ -554,7 +555,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerCallableProtocol", ArrayMock)(cast("EagerCallableProtocol", min)([cast("EagerTensorProtocol", getattr(x, "val")) for x in cast("EagerTensorProtocol", tensors)]))
+                return typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerCallableProtocol", min)([typing.cast("EagerTensorProtocol", getattr(x, "val")) for x in typing.cast("EagerTensorProtocol", tensors)]))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -564,7 +565,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", [cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", getattr(arr, "val")) / cast("EagerTensorProtocol", indices))]) * cast("EagerTensorProtocol", indices)
+            return typing.cast("EagerTensorProtocol", [typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", getattr(arr, "val")) / typing.cast("EagerTensorProtocol", indices))]) * typing.cast("EagerTensorProtocol", indices)
 
         def concatenate(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function concatenate.
@@ -573,7 +574,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
+            return typing.cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.
@@ -693,7 +694,7 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) + cast("EagerTensorProtocol", getattr(other, "val", other))))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) + typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
 
         def __radd__(self, other: EagerValue) -> EagerValue:
             """Test function __radd__.
@@ -702,8 +703,8 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
                 other: Test parameter `other`.
             """
             if other == 0:
-                return cast("EagerTensorProtocol", self)
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) + cast("EagerTensorProtocol", getattr(other, "val", other))))
+                return typing.cast("EagerTensorProtocol", self)
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) + typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -712,12 +713,12 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
                 other: Test parameter `other`.
             """
             if hasattr(other, "val"):
-                return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) * cast("EagerTensorProtocol", getattr(other, "val", other))))
-            return cast("EagerValue", cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", self.val) * cast("EagerTensorProtocol", other)))
+                return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) * typing.cast("EagerTensorProtocol", getattr(other, "val", other))))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", self.val) * typing.cast("EagerTensorProtocol", other)))
 
         def copy(self) -> EagerValue:
             """Test function copy."""
-            return cast("EagerTensorProtocol", ArrayMock(self.val))
+            return typing.cast("EagerTensorProtocol", ArrayMock(self.val))
 
     getattr(_state, "update")({"ArrayMock": ArrayMock})
     _state.update(locals())
@@ -773,7 +774,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerCallableProtocol", ArrayMock)(cast("EagerCallableProtocol", max)([cast("EagerTensorProtocol", getattr(x, "val")) for x in cast("EagerTensorProtocol", tensors)]))
+                return typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerCallableProtocol", max)([typing.cast("EagerTensorProtocol", getattr(x, "val")) for x in typing.cast("EagerTensorProtocol", tensors)]))
 
         class minimum:
             """Test class minimum."""
@@ -785,7 +786,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return cast("EagerCallableProtocol", ArrayMock)(cast("EagerCallableProtocol", min)([cast("EagerTensorProtocol", getattr(x, "val")) for x in cast("EagerTensorProtocol", tensors)]))
+                return typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerCallableProtocol", min)([typing.cast("EagerTensorProtocol", getattr(x, "val")) for x in typing.cast("EagerTensorProtocol", tensors)]))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -795,7 +796,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", [cast("EagerCallableProtocol", ArrayMock)(cast("EagerTensorProtocol", getattr(arr, "val")) / cast("EagerTensorProtocol", indices))]) * cast("EagerTensorProtocol", indices)
+            return typing.cast("EagerTensorProtocol", [typing.cast("EagerCallableProtocol", ArrayMock)(typing.cast("EagerTensorProtocol", getattr(arr, "val")) / typing.cast("EagerTensorProtocol", indices))]) * typing.cast("EagerTensorProtocol", indices)
 
         def concatenate(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function concatenate.
@@ -804,7 +805,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
+            return typing.cast("EagerTensorProtocol", getattr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.

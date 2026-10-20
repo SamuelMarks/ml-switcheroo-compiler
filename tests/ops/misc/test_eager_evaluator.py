@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.eager_evaluator import BackendExecuteOpStrategy, CustomEagerEvalStrategy, EagerEvaluator, EvaluationContext
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -44,14 +44,14 @@ def test_eager_evaluator() -> None:
             """
             return op
 
-    ctx1 = cast("EagerCallableProtocol", EvaluationContext)(DummyOpEager, "Op1", [], {}, cast("EagerCallableProtocol", DummyBackend)())
-    assert cast("EagerCallableProtocol", CustomEagerEvalStrategy)().evaluate(ctx1) == "custom_eager"
+    ctx1 = typing.cast("EagerCallableProtocol", EvaluationContext)(DummyOpEager, "Op1", [], {}, typing.cast("EagerCallableProtocol", DummyBackend)())
+    assert typing.cast("EagerCallableProtocol", CustomEagerEvalStrategy)().evaluate(ctx1) == "custom_eager"
 
-    ctx2 = cast("EagerCallableProtocol", EvaluationContext)(DummyOpBackend, "Op2", [], {}, cast("EagerCallableProtocol", DummyBackend)())
-    assert cast("EagerCallableProtocol", BackendExecuteOpStrategy)().evaluate(ctx2) == "Op2"
+    ctx2 = typing.cast("EagerCallableProtocol", EvaluationContext)(DummyOpBackend, "Op2", [], {}, typing.cast("EagerCallableProtocol", DummyBackend)())
+    assert typing.cast("EagerCallableProtocol", BackendExecuteOpStrategy)().evaluate(ctx2) == "Op2"
 
-    assert isinstance(cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(cast("EagerCallableProtocol", DummyOpEager)()), CustomEagerEvalStrategy)
-    assert isinstance(cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(cast("EagerCallableProtocol", DummyOpBackend)()), BackendExecuteOpStrategy)
+    assert isinstance(typing.cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(typing.cast("EagerCallableProtocol", DummyOpEager)()), CustomEagerEvalStrategy)
+    assert isinstance(typing.cast("EagerCallableProtocol", EagerEvaluator._get_strategy)(typing.cast("EagerCallableProtocol", DummyOpBackend)()), BackendExecuteOpStrategy)
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 

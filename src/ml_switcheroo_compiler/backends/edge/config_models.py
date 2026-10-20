@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+import typing
 
 from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -38,8 +38,8 @@ class StorageBufferBindingConfig(BaseModel):
 
     group: int = 0
     binding: int = 0
-    access: Literal["read", "read_write", "write"] = "read"
-    dtype: Literal["f32", "i32", "u32"] = "f32"
+    access: typing.Literal["read", "read_write", "write"] = "read"
+    dtype: typing.Literal["f32", "i32", "u32"] = "f32"
 
 
 class UniformBlockConfig(BaseModel):
@@ -201,10 +201,10 @@ class WebglTexturePackingConfig(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    internal_format: Literal["R32F", "RGBA32F"] = "R32F"
-    format: Literal["RED", "RGBA"] = "RED"
-    type: Literal["FLOAT", "HALF_FLOAT"] = "FLOAT"
-    attachment: Literal["COLOR_ATTACHMENT0", "COLOR_ATTACHMENT1"] = "COLOR_ATTACHMENT0"
+    internal_format: typing.Literal["R32F", "RGBA32F"] = "R32F"
+    format: typing.Literal["RED", "RGBA"] = "RED"
+    type: typing.Literal["FLOAT", "HALF_FLOAT"] = "FLOAT"
+    attachment: typing.Literal["COLOR_ATTACHMENT0", "COLOR_ATTACHMENT1"] = "COLOR_ATTACHMENT0"
     viewport_width: int = Field(default=32, ge=1, le=16384)
     viewport_height: int = Field(default=32, ge=1, le=16384)
     channels: int = Field(default=1, ge=1, le=4)

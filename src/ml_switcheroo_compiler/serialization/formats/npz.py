@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
@@ -27,7 +27,7 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         backend = registry.get_active_backend()
         if hasattr(backend, "load_npz"):
             try:
-                return cast("dict[str, TensorLike]", backend.load_npz(filepath))
+                return typing.cast("dict[str, TensorLike]", backend.load_npz(filepath))
             except Exception as e:
                 import warnings
 
@@ -52,5 +52,4 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
             backend.save_npz(weights_np, filepath)
             return
         np_mod = registry.BackendRegistry.get("numpy").get_module()
-        if isinstance(weights_np, dict):
-            np_mod.savez(filepath, **weights_np)
+        np_mod.savez(filepath, **typing.cast("dict[str, TensorOrScalar]", weights_np))

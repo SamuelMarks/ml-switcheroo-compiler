@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.distributed.layout_map import LayoutMap, ShardingSpec
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -23,7 +23,7 @@ def test_sharding_spec() -> None:
 
     s3 = ShardingSpec("mesh", ["y", None])
     assert s != s3
-    assert cast("EagerTensorProtocol", s) != cast("EagerTensorProtocol", "string")
+    assert typing.cast("EagerTensorProtocol", s) != typing.cast("EagerTensorProtocol", "string")
 
     assert repr(s) == "ShardingSpec(mesh=mesh, mapping=('x', None))"
 

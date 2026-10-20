@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+from ml_switcheroo_ir import NodeDict
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -26,11 +28,11 @@ def test_strategy_exhaustive_extra() -> None:
     with patch("os.path.exists", return_value=True):
         with patch("builtins.open", mock_open(read_data=yaml.dump({"strategies": {"test": "val"}}))):
             res = _load_strategy_config()
-            assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", {"test": "val"})
+            assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", {"test": "val"})
 
         with patch("builtins.open", mock_open(read_data=yaml.dump({"test2": "val2"}))):
-            res2 = cast("EagerTensorProtocol", _load_webrtc_topology())
-            assert res2 == cast("EagerTensorProtocol", {"test2": "val2"})
+            res2 = typing.cast("EagerTensorProtocol", _load_webrtc_topology())
+            assert res2 == typing.cast("EagerTensorProtocol", {"test2": "val2"})
 
     # Test PS Hooks
     ps = ParameterServerStrategy()
@@ -65,7 +67,7 @@ def test_strategy_exhaustive_extra() -> None:
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Constant")
     n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])
-    g.nodes = {"n1": n1, "n2": n2}
+    g.nodes = NodeDict({"n1": n1, "n2": n2})
 
     ps = ParameterServerStrategy()
     ps.pull_weights(g)

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import pytest
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -18,7 +18,7 @@ class Dummy:
 
     def __iter__(self) -> EagerValue:
         """Test function __iter__."""
-        return cast("EagerTensorProtocol", iter(self.shape))
+        return typing.cast("EagerTensorProtocol", iter(self.shape))
 
 
 def test_shape_misc_stubs() -> None:
@@ -143,8 +143,8 @@ def test_broadcast_to_empty_shape() -> None:
 
     op = BroadcastTo()
     assert op.infer_shape() == ()
-    assert cast("EagerCallableProtocol", op.infer_shape)(42) == ()
-    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", NoShape)()) == ()
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(42) == ()
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", NoShape)()) == ()
     assert op.infer_shape(shape=(5, 5)) == (5, 5)
 
 

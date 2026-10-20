@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable
-from typing import TYPE_CHECKING, TypeVar
+import typing
+from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
@@ -14,24 +14,23 @@ from ml_switcheroo_compiler.core.mixins import (
     TensorLogicalMixin,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.shape import TensorOrScalar
-    from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.tracing.state import global_tracing_state as global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
 
-T = TypeVar("T", bound="ProxyTensor")
+T = typing.TypeVar("T", bound="ProxyTensor")
 
 
 _TRACE_COUNTS: dict[int, int] = {}
 
 
-def get_trace_count(func: Callable[..., Tensor | tuple[Tensor, ...]]) -> int:
+def get_trace_count(func: TensorOrScalar) -> int:
     """Return the number of times the function has been traced.
 
     Args:
-        func (Callable[..., Tensor | tuple[Tensor, ...]]): The function to check.
+        func (TensorOrScalar): The function to check.
 
     Returns:
         int: The number of times the function has been traced.
@@ -39,20 +38,20 @@ def get_trace_count(func: Callable[..., Tensor | tuple[Tensor, ...]]) -> int:
     return _TRACE_COUNTS.get(id(func), 0)
 
 
-def increment_trace_count(func: Callable[..., Tensor | tuple[Tensor, ...]]) -> None:
+def increment_trace_count(func: TensorOrScalar) -> None:
     """Increment the trace count for the given function.
 
     Args:
-        func (Callable[..., Tensor | tuple[Tensor, ...]]): The function to increment the trace count for.
+        func (TensorOrScalar): The function to increment the trace count for.
     """
     _TRACE_COUNTS[id(func)] = get_trace_count(func) + 1
 
 
-def reset_trace_count(func: Callable[..., Tensor | tuple[Tensor, ...]]) -> None:
+def reset_trace_count(func: TensorOrScalar) -> None:
     """Reset the trace count for the given function.
 
     Args:
-        func (Callable[..., Tensor | tuple[Tensor, ...]]): The function to reset the trace count for.
+        func (TensorOrScalar): The function to reset the trace count for.
     """
     if id(func) in _TRACE_COUNTS:
         del _TRACE_COUNTS[id(func)]
@@ -112,7 +111,7 @@ class ProxyTensor(ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseM
     def __init__(
         self,
         id: str,
-        shape: tuple[int | str, ...],
+        shape: Sequence[int | str],
         dtype: str = "float32",
         sparsity: dict[str, str | int | float | bool] | None = None,
     ) -> None:
@@ -120,12 +119,12 @@ class ProxyTensor(ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseM
 
         Args:
             id (str): Node ID producing this tensor.
-            shape (tuple[int | str, ...]): Tensor shape.
+            shape (Sequence[int | str]): Tensor shape.
             dtype (str, optional): Tensor data type. Defaults to "float32".
             sparsity (dict[str, str | int | float | bool] | None, optional): Sparsity pattern metadata. Defaults to None.
         """
         self.id = id
-        self.shape = shape
+        self.shape = tuple(shape)
         self.dtype = dtype
         self.sparsity = sparsity
 
@@ -135,6 +134,8 @@ class ProxyTensor(ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseM
                 if self.id not in active_g.nodes and self.id not in active_g.inputs:
                     active_g.inputs.append(self.id)
                     if hasattr(active_g, "input_specs"):
+                        from ml_switcheroo_ir.types import DType as IRDType
                         from ml_switcheroo_ir.types import TensorSpec
 
-                        active_g.input_specs[self.id] = TensorSpec(shape=self.shape, dtype=self.dtype)
+                        ir_dt: IRDType | str = IRDType(self.dtype) if self.dtype in IRDType._value2member_map_ else str(self.dtype)
+                        active_g.input_specs[self.id] = TensorSpec(shape=self.shape, dtype=ir_dt)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -10,7 +10,7 @@ import numpy as np
 import ml_switcheroo_compiler.ops.linalg.matrix_ops as mod
 from ml_switcheroo_compiler.core.config import config
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -24,7 +24,7 @@ class DummyTensor:
             shape: Test parameter `shape`.
         """
         self.shape = shape
-        self.data = cast("EagerCallableProtocol", np.zeros)(shape)
+        self.data = typing.cast("EagerCallableProtocol", np.zeros)(shape)
         self.dtype = "float32"
         self.device = None
 
@@ -45,38 +45,38 @@ def test_matrix_ops_tracing(mock_emit: EagerTensorProtocol) -> None:
     global_tracing_state.active_graph = IRGraph()
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
-    cast("EagerCallableProtocol", mod.band_part)(a, 1, 1)
-    cast("EagerCallableProtocol", mod.diag)(a, 0)
-    cast("EagerCallableProtocol", mod.cross)(a, b)
-    cast("EagerCallableProtocol", mod.cross)(a, b, axes={"axis": 0})
+    typing.cast("EagerCallableProtocol", mod.band_part)(a, 1, 1)
+    typing.cast("EagerCallableProtocol", mod.diag)(a, 0)
+    typing.cast("EagerCallableProtocol", mod.cross)(a, b)
+    typing.cast("EagerCallableProtocol", mod.cross)(a, b, axes={"axis": 0})
     with patch("ml_switcheroo_compiler.ops.linalg.products.Trace.infer_shape", return_value=(2,)):
-        cast("EagerCallableProtocol", mod.trace)(a)
+        typing.cast("EagerCallableProtocol", mod.trace)(a)
     with patch("ml_switcheroo_compiler.ops.linalg.products.MatrixRank.infer_shape", return_value=(1,)):
-        cast("EagerCallableProtocol", mod.matrix_rank)(a)
+        typing.cast("EagerCallableProtocol", mod.matrix_rank)(a)
     with patch("ml_switcheroo_compiler.ops.linalg.products.MatrixTranspose.infer_shape", return_value=(2, 2)):
-        cast("EagerCallableProtocol", mod.matrix_transpose)(a)
+        typing.cast("EagerCallableProtocol", mod.matrix_transpose)(a)
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.Sqrtm.infer_shape", return_value=(2, 2)):
-        cast("EagerCallableProtocol", mod.sqrtm)(a)
-    cast("EagerCallableProtocol", mod.tensor_diag)(a)
-    cast("EagerCallableProtocol", mod.tensor_diag_part)(a)
-    cast("EagerCallableProtocol", mod.diag_part)(a)
+        typing.cast("EagerCallableProtocol", mod.sqrtm)(a)
+    typing.cast("EagerCallableProtocol", mod.tensor_diag)(a)
+    typing.cast("EagerCallableProtocol", mod.tensor_diag_part)(a)
+    typing.cast("EagerCallableProtocol", mod.diag_part)(a)
     with patch("ml_switcheroo_compiler.ops.linalg.products.Adjoint.infer_shape", return_value=(2, 2)):
-        cast("EagerCallableProtocol", mod.adjoint)(a)
+        typing.cast("EagerCallableProtocol", mod.adjoint)(a)
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.EighTridiagonal.infer_shape", return_value=(2,)):
-        cast("EagerCallableProtocol", mod.eigh_tridiagonal)(a, b)
-    cast("EagerCallableProtocol", mod.expm)(a)
-    cast("EagerCallableProtocol", mod.global_norm)([a])
+        typing.cast("EagerCallableProtocol", mod.eigh_tridiagonal)(a, b)
+    typing.cast("EagerCallableProtocol", mod.expm)(a)
+    typing.cast("EagerCallableProtocol", mod.global_norm)([a])
     mod.global_norm([])
-    cast("EagerCallableProtocol", mod.logdet)(a)
-    cast("EagerCallableProtocol", mod.logm)(a)
-    cast("EagerCallableProtocol", mod.normalize)(a)
-    cast("EagerCallableProtocol", mod.set_diag)(a, b)
-    cast("EagerCallableProtocol", mod.tridiagonal_matmul)(a, a, a, a)
-    cast("EagerCallableProtocol", mod.matrix_norm)(a)
-    cast("EagerCallableProtocol", mod.vector_norm)(a)
-    cast("EagerCallableProtocol", mod.svdvals)(a)
-    cast("EagerCallableProtocol", mod.diagonal)(a)
-    cast("EagerCallableProtocol", mod.cond)(a)
+    typing.cast("EagerCallableProtocol", mod.logdet)(a)
+    typing.cast("EagerCallableProtocol", mod.logm)(a)
+    typing.cast("EagerCallableProtocol", mod.normalize)(a)
+    typing.cast("EagerCallableProtocol", mod.set_diag)(a, b)
+    typing.cast("EagerCallableProtocol", mod.tridiagonal_matmul)(a, a, a, a)
+    typing.cast("EagerCallableProtocol", mod.matrix_norm)(a)
+    typing.cast("EagerCallableProtocol", mod.vector_norm)(a)
+    typing.cast("EagerCallableProtocol", mod.svdvals)(a)
+    typing.cast("EagerCallableProtocol", mod.diagonal)(a)
+    typing.cast("EagerCallableProtocol", mod.cond)(a)
     assert callable(test_matrix_ops_tracing)
 
 
@@ -95,24 +95,24 @@ def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
     setattr(mock_get_backend, "return_value", mock_backend)
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
-    cast("EagerCallableProtocol", mod.band_part)(a, 1, 1)
-    cast("EagerCallableProtocol", mod.diag)(a, 0)
-    cast("EagerCallableProtocol", mod.cross)(a, b)
-    cast("EagerCallableProtocol", mod.trace)(a)
-    cast("EagerCallableProtocol", mod.matrix_rank)(a)
-    cast("EagerCallableProtocol", mod.matrix_transpose)(a)
-    cast("EagerCallableProtocol", mod.sqrtm)(a)
-    cast("EagerCallableProtocol", mod.tensor_diag)(a)
-    cast("EagerCallableProtocol", mod.tensor_diag_part)(a)
-    cast("EagerCallableProtocol", mod.diag_part)(a)
-    cast("EagerCallableProtocol", mod.adjoint)(a)
-    cast("EagerCallableProtocol", mod.eigh_tridiagonal)(a, b)
-    cast("EagerCallableProtocol", mod.tridiagonal_matmul)(a, a, a, a)
-    cast("EagerCallableProtocol", mod.matrix_norm)(a)
-    cast("EagerCallableProtocol", mod.vector_norm)(a)
-    cast("EagerCallableProtocol", mod.svdvals)(a)
-    cast("EagerCallableProtocol", mod.diagonal)(a)
-    cast("EagerCallableProtocol", mod.cond)(a)
+    typing.cast("EagerCallableProtocol", mod.band_part)(a, 1, 1)
+    typing.cast("EagerCallableProtocol", mod.diag)(a, 0)
+    typing.cast("EagerCallableProtocol", mod.cross)(a, b)
+    typing.cast("EagerCallableProtocol", mod.trace)(a)
+    typing.cast("EagerCallableProtocol", mod.matrix_rank)(a)
+    typing.cast("EagerCallableProtocol", mod.matrix_transpose)(a)
+    typing.cast("EagerCallableProtocol", mod.sqrtm)(a)
+    typing.cast("EagerCallableProtocol", mod.tensor_diag)(a)
+    typing.cast("EagerCallableProtocol", mod.tensor_diag_part)(a)
+    typing.cast("EagerCallableProtocol", mod.diag_part)(a)
+    typing.cast("EagerCallableProtocol", mod.adjoint)(a)
+    typing.cast("EagerCallableProtocol", mod.eigh_tridiagonal)(a, b)
+    typing.cast("EagerCallableProtocol", mod.tridiagonal_matmul)(a, a, a, a)
+    typing.cast("EagerCallableProtocol", mod.matrix_norm)(a)
+    typing.cast("EagerCallableProtocol", mod.vector_norm)(a)
+    typing.cast("EagerCallableProtocol", mod.svdvals)(a)
+    typing.cast("EagerCallableProtocol", mod.diagonal)(a)
+    typing.cast("EagerCallableProtocol", mod.cond)(a)
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -126,9 +126,9 @@ def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
 def test_matrix_ops_opdefs() -> None:
     """Test function test_matrix_ops_opdefs."""
     op1 = mod.Svdvals()
-    assert cast("EagerCallableProtocol", op1.infer_shape)(cast("EagerCallableProtocol", DummyTensor)((2, 3))) == (2,)
-    assert cast("EagerCallableProtocol", op1.infer_shape)(cast("EagerCallableProtocol", DummyTensor)((3,))) == (3,)
+    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 3))) == (2,)
+    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((3,))) == (3,)
     op2 = mod.TridiagonalMatmul()
-    assert cast("EagerCallableProtocol", op2.infer_shape)(None, None, None, cast("EagerCallableProtocol", DummyTensor)((2, 2))) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(None, None, None, typing.cast("EagerCallableProtocol", DummyTensor)((2, 2))) == (2, 2)
     op3 = mod.Cond()
     assert op3.infer_shape() == ()

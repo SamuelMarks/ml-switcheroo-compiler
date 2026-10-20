@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import importlib
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import pytest
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 backends_to_test = {
@@ -43,7 +43,7 @@ def test_backend_import_error(backend: EagerTensorProtocol, error_msg: EagerTens
             if "sphinx" in sys.modules:
                 del sys.modules["sphinx"]
 
-            with cast("EagerCallableProtocol", pytest.raises)(ImportError, match=error_msg):
+            with typing.cast("EagerCallableProtocol", pytest.raises)(ImportError, match=error_msg):
                 importlib.reload(mod)
 
 

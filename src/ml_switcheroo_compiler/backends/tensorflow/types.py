@@ -1,6 +1,8 @@
 """Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.tensorflow.types`)."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 import tensorflow as tf
 
@@ -55,7 +57,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(tf, data, dtype))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(tf, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -76,7 +78,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_asarray)(tf, data))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_asarray)(tf, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -97,4 +99,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Result.
     """
-    return cast(float, cast("EagerCallableProtocol", generic_item)(tf, data))
+    return typing.cast(float, typing.cast("EagerCallableProtocol", generic_item)(tf, data))

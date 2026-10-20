@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
+import typing
 import uuid
 from collections.abc import Iterable, Sequence
-from typing import cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
@@ -47,12 +47,12 @@ def _emit_creation_node(
         id=out_id,
         op_type=op_type,
         inputs=[],
-        attributes={**cast("dict[str, AttributeValue]", attributes or {}), "dtype": dtype.value},
+        attributes={**typing.cast("dict[str, AttributeValue]", attributes or {}), "dtype": dtype.value},
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
 
-    proxy = cast("EagerCallableProtocol", ProxyTensor)(
+    proxy = typing.cast("EagerCallableProtocol", ProxyTensor)(
         id=out_id,
         shape=shape,
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
@@ -174,13 +174,13 @@ class Geomspace(OpDef):
         raw_num = kwargs.get("num", args[2] if len(args) > 2 else 50)
         num: int = 50
         try:
-            num = int(cast(int, raw_num))
+            num = int(typing.cast(int, raw_num))
         except (TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         raw_axis = kwargs.get("axis", 0)
         axis: int = 0
         try:
-            axis = int(cast(int, raw_axis))
+            axis = int(typing.cast(int, raw_axis))
         except (TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         shape1 = getattr(start, "shape", getattr(start, "shape_metadata", ()))
@@ -217,9 +217,7 @@ class Geometric(OpDef):
             return tuple(getattr(p, "shape", getattr(p, "shape_metadata", ())))
         if isinstance(size, int):
             return (size,)
-        if isinstance(size, Iterable):
-            return tuple(int(cast(int, d)) for d in cast("Iterable[TensorOrScalar]", size))
-        return ()
+        return tuple(int(typing.cast(int, d)) for d in typing.cast("Iterable[TensorOrScalar]", size))
 
 
 def from_dlpack(obj: TensorOrScalar) -> TensorOrScalar:

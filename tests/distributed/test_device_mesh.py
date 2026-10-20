@@ -1,5 +1,7 @@
 """Unit tests for DeviceMesh representation and topology mapping."""
 
+from __future__ import annotations
+
 import pytest
 
 from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh

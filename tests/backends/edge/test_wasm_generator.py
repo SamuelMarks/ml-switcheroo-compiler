@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
+from ml_switcheroo_ir import AttributeValue, LogicalNode, NodeDict
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -28,19 +31,19 @@ def test_wasm_generator() -> None:
 
     orig = ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.copy()
     ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.clear()
-    cast("EagerCallableProtocol", ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update)(OPS_REGISTRY)
+    typing.cast("EagerCallableProtocol", ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update)(OPS_REGISTRY)
 
     try:
         graph = IRGraph()
 
-        graph.nodes = {"x": IRNode("x", "Input", inputs=[], shape_metadata=[10]), "y": IRNode("y", "Input", inputs=[], shape_metadata=[10]), "add": IRNode("add", "Add", inputs=["x", "y"], shape_metadata=[10])}
+        graph.nodes = NodeDict({"x": IRNode("x", "Input", inputs=[], shape_metadata=[10]), "y": IRNode("y", "Input", inputs=[], shape_metadata=[10]), "add": IRNode("add", "Add", inputs=["x", "y"], shape_metadata=[10])})
         graph.inputs = ["x", "y"]
         graph.outputs = ["add"]
 
         gen = WasmCodeGenerator(graph)
         code = gen.generate()
         assert code is not None
-        assert isinstance(code, str) and len(code) > 0
+        assert bool(typing.cast("EagerValue", isinstance(code, str))) and len(code) > 0
     finally:
         ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.clear()
         ml_switcheroo_compiler.ops.registry._YAML_REGISTRY.update(orig)
@@ -69,10 +72,10 @@ def test_wasm_generator_missing_coverage() -> None:
     true_graph.outputs = []
     # Add a subnode to true_graph that uses an input not in true_graph.inputs
     subnode = IRNode("sub", "Dummy", inputs=["outer_var"])
-    true_graph.nodes = {"sub": subnode}
+    true_graph.nodes = NodeDict({"sub": subnode})
 
     cond_node = IRNode("cond", "Cond", inputs=["pred", "x", "y"])
-    cond_node.attributes = {"true_graph": true_graph, "false_graph": IRGraph()}
+    cond_node.attributes = typing.cast("dict[str, AttributeValue]", {"true_graph": true_graph, "false_graph": IRGraph()})
     gen.sorted_nodes = [cond_node]
     gen.visit_Cond(cond_node, "Cond", "cond", ["pred", "x", "y"], [10], 10)
 
@@ -95,7 +98,7 @@ def test_wasm_scalar_fallback_code() -> None:
 
     g = IRGraph()
     g.nodes["n1"] = IRNode(id="n1", op_type="UnknownSIMD_Op_Test")
-    setattr(g, "sorted_nodes", [g.nodes["n1"]])
+    object.__setattr__(g, "sorted_nodes", [g.nodes["n1"]])
     gen = WasmCodeGenerator(g)
 
     # We directly invoke _generate_vector_unrolled_op for a fake op that has no simd_macro
@@ -110,7 +113,7 @@ def test_wasm_dummy_allocation() -> None:
 
     g = IRGraph()
     g.nodes["n1"] = IRNode(id="n1", op_type="Linear")
-    setattr(g, "sorted_nodes", [g.nodes["n1"]])
+    object.__setattr__(g, "sorted_nodes", [g.nodes["n1"]])
     gen = WasmCodeGenerator(g)
     code = gen.generate()
     assert "float dummy_val = 0.0f;" in code
@@ -264,14 +267,14 @@ def _test_wasm_additional_edges_and_telemetry_part_2(_state: dict[str, EagerTens
     node_tan = IRNode(id="tan_node", op_type="Tan", inputs=["in_tan"])
     gen.code.clear()
     gen._generate_vector_unrolled_op(node_tan, "Tan", "tan_node", ["in_tan"], [4], 4)
-    assert "buf_in_tan" in cast("EagerCallableProtocol", "\n".join)(gen.code)
+    assert "buf_in_tan" in typing.cast("EagerCallableProtocol", "\n".join)(gen.code)
 
     # _generate_vector_unrolled_op when intrinsics.yaml does not exist
     node_sin = IRNode(id="sin_node", op_type="Sin", inputs=["in_sin"])
     with patch.object(os.path, "exists", return_value=False):
         gen.code.clear()
         gen._generate_vector_unrolled_op(node_sin, "Sin", "sin_node", ["in_sin"], [4], 4)
-        assert "std::sin" in cast("EagerCallableProtocol", "\n".join)(gen.code)
+        assert "std::sin" in typing.cast("EagerCallableProtocol", "\n".join)(gen.code)
 
     # 3. _generate_vector_unrolled_op when op is completely unimplemented (lines 867->870)
     node_unimpl = IRNode(id="unimpl", op_type="UnknownOpXYZ", inputs=["in0"])
@@ -307,7 +310,7 @@ def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTens
         with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.config_models.WasmIntrinsicsConfig.model_dump", return_value=fake_intrinsics):
             gen.code.clear()
             gen._generate_vector_unrolled_op(node_spec, "SpecialSimd", "spec", ["in0"], [4], 4)
-            code_spec = cast("EagerCallableProtocol", "\n".join)(gen.code)
+            code_spec = typing.cast("EagerCallableProtocol", "\n".join)(gen.code)
             assert "wasm_f32x4_extract_lane" in code_spec
 
     # 5. apply_shape_telemetry exhaustive branches (lines 1173, 1180->1176, 1182->1188, 1187, 1193->1191, 1199-1200, 1202, 1203->1195, 1205->1191)
@@ -336,7 +339,8 @@ def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTens
     n_valid_str = IRNode(id="n1", op_type="Input", shape_metadata=["B", "Seq"])
     n_non_list_concrete = IRNode(id="n2", op_type="Input", shape_metadata=["B"])
     n_len_mismatch = IRNode(id="n3", op_type="Input", shape_metadata=["B", 10])
-    n_failing_eval = cast("EagerCallableProtocol", IRNode)(id="n4", op_type="Relu", inputs=["n1"], shape_metadata=[cast("EagerCallableProtocol", FailingEvalDim)()])
+    n_failing_eval = IRNode(id="n4", op_type="Relu", inputs=["n1"])
+    object.__setattr__(n_failing_eval, "shape_metadata", [typing.cast("EagerCallableProtocol", FailingEvalDim)()])
     getattr(_state, "update")({"FailingEvalDim": FailingEvalDim, "code_spec": code_spec, "n_failing_eval": n_failing_eval, "n_len_mismatch": n_len_mismatch})
     getattr(_state, "update")({"n_non_list_concrete": n_non_list_concrete, "n_valid_str": n_valid_str})
     _state.update(locals())
@@ -357,14 +361,19 @@ def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTens
     setattr(
         g2,
         "nodes",
-        {
-            "n1": n_valid_str,
-            "n2": n_non_list_concrete,
-            "n3": n_len_mismatch,
-            "n4": n_failing_eval,
-            "n5": n_unresolved_str,
-            "n6": n_no_meta,
-        },
+        NodeDict(
+            typing.cast(
+                "dict[str, LogicalNode]",
+                {
+                    "n1": n_valid_str,
+                    "n2": n_non_list_concrete,
+                    "n3": n_len_mismatch,
+                    "n4": n_failing_eval,
+                    "n5": n_unresolved_str,
+                    "n6": n_no_meta,
+                },
+            )
+        ),
     )
     setattr(g2, "inputs", ["n1", "n2", "n3"])
     setattr(g2, "outputs", ["n4", "n5", "n6"])
@@ -375,7 +384,7 @@ def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTens
         "n2": 42,  # not list/tuple (line 1180->1176)
         "n3": [16, 10, 20],  # len mismatch (line 1182->1188)
     }
-    cast("EagerCallableProtocol", gen2.apply_shape_telemetry)(telemetry_payload)
+    typing.cast("EagerCallableProtocol", gen2.apply_shape_telemetry)(telemetry_payload)
     assert n_valid_str.shape_metadata == (16, 64)
     assert n_failing_eval.shape_metadata == (1,)
     getattr(_state, "update")({"g2": g2, "gen2": gen2, "n_no_meta": n_no_meta, "n_unresolved_str": n_unresolved_str})
@@ -405,14 +414,16 @@ def test_wasm_generate_wat_expanded_opcodes() -> None:
     n_floor = IRNode(id="n_floor", op_type="Floor", inputs=["n_ceil"], shape_metadata=[16])
     n_and = IRNode(id="n_and", op_type="And", inputs=["n_floor"], shape_metadata=[16])
 
-    g.nodes = {
-        "in0": n_in,
-        "n_add": n_add,
-        "n_sqrt": n_sqrt,
-        "n_ceil": n_ceil,
-        "n_floor": n_floor,
-        "n_and": n_and,
-    }
+    g.nodes = NodeDict(
+        {
+            "in0": n_in,
+            "n_add": n_add,
+            "n_sqrt": n_sqrt,
+            "n_ceil": n_ceil,
+            "n_floor": n_floor,
+            "n_and": n_and,
+        }
+    )
     g.inputs = ["in0"]
     g.outputs = ["n_and"]
 
@@ -435,7 +446,7 @@ def test_wasm_generate_wat_missing_or_invalid_opcodes_yaml() -> None:
     g = IRGraph()
     n_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[16])
     n_add = IRNode(id="n_add", op_type="Add", inputs=["in0"], shape_metadata=[16])
-    g.nodes = {"in0": n_in, "n_add": n_add}
+    g.nodes = NodeDict({"in0": n_in, "n_add": n_add})
     g.inputs = ["in0"]
     g.outputs = ["n_add"]
     gen = WasmCodeGenerator(g)
@@ -458,7 +469,7 @@ def test_wasm_offline_diagnostic_ops_ignored() -> None:
     n_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[4])
     n_diag = IRNode(id="diag0", op_type="DiagnosticProbe", inputs=["in0"], shape_metadata=[4])
     n_add = IRNode(id="add0", op_type="Add", inputs=["in0", "in0"], shape_metadata=[4])
-    g.nodes = {"in0": n_in, "diag0": n_diag, "add0": n_add}
+    g.nodes = NodeDict({"in0": n_in, "diag0": n_diag, "add0": n_add})
     g.inputs = ["in0"]
     g.outputs = ["add0"]
 

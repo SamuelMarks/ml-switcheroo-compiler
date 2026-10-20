@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import get_frontend, get_op, get_util, register_frontend, register_op, register_util
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -28,8 +28,8 @@ def test_registry_register_op() -> None:
 
     # re-registration with same name and same class name is allowed
     @register_op("TestRegistryOp1")
-    class TestRegistryOp2(OpDef):
-        """Test class TestRegistryOp2."""
+    class TestRegistryOp1(OpDef):  # type: ignore[no-redef]  # noqa: F811
+        """Test class TestRegistryOp1."""
 
         def infer_shape(self) -> EagerValue:
             """Test function infer_shape."""
@@ -38,7 +38,7 @@ def test_registry_register_op() -> None:
     # re-registration with same name but DIFFERENT class name is KeyError
     with pytest.raises(ValueError, match="already registered"):
 
-        @register_op("TestRegistryOp2")
+        @register_op("TestRegistryOp1")
         class AnotherOpClass(OpDef):
             """Test class AnotherOpClass."""
 
@@ -64,7 +64,7 @@ def test_registry_util() -> None:
 def test_registry_frontend() -> None:
     """Test function test_registry_frontend."""
 
-    @cast("EagerCallableProtocol", register_frontend)("my_frontend")
+    @typing.cast("EagerCallableProtocol", register_frontend)("my_frontend")
     def my_frontend_fn() -> EagerValue:
         """Test function my_frontend_fn."""
         return 42
@@ -91,7 +91,7 @@ def test_registry_files_load() -> None:
     ops = get_all_ops()
     assert len(ops) > 0
     op = get_op("Conv2D")
-    assert cast("EagerTensorProtocol", getattr(op, "get_yaml_data"))() is not None
+    assert typing.cast("EagerTensorProtocol", getattr(op, "get_yaml_data"))() is not None
     assert backend_mapping_registry.get_generator_mapping("numpy", "NonExistentOp") is None
     assert backend_mapping_registry.get_generator_mapping("numpy", "Add") is not None
     assert get_backend_mapping("NonExistentOp") == {}
@@ -111,7 +111,7 @@ def test_registry_files_load() -> None:
     getattr(_YAML_REGISTRY, "__setitem__")("FakeYamlOp", {"some": "data"})
     fake_op_cls = get_op("FakeYamlOp")
     assert fake_op_cls.__name__ == "FakeYamlOp"
-    assert cast("EagerTensorProtocol", getattr(fake_op_cls, "get_yaml_data"))() == {"some": "data"}
+    assert typing.cast("EagerTensorProtocol", getattr(fake_op_cls, "get_yaml_data"))() == {"some": "data"}
     _REGISTRY.pop("FakeYamlOp", None)
     _YAML_REGISTRY.pop("FakeYamlOp", None)
 

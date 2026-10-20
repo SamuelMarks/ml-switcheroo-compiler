@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.ir.shape_system import (
     SymVar,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -140,7 +140,7 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return cast("EagerValue", getattr(env, "__getitem__")("x") > 10)
+        return typing.cast("EagerValue", getattr(env, "__getitem__")("x") > 10)
 
     def cond_2(env: EagerValue) -> EagerValue:
         """Check if x > 0.
@@ -148,12 +148,12 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return cast("EagerValue", getattr(env, "__getitem__")("x") > 0)
+        return typing.cast("EagerValue", getattr(env, "__getitem__")("x") > 0)
 
-    piecewise = cast("EagerCallableProtocol", SymPiecewise)(
+    piecewise = typing.cast("EagerCallableProtocol", SymPiecewise)(
         cases=[
-            (cond_1, cast("EagerCallableProtocol", SymConst)(100)),
-            (cond_2, cast("EagerCallableProtocol", SymConst)(50)),
+            (cond_1, typing.cast("EagerCallableProtocol", SymConst)(100)),
+            (cond_2, typing.cast("EagerCallableProtocol", SymConst)(50)),
         ],
         default=SymConst(0),
     )

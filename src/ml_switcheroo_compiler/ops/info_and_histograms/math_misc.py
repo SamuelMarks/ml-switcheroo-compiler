@@ -1,6 +1,8 @@
 """Misc operations."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -258,7 +260,7 @@ class Trapezoid(OpDef):
             return ()
         shape = list(getattr(args[0], "shape", ()))
         axis = kwargs.get("axis", -1)
-        if int(cast(int, axis)) < len(shape):
+        if int(typing.cast(int, axis)) < len(shape):
             getattr(shape, "pop")(axis)
         return tuple(shape)
 

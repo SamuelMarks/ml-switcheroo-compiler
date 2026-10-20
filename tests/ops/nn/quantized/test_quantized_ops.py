@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
@@ -37,7 +37,7 @@ from ml_switcheroo_compiler.ops.nn.quantized_ops import (
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -115,12 +115,12 @@ def test_quantized_ops_missing() -> None:
     inp = create_eager_tensor(np.ones((1, 2, 2, 1)))
     weight = create_eager_tensor(np.ones((2, 2, 1, 1)))
     scales = create_eager_tensor(np.ones((1,)))
-    q_cfg = QuantizedOpsConfig(weight, scales, biases=None)
+    q_cfg = QuantizedOpsConfig(weight=weight, scales=scales, biases=None)
 
     with ConfigContext(eager_mode=True):
         res = quantized_conv(inp, q_cfg)
         assert isinstance(res, Tensor)
-        cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", res.numpy)(), cast("EagerCallableProtocol", np.array)([[[[4.0]]]]))
+        typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", res.numpy)(), typing.cast("EagerCallableProtocol", np.array)([[[[4.0]]]]))
 
 
 def test_quantized_ops_brute() -> None:

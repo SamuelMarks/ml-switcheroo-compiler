@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @global_eager_registry.register("Polyval")
-def _polyval(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _polyval(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager polyval operation on the active backend array.
 
     Args:
@@ -26,7 +27,7 @@ def _polyval(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 
 @global_eager_registry.register("Polyint")
-def _np_polyint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_polyint(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np polyint operation on the active backend array.
 
     Args:
@@ -39,5 +40,5 @@ def _np_polyint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     """
     func = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).polyint(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).polyint(*args, **kwargs)

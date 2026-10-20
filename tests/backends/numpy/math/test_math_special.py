@@ -3,57 +3,59 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
 
-import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mm
+import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as _mm_raw
 import ml_switcheroo_compiler.ops as _ops
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_confusion_matrix, _np_decode_csv, _np_decode_image, _np_descriptive, _np_distributions, _np_parse_example, _np_parse_tensor, _np_rawmatmul, _np_read_file, _np_rem, _np_serialize_tensor, _np_sparsedensematmul, _np_write_file
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+
+mm = typing.cast("EagerTensorProtocol", _mm_raw)
 
 
 def test_pmean() -> None:
     """Test function test_pmean."""
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", mm._np_pmean)(np, cast("EagerCallableProtocol", np.ones)((2, 2)), "x"), cast("EagerCallableProtocol", np.ones)((2, 2)))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", mm._np_pmean)(np, typing.cast("EagerCallableProtocol", np.ones)((2, 2)), "x"), typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
 
 
 def test_segment_sum() -> None:
     """Test function test_segment_sum."""
     res = mm._np_segment_sum(np, np.array([1, 2, 3, 4]), np.array([0, 0, 1, 1]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [3, 7])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [3, 7])
 
 
 def test_clz() -> None:
     """Test function test_clz."""
     res = mm._np_clz(np, np.array([1, 2, -1], dtype=np.int32))
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 31
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 30
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)) == 0
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 31
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 30
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)) == 0
 
 
 def test_population_count() -> None:
     """Test function test_population_count."""
     res = mm._np_population_count(np, np.array([1, 3, -1], dtype=np.int32))
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 1
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 1
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 2
     res = mm._np_population_count(np, np.array([1, 3, 7], dtype=np.int32))
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)) == 3
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)) == 3
 
 
 def test_bitcast_convert_type() -> None:
     """Test function test_bitcast_convert_type."""
     res = mm._np_bitcast_convert_type(np, np.array([1.0], dtype=np.float32), "int32")
-    assert cast("EagerTensorProtocol", getattr(res, "dtype")) == np.int32
+    assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == np.int32
 
 
 def test_reduce_precision() -> None:
     """Test function test_reduce_precision."""
     res = mm._np_reduce_precision(np, np.array([1.0]), 8, 23)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
 
 
 def test_custom_linear_solve() -> None:
@@ -65,37 +67,37 @@ def test_custom_linear_solve() -> None:
 def test_strided_slice() -> None:
     """Test function test_strided_slice."""
     res = mm._np_stridedslice(np, np.ones((5, 5)), [1, 1], [3, 3], [1, 1])
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
 def test_sobol_sample() -> None:
     """Test function test_sobol_sample."""
     res = mm._np_sobolsample(np, 2, 4)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (4, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (4, 2)
 
 
 def test_logsumexp() -> None:
     """Test function test_logsumexp."""
     res = mm._np_logsumexp(np, np.ones((2, 2)), keepdims=False)
-    assert cast("EagerCallableProtocol", np.ndim)(res) == 0
+    assert typing.cast("EagerCallableProtocol", np.ndim)(res) == 0
 
 
 def test_truncate_div() -> None:
     """Test function test_truncate_div."""
     res = mm._np_truncate_div(np, np.array([3.5]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
 
 
 def test_truncate_mod() -> None:
     """Test function test_truncate_mod."""
     res = mm._np_truncate_mod(np, np.array([3.5]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.5])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.5])
 
 
 def test_math_misc_one_hot() -> None:
     """Test function test_math_misc_one_hot."""
     res = mm._np_one_hot(np, np.array([0, 1]), depth=2)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
 def test_math_misc_scipy_and_polynomials() -> None:
@@ -249,10 +251,10 @@ def test_all_mocked_try_blocks() -> None:
 def test_math_misc_more_edges() -> None:
     """Test function test_math_misc_more_edges."""
     res_fb = mm._np_frombuffer(np, b"\x00\x00\x00\x00", dtype=np.int32)
-    assert cast("EagerTensorProtocol", getattr(res_fb, "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(res_fb, "shape")) == (1,)
     assert mm._np_frombuffer(np) is None
     res_oh = mm._np_one_hot(np, np.array([0, 1]), depth=2, axis=0)
-    assert cast("EagerTensorProtocol", getattr(res_oh, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res_oh, "shape")) == (2, 2)
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -970,7 +972,7 @@ def test_final_math_misc_mocking_once_more() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("MockOpFuncWithInit", np.ones((2, 2)))
+            return typing.cast("MockOpFuncWithInit", np.ones((2, 2)))
 
     class RealMockType:
         """Test class RealMockType."""
@@ -1048,7 +1050,7 @@ def test_final_math_misc_mocking_once_more_2() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType", np.ones((2, 2)))
+            return typing.cast("RealMockType", np.ones((2, 2)))
 
     op_names = [
         "RawMatMul",
@@ -1105,7 +1107,7 @@ def test_final_math_misc_mocking_again_and_again() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = [
         "RawMatMul",
@@ -1218,7 +1220,7 @@ def test_final_math_misc_mocking_again_and_again_again_2() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["decode_csv", "decode_image", "parse_example", "parse_tensor", "serialize_tensor", "encode_image", "encode_jpeg", "encode_png", "encode_base64", "decode_base64", "decode_json_example", "decode_compressed", "read_file", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1255,7 +1257,7 @@ def test_final_math_misc_mocking_again_and_again_again_3() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "EncodeImage", "EncodeJpeg", "EncodePng", "EncodeBase64", "DecodeBase64", "DecodeJsonExample", "DecodeCompressed", "ReadFile", "WriteFile", "ConfusionMatrix", "Descriptive", "Distributions"]
     for op_name in op_names:
@@ -1306,7 +1308,7 @@ def test_final_math_misc_mocking_again_and_again_again_5() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
@@ -1343,7 +1345,7 @@ def test_final_math_misc_mocking_camel() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
@@ -1380,7 +1382,7 @@ def test_final_math_misc_mocking_again_and_again_again_6() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["decode_csv", "decode_image", "parse_example", "parse_tensor", "serialize_tensor", "read_file", "write_file"]
     for op_name in op_names:
@@ -1447,7 +1449,7 @@ def test_final_math_misc_mocking_for_remaining() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions", "shifted_chebyshev_polynomial_t", "shifted_chebyshev_polynomial_u", "shifted_chebyshev_polynomial_v", "shifted_chebyshev_polynomial_w", "frombuffer", "rem"]
     for op_name in op_names:
@@ -1484,7 +1486,7 @@ def test_final_math_misc_mocking_again_and_again_again_8_fixed() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1521,7 +1523,7 @@ def test_final_math_misc_mocking_again_and_again_again_9() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1558,7 +1560,7 @@ def test_final_math_misc_mocking_again_and_again_again_10() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1595,7 +1597,7 @@ def test_final_math_misc_mocking_again_and_again_again_11() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1632,7 +1634,7 @@ def test_final_math_misc_mocking_again_and_again_again_12() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["serialize_tensor", "write_file"]
     for op_name in op_names:
@@ -1669,7 +1671,7 @@ def test_final_math_misc_mocking_again_and_again_again_13() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1706,7 +1708,7 @@ def test_final_math_misc_mocking_again_and_again_again_14() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1743,7 +1745,7 @@ def test_final_math_misc_mocking_again_and_again_again_15() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["rem", "serialize_tensor", "write_file"]
     for op_name in op_names:
@@ -1780,7 +1782,7 @@ def test_final_math_misc_mocking_again_and_again_again_16() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("RealMockType2", np.ones((2, 2)))
+            return typing.cast("RealMockType2", np.ones((2, 2)))
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
@@ -1874,7 +1876,7 @@ def _test_np_ops_subclass_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
         setattr(_ops, "rem", MockCallableClass)
         setattr(_ops, "serialize_tensor", MockCallableClass)
         setattr(_ops, "write_file", MockCallableClass)
-        _ops.confusion_matrix = MockCallableClass
+        setattr(_ops, "confusion_matrix", MockCallableClass)
         setattr(_ops, "descriptive", MockCallableClass)
         setattr(_ops, "distributions", MockCallableClass)
         _np_rawmatmul(np, np.ones((2, 2)), np.ones((2, 2)))
@@ -2033,25 +2035,25 @@ def test__np_affineconfig() -> None:
 def test__np_all_gather() -> None:
     """Test function test__np_all_gather."""
     with pytest.raises(AttributeError):
-        cast("EagerTensorProtocol", getattr(mm, "_np_all_gather"))(np, np.ones((2, 2)))
+        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_gather"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        cast("EagerTensorProtocol", getattr(mm, "_np_all_gather"))(np)
+        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_gather"))(np)
 
 
 def test__np_all_reduce() -> None:
     """Test function test__np_all_reduce."""
     with pytest.raises(AttributeError):
-        cast("EagerTensorProtocol", getattr(mm, "_np_all_reduce"))(np, np.ones((2, 2)))
+        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_reduce"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        cast("EagerTensorProtocol", getattr(mm, "_np_all_reduce"))(np)
+        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_reduce"))(np)
 
 
 def test__np_all_to_all() -> None:
     """Test function test__np_all_to_all."""
     with pytest.raises(AttributeError):
-        cast("EagerTensorProtocol", getattr(mm, "_np_all_to_all"))(np, np.ones((2, 2)))
+        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_to_all"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        cast("EagerTensorProtocol", getattr(mm, "_np_all_to_all"))(np)
+        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_to_all"))(np)
 
 
 def test__np_append() -> None:
@@ -3558,7 +3560,7 @@ def test__np_sigmoid() -> None:
 def test__np_sobolsample() -> None:
     """Test function test__np_sobolsample."""
     with pytest.raises(TypeError):
-        mm._np_sobolsample(np, np.ones((2, 2)))
+        mm._np_sobolsample(np, typing.cast("int", np.ones((2, 2))))
     with pytest.raises(TypeError):
         mm._np_sobolsample(np)
 

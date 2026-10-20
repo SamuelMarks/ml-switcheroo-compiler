@@ -1,5 +1,7 @@
 """Compiler for ml-switcheroo."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler import random as random
 from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
 from ml_switcheroo_compiler.core.sparse_tensor import SparseTensor

@@ -1,12 +1,14 @@
 """Metal Shading Language (MSL) backend generator."""
 
+from __future__ import annotations
+
 import ctypes
 import ctypes.util
 import logging
 import math
 import os
 import struct
-from typing import Callable, Optional, Protocol, Union, cast, runtime_checkable
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -20,12 +22,12 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
-@runtime_checkable
-class TensorLike(Protocol):
+@typing.runtime_checkable
+class TensorLike(typing.Protocol):
     """Protocol for array/tensor buffer instances with shape metadata."""
 
     @property
@@ -38,10 +40,10 @@ class TensorLike(Protocol):
         ...
 
 
-ArrayBufferType = Union[TensorLike, bytes, memoryview, list[float], tuple[float, ...]]
+ArrayBufferType = typing.Union[TensorLike, bytes, memoryview, list[float], "tuple[float, ...]"]
 
 
-def _calculate_node_bytes(node: Optional[IRNode]) -> tuple[int, int]:
+def _calculate_node_bytes(node: IRNode | None) -> tuple[int, int]:
     """Calculate total number of elements and allocated byte size for an IRNode.
 
     Args:
@@ -138,7 +140,7 @@ def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -
         elif hasattr(arg, "data") and hasattr(getattr(arg, "data"), "tobytes"):
             input_buffers[input_name] = getattr(arg, "data").tobytes()
         else:
-            input_buffers[input_name] = cast("Callable[..., bytes]", bytes)(arg)
+            input_buffers[input_name] = typing.cast("TypedVariadicCallable[bytes]", bytes)(arg)
     return input_buffers
 
 
@@ -155,10 +157,10 @@ def _evaluate_metal_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Ea
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
     feed_dict: dict[str, EagerValue] = {graph.inputs[i]: getattr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
-    res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict))
+    res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
-        return cast(EagerValue, res_dict.get(graph.outputs[0]))
-    return cast(EagerValue, tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
+        return res_dict.get(graph.outputs[0])
+    return typing.cast(EagerValue, tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
 
 
 METAL_SYNTH_MATH_MAP: dict[str, str] = {
@@ -188,7 +190,7 @@ METAL_SYNTH_MATH_MAP: dict[str, str] = {
 }
 
 
-def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: Optional[str] = None) -> str:
+def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: str | None = None) -> str:
     """Synthesize a C++ Metal MSL kernel without fallback placeholder loops.
 
     Args:
@@ -259,7 +261,7 @@ def _synthesize_metal_kernel(clean_op: str, inps: list[str], scalar_expr: Option
 class MetalCodeGenerator(BaseGenerator):
     """Metal Code Generator."""
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[CodeGeneratorVisitor]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: list[CodeGeneratorVisitor] | None = None) -> None:
         """Initialize MetalCodeGenerator.
 
         Args:
@@ -331,7 +333,7 @@ class MetalCodeGenerator(BaseGenerator):
         msl.append(f"    encoder.dispatchThreads_threadsPerThreadgroup_(grid_size_{node_idx}, tg_size_{node_idx})")
         self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, msl)
 
-    def _ensure_template(self, node: IRNode, node_idx: int) -> Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]:
+    def _ensure_template(self, node: IRNode, node_idx: int) -> HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | None:
         """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
 
         Args:
@@ -394,7 +396,7 @@ class MetalCodeGenerator(BaseGenerator):
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
         msl.append(f"    {out_name} = device.newBufferWithLength_options_({bytes_alloc}, 0)")
-        wg: list[int] = cast(list[int], getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg: list[int] = typing.cast(list[int], getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
 
         gx, gy, gz = _resolve_metal_grid_sizes(node, num_elements, self.graph)
         msl.append(f"    grid_size_{node_idx} = MTLSize({gx}, {gy}, {gz})")
@@ -531,9 +533,7 @@ class MetalCodeGenerator(BaseGenerator):
                         input_buffers = _prepare_metal_input_buffers(graph, args)
                         out_dict = getattr(runner_inst, "execute_graph")(graph, input_buffers)
                         if len(graph.outputs) == 1:
-                            from typing import cast
-
-                            return cast(EagerValue, out_dict.get(graph.outputs[0]))
+                            return typing.cast(EagerValue, out_dict.get(graph.outputs[0]))
                         return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -560,8 +560,8 @@ class MetalRunner:
         except Exception:
             self.device = None
 
-        self.objc: Optional[ctypes.CDLL] = None
-        self.metal: Optional[ctypes.CDLL] = None
+        self.objc: ctypes.CDLL | None = None
+        self.metal: ctypes.CDLL | None = None
         try:
             objc_path = ctypes.util.find_library("objc")
             if objc_path:
@@ -606,8 +606,8 @@ class MetalRunner:
         msl_source: str,
         entry_point: str,
         workgroup_size: list[int],
-        buffers: Optional[list[Optional[ctypes.c_void_p]]] = None,
-        grid_size: Optional[list[int]] = None,
+        buffers: list[ctypes.c_void_p | None] | None = None,
+        grid_size: list[int] | None = None,
     ) -> None:
         """Compile and dispatch kernel dynamically with buffer encoding.
 
@@ -666,7 +666,7 @@ class MetalRunner:
         cmd_buf.commit()
         cmd_buf.waitUntilCompleted()
 
-    def allocate_buffer(self, size: int) -> Optional[ctypes.c_void_p]:
+    def allocate_buffer(self, size: int) -> ctypes.c_void_p | None:
         """Allocate zero-copy buffer.
 
         Args:
@@ -719,7 +719,7 @@ class MetalRunner:
                         return ctypes.c_void_p(contents_ptr)
         return None
 
-    def write_buffer(self, buffer: Optional[ctypes.c_void_p], data: bytes) -> None:
+    def write_buffer(self, buffer: ctypes.c_void_p | None, data: bytes) -> None:
         """Write bytes to buffer.
 
         Args:
@@ -729,7 +729,7 @@ class MetalRunner:
         if buffer and buffer.value:
             ctypes.memmove(buffer.value, data, len(data))
 
-    def read_buffer(self, buffer: Optional[ctypes.c_void_p], size: int) -> bytes:
+    def read_buffer(self, buffer: ctypes.c_void_p | None, size: int) -> bytes:
         """Read bytes from buffer.
 
         Args:
@@ -743,7 +743,7 @@ class MetalRunner:
             return ctypes.string_at(buffer.value, size)
         return b""
 
-    def free_buffer(self, buffer: Optional[ctypes.c_void_p]) -> None:
+    def free_buffer(self, buffer: ctypes.c_void_p | None) -> None:
         """Release device buffer memory.
 
         Args:
@@ -822,7 +822,7 @@ class MetalRunner:
 
         out_ptr = out_buf.contents()
         c_floats = ctypes.cast(out_ptr, ctypes.POINTER(ctypes.c_float))
-        return cast(ArrayBufferType, [float(c_floats[idx]) for idx in range(num_elements)])
+        return typing.cast(ArrayBufferType, [float(c_floats[idx]) for idx in range(num_elements)])
 
     @staticmethod
     def _to_float32_bytes(data: EagerValue) -> bytes:
@@ -959,7 +959,7 @@ class MetalRunner:
             if buf is not None and hasattr(buf, "contents"):
                 node = graph.nodes.get(out_id)
                 _, byte_size = _calculate_node_bytes(node)
-                ptr = buf.contents()
+                ptr = int(typing.cast(int, buf.contents()))
                 results[out_id] = bytes(ctypes.string_at(ptr, byte_size))
 
         return results
@@ -1075,7 +1075,7 @@ class MetalRunner:
             curr_n = num_tgs
             curr_buf = out_buf
 
-    def reduce_sum(self, arr: Union[TensorLike, list[float], tuple[float, ...], bytes, memoryview]) -> float:
+    def reduce_sum(self, arr: TensorLike | list[float] | tuple[float, ...] | bytes | memoryview) -> float:
         """Perform multi-stage parallel tree reduction of an array on Metal GPU.
 
         Utilizes MSL hardware SIMD-group intrinsics (simd_sum) and threadgroup shared memory

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, Union, cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -14,7 +15,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
@@ -36,20 +37,22 @@ class Welch(OpDef):
         return args[0].shape
 
 
-@dataclass
-class WindowConfig:
+class WindowConfig(pydantic.BaseModel):
     """Windowing configuration for Welch spectral density estimation."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     fs: float = 1.0
     window: str = "hann"
-    nperseg: Optional[int] = None
-    noverlap: Optional[int] = None
-    nfft: Optional[int] = None
+    nperseg: int | None = None
+    noverlap: int | None = None
+    nfft: int | None = None
 
 
-@dataclass
-class FilterState:
+class FilterState(pydantic.BaseModel):
     """Detrending, scaling, and averaging options for Welch spectral estimation."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     detrend: str = "constant"
     return_onesided: bool = True
@@ -58,17 +61,18 @@ class FilterState:
     average: str = "mean"
 
 
-@dataclass
-class WelchConfig:
+class WelchConfig(pydantic.BaseModel):
     """Composite configuration for Welch's method (`WindowConfig` + `FilterState`)."""
 
-    window_config: WindowConfig = field(default_factory=WindowConfig)
-    filter_state: FilterState = field(default_factory=FilterState)
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    window_config: WindowConfig = pydantic.Field(default_factory=WindowConfig)
+    filter_state: FilterState = pydantic.Field(default_factory=FilterState)
 
 
 def welch(
     x: Tensor,
-    config_params: Optional[WelchConfig] = None,
+    config_params: WelchConfig | None = None,
 ) -> TensorOrScalar:
     """Estimate power spectral density using Welch's overlapped periodogram method.
 
@@ -84,7 +88,7 @@ def welch(
 
     if config.eager_mode:
         backend = get_active_backend()
-        f, Pxx = cast(
+        f, Pxx = typing.cast(
             "tuple[TensorLike, TensorLike]",
             backend.execute_op(
                 "Welch",
@@ -109,7 +113,7 @@ def welch(
     f_shape = (256,)
     Pxx_shape = (256,)
 
-    f_out, Pxx_out = cast(
+    f_out, Pxx_out = typing.cast(
         "tuple[Tensor, Tensor]",
         _emit_linalg_node(
             "Welch",
@@ -286,14 +290,14 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        out_shape = typing.cast("tuple[int, ...]", getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    out_shape = typing.cast("tuple[int, ...]", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(
         "Stft",
         [x],
         {"nfft": nfft, "noverlap": noverlap},
-        cast("Sequence[Union[int, str]]", out_shape),
+        typing.cast("Sequence[int | str]", out_shape),
         "complex64",
     )
 
@@ -312,13 +316,13 @@ def istft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+        out_shape = typing.cast("tuple[int, ...]", getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)
+    out_shape = typing.cast("tuple[int, ...]", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(
         "Istft",
         [x],
         {"nfft": nfft, "noverlap": noverlap},
-        cast("Sequence[Union[int, str]]", out_shape),
+        typing.cast("Sequence[int | str]", out_shape),
         "float32",
     )

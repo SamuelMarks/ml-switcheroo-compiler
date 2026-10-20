@@ -1,5 +1,7 @@
 """State functionalization pass."""
 
+from __future__ import annotations
+
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, topological_sort
 
 

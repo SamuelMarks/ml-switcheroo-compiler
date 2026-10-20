@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
@@ -72,7 +72,7 @@ def det(input: Tensor) -> TensorOrScalar:
 
         backend = get_active_backend()
         data = backend.execute_op("Det", (input.data if type(input).__name__ == "Tensor" else input))
-        arr = cast("TensorLike", backend.array(data))
+        arr = typing.cast("TensorLike", backend.array(data))
         return Tensor(
             arr,
             TensorConfig(arr.shape, getattr(input, "dtype", None), getattr(input, "device", None)),
@@ -93,9 +93,9 @@ def slogdet(input: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sign, logdet = cast("tuple[TensorOrScalar, TensorOrScalar]", backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input)))
-        sign_arr = cast("TensorLike", backend.array(sign))
-        logdet_arr = cast("TensorLike", backend.array(logdet))
+        sign, logdet = typing.cast("tuple[TensorOrScalar, TensorOrScalar]", backend.execute_op("Slogdet", (input.data if type(input).__name__ == "Tensor" else input)))
+        sign_arr = typing.cast("TensorLike", backend.array(sign))
+        logdet_arr = typing.cast("TensorLike", backend.array(logdet))
         return (
             Tensor(
                 sign_arr,

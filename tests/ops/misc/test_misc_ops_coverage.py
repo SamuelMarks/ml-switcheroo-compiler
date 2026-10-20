@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import ml_switcheroo_compiler.ops.info_and_histograms.misc_ops as misc_ops_mod
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -45,8 +45,8 @@ def test_misc_ops_full_coverage() -> None:
     axis_index_op = misc_ops_mod.AxisIndex()
     assert axis_index_op.infer_shape() == ()
     assert axis_index_op.infer_shape(DummyWithShape((3, 7))) == (3, 7)
-    assert cast("EagerCallableProtocol", axis_index_op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)([3, 7])) == (3, 7)
-    assert cast("EagerCallableProtocol", axis_index_op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
+    assert typing.cast("EagerCallableProtocol", axis_index_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)([3, 7])) == (3, 7)
+    assert typing.cast("EagerCallableProtocol", axis_index_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
 
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value="infeed_val") as mock_disp:
         res_infeed = misc_ops_mod.infeed(shape=(2, 2))

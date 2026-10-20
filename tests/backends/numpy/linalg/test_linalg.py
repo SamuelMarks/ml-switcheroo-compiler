@@ -1,5 +1,7 @@
 """Tests for test_linalg."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import _build_einsum_equation
 
 

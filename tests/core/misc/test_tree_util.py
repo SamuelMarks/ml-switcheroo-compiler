@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tree_util import TreeDef, tree_all, tree_flatten, tree_leaves, tree_map, tree_reduce, tree_structure, tree_unflatten
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -28,8 +28,8 @@ def test_tree_util_extra() -> None:
     assert tree_structure({"a": t1, "b": t2}) is not None
     assert tree_all([True, True])
     assert not tree_all([True, False])
-    assert cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
-    assert cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
+    assert typing.cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
+    assert typing.cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
 
 
 def test_tree_flatten_unflatten() -> None:
@@ -39,25 +39,25 @@ def test_tree_flatten_unflatten() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     tree = {"a": 1, "b": [2, 3], "c": (4, {"d": 5})}
-    (leaves, treedef) = cast("EagerCallableProtocol", tree_flatten)(tree)
+    (leaves, treedef) = typing.cast("EagerCallableProtocol", tree_flatten)(tree)
     assert leaves == [1, 2, 3, 4, 5]
     assert repr(treedef).startswith("TreeDef")
-    (_, treedef2) = cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 3], "c": (4, {"d": 5})})
+    (_, treedef2) = typing.cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 3], "c": (4, {"d": 5})})
     assert treedef == treedef2
     assert hash(treedef) == hash(treedef2)
-    (_, mutated_treedef) = cast("EagerCallableProtocol", tree_flatten)({"a": 10, "b": [20, 30], "c": (40, {"d": 50})})
+    (_, mutated_treedef) = typing.cast("EagerCallableProtocol", tree_flatten)({"a": 10, "b": [20, 30], "c": (40, {"d": 50})})
     assert treedef == mutated_treedef
     (_, different_treedef) = tree_flatten({"a": [1, 2], "b": [3, 4, 5]})
     assert treedef != different_treedef
     assert hash(treedef) != hash(different_treedef)
     assert treedef != TreeDef(list)
     assert treedef != "Not a TreeDef"
-    tree_reconstructed = cast("EagerCallableProtocol", tree_unflatten)(treedef, leaves)
+    tree_reconstructed = typing.cast("EagerCallableProtocol", tree_unflatten)(treedef, leaves)
     assert tree == tree_reconstructed
     with pytest.raises(ValueError, match="Too few leaves"):
-        cast("EagerCallableProtocol", tree_unflatten)(treedef, [1, 2, 3, 4])
+        typing.cast("EagerCallableProtocol", tree_unflatten)(treedef, [1, 2, 3, 4])
     with pytest.raises(ValueError, match="Too many leaves"):
-        cast("EagerCallableProtocol", tree_unflatten)(treedef, [1, 2, 3, 4, 5, 6])
+        typing.cast("EagerCallableProtocol", tree_unflatten)(treedef, [1, 2, 3, 4, 5, 6])
     with pytest.raises(ValueError, match="Unsupported treedef node_type"):
         tree_unflatten(TreeDef(set), [])
     with pytest.raises(ValueError, match="Dict treedef must have keys"):
@@ -72,11 +72,11 @@ def test_tree_map() -> None:
     """
     tree1 = {"a": 1, "b": [2, 3]}
     tree2 = {"a": 10, "b": [20, 30]}
-    res = cast("EagerCallableProtocol", tree_map)(lambda x, y: x + y, tree1, tree2)
+    res = typing.cast("EagerCallableProtocol", tree_map)(lambda x, y: x + y, tree1, tree2)
     assert res == {"a": 11, "b": [22, 33]}
     tree3 = {"a": 1, "b": 2}
     with pytest.raises(ValueError, match="All trees must have the same structure"):
-        cast("EagerCallableProtocol", tree_map)(lambda x, y: x + y, tree1, tree3)
+        typing.cast("EagerCallableProtocol", tree_map)(lambda x, y: x + y, tree1, tree3)
 
 
 def test_tree_def_repr() -> None:
@@ -103,7 +103,7 @@ def test_tree_def_eq() -> None:
     td1 = TreeDef(list)
     td2 = TreeDef(list)
     assert td1 == td2
-    assert cast("EagerTensorProtocol", td1) != cast("EagerTensorProtocol", "not_a_treedef")
+    assert typing.cast("EagerTensorProtocol", td1) != typing.cast("EagerTensorProtocol", "not_a_treedef")
 
 
 def test_unflatten_dict_no_keys() -> None:
@@ -173,8 +173,8 @@ def test_tree_reduce() -> None:
     """Test function test_tree_reduce."""
     from ml_switcheroo_compiler.tree_util import tree_reduce
 
-    assert cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
-    assert cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
+    assert typing.cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3]) == 6
+    assert typing.cast("EagerCallableProtocol", tree_reduce)(lambda x, y: x + y, [1, 2, 3], 10) == 16
 
 
 def test_tree_transpose_inner_size_zero() -> None:
@@ -203,10 +203,10 @@ def test_tree_def_hash_eq() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    (flat1, tree_def1) = cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 3]})
-    (flat2, tree_def2) = cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 3]})
-    (flat3, tree_def3) = cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 4]})
-    (flat4, tree_def4) = cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": {"c": 3}})
+    (flat1, tree_def1) = typing.cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 3]})
+    (flat2, tree_def2) = typing.cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 3]})
+    (flat3, tree_def3) = typing.cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": [2, 4]})
+    (flat4, tree_def4) = typing.cast("EagerCallableProtocol", tree_flatten)({"a": 1, "b": {"c": 3}})
     assert hash(tree_def1) == hash(tree_def2)
     assert tree_def1 == tree_def2
     assert tree_def1 == tree_def3

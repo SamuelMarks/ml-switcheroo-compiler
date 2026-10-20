@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -33,7 +33,7 @@ def _eager_base64(op: str, data: TensorOrScalar, pad: bool = False) -> TensorOrS
         """
         if d is None:
             return b""
-        raw_bytes = d.encode("utf-8") if isinstance(d, str) else cast("bytes", d)
+        raw_bytes = d.encode("utf-8") if isinstance(d, str) else typing.cast("bytes", d)
         res = base64.b64encode(raw_bytes) if op == "encode" else base64.b64decode(raw_bytes)
         if op == "encode" and not pad:
             res = res.rstrip(b"=")

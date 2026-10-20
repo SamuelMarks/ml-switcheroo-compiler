@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Union
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
@@ -13,15 +10,16 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_shear_eager,
 )
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("RandomShear")
 def _np_random_shear(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     y_factor: tuple[float, float] | float,
     x_factor: tuple[float, float] | float | None = None,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np random shear operation on the active backend array.
 
@@ -40,10 +38,10 @@ def _np_random_shear(
 
 @numpy_eager_registry.register("RandomPerspective")
 def _np_random_perspective(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     factor: float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np random perspective operation on the active backend array.
 
@@ -61,11 +59,11 @@ def _np_random_perspective(
 
 @numpy_eager_registry.register("RandomElasticTransform")
 def _np_random_elastic_transform(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     alpha: float,
     sigma: float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np random elastic transform operation on the active backend array.
 

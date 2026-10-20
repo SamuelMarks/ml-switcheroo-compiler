@@ -2,33 +2,34 @@
 
 from __future__ import annotations
 
-from typing import Callable, TypeVar, cast  # noqa: F401
+import typing
+from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
 
-_StateT = TypeVar("_StateT")
+_StateT = typing.TypeVar("_StateT")
 
 
-def cond_eager(pred: Tensor, true_fn: Callable[..., TensorOrScalar], false_fn: Callable[..., TensorOrScalar]) -> TensorOrScalar:
+def cond_eager(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) -> TensorOrScalar:
     """Execute the eager cond eager operation on the active backend array.
 
     Args:
         pred (Tensor): The pred parameter.
-        true_fn (Callable): The true_fn parameter.
-        false_fn (Callable): The false_fn parameter.
+        true_fn (TensorOrScalar): The true_fn parameter.
+        false_fn (TensorOrScalar): The false_fn parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
     if bool(pred.data):
-        return true_fn()
-    return false_fn()
+        return typing.cast(TypedVariadicCallable[TensorOrScalar], true_fn)()
+    return typing.cast(TypedVariadicCallable[TensorOrScalar], false_fn)()
 
 
 def while_loop_eager(
@@ -88,11 +89,11 @@ def _stack_scan_outputs(
         )
 
 
-def scan_eager(f: Callable[..., TensorOrScalar], init: TensorOrScalar, xs: TensorOrScalar, length: int | None = None) -> TensorOrScalar:
+def scan_eager(f: TensorOrScalar, init: TensorOrScalar, xs: TensorOrScalar, length: int | None = None) -> TensorOrScalar:
     """Execute the eager scan eager operation on the active backend array.
 
     Args:
-        f (Callable): The f parameter.
+        f (TensorOrScalar): The f parameter.
         init (TensorOrScalar): The init parameter.
         xs (TensorOrScalar): The xs parameter.
         length (int | None): The length parameter.
@@ -100,19 +101,20 @@ def scan_eager(f: Callable[..., TensorOrScalar], init: TensorOrScalar, xs: Tenso
     Returns:
         tuple: Result.
     """
+    fn_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], f)
     carry = init
     ys = []
     scan_length = length if length is not None else (getattr(xs, "shape")[0] if xs is not None else 0)
     for i in range(scan_length):
         x = Tensor(getattr(xs, "data")[i], TensorConfig(getattr(xs, "shape")[1:], getattr(xs, "dtype"), getattr(xs, "device"))) if xs is not None else None
-        carry, y = getattr(f(carry, x), "__iter__")()
+        carry, y = getattr(fn_callable(carry, x), "__iter__")()
         ys.append(getattr(y, "data") if hasattr(y, "data") else y)
 
-    out_tensor = cast("EagerCallableProtocol", _stack_scan_outputs)(ys, init, y if scan_length > 0 else init)
+    out_tensor = typing.cast("EagerCallableProtocol", _stack_scan_outputs)(ys, init, y if scan_length > 0 else init)
     return carry, out_tensor
 
 
-def _map_fn_eager_get_length(elems: Tensor) -> int:
+def _map_fn_eager_get_length(elems: Tensor | None) -> int:
     """Execute the eager map fn eager get length operation on the active backend array.
 
     Args:
@@ -124,21 +126,22 @@ def _map_fn_eager_get_length(elems: Tensor) -> int:
     return elems.shape[0] if elems is not None and len(elems.shape) > 0 else 0
 
 
-def _map_fn_eager_execute(fn: Callable[..., TensorOrScalar], elems: Tensor, length: int) -> TensorOrScalar:
+def _map_fn_eager_execute(fn: TensorOrScalar, elems: Tensor, length: int) -> TensorOrScalar:
     """Execute the eager map fn eager execute operation on the active backend array.
 
     Args:
-        fn (Callable): The fn parameter.
+        fn (TensorOrScalar): The fn parameter.
         elems (Tensor): The elems parameter.
         length (int): The length parameter.
 
     Returns:
         list: Result.
     """
+    fn_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], fn)
     ys = []
     for i in range(length):
-        x = Tensor(cast(EagerTensorProtocol, elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
-        y = fn(x)
+        x = Tensor(typing.cast(EagerTensorProtocol, elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
+        y = fn_callable(x)
         ys.append(getattr(y, "data") if hasattr(y, "data") else y)
     return ys
 
@@ -163,11 +166,11 @@ def _map_fn_eager_stack(ys: TensorOrScalar, elems: Tensor, dtype: DType | None) 
     return Tensor(stacked_ys, TensorConfig(getattr(stacked_ys, "shape"), out_dtype, elems.device))
 
 
-def map_fn_eager(fn: Callable[..., TensorOrScalar], elems: Tensor, dtype: DType | None = None) -> TensorOrScalar:
+def map_fn_eager(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None) -> TensorOrScalar:
     """Execute the eager map fn eager operation on the active backend array.
 
     Args:
-        fn (Callable): The fn parameter.
+        fn (TensorOrScalar): The fn parameter.
         elems (Tensor): The elems parameter.
         dtype (DType | None): The dtype parameter.
 
@@ -179,7 +182,7 @@ def map_fn_eager(fn: Callable[..., TensorOrScalar], elems: Tensor, dtype: DType 
     return _map_fn_eager_stack(ys, elems, dtype)
 
 
-def pmap_eager(func: Callable[..., TensorOrScalar], axis_name: str | None = None) -> TensorOrScalar:
+def pmap_eager(func: TensorOrScalar, axis_name: str | None = None) -> TensorOrScalar:
     """Execute the eager pmap eager operation on the active backend array.
 
     Args:
@@ -199,7 +202,7 @@ def pmap_eager(func: Callable[..., TensorOrScalar], axis_name: str | None = None
         Returns:
             tuple[int, ...]: Result.
         """
-        return cast("Callable[..., TensorOrScalar]", vmap(func))(*args)
+        return typing.cast("TypedVariadicCallable[TensorOrScalar]", vmap(func))(*args)
 
     return wrapped
 

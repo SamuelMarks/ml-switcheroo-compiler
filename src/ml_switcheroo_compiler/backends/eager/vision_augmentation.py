@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable
-from dataclasses import dataclass
 from types import ModuleType
-from typing import Optional, cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -25,7 +26,7 @@ def _flip_horizontal(img: VisionArray, rng: VisionArray) -> VisionArray:
 
     Returns: VisionArray: The horizontally flipped image, or the original image.
     """
-    return cast(EagerTensorProtocol, img)[:, :, ::-1] if cast(ModuleType, rng).random() > 0.5 else img
+    return typing.cast(EagerTensorProtocol, img)[:, :, ::-1] if typing.cast(ModuleType, rng).random() > 0.5 else img
 
 
 def _flip_vertical(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -37,7 +38,7 @@ def _flip_vertical(img: VisionArray, rng: VisionArray) -> VisionArray:
 
     Returns: VisionArray: The vertically flipped image, or the original image.
     """
-    return cast(EagerTensorProtocol, img)[:, ::-1, :] if cast(ModuleType, rng).random() > 0.5 else img
+    return typing.cast(EagerTensorProtocol, img)[:, ::-1, :] if typing.cast(ModuleType, rng).random() > 0.5 else img
 
 
 def _flip_both(img: VisionArray, rng: VisionArray) -> VisionArray:
@@ -93,21 +94,22 @@ def random_flip_eager(backend_module: VisionArray, images: VisionArray, mode: st
     strategy = _FLIP_STRATEGIES.get(mode, _identity_flip)
 
     for i in range(ctx.B):
-        cast(EagerTensorProtocol, out)[i] = strategy(cast(EagerTensorProtocol, out)[i], ctx.rng)
+        typing.cast(EagerTensorProtocol, out)[i] = strategy(typing.cast(EagerTensorProtocol, out)[i], ctx.rng)
 
     out = _from_channels_last(ctx.np_mod, out, data_format)
     return _from_numpy_array(backend_module, out, "", images)
 
 
-@dataclass
-class RotationConfig:
+class RotationConfig(pydantic.BaseModel):
     """Configuration parameters for the random rotation transformation."""
 
-    factor: float
-    fill_mode: str
-    interpolation: str
-    fill_value: float
-    data_format: str
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    factor: float | tuple[float, float] = 0.0
+    fill_mode: str = "reflect"
+    interpolation: str = "bilinear"
+    fill_value: float = 0.0
+    data_format: str | None = None
     seed: VisionArray | None = None
 
 
@@ -140,9 +142,10 @@ def _generate_coordinate_grid(np_mod: VisionArray, H: int, W: int) -> tuple[Visi
     return (0, 0)
 
 
-@dataclass
-class AffineTransformParams:
+class AffineTransformParams(pydantic.BaseModel):
     """Parameters defining a spatial affine transformation operation."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     cos_a: float
     sin_a: float
@@ -161,8 +164,8 @@ def _apply_affine_transform(y_grid: VisionArray, x_grid: VisionArray, params: Af
     Returns:
         tuple[VisionArray, VisionArray]: The transformed Y and X coordinates.
     """
-    x_shifted = cast(float, x_grid) - params.cx
-    y_shifted = cast(float, y_grid) - params.cy
+    x_shifted = typing.cast(float, x_grid) - params.cx
+    y_shifted = typing.cast(float, y_grid) - params.cy
     x_rot = x_shifted * params.cos_a + y_shifted * params.sin_a
     y_rot = -x_shifted * params.sin_a + y_shifted * params.cos_a
     return (y_rot + params.cy, x_rot + params.cx)
@@ -308,8 +311,8 @@ def _get_elastic_factor(rng: VisionArray, f: VisionArray) -> float:
         float: The sampled configuration parameter for elastic distortion.
     """
     if isinstance(f, (tuple, list)):
-        return float(cast(ModuleType, rng).uniform(f[0], f[1]))
-    return float(cast(float, f))
+        return float(typing.cast(ModuleType, rng).uniform(f[0], f[1]))
+    return float(typing.cast(float, f))
 
 
 def random_elastic_transform_eager(
@@ -339,10 +342,10 @@ def random_elastic_transform_eager(
         new_y=new_y,
         new_x=new_x,
         order=1 if str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear") == "bilinear" else 0,
-        fill_value=float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0)),
+        fill_value=float(typing.cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0)),
     )
     out = _apply_elastic_batch(ctx.np_mod, ctx.imgs, t_config)
-    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
+    out = _from_channels_last(ctx.np_mod, out, typing.cast("str | None", data_format))
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -382,10 +385,10 @@ def _get_shear_factor(rng: VisionArray, factor: VisionArray) -> float:
     Returns:
         float: The sampled shear magnitude.
     """
-    rng_mod = cast(ModuleType, rng)
+    rng_mod = typing.cast(ModuleType, rng)
     if isinstance(factor, (tuple, list)):
         return float(rng_mod.uniform(factor[0], factor[1]))
-    return float(rng_mod.uniform(-cast(float, factor), factor))
+    return float(rng_mod.uniform(-typing.cast(float, factor), factor))
 
 
 def _compute_shear_grid(np_mod: VisionArray, config: GeometricGridConfig) -> tuple[VisionArray, VisionArray]:
@@ -421,7 +424,7 @@ def random_zoom_eager(
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
     interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
+    fill_value = float(typing.cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
     seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
     data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -434,10 +437,10 @@ def random_zoom_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=cast("str", data_format),
+        data_format=typing.cast("str", data_format),
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
+    out = _from_channels_last(ctx.np_mod, out, typing.cast("str | None", data_format))
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -461,7 +464,7 @@ def random_translation_eager(
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
     interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
+    fill_value = float(typing.cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
     seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
     data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -472,10 +475,10 @@ def random_translation_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=cast("str", data_format),
+        data_format=typing.cast("str", data_format),
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
+    out = _from_channels_last(ctx.np_mod, out, typing.cast("str | None", data_format))
     return _from_numpy_array(backend_module, out, "", images)
 
 
@@ -499,7 +502,7 @@ def random_shear_eager(
     """
     fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
     interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
+    fill_value = float(typing.cast(float, kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
     seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
     data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
@@ -510,8 +513,8 @@ def random_shear_eager(
         interpolation=interpolation,
         seed=seed,
         fill_value=fill_value,
-        data_format=cast("str", data_format),
+        data_format=typing.cast("str", data_format),
     )
     out = _interpolate_pixels(ctx.np_mod, ctx.imgs, new_y, new_x, config)
-    out = _from_channels_last(ctx.np_mod, out, cast("Optional[str]", data_format))
+    out = _from_channels_last(ctx.np_mod, out, typing.cast("str | None", data_format))
     return _from_numpy_array(backend_module, out, "", images)

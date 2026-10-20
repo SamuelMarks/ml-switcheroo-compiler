@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Union, cast
 
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
-ValueType = Union["Tensor", float, int, bool, str, tuple[int, ...], list[float], "EvalValue"]
+ValueType = TensorOrScalar
 
 
 class Environment:
@@ -31,7 +28,7 @@ class Environment:
         Args:
             inputs (Mapping[str, ValueType] | None): Initial variable mapping dictionary.
         """
-        self.memory = cast("dict[str, ValueType]", inputs) if isinstance(inputs, dict) else (dict(inputs) if inputs is not None else {})
+        self.memory = dict(inputs) if inputs is not None else {}
 
     def get(self, name: str) -> ValueType:
         """Retrieve the value associated with the given node or variable name.

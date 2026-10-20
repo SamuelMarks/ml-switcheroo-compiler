@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable
-from dataclasses import dataclass
-from types import ModuleType
-from typing import cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_crop_eager,
@@ -13,10 +13,12 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_zoom_eager,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
 @numpy_eager_registry.register("AugMix")
-def _np_augmix(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
+def _np_augmix(backend_module: BackendModuleProtocol, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np augmix operation on the active backend array.
 
     Args:
@@ -32,7 +34,7 @@ def _np_augmix(backend_module: ModuleType, images: EagerValue, factor: float, **
 
 
 @numpy_eager_registry.register("Cutmix")
-def _np_cutmix(backend_module: ModuleType, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_cutmix(backend_module: BackendModuleProtocol, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np cutmix operation on the active backend array.
 
     Args:
@@ -48,7 +50,7 @@ def _np_cutmix(backend_module: ModuleType, images1: EagerValue, images2: EagerVa
 
 
 @numpy_eager_registry.register("Mixup")
-def _np_mixup(backend_module: ModuleType, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_mixup(backend_module: BackendModuleProtocol, images1: EagerValue, images2: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np mixup operation on the active backend array.
 
     Args:
@@ -64,7 +66,7 @@ def _np_mixup(backend_module: ModuleType, images1: EagerValue, images2: EagerVal
 
 
 @numpy_eager_registry.register("RandAugment")
-def _np_rand_augment(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
+def _np_rand_augment(backend_module: BackendModuleProtocol, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np rand augment operation on the active backend array.
 
     Args:
@@ -80,7 +82,7 @@ def _np_rand_augment(backend_module: ModuleType, images: EagerValue, factor: flo
 
 
 @numpy_eager_registry.register("RandomColorJitter")
-def _np_random_color_jitter(backend_module: ModuleType, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_random_color_jitter(backend_module: BackendModuleProtocol, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np random color jitter operation on the active backend array.
 
     Args:
@@ -95,7 +97,7 @@ def _np_random_color_jitter(backend_module: ModuleType, images: EagerValue, **kw
 
 
 @numpy_eager_registry.register("RandomCrop")
-def _np_random_crop(backend_module: ModuleType, images: EagerValue, size: EagerValue, seed: EagerValue = None) -> EagerValue:
+def _np_random_crop(backend_module: BackendModuleProtocol, images: EagerValue, size: EagerValue, seed: EagerValue = None) -> EagerValue:
     """Execute the eager np random crop operation on the active backend array.
 
     Args:
@@ -107,11 +109,11 @@ def _np_random_crop(backend_module: ModuleType, images: EagerValue, size: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", random_crop_eager)(backend_module, images, size, seed))
+    return typing.cast("EagerCallableProtocol", random_crop_eager)(backend_module, images, size, seed)
 
 
 @numpy_eager_registry.register("RandomErasing")
-def _np_random_erasing(backend_module: ModuleType, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
+def _np_random_erasing(backend_module: BackendModuleProtocol, images: EagerValue, factor: float, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np random erasing operation on the active backend array.
 
     Args:
@@ -137,7 +139,7 @@ def _np_flip_horizontal(img: EagerValue, rng: EagerValue) -> EagerValue:
     Returns:
         The flipped or unchanged image array.
     """
-    return cast(EagerTensorProtocol, img)[:, :, ::-1] if cast(ModuleType, rng).random() > 0.5 else img
+    return typing.cast(EagerTensorProtocol, img)[:, :, ::-1] if typing.cast(BackendModuleProtocol, rng).random() > 0.5 else img
 
 
 def _np_flip_vertical(img: EagerValue, rng: EagerValue) -> EagerValue:
@@ -150,7 +152,7 @@ def _np_flip_vertical(img: EagerValue, rng: EagerValue) -> EagerValue:
     Returns:
         The flipped or unchanged image array.
     """
-    return cast(EagerTensorProtocol, img)[:, ::-1, :] if cast(ModuleType, rng).random() > 0.5 else img
+    return typing.cast(EagerTensorProtocol, img)[:, ::-1, :] if typing.cast(BackendModuleProtocol, rng).random() > 0.5 else img
 
 
 def _np_flip_both(img: EagerValue, rng: EagerValue) -> EagerValue:
@@ -194,18 +196,27 @@ def _np_random_flip(images: EagerValue, mode: str, seed: EagerValue = None) -> E
     # Check if a single image
     strategy: Callable[[EagerValue, EagerValue], EagerValue] = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
     if len(getattr(images, "shape")) == 3:
-        return strategy(images, cast("EagerValue", rng))
+        return strategy(images, rng)
 
     out = getattr(np, "copy")(images)
 
     for i in range(out.shape[0]):
-        out[i] = strategy(out[i], cast("EagerValue", rng))
+        out[i] = strategy(out[i], rng)
 
-    return cast(EagerValue, out)
+    return typing.cast("EagerValue", out)
 
 
-@dataclass
-class RotationConfig:
+class _PositionalVisionModel(pydantic.BaseModel):
+    """Base vision model supporting positional and keyword initialization."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
+        """Initialize model from positional or keyword arguments."""
+        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+
+
+class RotationConfig(_PositionalVisionModel):
     """Rotation configuration."""
 
     theta: float
@@ -215,7 +226,7 @@ class RotationConfig:
     y: EagerValue
 
 
-def _calculate_rotation_matrix(np: ModuleType, cfg: RotationConfig) -> EagerValue:
+def _calculate_rotation_matrix(np: BackendModuleProtocol, cfg: RotationConfig) -> EagerValue:
     """Calculate rotation matrix coordinates.
 
     Args:
@@ -255,14 +266,13 @@ def _nearest_interpolation(
     src_x, src_y = coords
     H, W = shape
     b, c = b_c
-    mod = cast(ModuleType, np)
+    mod = typing.cast(BackendModuleProtocol, np)
     src_y_round = mod.clip(mod.round(src_y).astype(mod.int32), 0, H - 1)
     src_x_round = mod.clip(mod.round(src_x).astype(mod.int32), 0, W - 1)
-    return cast(EagerTensorProtocol, images)[b, src_y_round, src_x_round, c]
+    return typing.cast(EagerTensorProtocol, images)[b, src_y_round, src_x_round, c]
 
 
-@dataclass
-class InterpPixelsConfig:
+class InterpPixelsConfig(_PositionalVisionModel):
     """InterpPixelsConfig class."""
 
     images: EagerValue
@@ -275,7 +285,7 @@ class InterpPixelsConfig:
     b_c: tuple[EagerValue, ...]
 
 
-def _get_interp_pixels(np: ModuleType, cfg: InterpPixelsConfig) -> EagerValue:
+def _get_interp_pixels(np: BackendModuleProtocol, cfg: InterpPixelsConfig) -> EagerValue:
     """Gather pixels.
 
     Args:
@@ -290,10 +300,10 @@ def _get_interp_pixels(np: ModuleType, cfg: InterpPixelsConfig) -> EagerValue:
     y1_c = np.clip(cfg.y1, 0, cfg.H - 1)
     x0_c = np.clip(cfg.x0, 0, cfg.W - 1)
     x1_c = np.clip(cfg.x1, 0, cfg.W - 1)
-    Ia = cast(EagerTensorProtocol, cfg.images)[b, y0_c, x0_c, c]
-    Ib = cast(EagerTensorProtocol, cfg.images)[b, y1_c, x0_c, c]
-    Ic = cast(EagerTensorProtocol, cfg.images)[b, y0_c, x1_c, c]
-    Id = cast(EagerTensorProtocol, cfg.images)[b, y1_c, x1_c, c]
+    Ia = typing.cast(EagerTensorProtocol, cfg.images)[b, y0_c, x0_c, c]
+    Ib = typing.cast(EagerTensorProtocol, cfg.images)[b, y1_c, x0_c, c]
+    Ic = typing.cast(EagerTensorProtocol, cfg.images)[b, y0_c, x1_c, c]
+    Id = typing.cast(EagerTensorProtocol, cfg.images)[b, y1_c, x1_c, c]
     return Ia, Ib, Ic, Id
 
 
@@ -310,12 +320,12 @@ def _get_interp_weights(
     Returns:
         tuple: Result.
     """
-    src_y = cast(EagerTensorProtocol, src_coords[0])
-    src_x = cast(EagerTensorProtocol, src_coords[1])
-    y0 = cast(EagerTensorProtocol, bounds[0])
-    y1 = cast(EagerTensorProtocol, bounds[1])
-    x0 = cast(EagerTensorProtocol, bounds[2])
-    x1 = cast(EagerTensorProtocol, bounds[3])
+    src_y = typing.cast(EagerTensorProtocol, src_coords[0])
+    src_x = typing.cast(EagerTensorProtocol, src_coords[1])
+    y0 = typing.cast(EagerTensorProtocol, bounds[0])
+    y1 = typing.cast(EagerTensorProtocol, bounds[1])
+    x0 = typing.cast(EagerTensorProtocol, bounds[2])
+    x1 = typing.cast(EagerTensorProtocol, bounds[3])
     wa = (y1 - src_y) * (x1 - src_x)
     wb = (src_y - y0) * (x1 - src_x)
     wc = (y1 - src_y) * (src_x - x0)
@@ -342,7 +352,7 @@ def _bilinear_interpolation(
     Returns:
             tuple[int, ...]: Result.
     """
-    mod = cast(ModuleType, np)
+    mod = typing.cast(BackendModuleProtocol, np)
     y0: EagerTensorProtocol = mod.floor(coords[1]).astype(mod.int32)
     y1: EagerTensorProtocol = y0 + 1
     x0: EagerTensorProtocol = mod.floor(coords[0]).astype(mod.int32)
@@ -354,11 +364,10 @@ def _bilinear_interpolation(
 
     p0, p1, p2, p3 = getattr(pixels, "__iter__")()
     w0, w1, w2, w3 = getattr(weights, "__iter__")()
-    return cast(EagerValue, p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3)
+    return typing.cast("EagerValue", p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3)
 
 
-@dataclass
-class AffineConfig:
+class AffineConfig(_PositionalVisionModel):
     """Affine configuration."""
 
     coords: tuple[EagerValue, ...]
@@ -367,7 +376,7 @@ class AffineConfig:
     options: tuple[EagerValue, ...]
 
 
-def _apply_affine_grid(np: ModuleType, images: EagerValue, cfg: AffineConfig) -> EagerValue:
+def _apply_affine_grid(np: BackendModuleProtocol, images: EagerValue, cfg: AffineConfig) -> EagerValue:
     """Apply affine grid sampling.
 
     Args:
@@ -379,18 +388,17 @@ def _apply_affine_grid(np: ModuleType, images: EagerValue, cfg: AffineConfig) ->
     """
     interpolation, fill_mode, fill_value, mask = cfg.options
     if interpolation == "nearest":
-        val = cast("Callable[..., EagerValue]", _nearest_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val = typing.cast("TypedVariadicCallable[EagerValue]", _nearest_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
     else:
-        val = cast("Callable[..., EagerValue]", _bilinear_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
+        val = typing.cast("TypedVariadicCallable[EagerValue]", _bilinear_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
 
     if fill_mode == "constant":
         val = getattr(np, "where")(mask, val, fill_value)
 
-    return cast(EagerValue, getattr(val, "astype")(getattr(images, "dtype")))
+    return typing.cast("EagerValue", getattr(val, "astype")(getattr(images, "dtype")))
 
 
-@dataclass
-class BatchRotationConfig:
+class BatchRotationConfig(_PositionalVisionModel):
     """Batch rotation configuration."""
 
     images: EagerTensorProtocol
@@ -402,7 +410,7 @@ class BatchRotationConfig:
     options: tuple[EagerValue, ...]
 
 
-def _process_batch_item(np: ModuleType, cfg: BatchRotationConfig, b: int, out: EagerValue) -> None:
+def _process_batch_item(np: BackendModuleProtocol, cfg: BatchRotationConfig, b: int, out: EagerValue) -> None:
     """Process a single item in the batch.
 
     Args:
@@ -411,16 +419,16 @@ def _process_batch_item(np: ModuleType, cfg: BatchRotationConfig, b: int, out: E
         b (int): The b parameter.
         out (EagerValue): The out parameter.
     """
-    rot_cfg = RotationConfig(theta=cast("float", cfg.angles[b]), H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
+    rot_cfg = RotationConfig(theta=typing.cast("float", cfg.angles[b]), H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
     src_x, src_y = getattr(getattr(_calculate_rotation_matrix(np, rot_cfg), "__iter__")(), "__iter__")()
     mask = (src_x >= 0) & (src_x <= cfg.W - 1) & (src_y >= 0) & (src_y <= cfg.H - 1)
     C = int(tuple(cfg.images.shape)[3])
     for c in range(C):
         aff_cfg = AffineConfig(coords=(src_x, src_y), shape=(cfg.H, cfg.W), b_c=(b, c), options=cfg.options + (mask,))
-        cast(EagerTensorProtocol, out)[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
+        typing.cast(EagerTensorProtocol, out)[b, :, :, c] = _apply_affine_grid(np, cfg.images, aff_cfg)
 
 
-def _apply_rotation_batch(np: ModuleType, cfg: BatchRotationConfig) -> EagerValue:
+def _apply_rotation_batch(np: BackendModuleProtocol, cfg: BatchRotationConfig) -> EagerValue:
     """Apply rotation to a batch of images.
 
     Args:
@@ -434,7 +442,7 @@ def _apply_rotation_batch(np: ModuleType, cfg: BatchRotationConfig) -> EagerValu
     out = np.zeros_like(cfg.images, dtype=cfg.images.dtype)
     for b in range(B):
         _process_batch_item(np, cfg, b, out)
-    return cast(EagerValue, out)
+    return typing.cast("EagerValue", out)
 
 
 def _resolve_rotation_factor(
@@ -453,7 +461,7 @@ def _resolve_rotation_factor(
     return -factor, factor
 
 
-def _create_rotation_mesh(np: ModuleType, H: int, W: int) -> EagerValue:
+def _create_rotation_mesh(np: BackendModuleProtocol, H: int, W: int) -> EagerValue:
     """Create mesh grid for rotation.
 
     Args:
@@ -471,7 +479,7 @@ def _create_rotation_mesh(np: ModuleType, H: int, W: int) -> EagerValue:
 
 
 @numpy_eager_registry.register("RandomRotation")
-def _np_random_rotation(backend_module: ModuleType, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_random_rotation(backend_module: BackendModuleProtocol, images: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np random rotation operation on the active backend array.
 
     Args:
@@ -493,7 +501,7 @@ def _np_random_rotation(backend_module: ModuleType, images: EagerValue, **kwargs
     B, H, W, _ = getattr(images, "shape")
 
     rng = np.random.default_rng(kwargs.get("seed", None))
-    angles = rng.uniform(*cast("EagerCallableProtocol", _resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
+    angles = rng.uniform(*typing.cast("EagerCallableProtocol", _resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
 
     y, x = getattr(getattr(_create_rotation_mesh(np, H, W), "__iter__")(), "__iter__")()
 
@@ -503,14 +511,14 @@ def _np_random_rotation(backend_module: ModuleType, images: EagerValue, **kwargs
         kwargs.get("fill_value", 0.0),
     )
 
-    batch_cfg = BatchRotationConfig(images=cast("EagerTensorProtocol", images), angles=angles, H=H, W=W, x=x, y=y, options=options)
+    batch_cfg = BatchRotationConfig(images=typing.cast("EagerTensorProtocol", images), angles=angles, H=H, W=W, x=x, y=y, options=options)
     out = _apply_rotation_batch(np, batch_cfg)
 
     return getattr(out, "__getitem__")(0) if rank == 3 else out
 
 
 @numpy_eager_registry.register("RandomTranslation")
-def _np_random_translation(backend_module: ModuleType, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_random_translation(backend_module: BackendModuleProtocol, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np random translation operation on the active backend array.
 
     Args:
@@ -523,11 +531,11 @@ def _np_random_translation(backend_module: ModuleType, images: EagerValue, heigh
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", random_translation_eager)(backend_module, images, height_factor, width_factor, **kwargs))
+    return typing.cast("EagerCallableProtocol", random_translation_eager)(backend_module, images, height_factor, width_factor, **kwargs)
 
 
 @numpy_eager_registry.register("RandomZoom")
-def _np_random_zoom(backend_module: ModuleType, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
+def _np_random_zoom(backend_module: BackendModuleProtocol, images: EagerValue, height_factor: EagerValue, width_factor: EagerValue = None, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np random zoom operation on the active backend array.
 
     Args:
@@ -540,7 +548,7 @@ def _np_random_zoom(backend_module: ModuleType, images: EagerValue, height_facto
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", random_zoom_eager)(backend_module, images, height_factor, width_factor, **kwargs))
+    return typing.cast("EagerCallableProtocol", random_zoom_eager)(backend_module, images, height_factor, width_factor, **kwargs)
 
 
 __all__ = [

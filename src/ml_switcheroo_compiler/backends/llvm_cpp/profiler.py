@@ -1,14 +1,17 @@
 """C++ / LLVM backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import ctypes
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -19,7 +22,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -48,26 +52,26 @@ def _flatten_input_values(val: EagerValue) -> list[float]:
 class CppProfiler:
     """Provides genuine execution timing and peak memory profiling for native C++ compilation."""
 
-    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., str]]:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[str] | None:
         """Compile an IRGraph into an executable C++ shared library callable.
 
         Args:
             graph (IRGraph): Target computation graph.
 
         Returns:
-            Optional[Callable[..., str]]: Native callable executing the compiled C++ graph.
+            Optional[TypedVariadicCallable[str]]: Native callable executing the compiled C++ graph.
         """
         generator = CppGenerator(graph=graph)
         try:
-            return generator._compile_aot_impl(graph)
+            return typing.cast(TypedVariadicCallable[str], generator._compile_aot_impl(graph))
         except Exception:
             return None
 
     def _marshal_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
-    ) -> tuple[Optional[EagerValue], list[EagerValue]]:
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+    ) -> tuple[EagerValue | None, list[EagerValue]]:
         """Marshal input tensors into C-contiguous float buffers and ctypes pointer array.
 
         Args:
@@ -95,7 +99,7 @@ class CppProfiler:
     def _allocate_outputs(
         self,
         graph: IRGraph,
-    ) -> tuple[Optional[EagerValue], list[EagerValue]]:
+    ) -> tuple[EagerValue | None, list[EagerValue]]:
         """Allocate output float buffers and ctypes pointer array for graph outputs.
 
         Args:
@@ -123,11 +127,11 @@ class CppProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on C++ backend with ABI tensor marshalling.
 
         Args:
@@ -147,7 +151,7 @@ class CppProfiler:
         c_inputs, _ = self._marshal_inputs(graph, inputs)
         c_outputs, _ = self._allocate_outputs(graph)
 
-        compiled_fn: Optional[Callable[..., str]] = None
+        compiled_fn: TypedVariadicCallable[str] | None = None
         if has_ops:
             compiled_fn = self._compile_graph(graph)
 

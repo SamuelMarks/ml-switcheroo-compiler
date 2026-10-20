@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Iterable
-from typing import cast
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -73,13 +73,13 @@ class ApplyOverAxes(OpDef):
                 if sm:
                     return tuple(int(d) for d in sm)
             if isinstance(obj, (list, tuple)):
-                return tuple(int(cast(int, d)) for d in obj)
+                return tuple(int(typing.cast(int, d)) for d in obj)
             return ()
 
         shape = list(_get_shape(inp_a))
         ax = axes if axes is not None else kwargs.get("axes")
         if ax is not None and shape:
-            axes_list = [int(ax)] if isinstance(ax, int) else [int(cast(int, x)) for x in (cast("Iterable[TensorOrScalar]", ax) if isinstance(ax, Iterable) else ())]
+            axes_list = [int(ax)] if isinstance(ax, int) else [int(typing.cast(int, x)) for x in (typing.cast("Iterable[TensorOrScalar]", ax) if isinstance(ax, Iterable) else ())]
             for a_idx in axes_list:
                 norm_idx = a_idx + len(shape) if a_idx < 0 else a_idx
                 if 0 <= norm_idx < len(shape):
@@ -210,7 +210,7 @@ class TrapezoidalIntegral(OpDef):
         """
         y = args[0] if len(args) > 0 else kwargs.get("y")
         shape = list(y) if isinstance(y, Iterable) else []
-        axis = int(cast(int, kwargs.get("axis", -1)))
+        axis = int(typing.cast(int, kwargs.get("axis", -1)))
         if axis < 0:
             axis += len(shape)
         shape.pop(axis)
@@ -317,7 +317,7 @@ class Descriptive(OpDef):
             out_shape = tuple(1 for _ in shape) if keepdims else ()
             return (out_shape, out_shape, out_shape, out_shape)
 
-        axes_seq = (axis,) if isinstance(axis, int) else (tuple(cast("Iterable[int]", axis)) if isinstance(axis, Iterable) else ())
+        axes_seq = (axis,) if isinstance(axis, int) else (tuple(typing.cast("Iterable[int]", axis)) if isinstance(axis, Iterable) else ())
         if keepdims:
             out_shape_list = list(shape)
             for d in axes_seq:
@@ -364,10 +364,8 @@ class Distributions(OpDef):
         sample_shape = kwargs.get("sample_shape", ())
         if isinstance(sample_shape, int):
             sample_shape_tuple: tuple[int, ...] = (sample_shape,)
-        elif isinstance(sample_shape, Iterable):
-            sample_shape_tuple = tuple(int(cast(int, d)) for d in cast("Iterable[TensorOrScalar]", sample_shape))
         else:
-            sample_shape_tuple = ()
+            sample_shape_tuple = tuple(int(typing.cast(int, d)) for d in typing.cast("Iterable[TensorOrScalar]", sample_shape or ()))
         return sample_shape_tuple + shape
 
 

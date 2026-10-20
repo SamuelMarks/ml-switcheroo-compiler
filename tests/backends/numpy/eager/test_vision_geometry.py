@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_grid, _np_elastic_transform
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -17,8 +18,8 @@ def test_elastic_transform() -> None:
     """Test function test_elastic_transform."""
     arr_1d = np.array([1, 2, 3])
     disp = np.array([[[1, 1]]])
-    res_1d = _np_elastic_transform(None, arr_1d, disp)
-    assert cast("EagerCallableProtocol", np.array_equal)(res_1d, arr_1d)
+    res_1d = _np_elastic_transform(typing.cast("BackendModuleProtocol", None), arr_1d, disp)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res_1d, arr_1d)
 
 
 def test_affine_grid() -> None:
@@ -26,5 +27,5 @@ def test_affine_grid() -> None:
     """Test function test_affine_grid."""
     theta = np.ones((1, 6))
     size_4d = (1, 3, 10, 10)
-    res_4d = _np_affine_grid(None, theta, size_4d)
-    assert cast("EagerTensorProtocol", getattr(res_4d, "shape")) == (1, 10, 10, 2)
+    res_4d = _np_affine_grid(typing.cast("BackendModuleProtocol", None), theta, size_4d)
+    assert typing.cast("EagerTensorProtocol", getattr(res_4d, "shape")) == (1, 10, 10, 2)

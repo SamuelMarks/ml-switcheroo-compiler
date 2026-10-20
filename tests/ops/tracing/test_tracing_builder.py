@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -58,7 +58,7 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             self.data = type("M", (), {"id": "1"})()
             self.shape = (2,)
 
-    assert cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", MockTensor1)()) == ("1", (2,))
+    assert typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(typing.cast("EagerCallableProtocol", MockTensor1)()) == ("1", (2,))
 
     class MockTensor2:
         """Test class MockTensor2."""
@@ -68,7 +68,7 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             self.data = 42
             self.shape = ()
 
-    res = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", MockTensor2)())
+    res = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(typing.cast("EagerCallableProtocol", MockTensor2)())
     assert res[1] == ()
 
     # Test the branch where hasattr(global_tracing_state, "constant_cache") is False
@@ -85,18 +85,18 @@ def test_extract_from_tensor(mocker: EagerTensorProtocol) -> None:
             obj: Test parameter `obj`.
             name: Test parameter `name`.
         """
-        if cast("EagerTensorProtocol", obj) is cast("EagerTensorProtocol", global_tracing_state) and cast("EagerTensorProtocol", name) == cast("EagerTensorProtocol", "constant_cache"):
+        if typing.cast("EagerTensorProtocol", obj) is typing.cast("EagerTensorProtocol", global_tracing_state) and typing.cast("EagerTensorProtocol", name) == typing.cast("EagerTensorProtocol", "constant_cache"):
             return False
-        return cast("EagerCallableProtocol", original_hasattr)(obj, name)
+        return typing.cast("EagerCallableProtocol", original_hasattr)(obj, name)
 
     with patch("builtins.hasattr", side_effect=custom_hasattr):
-        res2 = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(cast("EagerCallableProtocol", MockTensor2)())
+        res2 = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(typing.cast("EagerCallableProtocol", MockTensor2)())
         assert res2[1] == ()
 
     # Hit the cache condition
     m2 = MockTensor2()
     with patch.object(global_tracing_state, "constant_cache", {id(m2.data): "cached_id"}, create=True):
-        res3 = cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(m2)
+        res3 = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(m2)
         assert res3 == ("cached_id", ())
 
 

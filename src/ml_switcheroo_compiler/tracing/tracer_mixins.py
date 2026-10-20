@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
-from collections.abc import Mapping
-from typing import TYPE_CHECKING, cast
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 
@@ -50,7 +48,8 @@ class ProxyMathOverloadsMixin:
         # Broadcast shapes
         from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes
 
-        out_shape = broadcast_shapes(self.shape, other_shape)
+        out_shape_raw = broadcast_shapes(self.shape, other_shape)
+        out_shape: tuple[int | str, ...] = tuple(d if isinstance(d, (int, str)) else str(d) for d in out_shape_raw)
         out_dtype = self.dtype
 
         if other_id is None:
@@ -59,10 +58,12 @@ class ProxyMathOverloadsMixin:
 
             from ml_switcheroo_compiler.ir.core import IRNode
 
+            const_val: AttributeValue = other if isinstance(other, (int, float, str, bool, bytes)) or other is None else str(other)
+            const_attrs: dict[str, AttributeValue] = {"value": const_val}
             const_node = IRNode(
                 id=other_id,
                 op_type="Constant",
-                attributes=cast("Mapping[str, AttributeValue]", {"value": other}),
+                attributes=const_attrs,
                 shape_metadata=(),
             )
             global_tracing_state.add_node(const_node)
@@ -81,7 +82,7 @@ class ProxyMathOverloadsMixin:
 
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return cast(ProxyTensor, cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
+        return ProxyTensor(id=out_id, shape=out_shape, dtype=out_dtype)
 
     def _unary_op(self, op_type: str) -> ProxyTensor:
         """Trace a unary mathematical operation and append it to the computation graph.
@@ -184,6 +185,7 @@ class ProxyMathOverloadsMixin:
         out_dtype = self.dtype
 
         out_id = str(uuid.uuid4())
+        out_shape_tuple: tuple[int | str, ...] = tuple(d if isinstance(d, (int, str)) else str(d) for d in out_shape)
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -191,19 +193,19 @@ class ProxyMathOverloadsMixin:
             id=out_id,
             op_type="MatMul",
             inputs=[self.id, other_id],
-            shape_metadata=out_shape,
+            shape_metadata=out_shape_tuple,
         )
         global_tracing_state.add_node(node)
 
         from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-        return cast(ProxyTensor, cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=out_dtype))
+        return ProxyTensor(id=out_id, shape=out_shape_tuple, dtype=out_dtype)
 
-    def assign(self, value: ProxyTensor) -> ProxyTensor:
+    def assign(self, value: ProxyTensor | TensorOrScalar) -> ProxyTensor:
         """Trace an assignment operation, updating a variable's state.
 
         Args:
-            value (ProxyTensor): The incoming tensor to assign to the variable.
+            value (ProxyTensor | TensorOrScalar): The incoming tensor to assign to the variable.
 
         Returns:
             ProxyTensor: A proxy tensor representing the updated state.
@@ -235,10 +237,12 @@ class ProxyMathOverloadsMixin:
 
             from ml_switcheroo_compiler.ir.core import IRNode
 
+            const_val: AttributeValue = value if isinstance(value, (int, float, str, bool, bytes)) or value is None else str(value)
+            const_attrs: dict[str, AttributeValue] = {"value": const_val}
             const_node = IRNode(
                 id=value_id,
                 op_type="Constant",
-                attributes=cast("Mapping[str, AttributeValue]", {"value": value}),
+                attributes=const_attrs,
                 shape_metadata=(),
             )
             global_tracing_state.add_node(const_node)
@@ -269,7 +273,7 @@ class ProxyMathOverloadsMixin:
         Returns:
             ProxyTensor: A proxy tensor representing the updated variable
         """
-        return cast("ProxyTensor", getattr(self, "assign")(self + value))
+        return self.assign(self._binary_op(value, "Add"))
 
     def assign_sub(self, value: ProxyTensor) -> ProxyTensor:
         """Subtract value from variable proxy and return updated proxy.
@@ -280,4 +284,4 @@ class ProxyMathOverloadsMixin:
         Returns:
             ProxyTensor: A proxy tensor representing the updated variable
         """
-        return cast("ProxyTensor", getattr(self, "assign")(self - value))
+        return self.assign(self._binary_op(value, "Sub"))

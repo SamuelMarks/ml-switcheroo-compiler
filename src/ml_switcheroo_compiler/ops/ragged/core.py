@@ -1,6 +1,8 @@
 """Ragged ops core."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -28,8 +30,8 @@ class RaggedDot(OpDef):
         if len(args) >= 2:
             a, b = args[0], args[1]
         else:
-            a = cast(EagerTensorProtocol, kwargs.get("rt_a", kwargs.get("a", args[0] if args else None)))
-            b = cast(EagerTensorProtocol, kwargs.get("b", kwargs.get("weights", args[1] if len(args) > 1 else None)))
+            a = typing.cast(EagerTensorProtocol, kwargs.get("rt_a", kwargs.get("a", args[0] if args else None)))
+            b = typing.cast(EagerTensorProtocol, kwargs.get("b", kwargs.get("weights", args[1] if len(args) > 1 else None)))
 
         if a is None:
             return ()

@@ -1,18 +1,21 @@
 """Distributed training strategies for ML Switcheroo Compiler."""
 
+from __future__ import annotations
+
 import logging
 import os
+import typing
 from types import ModuleType
-from typing import Optional, Union, cast
 
 import yaml
+from ml_switcheroo_ir import NodeDict
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-AttrType = Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], None]
+AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
 
 
 def _load_strategy_config() -> dict[str, dict[str, AttrType]]:
@@ -24,7 +27,7 @@ def _load_strategy_config() -> dict[str, dict[str, AttrType]]:
     yaml_path = os.path.join(os.path.dirname(__file__), "strategy_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return cast(dict[str, dict[str, "AttrType"]], yaml.safe_load(f).get("strategies", {}))
+            return typing.cast(dict[str, dict[str, "AttrType"]], yaml.safe_load(f).get("strategies", {}))
     return {}
 
 
@@ -37,7 +40,7 @@ def _load_device_mesh_config() -> dict[str, AttrType]:
     yaml_path: str = os.path.join(os.path.dirname(__file__), "device_mesh.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return cast(dict[str, AttrType], yaml.safe_load(f) or {})
+            return typing.cast(dict[str, AttrType], yaml.safe_load(f) or {})
     return {}
 
 
@@ -50,7 +53,7 @@ def _load_webrtc_topology() -> dict[str, AttrType]:
     yaml_path = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return cast(dict[str, "AttrType"], yaml.safe_load(f))
+            return typing.cast(dict[str, "AttrType"], yaml.safe_load(f))
     return {}
 
 
@@ -101,9 +104,7 @@ class ParameterServerStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("pull")
         if hook_name and hasattr(backend, hook_name):
-            from typing import cast
-
-            return cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
+            return typing.cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -136,7 +137,7 @@ class ParameterServerStrategy(Distribution):
                 modified = True
 
         if modified:
-            graph.nodes = new_nodes
+            graph.nodes = NodeDict(new_nodes)
 
         return modified
 
@@ -152,9 +153,7 @@ class ParameterServerStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("push")
         if hook_name and hasattr(backend, hook_name):
-            from typing import cast
-
-            return cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
+            return typing.cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -180,7 +179,7 @@ class ParameterServerStrategy(Distribution):
                 modified = True
 
         if modified:
-            graph.nodes = new_nodes
+            graph.nodes = NodeDict(new_nodes)
 
         return modified
 
@@ -232,9 +231,7 @@ class DataParallelStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("sync")
         if hook_name and hasattr(backend, hook_name):
-            from typing import cast
-
-            return cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
+            return typing.cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -260,7 +257,7 @@ class DataParallelStrategy(Distribution):
                         consumer.inputs = [ar_id if inp == node.id else inp for inp in consumer.inputs]
 
         if modified:
-            graph.nodes = new_nodes
+            graph.nodes = NodeDict(new_nodes)
 
         return modified
 
@@ -322,7 +319,7 @@ class ModelParallelStrategy(Distribution):
                 modified = True
 
         if modified:
-            graph.nodes = new_nodes
+            graph.nodes = NodeDict(new_nodes)
         return modified
 
 
@@ -341,8 +338,8 @@ class PreemptionCheckpointHandler:
 
     def save_preemption_checkpoint(
         self,
-        checkpoint_data: Optional[dict[str, AttrType]] = None,
-        checkpoint_id: Optional[str] = None,
+        checkpoint_data: dict[str, AttrType] | None = None,
+        checkpoint_id: str | None = None,
     ) -> str:
         """Save a preemption checkpoint file containing cluster and state metadata.
 
@@ -362,14 +359,14 @@ class PreemptionCheckpointHandler:
         payload: dict[str, AttrType] = {
             "checkpoint_id": cp_id,
             "timestamp": time.time(),
-            "cluster_resolver": getattr(self.cluster_resolver, "__class__", type(self.cluster_resolver)).__name__,
+            "cluster_resolver": str(getattr(self.cluster_resolver, "__class__", type(self.cluster_resolver)).__name__),
             "data": checkpoint_data or {},
         }
         with open(cp_path, "w", encoding="utf-8") as f:
             json.dump(payload, f)
         return cp_path
 
-    def restore_latest_checkpoint(self) -> Optional[dict[str, AttrType]]:
+    def restore_latest_checkpoint(self) -> dict[str, AttrType] | None:
         """Find and restore the latest checkpoint dictionary from the checkpoint directory.
 
         Returns:
@@ -411,7 +408,7 @@ class PreemptionCheckpointHandler:
 class Server:
     """Distributed execution server."""
 
-    def __init__(self, server_def: Union[dict[str, AttrType], str, None] = None, job_name: Optional[str] = None, task_index: Optional[int] = None) -> None:
+    def __init__(self, server_def: dict[str, AttrType] | str | None = None, job_name: str | None = None, task_index: int | None = None) -> None:
         """Initialize Server.
 
         Args:
@@ -426,8 +423,8 @@ class Server:
         import socket
         import threading
 
-        self._server: Optional[socket.socket] = None
-        self._thread: Optional[threading.Thread] = None
+        self._server: socket.socket | None = None
+        self._thread: threading.Thread | None = None
         self._running = False
 
         self.inbox: queue.Queue[tuple[str, AttrType]] = queue.Queue()
@@ -519,7 +516,7 @@ class Server:
         import json
         from contextlib import AbstractContextManager
 
-        with cast("AbstractContextManager[TensorOrScalar]", conn):
+        with typing.cast("AbstractContextManager[TensorOrScalar]", conn):
             getattr(conn, "setblocking")(True)
             header_len_b = getattr(conn, "recv")(4)
             if not header_len_b:
@@ -618,7 +615,7 @@ class RemoteValue:
 class PipelineParallelStrategy(Distribution):
     """Pipeline parallelism strategy for large models."""
 
-    def __init__(self, topology_name: str = "default", num_microbatches: Optional[int] = None, devices_per_stage: Optional[int] = None, target_env: str = "host") -> None:
+    def __init__(self, topology_name: str = "default", num_microbatches: int | None = None, devices_per_stage: int | None = None, target_env: str = "host") -> None:
         """Initialize pipeline parallelism strategy.
 
         Args:
@@ -689,7 +686,7 @@ class PipelineParallelStrategy(Distribution):
 
                     new_nodes[new_n.id] = new_n
 
-        graph.nodes = new_nodes
+        graph.nodes = NodeDict(new_nodes)
         graph.outputs = [f"{out}_mb{microbatches - 1}" for out in graph.outputs]
 
     def split_into_stages(self, graph: IRGraph, num_stages: int) -> list[list[str]]:
@@ -757,7 +754,7 @@ class PipelineParallelStrategy(Distribution):
             if modified:
                 node.inputs = new_inputs
 
-        graph.nodes = new_nodes
+        graph.nodes = NodeDict(new_nodes)
 
     def generate_microbatch_loop(self, graph: IRGraph) -> None:
         """Implement microbatch loop generation (splitting global batch size into sequential chunks).
@@ -776,7 +773,7 @@ class PipelineParallelStrategy(Distribution):
         inputs = [n for n in graph.nodes.values() if n.op_type == "Input"]
         compute_nodes = {nid: n for nid, n in graph.nodes.items() if n.op_type != "Input"}
 
-        graph.nodes = {n.id: n for n in inputs}
+        graph.nodes = NodeDict({n.id: n for n in inputs})
 
         body_graph = IRGraph()
         body_inputs = []
@@ -803,7 +800,7 @@ class PipelineParallelStrategy(Distribution):
         cond_graph = IRGraph()
         cond_in = IRNode(id="idx_cond", op_type="Input")
         cond_cmp = IRNode(id="cond_cmp", op_type="Less", inputs=["idx_cond", "max_iters"], attributes={})
-        cond_graph.nodes = {"idx_cond": cond_in, "cond_cmp": cond_cmp}
+        cond_graph.nodes = NodeDict({"idx_cond": cond_in, "cond_cmp": cond_cmp})
         cond_graph.inputs = ["idx_cond"]
         cond_graph.outputs = ["cond_cmp"]
 
@@ -815,7 +812,7 @@ class PipelineParallelStrategy(Distribution):
             id="microbatch_loop",
             op_type="WhileLoop",
             inputs=[i.id for i in inputs],
-            attributes=cast(
+            attributes=typing.cast(
                 "Mapping[str, AttributeValue]",
                 {"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph},
             ),
@@ -959,7 +956,7 @@ class PipelineParallelStrategy(Distribution):
 
         # Emit schedule metadata into graph attributes for the executor
         if not hasattr(graph, "attributes"):
-            setattr(graph, "attributes", {})
+            object.__setattr__(graph, "attributes", {})
         getattr(graph, "attributes")["pipeline_schedule"] = schedule
         getattr(graph, "attributes")["num_pipeline_stages"] = num_stages
 
@@ -998,8 +995,8 @@ class SPMDShardingStrategy(Distribution):
 
     def __init__(
         self,
-        mesh: Union[dict[str, AttrType], list[AttrType], tuple[AttrType, ...], None] = None,
-        layout_map: Union[dict[str, AttrType], None] = None,
+        mesh: dict[str, AttrType] | list[AttrType] | tuple[AttrType, ...] | None = None,
+        layout_map: dict[str, AttrType] | None = None,
     ) -> None:
         """Initialize SPMDShardingStrategy.
 
@@ -1027,15 +1024,13 @@ class SPMDShardingStrategy(Distribution):
             for inp_id in node.inputs:
                 inp_node = graph.nodes.get(inp_id)
                 if inp_node and getattr(inp_node, "sharding", None) is not None:
-                    node.sharding = inp_node.sharding
+                    object.__setattr__(node, "sharding", inp_node.sharding)
                     break
 
             if self.layout_map:
-                from ml_switcheroo_ir import PartitionSpec
-
                 spec = self.layout_map.get(node.id)
                 if spec:
-                    node.sharding = cast("Optional[PartitionSpec]", spec)
+                    object.__setattr__(node, "sharding", spec)
 
     def lower_sharding(self, graph: IRGraph) -> bool:
         """Execute SPMD graph partitioning, lowering 1D/2D mesh sharding to explicit collectives.

@@ -1,5 +1,7 @@
 """Test Broadcast Explicitizer Pass."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import _inject_broadcast_node, _needs_broadcast, _process_broadcast_node, broadcast_explicitizer_pass
 

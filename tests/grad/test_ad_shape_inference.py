@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.jvp_vjp import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -26,7 +26,7 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return cast("EagerCallableProtocol", Tensor)(val, cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
+    return typing.cast("EagerCallableProtocol", Tensor)(val, typing.cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
 
 
 def test_vjp_shape_dtype_inference() -> None:
@@ -44,14 +44,14 @@ def test_vjp_shape_dtype_inference() -> None:
     x = make_tensor(np.ones((2, 3), dtype=np.float32))
     y = make_tensor(np.ones((2, 3), dtype=np.float32))
 
-    out, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x, y)
+    out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x, y)
 
-    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(out, "dtype")).value == "float32"
+    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(out, "dtype")).value == "float32"
 
     cot = make_tensor(np.ones((2, 3), dtype=np.float32))
-    grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+    grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
 
-    assert cast("EagerCallableProtocol", len)(grads) == 2
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(grads, "__getitem__")(0)), "shape")) == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(grads, "__getitem__")(1)), "shape")) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", len)(grads) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(grads, "__getitem__")(0)), "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(grads, "__getitem__")(1)), "shape")) == (2, 3)

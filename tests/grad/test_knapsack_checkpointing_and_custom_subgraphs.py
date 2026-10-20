@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import pytest
@@ -24,7 +24,7 @@ from ml_switcheroo_compiler.grad.checkpointing import (
 from ml_switcheroo_compiler.grad.custom_vjp_ops import custom_vjp
 from ml_switcheroo_compiler.grad.jvp_vjp import custom_jvp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -99,8 +99,8 @@ def test_custom_vjp_declarative_subgraph() -> None:
     bwd_g.nodes["scaled"] = LogicalNode(id="scaled", op_type="Mul", inputs=["cot", "x"])
     bwd_g.outputs = ["scaled"]
 
-    cast("EagerTensorProtocol", getattr(dummy_fn, "defvjp_subgraph"))(bwd_g)
-    assert cast("EagerTensorProtocol", getattr(dummy_fn, "bwd_subgraph")) == bwd_g
+    typing.cast("EagerTensorProtocol", getattr(dummy_fn, "defvjp_subgraph"))(bwd_g)
+    assert typing.cast("EagerTensorProtocol", getattr(dummy_fn, "bwd_subgraph")) == bwd_g
 
 
 def test_custom_jvp_declarative_subgraph() -> None:
@@ -160,7 +160,7 @@ def test_evaluate_node_costs_edge_cases() -> None:
         shape_metadata=(-1, "str_dim", 4),
         attributes={"dtype": "float64"},
     )
-    footprint, flop = cast("EagerCallableProtocol", _evaluate_node_costs)(
+    footprint, flop = typing.cast("EagerCallableProtocol", _evaluate_node_costs)(
         node=node,
         memory_sizes=None,
         heavy_ops={"Conv"},

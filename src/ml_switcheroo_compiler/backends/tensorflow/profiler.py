@@ -1,12 +1,16 @@
 """TensorFlow backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import logging
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union, cast
+import typing
+from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 try:
     import tensorflow as tf
@@ -24,7 +28,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -50,7 +55,7 @@ def _get_tf_peak_memory_mb() -> float:
     return _get_process_memory_mb()
 
 
-def _sync_tf_result(result: Union[EagerValue, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue]]) -> None:
+def _sync_tf_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ...] | dict[str, EagerValue]) -> None:
     """Force synchronization of TensorFlow evaluation results to host memory.
 
     Args:
@@ -75,7 +80,7 @@ def _compute_metrics(
     latencies: list[float],
     peak_mem: float,
     warmup_iters: int,
-) -> dict[str, Union[list[float], float]]:
+) -> dict[str, list[float] | float]:
     """Compute statistical latency percentiles and format metrics payload.
 
     Args:
@@ -109,7 +114,7 @@ class TensorFlowProfiler:
     def _prepare_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
     ) -> list[EagerValue]:
         """Convert input structures into topologically ordered TensorFlow tensors.
 
@@ -136,14 +141,14 @@ class TensorFlowProfiler:
             return [tf_inputs_dict[k] for k in input_keys]
         return list(tf_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Optional[Callable[..., EagerValue]]:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
         """Compile an IRGraph into an executable TensorFlow function.
 
         Args:
             graph (IRGraph): The IR computation graph.
 
         Returns:
-            Optional[Callable[..., object]]: Compiled executable TensorFlow function.
+            Optional[TypedVariadicCallable[object]]: Compiled executable TensorFlow function.
 
         Raises:
             TypeError: If apply_model cannot be generated from the graph.
@@ -161,15 +166,15 @@ class TensorFlowProfiler:
     def _build_step_fn(
         self,
         has_ops: bool,
-        compiled_fn: Optional[Callable[..., EagerValue]],
+        compiled_fn: TypedVariadicCallable[EagerValue] | None,
         tf_inputs: list[EagerValue],
-        device: Optional[str],
+        device: str | None,
     ) -> Callable[[], EagerValue]:
         """Build execution step function with device context and synchronization.
 
         Args:
             has_ops (bool): Whether graph contains operations.
-            compiled_fn (Optional[Callable[..., object]]): Compiled callable.
+            compiled_fn (Optional[TypedVariadicCallable[object]]): Compiled callable.
             tf_inputs (list[object]): Ordered TensorFlow inputs.
             device (Optional[str]): Target execution device.
 
@@ -200,18 +205,18 @@ class TensorFlowProfiler:
             for t in tf_inputs:
                 accum = tf.add(accum, t)
             _sync_tf_result(accum)
-            return cast(EagerValue, accum)
+            return typing.cast(EagerValue, accum)
 
         return _execute_step
 
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on TensorFlow backend with device synchronization.
 
         Args:
@@ -230,7 +235,7 @@ class TensorFlowProfiler:
         tf_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Optional[Callable[..., EagerValue]] = None
+        compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)

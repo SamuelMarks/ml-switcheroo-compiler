@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.stats.distributions import BetaCdf, BetaPdf, BinomCdf, BinomPmf, GammaCdf, GammaPdf, NormCdf, NormPdf, PoissonCdf, PoissonPmf, beta_cdf, beta_pdf, binom_cdf, binom_pmf, gamma_cdf, gamma_pdf, norm_cdf, norm_pdf, poisson_cdf, poisson_pmf
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -30,16 +30,16 @@ class MockTensor:
 def test_distributions_infer_shape() -> None:
     """Test function test_distributions_infer_shape."""
     t = MockTensor((2, 3))
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", NormPdf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", NormCdf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", GammaPdf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", GammaCdf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", BetaPdf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", BetaCdf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", PoissonPmf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", PoissonCdf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", BinomPmf)().infer_shape)(t) == (2, 3)
-    assert cast("EagerCallableProtocol", cast("EagerCallableProtocol", BinomCdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", NormPdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", NormCdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", GammaPdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", GammaCdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", BetaPdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", BetaCdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", PoissonPmf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", PoissonCdf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", BinomPmf)().infer_shape)(t) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", BinomCdf)().infer_shape)(t) == (2, 3)
 
 
 def test_distributions_funcs(mocker: EagerTensorProtocol) -> None:

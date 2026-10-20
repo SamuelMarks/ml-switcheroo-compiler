@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import typing
+
 # ruff: noqa: E402
 import uuid
-from collections.abc import Sequence
-from typing import cast
+from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -42,7 +43,7 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, global_tracing_st
 def _emit_reduction_node(
     op_type: str,
     inputs: Sequence[Tensor],
-    attrs: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None],
+    attrs: Mapping[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None],
     out_shape: tuple[int | None, ...],
     out_dtype: DType,
 ) -> Tensor:
@@ -58,22 +59,21 @@ def _emit_reduction_node(
     Returns:
         Tensor: Result.
     """
-    from collections.abc import Mapping
-
     from ml_switcheroo_ir import AttributeValue
 
     out_id = str(uuid.uuid4())
+    clean_shape: tuple[int, ...] = tuple(d for d in out_shape if d is not None)
     node = LogicalNode(
         id=out_id,
         op_type=op_type,
         inputs=[getattr(getattr(inp, "data", inp), "id", "mock_id") for inp in inputs],
-        attributes=cast("Mapping[str, AttributeValue]", attrs),
-        shape_metadata=out_shape,
+        attributes=typing.cast("Mapping[str, AttributeValue]", attrs),
+        shape_metadata=clean_shape,
     )
     global_tracing_state.add_node(node)
 
     dtype_val = getattr(out_dtype, "value", out_dtype)
-    proxy = cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
+    proxy = typing.cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 
@@ -110,7 +110,7 @@ def _build_reduce_window_attributes(
     init_value: Tensor | float,
     computation: str,
     window_config: WindowConfig,
-) -> dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None]:
+) -> dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None]:
     """Compute the build reduce window attributes tensor operation.
 
     Args:
@@ -119,9 +119,9 @@ def _build_reduce_window_attributes(
         window_config (WindowConfig): The window_config parameter.
 
     Returns:
-        dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None]: Result.
+        dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None]: Result.
     """
-    attributes: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | bool | None] = {
+    attributes: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int] | int] | int | float | str | bool | None] = {
         "computation": computation,
         "window_dimensions": window_config.window_dimensions,
         "window_strides": window_config.window_strides,

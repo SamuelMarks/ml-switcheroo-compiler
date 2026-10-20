@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -15,8 +15,9 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import (
     _resulttype,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -41,7 +42,7 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             return True
 
     acb = AllcloseBackend()
-    assert _allclose(acb, [1.0], [1.0]) is True
+    assert _allclose(typing.cast("BackendModuleProtocol", acb), [1.0], [1.0]) is True
 
     # Case B: backend lacks allclose -> fallback to np.allclose
     class EmptyBackend:
@@ -107,12 +108,12 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
 
     assert (
         bool(
-            cast("EagerCallableProtocol", _allclose)(
+            typing.cast("EagerCallableProtocol", _allclose)(
                 eb,
                 [1.0],
                 [1.0],
                 rtol=ItemObj(1e-4),
-                atol=cast("EagerCallableProtocol", DataObj)(cast("EagerCallableProtocol", ToListObj)([1e-6])),
+                atol=typing.cast("EagerCallableProtocol", DataObj)(typing.cast("EagerCallableProtocol", ToListObj)([1e-6])),
                 equal_nan=DataObj(False),
             )
         )
@@ -132,7 +133,7 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
             """
             return "allclose_equiv"
 
-    assert _array_equiv(ArrayEquivBackend(), [1], [1]) == "allclose_equiv"
+    assert _array_equiv(typing.cast("BackendModuleProtocol", ArrayEquivBackend()), [1], [1]) == "allclose_equiv"
     assert _array_equiv(EmptyBackend(), [1], [1]) is True
 
     # 3. _assert
@@ -196,8 +197,8 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
             return "result_type"
 
     tb = TypeBackend()
-    assert _promotetypes(tb, "float32", "float64") == "promoted"
-    assert _resulttype(tb, "int32", "float32") == "result_type"
+    assert _promotetypes(typing.cast("BackendModuleProtocol", tb), "float32", "float64") == "promoted"
+    assert _resulttype(typing.cast("BackendModuleProtocol", tb), "int32", "float32") == "result_type"
     getattr(_state, "update")({"TypeBackend": TypeBackend, "exc_info": exc_info, "exc_info_data": exc_info_data, "exc_info_empty_data": exc_info_empty_data})
     getattr(_state, "update")({"tb": tb})
     _state.update(locals())

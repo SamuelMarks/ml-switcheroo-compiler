@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 import typing  # noqa: F401
-from typing import cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 from .math_general import _get_np_arg
 
@@ -25,7 +25,7 @@ def _np_diag_indices_(backend_module: EagerValue, *args: EagerValue, **kwargs: E
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(backend_module, "diag_indices")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(backend_module, "diag_indices")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("DiagIndicesFrom")
@@ -39,7 +39,7 @@ def _np_diag_indices_from_(backend_module: EagerValue, *args: EagerValue, **kwar
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(backend_module, "diag_indices_from")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(backend_module, "diag_indices_from")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Diagflat")
@@ -53,7 +53,7 @@ def _np_diagflat_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(backend_module, "diagflat")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(backend_module, "diagflat")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Diagonal")
@@ -67,7 +67,7 @@ def _np_diagonal_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(backend_module, "diagonal")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(backend_module, "diagonal")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Indices")
@@ -81,7 +81,7 @@ def _np_indices_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(backend_module, "indices")(*args, **kwargs))
+    return typing.cast(EagerValue, getattr(backend_module, "indices")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("MaskIndices")
@@ -95,7 +95,7 @@ def _np_mask_indices_(backend_module: EagerValue, *args: EagerValue, **kwargs: E
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(typing.Callable[..., EagerValue], getattr(backend_module, "mask_indices"))(*args, **kwargs)
+    return typing.cast(TypedVariadicCallable[EagerValue], getattr(backend_module, "mask_indices"))(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperatorBlockDiag")
@@ -153,12 +153,12 @@ def _np_confusion_matrix(backend_module: EagerValue, *args: EagerValue, **kwargs
         if hasattr(_ops, "confusion_matrix"):
             cls_or_func = _ops.confusion_matrix
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
-                return cast(EagerValue, cls_or_func(*args, **kwargs))
+                return typing.cast(EagerValue, cls_or_func(*args, **kwargs))
     except Exception:
         # Ignore dynamic load errors
         logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
     if hasattr(backend_module, "confusion_matrix"):
-        return cast(EagerValue, getattr(backend_module, "confusion_matrix")(*args, **kwargs))
+        return typing.cast(EagerValue, getattr(backend_module, "confusion_matrix")(*args, **kwargs))
     y_true = np.asarray(args[0]).flatten()
     y_pred = np.asarray(args[1]).flatten()
     raw_num_classes = kwargs.get("num_classes", args[2] if len(args) > 2 else None) if hasattr(kwargs, "get") else None
@@ -184,13 +184,13 @@ def _np_distributions(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         if hasattr(_ops, "distributions"):
             cls_or_func = _ops.distributions
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
-                return cast(EagerValue, cls_or_func(*args, **kwargs))
+                return typing.cast(EagerValue, cls_or_func(*args, **kwargs))
     except Exception as e:
         print("EXCEPTION IN _np_distributions:", repr(e))
         # Ignore dynamic load errors
         logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
     if hasattr(backend_module, "distributions"):
-        return cast(EagerValue, getattr(backend_module, "distributions")(*args, **kwargs))
+        return typing.cast(EagerValue, getattr(backend_module, "distributions")(*args, **kwargs))
     arr = np.asarray(args[0]) if args else np.zeros((1,))
     return np.array([np.mean(arr), np.var(arr)])
 

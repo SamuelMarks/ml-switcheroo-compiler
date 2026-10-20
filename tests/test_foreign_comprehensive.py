@@ -1,8 +1,10 @@
 # ruff: noqa: C901, PLR0912, PLR0915, E402, F401, F811, F841, E712, D301, UP006, UP035
 """Test universal ForeignCall Operation."""
 
+from __future__ import annotations
+
+import typing
 from collections.abc import Callable
-from typing import Tuple, cast
 
 import pytest
 
@@ -13,7 +15,7 @@ from ml_switcheroo_compiler.foreign import ForeignCall
 def test_foreign_call_introspection() -> None:
     """Test dynamic shape introspection."""
 
-    def my_complex_func(x: EagerValue) -> Tuple[int, int, int]:
+    def my_complex_func(x: EagerValue) -> typing.Tuple[int, int, int]:
         """Mock complex func.
 
         Args:
@@ -24,7 +26,7 @@ def test_foreign_call_introspection() -> None:
     fc = ForeignCall()
 
     # Test typing hints
-    assert cast("EagerTensorProtocol", fc.infer_shape(my_complex_func)) == cast("EagerTensorProtocol", (int, int, int))
+    assert typing.cast("EagerTensorProtocol", fc.infer_shape(my_complex_func)) == typing.cast("EagerTensorProtocol", (int, int, int))
 
     # Test kwargs
     assert fc.infer_shape(my_complex_func, output_shape=(4, 5)) == (4, 5)
@@ -44,7 +46,7 @@ def test_foreign_call_introspection() -> None:
             """Call."""
             return {"a": (2, 3), "b": (4, 5)}
 
-    assert fc.infer_shape(ComplexCallable()) == ()
+    assert fc.infer_shape(typing.cast("EagerValue", ComplexCallable())) == ()
 
     # Test obj with shapes
     class WithShape:
@@ -64,7 +66,7 @@ def test_foreign_call_introspection() -> None:
             """Init."""
             self.output_shape = (6, 6)
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithOutputShape)()) == (6, 6)
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithOutputShape)()) == (6, 6)
 
     class WithOutputShapes:
         """Mock."""
@@ -73,7 +75,7 @@ def test_foreign_call_introspection() -> None:
             """Init."""
             self.output_shapes = [(7, 7), (8, 8)]
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithOutputShapes)()) == (7, 7)
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithOutputShapes)()) == (7, 7)
 
 
 def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -93,9 +95,9 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
 
         def __init__(self) -> None:
             """Init."""
-            self.output_shapes = cast("list[EagerTensorProtocol]", [])
+            self.output_shapes = typing.cast("list[EagerTensorProtocol]", [])
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", EmptyOutputShapes)()) == ()
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", EmptyOutputShapes)()) == ()
 
     # bad output_shape
     class BadOutputShape:
@@ -105,7 +107,7 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
             """Init."""
             self.output_shape = 5
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", BadOutputShape)()) == (5,)
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", BadOutputShape)()) == (5,)
 
     # subgraph handling
     class MockSubNode:
@@ -142,7 +144,7 @@ def _test_foreign_call_introspection_branches_part_2(_state: dict[str, EagerTens
             """Init."""
             self.subgraph = MockSubgraph()
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithSubgraph)()) == (11, 11)
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithSubgraph)()) == (11, 11)
 
     # typing.get_type_hints failure fallback
     def failing_typing_hints() -> None:
@@ -190,7 +192,7 @@ def _test_foreign_call_introspection_branches_part_3(_state: dict[str, EagerTens
     assert fc.infer_shape(ast_int_return) == ()
 
     # Fallthrough
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", object)()) == ()
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", object)()) == ()
     getattr(_state, "update")({"ast_int_return": ast_int_return, "ast_str_return": ast_str_return, "non_int_tuple": non_int_tuple})
 
 
@@ -222,7 +224,7 @@ def test_foreign_call_output_shape_scalar() -> None:
             """Init."""
             self.output_shape = 5
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithScalarOutShape)()) == (5,)
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithScalarOutShape)()) == (5,)
 
 
 def test_foreign_call_inspect_signature() -> None:
@@ -232,12 +234,12 @@ def test_foreign_call_inspect_signature() -> None:
     class MyCallable:
         """Mock callable."""
 
-        def __call__(self) -> Tuple[int, int]:
+        def __call__(self) -> typing.Tuple[int, int]:
             """Call."""
             return (0, 0)
 
     # typing.get_type_hints doesn't work directly on objects usually without accessing __call__
-    assert cast("EagerTensorProtocol", fc.infer_shape(MyCallable())) == cast("EagerTensorProtocol", (int, int))
+    assert typing.cast("EagerTensorProtocol", fc.infer_shape(typing.cast("EagerValue", MyCallable()))) == typing.cast("EagerTensorProtocol", (int, int))
 
 
 def test_foreign_call_fallback_args() -> None:
@@ -309,7 +311,7 @@ def test_foreign_call_out_shape_tuple_branch() -> None:
             """Init."""
             self.output_shape = (5, 5)
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithTupleOutShape)()) == (5, 5)
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithTupleOutShape)()) == (5, 5)
 
 
 def test_foreign_call_out_shape_kwarg_tuple_branch() -> None:
@@ -371,7 +373,7 @@ def test_foreign_call_out_shapes_empty_tuple_branch() -> None:
             """Init."""
             self.output_shapes = ()
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithEmptyOutputShapes)()) == ()
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithEmptyOutputShapes)()) == ()
 
 
 def test_foreign_call_out_shape_tuple_branch_2() -> None:
@@ -385,7 +387,7 @@ def test_foreign_call_out_shape_tuple_branch_2() -> None:
             """Init."""
             self.output_shape = [5, 5]
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithTupleOutShape2)()) == (5, 5)
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithTupleOutShape2)()) == (5, 5)
 
 
 def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
@@ -397,9 +399,9 @@ def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
 
         def __init__(self) -> None:
             """Init."""
-            self.output_shapes = cast("EagerTensorProtocol", [[]])
+            self.output_shapes = typing.cast("EagerTensorProtocol", [[]])
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithEmptyOutputShapes2)()) == ()
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithEmptyOutputShapes2)()) == ()
 
     class WithEmptyOutputShapes3:
         """Mock."""
@@ -408,7 +410,7 @@ def test_foreign_call_out_shapes_empty_tuple_branch_2() -> None:
             """Init."""
             self.output_shapes = ()
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithEmptyOutputShapes3)()) == ()
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithEmptyOutputShapes3)()) == ()
 
 
 def test_foreign_call_out_nodes_metadata_branch() -> None:
@@ -435,4 +437,4 @@ def test_foreign_call_out_nodes_metadata_branch() -> None:
             """Init."""
             self.subgraph = MockSubgraphNoMetadata()
 
-    assert cast("EagerCallableProtocol", fc.infer_shape)(cast("EagerCallableProtocol", WithSubgraphNoMetadata)()) == ()
+    assert typing.cast("EagerCallableProtocol", fc.infer_shape)(typing.cast("EagerCallableProtocol", WithSubgraphNoMetadata)()) == ()

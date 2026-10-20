@@ -5,28 +5,28 @@ from __future__ import annotations
 import builtins
 import importlib
 import os
-from collections.abc import Callable
+import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 from unittest.mock import mock_open, patch
 
 import pytest
 
 import scripts.generate_exports as ge
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 _real_import = importlib.import_module
 
 
-def _mock_mod_import(mod_obj: EagerValue) -> Callable[..., EagerValue]:
+def _mock_mod_import(mod_obj: EagerValue) -> TypedVariadicCallable[EagerValue]:
     """Create a mock importlib.import_module side-effect targeting test modules.
 
     Args:
         mod_obj (EagerValue): Object to return when user/test module is imported.
 
     Returns:
-        Callable[..., object]: Mock import side-effect function.
+        TypedVariadicCallable[object]: Mock import side-effect function.
     """
 
     def _imp(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -38,10 +38,10 @@ def _mock_mod_import(mod_obj: EagerValue) -> Callable[..., EagerValue]:
             kwargs: Test parameter `kwargs`.
         """
         if name in ("subprocess", "scripts", "scripts.generate_exports", "ast", "os", "sys", "tempfile", "builtins"):
-            return cast("EagerCallableProtocol", _real_import)(name, *args, **kwargs)
+            return typing.cast("EagerCallableProtocol", _real_import)(name, *args, **kwargs)
         return mod_obj
 
-    return _imp
+    return typing.cast("TypedVariadicCallable[EagerValue]", _imp)
 
 
 def test_get_exports_from_submodule() -> None:
@@ -205,7 +205,7 @@ def test_process_file_magic_from(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         __all__ = ["x"]
 
     with patch("subprocess.run"), patch("scripts.generate_exports._get_exports_from_submodule", return_value=["x", "y"]):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod2)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod2)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -232,7 +232,7 @@ def test_process_file_magic_auto(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         _z = 3
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert '"x"' in content
@@ -257,7 +257,7 @@ def test_process_file_no_magic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert '"x"' in content
@@ -281,7 +281,7 @@ def test_process_file_existing_all_match(tmp_path: Path, monkeypatch: pytest.Mon
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ['x']"
 
@@ -304,7 +304,7 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
         x = 1
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n"
 
@@ -327,7 +327,7 @@ def test_process_file_append(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         x = 1
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -351,7 +351,7 @@ def test_process_file_syntax_error(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ["
 
@@ -373,7 +373,7 @@ def test_process_file_invalid_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         __all__ = 123
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n\n__all__ = [\n]\n"
 
@@ -440,7 +440,7 @@ def test_process_file_expr_not_call(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content
@@ -487,14 +487,14 @@ def test_process_file_same_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             kwargs: Test parameter `kwargs`.
         """
         cmd = args[0]
-        if cmd and cast("EagerTensorProtocol", "ruff") in cast("EagerTensorProtocol", cmd):
-            tmp_name = cast("EagerTensorProtocol", getattr(cmd, "__getitem__")(-1))
-            if cast("EagerCallableProtocol", os.path.exists)(tmp_name):
-                with cast("EagerCallableProtocol", builtins.open)(tmp_name, "w") as tmp_f:
+        if cmd and typing.cast("EagerTensorProtocol", "ruff") in typing.cast("EagerTensorProtocol", cmd):
+            tmp_name = typing.cast("EagerTensorProtocol", getattr(cmd, "__getitem__")(-1))
+            if typing.cast("EagerCallableProtocol", os.path.exists)(tmp_name):
+                with typing.cast("EagerCallableProtocol", builtins.open)(tmp_name, "w") as tmp_f:
                     tmp_f.write(original_source)
 
     with patch("subprocess.run", side_effect=mock_subprocess_run):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == original_source
 
@@ -516,7 +516,7 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
         __all__ = ["x", "z"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     src = setup_mock_src(tmp_path, monkeypatch)
     f = src / "test_empty_all.py"
@@ -528,7 +528,7 @@ def test_process_file_ast_elements_middle(tmp_path: Path, monkeypatch: pytest.Mo
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod2)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod2)())):
             ge.process_file(str(f))
     assert "x = 1\n\n__all__ = [\n" in f.read_text()
 
@@ -565,7 +565,7 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
     with patch("subprocess.run"):
         with patch("ast.walk", side_effect=mock_walk):
-            with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+            with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
                 ge.process_file(str(f))
     assert "__all__" in f.read_text()
 
@@ -587,7 +587,7 @@ def test_process_file_complex_targets(tmp_path: Path, monkeypatch: pytest.Monkey
         __all__ = ["x", "y"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "other.append" in content
@@ -634,7 +634,7 @@ def test_process_file_tuple_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     assert f.read_text() == "x = 1\n__all__ = ('x',)"
 
@@ -656,7 +656,7 @@ def test_process_file_extend_all(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         __all__ = ["x"]
 
     with patch("subprocess.run"):
-        with cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=cast("EagerCallableProtocol", _mock_mod_import)(cast("EagerCallableProtocol", MockMod)())):
+        with typing.cast("EagerCallableProtocol", patch)("scripts.generate_exports.importlib.import_module", side_effect=typing.cast("EagerCallableProtocol", _mock_mod_import)(typing.cast("EagerCallableProtocol", MockMod)())):
             ge.process_file(str(f))
     content = f.read_text()
     assert "__all__ =" in content

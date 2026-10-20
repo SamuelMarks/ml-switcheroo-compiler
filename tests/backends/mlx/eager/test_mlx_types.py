@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -28,6 +28,6 @@ def test_mlx_asarray_fallback(mocker: EagerTensorProtocol) -> None:
             """
             return "array_" + str(data)
 
-    cast("EagerCallableProtocol", mocker.patch.object)(types_mod, "mx", cast("EagerCallableProtocol", DummyMX)())
+    typing.cast("EagerCallableProtocol", mocker.patch.object)(types_mod, "mx", typing.cast("EagerCallableProtocol", DummyMX)())
 
-    assert cast("EagerCallableProtocol", asarray)(None, "foo") == "array_foo"
+    assert typing.cast("EagerCallableProtocol", asarray)(None, "foo") == "array_foo"

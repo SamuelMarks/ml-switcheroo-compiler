@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import (
     get_wgsl_template,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -72,7 +72,7 @@ def test_wgsl_provider_non_dict_fallback() -> None:
         with patch("os.listdir", return_value=["ignore.txt", "broken.yaml"]):
             with patch("builtins.open", side_effect=OSError("corrupted file")):
                 d: dict[str, EagerValue] = {}
-                cast("EagerCallableProtocol", provider._merge_modular_templates)(d)
+                typing.cast("EagerCallableProtocol", provider._merge_modular_templates)(d)
 
     # Reset
     provider._WGSL_TEMPLATES = {}
@@ -123,7 +123,7 @@ def test_wgsl_provider_kernels_config_and_global_bindings() -> None:
     assert isinstance(cfg, dict)
     with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider._load_kernels", return_value={"op_mappings": {"invalid_op": "not_a_dict"}}):
         assert get_wgsl_op_mapping("invalid_op") == {}
-    mock_base = cast("EagerTensorProtocol", {"templates": {}})
+    mock_base = typing.cast("EagerTensorProtocol", {"templates": {}})
     mock_kernels = {"templates": {"mock_k": {}}, "bindings": {"global_bindings": "// global bindings test"}}
     import ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider as wp
 
@@ -180,7 +180,7 @@ def test_wgsl_grounding_schema_missing_and_validate_edges() -> None:
     with mock.patch("os.path.exists", return_value=True):
         with mock.patch("builtins.open", mock.mock_open(read_data=mock_json_content)):
             schema_loaded = wp.get_wgsl_grounding_schema()
-            assert cast("EagerCallableProtocol", len)(schema_loaded["ops"]) == 3
+            assert typing.cast("EagerCallableProtocol", len)(schema_loaded["ops"]) == 3
 
     # 4. validate_wgsl_statement finding op in ops_list
     assert wp.validate_wgsl_statement("mock_op") is True

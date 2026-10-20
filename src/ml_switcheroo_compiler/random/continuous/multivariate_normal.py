@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+
+import pydantic
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import _emit_random_node
 
 
-@dataclass
-class MultivariateNormalOptions:
+class MultivariateNormalOptions(pydantic.BaseModel):
     """Options for multivariate normal."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     shape: Sequence[int] | tuple[int, ...] | None = None
     dtype: dtypes.DType | None = None

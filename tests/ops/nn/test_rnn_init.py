@@ -1,5 +1,7 @@
 """Tests for RNN initialization and registration."""
 
+from __future__ import annotations
+
 import ml_switcheroo_compiler.ops.nn.rnn as rnn
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY
 

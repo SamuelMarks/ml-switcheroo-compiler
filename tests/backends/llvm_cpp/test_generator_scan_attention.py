@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import NodeDict
+
 
 def test_scan_and_attention() -> None:
     """Test Scan and Attention."""
@@ -11,7 +13,7 @@ def test_scan_and_attention() -> None:
     graph = IRGraph()
     n1 = IRNode(id="n1", op_type="Scan", inputs=["in_val"], shape_metadata=[10])
     n2 = IRNode(id="n2", op_type="Attention", inputs=["in_val", "in_val", "in_val"], shape_metadata=[10, 10])
-    graph.nodes = {"n1": n1, "n2": n2}
+    graph.nodes = NodeDict({"n1": n1, "n2": n2})
 
     gen = CppGenerator(graph)
     code = gen.generate()

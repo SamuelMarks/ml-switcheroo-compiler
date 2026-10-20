@@ -1,9 +1,10 @@
 """CuPy code generator and eager execution backend."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 try:
@@ -91,12 +92,12 @@ class CupyGenerator(PythonStringGenerator):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
-            evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", inputs))
+            evaluated = evaluate_graph(graph, inputs=inputs)
             if hasattr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
-                    return cast(EagerValue, evaluated.get(graph.outputs[0]))
+                    return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return cast(EagerValue, evaluated)
+            return typing.cast(EagerValue, evaluated)
 
         try:
             import cupy as cp

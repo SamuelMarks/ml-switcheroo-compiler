@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import importlib
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 
 import pytest
+from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.utils.generic_utils import (
     ArchiveConfig,
     CacheConfig,
@@ -29,13 +31,13 @@ from ml_switcheroo_compiler.utils.generic_utils import (
     standardize_dtype,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
-CustomObjectScope = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
-custom_object_scope = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "custom_object_scope"))
-deserialize_object = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-register_serializable = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
-serialize_object = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+CustomObjectScope = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
+custom_object_scope = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "custom_object_scope"))
+deserialize_object = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
+register_serializable = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
+serialize_object = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
 
 
 def test_configs() -> None:
@@ -203,10 +205,10 @@ def test_generic_utils_stubs() -> None:
 
 def test_custom_object_scope_and_serialization() -> None:
     """Test functional custom_object_scope and serialization/deserialization."""
-    deserialize_object = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-    get_custom_objects = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
-    get_registered_object = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
-    serialize_object = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+    deserialize_object = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
+    get_custom_objects = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
+    get_registered_object = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
+    serialize_object = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
 
     class CustomDense:
         """CustomDense test class."""
@@ -238,7 +240,7 @@ def test_custom_object_scope_and_serialization() -> None:
         assert id(get_registered_object("CustomDense")) == id(CustomDense)
 
         layer = CustomDense(units=64)
-        serialized = cast("EagerCallableProtocol", serialize_object)(layer)
+        serialized = typing.cast("EagerCallableProtocol", serialize_object)(layer)
         assert serialized is not None
         assert serialized["class_name"] == "CustomDense"
         assert serialized["config"] == {"units": 64}
@@ -279,7 +281,7 @@ def test_custom_object_scope_and_serialization() -> None:
     assert deserialize_object(cfg_not_dict, custom_objects={"SimpleLayer": SimpleLayer}) == cfg_not_dict
 
     # Registered name and object lookups
-    get_registered_name = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
+    get_registered_name = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
 
     @register_serializable(package="TestPkg", name="NamedCustomLayer")
     class NamedCustomLayer:
@@ -290,7 +292,7 @@ def test_custom_object_scope_and_serialization() -> None:
     assert get_registered_name(NamedCustomLayer) == "NamedCustomLayer"
     assert get_registered_name(None) == ""
     assert get_registered_name(lambda x: x) == "<lambda>"
-    assert cast("EagerCallableProtocol", get_registered_name)(123) == "int"
+    assert typing.cast("EagerCallableProtocol", get_registered_name)(123) == "int"
 
     assert get_registered_object(None) is None
     assert get_registered_object("") is None
@@ -318,7 +320,7 @@ def test_is_symbolic_tensor_and_dtype() -> None:
     t = Tensor([1, 2], TensorConfig((2,), "float32", "cpu"))
     assert is_symbolic_tensor(t)
 
-    assert not cast("EagerCallableProtocol", is_symbolic_tensor)(cast("EagerCallableProtocol", DummyObj)())
+    assert not typing.cast("EagerCallableProtocol", is_symbolic_tensor)(typing.cast("EagerCallableProtocol", DummyObj)())
     assert not is_symbolic_tensor(123)
     assert not is_symbolic_tensor()
 
@@ -346,34 +348,34 @@ def test_bounding_boxes_conversions() -> None:
     # xyxy <-> xywh
     xyxy_boxes = np.array([[10.0, 20.0, 50.0, 80.0]], dtype=np.float32)
     xywh_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xywh")
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(xywh_boxes, [[10.0, 20.0, 40.0, 60.0]])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(xywh_boxes, [[10.0, 20.0, 40.0, 60.0]])
 
     # Custom target fallback and custom source validation
     with mock.patch.object(bounding_boxes, "SUPPORTED_FORMATS", ("xyxy", "custom")):
         res_custom = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="custom")
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_custom, xyxy_boxes)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_custom, xyxy_boxes)
         with pytest.raises(ValueError, match="Unrecognized source format"):
             bounding_boxes.convert_format(xyxy_boxes, source="custom", target="xyxy")
 
     # xywh -> center_xywh
     center_boxes = bounding_boxes.convert_format(xywh_boxes, source="xywh", target="center_xywh")
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(center_boxes, [[30.0, 50.0, 40.0, 60.0]])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(center_boxes, [[30.0, 50.0, 40.0, 60.0]])
 
     # center_xywh -> yxyx
     yxyx_boxes = bounding_boxes.convert_format(center_boxes, source="center_xywh", target="yxyx")
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(yxyx_boxes, [[20.0, 10.0, 80.0, 50.0]])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(yxyx_boxes, [[20.0, 10.0, 80.0, 50.0]])
 
     # yxyx -> rel_xyxy
     rel_boxes = bounding_boxes.convert_format(yxyx_boxes, source="yxyx", target="rel_xyxy", image_shape=(100, 200))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(rel_boxes, [[0.05, 0.2, 0.25, 0.8]])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(rel_boxes, [[0.05, 0.2, 0.25, 0.8]])
 
     # rel_xyxy -> xyxy
     back_to_xyxy = bounding_boxes.convert_format(rel_boxes, source="rel_xyxy", target="xyxy", image_shape=(100, 200))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(back_to_xyxy, xyxy_boxes)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(back_to_xyxy, xyxy_boxes)
 
     # Identity conversion
     same_boxes = bounding_boxes.convert_format(xyxy_boxes, source="xyxy", target="xyxy")
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(same_boxes, xyxy_boxes)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(same_boxes, xyxy_boxes)
 
     # Validations
     with pytest.raises(ValueError, match="Unsupported bounding box format"):
@@ -430,19 +432,19 @@ def test_framework_agnostic_serialization_separation() -> None:
     assert get_registered_object("AgnosticLayer") is AgnosticLayer
 
     layer = AgnosticLayer(size=256)
-    serialized = serialize_object(layer)
+    serialized = serialize_object(typing.cast("AttributeValue", layer))
     assert serialized is not None
     assert serialized["class_name"] == "AgnosticLayer"
     assert serialized["config"] == {"size": 256}
 
     deserialized = deserialize_object(serialized)
-    assert isinstance(deserialized, AgnosticLayer)
-    assert deserialized.size == 256
+    assert type(deserialized).__name__ == "AgnosticLayer"
+    assert getattr(deserialized, "size") == 256
 
     # Test CustomObjectScope context manager enter and exit
     with CustomObjectScope({"TempLayer": AgnosticLayer}):
         assert get_registered_object("TempLayer") is AgnosticLayer
-    assert get_registered_object("TempLayer") is None
+    assert typing.cast("EagerValue", get_registered_object("TempLayer")) is None
 
     # Test is_symbolic_tensor
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor

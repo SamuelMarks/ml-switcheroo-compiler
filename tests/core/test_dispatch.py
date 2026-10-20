@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.dispatch import dispatch
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -66,7 +66,7 @@ def test_dispatch_tracing() -> None:
 
         t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
         out = dispatch("test", "TestDispatchTracing", t)
-        assert cast("EagerTensorProtocol", getattr(out, "shape")) == ()
-        assert cast("EagerTensorProtocol", getattr(out, "dtype")).value == "float32"
+        assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == ()
+        assert typing.cast("EagerTensorProtocol", getattr(out, "dtype")).value == "float32"
     finally:
         global_tracing_state.stop_tracing()

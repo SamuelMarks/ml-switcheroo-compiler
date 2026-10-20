@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -11,7 +11,7 @@ import pytest
 from ml_switcheroo_compiler.backends.cupy.eager import _verify_gpu_residency, execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -46,30 +46,30 @@ def test_cupy_verify_gpu_residency() -> None:
         pass
 
     # Mock cupy array resident on GPU when cp is None
-    mock_array = cast("EagerCallableProtocol", MockNdarray)(cast("EagerCallableProtocol", DataWithDevice)("cuda:0"))
+    mock_array = typing.cast("EagerCallableProtocol", MockNdarray)(typing.cast("EagerCallableProtocol", DataWithDevice)("cuda:0"))
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-        cast("EagerCallableProtocol", _verify_gpu_residency)(mock_array)
+        typing.cast("EagerCallableProtocol", _verify_gpu_residency)(mock_array)
 
     # Valid device memory with cp not None
     mock_cp = MagicMock()
     mock_cp.ndarray = MockNdarray
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-        cast("EagerCallableProtocol", _verify_gpu_residency)(mock_array)
+        typing.cast("EagerCallableProtocol", _verify_gpu_residency)(mock_array)
 
         # res has data but data has no device attribute
-        cast("EagerCallableProtocol", _verify_gpu_residency)(cast("EagerCallableProtocol", MockNdarray)(cast("EagerCallableProtocol", DataNoDevice)()))
+        typing.cast("EagerCallableProtocol", _verify_gpu_residency)(typing.cast("EagerCallableProtocol", MockNdarray)(typing.cast("EagerCallableProtocol", DataNoDevice)()))
 
         # res has data = None
-        cast("EagerCallableProtocol", _verify_gpu_residency)(cast("EagerCallableProtocol", MockNdarray)(None))
+        typing.cast("EagerCallableProtocol", _verify_gpu_residency)(typing.cast("EagerCallableProtocol", MockNdarray)(None))
 
         # res is not an array
         _verify_gpu_residency(42)
 
     # Mock array with missing device (device is None)
-    bad_array = cast("EagerCallableProtocol", MockNdarray)(cast("EagerCallableProtocol", DataWithDevice)(None))
+    bad_array = typing.cast("EagerCallableProtocol", MockNdarray)(typing.cast("EagerCallableProtocol", DataWithDevice)(None))
     with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
         with pytest.raises(RuntimeError, match="CuPy array is not residing on GPU device memory"):
-            cast("EagerCallableProtocol", _verify_gpu_residency)(bad_array)
+            typing.cast("EagerCallableProtocol", _verify_gpu_residency)(bad_array)
 
 
 def test_cupy_eager_dispatch_native() -> None:
@@ -80,24 +80,24 @@ def test_cupy_eager_dispatch_native() -> None:
 
     with patch.dict(sys.modules, {"cupy": mock_cp}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-            res = cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
+            res = typing.cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0, 2.0], [3.0, 4.0])
             assert res == mock_cp.add.return_value
             mock_cp.add.assert_called_once()
 
             # Non-list arg (e.g. scalar int) and asarray exception handling
             mock_cp.asarray.side_effect = RuntimeError("asarray failure")
-            res_scalar = cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0, 2.0], 5)
+            res_scalar = typing.cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0, 2.0], 5)
             assert res_scalar == mock_cp.add.return_value
             mock_cp.asarray.side_effect = None
 
             # Ensure silent CPU NumPy fallback is prevented: unmapped op raises BackendNotSupportedError
             with pytest.raises(BackendNotSupportedError):
-                cast("EagerCallableProtocol", execute_op)(None, "CompletelyUnsupportedOp123")
+                typing.cast("EagerCallableProtocol", execute_op)(None, "CompletelyUnsupportedOp123")
 
             # Dispatch raises BackendNotSupportedError
             with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("dispatch failed")):
                 with pytest.raises(BackendNotSupportedError, match="Operation 'Add' is not implemented"):
-                    cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0])
+                    typing.cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0])
 
 
 def test_cupy_eager_unavailable() -> None:
@@ -105,7 +105,7 @@ def test_cupy_eager_unavailable() -> None:
     with patch.dict(sys.modules, {"cupy": None}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
             with pytest.raises(BackendNotSupportedError, match="CuPy is not installed"):
-                cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 2)
+                typing.cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 2)
 
 
 def test_cupy_eager_reductions_and_kwarg_mapping() -> None:
@@ -116,7 +116,7 @@ def test_cupy_eager_reductions_and_kwarg_mapping() -> None:
 
     with patch.dict(sys.modules, {"cupy": mock_cp}):
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", mock_cp):
-            cast("EagerCallableProtocol", execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
+            typing.cast("EagerCallableProtocol", execute_op)(None, "Sum", [1.0, 2.0], dim=0, keepdim=True)
             mock_cp.sum.assert_called_once()
             _, kwargs = mock_cp.sum.call_args
             assert "axis" in kwargs and kwargs["axis"] == 0
@@ -131,7 +131,7 @@ def test_cupy_eager_fallback_mock_mod() -> None:
     try:
         with patch.dict(sys.modules, {"cupy": None}):
             with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-                res = cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 2)
+                res = typing.cast("EagerCallableProtocol", execute_op)(None, "Add", 1, 2)
                 assert res == 42
     finally:
         delattr(cupy_eager, "add")
@@ -143,7 +143,7 @@ def test_cupy_eager_registry_fallback() -> None:
 
     mock_func = MagicMock(return_value="registered_res")
     with patch.object(global_eager_registry, "get", return_value=mock_func):
-        res = cast("EagerCallableProtocol", execute_op)(None, "CustomRegisteredOp", 10)
+        res = typing.cast("EagerCallableProtocol", execute_op)(None, "CustomRegisteredOp", 10)
         assert res == "registered_res"
         mock_func.assert_called_once()
 
@@ -196,7 +196,7 @@ def test_cupy_eager_remaining_branches() -> None:
         pass
 
     empty_mod = EmptyBackendMod()
-    cast("EagerCallableProtocol", _attach_vision_ops)(empty_mod)
+    typing.cast("EagerCallableProtocol", _attach_vision_ops)(empty_mod)
     assert hasattr(empty_mod, "conv2d")
     assert hasattr(empty_mod, "maxpool2d")
     assert hasattr(empty_mod, "avgpool2d")

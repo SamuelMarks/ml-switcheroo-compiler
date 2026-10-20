@@ -1,11 +1,14 @@
 """Pydantic models and helpers for hardware generators (CUDA, ROCm, Metal, LLVM/C++)."""
 
+from __future__ import annotations
+
 import os
-from typing import Callable, Optional, Union, cast
+import typing
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -24,9 +27,9 @@ class KernelParameterConfig(BaseModel):
     name: str
     param_type: str = Field(default="pointer", description="Type category: pointer, int, float, shape_dim")
     source: str = Field(default="input", description="Source: input, output, shape, attribute, num_elements")
-    source_index: Optional[int] = Field(default=None, description="Input or output index")
-    source_key: Optional[str] = Field(default=None, description="Key for attribute or shape dimension")
-    default_value: Optional[Union[int, float, str]] = Field(default=None, description="Fallback value")
+    source_index: int | None = Field(default=None, description="Input or output index")
+    source_key: str | None = Field(default=None, description="Key for attribute or shape dimension")
+    default_value: int | float | str | None = Field(default=None, description="Fallback value")
 
 
 class GridDimensionConfig(BaseModel):
@@ -57,18 +60,18 @@ class HardwareTemplateConfig(BaseModel):
 
     body: str
     workgroup_size: list[int] = Field(default_factory=lambda: [256, 1, 1])
-    grid_calc: Optional[GridDimensionConfig] = None
-    parameters: Optional[list[KernelParameterConfig]] = None
-    shared_memory_bytes: Union[int, str] = 0
-    header: Optional[str] = None
-    epilogue: Optional[str] = None
+    grid_calc: GridDimensionConfig | None = None
+    parameters: list[KernelParameterConfig] | None = None
+    shared_memory_bytes: int | str = 0
+    header: str | None = None
+    epilogue: str | None = None
     type_mappings: dict[str, str] = Field(default_factory=dict)
 
     def get(
         self,
         key: str,
-        default: Optional[Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, list[KernelParameterConfig]]] = None,
-    ) -> Optional[Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, list[KernelParameterConfig]]]:
+        default: int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None = None,
+    ) -> int | float | str | list[int] | dict[str, str] | GridDimensionConfig | list[KernelParameterConfig] | None:
         """Retrieve an attribute by string key with fallback default.
 
         Args:
@@ -81,7 +84,7 @@ class HardwareTemplateConfig(BaseModel):
         if hasattr(self, key):
             val = getattr(self, key)
             if val is not None:
-                return cast(Optional[Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, list[KernelParameterConfig]]], val)
+                return typing.cast(typing.Union[typing.Union[int, float, str, list[int], dict[str, str], GridDimensionConfig, "list[KernelParameterConfig]"], "None"], val)
         return default
 
     def __eq__(self, other: object) -> bool:
@@ -104,12 +107,7 @@ class HardwareTemplateConfig(BaseModel):
         return False
 
 
-TemplateEntryType = Union[
-    HardwareTemplateConfig,
-    dict[str, Union[str, int, float, list[int], None]],
-    list[str],
-    str,
-]
+TemplateEntryType = typing.Union[HardwareTemplateConfig, dict[str, typing.Union[str, int, float, list[int], "None"]], list[str], "str"]
 
 
 class HardwareTemplatesConfig(BaseModel):
@@ -125,10 +123,10 @@ class HardwareTemplatesConfig(BaseModel):
 
     @field_validator("templates", mode="before")
     @classmethod
-    def _validate_templates(
+    def _coerce_templates(
         cls,
-        v: Union[dict[str, TemplateEntryType], dict[str, Union[str, int, float, list[int], None]]],
-    ) -> dict[str, TemplateEntryType]:
+        v: dict[str, TemplateEntryType] | dict[str, str | int | float | list[int] | None] | TensorOrScalar,
+    ) -> dict[str, TemplateEntryType] | TensorOrScalar:
         """Validate templates and convert dict entries with body to HardwareTemplateConfig.
 
         Args:
@@ -142,15 +140,17 @@ class HardwareTemplatesConfig(BaseModel):
         out: dict[str, TemplateEntryType] = {}
         for key, val in v.items():
             if isinstance(val, dict) and "body" in val:
-                out[str(key)] = cast("Callable[..., HardwareTemplateConfig]", HardwareTemplateConfig)(**val)
+                out[str(key)] = typing.cast("TypedVariadicCallable[HardwareTemplateConfig]", HardwareTemplateConfig)(**val)
             elif isinstance(val, str):
                 out[str(key)] = HardwareTemplateConfig(body=val)
             else:
-                out[str(key)] = cast(TemplateEntryType, val)
+                out[str(key)] = typing.cast(TemplateEntryType, val)
         return out
 
+    _validate_templates = _coerce_templates
 
-def load_hardware_templates(yaml_dir: str, yaml_path: str, backend: Optional[str] = None) -> HardwareTemplatesConfig:
+
+def load_hardware_templates(yaml_dir: str, yaml_path: str, backend: str | None = None) -> HardwareTemplatesConfig:
     """Load hardware template configurations from a directory or single YAML file.
 
     Args:
@@ -467,7 +467,7 @@ def _resolve_pool_args(
         d_out = out_shape[2] if len(out_shape) > 2 else 1
         h_out = out_shape[3] if len(out_shape) > 3 else 1
         w_out = out_shape[4] if len(out_shape) > 4 else 1
-        k_3d = cast(list[int], node.attributes.get("kernel_size", [2, 2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2, 2]
+        k_3d = typing.cast(list[int], node.attributes.get("kernel_size", [2, 2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2, 2]
         kd = k_3d[0]
         kh = k_3d[1]
         kw = k_3d[2]
@@ -495,7 +495,7 @@ def _resolve_pool_args(
     w_in = in0_shape[3] if len(in0_shape) > 3 else 1
     h_out = out_shape[2] if len(out_shape) > 2 else 1
     w_out = out_shape[3] if len(out_shape) > 3 else 1
-    k_2d = cast(list[int], node.attributes.get("kernel_size", [2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2]
+    k_2d = typing.cast(list[int], node.attributes.get("kernel_size", [2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2]
     kh = k_2d[0]
     kw = k_2d[1]
     grid_x = f"({h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
@@ -605,7 +605,7 @@ def resolve_hardware_launch_grid_and_args(
 
 
 def calculate_hardware_launch_config(
-    shape: Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None],
+    shape: tuple[int | str, ...] | list[int | str] | tuple[int, ...] | list[int] | None,
     max_threads_per_block: int = 1024,
     max_block_dim: tuple[int, int, int] = (1024, 1024, 64),
     max_grid_dim: tuple[int, int, int] = (2147483647, 65535, 65535),
@@ -698,8 +698,8 @@ def _format_stride_terms(coord_vars: list[str], strides: list[int]) -> str:
 
 
 def generate_nd_coordinate_offset_logic(
-    shape: Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int]],
-    strides: Optional[Union[tuple[int, ...], list[int]]] = None,
+    shape: tuple[int | str, ...] | list[int | str] | tuple[int, ...] | list[int],
+    strides: tuple[int, ...] | list[int] | None = None,
     linear_var: str = "idx",
     offset_var: str = "offset",
     language: str = "cuda",
@@ -816,7 +816,7 @@ class HardwareExecutionSchema(BaseModel):
     )
 
 
-def load_hardware_execution_schema(path: Optional[str] = None) -> HardwareExecutionSchema:
+def load_hardware_execution_schema(path: str | None = None) -> HardwareExecutionSchema:
     """Load hardware execution specification schemas from YAML configuration.
 
     Args:
@@ -859,9 +859,9 @@ class KernelTemplateModel(BaseModel):
         description="Memory layout constraints",
     )
     body: str = Field(default="", description="Unified arithmetic kernel body")
-    cuda_body: Optional[str] = Field(default=None, description="CUDA-specialized kernel body")
-    rocm_body: Optional[str] = Field(default=None, description="ROCm-specialized kernel body")
-    metal_body: Optional[str] = Field(default=None, description="Metal-specialized kernel body")
+    cuda_body: str | None = Field(default=None, description="CUDA-specialized kernel body")
+    rocm_body: str | None = Field(default=None, description="ROCm-specialized kernel body")
+    metal_body: str | None = Field(default=None, description="Metal-specialized kernel body")
     parameters: list[KernelParameterConfig] = Field(
         default_factory=list,
         description="Kernel parameter configurations",
@@ -883,7 +883,7 @@ class KernelTemplatesManifestModel(BaseModel):
     )
     model_config = ConfigDict(extra="allow")
 
-    def get_template(self, op_type: str) -> Optional[KernelTemplateModel]:
+    def get_template(self, op_type: str) -> KernelTemplateModel | None:
         """Look up kernel template by opcode name case-insensitively.
 
         Args:
@@ -899,7 +899,7 @@ class KernelTemplatesManifestModel(BaseModel):
         return None
 
 
-def load_kernel_templates_manifest(path: Optional[str] = None) -> KernelTemplatesManifestModel:
+def load_kernel_templates_manifest(path: str | None = None) -> KernelTemplatesManifestModel:
     """Load unified kernel templates manifest from YAML configuration.
 
     Args:
@@ -971,7 +971,7 @@ class LaunchHeuristicsManifestModel(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-def load_launch_heuristics(path: Optional[str] = None) -> LaunchHeuristicsManifestModel:
+def load_launch_heuristics(path: str | None = None) -> LaunchHeuristicsManifestModel:
     """Load launch geometry heuristics rulebook from YAML configuration.
 
     Args:
@@ -988,9 +988,9 @@ def load_launch_heuristics(path: Optional[str] = None) -> LaunchHeuristicsManife
 
 
 def query_optimal_launch_geometry(
-    shape: Union[tuple[Union[int, str], ...], list[Union[int, str]], tuple[int, ...], list[int], None],
-    hardware_caps: Optional[HardwareCapabilityQuery] = None,
-    heuristics_path: Optional[str] = None,
+    shape: tuple[int | str, ...] | list[int | str] | tuple[int, ...] | list[int] | None,
+    hardware_caps: HardwareCapabilityQuery | None = None,
+    heuristics_path: str | None = None,
 ) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
     """Query dynamic hardware capabilities and evaluate launch heuristics rulebook.
 
@@ -1047,7 +1047,7 @@ class MemoryLayoutsManifestModel(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-def load_memory_layouts(path: Optional[str] = None) -> MemoryLayoutsManifestModel:
+def load_memory_layouts(path: str | None = None) -> MemoryLayoutsManifestModel:
     """Load memory layout transformation rulebook from YAML configuration.
 
     Args:
@@ -1102,21 +1102,21 @@ class HardwareDeviceProfileModel(BaseModel):
     """
 
     architecture: str
-    warp_size: Optional[int] = None
-    wavefront_size: Optional[int] = None
-    simdgroup_size: Optional[int] = None
+    warp_size: int | None = None
+    wavefront_size: int | None = None
+    simdgroup_size: int | None = None
     max_threads_per_block: int = Field(default=1024)
-    max_threads_per_threadgroup: Optional[int] = None
+    max_threads_per_threadgroup: int | None = None
     max_block_dim: list[int] = Field(default_factory=lambda: [1024, 1024, 64])
-    max_threadgroup_dim: Optional[list[int]] = None
+    max_threadgroup_dim: list[int] | None = None
     max_grid_dim: list[int] = Field(default_factory=lambda: [2147483647, 65535, 65535])
     shared_memory_limit_bytes: int = Field(default=49152)
-    threadgroup_memory_limit_bytes: Optional[int] = None
-    max_shared_memory_per_multiprocessor: Optional[int] = None
-    max_threads_per_multiprocessor: Optional[int] = None
-    vector_width: Optional[int] = None
-    max_threads: Optional[int] = None
-    openmp_chunk_size: Optional[int] = None
+    threadgroup_memory_limit_bytes: int | None = None
+    max_shared_memory_per_multiprocessor: int | None = None
+    max_threads_per_multiprocessor: int | None = None
+    vector_width: int | None = None
+    max_threads: int | None = None
+    openmp_chunk_size: int | None = None
     dynamic_tile_sizes: DeviceTileSizesModel = Field(default_factory=DeviceTileSizesModel)
     model_config = ConfigDict(extra="allow")
 
@@ -1149,7 +1149,7 @@ class HardwareDeviceProfilesManifestModel(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-def load_hardware_device_profiles(path: Optional[str] = None) -> HardwareDeviceProfilesManifestModel:
+def load_hardware_device_profiles(path: str | None = None) -> HardwareDeviceProfilesManifestModel:
     """Load hardware target execution profiles and limits from YAML configuration.
 
     Args:
@@ -1168,7 +1168,7 @@ def load_hardware_device_profiles(path: Optional[str] = None) -> HardwareDeviceP
 def validate_and_bound_shared_memory(
     requested_bytes: int,
     backend: str = "cuda",
-    manifest: Optional[HardwareDeviceProfilesManifestModel] = None,
+    manifest: HardwareDeviceProfilesManifestModel | None = None,
 ) -> int:
     """Validate and bound shared memory allocations according to architecture profiles.
 

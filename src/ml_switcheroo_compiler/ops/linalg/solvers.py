@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -122,12 +122,10 @@ def lstsq(
         Tensor: Result.
     """
     if config.eager_mode:
-        from typing import cast
-
         data = get_active_backend().execute_op("Lstsq", a.data, b.data, rcond=rcond)
         if isinstance(data, tuple) or (hasattr(data, "solution") and hasattr(data, "residuals")):
             # torch returns namedtuple, numpy returns tuple
-            data = getattr(data, "solution") if hasattr(data, "solution") else cast("tuple[Tensor, ...]", data)[0]
+            data = getattr(data, "solution") if hasattr(data, "solution") else typing.cast("tuple[Tensor, ...]", data)[0]
         return Tensor(data, TensorConfig(getattr(data, "shape"), b.dtype, b.device))
 
     out_shape = getattr(Lstsq(), "infer_shape")(a, b)
@@ -354,7 +352,7 @@ class CholeskySolve(OpDef):
 
     op_name = "CholeskySolve"
 
-    def infer_shape(self, chol: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, chol: TensorOrScalar, rhs: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer the shape of the output tensor for the Cholesky solve operation.
 
         Args:
@@ -395,7 +393,7 @@ class BandedTriangularSolve(OpDef):
 
     op_name = "BandedTriangularSolve"
 
-    def infer_shape(self, bands: EagerTensorProtocol, rhs: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, bands: TensorOrScalar, rhs: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infer the shape of the output tensor for the banded triangular solve operation.
 
         Args:
@@ -476,7 +474,7 @@ class MatrixNorm(OpDef):
         axis = kwargs.get("axis", (-2, -1))
         keepdims = bool(kwargs.get("keepdims", False))
 
-        axes = (axis,) if isinstance(axis, int) else cast("tuple[int, ...]", axis)
+        axes = (axis,) if isinstance(axis, int) else typing.cast("tuple[int, ...]", axis)
         if keepdims:
             out_shape = list(shape)
             for d in axes:
@@ -513,7 +511,7 @@ class VectorNorm(OpDef):
         axis = kwargs.get("axis", -1)
         keepdims = bool(kwargs.get("keepdims", False))
 
-        axes = (axis,) if isinstance(axis, int) else cast("tuple[int, ...]", axis)
+        axes = (axis,) if isinstance(axis, int) else typing.cast("tuple[int, ...]", axis)
         if keepdims:
             out_shape = list(shape)
             for d in axes:
@@ -566,7 +564,7 @@ class Tensorinv(OpDef):
         """
         in_shape = a.shape
         ind = kwargs.get("ind", 2)
-        return in_shape[int(cast(int, ind)) :] + in_shape[: int(cast(int, ind))]
+        return in_shape[int(typing.cast(int, ind)) :] + in_shape[: int(typing.cast(int, ind))]
 
 
 @register_op("Tensorsolve")

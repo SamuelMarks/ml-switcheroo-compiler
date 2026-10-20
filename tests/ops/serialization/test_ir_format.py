@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.serialization.ir_format import graph_to_flatbuffers, graph_to_json, graph_to_protobuf, json_to_graph
 
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+if typing.TYPE_CHECKING:
+    pass
 
 
 def test_ir_format() -> None:
     """Test function test_ir_format."""
     graph = IRGraph()
-    getattr(graph.nodes, "__setitem__")("test_node", cast("EagerCallableProtocol", IRNode)("test_node", "TestOp", ["input1"]))
+    graph.nodes["test_node"] = IRNode("test_node", "TestOp", inputs=["input1"])
     json_str = graph_to_json(graph)
     assert "TestOp" in json_str
     loaded_graph = json_to_graph(json_str)

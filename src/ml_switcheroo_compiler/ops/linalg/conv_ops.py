@@ -1,6 +1,6 @@
 """Implementation of conv ops operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.conv_ops`)."""
 
-from typing import Union
+from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
@@ -28,7 +28,7 @@ class ConvGeneralDilated(OpDef):
         """
         lhs = args[0] if len(args) > 0 else kwargs.get("lhs")
         rhs = args[1] if len(args) > 1 else kwargs.get("rhs")
-        config: Union[OpArgValue, ConvConfig] = args[2] if len(args) > BINARY_OP_ARITY else kwargs.get("config", None)
+        config: OpArgValue | ConvConfig = args[2] if len(args) > BINARY_OP_ARITY else kwargs.get("config", None)
         if config is None:
             config = ConvConfig(window_strides=[], padding=[])
         if not _has_valid_shape(lhs) or not _has_valid_shape(rhs):

@@ -2,26 +2,31 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, cast, runtime_checkable
+import typing
 
 from ml_switcheroo_ir import AttributeValue
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
     from ml_switcheroo_compiler.backends.formatters import CodeFormatter
 
 
-@runtime_checkable
-class FallbackPrefixProtocol(Protocol):
+@typing.runtime_checkable
+class FallbackPrefixProtocol(typing.Protocol):
     """Protocol for AST generators providing a fallback prefix."""
 
     indent_level: int
-    code: list[str]
     var_names: dict[str, str]
     formatter: CodeFormatter
     _cholesky_vjp_imported: bool
     _lu_vjp_imported: bool
     _qr_vjp_imported: bool
     _svd_vjp_imported: bool
+
+    @property
+    def code(self) -> list[str]:
+        """Return generated code lines."""
+        ...
 
     def __init__(self, graph: AttributeValue = None) -> None:
         """Initialize the protocol generator.
@@ -71,7 +76,7 @@ class CommonASTVisitor:
         self,
         graph: AttributeValue = None,
         *args: str | int | float | bool,
-        generator: FallbackPrefixProtocol | None = None,
+        generator: FallbackPrefixProtocol | BaseGenerator | None = None,
         **kwargs: str | int | float | bool | None,
     ) -> None:
         """Initialize the visitor.
@@ -93,7 +98,7 @@ class CommonASTVisitor:
         Returns:
             FallbackPrefixProtocol: The generator or self.
         """
-        return cast(FallbackPrefixProtocol, getattr(self, "_generator", None) or self)
+        return typing.cast(FallbackPrefixProtocol, getattr(self, "_generator", None) or self)
 
     def get_fallback_prefix(self) -> str:
         """Return the backend prefix (e.g., 'jax', 'pt', 'mx').

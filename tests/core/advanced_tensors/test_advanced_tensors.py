@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.sparse_tensor import SparseTensorCOO
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -58,4 +58,4 @@ def test_tensor_array_eager() -> None:
         stacked = ta.stack()
         assert res.shape == (2, 2)
         assert stacked.shape == (2, 2, 2)
-        assert cast("EagerCallableProtocol", np.array_equal)(res.data, cast("EagerCallableProtocol", np.ones)((2, 2)))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(res.data, typing.cast("EagerCallableProtocol", np.ones)((2, 2)))

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, ClassBasedGenerator, EmitUtilsMixin, FormatterProxyMixin, PythonStringGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -17,8 +17,8 @@ class DummyFormatter:
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.var_names = cast("dict[str, EagerTensorProtocol]", {})
-        self.code = cast("list[EagerTensorProtocol]", [])
+        self.var_names = typing.cast("dict[str, EagerTensorProtocol]", {})
+        self.code = typing.cast("list[EagerTensorProtocol]", [])
         self.header = ""
         self.indent_level = 0
 
@@ -32,7 +32,7 @@ class DummyFormatter:
         Args:
             line: Test parameter `line`.
         """
-        cast("EagerCallableProtocol", self.code.append)(cast("EagerCallableProtocol", self.get_indent)() + line)
+        typing.cast("EagerCallableProtocol", self.code.append)(typing.cast("EagerCallableProtocol", self.get_indent)() + line)
 
     def assign_var_name(self, node_id: str, prefix: str = "tensor") -> str:
         """Test function assign_var_name.
@@ -72,7 +72,7 @@ class DummyEmitUtils(EmitUtilsMixin):
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.code = cast("list[EagerTensorProtocol]", [])
+        self.code = typing.cast("list[EagerTensorProtocol]", [])
 
     def add_line(self, line: EagerValue) -> None:
         """Test function add_line.
@@ -80,7 +80,7 @@ class DummyEmitUtils(EmitUtilsMixin):
         Args:
             line: Test parameter `line`.
         """
-        cast("EagerCallableProtocol", self.code.append)(line)
+        typing.cast("EagerCallableProtocol", self.code.append)(line)
 
 
 def test_emit_utils_mixin() -> None:
@@ -103,12 +103,12 @@ def test_emit_utils_mixin() -> None:
 
     setattr(eu, "graph", IRGraph())
     setattr(eu, "formatter", DummyFormatter())
-    setattr(cast("EagerTensorProtocol", getattr(eu, "graph")), "outputs", ["out1"])
+    setattr(typing.cast("EagerTensorProtocol", getattr(eu, "graph")), "outputs", ["out1"])
     eu.code = []
     eu._emit_body_return([])
     assert eu.code == ["return out1"]
 
-    setattr(cast("EagerTensorProtocol", getattr(eu, "graph")), "outputs", ["out1", "out2"])
+    setattr(typing.cast("EagerTensorProtocol", getattr(eu, "graph")), "outputs", ["out1", "out2"])
     eu.code = []
     eu._emit_body_return([])
     assert eu.code == ["return (out1, out2)"]
@@ -137,7 +137,7 @@ def test_base_generator_methods() -> None:
         return {"TestOp": "test_prefix.testop({0}, {1}, kw={kw})"}
 
     setattr(gen, "get_ops_map", get_ops_map)
-    res = gen.generic_visit(IRNode("id", "TestOp"), ["a", "b"], kw=42)
+    res = typing.cast("EagerCallableProtocol", gen.generic_visit)(IRNode("id", "TestOp"), ["a", "b"], kw=42)
     assert res == "test_prefix.testop(a, b, kw=42)"
 
     # kwargs replacement where kwargs left over
@@ -150,9 +150,9 @@ def test_base_generator_methods() -> None:
         return {"TestOp2": "test_prefix.testop({0}, {1}, kw={kw})"}
 
     setattr(gen, "get_ops_map", get_ops_map2)
-    res2 = gen.generic_visit(IRNode("id", "TestOp2"), ["a", "b"], kw=42, unrelated="{not_fmt}")
+    res2 = typing.cast("EagerCallableProtocol", gen.generic_visit)(IRNode("id", "TestOp2"), ["a", "b"], kw=42, unrelated="{not_fmt}")
     # unrelated should be cleaned up by regex
-    assert "test_prefix.testop" in res2
+    assert "test_prefix.testop" in typing.cast("str", res2)
 
     gen.code = []
     gen._emit_input_assignment("v1", IRNode("i", "Input"), "args", 0)
@@ -218,7 +218,7 @@ def _test_code_generator_visitor_missing_lines_part_1(_state: dict[str, EagerTen
     Args:
         _state: Shared test state dictionary.
     """
-    CodeGeneratorVisitor = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "CodeGeneratorVisitor"))
+    CodeGeneratorVisitor = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "CodeGeneratorVisitor"))
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     getattr(_state, "update")({"CodeGeneratorVisitor": CodeGeneratorVisitor, "IRGraph": IRGraph, "IRNode": IRNode})
@@ -238,12 +238,12 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.code = cast("list[EagerTensorProtocol]", [])
+            self.code = typing.cast("list[EagerTensorProtocol]", [])
             self.graph = IRGraph()
-            setattr(self.graph, "inputs", [IRNode("in1", "Input", "in1")])
-            setattr(self.graph, "outputs", [IRNode("out1", "Output", "out1")])
+            object.__setattr__(self.graph, "inputs", [IRNode("in1", "Input", "in1")])
+            object.__setattr__(self.graph, "outputs", [IRNode("out1", "Output", "out1")])
             self.sorted_nodes = self.graph.inputs + self.graph.outputs
-            self.var_names = cast("dict[str, EagerTensorProtocol]", {})
+            self.var_names = typing.cast("dict[str, EagerTensorProtocol]", {})
 
         def assign_var_name(self, id: EagerValue, prefix: EagerValue = "") -> EagerValue:
             """Test function assign_var_name.
@@ -252,7 +252,7 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
                 id: Test parameter `id`.
                 prefix: Test parameter `prefix`.
             """
-            return cast("EagerTensorProtocol", "var_") + cast("EagerTensorProtocol", id)
+            return typing.cast("EagerTensorProtocol", "var_") + typing.cast("EagerTensorProtocol", id)
 
         def generic_visit(self, node: EagerValue, inputs: EagerValue, **kwargs: EagerValue) -> EagerValue:
             """Test function generic_visit.
@@ -273,7 +273,7 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
                 prefix: Test parameter `prefix`.
                 i: Test parameter `i`.
             """
-            cast("EagerCallableProtocol", self.code.append)(f"{var} = {prefix}[{i}]")
+            typing.cast("EagerCallableProtocol", self.code.append)(f"{var} = {prefix}[{i}]")
 
         def _emit_output_assignment(self, node: EagerValue, inputs: EagerValue, var: EagerValue) -> None:
             """Test function _emit_output_assignment.
@@ -283,7 +283,7 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
                 inputs: Test parameter `inputs`.
                 var: Test parameter `var`.
             """
-            cast("EagerCallableProtocol", self.code.append)(f"ret {var}")
+            typing.cast("EagerCallableProtocol", self.code.append)(f"ret {var}")
 
         def get_ops_map(self, *args: EagerValue, **kwargs: EagerValue) -> dict[str, str]:
             """Test function get_ops_map.
@@ -372,7 +372,7 @@ def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTen
     setattr(gen, "visitors", [MockSpecificVisitor2()])
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
-    res = cast("EagerCallableProtocol", BaseGenerator.visit)(gen, node, [])
+    res = typing.cast("EagerCallableProtocol", BaseGenerator.visit)(gen, node, [])
     assert res == "visited_TestOp"
     getattr(_state, "update")({"BaseGenerator": BaseGenerator, "MockSpecificVisitor2": MockSpecificVisitor2, "gen": gen, "node": node})
     getattr(_state, "update")({"res": res, "visitor": visitor})
@@ -447,7 +447,7 @@ def test_base_generator_maps() -> None:
 
     gen = MinimalGen(IRGraph())
     ops = gen.get_ops_map({})
-    assert cast("EagerTensorProtocol", getattr(ops, "__getitem__")("Add")) == "m.add"
+    assert typing.cast("EagerTensorProtocol", getattr(ops, "__getitem__")("Add")) == "m.add"
 
 
 def test_class_based_generator_full() -> None:
@@ -493,7 +493,7 @@ def test_class_based_generator_full() -> None:
     class MyClassGenNoBase(ClassBasedGenerator):
         """Test class MyClassGenNoBase."""
 
-        _base_class_name = cast("str", None)
+        _base_class_name = typing.cast("str", None)
 
         def _generate_body(self, input_prefix: str = "args") -> None:
             """Test function _generate_body.
@@ -556,7 +556,7 @@ def test_ir_graph_walker() -> None:
         setattr(bg, "CodeGeneratorVisitor", DummyVisitor)
         walker = bg.IRGraphWalker(gen)
         walker.walk("args")
-        assert cast("EagerTensorProtocol", getattr(gen, "called")) == "args"
+        assert typing.cast("EagerTensorProtocol", getattr(gen, "called")) == "args"
         assert walker.generator is gen
     finally:
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
@@ -685,7 +685,7 @@ def test_ast_walker_proper() -> None:
 
     g = IRGraph()
     n = IRNode("in", "Input")
-    setattr(g, "inputs", [n])
+    object.__setattr__(g, "inputs", [n])
     g.outputs = []
 
     class MyGen(BaseGenerator):
@@ -817,7 +817,7 @@ def test_class_based_generator_has_base_no_params_hit_457() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            cast("EagerCallableProtocol", super().__init__)(*args, **kwargs)
+            typing.cast("EagerCallableProtocol", super().__init__)(*args, **kwargs)
             self._base_class_name = "BaseClass"
 
         def _generate_body(self, input_prefix: str = "args") -> None:
@@ -871,7 +871,7 @@ def test_graph_walker_lines() -> None:
 
     import ml_switcheroo_compiler.backends.base_generator as bg
 
-    old = cast("EagerTensorProtocol", getattr(bg, "CodeGeneratorVisitor"))
+    old = typing.cast("EagerTensorProtocol", getattr(bg, "CodeGeneratorVisitor"))
     setattr(bg, "CodeGeneratorVisitor", DummyVisitor)
     try:
         gen = BaseGenerator(IRGraph())
@@ -934,7 +934,7 @@ def test_get_ops_map_fallbacks_coverage() -> None:
                 name: Test parameter `name`.
             """
             if prefix == "test_prefix":
-                return cast("EagerTensorProtocol", "mapped_") + cast("EagerTensorProtocol", name)
+                return typing.cast("EagerTensorProtocol", "mapped_") + typing.cast("EagerTensorProtocol", name)
             return None
 
         mock_reg.get_generator_mapping.side_effect = mock_get
@@ -979,11 +979,11 @@ def test_base_generator_compile_aot() -> None:
     g = IRGraph()
     # Call as classmethod
     res_cls = CustomGen.compile_aot(g)
-    assert cast("EagerTensorProtocol", res_cls) == cast("EagerTensorProtocol", "compiled_artifact")
+    assert typing.cast("EagerTensorProtocol", res_cls) == typing.cast("EagerTensorProtocol", "compiled_artifact")
 
     # Call on instance with graph=None falling back to self.graph
     inst = CustomGen(g)
-    assert cast("EagerTensorProtocol", inst.compile_aot(None)) == cast("EagerTensorProtocol", "compiled_artifact")
+    assert typing.cast("EagerTensorProtocol", inst.compile_aot(None)) == typing.cast("EagerTensorProtocol", "compiled_artifact")
 
     # Base implementation raises NotImplementedError
     base_inst = BaseGenerator(g)
@@ -1001,7 +1001,7 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
 
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
-    IRNode = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "IRNode"))
+    IRNode = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "IRNode"))
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     g = IRGraph()
@@ -1015,7 +1015,7 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
         op_type="Argmin",
         attributes={"dim": 0, "keepdim": True, "_internal_attr": "hidden"},
     )
-    argmin_res = cast("EagerCallableProtocol", cupy_bg.visit_OpNode)(argmin_node, ["x"])
+    argmin_res = typing.cast("EagerCallableProtocol", cupy_bg.visit_OpNode)(argmin_node, ["x"])
     assert "cupy.argmin" in argmin_res
     assert "x" in argmin_res
     assert "axis=0" in argmin_res
@@ -1026,12 +1026,12 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
     torch_bg = BaseGenerator(g)
     setattr(torch_bg, "backend_name", "pytorch")
     atan2_node = IRNode(id="n2", op_type="Atan2", attributes={"out_var": "out_val"})
-    atan2_res = cast("EagerCallableProtocol", torch_bg.visit_OpNode)(atan2_node, ["in_x", "in_y"])
+    atan2_res = typing.cast("EagerCallableProtocol", torch_bg.visit_OpNode)(atan2_node, ["in_x", "in_y"])
     assert "out_val = torch.atan2(in_x, in_y)" in atan2_res
 
     # ast_template with default out variable name from node.id
     atan2_node_default_out = IRNode(id="atan2_id", op_type="Atan2")
-    atan2_res_default = cast("EagerCallableProtocol", torch_bg.visit_OpNode)(atan2_node_default_out, ["in_x", "in_y"])
+    atan2_res_default = typing.cast("EagerCallableProtocol", torch_bg.visit_OpNode)(atan2_node_default_out, ["in_x", "in_y"])
     assert "tensor_0 = torch.atan2(in_x, in_y)" in atan2_res_default
     getattr(_state, "update")({"BaseGenerator": BaseGenerator, "IRGraph": IRGraph, "IRNode": IRNode, "MagicMock": MagicMock})
     getattr(_state, "update")({"argmin_node": argmin_node, "argmin_res": argmin_res, "atan2_node": atan2_node, "atan2_node_default_out": atan2_node_default_out})
@@ -1065,9 +1065,9 @@ def _test_base_generator_visit_and_visit_opnode_part_2(_state: dict[str, EagerTe
 
     # 4. Exception in load_backend_mappings falling back to generic_visit
     bad_bg = BaseGenerator(g)
-    with cast("EagerCallableProtocol", patch)(
+    with typing.cast("EagerCallableProtocol", patch)(
         "ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings",
-        side_effect=cast("EagerCallableProtocol", RuntimeError)("disk error"),
+        side_effect=typing.cast("EagerCallableProtocol", RuntimeError)("disk error"),
     ):
         unknown_node = IRNode(id="n3", op_type="Add")
         fallback_res = bad_bg.visit_OpNode(unknown_node, ["arg1", "arg2"])
@@ -1123,7 +1123,7 @@ def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTe
             """
             return f"subclass_handled({', '.join(input_vars)})"
 
-    cg = cast("EagerCallableProtocol", CustomGenerator)(g)
+    cg = typing.cast("EagerCallableProtocol", CustomGenerator)(g)
     setattr(cg, "visitors", [])
     s_node = IRNode(id="n6", op_type="SubclassOp")
     assert cg.visit(s_node, ["s1"]) == "subclass_handled(s1)"
@@ -1156,7 +1156,7 @@ def _test_base_generator_visit_and_visit_opnode_part_4(_state: dict[str, EagerTe
     saved_opnode = BaseGenerator.visit_OpNode
     delattr(BaseGenerator, "visit_OpNode")
     try:
-        nog = cast("EagerCallableProtocol", NoOpNodeGenerator)(g)
+        nog = typing.cast("EagerCallableProtocol", NoOpNodeGenerator)(g)
         g_node = IRNode(id="n7", op_type="GenericOp")
         assert nog.visit(g_node, ["g1"]) == "np.genericop(g1)"
     finally:

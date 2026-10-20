@@ -1,14 +1,18 @@
 """PyTorch backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import logging
 import resource
 import sys
 import time
-from typing import Callable, Optional, Union, cast
+import typing
+from collections.abc import Callable
 
 import torch
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -20,7 +24,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -50,7 +55,7 @@ class TorchGraphModule(torch.nn.Module):
         else:
             raise TypeError("Failed to generate valid torch.nn.Module from IRGraph")
 
-    def forward(self, *args: Union[torch.Tensor, dict[str, torch.Tensor]], **kwargs: torch.Tensor) -> Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]]:
+    def forward(self, *args: torch.Tensor | dict[str, torch.Tensor], **kwargs: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
         """Execute the native compiled graph forward pass.
 
         Args:
@@ -71,14 +76,14 @@ class TorchGraphModule(torch.nn.Module):
             res = self.model(*ordered)
             if isinstance(res, torch.Tensor) and self.graph.outputs:
                 return {self.graph.outputs[0]: res}
-            return cast(Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]], res)
-        return cast(Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]], self.model(*args, **kwargs))
+            return typing.cast(typing.Union[torch.Tensor, tuple[torch.Tensor, ...], "dict[str, torch.Tensor]"], res)
+        return typing.cast(typing.Union[torch.Tensor, tuple[torch.Tensor, ...], "dict[str, torch.Tensor]"], self.model(*args, **kwargs))
 
 
 class PyTorchProfiler:
     """Provides genuine execution timing and peak device memory profiling for PyTorch."""
 
-    def _resolve_device(self, device: Optional[str]) -> torch.device:
+    def _resolve_device(self, device: str | None) -> torch.device:
         """Resolve valid PyTorch execution device with hardware fallbacks.
 
         Args:
@@ -96,7 +101,7 @@ class PyTorchProfiler:
 
     def _prepare_inputs(
         self,
-        inputs: dict[str, Union[list[float], list[list[float]], torch.Tensor]],
+        inputs: dict[str, list[float] | list[list[float]] | torch.Tensor],
         device: torch.device,
     ) -> list[torch.Tensor]:
         """Convert input payloads to device tensors.
@@ -119,7 +124,7 @@ class PyTorchProfiler:
     def _prepare_ordered_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], torch.Tensor]],
+        inputs: dict[str, list[float] | list[list[float]] | torch.Tensor],
         device: torch.device,
     ) -> list[torch.Tensor]:
         """Prepare inputs ordered topologically for compiled forward execution.
@@ -173,7 +178,7 @@ class PyTorchProfiler:
         graph: IRGraph,
         device: torch.device,
         input_list: list[torch.Tensor],
-    ) -> Optional[torch.nn.Module]:
+    ) -> torch.nn.Module | None:
         """Compile an IRGraph into an optimized PyTorch module.
 
         Args:
@@ -188,12 +193,12 @@ class PyTorchProfiler:
         compiled: torch.nn.Module = base_module
         if callable(getattr(torch, "compile", None)):
             try:
-                compiled = cast(torch.nn.Module, torch.compile(base_module))
+                compiled = typing.cast(torch.nn.Module, torch.compile(base_module))
             except Exception:
                 compiled = base_module
         if compiled is base_module and hasattr(torch, "jit") and callable(getattr(torch.jit, "trace", None)) and input_list:
             try:
-                compiled = cast(Callable[..., torch.nn.Module], getattr(torch.jit, "trace"))(base_module, tuple(input_list))
+                compiled = typing.cast(TypedVariadicCallable[torch.nn.Module], getattr(torch.jit, "trace"))(base_module, tuple(input_list))
             except Exception:
                 compiled = base_module
         return compiled
@@ -264,11 +269,11 @@ class PyTorchProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], torch.Tensor]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | torch.Tensor],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on the PyTorch backend with hardware synchronization.
 
         Args:
@@ -285,18 +290,18 @@ class PyTorchProfiler:
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         torch_input_list: list[torch.Tensor] = self._prepare_ordered_inputs(graph, inputs, torch_dev)
 
-        compiled_module: Optional[torch.nn.Module] = None
+        compiled_module: torch.nn.Module | None = None
         if has_ops:
             compiled_module = self._compile_module(graph, torch_dev, torch_input_list)
 
-        def _execute_step() -> Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]]:
+        def _execute_step() -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
             """Execute a single evaluation step on PyTorch backend.
 
             Returns:
                 Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]]: Single or collection of output tensors.
             """
             if has_ops and compiled_module is not None:
-                return cast(Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]], compiled_module(*torch_input_list))
+                return typing.cast(typing.Union[torch.Tensor, tuple[torch.Tensor, ...], "dict[str, torch.Tensor]"], compiled_module(*torch_input_list))
             if not torch_input_list:
                 return torch.zeros((1,), device=torch_dev, dtype=torch.float32)
             accum = torch.zeros_like(torch_input_list[0])

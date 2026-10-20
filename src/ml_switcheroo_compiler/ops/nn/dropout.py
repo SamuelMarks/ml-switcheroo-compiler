@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -14,8 +15,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, regis
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-@dataclass
-class DropoutConfig:
+class DropoutConfig(pydantic.BaseModel):
     """Configuration parameters for controlling dropout behavior during training.
 
     Args:
@@ -23,6 +23,8 @@ class DropoutConfig:
         training: Boolean flag indicating if the model is in training mode.
         seed: Optional integer seed for random number generation.
     """
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     noise_shape: Sequence[int] | None = None
     training: bool = False
@@ -111,7 +113,7 @@ def alpha_dropout(
 class ActivityRegularization(OpDef):
     """Operation definition for applying activity regularization."""
 
-    def infer_shape(self, x: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Determine the output shape for activity regularization based on the input.
 
         Args:

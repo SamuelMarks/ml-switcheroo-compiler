@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
-from collections.abc import Callable, Mapping
-from typing import Optional, cast
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -19,29 +17,32 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
 from .utils import GradValue
 
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
+
 
 class CustomVJPFunction:
     """Wrap for custom_vjp functions."""
 
-    def __init__(self, fun: Callable[..., GradValue]) -> None:
+    def __init__(self, fun: GradValue) -> None:
         """Initialize the custom VJP wrapper.
 
         Args:
-            fun (Callable[..., GradValue]): The base function being wrapped for custom VJPs.
+            fun (GradValue): The base function being wrapped for custom VJPs.
         """
         self.fun = fun
         self.fwd: GradValue = None
         self.bwd: GradValue = None
-        self.bwd_subgraph: Optional[LogicalGraph] = None
+        self.bwd_subgraph: LogicalGraph | None = None
         self._tracing_fwd = False
 
-    def defvjp(self, fwd: GradValue, bwd: GradValue, bwd_subgraph: Optional[LogicalGraph] = None) -> None:
+    def defvjp(self, fwd: GradValue, bwd: GradValue, bwd_subgraph: LogicalGraph | None = None) -> None:
         """Define the forward and backward passes.
 
         Args:
             fwd (GradValue): The forward pass.
             bwd (GradValue): The backward pass.
-            bwd_subgraph (Optional[LogicalGraph]): Declarative custom backward IR subgraph.
+            bwd_subgraph (LogicalGraph | None): Declarative custom backward IR subgraph.
         """
         self.fwd = fwd
         self.bwd = bwd
@@ -62,32 +63,32 @@ class CustomVJPFunction:
         """
         self.bwd_subgraph = bwd_subgraph
 
-    def _extract_tensor_args(self, args: tuple[Tensor | int | float | str | bool | None, ...]) -> list[Tensor]:
+    def _extract_tensor_args(self, args: tuple[GradValue, ...]) -> list[Tensor]:
         """Extract all tensor instances from the provided arguments.
 
         Args:
-            args (tuple[Tensor | int | float | str | bool | None, ...]): The positional arguments.
+            args (tuple[GradValue, ...]): The positional arguments.
 
         Returns:
             list[Tensor]: A list containing only the tensor arguments.
         """
         return [a for a in args if isinstance(a, Tensor)]
 
-    def _trace_fwd_graph(self, tensor_args: list[Tensor]) -> Optional[LogicalGraph]:
+    def _trace_fwd_graph(self, tensor_args: list[Tensor]) -> LogicalGraph | None:
         """Trace the forward pass of the custom VJP function to construct its logical graph.
 
         Args:
             tensor_args (list[Tensor]): The list of tensor arguments.
 
         Returns:
-            Optional[LogicalGraph]: The traced logical graph for the forward pass.
+            LogicalGraph | None: The traced logical graph for the forward pass.
         """
         if self.fwd is None or self.bwd is None:
             return None
 
         self._tracing_fwd = True
         try:
-            return cast(Optional[LogicalGraph], cast("EagerCallableProtocol", _trace_function)(self.fwd, tuple(tensor_args), "fwd_pass"))
+            return _trace_function(self.fwd, tuple(tensor_args), "fwd_pass")
         finally:
             self._tracing_fwd = False
 
@@ -113,15 +114,15 @@ class CustomVJPFunction:
     def _emit_vjp_node(
         self,
         tensor_args: list[Tensor],
-        fwd_graph: Optional[LogicalGraph],
-        primal_graph: Optional[LogicalGraph],
+        fwd_graph: LogicalGraph | None,
+        primal_graph: LogicalGraph | None,
     ) -> Tensor:
         """Emit a CustomVJP node into the active computation graph.
 
         Args:
             tensor_args (list[Tensor]): The tensor arguments.
-            fwd_graph (Optional[LogicalGraph]): The traced forward graph.
-            primal_graph (Optional[LogicalGraph]): The primal logical graph.
+            fwd_graph (LogicalGraph | None): The traced forward graph.
+            primal_graph (LogicalGraph | None): The primal logical graph.
 
         Returns:
             Tensor: The proxy tensor representing the custom VJP output.
@@ -135,21 +136,29 @@ class CustomVJPFunction:
             else:
                 cid = str(uuid.uuid4())
                 arr = getattr(a, "data", a)
+                c_attrs: dict[str, AttributeValue] = {"value": arr}  # type: ignore[dict-item]
                 c_node = LogicalNode(
                     id=cid,
                     op_type="Constant",
                     inputs=[],
-                    attributes=cast("Mapping[str, AttributeValue]", {"value": arr}),
+                    attributes=c_attrs,
                     shape_metadata=getattr(arr, "shape", ()),
                 )
                 global_tracing_state.add_node(c_node)
                 in_ids.append(cid)
 
-        vjp_attrs = {"primal_graph": primal_graph, "fwd_graph": fwd_graph, "bwd_fn": self.bwd}
+        vjp_attrs = typing.cast(
+            "dict[str, AttributeValue]",
+            {
+                "primal_graph": primal_graph,
+                "fwd_graph": fwd_graph,
+                "bwd_fn": self.bwd,
+            },
+        )
         subgraphs: dict[str, LogicalGraph] = {}
         if self.bwd_subgraph is not None:
-            vjp_attrs["bwd_graph"] = self.bwd_subgraph
-            vjp_attrs["custom_backward_subgraph"] = self.bwd_subgraph
+            vjp_attrs["bwd_graph"] = typing.cast("AttributeValue", self.bwd_subgraph)
+            vjp_attrs["custom_backward_subgraph"] = typing.cast("AttributeValue", self.bwd_subgraph)
             subgraphs["bwd"] = self.bwd_subgraph
         if primal_graph is not None:
             subgraphs["primal"] = primal_graph
@@ -160,7 +169,7 @@ class CustomVJPFunction:
             id=out_id,
             op_type="CustomVJP",
             inputs=in_ids,
-            attributes=cast("Mapping[str, AttributeValue]", vjp_attrs),
+            attributes=vjp_attrs,
             subgraphs=subgraphs,
             shape_metadata=meta[0],
         )
@@ -179,21 +188,22 @@ class CustomVJPFunction:
             GradValue: The computed primal output.
         """
         if config.eager_mode or not global_tracing_state.is_tracing or self._tracing_fwd:
-            return self.fun(*args, **kwargs)
+            call_fn: VariadicCallableProtocol = self.fun  # type: ignore[assignment]
+            return call_fn(*args, **kwargs)
 
-        tensor_args = getattr(self, "_extract_tensor_args")(args)
+        tensor_args = self._extract_tensor_args(args)
         fwd_graph = self._trace_fwd_graph(tensor_args)
-        primal_graph = cast("Callable[..., LogicalGraph]", _trace_function)(self.fun, tuple(tensor_args), "primal_pass")
+        primal_graph = _trace_function(self.fun, tuple(tensor_args), "primal_pass")
         return self._emit_vjp_node(tensor_args, fwd_graph, primal_graph)
 
 
-def custom_vjp(fun: Callable[..., GradValue]) -> GradValue:
+def custom_vjp(fun: GradValue) -> CustomVJPFunction:
     """Wrap a function to allow defining custom vector-Jacobian product (VJP) rules.
 
     Args:
-        fun (Callable[..., GradValue]): The original function.
+        fun (GradValue): The original function.
 
     Returns:
-        GradValue: The wrapped function that supports custom VJPs.
+        CustomVJPFunction: The wrapped function that supports custom VJPs.
     """
-    return cast(GradValue, CustomVJPFunction(fun))
+    return CustomVJPFunction(fun)

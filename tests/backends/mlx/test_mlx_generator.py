@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -57,9 +57,9 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
 
     # Create a mock module for mlx.core
     mock_mlx_core = types.ModuleType("mlx.core")
-    setattr(mock_mlx_core, "load", cast("EagerTensorProtocol", getattr(MockMX, "load")))
-    setattr(mock_mlx_core, "save", cast("EagerTensorProtocol", getattr(MockMX, "save")))
-    setattr(mock_mlx_core, "save_safetensors", cast("EagerTensorProtocol", getattr(MockMX, "save_safetensors")))
+    setattr(mock_mlx_core, "load", typing.cast("EagerTensorProtocol", getattr(MockMX, "load")))
+    setattr(mock_mlx_core, "save", typing.cast("EagerTensorProtocol", getattr(MockMX, "save")))
+    setattr(mock_mlx_core, "save_safetensors", typing.cast("EagerTensorProtocol", getattr(MockMX, "save_safetensors")))
 
     mock_mlx = types.ModuleType("mlx")
     setattr(mock_mlx, "core", mock_mlx_core)

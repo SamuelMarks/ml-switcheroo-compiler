@@ -5,9 +5,9 @@ from __future__ import annotations
 import gzip
 import os
 import struct
+import typing
 import zlib
 from types import TracebackType
-from typing import cast
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -43,7 +43,7 @@ def decode_csv(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast(
+        return typing.cast(
             "Tensor | list[Tensor]",
             get_active_backend().execute_op(
                 "DecodeCsv",
@@ -96,7 +96,7 @@ def parse_example(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast(
+        return typing.cast(
             "Tensor | dict[str, Tensor]",
             get_active_backend().execute_op(
                 "ParseExample",
@@ -196,7 +196,7 @@ def parse_single_sequence_example(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast(
+        return typing.cast(
             "Tensor | tuple[dict[str, Tensor], dict[str, Tensor]]",
             get_active_backend().execute_op(
                 "ParseSequenceExample",
@@ -278,7 +278,7 @@ class BinaryRecordWriter:
         """
         return (((crc >> 15) | (crc << 17)) + 0xA282EAD8) & 0xFFFFFFFF
 
-    def write(self, record: bytes | str) -> None:
+    def write(self, record: bytes | str | None) -> None:
         """Write a record using length-prefixed binary framing with CRC32 checksums.
 
         Args:
@@ -321,11 +321,9 @@ class BinaryRecordWriter:
         if self.options.compression_type == "GZIP" and self._gzip_compressor is not None:
             self._gzip_compressor.close()
         elif self.options.compression_type == "ZLIB" and self._zlib_compressor is not None:
-            flushed: bytes = self._zlib_compressor.flush()
-            if flushed:
-                self._file.write(flushed)
+            self._file.write(self._zlib_compressor.flush())
 
-        if self._file and not self._file.closed:
+        if not self._file.closed:
             self._file.flush()
             self._file.close()
 

@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 
 from ml_switcheroo_compiler.ops.base import register_op
 
 from .base import UnaryMathOp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.shape import TensorOrScalar
     from ml_switcheroo_compiler.core.tensor import Tensor
-    from ml_switcheroo_compiler.ir.core import IRNode
 
 
 @register_op("Exp")
@@ -82,20 +82,22 @@ class NanToNum(UnaryMathOp):
 
     def __call__(
         self,
-        x: Tensor | IRNode | int | float | str,
-        **kwargs: int | float | str | bool | None,
+        x: TensorOrScalar = None,
+        *args: TensorOrScalar,
+        **kwargs: TensorOrScalar,
     ) -> Tensor:
         """Call NanToNum, filtering out the copy kwarg.
 
         Args:
-            x (Tensor | IRNode | int | float | str): The input parameter.
-            **kwargs (int | float | str | bool | None): Keyword args.
+            x (TensorOrScalar): The input parameter.
+            *args (TensorOrScalar): Extra positional arguments.
+            **kwargs (TensorOrScalar): Keyword args.
 
         Returns:
             Tensor: Result.
         """
         clean_kwargs = {k: v for k, v in kwargs.items() if k != "copy"}
-        return super().__call__(x, **clean_kwargs)
+        return super().__call__(x, *args, **clean_kwargs)
 
 
 @register_op("ZeroFraction")

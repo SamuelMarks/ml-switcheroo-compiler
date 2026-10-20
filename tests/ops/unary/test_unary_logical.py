@@ -1,5 +1,7 @@
 """Tests for ops unary logical coverage."""
 
+from __future__ import annotations
+
 import ml_switcheroo_compiler.ops.unary.logical as unary_logical
 
 

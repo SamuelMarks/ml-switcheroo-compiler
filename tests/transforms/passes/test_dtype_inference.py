@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dtype_inference import _get_promoted_dtype, _get_value_dtype, _handle_cast_dtype, _infer_constant_dtype, _infer_input_dtype, _infer_op_dtype, _infer_output_dtype, dtype_inference_pass
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -27,7 +27,7 @@ class DummyVal:
 
 def test_get_value_dtype() -> None:
     """Test function test_get_value_dtype."""
-    assert cast("EagerCallableProtocol", _get_value_dtype)(cast("EagerCallableProtocol", DummyVal)("float16")) == DType.Float16
+    assert typing.cast("EagerCallableProtocol", _get_value_dtype)(typing.cast("EagerCallableProtocol", DummyVal)("float16")) == DType.Float16
     assert _get_value_dtype(True) == DType.Bool
     assert _get_value_dtype(1) == DType.Int32
     assert _get_value_dtype(1.0) == DType.Float32

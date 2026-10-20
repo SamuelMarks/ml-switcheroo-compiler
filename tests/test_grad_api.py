@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.api import grad, hook_gradient, jvp, value_and_grad
 from ml_switcheroo_compiler.grad.options import GradOptions
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -28,7 +28,7 @@ def test_value_and_grad_has_aux() -> None:
     opts = GradOptions(has_aux=True)
     wrapped = value_and_grad(func, opts)
     t_in = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
-    (val, aux), g_out = cast("EagerCallableProtocol", wrapped)(t_in)
+    (val, aux), g_out = typing.cast("EagerCallableProtocol", wrapped)(t_in)
     assert val is not None
     assert aux is not None
     assert g_out is not None
@@ -51,7 +51,7 @@ def test_hook_gradient() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("Tensor", hook_gradient(x, hook))
+        return typing.cast("Tensor", hook_gradient(x, hook))
 
     def func2(x: Tensor) -> Tensor:
         """Test function func2.
@@ -59,7 +59,7 @@ def test_hook_gradient() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("Tensor", hook_gradient(x, lambda g: None))
+        return typing.cast("Tensor", hook_gradient(x, lambda g: None))
 
     t_in = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
     g = grad(func)
@@ -85,7 +85,7 @@ def test_value_and_grad_no_aux() -> None:
     opts = GradOptions(has_aux=False)
     wrapped = value_and_grad(func, opts)
     t_in = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), "float32", "cpu"))
-    val, g_out = cast("EagerCallableProtocol", wrapped)(t_in)
+    val, g_out = typing.cast("EagerCallableProtocol", wrapped)(t_in)
     assert val is not None
     assert g_out is not None
 
@@ -105,8 +105,8 @@ def test_api_jvp_basic() -> None:
     primals = (2.0, 1.0)
     tangents = (1.0, 2.0)
     primal_out, tangent_out = jvp(f, primals, tangents)
-    assert cast("EagerCallableProtocol", np.isclose)(primal_out, 7.0)
-    assert cast("EagerCallableProtocol", np.isclose)(tangent_out, 10.0, atol=1e-3)
+    assert typing.cast("EagerCallableProtocol", np.isclose)(primal_out, 7.0)
+    assert typing.cast("EagerCallableProtocol", np.isclose)(tangent_out, 10.0, atol=1e-3)
 
 
 def test_api_jvp_no_add_and_add_exception() -> None:
@@ -138,7 +138,7 @@ def test_api_jvp_no_add_and_add_exception() -> None:
 
     primals = (NoAdd(), BrokenAdd())
     tangents = (1.0, 1.0)
-    primal_out, tangent_out = cast("EagerCallableProtocol", jvp)(f, primals, tangents)
+    primal_out, tangent_out = typing.cast("EagerCallableProtocol", jvp)(f, primals, tangents)
     assert primal_out == 42.0
     assert tangent_out == 0.0
 
@@ -166,6 +166,6 @@ def test_api_jvp_sub_exception() -> None:
         _ = x
         return NonDifferentiableOutput("result")
 
-    primal_out, tangent_out = cast("EagerCallableProtocol", jvp)(f, (1.0,), (1.0,))
+    primal_out, tangent_out = typing.cast("EagerCallableProtocol", jvp)(f, (1.0,), (1.0,))
     assert isinstance(primal_out, NonDifferentiableOutput)
     assert tangent_out is primal_out

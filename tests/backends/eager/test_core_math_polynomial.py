@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_polynomial import (
     _np_polyint,
     _polyval,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -35,7 +36,7 @@ def test_math_polynomial_coverage() -> None:
             """
             return "polyval_val"
 
-    assert _polyval(PolyvalBackend(), [1, 2], 3) == "polyval_val"
+    assert _polyval(typing.cast("BackendModuleProtocol", PolyvalBackend()), [1, 2], 3) == "polyval_val"
 
     # Case B: backend lacks polyval (returns None)
     class EmptyBackend:
@@ -43,7 +44,7 @@ def test_math_polynomial_coverage() -> None:
 
         pass
 
-    assert _polyval(EmptyBackend(), [1, 2], 3) is None
+    assert _polyval(typing.cast("BackendModuleProtocol", EmptyBackend()), [1, 2], 3) is None
 
     # _np_polyint
     # Case A: backend has polyint
@@ -59,11 +60,11 @@ def test_math_polynomial_coverage() -> None:
             """
             return "polyint_val"
 
-    assert _np_polyint(PolyintBackend(), [1, 2]) == "polyint_val"
+    assert _np_polyint(typing.cast("BackendModuleProtocol", PolyintBackend()), [1, 2]) == "polyint_val"
 
     # Case B: backend lacks polyint -> fallback to np.polyint
-    p_int = _np_polyint(EmptyBackend(), [3, 2, 1])
-    assert cast("EagerCallableProtocol", list)(p_int) == [1.0, 1.0, 1.0, 0.0]
+    p_int = _np_polyint(typing.cast("BackendModuleProtocol", EmptyBackend()), [3, 2, 1])
+    assert typing.cast("EagerCallableProtocol", list)(p_int) == [1.0, 1.0, 1.0, 0.0]
 
     # Registry
     assert global_eager_registry.get("Polyval") is not None

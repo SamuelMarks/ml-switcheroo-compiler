@@ -9,18 +9,15 @@ import pickle
 import tempfile
 import typing
 import zipfile
-from collections.abc import Iterable
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, TypeVar, cast
+from collections.abc import Callable, Iterable, Mapping
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.device import Device, DeviceType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
-
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.tensor import Tensor
-
+from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.serialization.formats.base import WeightFormatProtocol
@@ -50,7 +47,7 @@ def graph_to_json(graph: IRGraph) -> str:
     return str(graph.to_json())
 
 
-T = TypeVar("T")
+T = typing.TypeVar("T")
 
 
 def _infer_weight_format(filepath: str) -> str:
@@ -96,7 +93,7 @@ def _save_as_h5(weights_np: TensorOrScalar, filepath: str) -> None:
         weights_np (TensorOrScalar): The weights_np parameter.
         filepath (str): The filepath parameter.
     """
-    H5WeightFormat().save(cast("dict[str, TensorLike]", weights_np), filepath)
+    H5WeightFormat().save(typing.cast("dict[str, TensorLike]", weights_np), filepath)
 
 
 def _save_as_safetensors(weights_np: TensorOrScalar, filepath: str) -> None:
@@ -187,7 +184,7 @@ def load_weights(filepath: str, target_model: TensorOrScalar = None) -> TensorOr
     fmt = _infer_weight_format(filepath)
     handler = _get_format_handler(fmt)
     weights = handler.load(filepath)
-    return cast(TensorOrScalar, cast("EagerCallableProtocol", _validate_and_map_weights)(weights, target_model))
+    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _validate_and_map_weights)(weights, target_model))
 
 
 def save_weights(model: TensorOrScalar, filepath: str, overwrite: bool = True, **kwargs: AttrValue) -> None:
@@ -200,7 +197,7 @@ def save_weights(model: TensorOrScalar, filepath: str, overwrite: bool = True, *
         **kwargs (AttrValue): Keyword args.
     """
     _ = (overwrite, kwargs)
-    weights = _extract_model_weights(cast("LoadedModel", model)) if model is not None else {}
+    weights = _extract_model_weights(typing.cast("LoadedModel", model)) if model is not None else {}
     with open(filepath, "wb") as f:
         pickle.dump(weights, f)
 
@@ -254,7 +251,7 @@ def _extract_model_weights(model: LoadedModel | Tensor | dict[str, Tensor]) -> d
     if hasattr(model, "weights"):
         for i, w in enumerate(model.weights):
             name = str(getattr(w, "name", f"weight_{i}"))
-            weights_store[name] = cast("Tensor | list[AttributeValue] | dict[str, AttributeValue]", to_numpy(w))
+            weights_store[name] = typing.cast("Tensor | list[AttributeValue] | dict[str, AttributeValue]", to_numpy(w))
     return weights_store
 
 
@@ -269,11 +266,11 @@ def _extract_optimizer_state(model: TensorOrScalar, state_store: TensorOrScalar)
         if hasattr(getattr(model, "optimizer"), "variables"):
             for i, w in enumerate(getattr(model, "optimizer").variables):
                 name = getattr(w, "name", f"opt_state_{i}")
-                cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
+                typing.cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
         if hasattr(getattr(model, "optimizer"), "momentums"):
             for i, w in enumerate(getattr(model, "optimizer").momentums):
                 name = getattr(w, "name", f"momentum_{i}")
-                cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
+                typing.cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
 
 
 def _extract_non_trainable_state(model: TensorOrScalar, state_store: TensorOrScalar, weights_store: TensorOrScalar) -> None:
@@ -289,7 +286,7 @@ def _extract_non_trainable_state(model: TensorOrScalar, state_store: TensorOrSca
         for i, w in enumerate(getattr(model, "non_trainable_variables")):
             name = getattr(w, "name", f"non_trainable_{i}")
             if name not in existing_keys:
-                cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
+                typing.cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
 
 
 def _extract_ema_state(model: TensorOrScalar, state_store: TensorOrScalar) -> None:
@@ -302,7 +299,7 @@ def _extract_ema_state(model: TensorOrScalar, state_store: TensorOrScalar) -> No
     if hasattr(model, "ema_variables"):
         for i, w in enumerate(getattr(model, "ema_variables")):
             name = getattr(w, "name", f"ema_{i}")
-            cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
+            typing.cast(EagerTensorProtocol, state_store)[name] = to_numpy(w)
 
 
 def _extract_model_state(
@@ -319,9 +316,9 @@ def _extract_model_state(
         dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]: A dictionary containing the extracted model state.
     """
     state_store: dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]] = {}
-    _extract_optimizer_state(cast("TensorOrScalar", model), cast("TensorOrScalar", state_store))
-    _extract_non_trainable_state(cast("TensorOrScalar", model), cast("TensorOrScalar", state_store), cast("TensorOrScalar", weights_store))
-    _extract_ema_state(cast("TensorOrScalar", model), cast("TensorOrScalar", state_store))
+    _extract_optimizer_state(typing.cast("TensorOrScalar", model), typing.cast("TensorOrScalar", state_store))
+    _extract_non_trainable_state(typing.cast("TensorOrScalar", model), typing.cast("TensorOrScalar", state_store), typing.cast("TensorOrScalar", weights_store))
+    _extract_ema_state(typing.cast("TensorOrScalar", model), typing.cast("TensorOrScalar", state_store))
     return state_store
 
 
@@ -363,23 +360,24 @@ def _write_h5_to_zip(zf: zipfile.ZipFile, filename: str, store: TensorOrScalar) 
     os.remove(tmp_path)
 
 
-@dataclass
-class KerasSerializationContext:
+class KerasSerializationContext(pydantic.BaseModel):
     """Provide context holding all stores and metadata for Keras serialization.
 
     Attributes:
         filepath (str): The destination file path.
         config_dict (dict[str, str | int | float | bool | list | dict] | None): The model configuration dictionary.
         metadata (dict[str, str | int | float | bool | list | dict] | None): The model metadata.
-        weights_store (dict[str, Tensor | list | dict] | None): The dictionary of extracted model weights.
-        state_store (dict[str, Tensor | list | dict] | None): The dictionary of extracted model state.
+        weights_store (dict[str, TensorOrScalar] | None): The dictionary of extracted model weights.
+        state_store (dict[str, TensorOrScalar] | None): The dictionary of extracted model state.
     """
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     filepath: str
     config_dict: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]] | None = None
     metadata: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]] | None = None
-    weights_store: dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]] | None = None
-    state_store: dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]] | None = None
+    weights_store: Mapping[str, Tensor | list[AttributeValue] | dict[str, AttributeValue] | TensorOrScalar] | None = None
+    state_store: Mapping[str, Tensor | list[AttributeValue] | dict[str, AttributeValue] | TensorOrScalar] | None = None
 
 
 def _write_keras_zip(ctx: KerasSerializationContext) -> None:
@@ -392,9 +390,9 @@ def _write_keras_zip(ctx: KerasSerializationContext) -> None:
         zf.writestr(zipfile.ZipInfo("config.json"), json.dumps(ctx.config_dict, indent=2))
         zf.writestr(zipfile.ZipInfo("metadata.json"), json.dumps(ctx.metadata, indent=2))
         if ctx.weights_store:
-            _write_h5_to_zip(zf, "model.weights.h5", cast("TensorOrScalar", ctx.weights_store))
+            _write_h5_to_zip(zf, "model.weights.h5", typing.cast("TensorOrScalar", ctx.weights_store))
         if ctx.state_store:
-            _write_h5_to_zip(zf, "optimizer.weights.h5", cast("TensorOrScalar", ctx.state_store))
+            _write_h5_to_zip(zf, "optimizer.weights.h5", typing.cast("TensorOrScalar", ctx.state_store))
 
 
 def save_model(model: TensorOrScalar, filepath: str, overwrite: bool = True, zipped: TensorOrScalar = None, **kwargs: AttrValue) -> None:
@@ -408,13 +406,19 @@ def save_model(model: TensorOrScalar, filepath: str, overwrite: bool = True, zip
         **kwargs (AttrValue): Keyword args.
     """
     _ = (overwrite, zipped, kwargs)
-    config_dict, metadata = cast(
-        "Callable[..., tuple[dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]], dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]]]]",
+    config_dict, metadata = typing.cast(
+        "TypedVariadicCallable[tuple[dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]], dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]]]]",
         _compile_model_metadata,
     )(model)
-    weights_store = cast("Callable[..., dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]]", _extract_model_weights)(model)
-    state_store = cast("Callable[..., dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]]", _extract_model_state)(model, weights_store)
-    ctx = KerasSerializationContext(filepath, config_dict, metadata, weights_store, state_store)
+    weights_store = typing.cast("TypedVariadicCallable[dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]]", _extract_model_weights)(model)
+    state_store = typing.cast("TypedVariadicCallable[dict[str, Tensor | list[AttributeValue] | dict[str, AttributeValue]]]", _extract_model_state)(model, weights_store)
+    ctx = KerasSerializationContext(
+        filepath=filepath,
+        config_dict=config_dict,
+        metadata=metadata,
+        weights_store=weights_store,
+        state_store=state_store,
+    )
     _write_keras_zip(ctx)
 
 
@@ -488,7 +492,7 @@ def load_model(
                 try:
                     with open(tmp_path, "wb") as f:
                         f.write(zf.read("model.weights.h5"))
-                    weights = cast(dict[str, AttributeValue], _load_h5_weights(tmp_path))
+                    weights = typing.cast(dict[str, AttributeValue], _load_h5_weights(tmp_path))
                 finally:
                     if os.path.exists(tmp_path):
                         os.remove(tmp_path)
@@ -521,9 +525,9 @@ def register_serializable(package: str = "Custom", name: str | None = None) -> C
             T: The registered object unchanged.
         """
         registered_name = str(name or getattr(arg, "__name__", str(arg)))
-        _CUSTOM_OBJECTS[registered_name] = cast("AttributeValue", arg)
+        _CUSTOM_OBJECTS[registered_name] = typing.cast("AttributeValue", arg)
         if package:
-            _CUSTOM_OBJECTS[f"{package}>{registered_name}"] = cast("AttributeValue", arg)
+            _CUSTOM_OBJECTS[f"{package}>{registered_name}"] = typing.cast("AttributeValue", arg)
         return arg
 
     return decorator
@@ -616,7 +620,7 @@ def get_registered_name(obj: AttributeValue = None, *args: AttributeValue, **kwa
         if registered_obj is target:
             return name
     if hasattr(target, "__name__"):
-        return cast(str, getattr(target, "__name__"))
+        return typing.cast(str, getattr(target, "__name__"))
     return "CustomObject"
 
 
@@ -725,7 +729,7 @@ def _instantiate_registered_class(
     cls_type = all_customs[str(class_name)]
     deserialized_sub = deserialize_object(sub_config, custom_objects=custom_objects)
     if hasattr(cls_type, "from_config"):
-        return cast("AttributeValue", getattr(cls_type, "from_config")(deserialized_sub))
+        return typing.cast("AttributeValue", getattr(cls_type, "from_config")(deserialized_sub))
     if callable(cls_type):
         return cls_type(**deserialized_sub) if isinstance(deserialized_sub, dict) else cls_type(deserialized_sub)
     return cls_type
@@ -882,7 +886,7 @@ class SavedModel:
         graph_def: dict[str, AttributeValue] = {}
         if self.model is not None:
             if hasattr(self.model, "graph"):
-                graph_def = json.loads(graph_to_json(self.model.graph))
+                graph_def = json.loads(graph_to_json(typing.cast(IRGraph, getattr(self.model, "graph"))))
             elif hasattr(self.model, "to_json"):
                 graph_def = json.loads(self.model.to_json())
             elif hasattr(self.model, "get_config"):

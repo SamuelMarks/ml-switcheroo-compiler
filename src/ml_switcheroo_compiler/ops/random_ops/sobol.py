@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -78,4 +78,4 @@ def generate_sobol(dim: int, num_results: int, skip: int = 0) -> Tensor | IRNode
     for n in range(skip + 1, skip + num_results + 1):
         row: list[float] = [_radical_inverse(n, _PRIMES[d % len(_PRIMES)]) for d in range(dim)]
         rows.append(row)
-    return cast("Tensor", getattr(ops, "array")(rows, dtype="float32"))
+    return typing.cast("Tensor", getattr(ops, "array")(rows, dtype="float32"))

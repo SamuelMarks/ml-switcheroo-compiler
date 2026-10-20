@@ -13,7 +13,6 @@ import os
 import re
 import subprocess
 import sys
-from typing import Optional, Union
 
 
 def _extract_expected_arg_names(args: ast.arguments) -> list[str]:
@@ -40,7 +39,7 @@ def _extract_expected_arg_names(args: ast.arguments) -> list[str]:
     return names
 
 
-def _has_non_none_return(returns: Optional[ast.expr]) -> bool:
+def _has_non_none_return(returns: ast.expr | None) -> bool:
     """Check whether a function return annotation is present and not `None`.
 
     Args:
@@ -56,7 +55,7 @@ def _has_non_none_return(returns: Optional[ast.expr]) -> bool:
     return not (isinstance(returns, ast.Name) and returns.id == "None")
 
 
-def _is_function_doc_complete(node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> bool:
+def _is_function_doc_complete(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
     """Verify that a function/method node has a valid docstring with documented args and return.
 
     Args:
@@ -170,7 +169,7 @@ def format_cov(cov: float) -> str:
     return f"{cov:.1f}"
 
 
-def get_test_coverage() -> Optional[float]:
+def get_test_coverage() -> float | None:
     """Retrieve the total test coverage percentage from the coverage tool.
 
     Runs the `coverage json` command to generate a report, parses the resulting JSON
@@ -247,7 +246,7 @@ def update_readme() -> None:
     if not os.path.exists("README.md"):
         return
 
-    test_cov: Optional[float] = get_test_coverage()
+    test_cov: float | None = get_test_coverage()
     doc_cov: float = get_doc_coverage()
 
     with open("README.md") as f:

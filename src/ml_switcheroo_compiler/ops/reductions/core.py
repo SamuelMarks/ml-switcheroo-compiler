@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     pass
 
 
@@ -23,21 +24,21 @@ class ReductionOp(OpDef):
 
     def __call__(
         self,
-        *args: Tensor,
-        **kwargs: int | float | str | bool | tuple[int, ...] | list[int] | None,
+        *args: TensorOrScalar,
+        **kwargs: TensorOrScalar,
     ) -> Tensor:
         """Universal dispatcher for the operation.
 
         Args:
-            *args (Tensor): Positional tensor arguments.
-            **kwargs (int | float | str | bool | tuple[int, ...] | list[int] | None): Keyword arguments.
+            *args (TensorOrScalar): Positional tensor arguments.
+            **kwargs (TensorOrScalar): Keyword arguments.
 
         Returns:
             Tensor: Resulting tensor or dispatched output.
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-        return cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
+        return typing.cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
 
     def infer_shape(
         self,
@@ -55,7 +56,7 @@ class ReductionOp(OpDef):
         """
         if not args or not hasattr(args[0], "shape"):
             return ()
-        in_shape = tuple(int(d) for d in args[0].shape if isinstance(d, int))
+        in_shape = tuple(int(d) for d in args[0].shape)
         ndim = len(in_shape)
         if ndim == 0:
             return ()
@@ -64,7 +65,7 @@ class ReductionOp(OpDef):
         if axis is None:
             return (1,) * ndim if keepdims else ()
         axes_raw = (axis,) if isinstance(axis, int) else tuple(axis) if isinstance(axis, (tuple, list)) else ()
-        norm_axes = {a + ndim if a < 0 else a for a in axes_raw if isinstance(a, int)}
+        norm_axes = {a + ndim if a < 0 else a for a in axes_raw}
         if keepdims:
             return tuple(1 if i in norm_axes else d for i, d in enumerate(in_shape))
         return tuple(d for i, d in enumerate(in_shape) if i not in norm_axes)

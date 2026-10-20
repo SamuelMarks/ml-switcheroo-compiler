@@ -1,5 +1,7 @@
 """Unit tests for WebRTC topology YAML validation."""
 
+from __future__ import annotations
+
 import os
 
 import yaml

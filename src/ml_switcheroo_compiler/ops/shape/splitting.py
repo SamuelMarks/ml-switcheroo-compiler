@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import cast
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
@@ -37,7 +37,7 @@ def _calculate_num_splits(input: TensorOrScalar, split_size_or_sections: int | S
         return 1
 
     if getattr(input, "shape") and getattr(input, "shape")[axis] % split_size_or_sections == 0:
-        return cast(TensorOrScalar, getattr(input, "shape")[axis] // split_size_or_sections)
+        return typing.cast(TensorOrScalar, getattr(input, "shape")[axis] // split_size_or_sections)
 
     return split_size_or_sections
 
@@ -162,11 +162,11 @@ def split(
         Sequence: Result.
     """
     valid_axis = _validate_split_axis(input, axis)
-    num_splits = _calculate_num_splits(input, split_size_or_sections, cast("int", valid_axis))
+    num_splits = _calculate_num_splits(input, split_size_or_sections, typing.cast("int", valid_axis))
 
     if isinstance(split_size_or_sections, int):
-        return _split_even(input, split_size_or_sections, cast("int", valid_axis), cast("int", num_splits))
-    return _split_sections(input, split_size_or_sections, cast("int", valid_axis), cast("int", num_splits))
+        return _split_even(input, split_size_or_sections, typing.cast("int", valid_axis), typing.cast("int", num_splits))
+    return _split_sections(input, split_size_or_sections, typing.cast("int", valid_axis), typing.cast("int", num_splits))
 
 
 def unstack(input: TensorOrScalar, axis: int = 0) -> TensorOrScalar:
@@ -385,4 +385,4 @@ class Unstack(OpDef):
         """
         input_shape = args[0].shape
         axis = kwargs.get("axis", 0)
-        return tuple([cast(EagerTensorProtocol, input_shape)[: int(cast(int, axis))] + cast(EagerTensorProtocol, input_shape)[int(cast(EagerTensorProtocol, axis) + 1) :]] * int(cast(int, getattr(input_shape, "__getitem__")(axis))))
+        return tuple([typing.cast(EagerTensorProtocol, input_shape)[: int(typing.cast(int, axis))] + typing.cast(EagerTensorProtocol, input_shape)[int(typing.cast(EagerTensorProtocol, axis) + 1) :]] * int(typing.cast(int, getattr(input_shape, "__getitem__")(axis))))

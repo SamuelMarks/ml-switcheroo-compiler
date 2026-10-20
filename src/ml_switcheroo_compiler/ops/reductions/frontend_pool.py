@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -16,9 +17,10 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from .frontend_utils import _emit_reduction_node
 
 
-@dataclass
-class UnpoolOptions:
+class UnpoolOptions(pydantic.BaseModel):
     """Options for unpooling."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     kernel_size: int | tuple[int, ...]
     stride: int | tuple[int, ...] | None = None
@@ -189,7 +191,7 @@ def fractional_max_pool3d(
 
     if config.eager_mode:
         backend = get_active_backend()
-        data, indices = cast(
+        data, indices = typing.cast(
             "tuple[TensorOrScalar, TensorOrScalar]",
             backend.execute_op(
                 "FractionalMaxPool3D",
@@ -204,16 +206,16 @@ def fractional_max_pool3d(
     pooled = _emit_reduction_node(
         "FractionalMaxPool3D",
         [operand],
-        cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
+        typing.cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
         tuple(out_shape),
         operand.dtype,
     )
     indices_tensor = _emit_reduction_node(
         "FractionalMaxPool3D_Indices",
         [operand],
-        cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
+        typing.cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
         tuple(out_shape),
-        cast("DType", "int64"),
+        typing.cast("DType", "int64"),
     )
     return pooled, indices_tensor
 
@@ -279,7 +281,7 @@ def adaptive_max_pool3d(
     if config.eager_mode:
         backend = get_active_backend()
         if return_indices:
-            data, indices = cast(
+            data, indices = typing.cast(
                 "tuple[TensorOrScalar, TensorOrScalar]",
                 backend.execute_op(
                     "AdaptiveMaxPool3D",
@@ -311,7 +313,7 @@ def adaptive_max_pool3d(
             [operand],
             {"output_size": output_size, "return_indices": return_indices},
             tuple(out_shape),
-            cast("DType", "int64"),
+            typing.cast("DType", "int64"),
         )
         return pooled, indices_tensor
     return pooled

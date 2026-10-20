@@ -1,5 +1,7 @@
 """Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.pytorch.types`)."""
 
+from __future__ import annotations
+
 import torch
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue

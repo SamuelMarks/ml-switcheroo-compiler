@@ -6,11 +6,13 @@ target subprojects for autodoc generation, sets up extensions like autosummary a
 myst_parser, and configures the Furo HTML theme.
 """
 
+from __future__ import annotations
+
 import os
 import sys
-from typing import TYPE_CHECKING, Union
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     import sphinx.application
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -21,7 +23,7 @@ from ml_playground_directive import setup as setup_directive
 projects: list[str] = [
     "../ml-switcheroo-compiler",
     "../ml-switcheroo-ir",
-    "../ml-framework-snapshots",
+    "../ml-ecosystem-snapshots",
     "../zero-chex",
     "../zero-flax",
     "../zero-grain",
@@ -78,7 +80,7 @@ html_theme: str = "furo"
 html_static_path: list[str] = ["_static"]
 
 
-def setup(app: "sphinx.application.Sphinx") -> dict[str, Union[str, bool]]:
+def setup(app: sphinx.application.Sphinx) -> dict[str, str | bool]:
     """Initializes the Sphinx extension by registering custom directives.
 
     This function is called by Sphinx when the extension is loaded. It imports and sets

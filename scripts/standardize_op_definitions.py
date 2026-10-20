@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Union
+import typing
 
 import yaml
 
@@ -12,15 +12,7 @@ from ml_switcheroo_compiler.ops.config_models import (
 )
 from ml_switcheroo_compiler.ops.shape_inference import load_shape_signatures
 
-OpYamlValue = Union[
-    str,
-    int,
-    float,
-    bool,
-    list["OpYamlValue"],
-    dict[str, "OpYamlValue"],
-    None,
-]
+OpYamlValue = typing.Union[str, int, float, bool, list["OpYamlValue"], dict[str, "OpYamlValue"], "None"]
 OpYamlDict = dict[str, OpYamlValue]
 
 DEFS_DIR: str = "src/ml_switcheroo_compiler/ops/definitions"

@@ -1,5 +1,7 @@
 """Tests for serialization extras."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from ml_switcheroo_compiler.serialization import (

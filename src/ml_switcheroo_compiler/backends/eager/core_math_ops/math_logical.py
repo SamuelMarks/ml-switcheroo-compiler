@@ -5,8 +5,6 @@ from __future__ import annotations
 
 import builtins  # noqa: F401
 import typing  # noqa: F401
-from types import ModuleType
-from typing import cast
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -14,10 +12,11 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
     global_eager_registry,
 )
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @global_eager_registry.register("NanToNum")
-def _nan_to_num(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _nan_to_num(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager nan to num operation on the active backend array.
 
     Args:
@@ -34,8 +33,8 @@ def _nan_to_num(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     posinf = kwargs.get("posinf", None)
     neginf = kwargs.get("neginf", None)
     if hasattr(backend_module, "nan_to_num"):
-        return cast(EagerValue, cast(ModuleType, backend_module).nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf))
+        return backend_module.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
+    return _resolve_eager_mod(backend_module).nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
 
 
 _ACTIVE_AXIS_INDICES: dict[EagerValue, int] = {}
@@ -73,7 +72,7 @@ def clear_infeed_queues() -> None:
 
 
 @global_eager_registry.register("AxisIndex")
-def _axis_index(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _axis_index(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager axis index operation on the active backend array.
 
     Args:
@@ -89,7 +88,7 @@ def _axis_index(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
 
 @global_eager_registry.register("DivideNoNan")
-def _divide_no_nan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _divide_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager divide no nan operation on the active backend array.
 
     Args:
@@ -100,18 +99,18 @@ def _divide_no_nan(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "divide_no_nan", None)
     if func2:
-        return cast(EagerValue, func2(*args, **kwargs))
-    (x, y) = (cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]))
+        return typing.cast("EagerValue", func2(*args, **kwargs))
+    (x, y) = (typing.cast(EagerTensorProtocol, args[0]), typing.cast(EagerTensorProtocol, args[1]))
     safe_y = mod.where(y.__eq__(0), 1.0, y)
-    return cast(EagerValue, mod.where(y.__eq__(0), 0, x / safe_y))
+    return mod.where(y.__eq__(0), 0, x / safe_y)
 
 
 @global_eager_registry.register("Finfo")
-def _finfo(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _finfo(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager finfo operation on the active backend array.
 
     Args:
@@ -122,11 +121,11 @@ def _finfo(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).finfo(*args, **kwargs))
+    return backend_module.finfo(*args, **kwargs)
 
 
 @global_eager_registry.register("Hardswish")
-def _hardswish(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _hardswish(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager hardswish operation on the active backend array.
 
     Args:
@@ -137,13 +136,13 @@ def _hardswish(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
-    x = cast(EagerTensorProtocol, args[0])
-    return cast(EagerValue, x * mod.clip(x + 3, 0, 6) / 6)
+    mod = backend_module
+    x = typing.cast(EagerTensorProtocol, args[0])
+    return x * mod.clip(x + 3, 0, 6) / 6
 
 
 @global_eager_registry.register("Heaviside")
-def _heaviside(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager heaviside operation on the active backend array.
 
     Args:
@@ -154,16 +153,16 @@ def _heaviside(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "heaviside", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
-    x, y = cast(EagerTensorProtocol, args[0]), args[1]
-    return cast(EagerValue, mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y)))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    x, y = typing.cast(EagerTensorProtocol, args[0]), args[1]
+    return mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y))
 
 
 @global_eager_registry.register("Histogram")
-def _histogram(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _histogram(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager histogram operation on the active backend array.
 
     Args:
@@ -174,11 +173,11 @@ def _histogram(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).histogram(*args, **kwargs))
+    return backend_module.histogram(*args, **kwargs)
 
 
 @global_eager_registry.register("Histogram2D")
-def _histogram2d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _histogram2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager histogram2d operation on the active backend array.
 
     Args:
@@ -189,11 +188,11 @@ def _histogram2d(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).histogram2d(*args, **kwargs))
+    return backend_module.histogram2d(*args, **kwargs)
 
 
 @global_eager_registry.register("HistogramBinedges")
-def _histogrambinedges(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _histogrambinedges(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager histogrambinedges operation on the active backend array.
 
     Args:
@@ -204,11 +203,11 @@ def _histogrambinedges(backend_module: EagerValue, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).histogram_bin_edges(*args, **kwargs))
+    return backend_module.histogram_bin_edges(*args, **kwargs)
 
 
 @global_eager_registry.register("HistogramDd")
-def _histogramdd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _histogramdd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager histogramdd operation on the active backend array.
 
     Args:
@@ -219,11 +218,11 @@ def _histogramdd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).histogramdd(*args, **kwargs))
+    return backend_module.histogramdd(*args, **kwargs)
 
 
 @global_eager_registry.register("Iinfo")
-def _iinfo(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _iinfo(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager iinfo operation on the active backend array.
 
     Args:
@@ -234,11 +233,11 @@ def _iinfo(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).iinfo(*args, **kwargs))
+    return backend_module.iinfo(*args, **kwargs)
 
 
 @global_eager_registry.register("Infeed")
-def _infeed(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _infeed(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager infeed operation on the active backend array.
 
     Args:
@@ -253,15 +252,15 @@ def _infeed(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     if queue_name in _INFEED_QUEUES:
         it = _INFEED_QUEUES[queue_name]
         try:
-            val = getattr(it, "__next__")() if hasattr(it, "__next__") else cast(ModuleType, it).pop(0)
-            return cast(EagerValue, val)
+            val = getattr(it, "__next__")() if hasattr(it, "__next__") else typing.cast(BackendModuleProtocol, it).pop(0)
+            return val
         except (StopIteration, IndexError):
             return 0
     return 0
 
 
 @global_eager_registry.register("Isclose")
-def _isclose(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager isclose operation on the active backend array.
 
     Args:
@@ -272,11 +271,11 @@ def _isclose(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).isclose(*args, **kwargs))
+    return backend_module.isclose(*args, **kwargs)
 
 
 @global_eager_registry.register("Iscomplex")
-def _iscomplex(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _iscomplex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager iscomplex operation on the active backend array.
 
     Args:
@@ -289,12 +288,12 @@ def _iscomplex(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     """
     func = getattr(backend_module, "iscomplex", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).iscomplex(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).iscomplex(*args, **kwargs)
 
 
 @global_eager_registry.register("Iscomplexobj")
-def _iscomplexobj(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _iscomplexobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager iscomplexobj operation on the active backend array.
 
     Args:
@@ -307,13 +306,13 @@ def _iscomplexobj(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """
     func = getattr(backend_module, "iscomplexobj", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
     x = args[0]
-    return cast(EagerValue, _resolve_eager_mod(backend_module).iscomplexobj(x))
+    return _resolve_eager_mod(backend_module).iscomplexobj(x)
 
 
 @global_eager_registry.register("Isnan")
-def _isnan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isnan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager isnan operation on the active backend array.
 
     Args:
@@ -324,11 +323,11 @@ def _isnan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).isnan(*args, **kwargs))
+    return backend_module.isnan(*args, **kwargs)
 
 
 @global_eager_registry.register("Isneginf")
-def _isneginf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isneginf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager isneginf operation on the active backend array.
 
     Args:
@@ -339,16 +338,16 @@ def _isneginf(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "isneginf", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
-    x = cast(EagerTensorProtocol, args[0])
-    return cast(EagerValue, mod.logical_and(mod.isinf(x), x < 0))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    x = typing.cast(EagerTensorProtocol, args[0])
+    return mod.logical_and(mod.isinf(x), x < 0)
 
 
 @global_eager_registry.register("Isreal")
-def _isreal(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isreal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager isreal operation on the active backend array.
 
     Args:
@@ -361,12 +360,12 @@ def _isreal(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     """
     func = getattr(backend_module, "isreal", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).isreal(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).isreal(*args, **kwargs)
 
 
 @global_eager_registry.register("Isrealobj")
-def _isrealobj(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isrealobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager isrealobj operation on the active backend array.
 
     Args:
@@ -379,13 +378,13 @@ def _isrealobj(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     """
     func = getattr(backend_module, "isrealobj", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
     x = args[0]
-    return cast(EagerValue, _resolve_eager_mod(backend_module).isrealobj(x))
+    return _resolve_eager_mod(backend_module).isrealobj(x)
 
 
 @global_eager_registry.register("Isscalar")
-def _isscalar(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _isscalar(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager isscalar operation on the active backend array.
 
     Args:
@@ -398,13 +397,13 @@ def _isscalar(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     """
     func = getattr(backend_module, "isscalar", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
     x = args[0]
-    return cast(EagerValue, _resolve_eager_mod(backend_module).isscalar(x))
+    return _resolve_eager_mod(backend_module).isscalar(x)
 
 
 @global_eager_registry.register("Issubdtype")
-def _issubdtype(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _issubdtype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager issubdtype operation on the active backend array.
 
     Args:
@@ -415,11 +414,11 @@ def _issubdtype(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, _resolve_eager_mod(backend_module).issubdtype(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).issubdtype(*args, **kwargs)
 
 
 @global_eager_registry.register("Kaiser")
-def _kaiser(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _kaiser(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager kaiser operation on the active backend array.
 
     Args:
@@ -430,11 +429,11 @@ def _kaiser(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).array(_resolve_eager_mod(backend_module).kaiser(*args, **kwargs)))
+    return backend_module.array(_resolve_eager_mod(backend_module).kaiser(*args, **kwargs))
 
 
 @global_eager_registry.register("Mish")
-def _mish(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _mish(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager mish operation on the active backend array.
 
     Args:
@@ -445,13 +444,13 @@ def _mish(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
-    x = cast(EagerTensorProtocol, args[0])
-    return cast(EagerValue, x * mod.tanh(mod.log1p(mod.exp(x))))
+    mod = backend_module
+    x = typing.cast(EagerTensorProtocol, args[0])
+    return x * mod.tanh(mod.log1p(mod.exp(x)))
 
 
 @global_eager_registry.register("MultiplyNoNan")
-def _multiply_no_nan(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _multiply_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager multiply no nan operation on the active backend array.
 
     Args:
@@ -462,17 +461,17 @@ def _multiply_no_nan(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "multiply_no_nan", None)
     if func2:
-        return cast(EagerValue, func2(*args, **kwargs))
-    (x, y) = (cast(EagerTensorProtocol, args[0]), cast(EagerTensorProtocol, args[1]))
-    return cast(EagerValue, mod.where(y.__eq__(0), 0, x * y))
+        return typing.cast("EagerValue", func2(*args, **kwargs))
+    (x, y) = (typing.cast(EagerTensorProtocol, args[0]), typing.cast(EagerTensorProtocol, args[1]))
+    return mod.where(y.__eq__(0), 0, x * y)
 
 
 @global_eager_registry.register("NpHeaviside")
-def _np_heaviside(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np heaviside operation on the active backend array.
 
     Args:
@@ -483,16 +482,16 @@ def _np_heaviside(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     Returns:
             EagerValue: Result.
     """
-    mod = cast(ModuleType, backend_module)
+    mod = backend_module
     func = getattr(backend_module, "heaviside", None)
     if func:
-        return cast(EagerValue, func(*args, **kwargs))
-    x, y = cast(EagerTensorProtocol, args[0]), args[1]
-    return cast(EagerValue, mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y)))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    x, y = typing.cast(EagerTensorProtocol, args[0]), args[1]
+    return mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y))
 
 
 @global_eager_registry.register("NpTakealongaxis")
-def _np_takealongaxis(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_takealongaxis(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np takealongaxis operation on the active backend array.
 
     Args:
@@ -503,11 +502,11 @@ def _np_takealongaxis(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).take_along_axis(*args, **kwargs))
+    return backend_module.take_along_axis(*args, **kwargs)
 
 
 @global_eager_registry.register("Piecewise")
-def _piecewise(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _piecewise(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager piecewise operation on the active backend array.
 
     Args:
@@ -518,4 +517,4 @@ def _piecewise(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast(ModuleType, backend_module).piecewise(*args, **kwargs))
+    return backend_module.piecewise(*args, **kwargs)

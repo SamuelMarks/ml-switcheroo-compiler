@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
 import ml_switcheroo_compiler.transforms.passes.config_models as passes_cfg
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -258,7 +258,7 @@ def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorPr
         _state: Shared test state dictionary.
     """
     remat_thresh = _state["remat_thresh"]
-    remat_rules = cast("EagerCallableProtocol", passes_cfg.RematerializationRulesConfig)(
+    remat_rules = typing.cast("EagerCallableProtocol", passes_cfg.RematerializationRulesConfig)(
         target_ops=["Conv2D"],
         high_cost_ops=["MatMul"],
         thresholds=remat_thresh,
@@ -349,9 +349,9 @@ def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorPr
         tensor_model_parallel=tp_strat,
         pipeline_parallel=pp_strat,
     )
-    mesh_cfg = cast("EagerCallableProtocol", passes_cfg.DeviceMeshPartitioningConfig)(default_mesh=mesh_grid, strategies=strategies)
-    root_mesh_cfg = cast("EagerCallableProtocol", passes_cfg.DeviceMeshPartitioningRootConfig)(device_mesh_partitioning=mesh_cfg)
-    assert cast("EagerTensorProtocol", root_mesh_cfg.device_mesh_partitioning.default_mesh.shape) == cast("EagerTensorProtocol", [2, 4])
+    mesh_cfg = typing.cast("EagerCallableProtocol", passes_cfg.DeviceMeshPartitioningConfig)(default_mesh=mesh_grid, strategies=strategies)
+    root_mesh_cfg = typing.cast("EagerCallableProtocol", passes_cfg.DeviceMeshPartitioningRootConfig)(device_mesh_partitioning=mesh_cfg)
+    assert typing.cast("EagerTensorProtocol", root_mesh_cfg.device_mesh_partitioning.default_mesh.shape) == typing.cast("EagerTensorProtocol", [2, 4])
 
     # SPMD Communication matrix
     comm_cond = passes_cfg.SpmdCommunicationCondition(

@@ -1,8 +1,8 @@
 """Constants & Creation Operations."""
 
+from __future__ import annotations
 
 # auto-generate-all
-
 from .frontend_basic import (
     array,
     asarray,
@@ -22,6 +22,7 @@ from .frontend_random import manual_seed, rand, randint, randn
 from .frontend_sequence import arange, linspace
 
 __all__ = [
+    "annotations",
     "arange",
     "array",
     "asarray",

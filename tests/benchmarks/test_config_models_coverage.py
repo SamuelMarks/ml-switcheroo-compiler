@@ -4,21 +4,22 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, Callable, Union, cast
+import typing
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
-MetricsVal = Union[list[float], float]
+MetricsVal = typing.Union[list[float], "float"]
 
-ProcessArg = Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, None]
+ProcessArg = typing.Union[tuple[str, str], IRGraph, dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], str, int, EagerValue, "None"]
 
 
 class MockSimpleProfiler:
@@ -58,13 +59,13 @@ class MockBackendClass:
 class MockDeterministicQueue:
     """Deterministic queue mock avoiding multiprocessing pipe latency."""
 
-    def __init__(self, items: list[tuple[str, Union[dict[str, MetricsVal], str]]]) -> None:
+    def __init__(self, items: list[tuple[str, dict[str, MetricsVal] | str]]) -> None:
         """Initialize mock queue with payload items.
 
         Args:
             items (list[tuple[str, Union[dict[str, MetricsVal], str]]]): Items to queue.
         """
-        self.items: list[tuple[str, Union[dict[str, MetricsVal], str]]] = list(items)
+        self.items: list[tuple[str, dict[str, MetricsVal] | str]] = list(items)
 
     def empty(self) -> bool:
         """Check if queue is empty.
@@ -74,7 +75,7 @@ class MockDeterministicQueue:
         """
         return len(self.items) == 0
 
-    def get(self) -> tuple[str, Union[dict[str, MetricsVal], str]]:
+    def get(self) -> tuple[str, dict[str, MetricsVal] | str]:
         """Retrieve next item.
 
         Returns:
@@ -82,7 +83,7 @@ class MockDeterministicQueue:
         """
         return self.items.pop(0)
 
-    def put(self, item: tuple[str, Union[dict[str, MetricsVal], str]]) -> None:
+    def put(self, item: tuple[str, dict[str, MetricsVal] | str]) -> None:
         """Put item into queue.
 
         Args:
@@ -94,14 +95,14 @@ class MockDeterministicQueue:
 class MockProcessOk:
     """Mock multiprocessing process simulating clean execution."""
 
-    def __init__(self, target: Callable[..., None], args: tuple[ProcessArg, ...]) -> None:
+    def __init__(self, target: TypedVariadicCallable[None], args: tuple[ProcessArg, ...]) -> None:
         """Initialize mock process.
 
         Args:
-            target (Callable[..., None]): Target function.
+            target (TypedVariadicCallable[None]): Target function.
             args (tuple[ProcessArg, ...]): Process arguments.
         """
-        self._target: Callable[..., None] = target
+        self._target: TypedVariadicCallable[None] = target
         self._args: tuple[ProcessArg, ...] = args
 
     def start(self) -> None:
@@ -279,7 +280,7 @@ def _test_config_models_loaders_part_2(_state: dict[str, EagerTensorProtocol]) -
     """
     valid_plan_yaml = _state["valid_plan_yaml"]
     try:
-        plan_loaded = cast("EagerCallableProtocol", cfg_models_mod.load_benchmark_plan)(valid_plan_yaml)
+        plan_loaded = typing.cast("EagerCallableProtocol", cfg_models_mod.load_benchmark_plan)(valid_plan_yaml)
         assert plan_loaded.name == "valid_plan"
     finally:
         os.unlink(valid_plan_yaml)

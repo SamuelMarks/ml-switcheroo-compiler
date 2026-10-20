@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -57,8 +57,8 @@ def test_topological_sort_dict() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n2"])
 
-    graph = cast("EagerCallableProtocol", MockGraphDict)({"n3": n3, "n1": n1, "n2": n2})
-    sorted_nodes = cast("EagerCallableProtocol", topological_sort)(graph)
+    graph = typing.cast("EagerCallableProtocol", MockGraphDict)({"n3": n3, "n1": n1, "n2": n2})
+    sorted_nodes = typing.cast("EagerCallableProtocol", topological_sort)(graph)
     assert [n.id for n in sorted_nodes] == ["n1", "n2", "n3"]
 
 
@@ -68,8 +68,8 @@ def test_topological_sort_list() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n2"])
 
-    graph = cast("EagerCallableProtocol", MockGraphList)([n3, n1, n2])
-    sorted_nodes = cast("EagerCallableProtocol", topological_sort)(graph)
+    graph = typing.cast("EagerCallableProtocol", MockGraphList)([n3, n1, n2])
+    sorted_nodes = typing.cast("EagerCallableProtocol", topological_sort)(graph)
     assert [n.id for n in sorted_nodes] == ["n1", "n2", "n3"]
 
 
@@ -79,16 +79,16 @@ def test_topological_sort_cycle() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n2"])
 
-    graph = cast("EagerCallableProtocol", MockGraphDict)({"n1": n1, "n2": n2, "n3": n3})
+    graph = typing.cast("EagerCallableProtocol", MockGraphDict)({"n1": n1, "n2": n2, "n3": n3})
     with pytest.raises(CompilationError, match="Cycle detected in graph."):
-        cast("EagerCallableProtocol", topological_sort)(graph)
+        typing.cast("EagerCallableProtocol", topological_sort)(graph)
 
 
 def test_topological_sort_missing_node() -> None:
     """Test function test_topological_sort_missing_node."""
     n1 = MockNode("n1", ["n_missing"])
-    graph = cast("EagerCallableProtocol", MockGraphDict)({"n1": n1})
-    sorted_nodes = cast("EagerCallableProtocol", topological_sort)(graph)
+    graph = typing.cast("EagerCallableProtocol", MockGraphDict)({"n1": n1})
+    sorted_nodes = typing.cast("EagerCallableProtocol", topological_sort)(graph)
     # The missing node won't crash, it just visits and adds to visited and ignores adding to sorted list.
     assert [n.id for n in sorted_nodes] == ["n1"]
 
@@ -99,22 +99,22 @@ def test_topological_sort_already_visited() -> None:
     n2 = MockNode("n2", ["n1"])
     n3 = MockNode("n3", ["n1"])
     n4 = MockNode("n4", ["n2", "n3"])
-    graph = cast("EagerCallableProtocol", MockGraphDict)({"n1": n1, "n2": n2, "n3": n3, "n4": n4})
-    sorted_nodes = cast("EagerCallableProtocol", topological_sort)(graph)
+    graph = typing.cast("EagerCallableProtocol", MockGraphDict)({"n1": n1, "n2": n2, "n3": n3, "n4": n4})
+    sorted_nodes = typing.cast("EagerCallableProtocol", topological_sort)(graph)
     assert len(sorted_nodes) == 4
 
 
 def test_topological_sort_missing_node_list() -> None:
     """Test function test_topological_sort_missing_node_list."""
     n1 = MockNode("n1", ["n_missing"])
-    graph = cast("EagerCallableProtocol", MockGraphList)([n1])
-    sorted_nodes = cast("EagerCallableProtocol", topological_sort)(graph)
+    graph = typing.cast("EagerCallableProtocol", MockGraphList)([n1])
+    sorted_nodes = typing.cast("EagerCallableProtocol", topological_sort)(graph)
     assert [n.id for n in sorted_nodes] == ["n1"]
 
 
 def test_topological_sort_nodes_neither_dict_nor_list() -> None:
     """Test function test_topological_sort_nodes_neither_dict_nor_list."""
     n1 = MockNode("n1", [])
-    graph = cast("EagerCallableProtocol", MockGraphDict)((n1,))
-    sorted_nodes = cast("EagerCallableProtocol", topological_sort)(graph)
+    graph = typing.cast("EagerCallableProtocol", MockGraphDict)((n1,))
+    sorted_nodes = typing.cast("EagerCallableProtocol", topological_sort)(graph)
     assert sorted_nodes == []

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
@@ -30,7 +32,7 @@ from ml_switcheroo_compiler.backends.llvm_cpp.config_models import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -106,7 +108,7 @@ def test_hardware_template_config_equality_and_validation() -> None:
     assert cfg.templates["list_tpl"] == ["item1", "item2"]
 
     # Test _validate_templates non-dict bypass
-    raw_val = cast("EagerCallableProtocol", HardwareTemplatesConfig._validate_templates)("not_a_dict")
+    raw_val = typing.cast("EagerCallableProtocol", getattr(HardwareTemplatesConfig, "_validate_templates"))("not_a_dict")
     assert raw_val == "not_a_dict"
 
 
@@ -148,8 +150,8 @@ def test_load_hardware_templates_from_file_and_dir() -> None:
         assert "op1" in cfg.templates
         assert "op2" in cfg.templates
         assert "op3" in cfg.templates
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cfg.templates, "__getitem__")("op1")), "body")) == "void op1() {}"
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cfg.templates, "__getitem__")("op2")), "workgroup_size")) == [32, 1, 1]
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(cfg.templates, "__getitem__")("op1")), "body")) == "void op1() {}"
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(cfg.templates, "__getitem__")("op2")), "workgroup_size")) == [32, 1, 1]
         assert cfg.templates["op3"] == 123
 
         # 3. Fallback when dir does not exist
@@ -172,7 +174,7 @@ def test_load_hardware_templates_from_file_and_dir() -> None:
             patch("yaml.safe_load", return_value={"direct": tpl_instance}),
         ):
             _load_yaml_file_into_config("dummy.yaml", cfg_inst)
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cfg_inst.templates, "__getitem__")("direct")), "body")) == "void direct() {}"
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(cfg_inst.templates, "__getitem__")("direct")), "body")) == "void direct() {}"
 
 
 def test_hardware_helpers_liveness_and_resolve() -> None:
@@ -274,7 +276,7 @@ def _test_hardware_launch_helpers_and_dispatch_part_1(_state: dict[str, EagerTen
     in0 = IRNode("c_in0", "Input", shape_metadata=(2, 3, 32, 32))
     in1 = IRNode("c_in1", "Input", shape_metadata=(16, 3, 3, 3))
     out_conv = IRNode("c_out", "Conv2D", inputs=["c_in0", "c_in1"], shape_metadata=(2, 16, 30, 30))
-    g.nodes = {"c_in0": in0, "c_in1": in1, "c_out": out_conv}
+    g.nodes = NodeDict({"c_in0": in0, "c_in1": in1, "c_out": out_conv})
     tpl = HardwareTemplateConfig(body="kernel", workgroup_size=[256, 1, 1])
     grid, args = resolve_hardware_launch_grid_and_args(out_conv, tpl, {"c_in0": "in_0", "c_in1": "in_1"}, "out_buf", 28800, 0, g)
     assert grid[1] == "16"
@@ -313,7 +315,7 @@ def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTen
         _state: Shared test state dictionary.
     """
     calculate_hardware_launch_config, empty_mm, g, tpl = _state["calculate_hardware_launch_config"], _state["empty_mm"], _state["g"], _state["tpl"]
-    grid_empty_mm, _ = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(empty_mm, tpl, {}, "out_mm", 1, 1, g)
+    grid_empty_mm, _ = typing.cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(empty_mm, tpl, {}, "out_mm", 1, 1, g)
     assert grid_empty_mm == ("(1 + block_1.x - 1) / block_1.x", "(1 + block_1.y - 1) / block_1.y", "1")
 
     # 3. BatchMatMul
@@ -321,17 +323,17 @@ def _test_hardware_launch_helpers_and_dispatch_part_2(_state: dict[str, EagerTen
     in_bm1 = IRNode("bm_in1", "Input", shape_metadata=(4, 16, 32))
     out_bmm = IRNode("bm_out", "BatchMatMul", inputs=["bm_in0", "bm_in1"], shape_metadata=(4, 8, 32))
     g.nodes.update({"bm_in0": in_bm0, "bm_in1": in_bm1, "bm_out": out_bmm})
-    grid_bmm, args_bmm = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(out_bmm, tpl, {"bm_in0": "in_bm0", "bm_in1": "in_bm1"}, "out_bmm", 1024, 2, g)
+    grid_bmm, args_bmm = typing.cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(out_bmm, tpl, {"bm_in0": "in_bm0", "bm_in1": "in_bm1"}, "out_bmm", 1024, 2, g)
     assert grid_bmm == ("(32 + block_2.x - 1) / block_2.x", "(8 + block_2.y - 1) / block_2.y", "4")
     assert args_bmm[-5:] == ["out_bmm", "4", "8", "32", "16"]
 
     empty_bmm = IRNode("empty_bmm", "BatchMatMul", inputs=[], shape_metadata=())
-    grid_empty_bmm, _ = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(empty_bmm, tpl, {}, "out_bmm", 1, 2, g)
+    grid_empty_bmm, _ = typing.cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(empty_bmm, tpl, {}, "out_bmm", 1, 2, g)
     assert grid_empty_bmm == ("(1 + block_2.x - 1) / block_2.x", "(1 + block_2.y - 1) / block_2.y", "1")
 
     # 4. FusedElementwise
     out_fused = IRNode("fused_out", "FusedElementwise", inputs=["c_in0"], shape_metadata=(2, 3))
-    grid_fused, args_fused = cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(out_fused, tpl, {"c_in0": "in_0"}, "out_fused", 6, 3, g)
+    grid_fused, args_fused = typing.cast("EagerCallableProtocol", resolve_hardware_launch_grid_and_args)(out_fused, tpl, {"c_in0": "in_0"}, "out_fused", 6, 3, g)
     assert grid_fused == ("(6 + block_3.x - 1) / block_3.x", "1", "1")
     assert args_fused == ["in_0", "out_fused", "6"]
 
@@ -526,7 +528,7 @@ def test_hardware_device_profiles_and_custom_paths() -> None:
         custom_tmpl_path = f.name
     try:
         tmpl_m = load_kernel_templates_manifest(path=custom_tmpl_path)
-        assert cast("EagerTensorProtocol", getattr(tmpl_m, "version")) == "1.0.0"
+        assert typing.cast("EagerTensorProtocol", getattr(tmpl_m, "version")) == "1.0.0"
     finally:
         os.remove(custom_tmpl_path)
 
@@ -535,7 +537,7 @@ def test_hardware_device_profiles_and_custom_paths() -> None:
         custom_heur_path = f.name
     try:
         heur_m = load_launch_heuristics(path=custom_heur_path)
-        assert cast("EagerTensorProtocol", getattr(heur_m, "version")) == "1.0.0"
+        assert typing.cast("EagerTensorProtocol", getattr(heur_m, "version")) == "1.0.0"
     finally:
         os.remove(custom_heur_path)
 
@@ -544,7 +546,7 @@ def test_hardware_device_profiles_and_custom_paths() -> None:
         custom_layout_path = f.name
     try:
         layout_m = load_memory_layouts(path=custom_layout_path)
-        assert cast("EagerTensorProtocol", getattr(layout_m, "version")) == "1.0.0"
+        assert typing.cast("EagerTensorProtocol", getattr(layout_m, "version")) == "1.0.0"
     finally:
         os.remove(custom_layout_path)
 
@@ -590,7 +592,7 @@ def _test_hardware_config_models_100_coverage_part_1(_state: dict[str, EagerTens
     in_c3d_0 = IRNode("c3d_in0", "Input", shape_metadata=(2, 3, 4, 8, 8))
     in_c3d_1 = IRNode("c3d_in1", "Input", shape_metadata=(16, 3, 2, 3, 3))
     out_c3d = IRNode("c3d_out", "Conv3D", inputs=["c3d_in0", "c3d_in1"], shape_metadata=(2, 16, 3, 6, 6))
-    g.nodes = {"c3d_in0": in_c3d_0, "c3d_in1": in_c3d_1, "c3d_out": out_c3d}
+    g.nodes = NodeDict({"c3d_in0": in_c3d_0, "c3d_in1": in_c3d_1, "c3d_out": out_c3d})
     grid_c3d, args_c3d = resolve_hardware_launch_grid_and_args(out_c3d, tpl, {"c3d_in0": "in0", "c3d_in1": "in1"}, "out_buf", 1728, 0, g)
     assert grid_c3d[1] == "16"
     assert grid_c3d[2] == "2"
@@ -700,10 +702,10 @@ def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTens
         KernelTemplatesManifestModel,
     )
 
-    dummy_manifest = cast("EagerCallableProtocol", KernelTemplatesManifestModel)(
+    dummy_manifest = typing.cast("EagerCallableProtocol", KernelTemplatesManifestModel)(
         kernel_templates={
-            "no_body_op": cast("EagerCallableProtocol", KernelTemplateModel)(opcode="no_body_op", name="no_body", cuda_body="", rocm_body="", metal_body=""),
-            "with_body_op": cast("EagerCallableProtocol", KernelTemplateModel)(opcode="with_body_op", name="with_body", cuda_body="void f() {}", rocm_body="void f() {}", metal_body="void f() {}"),
+            "no_body_op": typing.cast("EagerCallableProtocol", KernelTemplateModel)(opcode="no_body_op", name="no_body", cuda_body="", rocm_body="", metal_body=""),
+            "with_body_op": typing.cast("EagerCallableProtocol", KernelTemplateModel)(opcode="with_body_op", name="with_body", cuda_body="void f() {}", rocm_body="void f() {}", metal_body="void f() {}"),
         }
     )
     cfg_empty_body = HardwareTemplatesConfig(templates={})
@@ -713,7 +715,7 @@ def _test_hardware_config_models_100_coverage_part_3(_state: dict[str, EagerTens
     assert "no_body_op" not in cfg_empty_body.templates
 
     # _merge_unified_kernel_templates when load_kernel_templates_manifest raises
-    with cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", side_effect=cast("EagerCallableProtocol", RuntimeError)("fail")):
+    with typing.cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.hardware_config_models.load_kernel_templates_manifest", side_effect=typing.cast("EagerCallableProtocol", RuntimeError)("fail")):
         _merge_unified_kernel_templates(cfg_cuda, "cuda")
 
     # load_hardware_templates with backend param

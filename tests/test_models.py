@@ -1,5 +1,7 @@
 """Pydantic models for test manifests."""
 
+from __future__ import annotations
+
 from pydantic import BaseModel
 
 

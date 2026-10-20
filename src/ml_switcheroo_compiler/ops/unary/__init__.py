@@ -1,5 +1,7 @@
 """Public package exports and initialization for `ml_switcheroo_compiler.ops.unary`."""
 
+from __future__ import annotations
+
 import ml_switcheroo_compiler.ops.binary.special as _binary_special
 import ml_switcheroo_compiler.ops.unary.arithmetic as _arith
 import ml_switcheroo_compiler.ops.unary.base as _unary_base

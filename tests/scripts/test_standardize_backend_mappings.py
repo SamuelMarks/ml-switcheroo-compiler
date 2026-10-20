@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import os
 import runpy
+import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 import yaml
 
 import scripts.standardize_backend_mappings as sbm
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -43,7 +43,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_translations": {"axis": "dim", "drop": None},
         "dtype_overrides": {"float64": "float32"},
     }
-    result = cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
+    result = typing.cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
     assert result["operation"] == "Add"
     assert result["backend"] == "numpy"
     assert result["target_api"] == "np.add"
@@ -57,7 +57,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_map": ["invalid_list"],
         "dtype_overrides": ["invalid_list"],
     }
-    result_non_dict = cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
+    result_non_dict = typing.cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
     assert result_non_dict["kwarg_map"] == {}
     assert result_non_dict["dtype_overrides"] == {}
 
@@ -113,6 +113,6 @@ def test_run_standardization_and_main(tmp_path: Path) -> None:
 def test_runpy_entrypoint() -> None:
     """Verify script executes as main via runpy."""
     script_path = os.path.abspath(sbm.__file__)
-    with patch("scripts.standardize_backend_mappings.run_standardization", return_value=0) as mock_run:
+    with patch("glob.glob", return_value=[]) as mock_glob, patch("builtins.print"):
         runpy.run_path(script_path, run_name="__main__")
-        assert mock_run.called
+        assert mock_glob.called

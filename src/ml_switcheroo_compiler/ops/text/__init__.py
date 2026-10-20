@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.text import ops
@@ -25,7 +25,7 @@ from ml_switcheroo_compiler.ops.text.frontend import (
     text_vectorization,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import IRNode
 
 _ = ops
@@ -70,11 +70,9 @@ def create_token(
     Returns:
         IRNode: Resulting graph node.
     """
-    from typing import cast
-
     from ml_switcheroo_compiler.ops.base import get_op
 
-    return cast("IRNode", get_op("CreateToken")()(*args, **kwargs))
+    return typing.cast("IRNode", get_op("CreateToken")()(*args, **kwargs))
 
 
 __all__ = [

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -41,12 +43,12 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
     file_npy = tmp_path / "test.npy"
     TensorFlowCodeGenerator.save(str(file_npy), arr)
     res_npy = TensorFlowCodeGenerator.load(str(file_npy))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_npy, arr)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_npy, arr)
 
     file_npz = tmp_path / "test.npz"
     TensorFlowCodeGenerator.savez(str(file_npz), a=arr)
     res_npz = TensorFlowCodeGenerator.load(str(file_npz))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerTensorProtocol", getattr(res_npz, "__getitem__")("a")), arr)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerTensorProtocol", getattr(res_npz, "__getitem__")("a")), arr)
 
     file_comp = tmp_path / "test_comp.npz"
     TensorFlowCodeGenerator.savez_compressed(str(file_comp), a=arr)
@@ -66,8 +68,8 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
     assert gen._format_transpose({}) == "tf.transpose({0})"
     assert gen._format_transpose({"axes": [0, 1]}) == "tf.transpose({0}, perm={axes})"
 
-    assert cast("EagerCallableProtocol", gen.visit_RaggedDot)(cast("EagerCallableProtocol", DummyNode)(), ["x", "y"]) == "tf_ragged_dot(x, y)"
-    assert cast("EagerCallableProtocol", gen.visit_Einsum)(cast("EagerCallableProtocol", DummyNode)(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
+    assert typing.cast("EagerCallableProtocol", gen.visit_RaggedDot)(typing.cast("EagerCallableProtocol", DummyNode)(), ["x", "y"]) == "tf_ragged_dot(x, y)"
+    assert typing.cast("EagerCallableProtocol", gen.visit_Einsum)(typing.cast("EagerCallableProtocol", DummyNode)(), ["x", "y"], equation="i,j->ij") == "tf.einsum('i,j->ij', x, y)"
 
     assert gen.get_fallback_prefix() == "tf.math"
     assert "Zeros" in gen._get_creation_ops({})
@@ -96,7 +98,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     g = IRGraph()
     n_in = IRNode(id="x", op_type="Input", shape_metadata=[2, 2], attributes={"dtype": "float32"})
     n_relu = IRNode(id="y", op_type="Relu", inputs=["x"], shape_metadata=[2, 2], attributes={"dtype": "float32"})
-    g.nodes = {"x": n_in, "y": n_relu}
+    g.nodes = NodeDict({"x": n_in, "y": n_relu})
     g.inputs = ["x"]
     g.outputs = ["y"]
 
@@ -111,7 +113,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     g_aot = IRGraph()
     n_in_aot = IRNode(id="x", op_type="Input", shape_metadata=[2, 2], attributes={"dtype": "float32"})
     n_relu_aot = IRNode(id="y", op_type="Relu", inputs=["x"], shape_metadata=[2, 2], attributes={"dtype": "float32"})
-    g_aot.nodes = {"x": n_in_aot, "y": n_relu_aot}
+    g_aot.nodes = NodeDict({"x": n_in_aot, "y": n_relu_aot})
     g_aot.inputs = ["x"]
     g_aot.outputs = ["y"]
 
@@ -120,7 +122,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
         x_val = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
         cfg_2x2 = TensorConfig(shape=[2, 2], dtype="float32", device="cpu")
         out = runner(Tensor(x_val, cfg_2x2))
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(out, cast("EagerCallableProtocol", np.maximum)(x_val, 0.0))
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(out, typing.cast("EagerCallableProtocol", np.maximum)(x_val, 0.0))
 
     # 3. compile_aot exception fallback to forward_fn
     g_multi = IRGraph()
@@ -128,7 +130,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     n_b = IRNode(id="b_extra", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
     n_add = IRNode(id="add", op_type="Add", inputs=["a", "a"], shape_metadata=[2], attributes={"dtype": "float32"})
     n_sub = IRNode(id="sub", op_type="Sub", inputs=["a", "a"], shape_metadata=[2], attributes={"dtype": "float32"})
-    g_multi.nodes = {"a": n_a, "b_extra": n_b, "add": n_add, "sub": n_sub}
+    g_multi.nodes = NodeDict({"a": n_a, "b_extra": n_b, "add": n_add, "sub": n_sub})
     g_multi.inputs = ["a", "b_extra"]
     g_multi.outputs = ["add", "sub"]
     gen_multi = TensorFlowCodeGenerator(g_multi)
@@ -149,7 +151,7 @@ def test_tf_generator_pure_tf_and_aot() -> None:
             # Single output
             g_multi.outputs = ["add"]
             res_single = fb_runner(a_val)
-            cast("EagerCallableProtocol", np.testing.assert_allclose)(res_single, [2.0, 4.0])
+            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_single, [2.0, 4.0])
 
             # No outputs
             g_multi.outputs = []

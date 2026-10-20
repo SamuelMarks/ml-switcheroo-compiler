@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
+import typing
 from abc import ABC, abstractmethod
-from typing import Protocol, runtime_checkable
 
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
-@runtime_checkable
-class WeightFormatProtocol(Protocol):
+@typing.runtime_checkable
+class WeightFormatProtocol(typing.Protocol):
     """Protocol for weight format handlers supporting both loading and saving."""
 
     def load(self, filepath: str) -> dict[str, TensorLike]:

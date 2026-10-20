@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -25,7 +25,7 @@ def test_rope_infer_shape() -> None:
 
         shape = (1, 2)
 
-    assert cast("EagerCallableProtocol", RopeOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", RopeOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
 
 
 def test_rope() -> None:
@@ -98,4 +98,4 @@ def test_scaled_dot() -> None:
 
         shape = (1, 2)
 
-    assert cast("EagerCallableProtocol", ScaledDotProductAttention)().infer_shape(cast("EagerCallableProtocol", DummyShape)(), None, None, None) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", ScaledDotProductAttention)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)(), None, None, None) == (1, 2)

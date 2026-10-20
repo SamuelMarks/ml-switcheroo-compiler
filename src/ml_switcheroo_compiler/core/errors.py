@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 import yaml
 
@@ -30,10 +29,10 @@ class CompilerError(RuntimeError):
     def __init__(
         self,
         message: str = "",
-        node_id: Optional[str] = None,
-        op_type: Optional[str] = None,
-        backend_target: Optional[str] = None,
-        trace_context: Optional[str] = None,
+        node_id: str | None = None,
+        op_type: str | None = None,
+        backend_target: str | None = None,
+        trace_context: str | None = None,
         **kwargs: str | int | float | bool | None,
     ) -> None:
         """Initialize the base compiler exception.

@@ -6,9 +6,9 @@ import ast
 import logging
 import os
 import re
+import typing
 import uuid
 from collections.abc import Sequence
-from typing import Union, cast
 
 import yaml
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
@@ -22,7 +22,7 @@ from ml_switcheroo_compiler.grad.config_models import (
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-AttrPrimitive = Union[str, int, float, bool, None]
+AttrPrimitive = typing.Union[str, int, float, bool, "None"]
 
 
 class SymbolicExpressionCompiler:
@@ -196,11 +196,11 @@ class SymbolicExpressionCompiler:
 
         attrs: dict[str, AttrPrimitive] = {}
         if hasattr(node, "attributes") and node.attributes and canonical_op == getattr(node, "op_type", ""):
-            attrs.update(cast("dict[str, str | int | float | None]", dict(node.attributes)))
+            attrs.update(typing.cast("dict[str, str | int | float | None]", dict(node.attributes)))
         attrs.update(parsed_attrs)
 
         shape_meta = getattr(node, "shape_metadata", None)
-        return cast(str, cast("EagerCallableProtocol", emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
+        return typing.cast(str, typing.cast("EagerCallableProtocol", emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
 
     def _resolve_symbolic_variable(
         self,

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import ml_switcheroo_compiler.ops.unary.base as unary_base
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -70,10 +70,10 @@ def test_unary_base_exhaustive() -> None:
     assert op.infer_shape([4, 5]) == (4, 5)
 
     # 3. Object with shape attribute
-    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", _MockShapeContainer)((6, 7))) == (6, 7)
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", _MockShapeContainer)((6, 7))) == (6, 7)
 
     # 4. Object with shape_metadata attribute
-    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", _MockShapeMetaContainer)((8, 9))) == (8, 9)
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", _MockShapeMetaContainer)((8, 9))) == (8, 9)
 
     # 5. Scalar input without shape attributes
-    assert cast("EagerCallableProtocol", op.infer_shape)(123) == ()
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(123) == ()

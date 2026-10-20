@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ops.shape.dynamic_slicing import DynamicSlice, DynamicUpdateSlice, dynamic_slice, dynamic_update_slice, update_slice
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 class MockTensor:
@@ -56,13 +57,13 @@ def test_dynamic_slice_eager() -> None:
             """
             self.data = d
 
-    res = cast("EagerCallableProtocol", dynamic_slice)(t, [cast("EagerCallableProtocol", FakeStart)(1)], [2])
-    assert cast("EagerTensorProtocol", getattr(res, "config")).shape == (2,)
-    assert list(cast("EagerTensorProtocol", getattr(res, "data"))) == [2, 3]
+    res = typing.cast("EagerCallableProtocol", dynamic_slice)(t, [typing.cast("EagerCallableProtocol", FakeStart)(1)], [2])
+    assert typing.cast("EagerTensorProtocol", getattr(res, "config")).shape == (2,)
+    assert list(typing.cast("EagerTensorProtocol", getattr(res, "data"))) == [2, 3]
 
-    res2 = cast("EagerCallableProtocol", dynamic_slice)(t, [3], [2])
-    assert cast("EagerTensorProtocol", getattr(res2, "config")).shape == (2,)
-    assert list(cast("EagerTensorProtocol", getattr(res2, "data"))) == [4, 5]
+    res2 = typing.cast("EagerCallableProtocol", dynamic_slice)(t, [3], [2])
+    assert typing.cast("EagerTensorProtocol", getattr(res2, "config")).shape == (2,)
+    assert list(typing.cast("EagerTensorProtocol", getattr(res2, "data"))) == [4, 5]
 
     config.eager_mode = False
 
@@ -79,7 +80,7 @@ def test_update_slice(mocker: EagerTensorProtocol) -> None:
     t = MockTensor((5,))
     update = MockTensor((2,))
 
-    res = cast("EagerCallableProtocol", update_slice)(t, update, [1, cast("EagerCallableProtocol", MockTensor)(())])
+    res = typing.cast("EagerCallableProtocol", update_slice)(t, update, [1, typing.cast("EagerCallableProtocol", MockTensor)(())])
     assert res == "updated"
 
 
@@ -99,9 +100,9 @@ def test_dynamic_update_slice_infer_shape() -> None:
     op = DynamicUpdateSlice()
 
     t = MockTensor((2, 3))
-    assert cast("EagerCallableProtocol", op.infer_shape)(t, "update", "starts") == (2, 3)
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(t, "update", "starts") == (2, 3)
 
-    assert cast("EagerCallableProtocol", op.infer_shape)("not_tensor", "update", "starts") == ()
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)("not_tensor", "update", "starts") == ()
 
 
 def test_dynamic_slice_tracing(mocker: EagerTensorProtocol) -> None:
@@ -114,7 +115,7 @@ def test_dynamic_slice_tracing(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.shape.dynamic_slicing._emit_shape_node", return_value="sliced")
     t = MockTensor((5,))
     setattr(t, "dtype", "float32")
-    res = cast("EagerCallableProtocol", dynamic_slice)(t, [1], [2])
+    res = typing.cast("EagerCallableProtocol", dynamic_slice)(t, [1], [2])
     assert res == "sliced"
 
 
@@ -128,7 +129,7 @@ def test_dynamic_update_slice_tracing(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.shape.dynamic_slicing._emit_shape_node", return_value="updated")
     t = MockTensor((5,))
     setattr(t, "dtype", "float32")
-    res = dynamic_update_slice(t, MockTensor((2,)), [1])
+    res = dynamic_update_slice(typing.cast("Tensor", t), typing.cast("Tensor", MockTensor((2,))), typing.cast("list[Tensor]", [1]))
     assert res == "updated"
 
 
@@ -160,8 +161,8 @@ def test_dynamic_slice_validation_and_shapes(mocker: EagerTensorProtocol) -> Non
 
     t = MockTensor((10, 20))
     setattr(t, "dtype", "float32")
-    cast("EagerCallableProtocol", dynamic_slice)(t, [0, 0], [4, 8])
+    typing.cast("EagerCallableProtocol", dynamic_slice)(t, [0, 0], [4, 8])
     assert captured_shape["DynamicSlice"] == (4, 8)
 
     with pytest.raises(ValueError, match="slice_sizes length"):
-        cast("EagerCallableProtocol", dynamic_slice)(t, [0], [4])
+        typing.cast("EagerCallableProtocol", dynamic_slice)(t, [0], [4])

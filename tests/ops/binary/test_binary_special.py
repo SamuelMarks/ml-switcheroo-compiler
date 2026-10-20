@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.ops.binary.special import Allclose, Atan2, Divmod, Isclose
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -49,11 +49,11 @@ def test_binary_special() -> None:
 
     import ml_switcheroo_compiler.ops.binary.special as sp
 
-    orig_evaluator = cast("EagerTensorProtocol", getattr(sp, "EagerEvaluator"))
+    orig_evaluator = typing.cast("EagerTensorProtocol", getattr(sp, "EagerEvaluator"))
 
     try:
         setattr(sp, "EagerEvaluator", DummyEval())
-        assert cast("EagerTensorProtocol", d(1, 2)) == cast("EagerTensorProtocol", "eager_eval")
+        assert typing.cast("EagerTensorProtocol", d(1, 2)) == typing.cast("EagerTensorProtocol", "eager_eval")
     finally:
         setattr(sp, "EagerEvaluator", orig_evaluator)
 
@@ -84,17 +84,17 @@ def test_binary_special() -> None:
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops.binary": DummyBinary()}):
-        assert cast("EagerTensorProtocol", d(1, 2)) == cast("EagerTensorProtocol", ("fd", "r"))
+        assert typing.cast("EagerTensorProtocol", d(1, 2)) == typing.cast("EagerTensorProtocol", ("fd", "r"))
     config.eager_mode = True
 
 
 def test_binary_special_coverage() -> None:
     """Test function test_binary_special_coverage."""
     a = Atan2()
-    assert cast("EagerTensorProtocol", a.infer_shape(1)) == cast("EagerTensorProtocol", 1)
+    assert typing.cast("EagerTensorProtocol", a.infer_shape(1)) == typing.cast("EagerTensorProtocol", 1)
 
     d = Divmod()
-    assert cast("EagerTensorProtocol", d.infer_shape(1)) == cast("EagerTensorProtocol", 1)
+    assert typing.cast("EagerTensorProtocol", d.infer_shape(1)) == typing.cast("EagerTensorProtocol", 1)
 
     i = Isclose()
-    assert cast("EagerTensorProtocol", i.infer_shape(1)) == cast("EagerTensorProtocol", 1)
+    assert typing.cast("EagerTensorProtocol", i.infer_shape(1)) == typing.cast("EagerTensorProtocol", 1)

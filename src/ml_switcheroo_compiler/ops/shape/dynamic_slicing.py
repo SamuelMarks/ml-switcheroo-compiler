@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import builtins
+import typing
 from collections.abc import Sequence
-from typing import cast
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -37,12 +37,12 @@ def dynamic_slice(
         starts = []
         for s in start_indices:
             if hasattr(s, "data"):
-                starts.append(int(cast(int, s.data)))
+                starts.append(int(typing.cast(int, s.data)))
             else:
                 starts.append(int(s))
         starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
         idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
-        data = cast(EagerTensorProtocol, input.data)[idx]
+        data = typing.cast(EagerTensorProtocol, input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input, *start_indices]
     if len(input.shape) > 0 and len(slice_sizes) != len(input.shape):
@@ -57,7 +57,7 @@ def dynamic_slice(
     )
 
 
-def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int]) -> TensorOrScalar:
+def update_slice(input: Tensor, update: Tensor, start_indices: Sequence[int | Tensor]) -> TensorOrScalar:
     """Update a slice of the input tensor with an update tensor at specified start.
 
     Args:

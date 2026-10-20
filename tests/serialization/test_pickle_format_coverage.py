@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -190,6 +190,6 @@ def test_pickle_format(tmp_path: Path) -> None:
     fmt = PickleWeightFormat()
     filepath = str(tmp_path / "model.pkl")
     data = {"w": [1.0, 2.0, 3.0], "b": 0.5}
-    cast("EagerCallableProtocol", fmt.save)(data, filepath)
+    typing.cast("EagerCallableProtocol", fmt.save)(data, filepath)
     loaded = fmt.load(filepath)
     assert loaded == data

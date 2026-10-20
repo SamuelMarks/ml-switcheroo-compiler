@@ -1,7 +1,9 @@
 """WebGL 2.0 Backend Emission."""
 
+from __future__ import annotations
+
 import os
-from typing import Optional, cast
+import typing
 
 import yaml
 
@@ -10,7 +12,6 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplatesConfig
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -18,7 +19,7 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 class WebGLCodeGenerator(BaseGenerator):
     """WebGL 2.0 Code Generator for emitting fragment shader compute passes and browser JS orchestrator."""
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[CodeGeneratorVisitor]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: list[CodeGeneratorVisitor] | None = None) -> None:
         """Initialize WebGLCodeGenerator.
 
         Args:
@@ -276,7 +277,7 @@ class WebGLCodeGenerator(BaseGenerator):
         js.append("    gl.drawArrays(gl.TRIANGLES, 0, 6);")
         js.append("    currentFbo = (currentFbo === main_fbo) ? fboPong : main_fbo;")
 
-    def _emit_node(self, node: "IRNode", input_map: dict[str, int], js: list[str]) -> tuple[int, int]:
+    def _emit_node(self, node: IRNode, input_map: dict[str, int], js: list[str]) -> tuple[int, int]:
         """Emit WebGL operations for a single node.
 
         Args:
@@ -298,7 +299,7 @@ class WebGLCodeGenerator(BaseGenerator):
         binding_lines = self._build_texture_binding_lines(node, clean_id, input_map)
         setup_lines = self._build_node_setup_lines(node, clean_id, width, height, custom_setup)
 
-        node_pass_tpl: Optional[str] = self.config.js_orchestration.get("node_pass")
+        node_pass_tpl: str | None = self.config.js_orchestration.get("node_pass")
         if node_pass_tpl:
             js.append(
                 node_pass_tpl.format(
@@ -385,11 +386,11 @@ class WebGLCodeGenerator(BaseGenerator):
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict))
+            res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
-                return cast(EagerValue, res_dict)
+                return typing.cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:
-                return cast(EagerValue, res_dict.get(graph.outputs[0]))
+                return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
 
         shaders_map = {node_id: f"shader_{node_id}" for node_id, node in getattr(graph, "nodes", {}).items() if getattr(node, "op_type", "").lower() not in ("input", "output")}

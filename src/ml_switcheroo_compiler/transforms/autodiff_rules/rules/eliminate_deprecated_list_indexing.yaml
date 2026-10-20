@@ -1,4 +1,0 @@
-eliminate_deprecated_list_indexing:
-  jvp: ZerosLike($tangent[0])
-  vjp:
-  - ZerosLike($cotangent)

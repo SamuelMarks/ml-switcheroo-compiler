@@ -1,8 +1,10 @@
 """Keras Code Generator Package."""
 
+from __future__ import annotations
+
 import importlib.util
 import sys
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
@@ -17,4 +19,4 @@ if not _has_pkg and "sphinx" not in sys.modules and "pytest" not in sys.modules:
 from .eager import execute_op
 from .generator import KerasCodeGenerator
 
-type.__setattr__(KerasCodeGenerator, "execute_op", cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(KerasCodeGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 import unittest.mock as mock
-from typing import cast
 
 import numpy as np
 
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.random_stateless import (
 )
 
 
-def create_eager_tensor(data: np.ndarray) -> Tensor:
+def create_eager_tensor(data: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
     """Create a CPU float32 Tensor from a NumPy array.
 
     Args:
@@ -59,7 +59,7 @@ def test_random_stateless_eager_philox() -> None:
     config.eager_mode = True
     try:
         seed_tensor = Tensor(np.array([10, 20], dtype=np.int64), TensorConfig((2,), DType.Int64, Device("cpu")))
-        trunc = cast(Tensor, stateless_parameterized_truncated_normal((2, 2), seed_tensor))
+        trunc = typing.cast(Tensor, stateless_parameterized_truncated_normal((2, 2), seed_tensor))
         assert trunc.shape == (2, 2)
         assert np.all(np.asarray(trunc.data) >= -2.0)
         assert np.all(np.asarray(trunc.data) <= 2.0)
@@ -73,10 +73,10 @@ def test_random_stateless_eager_philox() -> None:
 
         idx_tensor = Tensor(np.array([0, 1, 2], dtype=np.int32), TensorConfig((3,), DType.Int32, Device("cpu")))
         max_tensor = Tensor(np.array([5], dtype=np.int32), TensorConfig((1,), DType.Int32, Device("cpu")))
-        idx_res = cast(Tensor, index_shuffle(idx_tensor, [1, 2], max_tensor))
+        idx_res = typing.cast(Tensor, index_shuffle(idx_tensor, [1, 2], max_tensor))
         assert idx_res.shape == (3,)
 
-        folded_tensor = cast(Tensor, stateless_fold_in(seed_tensor, 7))
+        folded_tensor = typing.cast(Tensor, stateless_fold_in(seed_tensor, 7))
         assert folded_tensor.shape == (2,)
         assert not np.array_equal(np.asarray(folded_tensor.data), np.array([10, 20]))
 

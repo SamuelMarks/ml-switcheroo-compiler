@@ -1,6 +1,8 @@
 """Implementation of products operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.linalg.products`)."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
@@ -16,7 +18,7 @@ class BandPart(OpDef):
     Extracts a central band of a tensor.
     """
 
-    def infer_shape(self, input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, input: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -36,7 +38,7 @@ class Diag(OpDef):
     Extracts a diagonal or constructs a diagonal array.
     """
 
-    def infer_shape(self, input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, input: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer shape.
 
         Args:
@@ -61,7 +63,7 @@ class Matmul(OpDef):
     Computes the matrix product of two arrays
     """
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape of the operation.
 
         Args:
@@ -74,7 +76,7 @@ class Matmul(OpDef):
         """
         if isinstance(a, tuple) and isinstance(b, tuple):
             try:
-                return matmul_shape(a, b)
+                return matmul_shape(typing.cast("tuple[int | str, ...]", a), typing.cast("tuple[int | str, ...]", b))
             except ValueError:
                 return None
         return None
@@ -135,8 +137,8 @@ class Trace(OpDef):
         axis1 = kwargs.get("axis1", 0)
         axis2 = kwargs.get("axis2", 1)
         if len(shape) >= 2:
-            shape.pop(max(int(cast(int, axis1)), int(cast(int, axis2))))
-            shape.pop(min(int(cast(int, axis1)), int(cast(int, axis2))))
+            shape.pop(max(int(typing.cast(int, axis1)), int(typing.cast(int, axis2))))
+            shape.pop(min(int(typing.cast(int, axis1)), int(typing.cast(int, axis2))))
         return tuple(shape)
 
 

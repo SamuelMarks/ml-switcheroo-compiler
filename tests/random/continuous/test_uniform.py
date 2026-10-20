@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.random.continuous.uniform import uniform
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -18,7 +18,7 @@ def test_uniform() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.uniform"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
         result = uniform("key", shape=(2, 2), dtype=dtypes.DType.Float64, minval=-1.0, maxval=2.0)
-        assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
+        assert typing.cast("EagerTensorProtocol", result) == typing.cast("EagerTensorProtocol", "mocked_result")
         mock_emit.assert_called_once_with("RandomUniform", ["key"], (2, 2), dtypes.DType.Float64, {"minval": -1.0, "maxval": 2.0})
 
 
@@ -27,5 +27,5 @@ def test_uniform_default_shape_and_dtype() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.uniform"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
         result = uniform("key")
-        assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
+        assert typing.cast("EagerTensorProtocol", result) == typing.cast("EagerTensorProtocol", "mocked_result")
         mock_emit.assert_called_once_with("RandomUniform", ["key"], (), dtypes.DType.Float32, {"minval": 0.0, "maxval": 1.0})

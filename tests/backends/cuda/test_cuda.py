@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 import ctypes
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def test_cuda_generator() -> None:
     """Test CUDA code generation."""
     graph = IRGraph()
-    graph.nodes = {"matmul": IRNode(id="matmul", op_type="MatMul", inputs=[])}
+    graph.nodes = NodeDict({"matmul": IRNode(id="matmul", op_type="MatMul", inputs=[])})
     gen = CudaCodeGenerator(graph)
     out = gen.generate()
     assert "matmul" in out
@@ -29,7 +30,7 @@ def test_cuda_generator() -> None:
 def test_cuda_generator_coverage() -> None:
     """Test CUDA generator coverage."""
     graph = IRGraph()
-    graph.nodes = {"input": IRNode(id="input", op_type="Input", inputs=[])}
+    graph.nodes = NodeDict({"input": IRNode(id="input", op_type="Input", inputs=[])})
     gen = CudaCodeGenerator(graph)
     out = gen.generate()
     assert "matmul" not in out
@@ -84,7 +85,7 @@ def test_cuda_runner_allocate_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", mock_cupy):
         runner = CUDARunner()
         ptr = runner.allocate_buffer(100)
-        assert cast("EagerTensorProtocol", getattr(ptr, "value")) == 12345
+        assert typing.cast("EagerTensorProtocol", getattr(ptr, "value")) == 12345
 
 
 def test_cuda_runner_allocate_ctypes() -> None:
@@ -117,7 +118,7 @@ def test_cuda_runner_allocate_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = CUDARunner()
             ptr = runner.allocate_buffer(100)
-            assert cast("EagerTensorProtocol", getattr(ptr, "value")) is None
+            assert typing.cast("EagerTensorProtocol", getattr(ptr, "value")) is None
 
 
 def test_cuda_runner_write_cupy() -> None:
@@ -156,7 +157,7 @@ def test_cuda_runner_write_ctypes_fail() -> None:
 def test_cuda_runner_write_no_ptr() -> None:
     """Test function test_cuda_runner_write_no_ptr."""
     runner = CUDARunner()
-    assert cast("EagerCallableProtocol", runner.write_buffer)(None, b"test") is None
+    assert typing.cast("EagerCallableProtocol", runner.write_buffer)(None, b"test") is None
 
 
 def test_cuda_runner_read_cupy() -> None:
@@ -198,7 +199,7 @@ def test_cuda_runner_read_ctypes_fail() -> None:
 def test_cuda_runner_read_no_ptr() -> None:
     """Test function test_cuda_runner_read_no_ptr."""
     runner = CUDARunner()
-    assert cast("EagerCallableProtocol", runner.read_buffer)(None, 4) == b"\x00" * 4
+    assert typing.cast("EagerCallableProtocol", runner.read_buffer)(None, 4) == b"\x00" * 4
 
 
 def test_cuda_runner_free_ctypes() -> None:
@@ -224,7 +225,7 @@ def test_cuda_runner_free_cupy() -> None:
 def test_cuda_runner_free_no_ptr() -> None:
     """Test function test_cuda_runner_free_no_ptr."""
     runner = CUDARunner()
-    cast("EagerCallableProtocol", runner.free_buffer)(None)
+    typing.cast("EagerCallableProtocol", runner.free_buffer)(None)
     assert isinstance(runner, CUDARunner)
 
 
@@ -297,17 +298,17 @@ def test_calculate_node_bytes_branches() -> None:
 
     # float64
     node_64 = IRNode(id="n1", op_type="Custom", inputs=[], attributes={"dtype": "float64"})
-    node_64.shape_metadata = [2, 3]
+    node_64.shape_metadata = (2, 3)
     assert _calculate_node_bytes(node_64) == (6, 48)
 
     # float16
     node_16 = IRNode(id="n2", op_type="Custom", inputs=[], attributes={"dtype": "float16"})
-    node_16.shape_metadata = [4]
+    node_16.shape_metadata = (4,)
     assert _calculate_node_bytes(node_16) == (4, 8)
 
     # int8
     node_8 = IRNode(id="n3", op_type="Custom", inputs=[], attributes={"dtype": "int8"})
-    node_8.shape_metadata = [5]
+    node_8.shape_metadata = (5,)
     assert _calculate_node_bytes(node_8) == (5, 5)
 
     # Default shape and dtype
@@ -353,9 +354,11 @@ def test_cuda_generate_missing_template_branches() -> None:
     """Test generate with op_type missing from templates raises BackendNotSupportedError."""
     graph = IRGraph()
     graph.inputs = ["in_0"]
-    graph.nodes = {
-        "unmapped_op": IRNode(id="unmapped_op", op_type="UnsupportedCustomOp", inputs=["in_0"]),
-    }
+    graph.nodes = NodeDict(
+        {
+            "unmapped_op": IRNode(id="unmapped_op", op_type="UnsupportedCustomOp", inputs=["in_0"]),
+        }
+    )
     gen = CudaCodeGenerator(graph)
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         gen.generate()
@@ -404,7 +407,7 @@ def test_marshall_kernel_params() -> None:
         CustomVal(999),
         "100",
     ]
-    res = cast("EagerCallableProtocol", _marshall_kernel_params)(args)
+    res = typing.cast("EagerCallableProtocol", _marshall_kernel_params)(args)
     assert res is not None
     assert len(res) == 5
 
@@ -505,12 +508,14 @@ def test_cuda_expanded_templates() -> None:
     """Test code generation for newly added CUDA templates."""
     graph = IRGraph()
     graph.inputs = ["x", "w"]
-    graph.nodes = {
-        "conv3d": IRNode(id="conv3d", op_type="Conv3D", inputs=["x", "w"]),
-        "layernorm": IRNode(id="layernorm", op_type="LayerNorm", inputs=["x"]),
-        "attention": IRNode(id="attention", op_type="Attention", inputs=["x"]),
-        "bcast": IRNode(id="bcast", op_type="Broadcast_Elementwise", inputs=["x", "w"]),
-    }
+    graph.nodes = NodeDict(
+        {
+            "conv3d": IRNode(id="conv3d", op_type="Conv3D", inputs=["x", "w"]),
+            "layernorm": IRNode(id="layernorm", op_type="LayerNorm", inputs=["x"]),
+            "attention": IRNode(id="attention", op_type="Attention", inputs=["x"]),
+            "bcast": IRNode(id="bcast", op_type="Broadcast_Elementwise", inputs=["x", "w"]),
+        }
+    )
     gen = CudaCodeGenerator(graph)
     out = gen.generate()
     assert "conv3d" in out
@@ -541,7 +546,7 @@ def test_cuda_runner_ctypes_init_failure() -> None:
             mock_cdll.cuCtxCreate_v2.side_effect = RuntimeError("ctx error")
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_cdll):
                 runner = CUDARunner()
-                assert cast("EagerTensorProtocol", getattr(runner._ctx, "value")) is None
+                assert typing.cast("EagerTensorProtocol", getattr(runner._ctx, "value")) is None
 
 
 def test_cuda_runner_read_buffer_error() -> None:
@@ -572,8 +577,8 @@ def test_cuda_runner_cupy_nvrtc_exception_fallback() -> None:
         mock_nvrtc = MagicMock()
         mock_nvrtc.nvrtcCreateProgram.return_value = 0
         mock_nvrtc.nvrtcCompileProgram.return_value = 0
-        mock_nvrtc.nvrtcGetPTXSize.side_effect = lambda prog, s: (cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 32), 0)[1]
-        mock_nvrtc.nvrtcGetPTX.side_effect = lambda prog, b: (cast("EagerCallableProtocol", setattr)(b, "value", b"ptx_fallback"), 0)[1]
+        mock_nvrtc.nvrtcGetPTXSize.side_effect = lambda prog, s: (typing.cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 32), 0)[1]
+        mock_nvrtc.nvrtcGetPTX.side_effect = lambda prog, b: (typing.cast("EagerCallableProtocol", setattr)(b, "value", b"ptx_fallback"), 0)[1]
         mock_nvrtc.nvrtcDestroyProgram.return_value = 0
 
         with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc):
@@ -585,13 +590,15 @@ def test_cuda_runner_cupy_nvrtc_exception_fallback() -> None:
 def test_cuda_nccl_collective_emission() -> None:
     """Test CUDA code generator NCCL collective emission for AllReduce, AllGather, ReduceScatter, Broadcast."""
     graph = IRGraph()
-    graph.nodes = {
-        "x": IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[4, 4]),
-        "ar": IRNode(id="ar", op_type="AllReduce", inputs=["x"], shape_metadata=[4, 4]),
-        "ag": IRNode(id="ag", op_type="AllGather", inputs=["ar"], shape_metadata=[8, 4]),
-        "rs": IRNode(id="rs", op_type="ReduceScatter", inputs=["ag"], shape_metadata=[4, 4]),
-        "bc": IRNode(id="bc", op_type="Broadcast", inputs=["rs"], shape_metadata=[4, 4], attributes={"root": 1}),
-    }
+    graph.nodes = NodeDict(
+        {
+            "x": IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[4, 4]),
+            "ar": IRNode(id="ar", op_type="AllReduce", inputs=["x"], shape_metadata=[4, 4]),
+            "ag": IRNode(id="ag", op_type="AllGather", inputs=["ar"], shape_metadata=[8, 4]),
+            "rs": IRNode(id="rs", op_type="ReduceScatter", inputs=["ag"], shape_metadata=[4, 4]),
+            "bc": IRNode(id="bc", op_type="Broadcast", inputs=["rs"], shape_metadata=[4, 4], attributes={"root": 1}),
+        }
+    )
     graph.inputs = ["x"]
     graph.outputs = ["bc"]
 
@@ -662,13 +669,13 @@ def _test_cuda_additional_branches_part_2(_state: dict[str, EagerTensorProtocol]
     setattr(runner_exec, "synchronize", lambda: None)
     g = IRGraph()
     g.outputs = ["out_0"]
-    cast("EagerCallableProtocol", runner_exec.execute_graph)(g, {"barr": cast("EagerCallableProtocol", bytearray)(b"\x00\x00\x00\x00")})
+    typing.cast("EagerCallableProtocol", runner_exec.execute_graph)(g, {"barr": typing.cast("EagerCallableProtocol", bytearray)(b"\x00\x00\x00\x00")})
 
     # 4. FusedElementwise with empty inputs
     g_empty = IRGraph()
     n_empty = IRNode(id="fused_empty", op_type="FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
     n_empty.shape_metadata = (4,)
-    g_empty.nodes = {"fused_empty": n_empty}
+    g_empty.nodes = NodeDict({"fused_empty": n_empty})
     gen = CudaCodeGenerator(g_empty)
     assert "kernel_0" in gen.generate()
 
@@ -709,8 +716,8 @@ def _test_cuda_additional_branches_part_4(_state: dict[str, EagerTensorProtocol]
             mock_nvrtc_fail = MagicMock(spec=["nvrtcCreateProgram", "nvrtcCompileProgram", "nvrtcGetProgramLogSize", "nvrtcGetProgramLog"])
             mock_nvrtc_fail.nvrtcCreateProgram.return_value = 0
             mock_nvrtc_fail.nvrtcCompileProgram.return_value = 1
-            mock_nvrtc_fail.nvrtcGetProgramLogSize.side_effect = lambda prog, s: (cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
-            mock_nvrtc_fail.nvrtcGetProgramLog.side_effect = lambda prog, b: (cast("EagerCallableProtocol", setattr)(b, "value", b"err"), 0)[1]
+            mock_nvrtc_fail.nvrtcGetProgramLogSize.side_effect = lambda prog, s: (typing.cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
+            mock_nvrtc_fail.nvrtcGetProgramLog.side_effect = lambda prog, b: (typing.cast("EagerCallableProtocol", setattr)(b, "value", b"err"), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc_fail):
                 with pytest.raises(RuntimeError, match="NVRTC compilation failed"):
                     runner_ctypes.compile_cuda_to_ptx("code")
@@ -719,8 +726,8 @@ def _test_cuda_additional_branches_part_4(_state: dict[str, EagerTensorProtocol]
             mock_nvrtc_ok = MagicMock(spec=["nvrtcCreateProgram", "nvrtcCompileProgram", "nvrtcGetPTXSize", "nvrtcGetPTX"])
             mock_nvrtc_ok.nvrtcCreateProgram.return_value = 0
             mock_nvrtc_ok.nvrtcCompileProgram.return_value = 0
-            mock_nvrtc_ok.nvrtcGetPTXSize.side_effect = lambda prog, s: (cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
-            mock_nvrtc_ok.nvrtcGetPTX.side_effect = lambda prog, b: (cast("EagerCallableProtocol", setattr)(b, "value", b"ptx_code"), 0)[1]
+            mock_nvrtc_ok.nvrtcGetPTXSize.side_effect = lambda prog, s: (typing.cast("EagerCallableProtocol", setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
+            mock_nvrtc_ok.nvrtcGetPTX.side_effect = lambda prog, b: (typing.cast("EagerCallableProtocol", setattr)(b, "value", b"ptx_code"), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc_ok):
                 assert runner_ctypes.compile_cuda_to_ptx("code") == "ptx_code"
     getattr(_state, "update")({"mock_nvrtc_fail": mock_nvrtc_fail, "mock_nvrtc_ok": mock_nvrtc_ok, "runner_ctypes": runner_ctypes})
@@ -787,19 +794,19 @@ def _test_cuda_additional_branches_part_6(_state: dict[str, EagerTensorProtocol]
     setattr(mock_cuda.cuLaunchKernel, "return_value", 0)
     unmapped_node = IRNode("unmapped", "UnsupportedUnknownOp")
     gen_cuda = CudaCodeGenerator(IRGraph())
-    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_cuda, "ptx", {})
+    typing.cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_cuda, "ptx", {})
 
     mapped_node = IRNode("mapped", "Add", inputs=[])
     setattr(getattr(getattr(gen_cuda.config, "templates"), "__getitem__")("add"), "workgroup_size", [16, 16, 2])
-    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_cuda, "ptx", {})
+    typing.cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(mapped_node, 0, gen_cuda, "ptx", {})
 
     # FusedElementwise dispatch
     fused_node = IRNode("fused", "FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
-    cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(fused_node, 0, gen_cuda, "ptx", {})
+    typing.cast("EagerCallableProtocol", runner_sync._dispatch_compute_node)(fused_node, 0, gen_cuda, "ptx", {})
 
     # execute_graph with an unmapped op node
     g_unmapped = IRGraph()
-    g_unmapped.nodes = {"unmapped": unmapped_node}
+    g_unmapped.nodes = NodeDict({"unmapped": unmapped_node})
     with patch.object(runner_sync, "compile_cuda_to_ptx", return_value="// PTX"):
         with pytest.raises(BackendNotSupportedError, match="not supported"):
             runner_sync.execute_graph(g_unmapped, {})
@@ -858,10 +865,10 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
 
     # 2. _emit_node buffer freeing for FusedElementwise and standard op, including false condition branch
     gen = CudaCodeGenerator(IRGraph())
-    lines = cast("list[EagerTensorProtocol]", [])
+    lines = typing.cast("list[EagerTensorProtocol]", [])
     # FusedElementwise: input 'x' is freed, input 'y' is in inputs_set so skipped
     fused_node = IRNode("fused_node", "FusedElementwise", inputs=["x", "y"], attributes={"scalar_expr": "in0 + in1"})
-    cast("EagerCallableProtocol", gen._emit_node)(
+    typing.cast("EagerCallableProtocol", gen._emit_node)(
         fused_node,
         0,
         {"x": "d_x", "y": "d_y"},
@@ -902,8 +909,8 @@ def _test_cuda_full_coverage_branches_part_2(_state: dict[str, EagerTensorProtoc
     g_fused_inputs = IRGraph()
     inp = IRNode("in0", "Input")
     fused_with_inp = IRNode("fused_calc", "FusedElementwise", inputs=["in0"], attributes={"scalar_expr": "in0 * 2.0f"})
-    fused_with_inp.shape_metadata = [4]
-    g_fused_inputs.nodes = {"in0": inp, "fused_calc": fused_with_inp}
+    fused_with_inp.shape_metadata = (4,)
+    g_fused_inputs.nodes = NodeDict({"in0": inp, "fused_calc": fused_with_inp})
     g_fused_inputs.inputs = ["in0"]
     g_fused_inputs.outputs = ["fused_calc"]
     gen_fused = CudaCodeGenerator(g_fused_inputs)
@@ -982,11 +989,11 @@ def _test_cuda_full_coverage_branches_part_4(_state: dict[str, EagerTensorProtoc
 
     g_exec = IRGraph()
     inp_node = IRNode("inp", "Input")
-    inp_node.shape_metadata = [4]
+    inp_node.shape_metadata = (4,)
     calc_node = IRNode("calc", "Add", inputs=["inp"])
-    calc_node.shape_metadata = [4]
+    calc_node.shape_metadata = (4,)
     calc_node.attributes = {"buffer_offset": 0}
-    g_exec.nodes = {"inp": inp_node, "calc": calc_node}
+    g_exec.nodes = NodeDict({"inp": inp_node, "calc": calc_node})
     g_exec.inputs = ["inp"]
     g_exec.outputs = ["calc"]
 
@@ -1129,20 +1136,20 @@ def test_cuda_generator_synthesized_kernels_and_runner_none_lib() -> None:
     n_unary = IRNode(id="n_un", op_type="CustomSynthUnary", inputs=["in0"])
     n_bin = IRNode(id="n_bin", op_type="CustomSynthBinary", inputs=["in0", "in1"])
     n_tri = IRNode(id="n_tri", op_type="CustomSynthTernary", inputs=["in0", "in1", "in2"])
-    g.nodes = {"n_un": n_unary, "n_bin": n_bin, "n_tri": n_tri}
+    g.nodes = NodeDict({"n_un": n_unary, "n_bin": n_bin, "n_tri": n_tri})
     gen = CudaCodeGenerator(g)
 
     tpl_unary = gen._ensure_template(n_unary, 0)
     assert tpl_unary is not None
-    assert "customsynthunary_kernel" in cast("EagerTensorProtocol", getattr(tpl_unary, "body"))
+    assert "customsynthunary_kernel" in typing.cast("EagerTensorProtocol", getattr(tpl_unary, "body"))
 
     tpl_bin = gen._ensure_template(n_bin, 1)
     assert tpl_bin is not None
-    assert "customsynthbinary_kernel" in cast("EagerTensorProtocol", getattr(tpl_bin, "body"))
+    assert "customsynthbinary_kernel" in typing.cast("EagerTensorProtocol", getattr(tpl_bin, "body"))
 
     tpl_tri = gen._ensure_template(n_tri, 2)
     assert tpl_tri is not None
-    assert "customsynthternary_kernel" in cast("EagerTensorProtocol", getattr(tpl_tri, "body"))
+    assert "customsynthternary_kernel" in typing.cast("EagerTensorProtocol", getattr(tpl_tri, "body"))
 
     # Unsupported operation raises BackendNotSupportedError
     n_unsup = IRNode(id="n_unsup", op_type="UnsupportedCustomOp", inputs=["in0"])
@@ -1173,7 +1180,7 @@ def test_cuda_generator_synthesized_kernels_and_runner_none_lib() -> None:
     # 3. generate() loop where _ensure_template returns None for op_type not in (input, output) (branch 348->332)
     g_custom = IRGraph()
     n_custom = IRNode(id="n_c", op_type="CustomNoTpl", inputs=[])
-    g_custom.nodes = {"n_c": n_custom}
+    g_custom.nodes = NodeDict({"n_c": n_custom})
     gen_custom = CudaCodeGenerator(g_custom)
     with patch.object(gen_custom, "_ensure_template", return_value=None):
         code = gen_custom.generate()
@@ -1216,7 +1223,7 @@ def test_cuda_prepare_input_buffers() -> None:
     wrapped = _WrapperWithData(np.array([4, 5], dtype=np.int32))
     list_raw = [1, 2, 3]
 
-    buffers = cast("EagerCallableProtocol", _prepare_cuda_input_buffers)(
+    buffers = typing.cast("EagerCallableProtocol", _prepare_cuda_input_buffers)(
         graph,
         (arr, b_raw, ba_raw, mv_raw, wrapped, list_raw),
     )
@@ -1248,7 +1255,7 @@ def test_cuda_evaluate_fallback() -> None:
     g_single = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
     n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_single.nodes = {"x": n_in, "out": n_exp}
+    g_single.nodes = NodeDict({"x": n_in, "out": n_exp})
     g_single.inputs = ["x"]
     g_single.outputs = ["out"]
 
@@ -1257,14 +1264,14 @@ def test_cuda_evaluate_fallback() -> None:
     assert res_single is not None
 
     # Test with arg.data wrapper and extra arguments
-    res_wrapper = cast("EagerCallableProtocol", _evaluate_cuda_fallback)(g_single, (cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
+    res_wrapper = typing.cast("EagerCallableProtocol", _evaluate_cuda_fallback)(g_single, (typing.cast("EagerCallableProtocol", _MockTensor)(arr), "extra_arg"))
     assert res_wrapper is not None
 
     # 2. Multi output graph
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.nodes = NodeDict({"x": n_in, "out1": n_out1, "out2": n_out2})
     g_multi.inputs = ["x"]
     g_multi.outputs = ["out1", "out2"]
 
@@ -1274,7 +1281,7 @@ def test_cuda_evaluate_fallback() -> None:
 
     # 3. Empty output graph
     g_empty = IRGraph()
-    g_empty.nodes = {"x": n_in}
+    g_empty.nodes = NodeDict({"x": n_in})
     g_empty.inputs = ["x"]
     g_empty.outputs = []
 
@@ -1290,7 +1297,7 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     graph = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2])
     n_exp = IRNode(id="out", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    graph.nodes = {"x": n_in, "out": n_exp}
+    graph.nodes = NodeDict({"x": n_in, "out": n_exp})
     graph.inputs = ["x"]
     graph.outputs = ["out"]
 
@@ -1306,7 +1313,7 @@ def test_cuda_compile_and_runner_dispatch() -> None:
         artifact = gen.compile_aot(graph, compile_options=["-O3"])
         assert isinstance(artifact, CompiledArtifact)
         assert artifact.binary_bytes == b".version 7.0\n.target sm_70"
-        assert cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "nvcc"
+        assert typing.cast("EagerTensorProtocol", getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "nvcc"
 
     # 2. Compile without list options and without assembly ptx
     mock_comp_empty = HardwareCompilationResult(
@@ -1324,14 +1331,14 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     mock_runner.execute_graph.return_value = {"out": np.array([42.0])}
     with patch.object(CUDARunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner):
-            res_avail = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
-            assert cast("EagerCallableProtocol", np.array_equal)(res_avail, cast("EagerCallableProtocol", np.array)([42.0]))
+            res_avail = typing.cast("EagerCallableProtocol", artifact.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            assert typing.cast("EagerCallableProtocol", np.array_equal)(res_avail, typing.cast("EagerCallableProtocol", np.array)([42.0]))
 
     # 3b. Multi output
     g_multi = IRGraph()
     n_out1 = IRNode(id="out1", op_type="Exp", inputs=["x"], shape_metadata=[2])
     n_out2 = IRNode(id="out2", op_type="Exp", inputs=["x"], shape_metadata=[2])
-    g_multi.nodes = {"x": n_in, "out1": n_out1, "out2": n_out2}
+    g_multi.nodes = NodeDict({"x": n_in, "out1": n_out1, "out2": n_out2})
     g_multi.inputs = ["x"]
     g_multi.outputs = ["out1", "out2"]
     gen_multi = CudaCodeGenerator(g_multi)
@@ -1342,7 +1349,7 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     mock_runner_multi.execute_graph.return_value = {"out1": 100, "out2": 200}
     with patch.object(CUDARunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner_multi):
-            res_m = cast("EagerCallableProtocol", art_multi.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            res_m = typing.cast("EagerCallableProtocol", art_multi.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_m == (100, 200)
 
     # 3c. Exception inside CUDARunner block falls back to evaluator
@@ -1350,12 +1357,12 @@ def test_cuda_compile_and_runner_dispatch() -> None:
     mock_runner_err.execute_graph.side_effect = RuntimeError("GPU crash")
     with patch.object(CUDARunner, "is_available", return_value=True):
         with patch("ml_switcheroo_compiler.backends.cuda.cuda.CUDARunner", return_value=mock_runner_err):
-            res_err = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+            res_err = typing.cast("EagerCallableProtocol", artifact.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
             assert res_err is not None
 
     # 4. Runner when CUDARunner.is_available() is False -> fallback
     with patch.object(CUDARunner, "is_available", return_value=False):
-        res_fallback = cast("EagerCallableProtocol", artifact.callable_fn)(cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
+        res_fallback = typing.cast("EagerCallableProtocol", artifact.callable_fn)(typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0], dtype=np.float32))
         assert res_fallback is not None
 
 
@@ -1376,7 +1383,7 @@ def test_cuda_generator_loop_options_coverage() -> None:
             "shape_invariants": [(2,)],
         },
     )
-    g1.nodes = {"in1": n_in, "loop1": n_loop1}
+    g1.nodes = NodeDict({"in1": n_in, "loop1": n_loop1})
     g1.inputs = ["in1"]
     g1.outputs = ["loop1"]
     code1 = CudaCodeGenerator(g1).generate()
@@ -1402,7 +1409,7 @@ def test_cuda_generator_loop_options_coverage() -> None:
             "shape_invariants": None,
         },
     )
-    g2.nodes = {"in1": n_in, "loop2": n_loop2}
+    g2.nodes = NodeDict({"in1": n_in, "loop2": n_loop2})
     g2.inputs = ["in1"]
     g2.outputs = ["loop2"]
     code2 = CudaCodeGenerator(g2).generate()
@@ -1422,7 +1429,7 @@ def test_cuda_generator_loop_options_coverage() -> None:
             "swap_memory": False,
         },
     )
-    g3.nodes = {"in1": n_in, "loop3": n_loop3}
+    g3.nodes = NodeDict({"in1": n_in, "loop3": n_loop3})
     g3.inputs = ["in1"]
     g3.outputs = ["loop3"]
     code3 = CudaCodeGenerator(g3).generate()

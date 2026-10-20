@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @global_eager_registry.register("Argpartition")
-def _argpartition(backend_module: EagerValue, a: EagerValue, kth: EagerValue, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
+def _argpartition(backend_module: BackendModuleProtocol, a: EagerValue, kth: EagerValue, axis: int = -1, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager argpartition operation on the active backend array.
 
     Args:
@@ -27,7 +28,7 @@ def _argpartition(backend_module: EagerValue, a: EagerValue, kth: EagerValue, ax
 
 
 @global_eager_registry.register("Median")
-def _median(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _median(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager median operation on the active backend array.
 
     Args:
@@ -38,11 +39,11 @@ def _median(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, getattr(backend_module, "median")(*args, **kwargs))
+    return typing.cast("EagerValue", getattr(backend_module, "median")(*args, **kwargs))
 
 
 @global_eager_registry.register("Percentile")
-def _percentile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _percentile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager percentile operation on the active backend array.
 
     Args:
@@ -53,11 +54,11 @@ def _percentile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, getattr(backend_module, "percentile")(*args, **kwargs))
+    return typing.cast("EagerValue", getattr(backend_module, "percentile")(*args, **kwargs))
 
 
 @global_eager_registry.register("Quantile")
-def _quantile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _quantile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager quantile operation on the active backend array.
 
     Args:
@@ -68,11 +69,11 @@ def _quantile(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, getattr(backend_module, "quantile")(*args, **kwargs))
+    return typing.cast("EagerValue", getattr(backend_module, "quantile")(*args, **kwargs))
 
 
 @global_eager_registry.register("Partition")
-def _np_partition(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np partition operation on the active backend array.
 
     Args:
@@ -85,5 +86,5 @@ def _np_partition(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     """
     func = getattr(backend_module, "partition", getattr(backend_module, "partition", None))
     if func is not None:
-        return cast(EagerValue, func(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).partition(*args, **kwargs))
+        return typing.cast("EagerValue", func(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).partition(*args, **kwargs)

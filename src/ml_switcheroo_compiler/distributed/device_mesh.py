@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from collections.abc import Sequence
-from typing import Optional
 
 import yaml
 
@@ -22,7 +21,7 @@ class DeviceMesh:
         self,
         shape: Sequence[int],
         axis_names: Sequence[str],
-        devices: Optional[Sequence[int]] = None,
+        devices: Sequence[int] | None = None,
     ) -> None:
         """Initialize DeviceMesh.
 
@@ -54,7 +53,7 @@ class DeviceMesh:
             self.devices = tuple(range(expected_devices))
 
     @classmethod
-    def from_yaml(cls, name: str = "default", yaml_path: Optional[str] = None) -> DeviceMesh:
+    def from_yaml(cls, name: str = "default", yaml_path: str | None = None) -> DeviceMesh:
         """Load a DeviceMesh configuration from a declarative YAML specification.
 
         Args:

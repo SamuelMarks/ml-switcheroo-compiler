@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged as sr
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -25,9 +25,9 @@ def test_sparse_and_ragged_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t", "sp_input"):
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
             else:
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
         with pytest.raises(TypeError):
             op(*args_to_pass)
         try:

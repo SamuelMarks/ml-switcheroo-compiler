@@ -112,12 +112,15 @@ def test_lint_any_ast_scanner(tmp_path: Path) -> None:
     any_name = "A" + "ny"
     src_file.write_text(
         f"""import typing
-from typing import {any_name}
+from typing import {any_name}, cast
 from ml_switcheroo_compiler.backends.registry import EagerValue
 AnyType = int
 x: object = 1
 def fn(a: {any_name}, *args: object, **kwargs: typing.{any_name}) -> {any_name}:
-    return a
+    y = cast("dict[str, {any_name}]", a)
+    z = cast("broken[", a)
+    w = typing.cast(object, y)
+    return w
 """,
         encoding="utf-8",
     )
@@ -130,6 +133,8 @@ def fn(a: {any_name}, *args: object, **kwargs: typing.{any_name}) -> {any_name}:
     assert any("prohibited *args annotation 'object'" in v for v in violations)
     assert any(f"prohibited **kwargs annotation 'typing.{any_name}'" in v for v in violations)
     assert any(f"prohibited return annotation '{any_name}'" in v for v in violations)
+    assert any(f"prohibited string-literal cast '{any_name}'" in v for v in violations)
+    assert any("prohibited cast 'object'" in v for v in violations)
 
     with pytest.raises(SystemExit) as exc_fail:
         la.main(["--target-dir", str(tmp_path), "--max-count", "0"])

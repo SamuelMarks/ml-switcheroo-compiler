@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array, _jax_from_numpy, _mlx_from_numpy, _to_channels_last, _to_numpy_array, _torch_from_numpy
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -60,9 +60,9 @@ class DummyTensorTorch:
                         """Test function numpy."""
                         return "torch_numpy_res"
 
-                return cast("EagerTensorProtocol", Numpy())
+                return typing.cast("EagerTensorProtocol", Numpy())
 
-        return cast("EagerTensorProtocol", Cpu())
+        return typing.cast("EagerTensorProtocol", Cpu())
 
 
 class DummyOriginal:
@@ -76,26 +76,26 @@ def test_to_numpy_array() -> None:
     np_mod = DummyNp()
 
     t1 = DummyTensorWithNumpy()
-    assert cast("EagerCallableProtocol", _to_numpy_array)(np_mod, t1, "test") == "numpy_res"
+    assert typing.cast("EagerCallableProtocol", _to_numpy_array)(np_mod, t1, "test") == "numpy_res"
 
     t2 = DummyTensorTorch()
-    assert cast("EagerCallableProtocol", _to_numpy_array)(np_mod, t2, "torch") == "torch_numpy_res"
+    assert typing.cast("EagerCallableProtocol", _to_numpy_array)(np_mod, t2, "torch") == "torch_numpy_res"
 
-    assert cast("EagerCallableProtocol", _to_numpy_array)(np_mod, "other", "test") == "np_asarray_res"
+    assert typing.cast("EagerCallableProtocol", _to_numpy_array)(np_mod, "other", "test") == "np_asarray_res"
 
 
 def test_from_numpy_array() -> None:
     """Test function test_from_numpy_array."""
     backend = DummyNp()
 
-    assert cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "torch") == "out"
-    assert cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "mlx.core") == "out"
-    assert cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "jax.numpy") == "out"
+    assert typing.cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "torch") == "out"
+    assert typing.cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "mlx.core") == "out"
+    assert typing.cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "jax.numpy") == "out"
 
-    assert cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "other") == "np_array_res"
+    assert typing.cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "other") == "np_array_res"
 
     orig = DummyOriginal()
-    assert cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "other", orig) == "np_array_res_float32"
+    assert typing.cast("EagerCallableProtocol", _from_numpy_array)(backend, "out", "other", orig) == "np_array_res_float32"
 
 
 def test_other_utils() -> None:

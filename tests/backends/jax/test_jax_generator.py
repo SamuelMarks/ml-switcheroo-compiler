@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING
+import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 

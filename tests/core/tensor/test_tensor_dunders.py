@@ -7,7 +7,7 @@ unary, indexing, and type conversion operations in eager mode.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -19,7 +19,7 @@ from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -91,8 +91,8 @@ def test_tensor_dunders_extra() -> None:
     assert not (t1 > t2).data
     assert (t1 <= t2).data
     assert not (t1 >= t2).data
-    assert not cast("EagerTensorProtocol", getattr(t1 == t2, "data"))
-    assert cast("EagerTensorProtocol", getattr(t1 != t2, "data"))
+    assert not typing.cast("EagerTensorProtocol", getattr(t1 == t2, "data"))
+    assert typing.cast("EagerTensorProtocol", getattr(t1 != t2, "data"))
 
 
 def test_tensor_errors() -> None:
@@ -126,6 +126,7 @@ def test_tensor_tracing_eval() -> None:
             pt = ProxyTensor("test_id", (1,), DType.Float32)
             t = Tensor(pt, TensorConfig((1,), DType.Float32, Device(DeviceType.CPU)))
             t.eval()
+            assert global_tracing_state.active_graph is not None
             assert "test_id" in global_tracing_state.active_graph.outputs
             t.eval()
         finally:

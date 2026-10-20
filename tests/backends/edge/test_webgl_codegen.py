@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 import numpy as np
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
@@ -22,7 +23,7 @@ def test_webgl_slice_codegen() -> None:
         shape_metadata=(16, 32),
         attributes={"starts": [8, 16], "ends": [24, 48]},
     )
-    graph.nodes = {"in_0": in_node, "slice_0": slice_node}
+    graph.nodes = NodeDict({"in_0": in_node, "slice_0": slice_node})
     graph.inputs = ["in_0"]
     graph.outputs = ["slice_0"]
 
@@ -47,7 +48,7 @@ def test_webgl_concat_codegen() -> None:
         shape_metadata=(32, 32),
         attributes={"axis": 0},
     )
-    graph.nodes = {"in_a": in_a, "in_b": in_b, "concat_0": concat_node}
+    graph.nodes = NodeDict({"in_a": in_a, "in_b": in_b, "concat_0": concat_node})
     graph.inputs = ["in_a", "in_b"]
     graph.outputs = ["concat_0"]
 
@@ -70,7 +71,7 @@ def test_webgl_reduce_codegen() -> None:
         shape_metadata=(16, 1),
         attributes={"axis": 1},
     )
-    graph.nodes = {"in_a": in_a, "reduce_0": reduce_node}
+    graph.nodes = NodeDict({"in_a": in_a, "reduce_0": reduce_node})
     graph.inputs = ["in_a"]
     graph.outputs = ["reduce_0"]
 
@@ -92,7 +93,7 @@ def test_webgl_texture_packing_3d_and_4d() -> None:
         inputs=["in_0"],
         shape_metadata=(2, 8, 14, 14),
     )
-    graph_4d.nodes = {"in_0": in_0, "conv_0": conv_0}
+    graph_4d.nodes = NodeDict({"in_0": in_0, "conv_0": conv_0})
     graph_4d.inputs = ["in_0"]
     graph_4d.outputs = ["conv_0"]
 
@@ -125,16 +126,18 @@ def test_webgl_starts_and_dynamic_conv_edge_branches() -> None:
     in_dyn = IRNode("in_dyn", "Input", shape_metadata=["dynamic_batch", 16, 16])
     conv_dyn = IRNode("conv_dyn", "Conv2D", inputs=["in_dyn"], shape_metadata=["dynamic_batch", 16, 16])
 
-    graph.nodes = {
-        "in": in_node,
-        "slice_int": slice_int,
-        "slice_1": slice_1,
-        "slice_2": slice_2,
-        "slice_empty": slice_empty,
-        "slice_str": slice_str,
-        "in_dyn": in_dyn,
-        "conv_dyn": conv_dyn,
-    }
+    graph.nodes = NodeDict(
+        {
+            "in": in_node,
+            "slice_int": slice_int,
+            "slice_1": slice_1,
+            "slice_2": slice_2,
+            "slice_empty": slice_empty,
+            "slice_str": slice_str,
+            "in_dyn": in_dyn,
+            "conv_dyn": conv_dyn,
+        }
+    )
     graph.inputs = ["in", "in_dyn"]
     graph.outputs = ["slice_int", "slice_1", "slice_2", "slice_empty", "slice_str", "conv_dyn"]
 
@@ -152,7 +155,7 @@ def test_webgl_starts_and_dynamic_conv_edge_branches() -> None:
         inputs=["in_3d"],
         shape_metadata=(4, 10, 20),
     )
-    graph_3d.nodes = {"in_3d": in_3d, "relu_0": relu_0}
+    graph_3d.nodes = NodeDict({"in_3d": in_3d, "relu_0": relu_0})
     graph_3d.inputs = ["in_3d"]
     graph_3d.outputs = ["relu_0"]
 
@@ -167,7 +170,7 @@ def test_webgl_coordinate_transformations_uniforms() -> None:
     graph = IRGraph(name="test_coord_uniforms")
     in_0 = IRNode(id="in_0", op_type="Input", shape_metadata=(2, 4, 8))
     node_op = IRNode(id="exp_0", op_type="Exp", inputs=["in_0"], shape_metadata=(2, 4, 8))
-    graph.nodes = {"in_0": in_0, "exp_0": node_op}
+    graph.nodes = NodeDict({"in_0": in_0, "exp_0": node_op})
     graph.inputs = ["in_0"]
     graph.outputs = ["exp_0"]
 
@@ -196,7 +199,7 @@ def test_webgl_slice_and_concat_runner() -> None:
         shape_metadata=(2, 2),
         attributes={"dim": 0, "start": 0, "end": 2},
     )
-    graph.nodes = {"x": in_x, "s": slice_op}
+    graph.nodes = NodeDict({"x": in_x, "s": slice_op})
     graph.inputs = ["x"]
     graph.outputs = ["s"]
 
@@ -205,4 +208,4 @@ def test_webgl_slice_and_concat_runner() -> None:
 
     inp = np.arange(16, dtype=np.float32).reshape(4, 4)
     res = artifact(inp)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp[0:2, :])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp[0:2, :])

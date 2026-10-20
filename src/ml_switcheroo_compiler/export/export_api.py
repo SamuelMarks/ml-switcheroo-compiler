@@ -5,12 +5,11 @@ from __future__ import annotations
 import logging
 import os
 import typing
-from collections.abc import Callable
-from typing import Optional
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.export.pb_utils import ProtobufWriter
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -22,30 +21,12 @@ class ExportArchive:
         """Initialize `ExportArchive` with empty trackables, endpoints, and variable collections."""
         self.trackables: dict[
             int,
-            typing.Union[
-                int,
-                float,
-                str,
-                bool,
-                list[AttributeValue],
-                tuple[AttributeValue, ...],
-                dict[str, AttributeValue],
-                None,
-            ],
+            int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
         ] = {}
-        self.endpoints: dict[str, Callable[..., AttributeValue]] = {}
+        self.endpoints: dict[str, TypedVariadicCallable[AttributeValue]] = {}
         self.collections: dict[
             str,
-            typing.Union[
-                int,
-                float,
-                str,
-                bool,
-                list[AttributeValue],
-                tuple[AttributeValue, ...],
-                dict[str, AttributeValue],
-                None,
-            ],
+            int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
         ] = {}
 
         yaml_path = os.path.join(os.path.dirname(__file__), "tf_schema.yaml")
@@ -57,16 +38,7 @@ class ExportArchive:
 
     def track(
         self,
-        resource: typing.Union[
-            int,
-            float,
-            str,
-            bool,
-            list[AttributeValue],
-            tuple[AttributeValue, ...],
-            dict[str, AttributeValue],
-            None,
-        ],
+        resource: int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
     ) -> None:
         """Register a trackable variable or resource with the archive.
 
@@ -78,27 +50,18 @@ class ExportArchive:
     def add_endpoint(
         self,
         name: str,
-        fn: Callable[..., AttributeValue],
-        **kwargs: typing.Union[
-            int,
-            float,
-            str,
-            bool,
-            list[AttributeValue],
-            tuple[AttributeValue, ...],
-            dict[str, AttributeValue],
-            None,
-        ],
+        fn: TensorOrScalar,
+        **kwargs: int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
     ) -> None:
         """Register a named callable endpoint for signature export.
 
         Args:
             name (str): Endpoint signature name.
-            fn (Callable[..., AttributeValue]): Callable endpoint function.
+            fn (TensorOrScalar): Callable endpoint function.
             **kwargs (Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None]): Optional endpoint metadata.
         """
         _ = kwargs
-        self.endpoints[name] = fn
+        self.endpoints[name] = typing.cast(TypedVariadicCallable[AttributeValue], fn)
 
     def _get_tf_dtype(self, dtype_str: str) -> int:
         """Map an IR dtype string to its protobuf `DataType` enum integer.
@@ -128,7 +91,7 @@ class ExportArchive:
             raise ValueError(f"Operation '{op_type}' cannot be exported to TensorFlow schema.")
         return str(mapped)
 
-    def _build_signature_def(self, name: str, graph: Optional[IRGraph] = None) -> ProtobufWriter:
+    def _build_signature_def(self, name: str, graph: IRGraph | None = None) -> ProtobufWriter:
         """Build a `SignatureDef` protobuf message for endpoint `name`.
 
         Args:
@@ -175,7 +138,7 @@ class ExportArchive:
 
         return sig
 
-    def _build_graph_def(self, graph: Optional[IRGraph] = None) -> ProtobufWriter:
+    def _build_graph_def(self, graph: IRGraph | None = None) -> ProtobufWriter:
         """Build a `GraphDef` protobuf message from `graph`.
 
         Args:
@@ -206,7 +169,7 @@ class ExportArchive:
         graph_def.add_message(4, versions)
         return graph_def
 
-    def _build_saved_model(self, graph: Optional[IRGraph] = None) -> bytes:
+    def _build_saved_model(self, graph: IRGraph | None = None) -> bytes:
         """Build the serialized `SavedModel` protobuf byte payload.
 
         Args:
@@ -233,8 +196,8 @@ class ExportArchive:
     def write_out(
         self,
         filepath: str,
-        options: typing.Union[dict[str, AttributeValue], None] = None,
-        graph: Optional[IRGraph] = None,
+        options: dict[str, AttributeValue] | None = None,
+        graph: IRGraph | None = None,
     ) -> None:
         """Write the `SavedModel` directory structure (`saved_model.pb` and `variables/`) to `filepath`.
 
@@ -266,7 +229,7 @@ class ExportArchive:
     def add_variable_collection(
         self,
         name: str,
-        variables: typing.Union[list[AttributeValue], dict[str, AttributeValue], tuple[AttributeValue, ...]],
+        variables: list[AttributeValue] | dict[str, AttributeValue] | tuple[AttributeValue, ...],
     ) -> None:
         """Add a named variable collection to the archive.
 

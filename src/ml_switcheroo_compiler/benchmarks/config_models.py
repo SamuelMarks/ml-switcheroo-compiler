@@ -1,14 +1,16 @@
 """Data models for benchmark plans, configurations, and performance results."""
 
+from __future__ import annotations
+
 import os
-from typing import Optional, Union
+import typing
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from pydantic import BaseModel, ConfigDict, Field
 
-CompileOptionValue = Union[str, int, float, bool]
-NodeAttributeValue = Union[str, int, float, bool, list[int], list[float]]
+CompileOptionValue = typing.Union[str, int, float, "bool"]
+NodeAttributeValue = typing.Union[str, int, float, bool, list[int], "list[float]"]
 
 
 class DeviceConstraintSpec(BaseModel):
@@ -21,8 +23,8 @@ class DeviceConstraintSpec(BaseModel):
         require_accelerator (bool): Whether execution requires an accelerator.
     """
 
-    min_memory_mb: Optional[float] = None
-    max_memory_mb: Optional[float] = None
+    min_memory_mb: float | None = None
+    max_memory_mb: float | None = None
     device_types: list[str] = Field(default_factory=lambda: ["cpu", "cuda", "mps"])
     require_accelerator: bool = False
 
@@ -57,10 +59,10 @@ class LatencyThresholdSpec(BaseModel):
         min_throughput_items_per_sec (Optional[float]): Minimum throughput in items per second.
     """
 
-    max_mean_latency_ms: Optional[float] = None
-    max_p95_latency_ms: Optional[float] = None
-    max_p99_latency_ms: Optional[float] = None
-    min_throughput_items_per_sec: Optional[float] = None
+    max_mean_latency_ms: float | None = None
+    max_p95_latency_ms: float | None = None
+    max_p99_latency_ms: float | None = None
+    min_throughput_items_per_sec: float | None = None
 
 
 LatencyThreshold = LatencyThresholdSpec
@@ -78,10 +80,10 @@ class BenchmarkTarget(BaseModel):
     """
 
     backend: str
-    device: Optional[str] = None
+    device: str | None = None
     compile_options: dict[str, CompileOptionValue] = Field(default_factory=dict)
-    device_constraints: Optional[DeviceConstraintSpec] = None
-    precision_target: Optional[PrecisionTargetSpec] = None
+    device_constraints: DeviceConstraintSpec | None = None
+    precision_target: PrecisionTargetSpec | None = None
 
 
 class BenchmarkPlan(BaseModel):
@@ -104,7 +106,7 @@ class BenchmarkPlan(BaseModel):
     """
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     models: list[str]
     batch_sizes: list[int]
     targets: list[BenchmarkTarget]
@@ -112,9 +114,9 @@ class BenchmarkPlan(BaseModel):
     warmup_iterations: int = 10
     input_shapes: dict[str, list[int]] = Field(default_factory=dict)
     dtypes: list[str] = Field(default_factory=lambda: ["float32"])
-    device_constraints: Optional[DeviceConstraintSpec] = None
-    precision_target: Optional[PrecisionTargetSpec] = None
-    latency_thresholds: Optional[LatencyThresholdSpec] = None
+    device_constraints: DeviceConstraintSpec | None = None
+    precision_target: PrecisionTargetSpec | None = None
+    latency_thresholds: LatencyThresholdSpec | None = None
     isolate_process: bool = False
 
 
@@ -158,14 +160,14 @@ class BenchmarkRunResult(BaseModel):
     p50_latency_ms: float
     p95_latency_ms: float
     p99_latency_ms: float
-    peak_memory_mb: Optional[float] = None
+    peak_memory_mb: float | None = None
     throughput_items_per_sec: float
-    p90_latency_ms: Optional[float] = None
-    min_latency_ms: Optional[float] = None
-    max_latency_ms: Optional[float] = None
-    std_latency_ms: Optional[float] = None
-    gflops: Optional[float] = None
-    bandwidth_gb_s: Optional[float] = None
+    p90_latency_ms: float | None = None
+    min_latency_ms: float | None = None
+    max_latency_ms: float | None = None
+    std_latency_ms: float | None = None
+    gflops: float | None = None
+    bandwidth_gb_s: float | None = None
     model_config = ConfigDict(extra="allow")
 
     def to_json(self) -> str:
@@ -227,7 +229,7 @@ class ModelWorkload(BaseModel):
         outputs (list[str]): Output node IDs.
     """
 
-    description: Optional[str] = None
+    description: str | None = None
     batch_sizes: list[int] = Field(default_factory=lambda: [1, 8, 32])
     inputs: dict[str, WorkloadTensorSpec]
     weights: dict[str, WorkloadTensorSpec] = Field(default_factory=dict)
@@ -263,8 +265,8 @@ class BackendProfile(BaseModel):
     default_warmup_iterations: int
     default_measured_iterations: int
     memory_tracking: str
-    profiler_module: Optional[str] = None
-    profiler_class: Optional[str] = None
+    profiler_module: str | None = None
+    profiler_class: str | None = None
     model_config = ConfigDict(extra="allow")
 
 
@@ -305,7 +307,7 @@ class BaselinePerformanceTarget(BaseModel):
     baseline_mean_latency_ms: float
     regression_threshold_percent: float = 15.0
     target_throughput_items_per_sec: float = 10.0
-    max_peak_memory_mb: Optional[float] = None
+    max_peak_memory_mb: float | None = None
     model_config = ConfigDict(extra="allow")
 
 
@@ -320,7 +322,7 @@ class PerfBaselinesManifestModel(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-def load_perf_baselines(path: Optional[str] = None) -> PerfBaselinesManifestModel:
+def load_perf_baselines(path: str | None = None) -> PerfBaselinesManifestModel:
     """Load baseline performance targets and regression thresholds from YAML.
 
     Args:
@@ -380,7 +382,7 @@ def load_benchmark_suite(yaml_path: str) -> BenchmarkSuite:
     return BenchmarkSuite(**data)
 
 
-def load_model_workloads(yaml_path: Optional[str] = None) -> dict[str, ModelWorkload]:
+def load_model_workloads(yaml_path: str | None = None) -> dict[str, ModelWorkload]:
     """Load model workloads from declarative YAML manifest.
 
     Args:
@@ -414,7 +416,7 @@ def load_model_workloads(yaml_path: Optional[str] = None) -> dict[str, ModelWork
     return manifest.models
 
 
-def load_workloads(yaml_path: Optional[str] = None) -> dict[str, ModelWorkload]:
+def load_workloads(yaml_path: str | None = None) -> dict[str, ModelWorkload]:
     """Load workloads from declarative workloads manifest.
 
     Args:
@@ -426,7 +428,7 @@ def load_workloads(yaml_path: Optional[str] = None) -> dict[str, ModelWorkload]:
     return load_model_workloads(yaml_path)
 
 
-def load_backend_profiles_manifest(yaml_path: Optional[str] = None) -> BackendProfilesManifest:
+def load_backend_profiles_manifest(yaml_path: str | None = None) -> BackendProfilesManifest:
     """Load backend profiles manifest from YAML configuration.
 
     Args:
@@ -451,7 +453,7 @@ def load_backend_profiles_manifest(yaml_path: Optional[str] = None) -> BackendPr
     return BackendProfilesManifest(**data)
 
 
-def load_backend_profiles(yaml_path: Optional[str] = None) -> dict[str, BackendProfile]:
+def load_backend_profiles(yaml_path: str | None = None) -> dict[str, BackendProfile]:
     """Load backend profiles from declarative YAML manifest.
 
     Args:

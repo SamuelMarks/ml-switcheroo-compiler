@@ -1,5 +1,7 @@
 """Type promotion rules for ml-switcheroo."""
 
+from __future__ import annotations
+
 import os
 
 import yaml

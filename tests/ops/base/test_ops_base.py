@@ -6,12 +6,13 @@ correctly, and that eager and tracing execution modes behave as expected.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -22,7 +23,7 @@ from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, OpDef, get_op, reg
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -173,7 +174,7 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
             get_op("UnknownOp")
     finally:
         _OP_REGISTRY.clear()
-        cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
+        typing.cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
     _state.update(locals())
 
 
@@ -335,7 +336,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
     finally:
         config.eager_mode = False
         _OP_REGISTRY.clear()
-        cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
+        typing.cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
     _state.update(locals())
 
 
@@ -498,7 +499,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
             assert t_out.device is dev
             assert t_out.shape == (3,)
             assert t_out.dtype == DType.Float32
-            nodes = list(cast("EagerTensorProtocol", getattr(global_tracing_state.active_graph, "nodes")).values())
+            nodes = list(typing.cast("EagerTensorProtocol", getattr(global_tracing_state.active_graph, "nodes")).values())
             assert len(nodes) == 1
             assert nodes[0].op_type == "TestTraceOp"
             assert nodes[0].inputs == ["in1"]
@@ -508,7 +509,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
             op(t_in)
     finally:
         _OP_REGISTRY.clear()
-        cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
+        typing.cast("EagerCallableProtocol", _OP_REGISTRY.update)(original_registry)
     _state.update(locals())
 
 
@@ -557,12 +558,12 @@ def test_dispatch_eager_wrapper() -> None:
             t1: Test parameter `t1`.
             t2: Test parameter `t2`.
         """
-        return "not eager"
         assert callable(test_func)
+        return "not eager"
 
     with patch("ml_switcheroo_compiler.ops.base.config") as mock_config:
         mock_config.eager_mode = False
-        assert test_func(1, 2) == "not eager"
+        assert test_func(typing.cast("EagerTensorProtocol", 1), typing.cast("EagerTensorProtocol", 2)) == "not eager"
         mock_config.eager_mode = True
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get_backend:
             backend = MagicMock()
@@ -575,10 +576,10 @@ def test_dispatch_eager_wrapper() -> None:
             from ml_switcheroo_compiler.core.dtype import DType
 
             t1.dtype = DType.Float32
-            res = test_func(t1, 2)
+            res = test_func(t1, typing.cast("EagerTensorProtocol", 2))
             assert isinstance(res, Tensor)
             backend.execute_op.return_value = ("backend_res1", "backend_res2")
-            res_tuple = test_func(t1, 2)
+            res_tuple = test_func(t1, typing.cast("EagerTensorProtocol", 2))
             assert isinstance(res_tuple, tuple)
             assert isinstance(res_tuple[0], Tensor)
             assert isinstance(res_tuple[1], Tensor)

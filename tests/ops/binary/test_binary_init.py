@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+import typing
+
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
 
 def test_binary_init_funcs() -> None:
     """Test function test_binary_init_funcs."""
@@ -32,6 +37,6 @@ def test_binary_init_missing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.base.get_op", side_effect=KeyError("mock")):
         importlib.reload(ml_switcheroo_compiler.ops.binary)
-        assert ml_switcheroo_compiler.ops.binary.add is None
+        assert typing.cast("EagerValue", ml_switcheroo_compiler.ops.binary.add) is None
 
     importlib.reload(ml_switcheroo_compiler.ops.binary)

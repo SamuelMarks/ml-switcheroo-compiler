@@ -1,8 +1,11 @@
 """RNN operations."""
 
-from collections.abc import Callable, Sequence
-from typing import Optional, cast  # noqa: F401
+from __future__ import annotations
 
+import typing  # noqa: F401
+from collections.abc import Sequence
+
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.linalg.matmul import matmul
@@ -15,7 +18,7 @@ def lstm_cell(
     state: tuple[Tensor, Tensor],
     kernel: Tensor,
     recurrent_kernel: Tensor,
-    bias: Optional[Tensor] = None,
+    bias: Tensor | None = None,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """Fused LSTM cell math.
 
@@ -37,7 +40,7 @@ def lstm_cell(
         z = add(z, bias)
 
     # Split z into i, f, c_bar, o
-    i, f, c_bar, o = cast(Callable[..., Sequence[Tensor]], split)(z, 4, axis=-1)
+    i, f, c_bar, o = typing.cast(TypedVariadicCallable[Sequence[Tensor]], split)(z, 4, axis=-1)
 
     i = _sigmoid(i)
     f = _sigmoid(f)

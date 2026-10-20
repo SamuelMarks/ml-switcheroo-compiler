@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
-numpy_eager_registry = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager"), "numpy_eager_registry"))
+numpy_eager_registry = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager"), "numpy_eager_registry"))
 
 
 def test_numpy_distributed_simulators() -> None:
@@ -23,20 +23,20 @@ def test_numpy_distributed_simulators() -> None:
     tensor = np.array([1, 2, 3])
 
     # AllGather
-    gathered = cast("EagerCallableProtocol", numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
-    assert cast("EagerTensorProtocol", getattr(gathered, "shape")) == (1, 3)
+    gathered = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
+    assert typing.cast("EagerTensorProtocol", getattr(gathered, "shape")) == (1, 3)
 
     # AllReduce
-    reduced = cast("EagerCallableProtocol", numpy_eager_registry.get)("AllReduce")(np_mod, tensor)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(reduced, tensor)
+    reduced = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("AllReduce")(np_mod, tensor)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(reduced, tensor)
 
     # ReduceScatter
-    scattered = cast("EagerCallableProtocol", numpy_eager_registry.get)("ReduceScatter")(np_mod, tensor)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(scattered, tensor)
+    scattered = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("ReduceScatter")(np_mod, tensor)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(scattered, tensor)
 
     # AllToAll
-    all_to_all = cast("EagerCallableProtocol", numpy_eager_registry.get)("AllToAll")(np_mod, tensor)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(all_to_all, tensor)
+    all_to_all = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("AllToAll")(np_mod, tensor)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(all_to_all, tensor)
 
 
 def test_numpy_distributed_all_reduce_ring_branches() -> None:
@@ -75,7 +75,7 @@ def test_numpy_distributed_all_reduce_ring_branches() -> None:
                 """
                 return np.array([1, 2])
 
-        cast("EagerCallableProtocol", ctx.all_reduce_ring)(cast("EagerCallableProtocol", np.array)([1, 2, 3]), op_type="dummy", backend_module=cast("EagerCallableProtocol", DummyBackend)())
+        typing.cast("EagerCallableProtocol", ctx.all_reduce_ring)(typing.cast("EagerCallableProtocol", np.array)([1, 2, 3]), op_type="dummy", backend_module=typing.cast("EagerCallableProtocol", DummyBackend)())
         ctx.all_gather_tensors(np.array([1, 2, 3]))
     assert ctx.world_size == 2
 

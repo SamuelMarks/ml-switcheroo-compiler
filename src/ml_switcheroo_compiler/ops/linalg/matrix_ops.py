@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -68,7 +68,7 @@ def cross(
     a: Tensor,
     b: Tensor,
     axes: dict[str, int | None] | None = None,
-) -> TensorOrScalar:
+) -> Tensor:
     """Compute the vector cross product of two arrays.
 
     Args:
@@ -85,9 +85,9 @@ def cross(
         data = backend.execute_op("Cross", a.data, b.data, **kw)
         return Tensor(data, TensorConfig(getattr(data, "shape"), a.dtype, a.device))
     out_shape = a.shape
-    return cast(
-        TensorOrScalar,
-        cast("EagerCallableProtocol", _emit_linalg_node)(
+    return typing.cast(
+        Tensor,
+        typing.cast("EagerCallableProtocol", _emit_linalg_node)(
             "Cross",
             [a, b],
             axes or {"axisa": -1, "axisb": -1, "axisc": -1, "axis": None},
@@ -253,13 +253,13 @@ def eigh_tridiagonal(
     """
     if config.eager_mode:
         kw = kwargs or {"eigvals_only": True, "select": "a", "select_range": None, "tol": None}
-        data = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **cast("dict[str, TensorOrScalar]", kw))
+        data = get_active_backend().execute_op("EighTridiagonal", alpha.data, beta.data, **typing.cast("dict[str, TensorOrScalar]", kw))
         return Tensor(data, TensorConfig(getattr(data, "shape"), alpha.dtype, alpha.device))
 
     out_shape = getattr(EighTridiagonal(), "infer_shape")(alpha, beta)
-    return cast(
+    return typing.cast(
         TensorOrScalar,
-        cast("EagerCallableProtocol", _emit_linalg_node)(
+        typing.cast("EagerCallableProtocol", _emit_linalg_node)(
             "EighTridiagonal",
             [alpha, beta],
             kwargs or {},

@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 import functools
+import typing  # noqa: F401
 import uuid
-from collections.abc import Callable, Mapping
-from typing import TYPE_CHECKING, Optional, TypeVar, Union, cast  # noqa: F401
+from collections.abc import Callable, Mapping, Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 # We import dispatcher directly
@@ -19,7 +19,8 @@ from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
 # Global operation registry
 
-T = TypeVar("T", bound="OpDef")
+T = typing.TypeVar("T", bound="OpDef")
+_F = typing.TypeVar("_F")
 OpArgValue = TensorOrScalar
 
 
@@ -31,10 +32,16 @@ class OpDef:
 
     op_type: str = "Unknown"
 
-    if TYPE_CHECKING:
-        __call__: Callable[..., Tensor]
-        infer_shape: Callable[..., TensorOrScalar]
-        eager_eval: Callable[..., TensorOrScalar]
+    if typing.TYPE_CHECKING:
+
+        def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor:
+            """Universal dispatcher for the operation."""
+            ...
+
+        def __getattr__(self, name: str) -> TypedVariadicCallable[TensorOrScalar]:
+            """Resolve infer_shape, eager_eval, and operation-specific methods."""
+            ...
+
     else:
 
         def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor:
@@ -47,7 +54,7 @@ class OpDef:
             Returns:
                 Tensor: Result.
             """
-            return cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
+            return typing.cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
 
         def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
             """Compute the infer shape tensor operation.
@@ -97,12 +104,25 @@ def emit_ir_node(
         str: Emitted node ID.
     """
     nid = f"{op_type.lower()}_{uuid.uuid4().hex[:6]}"
+    from ml_switcheroo_ir import SymInt, SymNode
+
+    from ml_switcheroo_compiler.tracing.builder import _to_attr_value
+
+    norm_shape: tuple[int | str | SymNode | SymInt, ...] | None = None
+    raw_shape: TensorOrScalar = getattr(shape_metadata, "dims", shape_metadata)
+    if isinstance(raw_shape, (tuple, list)):
+        first_elem: TensorOrScalar = raw_shape[0] if len(raw_shape) > 0 else None
+        flat_shape = first_elem if isinstance(first_elem, (tuple, list)) else raw_shape
+        norm_shape = tuple(int(d) if isinstance(d, float) else (d if isinstance(d, (int, str, SymNode, SymInt)) and not isinstance(d, bool) else ("?" if d is None else str(d))) for d in flat_shape)
+    raw_inputs: Sequence[TensorOrScalar] = inputs
+    norm_inputs: list[str] = [i if isinstance(i, str) else str(getattr(i, "id", id(i))) for i in raw_inputs]
+    norm_attrs: dict[str, AttributeValue] = {str(k): _to_attr_value(v) for k, v in (attributes or {}).items()}
     node = LogicalNode(
         id=nid,
         op_type=op_type,
-        inputs=inputs,
-        shape_metadata=shape_metadata,
-        attributes=cast("Mapping[str, AttributeValue]", attributes or {}),
+        inputs=norm_inputs,
+        shape_metadata=norm_shape,
+        attributes=norm_attrs,
     )
     if graph is not None:
         graph.nodes[nid] = node
@@ -113,7 +133,7 @@ def emit_ir_node(
     return nid
 
 
-def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callable[..., OpArgValue]]:
+def dispatch_eager(op_name: str) -> Callable[[_F], _F]:
     """Compute the dispatch eager tensor operation.
 
     Args:
@@ -123,7 +143,7 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callab
         Callable: Result.
     """
 
-    def decorator(func: Callable[..., OpArgValue]) -> Callable[..., OpArgValue]:
+    def decorator(func: _F) -> _F:
         """Compute the decorator tensor operation.
 
         Args:
@@ -132,8 +152,9 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callab
         Returns:
             Callable: Result.
         """
+        callable_func = typing.cast("TypedVariadicCallable[OpArgValue]", func)
 
-        @functools.wraps(func)
+        @functools.wraps(callable_func)
         def wrapper(*args: OpArgValue, **kwargs: OpArgValue) -> OpArgValue:
             """Compute the wrapper tensor operation.
 
@@ -162,9 +183,9 @@ def dispatch_eager(op_name: str) -> Callable[[Callable[..., OpArgValue]], Callab
                         for d in data
                     )
                 return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), dtype, device))
-            return func(*args, **kwargs)
+            return callable_func(*args, **kwargs)
 
-        return wrapper
+        return typing.cast("_F", wrapper)
 
     return decorator
 

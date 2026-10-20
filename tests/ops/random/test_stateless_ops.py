@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from ml_switcheroo_compiler.ops.random_stateless import (
     stateless_truncated_normal,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -123,17 +123,17 @@ def test_stateless_categorical(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mocker.patch("ml_switcheroo_compiler.random.distributions_discrete.categorical", return_value="cat")
-    mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="cast")
+    mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="typing.cast")
     seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
     logits = Tensor([[1.0, 2.0]], TensorConfig((1, 2), "float32", "cpu"))
     res = stateless_categorical(logits, 5, seed, "int32")
-    assert res == "cast"
+    assert res == "typing.cast"
     res2 = stateless_categorical(logits, 5, seed, DType("int32"))
-    assert res2 == "cast"
+    assert res2 == "typing.cast"
 
     logits_no_shape = Tensor(1.0, TensorConfig((), "float32", "cpu"))
     res3 = stateless_categorical(logits_no_shape, 5, seed, "int32")
-    assert res3 == "cast"
+    assert res3 == "typing.cast"
 
 
 def test_stateless_gamma(mocker: EagerTensorProtocol) -> None:
@@ -187,12 +187,12 @@ def test_stateless_parameterized_truncated_normal() -> None:
     try:
         seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
         cfg = RandomGenerationConfig(means=1.0, stddevs=0.5, minvals=-1.0, maxvals=1.0)
-        res = cast(Tensor, stateless_parameterized_truncated_normal((2,), seed, cfg))
+        res = typing.cast(Tensor, stateless_parameterized_truncated_normal((2,), seed, cfg))
         assert res.config.shape == (2,)
         arr = np.asarray(res.data)
         assert np.all(arr >= 0.5)
         assert np.all(arr <= 1.5)
-        res_empty = cast(Tensor, stateless_parameterized_truncated_normal((), seed, cfg))
+        res_empty = typing.cast(Tensor, stateless_parameterized_truncated_normal((), seed, cfg))
         assert res_empty.config.shape == ()
     finally:
         config.eager_mode = orig
@@ -230,13 +230,13 @@ def test_index_shuffle_and_fold_in() -> None:
         assert isinstance(res, int) and 0 <= res <= 10
 
         scalar_arr = Tensor(np.array(2, dtype=np.int32), TensorConfig((), "int32", "cpu"))
-        res_scalar = cast(Tensor, index_shuffle(scalar_arr, 123, np.array(5)))
+        res_scalar = typing.cast(Tensor, index_shuffle(scalar_arr, 123, np.array(5)))
         assert res_scalar.shape == ()
 
         vec_arr = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
-        res_vec = cast(Tensor, index_shuffle(vec_arr, 123, [5]))
+        res_vec = typing.cast(Tensor, index_shuffle(vec_arr, 123, [5]))
         assert res_vec.shape == (2,)
-        res_list = cast(Tensor, index_shuffle([1, 2], 123, 5))
+        res_list = typing.cast(Tensor, index_shuffle([1, 2], 123, 5))
         assert res_list.shape == ()
         res_empty_max = index_shuffle(vec_arr, 123, [])
         assert res_empty_max is vec_arr
@@ -256,7 +256,7 @@ def test_stateless_split() -> None:
     config.eager_mode = True
     try:
         res = stateless_split("seed", 3)
-        assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 2)
     finally:
         config.eager_mode = orig
 

@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import inspect
 import sys
-from typing import TYPE_CHECKING, NoReturn
+import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     import pytest
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -60,7 +60,7 @@ def test_linker_exception(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
     """
 
-    def mock_getframeinfo(*_args: EagerValue, **_kwargs: EagerValue) -> NoReturn:
+    def mock_getframeinfo(*_args: EagerValue, **_kwargs: EagerValue) -> typing.NoReturn:
         """Raise ValueError to simulate an inspection failure.
 
         Args:

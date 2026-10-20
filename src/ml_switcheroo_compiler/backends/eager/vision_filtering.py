@@ -2,26 +2,27 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from types import ModuleType
-from typing import cast
+import typing
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
 )
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
 
-def _resolve_filter_mod(backend_module: EagerValue | None) -> ModuleType:
+def _resolve_filter_mod(backend_module: BackendModuleProtocol | None) -> BackendModuleProtocol:
     """Resolve an array module providing `zeros`, `linspace`, `stack`, and `where`.
 
     Args:
         backend_module: Candidate backend module or None.
 
     Returns:
-        ModuleType: Resolved array module.
+        BackendModuleProtocol: Resolved array module.
     """
     from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
@@ -29,7 +30,7 @@ def _resolve_filter_mod(backend_module: EagerValue | None) -> ModuleType:
 
 
 @global_eager_registry.register("ExtractVolumePatches")
-def _extract_volume_patches(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager extract volume patches operation on the active backend array.
 
     Args:
@@ -42,18 +43,18 @@ def _extract_volume_patches(backend_module: EagerValue, *args: EagerValue, **kwa
     """
     mod = _resolve_filter_mod(backend_module)
     if not args:
-        return cast(EagerValue, getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else mod.array([]))
+        return typing.cast("EagerValue", getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else mod.array([]))
 
     input_tensor: EagerTensorProtocol = mod.asarray(args[0])
-    ksizes = cast("list[int]", kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
-    strides = cast("list[int]", kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
+    ksizes = typing.cast("list[int]", kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
+    strides = typing.cast("list[int]", kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
 
     if input_tensor.ndim != 5:
-        return cast(EagerValue, getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor)
+        return getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
 
     shape = input_tensor.shape
     if any(int(k) <= 0 or int(k) > int(s) for k, s in zip(ksizes, shape)):
-        return cast(EagerValue, getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor)
+        return getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
 
     out_dims = [len(range(0, int(shape[d]) - int(ksizes[d]) + 1, int(strides[d]))) for d in range(5)]
     patch_vol = int(ksizes[0]) * int(ksizes[1]) * int(ksizes[2]) * int(ksizes[3]) * int(ksizes[4])
@@ -73,19 +74,20 @@ def _extract_volume_patches(backend_module: EagerValue, *args: EagerValue, **kwa
                         ]
                         res[i0, i1, i2, i3, i4] = patch.reshape(-1)
 
-    return cast(EagerValue, getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res)
+    return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
-@dataclass
-class NMSConfig:
+class NMSConfig(pydantic.BaseModel):
     """Config for NMS."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     max_output_size: int
     iou_threshold: float = 0.5
     score_threshold: float = float("-inf")
 
 
-def _get_box_coords(np_mod: EagerValue, box_ctx: tuple[int, int, int, int], box: EagerValue) -> tuple[tuple[int, int], tuple[int, int]]:
+def _get_box_coords(np_mod: BackendModuleProtocol, box_ctx: tuple[int, int, int, int], box: EagerValue) -> tuple[tuple[int, int], tuple[int, int]]:
     """Retrieve the box coords property or mapping.
 
     Args:
@@ -97,7 +99,7 @@ def _get_box_coords(np_mod: EagerValue, box_ctx: tuple[int, int, int, int], box:
         tuple[tuple[int, int], tuple[int, int]]: ((y1, x1), (y2, x2)).
     """
     h, w = box_ctx[0], box_ctx[1]
-    box_arr = cast(EagerTensorProtocol, box)
+    box_arr = typing.cast(EagerTensorProtocol, box)
     y1 = int(box_arr[0] * (h - 1))
     x1 = int(box_arr[1] * (w - 1))
     y2 = int(box_arr[2] * (h - 1))
@@ -105,7 +107,7 @@ def _get_box_coords(np_mod: EagerValue, box_ctx: tuple[int, int, int, int], box:
     return ((y1, x1), (y2, x2))
 
 
-def _extract_box_channels(np_mod: EagerValue, img: EagerValue, out: EagerValue, coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int], config: BBoxConfig) -> None:
+def _extract_box_channels(np_mod: BackendModuleProtocol, img: EagerValue, out: EagerValue, coords_and_i: tuple[tuple[tuple[int, int], tuple[int, int]], int], config: BBoxConfig) -> None:
     """Execute the eager extract box channels operation on the active backend array.
 
     Args:
@@ -125,17 +127,17 @@ def _extract_box_channels(np_mod: EagerValue, img: EagerValue, out: EagerValue, 
     if y2_i <= y1_i or x2_i <= x1_i:
         return
 
-    cropped = cast(EagerTensorProtocol, img)[y1_i : y2_i + 1, x1_i : x2_i + 1]
+    cropped = typing.cast(EagerTensorProtocol, img)[y1_i : y2_i + 1, x1_i : x2_i + 1]
     if cropped.size == 0:
         return
 
     y_indices = getattr(np_mod, "linspace")(0, cropped.shape[0] - 1, crop_h).astype(int)
     x_indices = getattr(np_mod, "linspace")(0, cropped.shape[1] - 1, crop_w).astype(int)
     resized = cropped[y_indices][:, x_indices]
-    cast(EagerTensorProtocol, out)[i] = resized
+    typing.cast(EagerTensorProtocol, out)[i] = resized
 
 
-def _extract_single_box(np_mod: EagerValue, batch_ctx: EagerValue, i: int, config: BBoxConfig) -> None:
+def _extract_single_box(np_mod: BackendModuleProtocol, batch_ctx: EagerValue, i: int, config: BBoxConfig) -> None:
     """Execute the eager extract single box operation on the active backend array.
 
     Args:
@@ -147,7 +149,7 @@ def _extract_single_box(np_mod: EagerValue, batch_ctx: EagerValue, i: int, confi
     Returns:
             None: Result.
     """
-    imgs, bxs, bxs_idx, out = cast("tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]", batch_ctx)
+    imgs, bxs, bxs_idx, out = typing.cast("tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]", batch_ctx)
     img_idx = int(bxs_idx[i])
     if img_idx >= len(imgs):
         return
@@ -161,7 +163,7 @@ def _extract_single_box(np_mod: EagerValue, batch_ctx: EagerValue, i: int, confi
     _extract_box_channels(np_mod, img, out, (coords, i), config)
 
 
-def _extract_boxes_batch(np_mod: EagerValue, imgs: EagerValue, bxs: EagerValue, bxs_idx: EagerValue, config: BBoxConfig) -> EagerValue:
+def _extract_boxes_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, bxs: EagerValue, bxs_idx: EagerValue, config: BBoxConfig) -> EagerValue:
     """Extract bounding boxes for a batch.
 
     Args:
@@ -173,10 +175,10 @@ def _extract_boxes_batch(np_mod: EagerValue, imgs: EagerValue, bxs: EagerValue, 
 
     Returns: Any: Extracted boxes.
     """
-    imgs_arr = cast(EagerTensorProtocol, imgs)
+    imgs_arr = typing.cast(EagerTensorProtocol, imgs)
     num_boxes = getattr(bxs, "__len__")()
     if imgs_arr.ndim == 0:
-        return cast(EagerValue, getattr(np_mod, "zeros")((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype))
+        return typing.cast("EagerValue", getattr(np_mod, "zeros")((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype))
 
     channels = imgs_arr.shape[-1] if imgs_arr.ndim > 2 else 1
     out_shape = (num_boxes, config.crop_size[0], config.crop_size[1], channels)
@@ -184,10 +186,10 @@ def _extract_boxes_batch(np_mod: EagerValue, imgs: EagerValue, bxs: EagerValue, 
     batch_ctx = (imgs, bxs, bxs_idx, out)
     for i in range(num_boxes):
         _extract_single_box(np_mod, batch_ctx, i, config)
-    return cast(EagerValue, out)
+    return typing.cast("EagerValue", out)
 
 
-def _extract_boxes_tf(backend_module: EagerValue, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
+def _extract_boxes_tf(backend_module: BackendModuleProtocol, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
     """Execute the eager extract boxes tf operation on the active backend array.
 
     Args:
@@ -208,7 +210,7 @@ def _extract_boxes_tf(backend_module: EagerValue, images: EagerValue, boxes: Eag
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
-def extract_bounding_boxes_eager(backend_module: EagerValue, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
+def extract_bounding_boxes_eager(backend_module: BackendModuleProtocol, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
     """Execute the eager extract bounding boxes eager operation on the active backend array.
 
     Args:
@@ -224,7 +226,7 @@ def extract_bounding_boxes_eager(backend_module: EagerValue, images: EagerValue,
     return _extract_boxes_tf(backend_module, images, boxes, box_indices, config)
 
 
-def _to_xyxy_format(np_mod: EagerValue, boxes: EagerValue, format: str) -> EagerValue:
+def _to_xyxy_format(np_mod: BackendModuleProtocol, boxes: EagerValue, format: str) -> EagerValue:
     """Execute the eager to xyxy format operation on the active backend array.
 
     Args:
@@ -242,19 +244,19 @@ def _to_xyxy_format(np_mod: EagerValue, boxes: EagerValue, format: str) -> Eager
     if format == "xyxy":
         return boxes
     elif format == "xyWH":
-        boxes_arr = cast(EagerTensorProtocol, boxes)
+        boxes_arr = typing.cast(EagerTensorProtocol, boxes)
         x, y, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return cast(EagerValue, getattr(np_mod, "stack")([x, y, x + w, y + h], axis=-1))
+        return typing.cast("EagerValue", getattr(np_mod, "stack")([x, y, x + w, y + h], axis=-1))
     elif format == "cxcyWH":
-        boxes_arr = cast(EagerTensorProtocol, boxes)
+        boxes_arr = typing.cast(EagerTensorProtocol, boxes)
         cx, cy, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return cast(EagerValue, getattr(np_mod, "stack")([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1))
+        return typing.cast("EagerValue", getattr(np_mod, "stack")([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1))
     else:
         msg = f"Unknown format {format}"
         raise ValueError(msg)
 
 
-def _compute_iou(np_mod: EagerValue, b1: EagerValue, b2: EagerValue) -> EagerValue:
+def _compute_iou(np_mod: BackendModuleProtocol, b1: EagerValue, b2: EagerValue) -> EagerValue:
     """Execute the eager compute iou operation on the active backend array.
 
     Args:
@@ -269,13 +271,13 @@ def _compute_iou(np_mod: EagerValue, b1: EagerValue, b2: EagerValue) -> EagerVal
     b2 = getattr(np_mod, "asarray")(b2)
 
     if getattr(b1, "size") == 0 or getattr(b2, "size") == 0:
-        return cast(EagerValue, getattr(np_mod, "zeros")(cast(tuple[int, ...], getattr(b1, "shape"))[:-1], dtype=getattr(b1, "dtype")))
+        return typing.cast("EagerValue", getattr(np_mod, "zeros")(typing.cast(tuple[int, ...], getattr(b1, "shape"))[:-1], dtype=getattr(b1, "dtype")))
 
-    x11, y11, x12, y12 = cast(
+    x11, y11, x12, y12 = typing.cast(
         tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol],
         getattr(np_mod, "split")(b1, 4, axis=-1),
     )
-    x21, y21, x22, y22 = cast(
+    x21, y21, x22, y22 = typing.cast(
         tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol],
         getattr(np_mod, "split")(b2, 4, axis=-1),
     )
@@ -290,10 +292,10 @@ def _compute_iou(np_mod: EagerValue, b1: EagerValue, b2: EagerValue) -> EagerVal
     box2Area = (x22 - x21) * (y22 - y21)
 
     iou = interArea / (box1Area + box2Area - interArea + 1e-9)
-    return cast(EagerValue, iou.reshape(iou.shape[:-1]))
+    return typing.cast("EagerValue", iou.reshape(iou.shape[:-1]))
 
 
-def iou_eager(backend_module: EagerValue, boxes1: EagerValue, boxes2: EagerValue, bounding_box_format: str = "xyxy") -> EagerValue:
+def iou_eager(backend_module: BackendModuleProtocol, boxes1: EagerValue, boxes2: EagerValue, bounding_box_format: str = "xyxy") -> EagerValue:
     """Execute the eager iou eager operation on the active backend array.
 
     Args:
@@ -312,7 +314,7 @@ def iou_eager(backend_module: EagerValue, boxes1: EagerValue, boxes2: EagerValue
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
-def _sort_boxes_by_score(np_mod: EagerValue, boxes: EagerValue, scores: EagerValue, score_threshold: float) -> tuple[EagerValue, EagerValue, EagerValue, EagerValue]:
+def _sort_boxes_by_score(np_mod: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, score_threshold: float) -> tuple[EagerValue, EagerValue, EagerValue, EagerValue]:
     """Execute the eager sort boxes by score operation on the active backend array.
 
     Args:
@@ -339,7 +341,7 @@ def _sort_boxes_by_score(np_mod: EagerValue, boxes: EagerValue, scores: EagerVal
     return filtered_boxes, filtered_scores, indices, order
 
 
-def _compute_overlap(np_mod: EagerValue, bxs: EagerValue, i: int, order: EagerValue) -> EagerValue:
+def _compute_overlap(np_mod: BackendModuleProtocol, bxs: EagerValue, i: int, order: EagerValue) -> EagerValue:
     """Execute the eager compute overlap operation on the active backend array.
 
     Args:
@@ -351,14 +353,14 @@ def _compute_overlap(np_mod: EagerValue, bxs: EagerValue, i: int, order: EagerVa
     Returns:
             EagerValue: Result.
     """
-    bxs_arr = cast(EagerTensorProtocol, bxs)
-    order_arr = cast(EagerTensorProtocol, order)
+    bxs_arr = typing.cast(EagerTensorProtocol, bxs)
+    order_arr = typing.cast(EagerTensorProtocol, order)
     b1 = bxs_arr[order_arr[i]]
     b2 = bxs_arr[order_arr[1:]]
     return _compute_iou(np_mod, b1, b2)
 
 
-def _apply_suppression_threshold(np_mod: EagerValue, bxs: EagerValue, order: EagerValue, max_output_size: int, iou_threshold: float) -> EagerValue:
+def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue, order: EagerValue, max_output_size: int, iou_threshold: float) -> EagerValue:
     """Execute the eager apply suppression threshold operation on the active backend array.
 
     Args:
@@ -371,7 +373,7 @@ def _apply_suppression_threshold(np_mod: EagerValue, bxs: EagerValue, order: Eag
     Returns:
             EagerValue: Result.
     """
-    bxs_arr = cast(EagerTensorProtocol, bxs)
+    bxs_arr = typing.cast(EagerTensorProtocol, bxs)
     keep: list[int] = []
     order_list = list(getattr(order, "__iter__")())
     while len(order_list) > 0 and len(keep) < max_output_size:
@@ -382,16 +384,16 @@ def _apply_suppression_threshold(np_mod: EagerValue, bxs: EagerValue, order: Eag
         # Compute IoU of the kept box with the remaining boxes
         b1 = bxs_arr[i]
         b2 = bxs_arr[order_list]
-        iou = cast(EagerTensorProtocol, _compute_iou(np_mod, b1, b2))
+        iou = typing.cast(EagerTensorProtocol, _compute_iou(np_mod, b1, b2))
 
         # Keep those with IoU <= threshold
         to_keep = iou <= iou_threshold
         order_list = [order_list[j] for j in range(len(order_list)) if to_keep[j]]
 
-    return cast(EagerValue, getattr(np_mod, "array")(keep, dtype=getattr(np_mod, "int64")))
+    return typing.cast("EagerValue", getattr(np_mod, "array")(keep, dtype=getattr(np_mod, "int64")))
 
 
-def _nms_tf(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
+def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
     """Execute the eager nms tf operation on the active backend array.
 
     Args:
@@ -404,12 +406,12 @@ def _nms_tf(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, c
             EagerValue: Result.
     """
     if config is None:
-        config = NMSConfig(max_output_size=cast(EagerTensorProtocol, boxes).shape[0] if hasattr(boxes, "shape") else 100)
+        config = NMSConfig(max_output_size=typing.cast(EagerTensorProtocol, boxes).shape[0] if hasattr(boxes, "shape") else 100)
     res = _nms_torch(boxes, scores, config, backend_module)
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
 
-def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend_module: EagerValue | None = None) -> EagerValue:
+def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend_module: BackendModuleProtocol | None = None) -> EagerValue:
     """Execute the eager nms torch operation on the active backend array.
 
     Args:
@@ -426,12 +428,12 @@ def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend
     scores = mod.asarray(scores)
     bxs, _, idxs, order = _sort_boxes_by_score(mod, boxes, scores, config.score_threshold)
     if getattr(bxs, "__len__")() == 0:
-        return cast(EagerValue, mod.array([], dtype=mod.int64))
+        return typing.cast("EagerValue", mod.array([], dtype=mod.int64))
     kept_local = _apply_suppression_threshold(mod, bxs, order, config.max_output_size, config.iou_threshold)
-    return cast(EagerTensorProtocol, idxs)[kept_local]
+    return typing.cast(EagerTensorProtocol, idxs)[kept_local]
 
 
-def nms_eager(backend_module: EagerValue, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
+def nms_eager(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
     """Execute the eager nms eager operation on the active backend array.
 
     Args:

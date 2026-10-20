@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import append, column_stack, dsplit, dstack, hsplit, hstack, vsplit, vstack
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -22,7 +22,7 @@ def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
         data: Test parameter `data`.
         shape: Test parameter `shape`.
     """
-    return cast("Tensor", cast("EagerCallableProtocol", Tensor)(data, cast("EagerCallableProtocol", TensorConfig)(shape, "float32", "cpu")))
+    return typing.cast("Tensor", typing.cast("EagerCallableProtocol", Tensor)(data, typing.cast("EagerCallableProtocol", TensorConfig)(shape, "float32", "cpu")))
 
 
 def test_append_eager() -> None:
@@ -31,7 +31,7 @@ def test_append_eager() -> None:
     x = _t(np.array([1, 2, 3]), (3,))
     y = _t(np.array([4, 5]), (2,))
     out = append(x, y)
-    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (5,)
+    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (5,)
 
 
 def test_append_tracing() -> None:
@@ -42,7 +42,7 @@ def test_append_tracing() -> None:
         x = _t(np.array([1, 2, 3]), (3,))
         y = _t(np.array([4, 5]), (2,))
         out = append(x, y)
-        assert cast("EagerTensorProtocol", getattr(out, "shape")) == (5,)
+        assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (5,)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -53,7 +53,7 @@ def test_column_stack_eager() -> None:
     x = _t(np.array([1, 2, 3]), (3,))
     y = _t(np.array([4, 5, 6]), (3,))
     out = column_stack([x, y])
-    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (3, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (3, 2)
 
 
 def test_column_stack_tracing() -> None:
@@ -75,7 +75,7 @@ def test_dstack_eager() -> None:
     x = _t(np.array([[1, 2], [3, 4]]), (2, 2))
     y = _t(np.array([[5, 6], [7, 8]]), (2, 2))
     out = dstack([x, y])
-    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 2, 2)
 
 
 def test_dstack_tracing() -> None:
@@ -97,7 +97,7 @@ def test_hstack_eager() -> None:
     x = _t(np.array([1, 2]), (2,))
     y = _t(np.array([3, 4]), (2,))
     out = hstack([x, y])
-    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (4,)
+    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (4,)
 
 
 def test_hstack_tracing() -> None:
@@ -119,7 +119,7 @@ def test_vstack_eager() -> None:
     x = _t(np.array([1, 2]), (2,))
     y = _t(np.array([3, 4]), (2,))
     out = vstack([x, y])
-    assert cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 2)
 
 
 def test_vstack_tracing() -> None:
@@ -140,8 +140,8 @@ def test_dsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2, 2)), (2, 2, 2))
     out = dsplit(x, 2)
-    assert cast("EagerCallableProtocol", len)(out) == 2
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 2, 1)
+    assert typing.cast("EagerCallableProtocol", len)(out) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 2, 1)
 
 
 def test_dsplit_tracing() -> None:
@@ -151,8 +151,8 @@ def test_dsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2, 2)), (2, 2, 2))
         out = dsplit(x, 2)
-        assert cast("EagerCallableProtocol", len)(out) == 2
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 2, 1)
+        assert typing.cast("EagerCallableProtocol", len)(out) == 2
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 2, 1)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -162,8 +162,8 @@ def test_hsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2)), (2, 2))
     out = hsplit(x, 2)
-    assert cast("EagerCallableProtocol", len)(out) == 2
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 1)
+    assert typing.cast("EagerCallableProtocol", len)(out) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 1)
 
 
 def test_hsplit_tracing() -> None:
@@ -173,8 +173,8 @@ def test_hsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2)), (2, 2))
         out = hsplit(x, 2)
-        assert cast("EagerCallableProtocol", len)(out) == 2
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 1)
+        assert typing.cast("EagerCallableProtocol", len)(out) == 2
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (2, 1)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -184,8 +184,8 @@ def test_vsplit_eager() -> None:
     config.eager_mode = True
     x = _t(np.ones((2, 2)), (2, 2))
     out = vsplit(x, 2)
-    assert cast("EagerCallableProtocol", len)(out) == 2
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", len)(out) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (1, 2)
 
 
 def test_vsplit_tracing() -> None:
@@ -195,7 +195,7 @@ def test_vsplit_tracing() -> None:
     try:
         x = _t(np.ones((2, 2)), (2, 2))
         out = vsplit(x, 2)
-        assert cast("EagerCallableProtocol", len)(out) == 2
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (1, 2)
+        assert typing.cast("EagerCallableProtocol", len)(out) == 2
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(out, "__getitem__")(0)), "shape")) == (1, 2)
     finally:
         global_tracing_state.stop_tracing()

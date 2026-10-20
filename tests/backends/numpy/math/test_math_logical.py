@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_logical import (
     _np_where,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -113,7 +113,7 @@ def test_where() -> None:
         None
     """
     res = _np_where(np, np.array([True, False]), 1, 0)
-    assert cast("EagerCallableProtocol", np.array_equal)(res, [1, 0])
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, [1, 0])
 
 
 def test_assert() -> None:

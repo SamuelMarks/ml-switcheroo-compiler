@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import pydantic
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import get_op
@@ -10,8 +10,7 @@ from ml_switcheroo_compiler.ops.binary import divide
 from ml_switcheroo_compiler.ops.linalg import power_iteration
 
 
-@dataclass
-class NormConfig:
+class NormConfig(pydantic.BaseModel):
     """Configuration for normalization operations.
 
     Attributes:
@@ -19,6 +18,8 @@ class NormConfig:
         bias (Tensor | None): Optional shift tensor.
         epsilon (float): Small value to avoid division by zero.
     """
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     weight: Tensor | None = None
     bias: Tensor | None = None

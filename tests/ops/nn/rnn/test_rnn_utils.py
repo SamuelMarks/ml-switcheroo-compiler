@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.ops.nn.rnn as rnn_module
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -17,7 +18,7 @@ from ml_switcheroo_compiler.ops.nn.rnn_cell import simple_rnn_cell
 from ml_switcheroo_compiler.ops.nn.rnn_utils import BidirectionalConfig, BidirectionalInputs, DropoutWrapperConfig, RNNCellDeviceWrapper, RNNCellDropoutWrapper, RNNCellResidualWrapper, RNNConfig, ScanConfig, _permute_time_major, bidirectional, rnn, scan
 from ml_switcheroo_compiler.ops.nn.time_distributed import TimeDistributed, time_distributed
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -63,7 +64,7 @@ def test_rnn_utils_branches() -> None:
         cell(t, t)
         c_drop = ru.RNNCellDropoutWrapper(my_f, ru.DropoutWrapperConfig(input_keep_prob=0.5, output_keep_prob=0.5))
         with patch("ml_switcheroo_compiler.ops.nn.rnn_utils.dropout", return_value=t):
-            cast("EagerCallableProtocol", c_drop)(t, t)
+            typing.cast("EagerCallableProtocol", c_drop)(t, t)
         c_res = ru.RNNCellResidualWrapper(my_f)
         with patch("ml_switcheroo_compiler.ops.nn.rnn_utils.add", return_value=t):
             c_res(t, t)
@@ -80,7 +81,7 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
     Args:
         data: Test parameter `data`.
     """
-    return cast("EagerCallableProtocol", Tensor)(data, cast("EagerCallableProtocol", TensorConfig)(cast("EagerTensorProtocol", getattr(data, "shape")), cast("EagerCallableProtocol", DType)("float32"), cast("EagerCallableProtocol", Device)("cpu")))
+    return typing.cast("EagerCallableProtocol", Tensor)(data, typing.cast("EagerCallableProtocol", TensorConfig)(typing.cast("EagerTensorProtocol", getattr(data, "shape")), typing.cast("EagerCallableProtocol", DType)("float32"), typing.cast("EagerCallableProtocol", Device)("cpu")))
 
 
 def test_rnn_utils_missing_branches() -> None:
@@ -101,18 +102,18 @@ def test_rnn_utils_missing_branches() -> None:
 
     with ConfigContext(eager_mode=True):
         config = DropoutWrapperConfig(input_keep_prob=0.5, output_keep_prob=0.5)
-        wrapper = RNNCellDropoutWrapper(MockCell(), config)
+        wrapper = RNNCellDropoutWrapper(typing.cast("EagerValue", MockCell()), config)
         inputs = create_eager_tensor(np.ones((2, 2)))
         state = (create_eager_tensor(np.ones((2, 2))),)
-        (out, new_state) = cast("EagerCallableProtocol", wrapper)(inputs, state, training=True)
+        (out, new_state) = typing.cast("EagerCallableProtocol", wrapper)(inputs, state, training=True)
         assert out is not inputs
         assert id(new_state) == id(state)
-        (out, new_state) = cast("EagerCallableProtocol", wrapper)(inputs, state, training=False)
-        cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(out, "numpy")))(), cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(inputs, "numpy")))())
+        (out, new_state) = typing.cast("EagerCallableProtocol", wrapper)(inputs, state, training=False)
+        typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(out, "numpy")))(), typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(inputs, "numpy")))())
         assert id(new_state) == id(state)
         config2 = DropoutWrapperConfig(input_keep_prob=1.0, output_keep_prob=1.0)
-        wrapper2 = RNNCellDropoutWrapper(MockCell(), config2)
-        (out2, new_state2) = cast("EagerCallableProtocol", wrapper2)(inputs, state, training=True)
+        wrapper2 = RNNCellDropoutWrapper(typing.cast("EagerValue", MockCell()), config2)
+        (out2, new_state2) = typing.cast("EagerCallableProtocol", wrapper2)(inputs, state, training=True)
         assert out2 is inputs
         assert id(new_state2) == id(state)
 
@@ -138,7 +139,7 @@ def _test_rnn_brute_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
             x: Test parameter `x`.
             state: Test parameter `state`.
         """
-        return cast("EagerCallableProtocol", simple_rnn_cell)(x, state, kernel, rec_kernel, bias)
+        return typing.cast("EagerCallableProtocol", simple_rnn_cell)(x, state, kernel, rec_kernel, bias)
 
     _permute_time_major(t_in)
     rnn(t_in, (h0,), my_cell)
@@ -168,7 +169,9 @@ def _test_rnn_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     (rec_kernel, t_in) = (_state["rec_kernel"], _state["t_in"])
     dev_wrapper(Tensor(np.random.rand(2, 4).astype(np.float32), TensorConfig((2, 4), DType("float32"), "cpu")), (h0,))
     drop_wrapper = RNNCellDropoutWrapper(my_cell, config=DropoutWrapperConfig(input_keep_prob=0.5, output_keep_prob=0.5))
-    cast("EagerCallableProtocol", drop_wrapper)(cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", np.random.rand)(2, 4).astype(np.float32), cast("EagerCallableProtocol", TensorConfig)((2, 4), cast("EagerCallableProtocol", DType)("float32"), "cpu")), (h0,))
+    typing.cast("EagerCallableProtocol", drop_wrapper)(
+        typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", np.random.rand)(2, 4).astype(np.float32), typing.cast("EagerCallableProtocol", TensorConfig)((2, 4), typing.cast("EagerCallableProtocol", DType)("float32"), "cpu")), (h0,)
+    )
 
     def my_cell_res(x: EagerValue, state: EagerValue) -> EagerValue:
         """Test function my_cell_res.
@@ -177,10 +180,10 @@ def _test_rnn_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
             x: Test parameter `x`.
             state: Test parameter `state`.
         """
-        return cast("EagerCallableProtocol", simple_rnn_cell)(
+        return typing.cast("EagerCallableProtocol", simple_rnn_cell)(
             x,
             state,
-            cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", np.random.rand)(8, 8).astype(np.float32), cast("EagerCallableProtocol", TensorConfig)((8, 8), cast("EagerCallableProtocol", DType)("float32"), "cpu")),
+            typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", np.random.rand)(8, 8).astype(np.float32), typing.cast("EagerCallableProtocol", TensorConfig)((8, 8), typing.cast("EagerCallableProtocol", DType)("float32"), "cpu")),
             rec_kernel,
             bias,
         )
@@ -199,8 +202,8 @@ def _test_rnn_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
 
     res_wrapper2 = RNNCellResidualWrapper(my_cell_res, residual_fn=my_res_fn)
     res_wrapper2(Tensor(np.random.rand(2, 8).astype(np.float32), TensorConfig((2, 8), DType("float32"), "cpu")), (h0,))
-    time_distributed(t_in, wrapped_op_name="Relu")
-    cast("EagerCallableProtocol", TimeDistributed)().infer_shape(t_in)
+    time_distributed(typing.cast("Tensor", t_in), wrapped_op_name="Relu")
+    typing.cast("EagerCallableProtocol", TimeDistributed)().infer_shape(t_in)
     config.eager_mode = False
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -218,7 +221,7 @@ def _test_rnn_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (global_tracing_state, h0, t_in) = (_state["global_tracing_state"], _state["h0"], _state["t_in"])
     try:
-        time_distributed(t_in, wrapped_op_name="Relu")
+        time_distributed(typing.cast("Tensor", t_in), wrapped_op_name="Relu")
 
         def my_cell_trace(x: EagerValue, state: EagerValue) -> EagerValue:
             """Test function my_cell_trace.
@@ -230,9 +233,9 @@ def _test_rnn_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
             return (x, (x,))
 
         with pytest.raises(AttributeError):
-            cast("EagerCallableProtocol", rnn)(t_in, (h0,), my_cell_trace)
+            typing.cast("EagerCallableProtocol", rnn)(t_in, (h0,), my_cell_trace)
         with pytest.raises(AttributeError):
-            cast("EagerCallableProtocol", rnn)(t_in, (h0,), my_cell_trace, config=cast("EagerCallableProtocol", RNNConfig)(time_major=True, return_all_outputs=False, go_backwards=True))
+            typing.cast("EagerCallableProtocol", rnn)(t_in, (h0,), my_cell_trace, config=typing.cast("EagerCallableProtocol", RNNConfig)(time_major=True, return_all_outputs=False, go_backwards=True))
     finally:
         setattr(global_tracing_state, "is_tracing", False)
     setattr(global_tracing_state, "is_tracing", True)
@@ -259,8 +262,8 @@ def _test_rnn_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
 
         with patch("ml_switcheroo_compiler.ops.nn.rnn_utils.cf_scan") as mock_scan:
             mock_scan.return_value = ((h0,), t_in)
-            cast("EagerCallableProtocol", scan)(my_f, (h0,), t_in)
-            cast("EagerCallableProtocol", scan)(my_f, (h0,), t_in, config=cast("EagerCallableProtocol", ScanConfig)(reverse=True))
+            typing.cast("EagerCallableProtocol", scan)(my_f, (h0,), t_in)
+            typing.cast("EagerCallableProtocol", scan)(my_f, (h0,), t_in, config=typing.cast("EagerCallableProtocol", ScanConfig)(reverse=True))
     finally:
         setattr(global_tracing_state, "is_tracing", False)
 
@@ -370,7 +373,7 @@ def _test_rnn_utils_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
             xs: Test parameter `xs`.
             config: Test parameter `config`.
         """
-        (c, out) = cast("EagerCallableProtocol", fn)(init, xs)
+        (c, out) = typing.cast("EagerCallableProtocol", fn)(init, xs)
 
         class DummyOut:
             """Test class DummyOut."""
@@ -504,7 +507,7 @@ def test_rnn_utils_coverage2() -> None:
 
         with patch("ml_switcheroo_compiler.ops.nn.rnn_utils.cf_scan", mock_cf_scan):
             with patch("ml_switcheroo_compiler.ops.nn.rnn_utils.cf_reverse", return_value=t):
-                (carry, ys) = cast("EagerCallableProtocol", rnn_utils.scan)(mock_cell, t, t, config=cast("EagerCallableProtocol", rnn_utils.ScanConfig)(unroll=False, reverse=True))
+                (carry, ys) = typing.cast("EagerCallableProtocol", rnn_utils.scan)(mock_cell, t, t, config=typing.cast("EagerCallableProtocol", rnn_utils.ScanConfig)(unroll=False, reverse=True))
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing

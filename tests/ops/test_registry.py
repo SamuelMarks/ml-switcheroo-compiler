@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
 from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -18,7 +18,7 @@ def test_registry_get_op() -> None:
     # Transpose should definitely exist.
     op = registry.get_op("Transpose")
     assert op is not None
-    assert cast("EagerTensorProtocol", op["description"]) == cast("EagerTensorProtocol", "The Transpose operation.")
+    assert typing.cast("EagerTensorProtocol", op["description"]) == typing.cast("EagerTensorProtocol", "The Transpose operation.")
 
     # Missing op
     assert registry.get_op("NonExistentOp123") is None
@@ -89,10 +89,11 @@ def test_registry_remaining() -> None:
     """test_registry_remaining."""
     import pytest
 
-    from ml_switcheroo_compiler.ops.registry import get_op, get_util, register_op, register_util
+    from ml_switcheroo_compiler.ops.base import OpDef
+    from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, get_op, get_util, register_op, register_util
 
     @register_op("TestDuplicate")
-    class A:
+    class A(OpDef):
         """A."""
 
         pass
@@ -100,10 +101,12 @@ def test_registry_remaining() -> None:
     with pytest.raises(ValueError):
 
         @register_op("TestDuplicate")
-        class B:
+        class B(OpDef):
             """B."""
 
             pass
+
+    _OP_REGISTRY.pop("TestDuplicate", None)
 
     @register_util("MyUtil")
     def my_util() -> None:
@@ -119,7 +122,7 @@ def test_registry_remaining() -> None:
 
     getattr(_YAML_REGISTRY, "__setitem__")("DynamicTestOp123", {"test": 1})
     op_cls = get_op("DynamicTestOp123")
-    assert cast("EagerTensorProtocol", getattr(op_cls, "get_yaml_data"))() == {"test": 1}
+    assert typing.cast("EagerTensorProtocol", getattr(op_cls, "get_yaml_data"))() == {"test": 1}
 
     # hit 170-175 inside _RegistryShim
     class DummyShim:
@@ -140,12 +143,12 @@ def test_registry_remaining() -> None:
                 prefix: Test parameter `prefix`.
                 op_name: Test parameter `op_name`.
             """
-            op = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(self.operations, "get")))(op_name, {})
+            op = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(self.operations, "get")))(op_name, {})
             if not op:
                 return None
-            variants = cast("EagerTensorProtocol", getattr(op, "get"))("variants", {})
-            backend = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(variants, "get")))(prefix, {})
-            return cast("EagerTensorProtocol", getattr(backend, "get"))("generator")
+            variants = typing.cast("EagerTensorProtocol", getattr(op, "get"))("variants", {})
+            backend = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(variants, "get")))(prefix, {})
+            return typing.cast("EagerTensorProtocol", getattr(backend, "get"))("generator")
 
     from ml_switcheroo_compiler.ops.registry import _RegistryShim
 

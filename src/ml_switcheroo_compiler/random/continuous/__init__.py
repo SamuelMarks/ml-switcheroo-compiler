@@ -1,5 +1,7 @@
 """Continuous distributions."""
 
+from __future__ import annotations
+
 from .ball import ball
 from .beta import beta
 from .cauchy import cauchy

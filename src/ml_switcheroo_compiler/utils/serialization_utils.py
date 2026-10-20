@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable
 from types import TracebackType
-from typing import Protocol, TypeVar, Union, cast, runtime_checkable
 
 from ml_switcheroo_ir import AttributeValue
 
-T = TypeVar("T")
+T = typing.TypeVar("T")
 
 
-@runtime_checkable
-class ConfigurableProtocol(Protocol):
+@typing.runtime_checkable
+class ConfigurableProtocol(typing.Protocol):
     """Protocol for objects implementing get_config()."""
 
     def get_config(self) -> dict[str, AttributeValue]:
@@ -24,7 +24,27 @@ class ConfigurableProtocol(Protocol):
         ...
 
 
-SerializableType = Union[type, Callable[..., Union[AttributeValue, ConfigurableProtocol]]]
+class SerializableCallableProtocol(typing.Protocol):
+    """Protocol for serializable factory or function objects."""
+
+    def __call__(
+        self,
+        *args: AttributeValue,
+        **kwargs: AttributeValue,
+    ) -> AttributeValue | ConfigurableProtocol:
+        """Invoke the serializable callable.
+
+        Args:
+            *args (AttributeValue): Positional arguments.
+            **kwargs (AttributeValue): Keyword arguments.
+
+        Returns:
+            AttributeValue | ConfigurableProtocol: Constructed or computed result.
+        """
+        ...
+
+
+SerializableType = typing.Union[type, "SerializableCallableProtocol"]
 
 _GLOBAL_CUSTOM_OBJECTS: dict[str, SerializableType] = {}
 _REGISTERED_NAMES: dict[SerializableType, str] = {}
@@ -167,7 +187,7 @@ def register_serializable(
         """
         registered_name = str(name or getattr(cls_or_fn, "__name__", str(cls_or_fn)))
         full_name = f"{package}>{registered_name}" if package else registered_name
-        serializable_obj = cast(SerializableType, cls_or_fn)
+        serializable_obj = typing.cast(SerializableType, cls_or_fn)
         _GLOBAL_CUSTOM_OBJECTS[registered_name] = serializable_obj
         _GLOBAL_CUSTOM_OBJECTS[full_name] = serializable_obj
         _REGISTERED_NAMES[serializable_obj] = registered_name
@@ -223,7 +243,7 @@ def deserialize_object(
     cls_obj = get_registered_object(class_name, custom_objects)
     if cls_obj is not None and isinstance(cls_obj, type):
         if hasattr(cls_obj, "from_config") and isinstance(config_dict, dict):
-            return cast("ConfigurableProtocol | AttributeValue | None", cls_obj.from_config(config_dict))
+            return typing.cast("ConfigurableProtocol | AttributeValue | None", cls_obj.from_config(config_dict))
         if isinstance(config_dict, dict):
-            return cast("ConfigurableProtocol | AttributeValue | None", cls_obj(**config_dict))
+            return typing.cast("ConfigurableProtocol | AttributeValue | None", cls_obj(**config_dict))
     return identifier

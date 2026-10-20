@@ -1,6 +1,6 @@
 """Pydantic models for configuration files."""
 
-from typing import Optional, Union
+from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class NodePatternConfig(BaseModel):
     """Configuration for an IR node pattern."""
 
-    op_type: Optional[str] = None
-    capture: Optional[str] = None
-    inputs: Optional[list["NodePatternConfig"]] = None
+    op_type: str | None = None
+    capture: str | None = None
+    inputs: list[NodePatternConfig] | None = None
     wildcard: bool = False
     commutative: bool = False
     broadcast_dims: bool = False
@@ -99,7 +99,7 @@ class PassConfigModel(BaseModel):
     enabled: bool = True
     prerequisites: list[str] = Field(default_factory=list)
     preserves: list[str] = Field(default_factory=list)
-    options: dict[str, Union[str, int, float, bool, list[str]]] = Field(default_factory=dict)
+    options: dict[str, str | int | float | bool | list[str]] = Field(default_factory=dict)
     model_config = ConfigDict(extra="allow")
 
 
@@ -196,9 +196,9 @@ class ObservedNodeShape(BaseModel):
     node_id: str
     shape: list[int]
     dtype: str = "float32"
-    strides: Optional[list[int]] = None
-    offset: Optional[int] = None
-    byte_length: Optional[int] = None
+    strides: list[int] | None = None
+    offset: int | None = None
+    byte_length: int | None = None
 
 
 class RuntimeTensorMetadata(BaseModel):
@@ -215,7 +215,7 @@ class RuntimeTensorMetadata(BaseModel):
     buffer_id: str
     element_count: int
     is_gradient: bool = False
-    aliased_to: Optional[str] = None
+    aliased_to: str | None = None
     is_contiguous: bool = True
 
 
@@ -235,10 +235,10 @@ class ShapeInspectionPayload(BaseModel):
     runtime: str
     execution_id: str
     observed_shapes: dict[str, list[int]]
-    detailed_nodes: Optional[dict[str, ObservedNodeShape]] = None
-    tensor_metadata: Optional[dict[str, RuntimeTensorMetadata]] = None
-    execution_time_ms: Optional[float] = None
-    memory_usage_bytes: Optional[int] = None
+    detailed_nodes: dict[str, ObservedNodeShape] | None = None
+    tensor_metadata: dict[str, RuntimeTensorMetadata] | None = None
+    execution_time_ms: float | None = None
+    memory_usage_bytes: int | None = None
 
 
 class RuntimeShapePacket(BaseModel):
@@ -257,8 +257,8 @@ class RuntimeShapePacket(BaseModel):
     runtime: str
     graph_name: str = "default_graph"
     observations: list[ObservedNodeShape] = Field(default_factory=list)
-    execution_time_ms: Optional[float] = None
-    memory_usage_bytes: Optional[int] = None
+    execution_time_ms: float | None = None
+    memory_usage_bytes: int | None = None
     model_config = ConfigDict(extra="allow")
 
 
@@ -275,10 +275,10 @@ class ShapeLearningProtocolConfig(BaseModel):
     protocol_version: str
     description: str
     supported_runtimes: list[str]
-    message_types: dict[str, dict[str, Union[str, list[str]]]]
+    message_types: dict[str, dict[str, str | list[str]]]
 
 
-def load_shape_learning_protocol(path: Optional[str] = None) -> ShapeLearningProtocolConfig:
+def load_shape_learning_protocol(path: str | None = None) -> ShapeLearningProtocolConfig:
     """Load shape learning protocol configuration from YAML specification.
 
     Args:
@@ -349,7 +349,7 @@ class PipelineParallelStrategyConfig(BaseModel):
     """
 
     mesh_axis: str = "pp"
-    stage_dim: Optional[int] = None
+    stage_dim: int | None = None
 
 
 class MeshPartitioningStrategiesConfig(BaseModel):
@@ -388,7 +388,7 @@ class DeviceMeshPartitioningRootConfig(BaseModel):
     device_mesh_partitioning: DeviceMeshPartitioningConfig
 
 
-def load_mesh_partitioning(path: Optional[str] = None) -> DeviceMeshPartitioningConfig:
+def load_mesh_partitioning(path: str | None = None) -> DeviceMeshPartitioningConfig:
     """Load declarative mesh partitioning configuration from YAML.
 
     Args:
@@ -422,11 +422,11 @@ class SpmdCommunicationCondition(BaseModel):
     """
 
     inject: str
-    is_reduction: Optional[bool] = None
-    is_grad: Optional[bool] = None
-    axes_match: Optional[bool] = None
-    axes_length_match: Optional[bool] = None
-    default: Optional[bool] = None
+    is_reduction: bool | None = None
+    is_grad: bool | None = None
+    axes_match: bool | None = None
+    axes_length_match: bool | None = None
+    default: bool | None = None
 
 
 class SpmdCommunicationRule(BaseModel):

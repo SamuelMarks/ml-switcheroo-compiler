@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from typing import cast
+import typing
 
 from ml_switcheroo_ir import AttributeValue
 
@@ -12,7 +11,7 @@ from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -101,11 +100,11 @@ class NumbaGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return chr(10).join(self.code)
 
-    def compile_fn(self) -> Callable[..., tuple[EagerValue, ...]]:
+    def compile_fn(self) -> TypedVariadicCallable[tuple[EagerValue, ...]]:
         """Compile the generated Python/Numba script into an executable function.
 
         Returns:
-            Callable[..., tuple[EagerValue, ...]]: Executable compiled function.
+            TypedVariadicCallable[tuple[EagerValue, ...]]: Executable compiled function.
         """
         source: str = self.generate()
         namespace: dict[str, EagerValue] = {}
@@ -114,7 +113,7 @@ class NumbaGenerator(PythonStringGenerator):
         if not callable(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        return cast(Callable[..., tuple[EagerValue, ...]], func)
+        return typing.cast(TypedVariadicCallable[tuple[EagerValue, ...]], func)
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Fallback for generic nodes emitting operations compiled by Numba.
@@ -280,7 +279,7 @@ class NumbaGenerator(PythonStringGenerator):
         arg_names: list[str] | None = None,
         signatures: list[str] | None = None,
         target: str = "cpu",
-    ) -> Callable[..., EagerValue]:
+    ) -> TypedVariadicCallable[EagerValue]:
         """Compile a vectorized ufunc via Numba @vectorize.
 
         Args:
@@ -291,7 +290,7 @@ class NumbaGenerator(PythonStringGenerator):
             target (str): Compilation target architecture.
 
         Returns:
-            Callable[..., EagerValue]: Compiled vectorized ufunc.
+            TypedVariadicCallable[EagerValue]: Compiled vectorized ufunc.
 
         Raises:
             RuntimeError: If compilation fails or ufunc is not defined.
@@ -624,7 +623,7 @@ class NumbaGenerator(PythonStringGenerator):
             if compiled_fn is not None:
                 try:
                     args_tuple = tuple(getattr(a, "data", a) for a in args)
-                    return cast(Callable[..., EagerValue], compiled_fn)(args_tuple)
+                    return typing.cast(TypedVariadicCallable[EagerValue], compiled_fn)(args_tuple)
                 except Exception:
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -634,11 +633,11 @@ class NumbaGenerator(PythonStringGenerator):
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict), backend=NumbaGenerator)
+            res_dict = evaluate_graph(graph, feed_dict, backend=NumbaGenerator)
             if not graph.outputs:
-                return cast(EagerValue, res_dict)
+                return typing.cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:
-                return cast(EagerValue, res_dict.get(graph.outputs[0]))
+                return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
 
         return CompiledArtifact(

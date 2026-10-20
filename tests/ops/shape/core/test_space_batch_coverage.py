@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
@@ -46,10 +46,10 @@ def test_shape_space_batch_coverage() -> None:
     try:
         # OpDef infer_shape
         nd_op = space_batch_mod.SpaceToBatchND()
-        assert cast("EagerCallableProtocol", nd_op.infer_shape)(None, [2, 2], [[0, 0], [0, 0]]) == ()
+        assert typing.cast("EagerCallableProtocol", nd_op.infer_shape)(None, [2, 2], [[0, 0], [0, 0]]) == ()
 
         sb_op = space_batch_mod.SpaceToBatch()
-        assert cast("EagerCallableProtocol", sb_op.infer_shape)(None, 2, [[0, 0], [0, 0]]) == ()
+        assert typing.cast("EagerCallableProtocol", sb_op.infer_shape)(None, 2, [[0, 0], [0, 0]]) == ()
 
         # space_to_batch eager mode
         config.eager_mode = True
@@ -60,7 +60,7 @@ def test_shape_space_batch_coverage() -> None:
             # Input with data, dtype, device
             t_in = Tensor(np.zeros((1, 4, 4, 1)), TensorConfig((1, 4, 4, 1), DType.Float32, Device("cpu")))
             res1 = space_batch_mod.space_to_batch(t_in, 2, [[0, 0], [0, 0]])
-            assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (4, 2, 2, 1)
+            assert typing.cast("EagerTensorProtocol", getattr(res1, "shape")) == (4, 2, 2, 1)
 
             # Raw input without data/dtype/device
             raw_input = [[1, 2], [3, 4]]
@@ -71,7 +71,7 @@ def test_shape_space_batch_coverage() -> None:
             # space_to_batch_nd eager mode
             mock_backend.execute_op.return_value = np.zeros((4, 2, 2, 1))
             res_nd1 = space_batch_mod.space_to_batch_nd(t_in, [2, 2], [[0, 0], [0, 0]])
-            assert cast("EagerTensorProtocol", getattr(res_nd1, "shape")) == (4, 2, 2, 1)
+            assert typing.cast("EagerTensorProtocol", getattr(res_nd1, "shape")) == (4, 2, 2, 1)
 
             mock_backend.execute_op.return_value = 42
             res_nd2 = space_batch_mod.space_to_batch_nd(raw_input, [2, 2], [[0, 0], [0, 0]])

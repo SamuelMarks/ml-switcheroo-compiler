@@ -1,6 +1,8 @@
 """Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.jax.types`)."""
 
-from typing import Optional, cast
+from __future__ import annotations
+
+import typing
 
 import jax.numpy as jnp
 
@@ -24,10 +26,10 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return generic_zeros(cast(ZerosModule, jnp), shape)
+    return generic_zeros(typing.cast(ZerosModule, jnp), shape)
 
 
-def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
+def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
     """Execute array for compiler processing.
 
     Args:
@@ -38,7 +40,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(jnp, data, dtype))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(jnp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -51,7 +53,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_asarray)(jnp, data))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_asarray)(jnp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -64,4 +66,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Result.
     """
-    return cast(float, cast("EagerCallableProtocol", generic_item)(jnp, data))
+    return typing.cast(float, typing.cast("EagerCallableProtocol", generic_item)(jnp, data))

@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Iterable
 
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 
 
 class _TopologicalSorter:
@@ -40,10 +41,10 @@ class _TopologicalSorter:
 
         self.temp_mark.add(node_id)
         node = None
-        if isinstance(self.graph.nodes, dict):
+        if hasattr(self.graph.nodes, "get"):
             node = self.graph.nodes.get(node_id)
-        elif isinstance(self.graph.nodes, list):
-            for n in self.graph.nodes:
+        else:
+            for n in typing.cast(Iterable[IRNode], self.graph.nodes):
                 if getattr(n, "id", "") == node_id:
                     node = n
                     break
@@ -67,6 +68,8 @@ class _TopologicalSorter:
         nodes_iterable: Iterable[str | LogicalNode] = self.graph.nodes
         if isinstance(nodes_iterable, dict):
             nodes_iterable = list(nodes_iterable.keys())
+        elif not isinstance(nodes_iterable, list):
+            return []
         for n in nodes_iterable:
             node_id = getattr(n, "id", n) if not isinstance(n, str) else n
             if node_id not in self.visited:

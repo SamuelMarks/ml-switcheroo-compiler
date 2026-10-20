@@ -9,11 +9,12 @@ propagation.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError, TracingError
@@ -24,23 +25,25 @@ from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape, get_trace_count, increment_trace_count, reset_trace_count
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
 def testglobal_tracing_state_tape() -> None:
     """Verifies the lifecycle and state transitions of the TracerTape."""
     tape = TracerTape()
-    assert not global_tracing_state.is_tracing
+    assert not typing.cast("EagerValue", global_tracing_state.is_tracing)
     tape.add_node(LogicalNode(id="n", op_type="Linear"))
     graph = tape.start_tracing("Test")
-    assert global_tracing_state.is_tracing
+    assert typing.cast("EagerValue", global_tracing_state.is_tracing)
     assert graph.name == "Test"
     n = LogicalNode(id="n1", op_type="Input")
     tape.add_node(n)
+    assert global_tracing_state.active_graph is not None
     assert "n1" in global_tracing_state.active_graph.nodes
     out_graph = tape.stop_tracing()
     assert not global_tracing_state.is_tracing
+    assert out_graph is not None
     assert out_graph.nodes["n1"] == n
 
 
@@ -55,7 +58,7 @@ def test_proxy_tensor_math() -> None:
     b = ProxyTensor(id="b", shape=(2, 3))
     c = a + b
     assert c.shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(c.data, "id")) != "a"
+    assert typing.cast("EagerTensorProtocol", getattr(c.data, "id")) != "a"
     _ = a - b
     _ = a * b
     _ = a / b
@@ -70,7 +73,7 @@ def test_proxy_tensor_math() -> None:
     n = a @ m
     assert n.shape == (2, 4)
     graph = global_tracing_state.stop_tracing()
-    assert len(cast("EagerTensorProtocol", getattr(graph, "nodes"))) > 0
+    assert len(typing.cast("EagerTensorProtocol", getattr(graph, "nodes"))) > 0
 
 
 def test_proxy_tensor_outside_context() -> None:
@@ -100,7 +103,7 @@ def test_tracer_add_node_with_ast_ref() -> None:
     n = LogicalNode(id="n1", op_type="Input", source_ast_ref="test:1")
     tape.add_node(n)
     out_graph = tape.stop_tracing()
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(out_graph, "nodes")), "__getitem__")("n1")).source_ast_ref == "test:1"
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(out_graph, "nodes")), "__getitem__")("n1")).source_ast_ref == "test:1"
 
 
 def test_proxy_tensor_assign_operations() -> None:
@@ -151,9 +154,9 @@ def test_proxy_tensor_assign_errors() -> None:
             var_proxy.assign(val_proxy)
         global_tracing_state.add_node(IRNode(id="var_node", op_type="ReadVariable", inputs=[], attributes={"variable_name": "x"}, shape_metadata=()))
         var_proxy_2 = ProxyTensor(id="var_node", shape=(), dtype="float32")
-        out = cast("EagerCallableProtocol", var_proxy_2.assign)(42.0)
+        out = typing.cast("EagerCallableProtocol", var_proxy_2.assign)(42.0)
         assert out.shape == ()
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(global_tracing_state.active_graph, "nodes")), "__getitem__")(out.id)).op_type == "AssignVariable"
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(global_tracing_state.active_graph, "nodes")), "__getitem__")(out.id)).op_type == "AssignVariable"
     finally:
         global_tracing_state.stop_tracing()
 
@@ -173,12 +176,12 @@ def test_trace_counts() -> None:
         """
         pass
 
-    cast("EagerCallableProtocol", reset_trace_count)(my_func)
-    assert cast("EagerCallableProtocol", get_trace_count)(my_func) == 0
-    cast("EagerCallableProtocol", increment_trace_count)(my_func)
-    assert cast("EagerCallableProtocol", get_trace_count)(my_func) == 1
-    cast("EagerCallableProtocol", reset_trace_count)(my_func)
-    assert cast("EagerCallableProtocol", get_trace_count)(my_func) == 0
+    typing.cast("EagerCallableProtocol", reset_trace_count)(my_func)
+    assert typing.cast("EagerCallableProtocol", get_trace_count)(my_func) == 0
+    typing.cast("EagerCallableProtocol", increment_trace_count)(my_func)
+    assert typing.cast("EagerCallableProtocol", get_trace_count)(my_func) == 1
+    typing.cast("EagerCallableProtocol", reset_trace_count)(my_func)
+    assert typing.cast("EagerCallableProtocol", get_trace_count)(my_func) == 0
 
     def traced_fn() -> EagerValue:
         """Evaluate and process the traced fn operation.
@@ -189,10 +192,10 @@ def test_trace_counts() -> None:
         proxy = ProxyTensor(id="out", shape=(), dtype="float32")
         return Tensor(proxy, TensorConfig((), DType.Float32, "cpu"))
 
-    cast("EagerCallableProtocol", reset_trace_count)(traced_fn)
-    cast("EagerCallableProtocol", _trace_function)(traced_fn, (), "test_trace")
-    assert cast("EagerCallableProtocol", get_trace_count)(traced_fn) == 1
-    cast("EagerCallableProtocol", reset_trace_count)(traced_fn)
+    typing.cast("EagerCallableProtocol", reset_trace_count)(traced_fn)
+    typing.cast("EagerCallableProtocol", _trace_function)(traced_fn, (), "test_trace")
+    assert typing.cast("EagerCallableProtocol", get_trace_count)(traced_fn) == 1
+    typing.cast("EagerCallableProtocol", reset_trace_count)(traced_fn)
 
 
 def _test_tracing_state_full_branch_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -213,11 +216,11 @@ def _test_tracing_state_full_branch_coverage_part_1(_state: dict[str, EagerTenso
     assert state.active_graph is None
     g1 = state.start_tracing("Outer")
     assert state.is_tracing
-    assert cast("EagerTensorProtocol", getattr(state.active_graph, "name")) == "Outer"
+    assert typing.cast("EagerTensorProtocol", getattr(state.active_graph, "name")) == "Outer"
     opts = SimpleNamespace(parallel_iterations=4, swap_memory=True, maximum_iterations=100, shape_invariants=[])
     setattr(state, "current_loop_options", opts)
     g2 = state.start_tracing("Inner")
-    assert cast("EagerTensorProtocol", getattr(state.active_graph, "name")) == "Inner"
+    assert typing.cast("EagerTensorProtocol", getattr(state.active_graph, "name")) == "Inner"
     assert len(state.graph_stack) == 1
     assert len(state.loop_options_stack) == 1
     node_with_ast = LogicalNode(id="n_ast", op_type="Relu")
@@ -239,7 +242,7 @@ def _test_tracing_state_full_branch_coverage_part_2(_state: dict[str, EagerTenso
         _state: Shared test state dictionary.
     """
     (LogicalNode, state, sys) = (_state["LogicalNode"], _state["state"], _state["sys"])
-    setattr(state.active_graph, "name", None)
+    object.__setattr__(state.active_graph, "name", None)
     node_no_domain = LogicalNode(id="n_no_dom", op_type="Relu")
     setattr(node_no_domain, "domain", "")
     state.add_node(node_no_domain)
@@ -268,12 +271,12 @@ def _test_tracing_state_full_branch_coverage_part_3(_state: dict[str, EagerTenso
         node_stream = LogicalNode(id="n_stream", op_type="Relu")
         setattr(node_stream, "stream", None)
         state.add_node(node_stream)
-        assert node_stream.stream == "stream_cuda_1"
+        assert typing.cast("EagerValue", node_stream.stream) == "stream_cuda_1"
         setattr(config, "current_stream", "default")
         node_stream_def = LogicalNode(id="n_stream_def", op_type="Relu")
         setattr(node_stream_def, "stream", None)
         state.add_node(node_stream_def)
-        assert node_stream_def.stream is None
+        assert typing.cast("EagerValue", node_stream_def.stream) is None
         cfg_module = sys.modules.pop("ml_switcheroo_compiler.core.config")
         try:
             node_dummy = LogicalNode(id="n_dummy", op_type="Relu")
@@ -286,7 +289,7 @@ def _test_tracing_state_full_branch_coverage_part_3(_state: dict[str, EagerTenso
     loop_node = LogicalNode(id="loop_1", op_type="Loop", attributes={})
     state.add_node(loop_node)
     assert loop_node.attributes["parallel_iterations"] == 4
-    assert cast("EagerTensorProtocol", loop_node.attributes["swap_memory"]) is cast("EagerTensorProtocol", True)
+    assert typing.cast("EagerValue", loop_node.attributes["swap_memory"]) is True
     getattr(_state, "update")({"loop_node": loop_node})
     _state.update(locals())
 
@@ -309,12 +312,12 @@ def _test_tracing_state_full_branch_coverage_part_4(_state: dict[str, EagerTenso
     assert "parallel_iterations" not in loop_node_2.attributes
     assert loop_node_2.attributes["loop_options"] == "existing"
     setattr(state.active_graph, "inputs", ["input_to_replace", "other_input"])
-    setattr(state.active_graph, "input_specs", {"input_to_replace": "spec"})
+    object.__setattr__(state.active_graph, "input_specs", {"input_to_replace": "spec"})
     replacing_node = LogicalNode(id="input_to_replace", op_type="Add")
     state.add_node(replacing_node)
     assert "input_to_replace" not in state.active_graph.inputs
     assert "input_to_replace" not in state.active_graph.input_specs
-    delattr(state.active_graph, "input_specs")
+    object.__delattr__(state.active_graph, "input_specs")
     setattr(state.active_graph, "inputs", ["input_to_replace_2"])
     replacing_node_2 = LogicalNode(id="input_to_replace_2", op_type="Mul")
     state.add_node(replacing_node_2)
@@ -333,21 +336,21 @@ def _test_tracing_state_full_branch_coverage_part_5(_state: dict[str, EagerTenso
         _state: Shared test state dictionary.
     """
     (TracingState, g1, opts, state) = (_state["TracingState"], _state["g1"], _state["opts"], _state["state"])
-    assert state.is_tracing
-    assert state.active_graph is g1
-    assert state.current_loop_options is opts
+    assert typing.cast("EagerValue", state.is_tracing)
+    assert typing.cast("EagerValue", state.active_graph) is g1
+    assert typing.cast("EagerValue", state.current_loop_options) is opts
     outer_g = state.stop_tracing()
-    assert outer_g is g1
-    assert not state.is_tracing
-    assert state.active_graph is None
-    assert state.current_loop_options is None
+    assert typing.cast("EagerValue", outer_g) is g1
+    assert not typing.cast("EagerValue", state.is_tracing)
+    assert typing.cast("EagerValue", state.active_graph) is None
+    assert typing.cast("EagerValue", state.current_loop_options) is None
     state_dummy = TracingState()
     state_dummy.start_tracing("Base")
     dummy_inner = state_dummy.start_tracing("Inner")
     state_dummy.loop_options_stack.clear()
     popped = state_dummy.stop_tracing()
     assert popped is dummy_inner
-    assert state_dummy.current_loop_options is None
+    assert typing.cast("EagerValue", state_dummy.current_loop_options) is None
     getattr(_state, "update")({"dummy_inner": dummy_inner, "outer_g": outer_g, "popped": popped, "state_dummy": state_dummy})
 
 

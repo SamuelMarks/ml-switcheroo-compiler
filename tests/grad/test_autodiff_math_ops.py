@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -73,11 +73,11 @@ def test_autodiff_unary_math_ops() -> None:
                 inp: Test parameter `inp`.
                 op_bound: Test parameter `op_bound`.
             """
-            return cast("Tensor", dispatch_op(op_bound, inp))
+            return typing.cast("Tensor", dispatch_op(op_bound, inp))
 
         try:
-            primal, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x)
-            grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+            primal, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x)
+            grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
             assert primal is not None
             assert grads is not None
             evaluated_unary += 1
@@ -122,11 +122,11 @@ def test_autodiff_binary_math_ops() -> None:
                 in_b: Test parameter `in_b`.
                 op_bound: Test parameter `op_bound`.
             """
-            return cast("Tensor", dispatch_op(op_bound, in_a, in_b))
+            return typing.cast("Tensor", dispatch_op(op_bound, in_a, in_b))
 
         try:
-            primal, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x, y)
-            grads = cast("EagerCallableProtocol", vjp_fn)(cot)
+            primal, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x, y)
+            grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
             assert primal is not None
             assert grads is not None
             evaluated_binary += 1

@@ -6,7 +6,6 @@ import inspect
 import typing
 import uuid
 from collections.abc import Callable, Sequence  # noqa: F401
-from typing import Optional, Union, cast  # noqa: F401
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode, topological_sort
 
@@ -15,6 +14,21 @@ from ml_switcheroo_compiler.core.shape import ShapeLike, TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, clone_logical_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
+
+
+class JvpRuleCallable(typing.Protocol):
+    """Protocol for JVP rule functions (both graph-based and expression-based)."""
+
+    def __call__(self, *args: IRGraph | LogicalNode | str | list[str]) -> str | tuple[str, ...]:
+        """Execute the JVP rule.
+
+        Args:
+            *args: Rule arguments.
+
+        Returns:
+            str | tuple[str, ...]: Output tangent node ID(s) or expression string.
+        """
+        ...
 
 
 def _is_zero_node(graph: LogicalGraph, node_id: str) -> bool:
@@ -123,7 +137,7 @@ def _load_rematerialization_rules() -> dict[str, AttributeValue]:
     return {}
 
 
-def _should_rematerialize(node: LogicalNode, rules: Optional[dict[str, AttributeValue]] = None) -> bool:
+def _should_rematerialize(node: LogicalNode, rules: dict[str, AttributeValue] | None = None) -> bool:
     """Determine if a node should be rematerialized across backward boundary.
 
     Args:
@@ -139,9 +153,11 @@ def _should_rematerialize(node: LogicalNode, rules: Optional[dict[str, Attribute
         rules = _load_rematerialization_rules()
     if not rules:
         return False
-    if node.op_type in typing.cast(Sequence[str], rules.get("high_cost_ops", [])):
+    high_cost = rules.get("high_cost_ops", [])
+    if isinstance(high_cost, (list, tuple)) and node.op_type in high_cost:
         return False
-    return node.op_type in typing.cast(Sequence[str], rules.get("target_ops", [])) and bool(node.attributes.get("checkpoint", False))
+    target_ops = rules.get("target_ops", [])
+    return isinstance(target_ops, (list, tuple)) and node.op_type in target_ops and bool(node.attributes.get("checkpoint", False))
 
 
 def _recompute_subgraph(new_graph: LogicalGraph, node: LogicalNode) -> LogicalNode:
@@ -315,14 +331,14 @@ def _maybe_vectorize_graph(graph: LogicalGraph) -> LogicalGraph:
     ir_g.inputs = list(graph.inputs)
     ir_g.outputs = list(graph.outputs)
     for nid, n in graph.nodes.items():
-        ir_g.nodes[nid] = n if isinstance(n, IRNode) else IRNode(**n.__dict__)
+        ir_g.nodes[nid] = n if type(n) is IRNode else IRNode(**n.__dict__)
     return vectorization_pass(ir_g)
 
 
 def _init_adjoints(
     new_graph: LogicalGraph,
     output_ids: list[str],
-    cotangent_id: typing.Optional[str | Sequence[str] | dict[str, str]],
+    cotangent_id: str | Sequence[str] | dict[str, str] | None,
 ) -> dict[str, str]:
     """Initialize output adjoints for reverse-mode autodiff.
 
@@ -361,7 +377,7 @@ def _init_adjoints(
     return adjoints
 
 
-def grad(graph: LogicalGraph, wrt: list[str], output_id: str | Sequence[str], cotangent_id: typing.Optional[str | Sequence[str] | dict[str, str]] = None) -> LogicalGraph:
+def grad(graph: LogicalGraph, wrt: list[str], output_id: str | Sequence[str], cotangent_id: str | Sequence[str] | dict[str, str] | None = None) -> LogicalGraph:
     """Execute grad for compiler processing.
 
     Args:
@@ -447,6 +463,7 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: ShapeLike, 
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
     node = ast.parse(expr_str, mode="eval").body
+    norm_shape: tuple[int | str, ...] | list[int | str] | None = tuple(int(d) if isinstance(d, int) else str(d) for d in shape_metadata) if isinstance(shape_metadata, (list, tuple)) else None
 
     def _convert(ast_node: ast.AST) -> str:
         """Recursively convert an AST node to IR.
@@ -474,11 +491,11 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: ShapeLike, 
             op_type = op_map.get(type(ast_node.op))
             if op_type is None:
                 raise ValueError(f"Unsupported binary operator in JVP expression: {type(ast_node.op)}")
-            return emit_ir_node(graph, op_type, [left_id, right_id], cast("tuple[int | str, ...] | list[int | str] | None", shape_metadata))
+            return emit_ir_node(graph, op_type, [left_id, right_id], norm_shape)
         if isinstance(ast_node, ast.UnaryOp):
             operand_id = _convert(ast_node.operand)
             if isinstance(ast_node.op, ast.USub):
-                return emit_ir_node(graph, "Negative", [operand_id], cast("tuple[int | str, ...] | list[int | str] | None", shape_metadata))
+                return emit_ir_node(graph, "Negative", [operand_id], norm_shape)
             return operand_id
         if isinstance(ast_node, ast.Constant):
             import uuid
@@ -486,10 +503,11 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: ShapeLike, 
             from ml_switcheroo_ir import LogicalNode
 
             const_id = f"jvp_const_{uuid.uuid4().hex[:6]}"
+            c_val: AttributeValue = ast_node.value if isinstance(ast_node.value, (int, float, str, bool)) else None
             const_node = LogicalNode(
                 id=const_id,
                 op_type="Constant",
-                attributes={"value": cast("AttributeValue", ast_node.value)},
+                attributes={"value": c_val},
                 shape_metadata=(),
             )
             graph.nodes[const_id] = const_node
@@ -500,7 +518,7 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: ShapeLike, 
 
 
 def _invoke_style2_jvp_rule(
-    jvp_func: Callable[..., str | tuple[str, ...]],
+    jvp_func: JvpRuleCallable,
     sig: inspect.Signature,
     new_graph: IRGraph,
     node: LogicalNode,
@@ -509,7 +527,7 @@ def _invoke_style2_jvp_rule(
     """Invoke a JVP rule using the 'style 2' parameter mapping.
 
     Args:
-        jvp_func (Callable[..., str | tuple[str, ...]]): The JVP function.
+        jvp_func (JvpRuleCallable): The JVP function.
         sig (inspect.Signature): The signature of the JVP function.
         new_graph (IRGraph): The target IR graph.
         node (LogicalNode): The IR node.
@@ -541,7 +559,7 @@ def _invoke_style2_jvp_rule(
 
 
 def _invoke_jvp_rule(
-    jvp_func: Callable[..., str | tuple[str, ...]],
+    jvp_func: JvpRuleCallable,
     new_graph: IRGraph,
     node: LogicalNode,
     input_tangents: list[str],
@@ -549,7 +567,7 @@ def _invoke_jvp_rule(
     """Invoke a JVP rule function, auto-detecting the style.
 
     Args:
-        jvp_func (Callable[..., str | tuple[str, ...]]): The JVP function.
+        jvp_func (JvpRuleCallable): The JVP function.
         new_graph (IRGraph): The target IR graph.
         node (LogicalNode): The IR node.
         input_tangents (list[str]): The list of input tangents.
@@ -576,14 +594,14 @@ def _invoke_jvp_rule(
 
 def _process_jvp_node(
     new_graph: IRGraph,
-    node: LogicalNode | TensorOrScalar,
+    node: LogicalNode,
     tangents: dict[str, str],
 ) -> None:
     """Process a single node for JVP.
 
     Args:
         new_graph (IRGraph): The target IR graph.
-        node (LogicalNode | TensorOrScalar): The IR node to process.
+        node (LogicalNode): The IR node to process.
         tangents (dict[str, str]): Mapping of node IDs to tangent node IDs.
 
     Raises:
@@ -630,19 +648,14 @@ def _process_jvp_node(
         return
 
     try:
-        jvp_func = get_jvp(getattr(node, "op_type"))
+        jvp_func: JvpRuleCallable = get_jvp(getattr(node, "op_type"))  # type: ignore[assignment]
     except ValueError:
         raise ValueError(f"Missing JVP rule for operation: {getattr(node, 'op_type', 'Unknown')}") from None
 
     input_tangents = _get_input_tangents(new_graph, node, tangents)
 
     try:
-        out_tangent = _invoke_jvp_rule(
-            cast("Callable[..., Union[str, tuple[str, ...]]]", jvp_func),
-            new_graph,
-            cast("LogicalNode", node),
-            input_tangents,
-        )
+        out_tangent = _invoke_jvp_rule(jvp_func, new_graph, node, input_tangents)
         if out_tangent is not None:
             tangents[getattr(node, "id")] = str(out_tangent)
     except ValueError:
@@ -720,7 +733,7 @@ def hvp(
     tangents: list[str],
     outputs: list[str],
     mode: str = "forward-over-reverse",
-    projected_tangents: typing.Optional[list[str]] = None,
+    projected_tangents: list[str] | None = None,
 ) -> LogicalGraph:
     """Evaluate Hessian-vector product (HVP) operation.
 
@@ -786,13 +799,14 @@ def conv2d_vjp_input(graph: LogicalGraph, node: LogicalNode, cotangent: str) -> 
     stride = node.attributes.get("stride", node.attributes.get("strides", (1, 1)))
     dilation = node.attributes.get("dilation", node.attributes.get("dilations", (1, 1)))
 
+    raw_groups = node.attributes.get("groups", 1)
     attrs = {
         "stride": stride,
         "strides": stride,
         "padding": node.attributes.get("padding", "SAME"),
         "dilation": dilation,
         "dilations": dilation,
-        "groups": int(cast(int, node.attributes.get("groups", 1))),
+        "groups": int(raw_groups) if isinstance(raw_groups, (int, float, str)) else 1,
         "target_shape": shape_meta,
     }
     return emit_ir_node(graph, "Conv2DInputGrad", [cotangent, weight_id], shape_metadata=shape_meta, attributes=attrs)
@@ -821,13 +835,14 @@ def conv2d_vjp_weight(graph: LogicalGraph, node: LogicalNode, cotangent: str) ->
     stride = node.attributes.get("stride", node.attributes.get("strides", (1, 1)))
     dilation = node.attributes.get("dilation", node.attributes.get("dilations", (1, 1)))
 
+    raw_groups = node.attributes.get("groups", 1)
     attrs = {
         "stride": stride,
         "strides": stride,
         "padding": node.attributes.get("padding", "SAME"),
         "dilation": dilation,
         "dilations": dilation,
-        "groups": int(cast(int, node.attributes.get("groups", 1))),
+        "groups": int(raw_groups) if isinstance(raw_groups, (int, float, str)) else 1,
         "target_shape": shape_meta,
     }
     return emit_ir_node(graph, "Conv2DWeightGrad", [input_id, cotangent], shape_metadata=shape_meta, attributes=attrs)

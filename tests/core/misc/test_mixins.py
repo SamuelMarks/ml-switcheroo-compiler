@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 from ml_switcheroo_compiler.core.mixins import TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
     from ml_switcheroo_compiler.ops.base import OpDef
 
@@ -22,50 +22,50 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
         Args:
             name: Test parameter `name`.
         """
-        return cast("OpDef", lambda *args, **kwargs: (name, args))
+        return typing.cast("OpDef", lambda *args, **kwargs: (name, args))
 
 
 def test_mixins() -> None:
     """Test function test_mixins."""
     t = DummyTensor()
 
-    assert cast("EagerTensorProtocol", (t + 1)[0]) == cast("EagerTensorProtocol", "Add")
-    assert cast("EagerTensorProtocol", (1 + t)[0]) == cast("EagerTensorProtocol", "Add")
-    assert cast("EagerTensorProtocol", (t - 1)[0]) == cast("EagerTensorProtocol", "Subtract")
-    assert cast("EagerTensorProtocol", (1 - t)[0]) == cast("EagerTensorProtocol", "Subtract")
-    assert cast("EagerTensorProtocol", (t * 1)[0]) == cast("EagerTensorProtocol", "Multiply")
-    assert cast("EagerTensorProtocol", (1 * t)[0]) == cast("EagerTensorProtocol", "Multiply")
-    assert cast("EagerTensorProtocol", (t / 1)[0]) == cast("EagerTensorProtocol", "TrueDivide")
-    assert cast("EagerTensorProtocol", (1 / t)[0]) == cast("EagerTensorProtocol", "TrueDivide")
-    assert cast("EagerTensorProtocol", (t**1)[0]) == cast("EagerTensorProtocol", "Power")
-    assert cast("EagerTensorProtocol", (1**t)[0]) == cast("EagerTensorProtocol", "Power")
-    assert cast("EagerTensorProtocol", (t // 1)[0]) == cast("EagerTensorProtocol", "FloorDivide")
-    assert cast("EagerTensorProtocol", (1 // t)[0]) == cast("EagerTensorProtocol", "FloorDivide")
-    assert cast("EagerTensorProtocol", (t % 1)[0]) == cast("EagerTensorProtocol", "Mod")
-    assert cast("EagerTensorProtocol", (1 % t)[0]) == cast("EagerTensorProtocol", "Mod")
+    assert typing.cast("EagerTensorProtocol", (t + 1)[0]) == typing.cast("EagerTensorProtocol", "Add")
+    assert typing.cast("EagerTensorProtocol", (1 + t)[0]) == typing.cast("EagerTensorProtocol", "Add")
+    assert typing.cast("EagerTensorProtocol", (t - 1)[0]) == typing.cast("EagerTensorProtocol", "Subtract")
+    assert typing.cast("EagerTensorProtocol", (1 - t)[0]) == typing.cast("EagerTensorProtocol", "Subtract")
+    assert typing.cast("EagerTensorProtocol", (t * 1)[0]) == typing.cast("EagerTensorProtocol", "Multiply")
+    assert typing.cast("EagerTensorProtocol", (1 * t)[0]) == typing.cast("EagerTensorProtocol", "Multiply")
+    assert typing.cast("EagerTensorProtocol", (t / 1)[0]) == typing.cast("EagerTensorProtocol", "TrueDivide")
+    assert typing.cast("EagerTensorProtocol", (1 / t)[0]) == typing.cast("EagerTensorProtocol", "TrueDivide")
+    assert typing.cast("EagerTensorProtocol", (t**1)[0]) == typing.cast("EagerTensorProtocol", "Power")
+    assert typing.cast("EagerTensorProtocol", (1**t)[0]) == typing.cast("EagerTensorProtocol", "Power")
+    assert typing.cast("EagerTensorProtocol", (t // 1)[0]) == typing.cast("EagerTensorProtocol", "FloorDivide")
+    assert typing.cast("EagerTensorProtocol", (1 // t)[0]) == typing.cast("EagerTensorProtocol", "FloorDivide")
+    assert typing.cast("EagerTensorProtocol", (t % 1)[0]) == typing.cast("EagerTensorProtocol", "Mod")
+    assert typing.cast("EagerTensorProtocol", (1 % t)[0]) == typing.cast("EagerTensorProtocol", "Mod")
 
-    assert cast("EagerTensorProtocol", (t & 1)[0]) == cast("EagerTensorProtocol", "BitwiseAnd")
-    assert cast("EagerTensorProtocol", (1 & t)[0]) == cast("EagerTensorProtocol", "BitwiseAnd")
-    assert cast("EagerTensorProtocol", (t | 1)[0]) == cast("EagerTensorProtocol", "BitwiseOr")
-    assert cast("EagerTensorProtocol", (1 | t)[0]) == cast("EagerTensorProtocol", "BitwiseOr")
-    assert cast("EagerTensorProtocol", (t ^ 1)[0]) == cast("EagerTensorProtocol", "BitwiseXor")
-    assert cast("EagerTensorProtocol", (1 ^ t)[0]) == cast("EagerTensorProtocol", "BitwiseXor")
-    assert cast("EagerTensorProtocol", (t << 1)[0]) == cast("EagerTensorProtocol", "LeftShift")
-    assert cast("EagerTensorProtocol", (1 << t)[0]) == cast("EagerTensorProtocol", "LeftShift")
-    assert cast("EagerTensorProtocol", (t >> 1)[0]) == cast("EagerTensorProtocol", "RightShift")
-    assert cast("EagerTensorProtocol", (1 >> t)[0]) == cast("EagerTensorProtocol", "RightShift")
+    assert typing.cast("EagerTensorProtocol", (t & 1)[0]) == typing.cast("EagerTensorProtocol", "BitwiseAnd")
+    assert typing.cast("EagerTensorProtocol", (1 & t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseAnd")
+    assert typing.cast("EagerTensorProtocol", (t | 1)[0]) == typing.cast("EagerTensorProtocol", "BitwiseOr")
+    assert typing.cast("EagerTensorProtocol", (1 | t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseOr")
+    assert typing.cast("EagerTensorProtocol", (t ^ 1)[0]) == typing.cast("EagerTensorProtocol", "BitwiseXor")
+    assert typing.cast("EagerTensorProtocol", (1 ^ t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseXor")
+    assert typing.cast("EagerTensorProtocol", (t << 1)[0]) == typing.cast("EagerTensorProtocol", "LeftShift")
+    assert typing.cast("EagerTensorProtocol", (1 << t)[0]) == typing.cast("EagerTensorProtocol", "LeftShift")
+    assert typing.cast("EagerTensorProtocol", (t >> 1)[0]) == typing.cast("EagerTensorProtocol", "RightShift")
+    assert typing.cast("EagerTensorProtocol", (1 >> t)[0]) == typing.cast("EagerTensorProtocol", "RightShift")
 
-    assert cast("EagerTensorProtocol", (-t)[0]) == cast("EagerTensorProtocol", "Negative")
-    assert cast("EagerTensorProtocol", (+t)[0]) == cast("EagerTensorProtocol", "Positive")
-    assert cast("EagerTensorProtocol", abs(t)[0]) == cast("EagerTensorProtocol", "Abs")
-    assert cast("EagerTensorProtocol", (~t)[0]) == cast("EagerTensorProtocol", "BitwiseNot")
+    assert typing.cast("EagerTensorProtocol", (-t)[0]) == typing.cast("EagerTensorProtocol", "Negative")
+    assert typing.cast("EagerTensorProtocol", (+t)[0]) == typing.cast("EagerTensorProtocol", "Positive")
+    assert typing.cast("EagerTensorProtocol", abs(t)[0]) == typing.cast("EagerTensorProtocol", "Abs")
+    assert typing.cast("EagerTensorProtocol", (~t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseNot")
 
-    assert cast("EagerTensorProtocol", (t < 1)[0]) == "Less"
-    assert cast("EagerTensorProtocol", (t > 1)[0]) == "Greater"
-    assert cast("EagerTensorProtocol", (t <= 1)[0]) == "LessEqual"
-    assert cast("EagerTensorProtocol", (t >= 1)[0]) == "GreaterEqual"
-    assert cast("EagerTensorProtocol", getattr((cast("EagerTensorProtocol", t) == cast("EagerTensorProtocol", 1)), "__getitem__")(0)) == cast("EagerTensorProtocol", "Equal")
-    assert cast("EagerTensorProtocol", getattr((cast("EagerTensorProtocol", t) != cast("EagerTensorProtocol", 1)), "__getitem__")(0)) == cast("EagerTensorProtocol", "NotEqual")
+    assert typing.cast("EagerTensorProtocol", (t < 1)[0]) == "Less"
+    assert typing.cast("EagerTensorProtocol", (t > 1)[0]) == "Greater"
+    assert typing.cast("EagerTensorProtocol", (t <= 1)[0]) == "LessEqual"
+    assert typing.cast("EagerTensorProtocol", (t >= 1)[0]) == "GreaterEqual"
+    assert typing.cast("EagerTensorProtocol", getattr((typing.cast("EagerTensorProtocol", t) == typing.cast("EagerTensorProtocol", 1)), "__getitem__")(0)) == typing.cast("EagerTensorProtocol", "Equal")
+    assert typing.cast("EagerTensorProtocol", getattr((typing.cast("EagerTensorProtocol", t) != typing.cast("EagerTensorProtocol", 1)), "__getitem__")(0)) == typing.cast("EagerTensorProtocol", "NotEqual")
 
     assert hash(t) == id(t)
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ast
-from typing import TYPE_CHECKING
+import typing
 
 import numpy as np
 import pytest
@@ -19,7 +19,7 @@ from ml_switcheroo_compiler.backends.numpy.eager._indexing_parsing_utils import 
     _safe_parse_key,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 

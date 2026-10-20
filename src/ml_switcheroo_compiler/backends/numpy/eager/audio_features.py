@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -63,7 +63,7 @@ def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tup
 
 
 @numpy_eager_registry.register("Dct")
-def _np_dct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_dct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np dct operation on the active backend array.
 
     Args:
@@ -75,9 +75,9 @@ def _np_dct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue)
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
-    type: int = cast(int, kwargs.get("type", 2))
-    axis: int = cast(int, kwargs.get("axis", -1))
-    norm: str | None = cast("str | None", kwargs.get("norm", None))
+    type: int = typing.cast(int, kwargs.get("type", 2))
+    axis: int = typing.cast(int, kwargs.get("axis", -1))
+    norm: str | None = typing.cast("str | None", kwargs.get("norm", None))
 
     N = x.shape[axis]
     m: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _dct_1d_matrix(N, type, norm)
@@ -124,7 +124,7 @@ def _idct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tu
 
 
 @numpy_eager_registry.register("Idct")
-def _np_idct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_idct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np idct operation on the active backend array.
 
     Args:
@@ -136,9 +136,9 @@ def _np_idct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
-    type: int = cast(int, kwargs.get("type", 2))
-    axis: int = cast(int, kwargs.get("axis", -1))
-    norm: str | None = cast("str | None", kwargs.get("norm", None))
+    type: int = typing.cast(int, kwargs.get("type", 2))
+    axis: int = typing.cast(int, kwargs.get("axis", -1))
+    norm: str | None = typing.cast("str | None", kwargs.get("norm", None))
 
     N = x.shape[axis]
     m: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _idct_1d_matrix(N, type, norm)
@@ -148,7 +148,7 @@ def _np_idct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
 
 
 @numpy_eager_registry.register("Mdct")
-def _np_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement MDCT eagerly in numpy.
 
     Args:
@@ -165,7 +165,7 @@ def _np_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
     N = kwargs.get("N", x.shape[-1] // 2)
 
-    n_int = int(cast(int, N))
+    n_int = int(typing.cast(int, N))
     if int(x.shape[-1]) != 2 * n_int:
         raise ValueError("MDCT input last dimension must be 2N")
 
@@ -177,7 +177,7 @@ def _np_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
 
 
 @numpy_eager_registry.register("InverseMdct")
-def _np_inverse_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_inverse_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Inverse MDCT eagerly in numpy.
 
     Args:
@@ -199,7 +199,7 @@ def _np_inverse_mdct(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
 
 @numpy_eager_registry.register("Frame")
-def _np_frame(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_frame(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Frame eagerly in numpy.
 
     Args:
@@ -211,8 +211,8 @@ def _np_frame(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
-    frame_length: int = cast(int, kwargs.get("frame_length", 1))
-    frame_step: int = cast(int, kwargs.get("frame_step", 1))
+    frame_length: int = typing.cast(int, kwargs.get("frame_length", 1))
+    frame_step: int = typing.cast(int, kwargs.get("frame_step", 1))
     num_frames: int = (x.shape[-1] - frame_length) // frame_step + 1
     if num_frames <= 0:
         return np.empty(list(x.shape)[:-1] + [0, frame_length], dtype=x.dtype)
@@ -222,7 +222,7 @@ def _np_frame(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 
 @numpy_eager_registry.register("OverlapAndAdd")
-def _np_overlap_and_add(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_overlap_and_add(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement OverlapAndAdd eagerly in numpy.
 
     Args:
@@ -234,7 +234,7 @@ def _np_overlap_and_add(backend_module: ModuleType, *args: EagerValue, **kwargs:
             tuple[int, ...]: Result.
     """
     x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
-    frame_step: int = cast(int, kwargs.get("frame_step", 1))
+    frame_step: int = typing.cast(int, kwargs.get("frame_step", 1))
     num_frames: int = x.shape[-2]
     frame_length: int = x.shape[-1]
     res_length: int = (num_frames - 1) * frame_step + frame_length

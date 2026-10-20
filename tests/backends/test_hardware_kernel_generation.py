@@ -6,7 +6,7 @@ verifying compiler protocol compliance, syntax validation, and declarative execu
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
 from ml_switcheroo_compiler.backends.hardware_compilers import (
@@ -27,7 +27,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -128,7 +128,7 @@ def test_advanced_hardware_kernel_patterns() -> None:
         g.nodes["p_op"] = node
         g.inputs = ["in0"]
         g.outputs = ["p_op"]
-        setattr(g, "sorted_nodes", [in0, node])
+        object.__setattr__(g, "sorted_nodes", [in0, node])
 
         cuda_code = CudaCodeGenerator(g).generate()
         assert pattern in cuda_code or "kernel" in cuda_code
@@ -228,13 +228,13 @@ def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[
         if op_name in binary_ops:
             in1 = IRNode(id="in1", op_type="Input", shape_metadata=(4, 4))
             g.nodes["in1"] = in1
-            node = cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
+            node = typing.cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
             g.inputs = ["in0", "in1"]
-            setattr(g, "sorted_nodes", [in0, in1, node])
+            object.__setattr__(g, "sorted_nodes", [in0, in1, node])
         else:
-            node = cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+            node = typing.cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
             g.inputs = ["in0"]
-            setattr(g, "sorted_nodes", [in0, node])
+            object.__setattr__(g, "sorted_nodes", [in0, node])
         getattr(g.nodes, "__setitem__")(node.id, node)
         setattr(g, "outputs", [node.id])
 
@@ -276,12 +276,12 @@ def _test_all_registered_operations_hardware_codegen_parity_part_4(_state: dict[
     for op_name in sample_ops:
         g = IRGraph(name=f"test_{op_name}")
         in0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
-        node = cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+        node = typing.cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
         g.nodes["in0"] = in0
         getattr(g.nodes, "__setitem__")(node.id, node)
         g.inputs = ["in0"]
         setattr(g, "outputs", [node.id])
-        setattr(g, "sorted_nodes", [in0, node])
+        object.__setattr__(g, "sorted_nodes", [in0, node])
 
         # CUDA code generation and syntax validation
         try:

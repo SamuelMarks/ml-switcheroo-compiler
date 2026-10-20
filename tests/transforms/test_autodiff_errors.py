@@ -1,5 +1,7 @@
 """Tests for test_autodiff_errors."""
 
+from __future__ import annotations
+
 import pytest
 
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError

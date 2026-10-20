@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 import tempfile
-from typing import TYPE_CHECKING
+import typing
 
 import numpy as np
 import pytest
@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.ops.io.async_io import (
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 

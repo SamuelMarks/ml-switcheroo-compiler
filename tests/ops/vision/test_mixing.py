@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.mixing import cutmix, mixup
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -44,5 +44,5 @@ def test_vision_mixing_funcs(mocker: EagerTensorProtocol) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.mixing.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert cast("EagerTensorProtocol", getattr(mixup(t1, t2), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(cutmix(t1, t2), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(mixup(t1, t2), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(cutmix(t1, t2), "config")).shape == (2, 3)

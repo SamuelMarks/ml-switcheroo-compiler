@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.utils.np_utils import normalize, to_categorical
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -18,12 +18,12 @@ def test_np_utils(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mocker.patch("ml_switcheroo_compiler.ops.max", return_value=1)
-    mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="cast")
+    mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="typing.cast")
     mocker.patch("ml_switcheroo_compiler.ops.arange", return_value="arange")
     mocker.patch("ml_switcheroo_compiler.ops.expand_dims", return_value="expand")
     mocker.patch("ml_switcheroo_compiler.ops.equal", return_value="equal")
-    assert to_categorical("x") == "cast"
-    assert to_categorical("x", num_classes=5) == "cast"
+    assert to_categorical("x") == "typing.cast"
+    assert to_categorical("x", num_classes=5) == "typing.cast"
     mocker.patch("ml_switcheroo_compiler.ops.sum", return_value="sum")
     mocker.patch("ml_switcheroo_compiler.ops.square", return_value="square")
     mocker.patch("ml_switcheroo_compiler.ops.sqrt", return_value="sqrt")
@@ -46,9 +46,9 @@ def test_to_categorical_item(mocker: EagerTensorProtocol) -> None:
             """Test function item."""
             return 2
 
-    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.ops.max", return_value=cast("EagerCallableProtocol", M)())
-    mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="cast")
+    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.ops.max", return_value=typing.cast("EagerCallableProtocol", M)())
+    mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="typing.cast")
     mocker.patch("ml_switcheroo_compiler.ops.arange")
     mocker.patch("ml_switcheroo_compiler.ops.expand_dims")
     mocker.patch("ml_switcheroo_compiler.ops.equal")
-    assert to_categorical("x") == "cast"
+    assert to_categorical("x") == "typing.cast"

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import builtins  # noqa: F401
 import typing  # noqa: F401
-from typing import cast
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -12,10 +11,11 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
     global_eager_registry,
 )
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @global_eager_registry.register("Fft")
-def _fft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fft operation on the active backend array.
 
     Args:
@@ -31,7 +31,7 @@ def _fft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) ->
 
 
 @global_eager_registry.register("Rfft")
-def _rfft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _rfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager rfft operation on the active backend array.
 
     Args:
@@ -47,7 +47,7 @@ def _rfft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 
 @global_eager_registry.register("Fft2")
-def _fft2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fft2 operation on the active backend array.
 
     Args:
@@ -68,7 +68,7 @@ def _slice_fftconvolve_output(
     s1: list[int],
     s2: list[int],
     ndim: int,
-    np_mod: EagerValue,
+    np_mod: BackendModuleProtocol,
 ) -> EagerValue:
     """Slice full FFT convolution result according to the requested mode ('full', 'same', 'valid').
 
@@ -92,14 +92,14 @@ def _slice_fftconvolve_output(
             start = s2[i] - 1
             length = s1[i] - s2[i] + 1
             if length < 1:
-                return cast(EagerValue, getattr(np_mod, "empty")((0,) * ndim, dtype=getattr(out, "dtype")))
+                return typing.cast("EagerValue", getattr(np_mod, "empty")((0,) * ndim, dtype=getattr(out, "dtype")))
             slices.append(slice(start, start + length))
         return typing.cast(EagerTensorProtocol, out)[tuple(slices)]
     return out
 
 
 @global_eager_registry.register("Fftconvolve")
-def _fftconvolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Evaluate _fftconvolve operation using backend or native FFT/IFFT fallback.
 
     Args:
@@ -115,10 +115,10 @@ def _fftconvolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
     fft_mod = getattr(backend_module, "fft", None)
     if hasattr(fft_mod, "fftconvolve"):
-        return cast(EagerValue, getattr(fft_mod, "fftconvolve")(*args, **kwargs))
+        return typing.cast("EagerValue", getattr(fft_mod, "fftconvolve")(*args, **kwargs))
     signal_mod = getattr(backend_module, "signal", None)
     if hasattr(signal_mod, "fftconvolve"):
-        return cast(EagerValue, getattr(signal_mod, "fftconvolve")(*args, **kwargs))
+        return typing.cast("EagerValue", getattr(signal_mod, "fftconvolve")(*args, **kwargs))
 
     in1, in2 = args[0], args[1]
     mode = kwargs.get("mode", "full")
@@ -149,7 +149,7 @@ def _fftconvolve(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
 
 @global_eager_registry.register("Fftfreq")
-def _fftfreq(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fftfreq operation on the active backend array.
 
     Args:
@@ -165,7 +165,7 @@ def _fftfreq(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
 
 @global_eager_registry.register("Fftn")
-def _fftn(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fftn operation on the active backend array.
 
     Args:
@@ -181,7 +181,7 @@ def _fftn(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 
 @global_eager_registry.register("Fftnd")
-def _fftnd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fftnd operation on the active backend array.
 
     Args:
@@ -194,12 +194,12 @@ def _fftnd(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
     """
     fft_mod = getattr(backend_module, "fft", None)
     if hasattr(fft_mod, "fftnd"):
-        return cast(EagerValue, getattr(fft_mod, "fftnd")(*args, **kwargs))
+        return typing.cast("EagerValue", getattr(fft_mod, "fftnd")(*args, **kwargs))
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
 
 
 @global_eager_registry.register("Fftshift")
-def _fftshift(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _fftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager fftshift operation on the active backend array.
 
     Args:
@@ -215,7 +215,7 @@ def _fftshift(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
 
 @global_eager_registry.register("Ifft")
-def _ifft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager ifft operation on the active backend array.
 
     Args:
@@ -231,7 +231,7 @@ def _ifft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -
 
 
 @global_eager_registry.register("Ifft2")
-def _ifft2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager ifft2 operation on the active backend array.
 
     Args:
@@ -247,7 +247,7 @@ def _ifft2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 
 @global_eager_registry.register("Ifftn")
-def _ifftn(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager ifftn operation on the active backend array.
 
     Args:
@@ -263,7 +263,7 @@ def _ifftn(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) 
 
 
 @global_eager_registry.register("Ifftshift")
-def _ifftshift(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _ifftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager ifftshift operation on the active backend array.
 
     Args:
@@ -279,7 +279,7 @@ def _ifftshift(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
 
 
 @global_eager_registry.register("NpHfft")
-def _np_hfft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np hfft operation on the active backend array.
 
     Args:
@@ -292,5 +292,5 @@ def _np_hfft(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     """
     fft_mod = getattr(backend_module, "fft", None)
     if fft_mod and hasattr(fft_mod, "hfft"):
-        return cast(EagerValue, fft_mod.hfft(*args, **kwargs))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).fft.hfft(*args, **kwargs))
+        return typing.cast("EagerValue", fft_mod.hfft(*args, **kwargs))
+    return _resolve_eager_mod(backend_module).fft.hfft(*args, **kwargs)

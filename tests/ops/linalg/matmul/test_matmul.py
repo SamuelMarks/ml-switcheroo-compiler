@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -11,7 +11,7 @@ import pytest
 
 from ml_switcheroo_compiler.core.config import config
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 mod = sys.modules["ml_switcheroo_compiler.ops.linalg.matmul"]
 
@@ -26,11 +26,11 @@ class DummyTensor:
             shape: Test parameter `shape`.
         """
         self.shape = shape
-        self.data = cast("EagerCallableProtocol", np.zeros)(shape)
+        self.data = typing.cast("EagerCallableProtocol", np.zeros)(shape)
         self.dtype = "float32"
         self.device = None
 
-    if not TYPE_CHECKING:
+    if not typing.TYPE_CHECKING:
 
         @property
         def __class__(self) -> type:
@@ -217,9 +217,9 @@ def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ops.linalg.matmul import BlockMaskedMm, GatherMm, dot_general
 
     op1 = BlockMaskedMm()
-    assert cast("EagerCallableProtocol", op1.infer_shape)((2, 3), (4, 5)) is None
+    assert typing.cast("EagerCallableProtocol", op1.infer_shape)((2, 3), (4, 5)) is None
     op2 = GatherMm()
-    assert cast("EagerCallableProtocol", op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
+    assert typing.cast("EagerCallableProtocol", op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
@@ -233,14 +233,14 @@ def test_solvers_missing() -> None:
     from ml_switcheroo_compiler.ops.linalg.solvers import Pinv
 
     op = Pinv()
-    assert cast("EagerCallableProtocol", op.infer_shape)(None) == ()
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(None) == ()
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = (3,)
 
-    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyShape)()) == (3,)
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyShape)()) == (3,)
 
 
 def test_einsum_missing() -> None:
@@ -249,7 +249,7 @@ def test_einsum_missing() -> None:
 
     from ml_switcheroo_compiler.ops.linalg.einsum import ParsedEquationPart
 
-    p = ParsedEquationPart("ij", (3,))
+    p = ParsedEquationPart(chars="ij", shape=(3,))
     with pytest.raises(ValueError):
         p._check_dimension_mismatch({"i": 2}, "i", 3)
 
@@ -258,7 +258,7 @@ def test_einsum_missing_branch() -> None:
     """Test function test_einsum_missing_branch."""
     from ml_switcheroo_compiler.ops.linalg.einsum import ParsedEquationPart
 
-    p = ParsedEquationPart("ij", (3, 1))
+    p = ParsedEquationPart(chars="ij", shape=(3, 1))
     p.shape = (3, 1)
     setattr(p, "chars", ["i", "i"])
     axis_map = {"i": 3}

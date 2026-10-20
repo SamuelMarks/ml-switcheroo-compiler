@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
@@ -112,7 +112,7 @@ def solve(a: Tensor, b: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = cast(
+        data = typing.cast(
             "TensorLike",
             backend.execute_op(
                 "Solve",
@@ -139,7 +139,7 @@ def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> TensorOrScalar
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sol, info = cast(
+        sol, info = typing.cast(
             "tuple[TensorLike, TensorLike]",
             backend.execute_op(
                 "SolveEx",
@@ -176,7 +176,7 @@ def solve_triangular(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = cast(
+        data = typing.cast(
             "TensorLike",
             backend.execute_op(
                 "TriangularSolve",

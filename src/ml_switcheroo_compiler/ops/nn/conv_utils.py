@@ -5,12 +5,8 @@ from __future__ import annotations
 import math
 import typing
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import (
-    Optional,
-    Union,  # noqa: F401
-    cast,
-)
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -28,14 +24,15 @@ from ml_switcheroo_compiler.ops.shape.frontend import reshape
 # Simple redirect to dummy mock
 
 
-@dataclass
-class GenericConvConfig:
+class GenericConvConfig(pydantic.BaseModel):
     """Conv config."""
 
-    strides: Union[int, Sequence[int]] = 1
-    padding: Union[str, Sequence[tuple[int, int]]] = "VALID"
-    data_format: typing.Optional[str] = None
-    dilation_rate: Union[int, Sequence[int]] = 1
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    strides: int | Sequence[int] = 1
+    padding: str | Sequence[tuple[int, int]] = "VALID"
+    data_format: str | None = None
+    dilation_rate: int | Sequence[int] = 1
 
 
 def _calc_same_pad(k: int, s: int) -> tuple[int, int]:
@@ -72,10 +69,10 @@ def _calc_valid_pad(k: int, s: int) -> tuple[int, int]:
 
 
 def _calculate_conv_transpose_padding(
-    padding: Union[str, Sequence[tuple[int, int]]],
+    padding: str | Sequence[tuple[int, int]],
     k_sdims: tuple[int, ...],
     strides_tuple: tuple[int, ...],
-) -> Union[str, Sequence[tuple[int, int]]]:
+) -> str | Sequence[tuple[int, int]]:
     """Calculate padding for transposed convolution.
 
     Args:
@@ -99,7 +96,7 @@ def _calculate_conv_transpose_padding(
 
 
 def _build_conv_config(
-    kwargs: dict[str, int | str | Sequence[int] | Sequence[tuple[int, int]] | None],
+    kwargs: dict[str, TensorOrScalar],
     dimension_numbers: tuple[str, str, str] | tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]],
 ) -> ConvConfig:
     """Compute the build conv config tensor operation.
@@ -120,13 +117,13 @@ def _build_conv_config(
     rhs_dilation = kwargs.get("rhs_dilation", None)
     if isinstance(rhs_dilation, int):
         rhs_dilation = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
-    return cast(
+    return typing.cast(
         ConvConfig,
-        cast("EagerCallableProtocol", ConvConfig)(
-            window_strides=cast("Sequence[int]", strides),
+        typing.cast("EagerCallableProtocol", ConvConfig)(
+            window_strides=typing.cast("Sequence[int]", strides),
             padding=kwargs.get("padding", "VALID"),
-            lhs_dilation=cast("Optional[Sequence[int]]", lhs_dilation),
-            rhs_dilation=cast("Optional[Sequence[int]]", rhs_dilation),
+            lhs_dilation=typing.cast("Sequence[int] | None", lhs_dilation),
+            rhs_dilation=typing.cast("Sequence[int] | None", rhs_dilation),
             dimension_numbers=dimension_numbers,
         ),
     )
@@ -166,13 +163,13 @@ def _prepare_depthwise_conv(
 
         in_channels = lhs.shape[-1]
 
-        config_obj = cast(
+        config_obj = typing.cast(
             TensorOrScalar,
-            cast("EagerCallableProtocol", ConvConfig)(
-                window_strides=cast("Sequence[int]", strides),
+            typing.cast("EagerCallableProtocol", ConvConfig)(
+                window_strides=typing.cast("Sequence[int]", strides),
                 padding=kwargs.get("padding", "VALID"),
-                lhs_dilation=cast("Optional[Sequence[int]]", lhs_dilation),
-                rhs_dilation=cast("Optional[Sequence[int]]", rhs_dilation),
+                lhs_dilation=typing.cast("Sequence[int] | None", lhs_dilation),
+                rhs_dilation=typing.cast("Sequence[int] | None", rhs_dilation),
                 dimension_numbers=dimension_numbers,
                 feature_group_count=in_channels,
             ),
@@ -209,7 +206,7 @@ def atrous_conv2d_transpose(
     value: TensorOrScalar,
     filters: TensorOrScalar,
     output_shape: TensorOrScalar,
-    config: typing.Optional[GenericConvConfig] = None,
+    config: GenericConvConfig | None = None,
     name: TensorOrScalar = None,
 ) -> TensorOrScalar:
     """Atrous convolution transpose.
@@ -290,8 +287,8 @@ def compute_average_loss(per_example_loss: TensorOrScalar, sample_weight: Tensor
 def depthwise_conv2d(
     input: Tensor,
     filter: Tensor,
-    config: typing.Optional[GenericConvConfig] = None,
-    name: typing.Optional[str] = None,
+    config: GenericConvConfig | None = None,
+    name: str | None = None,
 ) -> TensorOrScalar:
     """Depthwise 2-D convolution.
 
@@ -322,7 +319,7 @@ def depthwise_conv2d_backprop_filter(
     input: TensorOrScalar,
     filter_sizes: TensorOrScalar,
     out_backprop: TensorOrScalar,
-    config: typing.Optional[GenericConvConfig] = None,
+    config: GenericConvConfig | None = None,
     name: TensorOrScalar = None,
 ) -> TensorOrScalar:
     """Compute the gradients of depthwise convolution with respect to the filter.
@@ -340,7 +337,7 @@ def depthwise_conv2d_backprop_filter(
     from ml_switcheroo_compiler.core.config import config as core_config
 
     raw_filter_shape = getattr(filter_sizes, "shape", None)
-    target_shape: tuple[int | str, ...] = (int(filter_sizes),) if isinstance(filter_sizes, int) else tuple(cast("Sequence[Union[int, str]]", filter_sizes)) if isinstance(filter_sizes, (list, tuple)) else tuple(raw_filter_shape) if isinstance(raw_filter_shape, (list, tuple)) else ()
+    target_shape: tuple[int | str, ...] = (int(filter_sizes),) if isinstance(filter_sizes, int) else tuple(typing.cast("Sequence[int | str]", filter_sizes)) if isinstance(filter_sizes, (list, tuple)) else tuple(raw_filter_shape) if isinstance(raw_filter_shape, (list, tuple)) else ()
     dtype = getattr(input, "dtype", "float32")
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -363,7 +360,7 @@ def depthwise_conv2d_backprop_input(
     input_sizes: TensorOrScalar,
     filter: TensorOrScalar,
     out_backprop: TensorOrScalar,
-    config: typing.Optional[GenericConvConfig] = None,
+    config: GenericConvConfig | None = None,
     name: TensorOrScalar = None,
 ) -> TensorOrScalar:
     """Compute the gradients of depthwise convolution with respect to the input.
@@ -381,7 +378,7 @@ def depthwise_conv2d_backprop_input(
     from ml_switcheroo_compiler.core.config import config as core_config
 
     raw_input_shape = getattr(input_sizes, "shape", None)
-    target_shape: tuple[int | str, ...] = (int(input_sizes),) if isinstance(input_sizes, int) else tuple(cast("Sequence[Union[int, str]]", input_sizes)) if isinstance(input_sizes, (list, tuple)) else tuple(raw_input_shape) if isinstance(raw_input_shape, (list, tuple)) else ()
+    target_shape: tuple[int | str, ...] = (int(input_sizes),) if isinstance(input_sizes, int) else tuple(typing.cast("Sequence[int | str]", input_sizes)) if isinstance(input_sizes, (list, tuple)) else tuple(raw_input_shape) if isinstance(raw_input_shape, (list, tuple)) else ()
     dtype = getattr(filter, "dtype", "float32")
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -400,22 +397,23 @@ def depthwise_conv2d_backprop_input(
     )
 
 
-@dataclass
-class ConvSpatialArgs:
+class ConvSpatialArgs(pydantic.BaseModel):
     """Arguments for spatial convolutions and morphological ops."""
 
-    strides = None
-    padding = "VALID"
-    data_format = None
-    dilations = None
-    rates = None
-    name = None
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    strides: TensorOrScalar = None
+    padding: str = "VALID"
+    data_format: str | None = None
+    dilations: TensorOrScalar = None
+    rates: TensorOrScalar = None
+    name: str | None = None
 
 
 def dilation2d(
     input: TensorOrScalar,
     filter: TensorOrScalar,
-    args: typing.Optional[ConvSpatialArgs] = None,
+    args: ConvSpatialArgs | None = None,
 ) -> TensorOrScalar:
     """Compute the grayscale dilation of 4-D `input` and 3-D `filter` tensors.
 
@@ -441,7 +439,7 @@ def dilation2d(
 def erosion2d(
     value: TensorOrScalar,
     kernel: TensorOrScalar,
-    args: typing.Optional[ConvSpatialArgs] = None,
+    args: ConvSpatialArgs | None = None,
 ) -> TensorOrScalar:
     """Compute the grayscale erosion of 4-D `value` and 3-D `kernel` tensors.
 
@@ -467,7 +465,7 @@ def erosion2d(
 def convolution(
     input: TensorOrScalar,
     filters: TensorOrScalar,
-    args: typing.Optional[ConvSpatialArgs] = None,
+    args: ConvSpatialArgs | None = None,
 ) -> TensorOrScalar:
     """Compute sums of N-D convolutions (actually cross-correlation).
 
@@ -498,7 +496,7 @@ def conv_transpose(
     input: TensorOrScalar,
     filters: TensorOrScalar,
     output_shape: TensorOrScalar,
-    args: typing.Optional[ConvSpatialArgs] = None,
+    args: ConvSpatialArgs | None = None,
 ) -> TensorOrScalar:
     """Return the transpose of `convolution`.
 
@@ -519,4 +517,4 @@ def conv_transpose(
         return get_active_backend().execute_op("ConvTranspose", input, filters, output_shape=output_shape, args=args)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, cast("Sequence[Union[int, str]]", output_shape), getattr(input, "dtype", "float32"))
+    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, typing.cast("Sequence[int | str]", output_shape), getattr(input, "dtype", "float32"))

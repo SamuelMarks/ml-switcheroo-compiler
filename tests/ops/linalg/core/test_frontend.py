@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -20,7 +20,7 @@ from ml_switcheroo_compiler.ops.linalg.products import Diagonal, MultiDot
 from ml_switcheroo_compiler.ops.linalg.solvers import MatrixNorm, Svdvals, Tensorinv, Tensorsolve, VectorNorm
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -55,22 +55,22 @@ def test_frontend_ops() -> None:
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
-        (e, t) = cast("EagerCallableProtocol", _test_op)(frontend.matrix_norm, a)
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
-        (e, t) = cast("EagerCallableProtocol", _test_op)(frontend.vector_norm, b)
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
-        (e, t) = cast("EagerCallableProtocol", _test_op)(frontend.svdvals, a)
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
-        (e, t) = cast("EagerCallableProtocol", _test_op)(solvers.tensorinv, a, ind=1)
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
-        (e, t) = cast("EagerCallableProtocol", _test_op)(solvers.tensorsolve, a, b)
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
-        (e, t) = cast("EagerCallableProtocol", _test_op)(frontend.diagonal, a)
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
-        (e, t) = cast("EagerCallableProtocol", _test_op)(multi_dot, [a, a])
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
-        (e, t) = cast("EagerCallableProtocol", _test_op)(vecdot, b, b)
-        assert cast("EagerTensorProtocol", getattr(e, "shape")) == ()
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(frontend.matrix_norm, a)
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == ()
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(frontend.vector_norm, b)
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == ()
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(frontend.svdvals, a)
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(solvers.tensorinv, a, ind=1)
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(solvers.tensorsolve, a, b)
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(frontend.diagonal, a)
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == (2,)
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(multi_dot, [a, a])
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 2)
+        (e, t) = typing.cast("EagerCallableProtocol", _test_op)(vecdot, b, b)
+        assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == ()
 
 
 def test_opdefs_infer_shapes() -> None:
@@ -85,16 +85,16 @@ def test_opdefs_infer_shapes() -> None:
             assert op.infer_shape() == ()
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
-        assert cast("EagerCallableProtocol", Svdvals)().infer_shape(a) == (2,)
-        assert cast("EagerCallableProtocol", Tensorinv)().infer_shape(a) == (2, 2)
-        assert cast("EagerCallableProtocol", Tensorsolve)().infer_shape(a, b) == (2,)
-        assert cast("EagerCallableProtocol", ConvTranspose)().infer_shape(a) == (2, 2)
-        assert cast("EagerCallableProtocol", ConvTranspose)().infer_shape() == ()
-        assert id(cast("EagerCallableProtocol", CustomLinearSolve)().infer_shape(a)) == id(a)
+        assert typing.cast("EagerCallableProtocol", Svdvals)().infer_shape(a) == (2,)
+        assert typing.cast("EagerCallableProtocol", Tensorinv)().infer_shape(a) == (2, 2)
+        assert typing.cast("EagerCallableProtocol", Tensorsolve)().infer_shape(a, b) == (2,)
+        assert typing.cast("EagerCallableProtocol", ConvTranspose)().infer_shape(a) == (2, 2)
+        assert typing.cast("EagerCallableProtocol", ConvTranspose)().infer_shape() == ()
+        assert id(typing.cast("EagerCallableProtocol", CustomLinearSolve)().infer_shape(a)) == id(a)
         assert CustomLinearSolve().infer_shape() == ()
-        assert id(cast("EagerCallableProtocol", Vecdot)().infer_shape(a)) == id(a)
+        assert id(typing.cast("EagerCallableProtocol", Vecdot)().infer_shape(a)) == id(a)
         assert Vecdot().infer_shape() == ()
-        assert id(cast("EagerCallableProtocol", CustomRoot)().infer_shape(a)) == id(a)
+        assert id(typing.cast("EagerCallableProtocol", CustomRoot)().infer_shape(a)) == id(a)
         assert CustomRoot().infer_shape() == ()
         p = Tensor(np.array([1, 0]), TensorConfig((2,), "int32", "cpu"))
         assert LuPivotsToPermutation().infer_shape(p, permutation_size=2) == (2,)

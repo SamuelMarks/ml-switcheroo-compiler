@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.core_math_ops import _associative_scan
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -22,15 +22,15 @@ def test_associative_scan() -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return cast("EagerTensorProtocol", a) + cast("EagerTensorProtocol", b)
+        return typing.cast("EagerTensorProtocol", a) + typing.cast("EagerTensorProtocol", b)
 
     elems = np.array([1, 2, 3, 4])
 
     # scan over axis 0
     res = _associative_scan(np, fn, elems)
-    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([1, 3, 6, 10]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.array)([1, 3, 6, 10]))
 
     # 2d scan over axis 1
     elems2d = np.array([[1, 2, 3], [4, 5, 6]])
     res2d = _associative_scan(np, fn, elems2d, axis=1)
-    assert cast("EagerCallableProtocol", np.array_equal)(res2d, cast("EagerCallableProtocol", np.array)([[1, 3, 6], [4, 9, 15]]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res2d, typing.cast("EagerCallableProtocol", np.array)([[1, 3, 6], [4, 9, 15]]))

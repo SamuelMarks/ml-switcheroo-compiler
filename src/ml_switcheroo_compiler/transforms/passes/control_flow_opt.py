@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_ir import LogicalGraph
 
@@ -69,8 +69,8 @@ def _hoist_common_invariants(
         list[IRNode]: Hoisted nodes added to the outer graph.
     """
     hoisted_nodes: list[IRNode] = []
-    t_nodes = true_branch.nodes if isinstance(true_branch.nodes, dict) else {n.id: n for n in getattr(true_branch, "nodes", [])}
-    f_nodes = false_branch.nodes if isinstance(false_branch.nodes, dict) else {n.id: n for n in getattr(false_branch, "nodes", [])}
+    t_nodes = true_branch.nodes if hasattr(true_branch.nodes, "items") else {n.id: n for n in getattr(true_branch, "nodes", [])}
+    f_nodes = false_branch.nodes if hasattr(false_branch.nodes, "items") else {n.id: n for n in getattr(false_branch, "nodes", [])}
 
     # Find common operations on external outer inputs
     for t_id, t_node in list(t_nodes.items()):
@@ -126,7 +126,7 @@ def _inline_active_branch(
         active_branch (IRGraph): The active branch subgraph to inline.
         new_nodes (dict[str, IRNode]): Target dictionary of nodes for the optimized graph.
     """
-    b_nodes = active_branch.nodes if isinstance(active_branch.nodes, dict) else {n.id: n for n in getattr(active_branch, "nodes", [])}
+    b_nodes = active_branch.nodes if hasattr(active_branch.nodes, "items") else {n.id: n for n in getattr(active_branch, "nodes", [])}
     id_map: dict[str, str] = {}
 
     for b_id, b_node in b_nodes.items():
@@ -169,12 +169,12 @@ def _optimize_cond_node(
     if static_pred is not None and (true_branch or false_branch):
         active_branch = true_branch if static_pred else false_branch
         if active_branch:
-            _inline_active_branch(node_id, node, cast("LogicalGraph", active_branch), new_nodes)
+            _inline_active_branch(node_id, node, typing.cast("LogicalGraph", active_branch), new_nodes)
             return True, True
         return True, False
 
     if true_branch and false_branch:
-        hoisted = _hoist_common_invariants(graph, node_id, cast("LogicalGraph", true_branch), cast("LogicalGraph", false_branch))
+        hoisted = _hoist_common_invariants(graph, node_id, typing.cast("LogicalGraph", true_branch), typing.cast("LogicalGraph", false_branch))
         if hoisted:
             for h_node in hoisted:
                 new_nodes[h_node.id] = h_node
@@ -202,7 +202,7 @@ def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:
             if inlined:
                 continue
 
-        new_nodes[node_id] = node if isinstance(node, IRNode) else (IRNode(**node.__dict__) if hasattr(node, "__dict__") else node)
+        new_nodes[node_id] = node if type(node) is IRNode else (IRNode(**node.__dict__) if hasattr(node, "__dict__") else node)
 
     if modified:
         graph.nodes.clear()

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -18,6 +18,6 @@ def test_pickle_format() -> None:
     data = {"a": 1, "b": "test"}
     with tempfile.TemporaryDirectory() as temp_dir:
         filepath = os.path.join(temp_dir, "weights.pkl")
-        cast("EagerCallableProtocol", fmt.save)(data, filepath)
+        typing.cast("EagerCallableProtocol", fmt.save)(data, filepath)
         loaded = fmt.load(filepath)
         assert loaded == data

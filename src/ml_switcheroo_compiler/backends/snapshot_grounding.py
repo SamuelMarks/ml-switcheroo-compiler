@@ -11,7 +11,7 @@ import gzip
 import json
 import logging
 import os
-from typing import Callable, cast
+import typing
 
 import yaml
 from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.errors import SnapshotGroundingError
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
 class BackendSnapshotTargetModel(BaseModel):
@@ -319,17 +320,14 @@ def _resolve_env_or_package_snapshot_dir() -> str | None:
         if env_dir and os.path.exists(env_dir):
             return os.path.abspath(env_dir)
 
-    for pkg_name in ("ml_ecosystem_snapshots", "ml_framework_snapshots"):
-        try:
-            import importlib.util
+    for pkg_name in ("ml_ecosystem_snapshots",):
+        import importlib.util
 
-            spec = importlib.util.find_spec(pkg_name)
-            if spec is not None and spec.origin is not None:
-                cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
-                if os.path.exists(cand) and any(f.endswith(".json") or f.endswith(".json.gz") for f in os.listdir(cand)):
-                    return os.path.abspath(cand)
-        except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
-            logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+        spec = importlib.util.find_spec(pkg_name)
+        if spec is not None and spec.origin is not None:
+            cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
+            if os.path.exists(cand) and any(f.endswith(".json") or f.endswith(".json.gz") for f in os.listdir(cand)):
+                return os.path.abspath(cand)
 
     return None
 
@@ -361,33 +359,6 @@ def _resolve_default_snapshot_dir() -> str:
                 "snapshots",
             )
         ),
-        os.path.abspath(
-            os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "..",
-                "..",
-                "..",
-                "ml-ecosystem-snapshots",
-                "src",
-                "ml_framework_snapshots",
-                "snapshots",
-            )
-        ),
-        os.path.abspath(
-            os.path.join(
-                os.path.dirname(__file__),
-                "..",
-                "..",
-                "..",
-                "..",
-                "ml-framework-snapshots",
-                "src",
-                "ml_framework_snapshots",
-                "snapshots",
-            )
-        ),
-        os.path.expanduser(os.path.join("~", ".cache", "ml_framework_snapshots", "snapshots")),
     ]
     for cdir in candidate_dirs:
         if os.path.exists(cdir) and any(f.endswith(".json") or f.endswith(".json.gz") for f in os.listdir(cdir)):
@@ -411,7 +382,7 @@ def _is_snapshot_file_complete(file_path: str, backend_name: str) -> bool:
     try:
         if file_path.endswith(".gz"):
             with gzip.open(file_path, "rt", encoding="utf-8") as gf:
-                data: dict[str, AttributeValue] = json.load(gf)
+                data: AttributeValue = json.load(gf)
         else:
             with open(file_path, encoding="utf-8") as f:
                 data = json.load(f)
@@ -545,16 +516,10 @@ def _register_ghost_ref(
     endpoints.add(sym)
     ref_map[sym] = ref
     item_map[sym] = ref.model_dump()
-    for key in (ref.api_path, ref.name):
-        if key:
-            endpoints.add(key)
-            ref_map[key] = ref
-            item_map[key] = ref.model_dump()
-    if ref.aliases:
-        for alias in ref.aliases:
-            endpoints.add(alias)
-            ref_map[alias] = ref
-            item_map[alias] = ref.model_dump()
+    for key in filter(None, (ref.api_path, ref.name, *(ref.aliases or ()))):
+        endpoints.add(key)
+        ref_map[key] = ref
+        item_map[key] = ref.model_dump()
 
 
 def _populate_from_grounding_engine(
@@ -604,18 +569,10 @@ def _extract_ast_canonical_ops(py_path: str) -> list[AttributeValue]:
         tree: ast.Module = ast.parse(f.read(), filename=py_path)
     collected: list[AttributeValue] = []
     for node in tree.body:
-        val_node: ast.expr | None = None
-        var_name: str = ""
-        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            var_name = node.targets[0].id
-            val_node = node.value
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
-            var_name = node.target.id
-            val_node = node.value
-        if val_node is not None and var_name.startswith("CANONICAL_") and var_name.endswith("_OPS"):
-            raw_ops: AttributeValue = ast.literal_eval(val_node)
-            if isinstance(raw_ops, list):
-                collected.extend(raw_ops)
+        val_node = getattr(node, "value", None)
+        if isinstance(val_node, ast.List) and "CANONICAL_" in ast.unparse(node):
+            raw_ops = typing.cast("list[AttributeValue]", ast.literal_eval(val_node))
+            collected.extend(raw_ops)
     return collected
 
 
@@ -690,7 +647,7 @@ def _param_to_dict(p: AttributeValue) -> dict[str, AttributeValue]:
     """
     dump_fn: AttributeValue = getattr(p, "model_dump", None)
     if callable(dump_fn):
-        dumped: AttributeValue = cast("Callable[..., AttributeValue]", dump_fn)()
+        dumped: AttributeValue = typing.cast("TypedVariadicCallable[AttributeValue]", dump_fn)()
         if isinstance(dumped, dict):
             return dumped
     if isinstance(p, dict):
@@ -710,14 +667,14 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, Att
     signatures: list[list[dict[str, AttributeValue]]] = []
     if ref.params:
         primary_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ref.params]
-        signatures.extend(cast("Callable[..., list[list[dict[str, AttributeValue]]]]", _split_signature_params)(primary_sig))
+        signatures.extend(typing.cast("TypedVariadicCallable[list[list[dict[str, AttributeValue]]]]", _split_signature_params)(primary_sig))
 
     if ref.overloads:
         for ov in ref.overloads:
-            ov_params: AttributeValue = ov.params if hasattr(ov, "params") else (ov.get("params") if isinstance(ov, dict) else None)
+            ov_params: AttributeValue = getattr(ov, "params", ov.get("params") if isinstance(ov, dict) else None)
             if isinstance(ov_params, list) and ov_params:
                 ov_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ov_params]
-                signatures.extend(cast("Callable[..., list[list[dict[str, AttributeValue]]]]", _split_signature_params)(ov_sig))
+                signatures.extend(typing.cast("TypedVariadicCallable[list[list[dict[str, AttributeValue]]]]", _split_signature_params)(ov_sig))
     return signatures
 
 
@@ -733,7 +690,7 @@ def _signatures_from_item(item: dict[str, AttributeValue]) -> list[list[dict[str
     fallback_signatures: list[list[dict[str, AttributeValue]]] = []
     params_obj: AttributeValue = item.get("params")
     if isinstance(params_obj, list) and params_obj:
-        fallback_signatures.extend(cast("Callable[..., list[list[dict[str, AttributeValue]]]]", _split_signature_params)(params_obj))
+        fallback_signatures.extend(typing.cast("TypedVariadicCallable[list[list[dict[str, AttributeValue]]]]", _split_signature_params)(params_obj))
 
     overloads_obj: AttributeValue = item.get("overloads")
     if isinstance(overloads_obj, list):
@@ -762,7 +719,8 @@ class SnapshotGroundingEngine:
         if config is None:
             config = load_backend_snapshot_targets()
         self.config: BackendSnapshotTargetsConfig = config
-        eff_dir = None if (snapshot_dir is not None and os.path.basename(os.path.normpath(snapshot_dir)) in ("ml-framework-snapshots", "ml-ecosystem-snapshots") and not os.path.exists(snapshot_dir)) else snapshot_dir
+        is_repo_root = snapshot_dir is not None and os.path.basename(os.path.normpath(snapshot_dir)) == "ml-ecosystem-snapshots" and (not os.path.isdir(snapshot_dir) or not any(f.endswith((".json", ".json.gz")) for f in os.listdir(snapshot_dir)))
+        eff_dir = None if is_repo_root else snapshot_dir
         self._is_default_snapshot_dir: bool = eff_dir is None
         self.snapshot_dir: str = os.path.abspath(eff_dir) if eff_dir is not None else _resolve_default_snapshot_dir()
 
@@ -827,36 +785,9 @@ class SnapshotGroundingEngine:
                         "snapshots",
                     )
                 ),
-                os.path.abspath(
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        "..",
-                        "..",
-                        "..",
-                        "..",
-                        "ml-ecosystem-snapshots",
-                        "src",
-                        "ml_framework_snapshots",
-                        "snapshots",
-                    )
-                ),
-                os.path.abspath(
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        "..",
-                        "..",
-                        "..",
-                        "..",
-                        "ml-framework-snapshots",
-                        "src",
-                        "ml_framework_snapshots",
-                        "snapshots",
-                    )
-                ),
                 os.path.expanduser(os.path.join("~", ".cache", "ml_ecosystem_snapshots", "snapshots")),
                 os.path.expanduser(os.path.join("~", ".cache", "ml_ecosystem_snapshots")),
                 os.path.expanduser(os.path.join("~", ".cache", "ml_switcheroo_compiler", "snapshots")),
-                os.path.expanduser(os.path.join("~", ".cache", "ml_framework_snapshots", "snapshots")),
             ]
             for cd in candidate_dirs:
                 if cd not in dirs_to_check and os.path.exists(cd):

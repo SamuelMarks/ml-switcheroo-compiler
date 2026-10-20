@@ -1,18 +1,23 @@
 """Dedicated eager execution handlers and dispatch for the Dask backend."""
 
+from __future__ import annotations
+
 import logging
 import sys
 import types
-from typing import Optional, cast
+import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
+da: types.ModuleType | None
 try:
-    import dask.array as da
+    import dask.array as _da
+
+    da = _da
 except ImportError:
-    da = cast(types.ModuleType, None)
+    da = None
 
 
 def _verify_dask_task_graph(res: EagerValue) -> None:
@@ -32,7 +37,7 @@ def _verify_dask_task_graph(res: EagerValue) -> None:
         raise RuntimeError(msg)
 
 
-def propagate_chunk_shapes(arr: EagerValue, chunks: Optional[EagerValue] = "auto") -> tuple[tuple[int, ...], ...]:
+def propagate_chunk_shapes(arr: EagerValue, chunks: EagerValue | None = "auto") -> tuple[tuple[int, ...], ...]:
     """Calculate chunk structure and shape propagation for distributed arrays.
 
     Args:
@@ -70,9 +75,9 @@ def dask_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
     if da is None or getattr(x, "ndim", 0) != 4 or getattr(w, "ndim", 0) != 4:
         return x
 
-    n, _, _, _ = cast(tuple[int, ...], getattr(x, "shape"))
-    out_c, _, kh, kw = cast(tuple[int, ...], getattr(w, "shape"))
-    stride_seq = cast(tuple[int, ...], stride)
+    n, _, _, _ = typing.cast(tuple[int, ...], getattr(x, "shape"))
+    out_c, _, kh, kw = typing.cast(tuple[int, ...], getattr(w, "shape"))
+    stride_seq = typing.cast(tuple[int, ...], stride)
     stride_h, stride_w = (stride, stride) if isinstance(stride, int) else (int(stride_seq[0]), int(stride_seq[1]))
     pad_h = kh // 2 if padding == "SAME" else 0
     pad_w = kw // 2 if padding == "SAME" else 0
@@ -80,16 +85,16 @@ def dask_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
         x_pad = getattr(da, "pad")(x, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant")
     else:
         x_pad = x
-    x_pad_shape = cast(tuple[int, ...], x_pad.shape)
+    x_pad_shape = typing.cast(tuple[int, ...], x_pad.shape)
     out_h = (int(x_pad_shape[2]) - kh) // stride_h + 1
     out_w = (int(x_pad_shape[3]) - kw) // stride_w + 1
     chunks = (getattr(x, "chunks")[0] if hasattr(x, "chunks") and len(getattr(x, "chunks")) > 0 else (n,), (out_c,), (out_h,), (out_w,))
     out = getattr(da, "zeros")((n, out_c, out_h, out_w), dtype=getattr(x, "dtype"), chunks=chunks)
     for i in range(kh):
         for j in range(kw):
-            patch = cast(EagerTensorProtocol, x_pad)[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
-            out = out + getattr(da, "tensordot")(patch, cast(EagerTensorProtocol, w)[:, :, i, j], axes=([1], [1])).transpose(0, 3, 1, 2)
-    return cast(EagerValue, out)
+            patch = typing.cast(EagerTensorProtocol, x_pad)[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
+            out = out + getattr(da, "tensordot")(patch, typing.cast(EagerTensorProtocol, w)[:, :, i, j], axes=([1], [1])).transpose(0, 3, 1, 2)
+    return typing.cast(EagerValue, out)
 
 
 def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValue = 2, padding: EagerValue = "VALID", **kwargs: EagerValue) -> EagerValue:
@@ -108,14 +113,14 @@ def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
     del padding, kwargs
     if da is None or getattr(x, "ndim", 0) != 4:
         return x
-    k_seq = cast(tuple[int, ...], kernel_size)
-    s_seq = cast(tuple[int, ...], stride)
-    x_shape = cast(tuple[int, ...], getattr(x, "shape"))
+    k_seq = typing.cast(tuple[int, ...], kernel_size)
+    s_seq = typing.cast(tuple[int, ...], stride)
+    x_shape = typing.cast(tuple[int, ...], getattr(x, "shape"))
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
     out_w = (int(x_shape[3]) - kw) // sw + 1
-    x_arr = cast(EagerTensorProtocol, x)
+    x_arr = typing.cast(EagerTensorProtocol, x)
     out = x_arr[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
     for i in range(kh):
         for j in range(kw):
@@ -142,14 +147,14 @@ def dask_avgpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
     del padding, kwargs
     if da is None or getattr(x, "ndim", 0) != 4:
         return x
-    k_seq = cast(tuple[int, ...], kernel_size)
-    s_seq = cast(tuple[int, ...], stride)
-    x_shape = cast(tuple[int, ...], getattr(x, "shape"))
+    k_seq = typing.cast(tuple[int, ...], kernel_size)
+    s_seq = typing.cast(tuple[int, ...], stride)
+    x_shape = typing.cast(tuple[int, ...], getattr(x, "shape"))
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
     out_w = (int(x_shape[3]) - kw) // sw + 1
-    x_arr = cast(EagerTensorProtocol, x)
+    x_arr = typing.cast(EagerTensorProtocol, x)
     out = x_arr[:, :, 0 : out_h * sh : sh, 0 : out_w * sw : sw]
     for i in range(kh):
         for j in range(kw):
@@ -174,9 +179,9 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
     del kwargs
     if da is None or getattr(x, "ndim", 0) != 4 or size is None:
         return x
-    size_seq = cast(tuple[int, ...], size)
+    size_seq = typing.cast(tuple[int, ...], size)
     new_h, new_w = (int(size_seq[0]), int(size_seq[1]))
-    _, _, h, w = cast(tuple[int, ...], getattr(x, "shape"))
+    _, _, h, w = typing.cast(tuple[int, ...], getattr(x, "shape"))
     if (new_h, new_w) == (h, w):
         return x
 
@@ -194,16 +199,16 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
     wy = getattr(da, "from_array")([v - float(int(v)) for v in y_coords], chunks=new_h)[None, None, :, None]
     wx = getattr(da, "from_array")([v - float(int(v)) for v in x_coords], chunks=new_w)[None, None, None, :]
 
-    x_arr = cast(EagerTensorProtocol, x)
+    x_arr = typing.cast(EagerTensorProtocol, x)
     p00 = x_arr[:, :, y0, :][:, :, :, x0]
     p01 = x_arr[:, :, y0, :][:, :, :, x1]
     p10 = x_arr[:, :, y1, :][:, :, :, x0]
     p11 = x_arr[:, :, y1, :][:, :, :, x1]
 
-    return cast(EagerValue, p00 * (1.0 - wy) * (1.0 - wx) + p01 * (1.0 - wy) * wx + p10 * wy * (1.0 - wx) + p11 * wy * wx)
+    return typing.cast(EagerValue, p00 * (1.0 - wy) * (1.0 - wx) + p01 * (1.0 - wy) * wx + p10 * wy * (1.0 - wx) + p11 * wy * wx)
 
 
-def _attach_dask_vision_ops(backend_mod: Optional[EagerValue]) -> None:
+def _attach_dask_vision_ops(backend_mod: EagerValue | None) -> None:
     """Attach lazy Dask vision and neural network kernels to Dask container.
 
     Args:
@@ -241,9 +246,9 @@ def execute_op(
     Raises:
         BackendNotSupportedError: If Dask is unavailable or op is unmapped.
     """
-    mod_entry = sys.modules.get("ml_switcheroo_compiler.backends.dask.eager")
+    mod_entry = typing.cast("types.ModuleType | EagerValue | None", sys.modules.get("ml_switcheroo_compiler.backends.dask.eager"))
     if mod_entry is not None and not isinstance(mod_entry, types.ModuleType):
-        backend_mod: Optional[EagerValue] = mod_entry
+        backend_mod: EagerValue | None = mod_entry
     else:
         backend_mod = da
     _attach_dask_vision_ops(backend_mod)

@@ -5,9 +5,9 @@ from __future__ import annotations
 import math
 import os
 import struct
+import typing  # noqa: F401
 import uuid
 from collections.abc import Callable, Sequence
-from typing import Optional, Protocol, TypeVar, Union, cast  # noqa: F401
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph
@@ -15,31 +15,30 @@ from ml_switcheroo_ir import LogicalGraph
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-T = TypeVar("T")
+T = typing.TypeVar("T")
 
 
-class TensorProtoType(Protocol):
+class TensorProtoType(typing.Protocol):
     """Protocol for ONNX TensorProto objects."""
 
     name: str
 
 
-class ValueInfoProtoType(Protocol):
+class ValueInfoProtoType(typing.Protocol):
     """Protocol for ONNX ValueInfoProto objects."""
 
     name: str
 
 
-class NodeProtoType(Protocol):
+class NodeProtoType(typing.Protocol):
     """Protocol for ONNX NodeProto objects."""
 
     name: str
 
 
-class GraphProtoType(Protocol):
+class GraphProtoType(typing.Protocol):
     """Protocol for ONNX GraphProto objects."""
 
     name: str
@@ -215,10 +214,10 @@ def _serialize_sequence_attribute(attr_bytes: bytes, val: Sequence[EagerValue]) 
         bytes: Wire bytes for sequence AttributeProto message.
     """
     if val and isinstance(val[0], int):
-        ints_bytes: bytes = b"".join(encode_int(8, int(cast(int, x))) for x in val)
+        ints_bytes: bytes = b"".join(encode_int(8, int(typing.cast(int, x))) for x in val)
         return attr_bytes + ints_bytes + encode_int(20, 7)  # INTS
     if val and isinstance(val[0], float):
-        floats_bytes: bytes = b"".join(encode_tag(7, 5) + struct.pack("<f", float(cast(float, x))) for x in val)
+        floats_bytes: bytes = b"".join(encode_tag(7, 5) + struct.pack("<f", float(typing.cast(float, x))) for x in val)
         return attr_bytes + floats_bytes + encode_int(20, 6)  # FLOATS
     if val and isinstance(val[0], str):
         strs_bytes: bytes = b"".join(encode_length_delimited(9, str(x).encode("utf-8")) for x in val)
@@ -248,7 +247,7 @@ def serialize_attribute(name: str, val: EagerValue, graph_serializer: Callable[[
     if isinstance(val, (list, tuple)):
         return _serialize_sequence_attribute(attr_bytes, val)
     if hasattr(val, "nodes") and graph_serializer is not None:
-        subgraph_bytes: bytes = graph_serializer(cast("LogicalGraph", val), f"{name}_subgraph")
+        subgraph_bytes: bytes = graph_serializer(typing.cast("LogicalGraph", val), f"{name}_subgraph")
         return attr_bytes + encode_length_delimited(6, subgraph_bytes) + encode_int(20, 5)  # GRAPH
     return attr_bytes + encode_string(4, str(val)) + encode_int(20, 3)
 
@@ -522,7 +521,7 @@ class ONNXCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (Optional[T], optional): Visitor delegates.
         """
-        super().__init__(graph, cast("list[BaseGenerator] | None", delegates))
+        super().__init__(graph, typing.cast("list[BaseGenerator] | None", delegates))
         self.var_map: dict[str, str] = {}
 
         yaml_path: str = os.path.join(os.path.dirname(__file__), "onnx_schema.yaml")
@@ -532,7 +531,7 @@ class ONNXCodeGenerator(BaseGenerator):
         else:
             self.schema = {}
 
-    def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: str) -> str:
+    def generic_visit(self, node: IRNode | None, input_vars: list[str], **kwargs: str) -> str:
         """Process a node and return its generated ONNX variable name.
 
         Args:
@@ -640,7 +639,7 @@ class ONNXCodeGenerator(BaseGenerator):
         if dynamic_axes and name in dynamic_axes:
             for axis_idx, axis_name in dynamic_axes[name].items():
                 shape_list[axis_idx] = axis_name
-        return cast(ValueInfoProtoType, helper.make_tensor_value_info(name, proto_type, shape_list))
+        return typing.cast(ValueInfoProtoType, helper.make_tensor_value_info(name, proto_type, shape_list))
 
     def _build_onnx_value_infos(
         self,
@@ -703,12 +702,12 @@ class ONNXCodeGenerator(BaseGenerator):
         if op_type == "If":
             for branch_key, suffix in (("then_branch", "then"), ("else_branch", "else")):
                 if branch_key in node.attributes:
-                    subgen = ONNXCodeGenerator(cast("LogicalGraph", node.attributes[branch_key]))
+                    subgen = ONNXCodeGenerator(typing.cast("LogicalGraph", node.attributes[branch_key]))
                     g_proto = subgen._build_onnx_graph(None)
                     g_proto.name = f"{nid}_{suffix}"
                     kwargs[branch_key] = g_proto
         elif op_type in ("Loop", "WhileLoop") and "body" in node.attributes:
-            subgen = ONNXCodeGenerator(cast("LogicalGraph", node.attributes["body"]))
+            subgen = ONNXCodeGenerator(typing.cast("LogicalGraph", node.attributes["body"]))
             g_proto = subgen._build_onnx_graph(None)
             g_proto.name = f"{nid}_body"
             kwargs["body"] = g_proto
@@ -736,7 +735,7 @@ class ONNXCodeGenerator(BaseGenerator):
             inputs: list[str] = getattr(node, "inputs", [])
 
             if op_type == "Constant":
-                val = float(cast(float, node.attributes.get("value", 0.0)))
+                val = float(typing.cast(float, node.attributes.get("value", 0.0)))
                 dt: str = getattr(node, "dtype", "float32")
                 shape: tuple[int, ...] = getattr(node, "shape_metadata", ()) or ()
                 proto_type: int = self._get_proto_type(dt, TensorProto)
@@ -772,7 +771,7 @@ class ONNXCodeGenerator(BaseGenerator):
         onnx_outputs = getattr(self, "_build_onnx_value_infos")(output_ids, dynamic_axes, TensorProto, is_output=True)
 
         onnx_nodes = self._build_onnx_nodes(TensorProto)
-        return cast(GraphProtoType, getattr(helper, "make_graph")(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs))
+        return typing.cast(GraphProtoType, getattr(helper, "make_graph")(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs))
 
     @staticmethod
     def _apply_dynamic_axes_to_shape(
@@ -855,7 +854,7 @@ class ONNXCodeGenerator(BaseGenerator):
             shape_c = [int(x) for x in (getattr(node, "shape_metadata", ()) or ())]
             p_type = self._get_proto_type(dt)
             num_elem: int = math.prod(shape_c) if shape_c else 1
-            raw_data: bytes = struct.pack(f"<{num_elem}f", *([float(cast(float, c_val))] * num_elem))
+            raw_data: bytes = struct.pack(f"<{num_elem}f", *([float(typing.cast(float, c_val))] * num_elem))
             t_proto: bytes = serialize_tensor_proto(nid, p_type, shape_c, raw_data)
             attr_c: bytes = encode_string(1, "value") + encode_length_delimited(5, t_proto) + encode_int(20, 4)
             return serialize_node("Constant", [], outputs, nid, [attr_c])
@@ -980,10 +979,8 @@ class ONNXCodeGenerator(BaseGenerator):
             try:
                 from onnx import printer
 
-                res: str = getattr(printer, "to_text")(graph_def)
-                if not isinstance(res, str):
-                    return str(res)
-                return res
+                res = getattr(printer, "to_text")(graph_def)
+                return res if isinstance(res, str) else str(res)
             except (ImportError, AttributeError):
                 return str(getattr(helper, "printable_graph")(graph_def))
         except (ImportError, AttributeError):
@@ -1070,7 +1067,7 @@ class ONNXCodeGenerator(BaseGenerator):
         Returns:
             EagerValue: Runnable execution session callable executing the ONNX model.
         """
-        opset_version = int(cast(int, kwargs.get("opset_version", 18)))
+        opset_version = int(typing.cast(int, kwargs.get("opset_version", 18)))
         dynamic_axes = kwargs.get("dynamic_axes")
         dyn_map = dynamic_axes if isinstance(dynamic_axes, dict) else None
 
@@ -1091,7 +1088,7 @@ class ONNXCodeGenerator(BaseGenerator):
                 Returns:
                     EagerValue: Computed outputs.
                 """
-                return cast(EagerValue, session.run(None, self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
+                return typing.cast(EagerValue, session.run(None, self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
 
             return onnx_reference_runner
         except Exception:
@@ -1107,10 +1104,10 @@ class ONNXCodeGenerator(BaseGenerator):
                 Returns:
                     EagerValue: Evaluated output tensors.
                 """
-                evaluated = evaluate_graph(graph, inputs=cast("dict[str, EvalValue]", self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
+                evaluated = evaluate_graph(graph, inputs=self._prepare_runner_input_feed(graph, w_args, w_kwargs))
                 outputs = getattr(graph, "outputs", None)
                 if outputs:
-                    return cast(EagerValue, evaluated.get(outputs[0]) if len(outputs) == 1 else tuple(evaluated.get(out_id) for out_id in outputs))
-                return cast(EagerValue, evaluated)
+                    return evaluated.get(outputs[0]) if len(outputs) == 1 else tuple(evaluated.get(out_id) for out_id in outputs)
+                return typing.cast(EagerValue, evaluated)
 
             return fallback_runner

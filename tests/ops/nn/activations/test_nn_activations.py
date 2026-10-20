@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.activations import LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, crelu, log_softmax, one_hot, rrelu, sigmoid, softmax, softplus
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -100,7 +100,7 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = cast("dict[str, EagerTensorProtocol]", {})
+            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -116,7 +116,7 @@ def _test_nn_activations_coverage_part_3(_state: dict[str, EagerTensorProtocol])
         assert res is not None
         res = log_softmax(t)
         assert res is not None
-        res = cast("EagerCallableProtocol", sigmoid)(t)
+        res = typing.cast("EagerCallableProtocol", sigmoid)(t)
         assert res is not None
         res = one_hot(t_idx, 2)
         assert res is not None

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import typing
+
+from ml_switcheroo_ir import AttributeValue
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
 
@@ -25,7 +29,7 @@ def test_nested_loop_unrolling_both_levels() -> None:
         id="inner_loop",
         op_type="WhileLoop",
         inputs=["outer_x"],
-        attributes={"max_iterations": 2, "body": inner_body},
+        attributes=typing.cast("dict[str, AttributeValue]", {"max_iterations": 2, "body": inner_body}),
     )
     outer_body.nodes["inner_loop"] = inner_loop
     outer_body.outputs = ["inner_loop"]
@@ -41,7 +45,7 @@ def test_nested_loop_unrolling_both_levels() -> None:
         id="outer_loop",
         op_type="WhileLoop",
         inputs=["init_val"],
-        attributes={"max_iterations": 2, "body": outer_body},
+        attributes=typing.cast("dict[str, AttributeValue]", {"max_iterations": 2, "body": outer_body}),
     )
     main_graph.nodes["outer_loop"] = outer_loop
     main_graph.outputs = ["outer_loop"]
@@ -76,7 +80,7 @@ def test_nested_foriloop_in_whileloop() -> None:
         id="inner_fori",
         op_type="ForiLoop",
         inputs=["outer_acc"],
-        attributes={"lower": 1, "upper": 3, "body": fori_body},
+        attributes=typing.cast("dict[str, AttributeValue]", {"lower": 1, "upper": 3, "body": fori_body}),
     )
     outer_body.nodes["inner_fori"] = fori_node
     outer_body.outputs = ["inner_fori"]
@@ -91,7 +95,7 @@ def test_nested_foriloop_in_whileloop() -> None:
         id="outer_while",
         op_type="WhileLoop",
         inputs=["initial_val"],
-        attributes={"max_iterations": 3, "body": outer_body},
+        attributes=typing.cast("dict[str, AttributeValue]", {"max_iterations": 3, "body": outer_body}),
     )
     graph.nodes["outer_while"] = outer_while
     graph.outputs = ["outer_while"]
@@ -113,7 +117,7 @@ def test_nested_loop_exceeding_bound_preserves_loop() -> None:
         id="large_loop",
         op_type="WhileLoop",
         inputs=["init"],
-        attributes={"max_iterations": 50, "body": large_body},
+        attributes=typing.cast("dict[str, AttributeValue]", {"max_iterations": 50, "body": large_body}),
     )
     graph.nodes["large_loop"] = large_loop
 

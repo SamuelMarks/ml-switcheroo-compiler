@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -41,14 +41,14 @@ def test_mlx_generator_distributed_ops() -> None:
 
     mixin = MLXOpRegistryMixin()
 
-    ar = cast("EagerCallableProtocol", mixin.visit_AllReduce)(None, ["tensor"])
+    ar = typing.cast("EagerCallableProtocol", mixin.visit_AllReduce)(None, ["tensor"])
     assert "mx.distributed.all_sum(tensor)" in ar
 
-    ag = cast("EagerCallableProtocol", mixin.visit_AllGather)(None, ["tensor"])
+    ag = typing.cast("EagerCallableProtocol", mixin.visit_AllGather)(None, ["tensor"])
     assert "mx.distributed.all_gather(tensor)" in ag
 
-    a2a = cast("EagerCallableProtocol", mixin.visit_AllToAll)(None, ["tensor"])
+    a2a = typing.cast("EagerCallableProtocol", mixin.visit_AllToAll)(None, ["tensor"])
     assert "mx.distributed.all_to_all(tensor)" in a2a
 
-    rs = cast("EagerCallableProtocol", mixin.visit_ReduceScatter)(None, ["tensor"])
+    rs = typing.cast("EagerCallableProtocol", mixin.visit_ReduceScatter)(None, ["tensor"])
     assert "mx.distributed.recv(tensor)" in rs

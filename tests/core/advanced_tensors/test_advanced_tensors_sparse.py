@@ -1,5 +1,7 @@
 """Test sparse tensors."""
 
+from __future__ import annotations
+
 import numpy as np
 
 from ml_switcheroo_compiler.core.sparse_tensor import SparseTensor, SparseTensorCOO, SparseTensorCSR

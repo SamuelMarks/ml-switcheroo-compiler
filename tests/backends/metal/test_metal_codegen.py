@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.metal.metal import (
     METAL_SYNTH_MATH_MAP,
@@ -14,7 +15,7 @@ from ml_switcheroo_compiler.backends.metal.metal import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -64,7 +65,7 @@ def test_custom_scalar_expr_synthesized_properly_metal() -> None:
         inputs=["x"],
         attributes={"scalar_expr": "clamp(A[id], 0.0f, 6.0f)"},
     )
-    g.nodes = {"custom_relu6_metal": custom_node}
+    g.nodes = NodeDict({"custom_relu6_metal": custom_node})
     gen = MetalCodeGenerator(g)
 
     tpl = gen._ensure_template(custom_node, 0)
@@ -107,23 +108,23 @@ def test_expanded_metal_templates_yaml_coverage() -> None:
     for op in new_ops:
         assert op in templates, f"Template for '{op}' missing in msl_templates.yaml"
         tpl = templates[op]
-        body = cast("EagerTensorProtocol", getattr(tpl, "get"))("body", "")
+        body = typing.cast("EagerTensorProtocol", getattr(tpl, "get"))("body", "")
         assert "kernel void" in body, f"Kernel body for '{op}' must contain 'kernel void'"
         assert f"{op}" in body, f"Kernel body for '{op}' should contain function name"
 
     # Specific check for argmax / argmin reduction in Metal
-    argmax_body = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmax")), "get"))("body", "")
+    argmax_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmax")), "get"))("body", "")
     assert "threadgroup float s_val" in argmax_body
     assert "threadgroup int s_idx" in argmax_body
     assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in argmax_body
 
-    argmin_body = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmin")), "get"))("body", "")
+    argmin_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmin")), "get"))("body", "")
     assert "threadgroup float s_val" in argmin_body
     assert "threadgroup int s_idx" in argmin_body
     assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in argmin_body
 
     # Check SIMD-group matrix primitives
-    simd_mat_body = cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(templates, "__getitem__")("matmul_simdgroup_matrix")), "get"))("body", "")
+    simd_mat_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("matmul_simdgroup_matrix")), "get"))("body", "")
     assert "using namespace metal::simdgroup_matrix;" in simd_mat_body
     assert "simdgroup_matrix<half, 8, 8>" in simd_mat_body
     assert "simdgroup_multiply_accumulate" in simd_mat_body
@@ -138,7 +139,7 @@ def test_metal_code_generator_full_pipeline_syntax_validation() -> None:
     n_fma = IRNode(id="fma_out", op_type="Fma", inputs=["cbrt_x", "y", "x"], shape_metadata=[1024])
     n_var = IRNode(id="var_out", op_type="ReduceVar", inputs=["fma_out"], shape_metadata=[1])
 
-    g.nodes = {"x": n_in1, "y": n_in2, "cbrt_x": n_cbrt, "fma_out": n_fma, "var_out": n_var}
+    g.nodes = NodeDict({"x": n_in1, "y": n_in2, "cbrt_x": n_cbrt, "fma_out": n_fma, "var_out": n_var})
     g.inputs = ["x", "y"]
     g.outputs = ["var_out"]
 

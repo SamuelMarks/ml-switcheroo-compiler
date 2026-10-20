@@ -1,5 +1,7 @@
 """Tests to ensure that all registered operations can be retrieved."""
 
+from __future__ import annotations
+
 import os
 
 import yaml

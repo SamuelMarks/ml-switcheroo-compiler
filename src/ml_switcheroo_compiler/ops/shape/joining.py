@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import Union, cast
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -72,10 +72,8 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> TensorOrScalar:
         out_dtype_str = str(out_dtype.name).lower()
     elif hasattr(out_dtype, "__name__"):
         out_dtype_str = str(out_dtype.__name__)
-    elif hasattr(out_dtype, "value"):
-        out_dtype_str = str(out_dtype.value).lower()
     else:
-        out_dtype_str = str(out_dtype).split(".")[-1].lower()
+        out_dtype_str = str(getattr(out_dtype, "value", out_dtype)).split(".")[-1].lower()
 
     if config.eager_mode:
         backend = get_active_backend()
@@ -123,8 +121,8 @@ def vstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         data = backend.execute_op("Vstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = get_op("Vstack").infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Vstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
+    out_shape = get_op("Vstack")().infer_shape([t.shape for t in inputs])
+    return _emit_shape_node("Vstack", inputs, {}, typing.cast("Sequence[int | str]", out_shape), inputs[0].dtype)
 
 
 def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
@@ -141,8 +139,8 @@ def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         data = backend.execute_op("Hstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = get_op("Hstack").infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Hstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
+    out_shape = get_op("Hstack")().infer_shape([t.shape for t in inputs])
+    return _emit_shape_node("Hstack", inputs, {}, typing.cast("Sequence[int | str]", out_shape), inputs[0].dtype)
 
 
 def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
@@ -159,8 +157,8 @@ def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         data = backend.execute_op("Dstack", [t.data for t in tup])
         return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
-    out_shape = get_op("Dstack").infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Dstack", inputs, {}, cast("Sequence[Union[int, str]]", out_shape), inputs[0].dtype)
+    out_shape = get_op("Dstack")().infer_shape([t.shape for t in inputs])
+    return _emit_shape_node("Dstack", inputs, {}, typing.cast("Sequence[int | str]", out_shape), inputs[0].dtype)
 
 
 def append(arr: TensorOrScalar, values: TensorOrScalar, axis: int | None = None) -> TensorOrScalar:

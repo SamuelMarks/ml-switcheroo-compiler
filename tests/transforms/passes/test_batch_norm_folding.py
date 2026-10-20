@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.batch_norm_folding import batch_norm_folding_pass
 
@@ -20,7 +22,7 @@ def test_batch_norm_folding_basic() -> None:
     bn = IRNode(id="bn_1", op_type="BatchNorm", inputs=["conv_1", "scale", "bias", "mean", "var"])
     relu = IRNode(id="relu_1", op_type="Relu", inputs=["bn_1"])
 
-    graph.nodes = {"conv_1": conv, "bn_1": bn, "relu_1": relu}
+    graph.nodes = NodeDict({"conv_1": conv, "bn_1": bn, "relu_1": relu})
     graph.outputs = ["relu_1"]
 
     modified = batch_norm_folding_pass(graph)
@@ -44,7 +46,7 @@ def test_batch_norm_folding_output_node() -> None:
     conv = IRNode(id="conv_1", op_type="Conv2D", inputs=["inp_1", "weight_1"])
     bn = IRNode(id="bn_1", op_type="BatchNorm", inputs=["conv_1", "scale", "bias", "mean", "var"])
 
-    graph.nodes = {"conv_1": conv, "bn_1": bn}
+    graph.nodes = NodeDict({"conv_1": conv, "bn_1": bn})
     graph.outputs = ["bn_1"]
 
     modified = batch_norm_folding_pass(graph)
@@ -60,7 +62,7 @@ def test_batch_norm_folding_no_conv2d() -> None:
     add = IRNode(id="add_1", op_type="Add", inputs=["inp_1", "inp_2"])
     bn = IRNode(id="bn_1", op_type="BatchNorm", inputs=["add_1", "scale", "bias", "mean", "var"])
 
-    graph.nodes = {"add_1": add, "bn_1": bn}
+    graph.nodes = NodeDict({"add_1": add, "bn_1": bn})
     graph.outputs = ["bn_1"]
 
     modified = batch_norm_folding_pass(graph)
@@ -77,7 +79,7 @@ def test_batch_norm_folding_with_bias() -> None:
     bn = IRNode(id="bn_1", op_type="BatchNorm", inputs=["conv_1", "scale", "bias", "mean", "var"])
     relu = IRNode(id="relu_1", op_type="Relu", inputs=["bn_1"])
 
-    graph.nodes = {"conv_1": conv, "bn_1": bn, "relu_1": relu}
+    graph.nodes = NodeDict({"conv_1": conv, "bn_1": bn, "relu_1": relu})
     graph.outputs = ["relu_1"]
 
     modified = batch_norm_folding_pass(graph)

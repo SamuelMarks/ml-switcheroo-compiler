@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.loop_tiling import _load_heuristics, loop_tiling_pass
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -35,7 +37,7 @@ def test_loop_tiling_pass_modifies_nodes() -> None:
     n2 = LogicalNode(id="conv", op_type="Conv2D", shape_metadata=(1, 64, 64, 3))
     n3 = LogicalNode(id="other", op_type="Add")
 
-    graph.nodes = {"matmul": n1, "conv": n2, "other": n3}
+    graph.nodes = NodeDict({"matmul": n1, "conv": n2, "other": n3})
     assert loop_tiling_pass(graph)
     assert getattr(n1, "attributes", {}).get("tiling") is True
     assert getattr(n2, "attributes", {}).get("tiling") is True
@@ -63,7 +65,7 @@ def test_load_heuristics_missing(monkeypatch: EagerTensorProtocol) -> None:
 
     graph = IRGraph()
     n1 = LogicalNode(id="matmul", op_type="MatMul", shape_metadata=(128, 128))
-    graph.nodes = {"matmul": n1}
+    graph.nodes = NodeDict({"matmul": n1})
     assert not loop_tiling_pass(graph)
 
 
@@ -72,7 +74,7 @@ def test_loop_tiling_pass_no_attributes() -> None:
     graph = IRGraph()
     n1 = LogicalNode(id="matmul", op_type="MatMul", shape_metadata=(128, 128))
     del n1.attributes
-    graph.nodes = {"matmul": n1}
+    graph.nodes = NodeDict({"matmul": n1})
     assert loop_tiling_pass(graph)
     assert getattr(n1, "attributes", {}).get("tiling") is True
 
@@ -109,7 +111,7 @@ def test_loop_tiling_extra_coverage() -> None:
     assert getattr(graph.nodes["n2"], "attributes", {}).get("tiling") is None
 
     # Hit not op_config branch
-    mock_yaml2 = cast("EagerTensorProtocol", {"profiles": {"default_wasm": {"tiling": {"matmul": {}}}}})
+    mock_yaml2 = typing.cast("EagerTensorProtocol", {"profiles": {"default_wasm": {"tiling": {"matmul": {}}}}})
     with patch("os.path.exists", return_value=True), patch("builtins.open", mock_open(read_data=yaml.dump(mock_yaml2))):
         loop_tiling_pass(graph)
 
@@ -124,7 +126,7 @@ def test_loop_tiling_missing_coverage_extra() -> None:
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {}) == (1, "sym", "sym", 3)
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {"TILE_H": 8, "TILE_W": 8}) == (1, "sym", "sym", 3)
     assert _split_shape("other_op", (1, 2), {}) == (1, 2)
-    assert bool(cast("EagerCallableProtocol", _should_tile)("matmul", "not_tuple", {})) is False
+    assert bool(typing.cast("EagerCallableProtocol", _should_tile)("matmul", "not_tuple", {})) is False
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass

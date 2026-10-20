@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core import dtype as dtypes
@@ -17,7 +17,7 @@ from ml_switcheroo_compiler.random.state import (
     rng_uniform,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -46,9 +46,9 @@ def test_emit_random_node_tracing() -> None:
         result = _emit_random_node("RandomOp", [inp], (2,), dtypes.DType.Float32, {"attr1": "val1"})
 
         assert isinstance(result, Tensor)
-        assert cast("EagerTensorProtocol", getattr(result.data, "id")) == "mock-uuid"
-        assert cast("EagerTensorProtocol", getattr(result.data, "shape")) == (2,)
-        assert cast("EagerTensorProtocol", getattr(result.data, "dtype")) == "float32"
+        assert typing.cast("EagerTensorProtocol", getattr(result.data, "id")) == "mock-uuid"
+        assert typing.cast("EagerTensorProtocol", getattr(result.data, "shape")) == (2,)
+        assert typing.cast("EagerTensorProtocol", getattr(result.data, "dtype")) == "float32"
         mock_global_state.add_node.assert_called_once()
 
         node = mock_global_state.add_node.call_args[0][0]
@@ -80,7 +80,7 @@ def test_dispatch_random_eager() -> None:
         mock_get_backend.return_value = mock_backend
 
         result = _dispatch_random_eager("func_name", "OpName", "arg1", kwarg1="val1")
-        assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
+        assert typing.cast("EagerTensorProtocol", result) == typing.cast("EagerTensorProtocol", "mocked_result")
         mock_backend.execute_op.assert_called_once_with("OpName", "arg1", kwarg1="val1")
 
 
@@ -91,7 +91,7 @@ def test_dispatch_random_eager_mode() -> None:
         mock_dispatch.return_value = "mocked_result"
 
         result = _dispatch_random("my_op_func", "arg1", kwarg1="val1")
-        assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
+        assert typing.cast("EagerTensorProtocol", result) == typing.cast("EagerTensorProtocol", "mocked_result")
         mock_dispatch.assert_called_once_with("my_op_func", "MyOpFunc", "arg1", kwarg1="val1")
 
 
@@ -106,7 +106,7 @@ def test_dispatch_random_tracing_has_op() -> None:
         mock_get_op.return_value = mock_op_cls
 
         result = _dispatch_random("my_op_func", "arg1", kwarg1="val1")
-        assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
+        assert typing.cast("EagerTensorProtocol", result) == typing.cast("EagerTensorProtocol", "mocked_result")
         mock_get_op.assert_called_once_with("MyOpFunc")
         mock_op_cls.assert_called_once()
         mock_op_instance.assert_called_once_with("arg1", kwarg1="val1")
@@ -119,7 +119,7 @@ def test_dispatch_random_tracing_no_op() -> None:
         mock_emit.return_value = "mocked_result"
 
         result = _dispatch_random("my_op_func", "arg1", kwarg1="val1")
-        assert cast("EagerTensorProtocol", result) == cast("EagerTensorProtocol", "mocked_result")
+        assert typing.cast("EagerTensorProtocol", result) == typing.cast("EagerTensorProtocol", "mocked_result")
         mock_emit.assert_called_once_with("MyOpFunc", ["arg1"], {"kwarg1": "val1"}, (), "float32")
 
 
@@ -128,7 +128,7 @@ def test_rng_uniform() -> None:
     with patch.object(sys.modules["ml_switcheroo_compiler.random.state"], "_dispatch_random") as mock_dispatch:
         mock_dispatch.return_value = "mocked_result"
 
-        result = cast("EagerCallableProtocol", rng_uniform)("a", "b", (2,), dtypes.DType.Float64)
+        result = typing.cast("EagerCallableProtocol", rng_uniform)("a", "b", (2,), dtypes.DType.Float64)
         assert result == "mocked_result"
         mock_dispatch.assert_called_once_with("rng_uniform", "a", "b", shape=(2,), dtype=dtypes.DType.Float64)
 
@@ -140,7 +140,7 @@ def test_get_numpy_rng() -> None:
         mock_backend_cls.get_numpy_rng.return_value = "mocked_rng"
         mock_get.return_value = mock_backend_cls
 
-        result = cast("EagerCallableProtocol", _get_numpy_rng)("arg1", kwarg1="val1")
+        result = typing.cast("EagerCallableProtocol", _get_numpy_rng)("arg1", kwarg1="val1")
         assert result == "mocked_rng"
         mock_get.assert_called_once_with("numpy")
         mock_backend_cls.get_numpy_rng.assert_called_once_with("arg1", kwarg1="val1")

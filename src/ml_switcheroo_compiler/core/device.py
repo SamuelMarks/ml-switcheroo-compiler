@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import typing
 from enum import Enum
 from types import TracebackType
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
+import pydantic
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 
 
@@ -19,12 +20,22 @@ class DeviceType(Enum):
     WEBGPU = "webgpu"
 
 
-@dataclass(frozen=True)
-class Device:
+class Device(pydantic.BaseModel):
     """Represents a specific hardware device and index."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True)
 
     device_type: DeviceType | str
     index: int = 0
+
+    def __init__(self, device_type: DeviceType | str, index: int = 0) -> None:
+        """Initialize Device.
+
+        Args:
+            device_type (DeviceType | str): Hardware device type or identifier string.
+            index (int): Zero-based device ordinal.
+        """
+        super().__init__(device_type=device_type, index=index)
 
     def __repr__(self) -> str:
         """Return the string representation of the Device.
@@ -227,7 +238,5 @@ def get_memory_info(device: str | None = None) -> dict[str, int]:
 
     backend = registry.get_active_backend()
     if hasattr(backend, "get_memory_info"):
-        from typing import cast
-
-        return cast("dict[str, int]", backend.get_memory_info(device))
+        return backend.get_memory_info(device)
     raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_memory_info()")

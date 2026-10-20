@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.transforms import elastic_transform, flip_left_right, flip_up_down, perspective_transform
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -48,10 +48,10 @@ def test_vision_transforms_funcs(mocker: EagerTensorProtocol) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.transforms.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert cast("EagerTensorProtocol", getattr(perspective_transform(t, t, t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(elastic_transform(t, t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(flip_left_right(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(flip_up_down(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(perspective_transform(t, t, t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(elastic_transform(t, t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(flip_left_right(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(flip_up_down(t), "config")).shape == (2, 3)
 
 
 def test_vision_transforms_funcs_kwargs(mocker: EagerTensorProtocol) -> None:
@@ -80,4 +80,4 @@ def test_transforms_opdef_infer_shape() -> None:
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert cast("EagerCallableProtocol", ElasticTransform)().infer_shape(t) == (1, 2, 3)
+    assert typing.cast("EagerCallableProtocol", ElasticTransform)().infer_shape(t) == (1, 2, 3)

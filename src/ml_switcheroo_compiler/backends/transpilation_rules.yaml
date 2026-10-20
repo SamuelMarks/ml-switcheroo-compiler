@@ -697,7 +697,6 @@ ast_to_ir_ops:
   keras.ops.selu: SELU
   torch.svd: Svd
   keras.ops.svd: Svd
-  torch.saddmm: Saddmm
   torch.save: Save
   jax.numpy.save: Save
   mlx.core.save: Save
@@ -3996,10 +3995,6 @@ ir_to_ast_ops:
     - keras
     - ops
     - svd
-  Saddmm:
-    pytorch:
-    - torch
-    - saddmm
   Save:
     jax:
     - jax

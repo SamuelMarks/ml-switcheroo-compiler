@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_unary import _np_erf, _np_erfc, _np_erfinv, _np_exp2, _np_igamma, _np_igammac, _np_signbit
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -28,7 +29,7 @@ class DummyModule:
             Args:
                 x: Test parameter `x`.
             """
-            return [cast("EagerCallableProtocol", f)(i) for i in cast("EagerTensorProtocol", x)]
+            return [typing.cast("EagerCallableProtocol", f)(i) for i in typing.cast("EagerTensorProtocol", x)]
 
         return _f
 
@@ -38,10 +39,10 @@ def test_erf_erfc_no_asarray() -> None:
     mod = DummyModule()
 
     # x is a scalar
-    res_erf = _np_erf(mod, 0.0)
+    res_erf = _np_erf(typing.cast("BackendModuleProtocol", mod), 0.0)
     assert res_erf == 0.0
 
-    res_erfc = _np_erfc(mod, 0.0)
+    res_erfc = _np_erfc(typing.cast("BackendModuleProtocol", mod), 0.0)
     assert res_erfc == 1.0
 
 

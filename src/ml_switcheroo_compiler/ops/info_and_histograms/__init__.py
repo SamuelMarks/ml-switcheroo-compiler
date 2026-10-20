@@ -1,5 +1,7 @@
 """Public package exports and initialization for `ml_switcheroo_compiler.ops.info_and_histograms`."""
 
+from __future__ import annotations
+
 from .grid_and_indices import (
     Indices,
     Ix,

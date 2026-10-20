@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention, scaled_dot_product_attention
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -35,7 +35,7 @@ def test_dot_product_attention_eager_branch() -> None:
     with pytest.MonkeyPatch.context() as m:
         m.setattr("ml_switcheroo_compiler.ops.nn.attention.get_active_backend", lambda: mock_b)
         res = scaled_dot_product_attention(q, k, v, sf)
-        assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
     config.eager_mode = False
 
@@ -52,7 +52,7 @@ def test_dot_product_attention_trace_branch() -> None:
     sf = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
 
     res = scaled_dot_product_attention(q, k, v, sf)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
 def test_dot_product_attention_infer_shape() -> None:
@@ -62,7 +62,7 @@ def test_dot_product_attention_infer_shape() -> None:
     k = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     v = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
     sf = Tensor(np.ones((2, 2)), TensorConfig((2, 2), DType.Float32, Device("cpu")))
-    assert cast("EagerCallableProtocol", op.infer_shape)(q, k, v, sf) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(q, k, v, sf) == (2, 2)
 
 
 def test_quantized_trace() -> None:
@@ -82,5 +82,5 @@ def test_quantized_trace() -> None:
 
     sf2 = Tensor(np.ones((1,)), TensorConfig((1,), DType.Float32, Device("cpu")))
     zp2 = Tensor(np.ones((1,)), TensorConfig((1,), DType.Float32, Device("cpu")))
-    res2 = cast("EagerCallableProtocol", fake_quantize_per_tensor_affine)(q, sf2, zp2, quant_min=0, quant_max=255)
+    res2 = typing.cast("EagerCallableProtocol", fake_quantize_per_tensor_affine)(q, sf2, zp2, quant_min=0, quant_max=255)
     assert res2 is not None

@@ -1,5 +1,7 @@
 """Core module for ml-switcheroo."""
 
+from __future__ import annotations
+
 from .assertions import clear_assertions, evaluate_assertions, record_assertion
 from .config import ConfigContext, EagerMode, config
 from .dataset import AudioDataset, Dataset, ImageDataset, NumpyDataset, TextDataset

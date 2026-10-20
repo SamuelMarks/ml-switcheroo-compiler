@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import Optional  # noqa: F401
+import typing  # noqa: F401
 
 
 def get_source_ast_ref(back_frames: int = 1) -> str | None:

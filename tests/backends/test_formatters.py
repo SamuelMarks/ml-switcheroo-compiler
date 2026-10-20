@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.formatters import CodeFormatter, FallbackHandler, FormatterContext, OpFormatter
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_formatter_context() -> None:
     """Test function test_formatter_context."""
-    ctx = FormatterContext("np", "Add", ["a"], {"axis": 0})
+    ctx = FormatterContext(prefix="np", op_type="Add", input_vars=["a"], kwargs={"axis": 0})
     assert ctx.prefix == "np"
 
 
@@ -20,7 +20,7 @@ def test_op_formatter() -> None:
     """Test function test_op_formatter."""
     assert OpFormatter.format_backend_string("{0} + {val}", ["a"], {"val": 1}) == "a + 1"
 
-    ctx1 = FormatterContext("np", "Sum", ["a"], {"axis": 0, "keepdims": True})
+    ctx1 = FormatterContext(prefix="np", op_type="Sum", input_vars=["a"], kwargs={"axis": 0, "keepdims": True})
     assert OpFormatter.format_generic_fallback(ctx1) == "np.sum(a, axis=0, keepdims=True)"
 
 
@@ -32,7 +32,7 @@ def test_fallback_handler() -> None:
 
         op_type = "Mean"
 
-    assert cast("EagerCallableProtocol", FallbackHandler.generate_fallback_code)(cast("EagerCallableProtocol", DummyNode)(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
+    assert typing.cast("EagerCallableProtocol", FallbackHandler.generate_fallback_code)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a"], "np", axis=0) == "np.mean(a, axis=0)"
 
 
 def test_code_formatter() -> None:
@@ -51,19 +51,19 @@ def test_op_formatter_edge_cases() -> None:
     """Test function test_op_formatter_edge_cases."""
     assert OpFormatter.format_backend_string("{0} + x", ["a"], {"val": 1}) == "a + x"
 
-    ctx2 = FormatterContext("np", "Sum", ["a"], {"axis": None, "keepdims": False})
+    ctx2 = FormatterContext(prefix="np", op_type="Sum", input_vars=["a"], kwargs={"axis": None, "keepdims": False})
     assert OpFormatter.format_generic_fallback(ctx2) == "np.sum(a)"
 
 
 def test_op_formatter_edge_cases_extended() -> None:
     """Test function test_op_formatter_edge_cases_extended."""
-    ctx = FormatterContext("np", "Cast", ["a"], {"dtype": "float32"})
+    ctx = FormatterContext(prefix="np", op_type="Cast", input_vars=["a"], kwargs={"dtype": "float32"})
     assert OpFormatter.format_generic_fallback(ctx) == "np.cast(a, dtype='float32')"
 
-    ctx_tuple = FormatterContext("np", "Reshape", ["a"], {"shape": "(2, 2)"})
+    ctx_tuple = FormatterContext(prefix="np", op_type="Reshape", input_vars=["a"], kwargs={"shape": "(2, 2)"})
     assert OpFormatter.format_generic_fallback(ctx_tuple) == "np.reshape(a, shape=(2, 2))"
 
-    ctx_int = FormatterContext("np", "Add", ["a"], {"val": 1})
+    ctx_int = FormatterContext(prefix="np", op_type="Add", input_vars=["a"], kwargs={"val": 1})
     assert OpFormatter.format_generic_fallback(ctx_int) == "np.add(a, val=1)"
 
 
@@ -80,16 +80,16 @@ def test_fallback_handler_missing_op_type() -> None:
 
         pass
 
-    assert cast("EagerCallableProtocol", FallbackHandler.generate_fallback_code)(cast("EagerCallableProtocol", DummyNodeNoOp)(), ["a"], "np") == "np.unknown(a)"
+    assert typing.cast("EagerCallableProtocol", FallbackHandler.generate_fallback_code)(typing.cast("EagerCallableProtocol", DummyNodeNoOp)(), ["a"], "np") == "np.unknown(a)"
 
 
 def test_op_formatter_edge_cases_continue() -> None:
     """Test function test_op_formatter_edge_cases_continue."""
-    ctx = FormatterContext("np", "Cast", ["a"], {"node_id": "n1", "shape_metadata": ()})
+    ctx = FormatterContext(prefix="np", op_type="Cast", input_vars=["a"], kwargs={"node_id": "n1", "shape_metadata": ()})
     assert OpFormatter.format_generic_fallback(ctx) == "np.cast(a)"
 
-    ctx_shape = FormatterContext("np", "Add", ["a"], {"shape": [2, 2]})
+    ctx_shape = FormatterContext(prefix="np", op_type="Add", input_vars=["a"], kwargs={"shape": [2, 2]})
     assert OpFormatter.format_generic_fallback(ctx_shape) == "np.add(a)"
 
-    ctx_dtype = FormatterContext("np", "Add", ["a"], {"dtype": "float32", "device": "cpu", "is_weight": False})
+    ctx_dtype = FormatterContext(prefix="np", op_type="Add", input_vars=["a"], kwargs={"dtype": "float32", "device": "cpu", "is_weight": False})
     assert OpFormatter.format_generic_fallback(ctx_dtype) == "np.add(a)"

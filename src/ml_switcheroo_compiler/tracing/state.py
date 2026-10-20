@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+import typing
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.autograph import LoopOptions
 
 

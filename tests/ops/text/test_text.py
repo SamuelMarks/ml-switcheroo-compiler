@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 
 import numpy as np
@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.ops.text import as_string, edit_distance, lookup, re
 from ml_switcheroo_compiler.tracing import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -56,34 +56,34 @@ def test_text_ops_eager(mocker: EagerTensorProtocol) -> None:
     assert lookup(t).config.shape == (2, 3)
     assert text_vectorization(t).config.shape == (2, 3)
     op = RegexReplace()
-    assert cast("EagerCallableProtocol", op.infer_shape)(1) == ()
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == ()
 
 
 def test_text_ops_misc() -> None:
     """Test function test_text_ops_misc."""
     from ml_switcheroo_compiler.ops.text.ops import ArrayRepr, ArrayStr
 
-    assert cast("EagerCallableProtocol", ArrayRepr)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", ArrayStr)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", ArrayRepr)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", ArrayStr)().infer_shape(()) == ()
 
 
 def test_text_classes_infer_shape() -> None:
     """Test function test_text_classes_infer_shape."""
     from ml_switcheroo_compiler.ops.text.ops import EditDistance, Hashing, RegexFullMatch, StringJoin, StringLength, StringLookup, StringLower, StringSplit, StringSubstr, StringToHash, StringToNumber, StringUpper, TextVectorization
 
-    assert cast("EagerCallableProtocol", StringToHash)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringLookup)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", TextVectorization)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", EditDistance)().infer_shape(None, None) == ()
-    assert cast("EagerCallableProtocol", Hashing)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", RegexFullMatch)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringJoin)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringLength)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringLower)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringSplit)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringSubstr)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringToNumber)().infer_shape(()) == ()
-    assert cast("EagerCallableProtocol", StringUpper)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringToHash)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringLookup)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", TextVectorization)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", EditDistance)().infer_shape(None, None) == ()
+    assert typing.cast("EagerCallableProtocol", Hashing)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", RegexFullMatch)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringJoin)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringLength)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringLower)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringSplit)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringSubstr)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringToNumber)().infer_shape(()) == ()
+    assert typing.cast("EagerCallableProtocol", StringUpper)().infer_shape(()) == ()
 
 
 def test_text_eager_mode_exceptions() -> None:
@@ -209,13 +209,13 @@ def test_text_ops_eager_additional(mocker: EagerTensorProtocol) -> None:
     setattr(mock_backend_front.array, "side_effect", lambda x: MockTensor((2, 3)))
     setattr(mock_backend.execute_op, "return_value", "res")
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert cast("EagerTensorProtocol", getattr(string_to_number(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(string_lower(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(string_upper(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(string_length(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(string_substr(t, 0, 1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(regex_full_match(t, "pattern"), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(string_join([t, t], separator=","), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_to_number(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_lower(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_upper(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_length(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_substr(t, 0, 1), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(regex_full_match(t, "pattern"), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_join([t, t], separator=","), "config")).shape == (2, 3)
 
 
 def test_text_ops_eager_additional_more(mocker: EagerTensorProtocol) -> None:
@@ -255,8 +255,8 @@ def test_text_ops_eager_additional_more(mocker: EagerTensorProtocol) -> None:
 
     assert string_split(t, " ") is not None
     setattr(mock_backend.execute_op, "return_value", "res")
-    assert cast("EagerTensorProtocol", getattr(regex_replace(t, "pattern", "rewrite"), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(as_string(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(regex_replace(t, "pattern", "rewrite"), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(as_string(t), "config")).shape == (2, 3)
 
 
 def test_text_ops_eager_additional_last(mocker: EagerTensorProtocol) -> None:
@@ -291,9 +291,9 @@ def test_text_ops_eager_additional_last(mocker: EagerTensorProtocol) -> None:
     setattr(mock_backend_front.array, "side_effect", lambda x: MockTensor((2, 3)))
     setattr(mock_backend.execute_op, "return_value", "res")
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert cast("EagerTensorProtocol", getattr(lookup(t, t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(text_vectorization(t, some_arg=1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(edit_distance(t, t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(lookup(t, t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(text_vectorization(t, some_arg=1), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(edit_distance(t, t), "config")).shape == (2, 3)
 
 
 def test_text_ops_eager_additional_coverage(mocker: EagerTensorProtocol) -> None:
@@ -384,9 +384,9 @@ def test_text_ops_eager_additional_coverage_3(mocker: EagerTensorProtocol) -> No
     import ml_switcheroo_compiler.tracing.state as state
 
     state.global_tracing_state.start_tracing()
-    assert cast("EagerTensorProtocol", getattr(string_to_number(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(string_lower(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(string_upper(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_to_number(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_lower(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(string_upper(t), "config")).shape == (2, 3)
     state.global_tracing_state.stop_tracing()
 
 
@@ -419,7 +419,7 @@ def test_text_ops_eager_additional_coverage_4(mocker: EagerTensorProtocol) -> No
     import ml_switcheroo_compiler.tracing.state as state
 
     state.global_tracing_state.start_tracing()
-    assert cast("EagerTensorProtocol", getattr(text_vectorization(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(text_vectorization(t), "config")).shape == (2, 3)
     state.global_tracing_state.stop_tracing()
     with pytest.raises(RuntimeError):
         _string_split_trace(t, " ")

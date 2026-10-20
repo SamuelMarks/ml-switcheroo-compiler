@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.distributed import DistributedASTVisitor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -20,7 +20,7 @@ class DummyGenerator:
             name: Test parameter `name`.
         """
         setattr(self.__class__, "__name__", name)
-        self.code = cast("list[EagerTensorProtocol]", [])
+        self.code = typing.cast("list[EagerTensorProtocol]", [])
 
 
 class DummyNode:
@@ -51,16 +51,16 @@ def test_distributed_ast_visitor() -> None:
         ("UnknownGenerator", "send(v0, target=1)", "recv(source=1)"),
     ]:
         gen = DummyGenerator(name)
-        visitor = cast("EagerCallableProtocol", DistributedASTVisitor)(gen)
+        visitor = typing.cast("EagerCallableProtocol", DistributedASTVisitor)(gen)
 
         send_node = DummyNode({"target_stage": 1})
-        res_send = cast("EagerCallableProtocol", visitor.visit_Send)(send_node, ["v0"])
+        res_send = typing.cast("EagerCallableProtocol", visitor.visit_Send)(send_node, ["v0"])
         assert res_send == expected_send
         assert len(gen.code) == 1
         assert "target" in gen.code[-1] or "stage" in gen.code[-1]
 
         recv_node = DummyNode({"source_stage": 1})
-        res_recv = cast("EagerCallableProtocol", visitor.visit_Recv)(recv_node, [])
+        res_recv = typing.cast("EagerCallableProtocol", visitor.visit_Recv)(recv_node, [])
         assert res_recv == expected_recv
         assert len(gen.code) == 2
         assert "source" in gen.code[-1] or "stage" in gen.code[-1]

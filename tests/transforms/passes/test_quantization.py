@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.core.dataset import Dataset
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -201,7 +203,7 @@ def test_quantization_missing_coverage() -> None:
     graph = IRGraph()
     n1 = IRNode(id="n1", op_type="Dequantize", inputs=["some_input"])
     n2 = IRNode(id="n2", op_type="UnknownOp", inputs=["n1"])
-    graph.nodes = {"some_input": IRNode(id="some_input", op_type="Input", inputs=[]), "n1": n1, "n2": n2}
+    graph.nodes = NodeDict({"some_input": IRNode(id="some_input", op_type="Input", inputs=[]), "n1": n1, "n2": n2})
     graph.inputs = ["some_input"]
     graph.outputs = ["n2"]
 

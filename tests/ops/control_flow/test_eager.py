@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow.eager import cond_eager, map_fn_eager, scan_eager, while_loop_eager
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
@@ -43,7 +43,7 @@ def test_cond_eager_true() -> None:
         return Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     res = cond_eager(pred, true_fn, false_fn)
-    assert cast("EagerTensorProtocol", getattr(res, "numpy"))() == 1.0
+    assert typing.cast("EagerTensorProtocol", getattr(res, "numpy"))() == 1.0
 
 
 def test_cond_eager_false() -> None:
@@ -59,7 +59,7 @@ def test_cond_eager_false() -> None:
         return Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     res = cond_eager(pred, true_fn, false_fn)
-    assert cast("EagerTensorProtocol", getattr(res, "numpy"))() == 0.0
+    assert typing.cast("EagerTensorProtocol", getattr(res, "numpy"))() == 0.0
 
 
 def test_while_loop_eager() -> None:
@@ -71,7 +71,7 @@ def test_while_loop_eager() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return Tensor(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(x, "__getitem__")(0)), "numpy"))() < 5, TensorConfig((), DType.Bool, Device("cpu")))
+        return Tensor(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(x, "__getitem__")(0)), "numpy"))() < 5, TensorConfig((), DType.Bool, Device("cpu")))
 
     def body_fn(x: EagerValue) -> EagerValue:
         """Test function body_fn.
@@ -79,10 +79,10 @@ def test_while_loop_eager() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return [Tensor(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(x, "__getitem__")(0)), "numpy"))() + 1, TensorConfig((), DType.Float32, Device("cpu")))]
+        return [Tensor(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(x, "__getitem__")(0)), "numpy"))() + 1, TensorConfig((), DType.Float32, Device("cpu")))]
 
     init_val = Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
-    res = cast("EagerCallableProtocol", while_loop_eager)(cond_fn, body_fn, [init_val])
+    res = typing.cast("EagerCallableProtocol", while_loop_eager)(cond_fn, body_fn, [init_val])
     assert res[0].numpy() == 5.0
 
 
@@ -97,14 +97,14 @@ def test_scan_eager() -> None:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
         """
-        new_carry = Tensor(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(carry, "__getitem__")(0)), "numpy"))() + cast("EagerTensorProtocol", getattr(x, "numpy"))(), TensorConfig((), DType.Float32, Device("cpu")))
+        new_carry = Tensor(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(carry, "__getitem__")(0)), "numpy"))() + typing.cast("EagerTensorProtocol", getattr(x, "numpy"))(), TensorConfig((), DType.Float32, Device("cpu")))
         return [new_carry], [new_carry]
 
     init = [Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))]
     xs = Tensor(np.array([1.0, 2.0, 3.0]), TensorConfig((3,), DType.Float32, Device("cpu")))
 
-    res_carry, res_ys = cast("EagerCallableProtocol", scan_eager)(scan_fn, init, xs)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res_carry, "__getitem__")(0)), "numpy"))() == 6.0
+    res_carry, res_ys = typing.cast("EagerCallableProtocol", scan_eager)(scan_fn, init, xs)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res_carry, "__getitem__")(0)), "numpy"))() == 6.0
 
 
 def test_map_fn_eager() -> None:
@@ -122,7 +122,7 @@ def test_map_fn_eager() -> None:
     elems = Tensor(np.array([1.0, 2.0, 3.0]), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = map_fn_eager(fn, elems)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "numpy")))(), cast("EagerCallableProtocol", np.array)([2.0, 4.0, 6.0]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([2.0, 4.0, 6.0]))
 
 
 def test_pmap_eager() -> None:
@@ -139,8 +139,8 @@ def test_pmap_eager() -> None:
         return Tensor(getattr(x, "numpy")() * 2, TensorConfig((), DType.Float32, Device("cpu")))
 
     x = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, Device("cpu")))
-    res = cast("EagerCallableProtocol", fn)(x)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "numpy")))(), cast("EagerCallableProtocol", np.array)([2.0, 4.0]))
+    res = typing.cast("EagerCallableProtocol", fn)(x)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([2.0, 4.0]))
 
 
 def test_stop_gradient_eager() -> None:
@@ -181,7 +181,7 @@ def test_while_loop_eager_non_tuple() -> None:
         return Tensor(getattr(x, "numpy")() + 1, TensorConfig((), DType.Float32, Device("cpu")))
 
     init_val = Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
-    res = cast("EagerCallableProtocol", while_loop_eager)(cond_fn, body_fn, init_val)
+    res = typing.cast("EagerCallableProtocol", while_loop_eager)(cond_fn, body_fn, init_val)
     assert res.numpy() == 5.0
 
 
@@ -206,7 +206,7 @@ def test_scan_tuple_return() -> None:
         backend.execute_op.return_value = MagicMock(shape=(2, 2))
         mock_backend.return_value = backend
 
-        carry, y = cast("EagerCallableProtocol", scan_eager)(f, init, xs)
+        carry, y = typing.cast("EagerCallableProtocol", scan_eager)(f, init, xs)
         assert y is not None
 
 

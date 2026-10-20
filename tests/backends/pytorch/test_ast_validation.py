@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -24,7 +24,7 @@ def test_pytorch_generator_no_numpy_crashes() -> None:
     prefix_str = "\n".join(prefix_lines)
 
     # We will execute the prefix in a dictionary
-    exec_globals = cast("dict[str, EagerTensorProtocol]", {})
+    exec_globals = typing.cast("dict[str, EagerTensorProtocol]", {})
     try:
         exec(prefix_str, exec_globals)
     except NameError as e:

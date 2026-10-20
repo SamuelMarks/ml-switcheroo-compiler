@@ -1,8 +1,10 @@
 """Numba Code Generator and Execution Package."""
 
+from __future__ import annotations
+
 import importlib.util
 import sys
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
@@ -22,7 +24,7 @@ type.__setattr__(NumbaGenerator, "zeros", staticmethod(zeros))
 type.__setattr__(NumbaGenerator, "array", staticmethod(array))
 type.__setattr__(NumbaGenerator, "asarray", staticmethod(asarray))
 type.__setattr__(NumbaGenerator, "item", staticmethod(item))
-type.__setattr__(NumbaGenerator, "execute_op", cast("EagerCallableProtocol", staticmethod)(execute_op))
+type.__setattr__(NumbaGenerator, "execute_op", typing.cast("EagerCallableProtocol", staticmethod)(execute_op))
 
 __all__ = [
     "NumbaGenerator",

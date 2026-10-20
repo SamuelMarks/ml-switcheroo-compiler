@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention, scaled_dot_product_attention
 from ml_switcheroo_compiler.tracing.tracer import TracerTape
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -54,7 +54,7 @@ def test_scaled_dot_product_attention_opdef() -> None:
 
         shape = (1, 1, 1)
 
-    res = cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyShape)(), None, None, None)
+    res = typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyShape)(), None, None, None)
     assert res == (1, 1, 1)
 
 

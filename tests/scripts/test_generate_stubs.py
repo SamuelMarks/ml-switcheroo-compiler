@@ -7,16 +7,16 @@ import json
 import runpy
 import sys
 import types
-from collections.abc import Callable
+import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 from unittest.mock import patch
 
 from pytest import CaptureFixture
 
 import scripts.generate_stubs as gs
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -102,7 +102,7 @@ def test_generate_stubs_from_snapshot_exhaustive(tmp_path: Path) -> None:
             "invalid_category": "not_a_list",
         }
     }
-    count = cast("EagerCallableProtocol", gs._generate_stubs_from_snapshot)(snap_data, "numpy", cast("EagerCallableProtocol", str)(out_file))
+    count = typing.cast("EagerCallableProtocol", gs._generate_stubs_from_snapshot)(snap_data, "numpy", typing.cast("EagerCallableProtocol", str)(out_file))
     assert count >= 3
     content = out_file.read_text(encoding="utf-8")
     assert "def f_full(x: Tensor, y: Tensor = ..., *args: Tensor, kw1: Tensor, **kwargs: Tensor) -> int: ..." in content
@@ -184,7 +184,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
     real_sig = inspect.signature
 
-    def smart_sig(obj: Callable[..., EagerValue]) -> inspect.Signature:
+    def smart_sig(obj: TypedVariadicCallable[EagerValue]) -> inspect.Signature:
         """Test function smart_sig.
 
         Args:
@@ -208,7 +208,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         """
         if name == "fake_fw":
             return fake_mod
-        return cast("types.ModuleType", cast("EagerCallableProtocol", real_import)(name, *args, **kwargs))
+        return typing.cast("types.ModuleType", typing.cast("EagerCallableProtocol", real_import)(name, *args, **kwargs))
 
     with patch("inspect.signature", side_effect=smart_sig):
         with patch("scripts.generate_stubs.importlib.import_module", side_effect=mock_import):
@@ -397,7 +397,7 @@ def test_format_params_via_ecosystem() -> None:
         "invalid",
         {"name": ""},
     ]
-    res = cast("EagerCallableProtocol", gs.format_params_via_ecosystem)(params, has_varargs=True)
+    res = typing.cast("EagerCallableProtocol", gs.format_params_via_ecosystem)(params, has_varargs=True)
     assert "x: Tensor" in res
     assert "dim: int = 0" in res
 

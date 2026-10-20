@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Iterable
-from types import ModuleType
-from typing import Optional, cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 
 
 @numpy_eager_registry.register("Load")
-def _np_load(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_load(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Load an array or weight archive using the NumPy backend.
 
     Args:
@@ -32,14 +32,14 @@ def _np_load(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
     from ml_switcheroo_compiler.ops.io import _fallback_load
 
     filepath = args[0] if args else kwargs.get("file", "")
-    res = _fallback_load(cast("Optional[str]", filepath))
+    res = _fallback_load(typing.cast("str | None", filepath))
     if res is not None:
         return res
     raise ValueError(f"Format not supported or file not found for load: {filepath}")
 
 
 @numpy_eager_registry.register("Save")
-def _np_save(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> None:
+def _np_save(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Save an array to a binary `.npy` file using NumPy.
 
     Args:
@@ -57,7 +57,7 @@ def _np_save(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
 
 
 @numpy_eager_registry.register("SaveGguf")
-def _np_save_gguf(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> None:
+def _np_save_gguf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Raise an error when attempting GGUF export on the NumPy backend.
 
     Args:
@@ -73,7 +73,7 @@ def _np_save_gguf(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
 
 
 @numpy_eager_registry.register("Savez")
-def _np_savez(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> None:
+def _np_savez(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Save multiple arrays to an uncompressed `.npz` archive.
 
     Args:
@@ -90,7 +90,7 @@ def _np_savez(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
 
 @numpy_eager_registry.register("SavezCompressed")
-def _np_savez_compressed(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> None:
+def _np_savez_compressed(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> None:
     """Save multiple arrays to a compressed `.npz` archive.
 
     Args:
@@ -107,7 +107,7 @@ def _np_savez_compressed(backend_module: ModuleType, *args: EagerValue, **kwargs
 
 
 @numpy_eager_registry.register("ReadFile")
-def _np_read_file(backend_module: ModuleType, filename: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_read_file(backend_module: BackendModuleProtocol, filename: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Read raw bytes from a file path into a `Tensor`.
 
     Args:
@@ -130,7 +130,7 @@ def _np_read_file(backend_module: ModuleType, filename: EagerValue, **kwargs: Ea
 
 @numpy_eager_registry.register("WriteFile")
 def _np_write_file(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     filename: EagerValue,
     contents: EagerValue,
     **kwargs: EagerValue,
@@ -152,7 +152,7 @@ def _np_write_file(
 
 
 @numpy_eager_registry.register("DecodeImage")
-def _np_decode_image(backend_module: ModuleType, contents: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_decode_image(backend_module: BackendModuleProtocol, contents: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Decode raw image bytes into a uint8/typed image Tensor.
 
     Args:
@@ -169,12 +169,12 @@ def _np_decode_image(backend_module: ModuleType, contents: EagerValue, **kwargs:
     dtype = kwargs.get("dtype", "uint8")
     return Tensor(
         np.zeros((), dtype=str(dtype)),
-        TensorConfig((), cast("Optional[str]", dtype), Device(DeviceType.CPU)),
+        TensorConfig((), typing.cast("str | None", dtype), Device(DeviceType.CPU)),
     )
 
 
 @numpy_eager_registry.register("DecodeCsv")
-def _np_decode_csv(backend_module: ModuleType, records: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_decode_csv(backend_module: BackendModuleProtocol, records: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Decode CSV record strings into a list of column Tensors.
 
     Args:
@@ -194,7 +194,7 @@ def _np_decode_csv(backend_module: ModuleType, records: EagerValue, **kwargs: Ea
 
 
 @numpy_eager_registry.register("ParseExample")
-def _np_parse_example(backend_module: ModuleType, serialized: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_parse_example(backend_module: BackendModuleProtocol, serialized: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Parse serialized records into a dictionary of feature Tensors.
 
     Args:
@@ -214,7 +214,7 @@ def _np_parse_example(backend_module: ModuleType, serialized: EagerValue, **kwar
 
 
 @numpy_eager_registry.register("SerializeTensor")
-def _np_serialize_tensor(backend_module: ModuleType, tensor: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_serialize_tensor(backend_module: BackendModuleProtocol, tensor: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Serialize a tensor into a binary byte-string `Tensor`.
 
     Args:
@@ -232,7 +232,7 @@ def _np_serialize_tensor(backend_module: ModuleType, tensor: EagerValue, **kwarg
 
 
 @numpy_eager_registry.register("ParseTensor")
-def _np_parse_tensor(backend_module: ModuleType, serialized: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_parse_tensor(backend_module: BackendModuleProtocol, serialized: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Deserialize a byte-string payload into a typed `Tensor`.
 
     Args:
@@ -249,12 +249,12 @@ def _np_parse_tensor(backend_module: ModuleType, serialized: EagerValue, **kwarg
     out_type = kwargs.get("out_type", "float32")
     return Tensor(
         np.zeros((), dtype=np.float32),
-        TensorConfig((), cast("Optional[str]", out_type), Device(DeviceType.CPU)),
+        TensorConfig((), typing.cast("str | None", out_type), Device(DeviceType.CPU)),
     )
 
 
 @numpy_eager_registry.register("EncodeBase64")
-def _np_encode_base64(backend_module: ModuleType, input: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_encode_base64(backend_module: BackendModuleProtocol, input: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Encode byte or string payloads into Base64 `Tensor` representations.
 
     Args:
@@ -273,12 +273,12 @@ def _np_encode_base64(backend_module: ModuleType, input: EagerValue, **kwargs: E
         return None
     data = getattr(input, "data", input)
     pad = kwargs.get("pad", False)
-    res = _eager_base64("encode", data, cast("bool", pad))
+    res = _eager_base64("encode", data, typing.cast("bool", pad))
     return Tensor(res, TensorConfig(getattr(input, "shape", ()), DType.Float32, Device(DeviceType.CPU)))
 
 
 @numpy_eager_registry.register("DecodeBase64")
-def _np_decode_base64(backend_module: ModuleType, input: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_decode_base64(backend_module: BackendModuleProtocol, input: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Decode Base64-encoded payloads back into raw byte `Tensor` representations.
 
     Args:
@@ -301,7 +301,7 @@ def _np_decode_base64(backend_module: ModuleType, input: EagerValue, **kwargs: E
 
 
 @numpy_eager_registry.register("ParseSequenceExample")
-def _np_parse_sequence_example(backend_module: ModuleType, serialized: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_parse_sequence_example(backend_module: BackendModuleProtocol, serialized: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Parse a serialized sequence record into context and sequence feature dictionaries.
 
     Args:

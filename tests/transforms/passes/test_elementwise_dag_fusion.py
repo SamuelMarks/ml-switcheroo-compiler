@@ -1,5 +1,9 @@
 """Exhaustive tests for elementwise DAG cluster fusion in operator_fusion pass."""
 
+from __future__ import annotations
+
+import typing
+
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
@@ -31,10 +35,12 @@ def test_elementwise_cluster_fusion_chain() -> None:
     fused = graph.nodes["relu1"]
     assert fused.op_type == "FusedElementwise"
     assert fused.inputs == ["in_a", "in_b"]
-    assert "Add" in fused.attributes["fused_ops"]
-    assert "Mul" in fused.attributes["fused_ops"]
-    assert "Relu" in fused.attributes["fused_ops"]
-    assert "fmaxf" in fused.attributes["scalar_expr"]
+    fused_ops = typing.cast("list[str]", fused.attributes["fused_ops"])
+    scalar_expr = typing.cast("str", fused.attributes["scalar_expr"])
+    assert "Add" in fused_ops
+    assert "Mul" in fused_ops
+    assert "Relu" in fused_ops
+    assert "fmaxf" in scalar_expr
 
     # Verify CUDA generation includes fused kernel
     cuda_code = CudaCodeGenerator(graph).generate()

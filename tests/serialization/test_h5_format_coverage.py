@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import sys
+import typing
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -13,7 +14,11 @@ import pytest
 
 import ml_switcheroo_compiler.backends.registry as registry
 import ml_switcheroo_compiler.serialization.formats.h5 as h5_mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
+
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
 class _DummyGenerator:
@@ -193,7 +198,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # 1. Missing h5py module import branch via reload
     monkeypatch.setitem(sys.modules, "h5py", None)
     importlib.reload(h5_mod)
-    assert h5_mod.h5py is None
+    assert typing.cast("EagerValue", h5_mod.h5py) is None
 
     fmt_missing = H5WeightFormat()
     dummy_path = str(tmp_path / "missing.h5")
@@ -205,7 +210,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Restore h5py
     monkeypatch.undo()
     importlib.reload(h5_mod)
-    assert h5_mod.h5py is not None
+    assert typing.cast("EagerValue", h5_mod.h5py) is not None
 
     fmt = H5WeightFormat()
 
@@ -214,7 +219,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(registry, "get_active_backend", lambda: mock_b)
     res = fmt.load(dummy_path)
     assert "backend_key" in res
-    fmt.save({"w": np.array([1.0])}, dummy_path)
+    fmt.save(typing.cast("dict[str, TensorLike]", {"w": np.array([1.0])}), dummy_path)
     assert mock_b.saved is not None
     assert mock_b.saved[1] == dummy_path
 
@@ -229,7 +234,7 @@ def test_h5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         "v_tolist": _MockArrayWithToList([7.0, 8.0]),
         "v_raw": 100,
     }
-    fmt.save(data, filepath)
+    fmt.save(typing.cast("dict[str, TensorLike]", data), filepath)
 
     # Insert a group to exercise both branches of dataset visiting
     with h5py.File(filepath, "a") as f:

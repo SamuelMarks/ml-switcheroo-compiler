@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.graph_scheduling import (
@@ -179,7 +181,7 @@ def test_graph_scheduling_simulate_peak_memory_external_input() -> None:
 
     g = IRGraph()
     n0 = IRNode(id="n0", op_type="Add", inputs=["external_input"], shape_metadata=(10, 10))
-    g.nodes = {"n0": n0}
+    g.nodes = NodeDict({"n0": n0})
     pass_sched = GraphSchedulingPass()
     mem = pass_sched.calculate_peak_memory(g, ["n0"])
     assert mem > 0
@@ -192,7 +194,7 @@ def test_graph_scheduling_stream_preservation_and_assignment() -> None:
     graph = IRGraph()
     n1 = IRNode(id="n1", op_type="Input", stream="custom_stream_0")
     n2 = IRNode(id="n2", op_type="Add", inputs=["n1"])
-    graph.nodes = {"n1": n1, "n2": n2}
+    graph.nodes = NodeDict({"n1": n1, "n2": n2})
 
     graph_scheduling_pass(graph)
     assert graph.nodes["n1"].stream == "custom_stream_0"

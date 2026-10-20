@@ -1,5 +1,7 @@
 """WebRTC Javascript string template emitters for Edge Backends."""
 
+from __future__ import annotations
+
 import json
 import os
 

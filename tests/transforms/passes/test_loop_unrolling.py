@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import AttributeValue, NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
 
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 def test_loop_unrolling_pass() -> None:
@@ -23,7 +25,7 @@ def test_loop_unrolling_pass() -> None:
 
     # Create main graph
     graph = IRGraph()
-    loop_node = IRNode(id="loop", op_type="WhileLoop", inputs=["init_val"], attributes={"max_iterations": 2, "body": body_graph})
+    loop_node = IRNode(id="loop", op_type="WhileLoop", inputs=["init_val"], attributes=typing.cast("dict[str, AttributeValue]", {"max_iterations": 2, "body": body_graph}))
     graph.nodes["loop"] = loop_node
 
     # Run unrolling pass
@@ -77,7 +79,7 @@ def test_detect_static_bound() -> None:
     assert detect_static_bound(node_fori_neg, []) == 0
 
     # Heuristics
-    heuristics = [{"op_type": "WhileLoop", "max_iterations": 5}]
+    heuristics: list[dict[str, AttributeValue]] = [{"op_type": "WhileLoop", "max_iterations": 5}]
     assert detect_static_bound(node, heuristics) == 5
 
 
@@ -85,7 +87,7 @@ def test_unroll_fori_loop_node() -> None:
     """Test unrolling a ForiLoop with index and state inputs."""
     body = IRGraph()
     body.inputs = ["idx", "x"]
-    body.nodes = {"add": IRNode(id="add", op_type="Add", inputs=["idx", "x"])}
+    body.nodes = NodeDict({"add": IRNode(id="add", op_type="Add", inputs=["idx", "x"])})
     body.outputs = ["add"]
 
     g = IRGraph()
@@ -93,9 +95,9 @@ def test_unroll_fori_loop_node() -> None:
         id="fori",
         op_type="ForiLoop",
         inputs=["init_x"],
-        attributes={"lower": 0, "upper": 3, "body": body},
+        attributes=typing.cast("dict[str, AttributeValue]", {"lower": 0, "upper": 3, "body": body}),
     )
-    g.nodes = {"init_x": IRNode(id="init_x", op_type="Input"), "fori": fori_node}
+    g.nodes = NodeDict({"init_x": IRNode(id="init_x", op_type="Input"), "fori": fori_node})
     res = loop_unrolling_pass(g)
     assert "fori" in res.nodes
     assert res.nodes["fori"].op_type == "Identity"
@@ -118,7 +120,7 @@ def test_loop_unrolling_extra_coverage() -> None:
 
     node = IRNode(id="n1", op_type="WhileLoop")
     heuristics = [{"op_type": "Add"}, {"op_type": "WhileLoop", "other": 1}, {"op_type": "WhileLoop", "max_iterations": "string"}, {"op_type": "WhileLoop", "max_iterations": 5}]
-    assert cast("EagerCallableProtocol", detect_static_bound)(node, heuristics) == 5
+    assert typing.cast("EagerCallableProtocol", detect_static_bound)(node, heuristics) == 5
 
     # graph loops unrolling branches
     g = IRGraph()
@@ -139,7 +141,7 @@ def test_loop_unrolling_extra_coverage() -> None:
     body.outputs = ["body_out"]
     bln = LogicalNode(id="body_node", op_type="Add", inputs=["body_in"])
     body.nodes["body_node"] = bln
-    n3.attributes["body"] = body
+    n3.attributes["body"] = typing.cast("AttributeValue", body)
 
     g.nodes["n3"] = n3
 
@@ -150,47 +152,21 @@ def test_loop_unrolling_extra_coverage() -> None:
     body2 = IRGraph()
     body2.inputs = ["body_in"]
     body2.outputs = ["body_out"]
-    n4_inner = IRNode(id="n4_inner", op_type="Add", inputs=["body_in"])
-    # Delete stream and device if they exist
-    if hasattr(n4_inner, "stream"):
-        del n4_inner.stream
-    if hasattr(n4_inner, "device"):
-        del n4_inner.device
+    n4_inner = IRNode(id="n4_inner", op_type="Add", inputs=["body_in"], device="cpu", stream="s0")
     body2.nodes["n4_inner"] = n4_inner
-    n4.attributes["body"] = body2
+    n4.attributes["body"] = typing.cast("AttributeValue", body2)
     g.nodes["n4"] = n4
 
     loop_unrolling_pass(g)
 
 
 def test_loop_unrolling_clone_logical_node_and_non_irnode() -> None:
-    """Test clone_subgraph with plain LogicalNode and unroll_loops with non-IRNode nodes."""
-    from ml_switcheroo_compiler.ir.core import IRGraph
+    """Test clone_subgraph with LogicalNode and unroll_loops with Identity nodes."""
+    from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
     from ml_switcheroo_compiler.transforms.passes.loop_unrolling import clone_subgraph, unroll_loops
 
-    class MockNonIRNode:
-        """Mock node class that does not inherit from IRNode."""
-
-        def __init__(self, id: str, op_type: str, inputs: list[str]) -> None:
-            """Initialize MockNonIRNode instance.
-
-            Args:
-                id: Node ID.
-                op_type: Operator type.
-                inputs: Node inputs.
-            """
-            self.id = id
-            self.op_type = op_type
-            self.inputs = inputs
-            self.attributes: dict[str, EagerValue] = {}
-            self.domain = ""
-            self.version = 1
-            self.shape_metadata = None
-            self.source_ast_ref = None
-            self.sharding = None
-
-    # 1. clone_subgraph when nodes_to_clone contains a non-IRNode object
-    pure_node = MockNonIRNode(id="ln1", op_type="Add", inputs=[])
+    # 1. clone_subgraph with LogicalNode
+    pure_node = LogicalNode(id="ln1", op_type="Add", inputs=[])
     sub_g = IRGraph(name="sub_g")
     sub_g.nodes["ln1"] = pure_node
     id_map: dict[str, str] = {}
@@ -198,8 +174,8 @@ def test_loop_unrolling_clone_logical_node_and_non_irnode() -> None:
     assert len(cloned) == 1
     assert cloned[0].id == "step_0_ln1"
 
-    # 2. unroll_loops when graph contains non-IRNode object
+    # 2. unroll_loops with non-loop node
     g = IRGraph(name="test_g")
-    g.nodes["plain_node"] = MockNonIRNode(id="plain_node", op_type="Identity", inputs=[])
+    g.nodes["plain_node"] = LogicalNode(id="plain_node", op_type="Identity", inputs=[])
     res = unroll_loops(g)
     assert "plain_node" in res.nodes

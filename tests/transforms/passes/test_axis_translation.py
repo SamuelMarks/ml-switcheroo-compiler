@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -31,7 +33,7 @@ def test_axis_translation_conv2d() -> None:
     # Consumer node
     relu = IRNode(id="relu_1", op_type="Relu", inputs=["conv_1"], shape_metadata=shape_meta)
 
-    graph.nodes = {"inp_1": inp, "conv_1": conv, "relu_1": relu}
+    graph.nodes = NodeDict({"inp_1": inp, "conv_1": conv, "relu_1": relu})
     graph.outputs = ["relu_1"]
 
     modified = axis_translation_pass(graph)
@@ -67,7 +69,7 @@ def test_axis_translation_conv2d_no_shape() -> None:
     relu = IRNode(id="relu_1", op_type="Relu", inputs=["conv_1"], shape_metadata=None)
 
     # We output both `relu` and `conv_1` to hit line 62
-    graph.nodes = {"inp_1": inp, "conv_1": conv, "relu_1": relu}
+    graph.nodes = NodeDict({"inp_1": inp, "conv_1": conv, "relu_1": relu})
     graph.outputs = ["relu_1", "conv_1"]
 
     # We manually add `transp_out_id` from the future to the graph to hit the `continue` at line 57
@@ -87,7 +89,7 @@ def test_axis_translation_conv2d_no_shape() -> None:
 
             hex = "dummyxxx"
 
-        return cast("EagerTensorProtocol", MockUUID())
+        return typing.cast("EagerTensorProtocol", MockUUID())
 
     setattr(uuid, "uuid4", mock_uuid4)
     try:
@@ -104,7 +106,7 @@ def test_axis_translation_conv2d_already_nhwc() -> None:
     """Test axis translation skips Conv2D if already NHWC."""
     graph = IRGraph()
     conv = IRNode(id="conv_1", op_type="Conv2D", inputs=[], attributes={"layout": "NHWC"})
-    graph.nodes = {"conv_1": conv}
+    graph.nodes = NodeDict({"conv_1": conv})
     modified = axis_translation_pass(graph)
     assert modified is False
 
@@ -113,7 +115,7 @@ def test_axis_translation_conv2d_empty_inputs() -> None:
     """Test Conv2D with layout NCHW but empty inputs."""
     graph = IRGraph()
     conv = IRNode(id="conv_1", op_type="Conv2D", inputs=[], attributes={"layout": "NCHW"})
-    graph.nodes = {"conv_1": conv}
+    graph.nodes = NodeDict({"conv_1": conv})
     assert axis_translation_pass(graph) is True
 
 

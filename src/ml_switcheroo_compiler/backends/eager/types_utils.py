@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Protocol, Union
+import typing
 
 
-class ZerosModule(Protocol):
+class ZerosModule(typing.Protocol):
     """Protocol for module providing zeros."""
 
     def zeros(
         self,
         shape: tuple[int, ...],
-    ) -> Union[tuple[str, tuple[int, ...]], tuple[int, ...]]:
+    ) -> tuple[str, tuple[int, ...]] | tuple[int, ...]:
         """Create zeros.
 
         Args:
@@ -23,22 +23,14 @@ class ZerosModule(Protocol):
         ...
 
 
-class ArrayModule(Protocol):
+class ArrayModule(typing.Protocol):
     """Protocol for module providing array."""
 
     def array(
         self,
-        data: Union[list[int], list[float], tuple[int, ...], int, float, str],
-        dtype: Union[str, type, None] = None,
-    ) -> Union[
-        tuple[
-            str,
-            Union[list[int], list[float], tuple[int, ...], int, float, str],
-            Union[str, type, None],
-        ],
-        list[int],
-        list[float],
-    ]:
+        data: list[int] | list[float] | tuple[int, ...] | int | float | str,
+        dtype: str | type | None = None,
+    ) -> tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str, str | type | None] | list[int] | list[float]:
         """Create array.
 
         Args:
@@ -51,20 +43,13 @@ class ArrayModule(Protocol):
         ...
 
 
-class AsArrayModule(Protocol):
+class AsArrayModule(typing.Protocol):
     """Protocol for module providing asarray."""
 
     def asarray(
         self,
-        data: Union[list[int], list[float], tuple[int, ...], int, float, str],
-    ) -> Union[
-        tuple[
-            str,
-            Union[list[int], list[float], tuple[int, ...], int, float, str],
-        ],
-        list[int],
-        list[float],
-    ]:
+        data: list[int] | list[float] | tuple[int, ...] | int | float | str,
+    ) -> tuple[str, list[int] | list[float] | tuple[int, ...] | int | float | str] | list[int] | list[float]:
         """Create asarray.
 
         Args:
@@ -76,10 +61,10 @@ class AsArrayModule(Protocol):
         ...
 
 
-class HasItem(Protocol):
+class HasItem(typing.Protocol):
     """Protocol for objects providing item method."""
 
-    def item(self) -> Union[float, int]:
+    def item(self) -> float | int:
         """Extract item.
 
         Returns:
@@ -88,19 +73,14 @@ class HasItem(Protocol):
         ...
 
 
-InputData = Union[list[int], list[float], tuple[int, ...], int, float, str]
-ArrayResult = Union[
-    tuple[str, InputData, Union[str, type, None]],
-    tuple[str, InputData],
-    list[int],
-    list[float],
-]
+InputData = typing.Union[list[int], list[float], tuple[int, ...], int, float, "str"]
+ArrayResult = typing.Union[tuple[str, InputData, typing.Union[str, type, "None"]], tuple[str, InputData], list[int], "list[float]"]
 
 
 def generic_zeros(
     mod: ZerosModule,
     shape: tuple[int, ...],
-) -> Union[tuple[str, tuple[int, ...]], tuple[int, ...]]:
+) -> tuple[str, tuple[int, ...]] | tuple[int, ...]:
     """Provide generic zeros.
 
     Args:
@@ -116,7 +96,7 @@ def generic_zeros(
 def generic_array(
     mod: ArrayModule,
     data: InputData,
-    dtype: Union[str, type, None] = None,
+    dtype: str | type | None = None,
 ) -> ArrayResult:
     """Provide generic array.
 
@@ -136,7 +116,7 @@ def generic_array(
 def generic_asarray(
     mod: AsArrayModule,
     data: InputData,
-) -> Union[tuple[str, InputData], list[int], list[float]]:
+) -> tuple[str, InputData] | list[int] | list[float]:
     """Provide generic asarray.
 
     Args:
@@ -150,7 +130,7 @@ def generic_asarray(
 
 
 def generic_item(
-    mod: Union[ZerosModule, ArrayModule, AsArrayModule, None],
+    mod: ZerosModule | ArrayModule | AsArrayModule | None,
     data: HasItem,
 ) -> float:
     """Provide generic item.

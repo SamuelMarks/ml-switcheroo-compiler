@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -10,7 +10,7 @@ import pytest
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_common import _np_mel_filterbank, _np_mfcc, _np_power_iteration
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -54,15 +54,15 @@ def test_np_power_iteration() -> None:
     """Test function disabled_test_np_power_iteration."""
     w = np.array([[1.0, 2.0], [3.0, 4.0]])
     res = _np_power_iteration(np, w, num_iters=2)
-    assert cast("EagerCallableProtocol", len)(res) == 3
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), "shape")) == (2,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), "shape")) == (2,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)), "shape")) == ()
+    assert typing.cast("EagerCallableProtocol", len)(res) == 3
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)), "shape")) == ()
     res2 = _np_power_iteration(np, w)
-    assert cast("EagerCallableProtocol", len)(res2) == 3
+    assert typing.cast("EagerCallableProtocol", len)(res2) == 3
     u = np.array([[1.0], [0.0]])
     res3 = _np_power_iteration(np, w, num_iters=1, u=u)
-    assert cast("EagerCallableProtocol", len)(res3) == 3
+    assert typing.cast("EagerCallableProtocol", len)(res3) == 3
 
 
 def test_backends_numpy_vision_power_iteration() -> None:
@@ -72,8 +72,8 @@ def test_backends_numpy_vision_power_iteration() -> None:
     func = numpy_eager_registry.get("PowerIteration")
     assert func is not None
     w = np.eye(3, dtype=np.float32)
-    (v, u, s) = cast("EagerCallableProtocol", func)(np, w, num_iters=2)
-    assert cast("EagerTensorProtocol", getattr(v, "shape")) == (3,)
-    assert cast("EagerTensorProtocol", getattr(u, "shape")) == (3,)
-    (v2, u2, s2) = cast("EagerCallableProtocol", func)(np, w, num_iters=1, u=cast("EagerCallableProtocol", np.array)([1.0, 0.0, 0.0], dtype=np.float32))
-    assert cast("EagerTensorProtocol", getattr(v2, "shape")) == (3,)
+    (v, u, s) = func(np, w, num_iters=2)
+    assert typing.cast("EagerTensorProtocol", getattr(v, "shape")) == (3,)
+    assert typing.cast("EagerTensorProtocol", getattr(u, "shape")) == (3,)
+    (v2, u2, s2) = func(np, w, num_iters=1, u=np.array([1.0, 0.0, 0.0], dtype=np.float32))
+    assert typing.cast("EagerTensorProtocol", getattr(v2, "shape")) == (3,)

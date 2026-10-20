@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -48,12 +48,12 @@ def test_h5_load_save(mocker: EagerTensorProtocol) -> None:
                 return [3, 4]
 
         weights = {"a": np.array([1, 2]), "b": MockNumpy(), "c": MockData(), "d": MockList()}
-        cast("EagerCallableProtocol", fmt.save)(weights, f.name)
+        typing.cast("EagerCallableProtocol", fmt.save)(weights, f.name)
         loaded = fmt.load(f.name)
-        assert cast("EagerCallableProtocol", np.array_equal)(loaded["a"], [1, 2])
-        assert cast("EagerCallableProtocol", np.array_equal)(loaded["b"], [1, 2])
-        assert cast("EagerCallableProtocol", np.array_equal)(loaded["c"], [1, 2])
-        assert cast("EagerCallableProtocol", np.array_equal)(loaded["d"], [3, 4])
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["a"], [1, 2])
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["b"], [1, 2])
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["c"], [1, 2])
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["d"], [3, 4])
 
 
 def test_h5_load_save_backend(mocker: EagerTensorProtocol) -> None:
@@ -65,6 +65,6 @@ def test_h5_load_save_backend(mocker: EagerTensorProtocol) -> None:
     fmt = H5WeightFormat()
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.load_h5, "return_value", {"a": 1})
-    assert cast("EagerTensorProtocol", fmt.load("test.h5")) == cast("EagerTensorProtocol", {"a": 1})
-    cast("EagerCallableProtocol", fmt.save)({"a": 1}, "test.h5")
+    assert typing.cast("EagerTensorProtocol", fmt.load("test.h5")) == typing.cast("EagerTensorProtocol", {"a": 1})
+    typing.cast("EagerCallableProtocol", fmt.save)({"a": 1}, "test.h5")
     mock_backend.save_h5.assert_called_with({"a": 1}, "test.h5")

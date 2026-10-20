@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
 
@@ -96,13 +96,15 @@ class LuSolve(OpDef):
         Returns:
             tuple[int, ...]: Broadcasted solution shape.
         """
+        lu: TensorOrScalar
+        rhs: TensorOrScalar
         if len(args) >= 3:
             lu, rhs = args[0], args[2]
         elif len(args) == 2:
             lu, rhs = args[0], args[1]
         else:
-            lu = cast(EagerTensorProtocol, kwargs.get("lu", kwargs.get("lower_upper", kwargs.get("a"))))
-            rhs = cast(EagerTensorProtocol, kwargs.get("rhs", kwargs.get("b")))
+            lu = kwargs.get("lu", kwargs.get("lower_upper", kwargs.get("a")))
+            rhs = kwargs.get("rhs", kwargs.get("b"))
 
         if lu is None or rhs is None:
             return ()
@@ -189,7 +191,7 @@ class Cross(OpDef):
         b = args[1]
         shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
         shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", ())))
-        axis = int(cast(int, kwargs.get("axis", -1)))
+        axis = int(typing.cast(int, kwargs.get("axis", -1)))
         if shape_a[axis] != 3 or shape_b[axis] != 3:
             raise ValueError("Cross requires dimension size 3")
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
@@ -264,7 +266,7 @@ def lu(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        p, l_mat, u = cast("tuple[TensorLike, TensorLike, TensorLike]", backend.execute_op("Lu", a.data))
+        p, l_mat, u = typing.cast("tuple[TensorLike, TensorLike, TensorLike]", backend.execute_op("Lu", a.data))
         return (
             Tensor(p, TensorConfig(p.shape, a.dtype, a.device)),
             Tensor(l_mat, TensorConfig(l_mat.shape, a.dtype, a.device)),
@@ -288,7 +290,7 @@ def lu_solve(lu_and_piv: tuple[Tensor, Tensor], b: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = cast("TensorLike", backend.execute_op("LuSolve", lu.data, piv.data, b.data))
+        data = typing.cast("TensorLike", backend.execute_op("LuSolve", lu.data, piv.data, b.data))
         return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
     return _emit_linalg_node("LuSolve", [lu, piv, b], {}, [b.shape], [b.dtype])
 
@@ -307,7 +309,7 @@ def polar(a: Tensor, side: str = "right") -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        u, p = cast("tuple[TensorLike, TensorLike]", backend.execute_op("Polar", a.data, side=side))
+        u, p = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("Polar", a.data, side=side))
         return (
             Tensor(u, TensorConfig(u.shape, a.dtype, a.device)),
             Tensor(p, TensorConfig(p.shape, a.dtype, a.device)),
@@ -331,7 +333,7 @@ def tridiagonal_solve(dl: Tensor, d: Tensor, du: Tensor, b: Tensor) -> TensorOrS
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = cast("TensorLike", backend.execute_op("TridiagonalSolve", dl.data, d.data, du.data, b.data))
+        data = typing.cast("TensorLike", backend.execute_op("TridiagonalSolve", dl.data, d.data, du.data, b.data))
         return Tensor(data, TensorConfig(data.shape, b.dtype, b.device))
     return _emit_linalg_node("TridiagonalSolve", [dl, d, du, b], {}, [b.shape], [b.dtype])
 

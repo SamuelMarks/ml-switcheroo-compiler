@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -24,7 +24,7 @@ def test_loop_unrolling_missing_coverage() -> None:
         op_type = "Add"
         id = "mock"
 
-    assert cast("EagerCallableProtocol", detect_static_bound)(cast("EagerCallableProtocol", MockNode)(), []) is None
+    assert typing.cast("EagerCallableProtocol", detect_static_bound)(typing.cast("EagerCallableProtocol", MockNode)(), []) is None
 
     g = IRGraph()
     n1 = LogicalNode(id="n1", op_type="Add")

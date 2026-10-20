@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, Union
+import typing
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
-class HasShape(Protocol):
+class HasShape(typing.Protocol):
     """Protocol for objects providing a shape attribute."""
 
     shape: tuple[int, ...]
 
 
-ShapeOperand = Union["Tensor", HasShape, int, float, str, None]
+ShapeOperand = typing.Union["Tensor", HasShape, int, float, str, None]
 
 
 class BaseLinearOperator(OpDef):

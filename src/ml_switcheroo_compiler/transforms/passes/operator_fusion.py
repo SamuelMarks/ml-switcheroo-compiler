@@ -5,10 +5,11 @@ from __future__ import annotations
 import glob
 import logging
 import os
-from typing import Callable, Union, cast
+import typing
 
 import yaml
 
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 from ml_switcheroo_compiler.transforms.passes.config_models import (
     ComputeCosts,
@@ -18,7 +19,7 @@ from ml_switcheroo_compiler.transforms.passes.config_models import (
     PassConfig,
 )
 
-MatchMapType = dict[str, Union[str, IRNode, int, float, None]]
+MatchMapType = dict[str, typing.Union[str, IRNode, int, float, "None"]]
 
 
 class NodePattern:
@@ -500,9 +501,9 @@ class MemoryAwareCostModel:
             return True
 
         if "max_fusion_memory_bytes" in self.config:
-            max_memory: int = int(cast(int, self.config["max_fusion_memory_bytes"]))
+            max_memory: int = int(typing.cast(int, self.config["max_fusion_memory_bytes"]))
         elif "compute_intensity_metrics" in self.config and isinstance(self.config["compute_intensity_metrics"], dict):
-            max_memory = int(cast(int, self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512)))
+            max_memory = int(typing.cast(int, self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512)))
         else:
             max_memory = 1024 * 1024 * 512
 
@@ -522,7 +523,7 @@ class MemoryAwareCostModel:
                 dtype: str = str(node.attributes.get("dtype", "float32"))
                 dtype_size: int = 4
                 if isinstance(memory_sizes, dict):
-                    dtype_size = int(cast(int, memory_sizes.get(dtype, 4)))
+                    dtype_size = int(typing.cast(int, memory_sizes.get(dtype, 4)))
                 total_mem += elements * dtype_size
 
         return bool(total_mem <= max_memory)
@@ -1014,7 +1015,7 @@ def operator_fusion_pass(graph: IRGraph) -> bool:
 
     engine: PatternMatchingEngine = PatternMatchingEngine(
         rules,
-        cast("Callable[..., MemoryAwareCostModel]", MemoryAwareCostModel)(cost_model_config) if cost_model_config else None,
+        typing.cast("TypedVariadicCallable[MemoryAwareCostModel]", MemoryAwareCostModel)(cost_model_config) if cost_model_config else None,
     )
     pattern_modified: bool = engine.apply_passes(graph)
     if pattern_modified:

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.io import decode_base64, encode_base64
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -33,7 +33,7 @@ def test_encode_decode_base64_eager() -> None:
     pass
     pass
     if True:
-        cast("EagerCallableProtocol", encode_base64)("not a tensor")
+        typing.cast("EagerCallableProtocol", encode_base64)("not a tensor")
     if True:
-        cast("EagerCallableProtocol", decode_base64)("dGVzdA==")
+        typing.cast("EagerCallableProtocol", decode_base64)("dGVzdA==")
     assert t_list.shape == (2,)

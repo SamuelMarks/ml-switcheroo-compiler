@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Protocol, Union, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
-class RandomDistributionConfig(Protocol):
+class RandomDistributionConfig(typing.Protocol):
     """Protocol describing configuration attributes for random distributions."""
 
     mean: float
@@ -19,7 +19,7 @@ class RandomDistributionConfig(Protocol):
     maxval: float
 
 
-class LookupTableProtocol(Protocol):
+class LookupTableProtocol(typing.Protocol):
     """Protocol for table objects supporting lookup."""
 
     def lookup(self, keys: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
@@ -36,9 +36,9 @@ class LookupTableProtocol(Protocol):
 
 @numpy_eager_registry.register("Normal")
 def _np_normal(
-    backend_module: ModuleType,
-    shape: Union[tuple[int, ...], list[int], int],
-    **kwargs: Union[str, float, int, RandomDistributionConfig, None],
+    backend_module: BackendModuleProtocol,
+    shape: tuple[int, ...] | list[int] | int,
+    **kwargs: str | float | int | RandomDistributionConfig | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate normal distribution random sampling.
 
@@ -54,14 +54,14 @@ def _np_normal(
     config = kwargs.get("config")
     mean = getattr(config, "mean", 0.0) if config else 0.0
     stddev = getattr(config, "stddev", 1.0) if config else 1.0
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("Uniform")
 def _np_uniform(
-    backend_module: ModuleType,
-    shape: Union[tuple[int, ...], list[int], int],
-    **kwargs: Union[str, float, int, RandomDistributionConfig, None],
+    backend_module: BackendModuleProtocol,
+    shape: tuple[int, ...] | list[int] | int,
+    **kwargs: str | float | int | RandomDistributionConfig | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate uniform distribution random sampling.
 
@@ -81,14 +81,14 @@ def _np_uniform(
     maxval = getattr(config, "maxval", 1.0) if config else 1.0
     if maxval is None:
         maxval = 1.0
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("StatelessSplit")
 def _np_stateless_split(
-    backend_module: ModuleType,
-    seed: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[Union[int, str]], int, str],
-    **kwargs: Union[int, None],
+    backend_module: BackendModuleProtocol,
+    seed: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[int | str] | int | str,
+    **kwargs: int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate stateless PRNG key split.
 
@@ -119,10 +119,10 @@ def _np_stateless_split(
 
 @numpy_eager_registry.register("Lookup")
 def _np_lookup(
-    backend_module: ModuleType,
-    table: Union[dict[Union[int, str], Union[int, float]], LookupTableProtocol, np.ndarray[tuple[int, ...], np.dtype[np.generic]], int],
-    keys: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[Union[int, str]], int, str],
-    **kwargs: Union[int, float, None],
+    backend_module: BackendModuleProtocol,
+    table: dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int,
+    keys: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[int | str] | int | str,
+    **kwargs: int | float | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Evaluate lookup table query on keys.
 
@@ -139,7 +139,7 @@ def _np_lookup(
     arr = np.asarray(keys)
     default_value = kwargs.get("default_value", 0)
     if isinstance(table, dict):
-        return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.vectorize(lambda k: table.get(k, default_value))(arr))
+        return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.vectorize(lambda k: table.get(k, default_value))(arr))
     if hasattr(table, "lookup"):
         return table.lookup(arr)
     return np.full_like(arr, default_value, dtype=np.int32)

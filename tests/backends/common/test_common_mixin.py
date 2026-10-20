@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_common_ast_visitor() -> None:
     """Test function test_common_ast_visitor."""
     vis = CommonASTVisitor()
-    assert cast("EagerTensorProtocol", vis.generator) is cast("EagerTensorProtocol", vis)
+    assert typing.cast("EagerTensorProtocol", vis.generator) is typing.cast("EagerTensorProtocol", vis)
     assert vis.get_fallback_prefix() == ""
 
     class DummyGenerator:
@@ -22,5 +22,5 @@ def test_common_ast_visitor() -> None:
         pass
 
     gen = DummyGenerator()
-    vis2 = cast("EagerCallableProtocol", CommonASTVisitor)(generator=gen)
+    vis2 = typing.cast("EagerCallableProtocol", CommonASTVisitor)(generator=gen)
     assert id(vis2.generator) == id(gen)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import pmap, vmap
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -37,13 +37,13 @@ def test_vmap_in_axes_length_coverage() -> None:
             Returns:
                 EagerValue: The evaluated or processed output.
             """
-            return cast("EagerTensorProtocol", a) + cast("EagerTensorProtocol", b)
+            return typing.cast("EagerTensorProtocol", a) + typing.cast("EagerTensorProtocol", b)
 
         t1 = Tensor(np.zeros((2, 3)), TensorConfig((2, 3), DType.Float32, device))
         t2 = Tensor(np.zeros((2, 3)), TensorConfig((2, 3), DType.Float32, device))
         v_func = vmap(my_func, in_axes=(0,))
         with pytest.raises(RuntimeError):
-            cast("EagerCallableProtocol", v_func)(t1, t2)
+            typing.cast("EagerCallableProtocol", v_func)(t1, t2)
 
 
 def test_vmap_pmap_scalar_fallback() -> None:
@@ -63,15 +63,15 @@ def test_vmap_pmap_scalar_fallback() -> None:
         Returns:
             EagerValue: The evaluated or processed output.
         """
-        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", y)
+        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", y)
 
     dev = Device("cpu")
     t = Tensor([1, 2, 3], TensorConfig((3,), DType.Int32, dev))
     with ConfigContext(eager_mode=False):
         global_tracing_state.start_tracing()
-        v_f = cast("EagerCallableProtocol", vmap)(f, in_axes=(0, None))
+        v_f = typing.cast("EagerCallableProtocol", vmap)(f, in_axes=(0, None))
         with pytest.raises(AttributeError):
-            cast("EagerCallableProtocol", v_f)(t, 5)
+            typing.cast("EagerCallableProtocol", v_f)(t, 5)
         p_f = pmap(f)
-        cast("EagerCallableProtocol", p_f)(t, 5)
+        typing.cast("EagerCallableProtocol", p_f)(t, 5)
         global_tracing_state.stop_tracing()

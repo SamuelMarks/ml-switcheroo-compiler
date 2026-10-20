@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Callable, cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-if TYPE_CHECKING:
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
 
 from ml_switcheroo_compiler.core.device import Device
@@ -72,16 +74,16 @@ def _emit_linalg_node(
         raise RuntimeError(msg)
 
     out_ids = [str(uuid.uuid4()) for _ in out_shapes]
-    shape_meta = cast(
+    shape_meta = typing.cast(
         "Sequence[int | str]",
-        tuple(out_shapes[0]) if len(out_shapes) == 1 else tuple(tuple(s) for s in out_shapes),
+        tuple("?" if d is None else d for d in out_shapes[0]) if out_shapes else (),
     )
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
-    node = cast("Callable[..., LogicalNode]", LogicalNode)(
+    node = typing.cast("TypedVariadicCallable[LogicalNode]", LogicalNode)(
         id=out_ids[0],
         op_type=op_type,
         inputs=input_ids,
-        attributes=cast("dict[str, AttributeValue]", attrs or {}),
+        attributes=typing.cast("dict[str, AttributeValue]", attrs or {}),
         shape_metadata=shape_meta,
     )
     global_tracing_state.add_node(node)

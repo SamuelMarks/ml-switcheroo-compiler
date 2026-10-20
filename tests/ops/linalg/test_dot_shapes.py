@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from hypothesis import given
 from hypothesis import strategies as st
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.dot import Dot
 from ml_switcheroo_compiler.ops.stats.descriptive import ApplyOverAxes
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -83,8 +83,8 @@ def test_dot_infer_shape_nd_contractions() -> None:
 
         shape_metadata = ()
 
-    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyWithMetadata)(), cast("EagerCallableProtocol", DummyWithMetadata)()) == (3, 4)
-    assert cast("EagerCallableProtocol", op.infer_shape)(cast("EagerCallableProtocol", DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithMetadata)(), typing.cast("EagerCallableProtocol", DummyWithMetadata)()) == (3, 4)
+    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
     assert op.infer_shape("not_a_shape", "also_not") == ()
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -57,14 +57,14 @@ def test_file_io_coverage(tmp_path: pytest.TempPathFactory) -> None:
             assert file_io_mod.read_file("file.txt", name="r1") == "file_op_res"
             mock_backend.execute_op.assert_called_with("ReadFile", "file.txt", name="r1")
 
-            assert cast("EagerTensorProtocol", file_io_mod.write_file("file.txt", dummy_t, name="w1")) == cast("EagerTensorProtocol", "file_op_res")
+            assert typing.cast("EagerTensorProtocol", file_io_mod.write_file("file.txt", dummy_t, name="w1")) == typing.cast("EagerTensorProtocol", "file_op_res")
             mock_backend.execute_op.assert_called_with("WriteFile", "file.txt", dummy_t, name="w1")
 
         # Non-eager mode
         config.eager_mode = False
         with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", side_effect=lambda op, *args, **kwargs: f"emitted_{op}"):
             assert file_io_mod.read_file("file.txt") == "emitted_ReadFile"
-            assert cast("EagerTensorProtocol", file_io_mod.write_file("file.txt", dummy_t)) == cast("EagerTensorProtocol", "emitted_WriteFile")
+            assert typing.cast("EagerTensorProtocol", file_io_mod.write_file("file.txt", dummy_t)) == typing.cast("EagerTensorProtocol", "emitted_WriteFile")
 
         # OpDefs infer_shape
         rf_op = file_io_mod.ReadFile()

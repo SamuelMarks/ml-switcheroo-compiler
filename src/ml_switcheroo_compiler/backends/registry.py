@@ -1,7 +1,10 @@
 """Backend Registry."""
 
+from __future__ import annotations
+
 import logging
-from typing import Callable, Literal, Union
+import typing
+from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -18,6 +21,12 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
     ShapeProtocol as ShapeProtocol,
+)
+from ml_switcheroo_compiler.backends.protocols import (
+    BackendModuleProtocol as BackendModuleProtocol,
+)
+from ml_switcheroo_compiler.backends.protocols import (
+    BackendNamespaceProtocol as BackendNamespaceProtocol,
 )
 from ml_switcheroo_compiler.core.config import config
 
@@ -181,7 +190,7 @@ _LOADERS = {
     "pyarrow_compute": _load_pyarrow_compute,
 }
 
-BackendName = Literal[
+BackendName = typing.Literal[
     "jax",
     "torch",
     "pytorch",
@@ -216,7 +225,7 @@ BackendName = Literal[
 class BackendRegistry:
     """Registry for pluggable backends."""
 
-    _registry: dict[BackendName, type["BaseGenerator"]] = {}
+    _registry: dict[BackendName, type[BaseGenerator]] = {}
 
     _LAZY_MODULES: dict[str, str] = {
         "jax": "ml_switcheroo_compiler.backends.jax",
@@ -250,7 +259,7 @@ class BackendRegistry:
     }
 
     @classmethod
-    def register(cls, name: BackendName, backend_class: type["BaseGenerator"]) -> None:
+    def register(cls, name: BackendName, backend_class: type[BaseGenerator]) -> None:
         """Register a new backend for compilation and execution.
 
         Args:
@@ -288,7 +297,7 @@ class BackendRegistry:
         return name
 
     @classmethod
-    def get(cls, name: Union[BackendName, str]) -> type["BaseGenerator"]:
+    def get(cls, name: BackendName | str) -> type[BaseGenerator]:
         """Retrieve a registered backend class by name.
 
         Args:
@@ -310,7 +319,7 @@ class BackendRegistry:
         return cls._registry[resolved_name]
 
     @classmethod
-    def get_all(cls) -> dict[BackendName, type["BaseGenerator"]]:
+    def get_all(cls) -> dict[BackendName, type[BaseGenerator]]:
         """Retrieve all registered backends, loading them if necessary.
 
         Returns:
@@ -326,7 +335,7 @@ class BackendRegistry:
         return cls._registry.copy()
 
 
-def get_active_backend() -> type["BaseGenerator"]:
+def get_active_backend() -> type[BaseGenerator]:
     """Retrieve the currently active backend class based on global configuration.
 
     Returns:
@@ -335,7 +344,7 @@ def get_active_backend() -> type["BaseGenerator"]:
     return BackendRegistry.get(config.backend)
 
 
-def register_backend(name: BackendName) -> Callable[[type["BaseGenerator"]], type["BaseGenerator"]]:
+def register_backend(name: BackendName) -> Callable[[type[BaseGenerator]], type[BaseGenerator]]:
     """Decorate to register a class as a backend for a specific name.
 
     Args:
@@ -345,7 +354,7 @@ def register_backend(name: BackendName) -> Callable[[type["BaseGenerator"]], typ
         Callable: A decorator that registers the backend class.
     """
 
-    def decorator(cls: type["BaseGenerator"]) -> type["BaseGenerator"]:
+    def decorator(cls: type[BaseGenerator]) -> type[BaseGenerator]:
         """Register the annotated class in the backend registry.
 
         Args:

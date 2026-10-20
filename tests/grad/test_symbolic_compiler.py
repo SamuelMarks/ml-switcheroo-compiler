@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 
 import pytest
 from ml_switcheroo_ir import LogicalNode
@@ -10,7 +10,7 @@ from ml_switcheroo_ir import LogicalNode
 from ml_switcheroo_compiler.grad.symbolic_compiler import SymbolicExpressionCompiler
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 

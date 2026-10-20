@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops import _pmean, _psum
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, set_np_distributed_context
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_psum
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -33,5 +33,5 @@ def test_math_misc_distributed() -> None:
 def test_core_math_ops_distributed() -> None:
     """Test function test_core_math_ops_distributed."""
     t = np.array([1, 2])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _psum)(np, t), t)
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _pmean)(np, t), t)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _psum)(np, t), t)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _pmean)(np, t), t)

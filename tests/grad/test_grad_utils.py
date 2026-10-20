@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.grad.utils import _get_inputs_dict, _to_original_type
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -23,10 +24,10 @@ def test_get_inputs_dict_missing_input(mocker: EagerTensorProtocol) -> None:
         """Test class DummyGraph."""
 
         inputs = ["missing_inp"]
-        nodes = cast("dict[str, EagerTensorProtocol]", {})
+        nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
     with pytest.raises(ValueError, match="Missing input value for node 'missing_inp'"):
-        cast("EagerCallableProtocol", _get_inputs_dict)(cast("EagerCallableProtocol", DummyGraph)())
+        typing.cast("EagerCallableProtocol", _get_inputs_dict)(typing.cast("EagerCallableProtocol", DummyGraph)())
 
 
 def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
@@ -52,15 +53,15 @@ def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
             """
             return val
 
-    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=cast("EagerCallableProtocol", DummyBackend)())
+    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=typing.cast("EagerCallableProtocol", DummyBackend)())
 
     val_int = np.array(1, dtype=np.int32)
     res_int = _to_original_type(val_int, orig)
-    assert cast("EagerTensorProtocol", getattr(res_int, "dtype")) == DType.Int32
+    assert typing.cast("EagerTensorProtocol", getattr(res_int, "dtype")) == DType.Int32
 
     val_bool = np.array(True, dtype=bool)
     res_bool = _to_original_type(val_bool, orig)
-    assert cast("EagerTensorProtocol", getattr(res_bool, "dtype")) == DType.Bool
+    assert typing.cast("EagerTensorProtocol", getattr(res_bool, "dtype")) == DType.Bool
 
 
 def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
@@ -80,7 +81,7 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
     class DummyGraph:
         """Test class DummyGraph."""
 
-        nodes = cast("EagerTensorProtocol", {"n": {}})
+        nodes = typing.cast("EagerTensorProtocol", {"n": {}})
 
     class DummyTensor1(Tensor):
         """Test class DummyTensor1."""
@@ -129,7 +130,7 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
     t3 = DummyTensor3(None, TensorConfig((), DType.Float32, None))
     setattr(t3, "_data", DummyDataNotInGraph())
 
-    wrt_tensors, wrt_ids = cast("EagerCallableProtocol", _find_wrt_tensors)(cast("EagerCallableProtocol", DummyGraph)())
+    wrt_tensors, wrt_ids = typing.cast("EagerCallableProtocol", _find_wrt_tensors)(typing.cast("EagerCallableProtocol", DummyGraph)())
     assert id(t) in [id(x) for x in wrt_tensors]
     assert id(t2) in [id(x) for x in wrt_tensors]
     assert id(t3) not in [id(x) for x in wrt_tensors]
@@ -145,7 +146,7 @@ def test_get_concrete_val_variants() -> None:
 
         _data = 42
 
-    assert cast("EagerCallableProtocol", _get_concrete_val)(cast("EagerCallableProtocol", NonProxy)()) == 42
+    assert typing.cast("EagerCallableProtocol", _get_concrete_val)(typing.cast("EagerCallableProtocol", NonProxy)()) == 42
 
 
 def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
@@ -168,7 +169,7 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
             """
             return val
 
-    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=cast("EagerCallableProtocol", DummyBackend)())
+    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.grad.utils.get_active_backend", return_value=typing.cast("EagerCallableProtocol", DummyBackend)())
 
     class NodeData:
         """Test class NodeData."""
@@ -187,13 +188,13 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
         """Test class DummyGraphSuccess."""
 
         inputs = ["in_valid"]
-        nodes = cast("EagerTensorProtocol", {"in_valid": {}, "no_val_node": {}})
+        nodes = typing.cast("EagerTensorProtocol", {"in_valid": {}, "no_val_node": {}})
 
     t_valid = Tensor(None, TensorConfig((), DType.Float32, None))
     setattr(t_valid, "_data", NodeData("in_valid", concrete_value=123.0))
 
     t_no_val = Tensor(None, TensorConfig((), DType.Float32, None))
-    proxy = cast("EagerCallableProtocol", ProxyTensor)(None, ())
+    proxy = typing.cast("EagerCallableProtocol", ProxyTensor)(None, ())
     setattr(proxy, "id", "no_val_node")
     setattr(proxy, "concrete_value", None)
     t_no_val._data = proxy
@@ -203,7 +204,7 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
 
     Tensor(1.0, TensorConfig((), DType.Float32, None))
 
-    res = cast("EagerCallableProtocol", _get_inputs_dict)(cast("EagerCallableProtocol", DummyGraphSuccess)())
+    res = typing.cast("EagerCallableProtocol", _get_inputs_dict)(typing.cast("EagerCallableProtocol", DummyGraphSuccess)())
     assert "in_valid" in res
     assert res["in_valid"] == 123.0
     assert "no_val_node" not in res
@@ -212,7 +213,7 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
     class GraphNoInputs:
         """Test class GraphNoInputs."""
 
-        nodes = cast("dict[str, EagerTensorProtocol]", {})
+        nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
-    res_no_inputs = cast("EagerCallableProtocol", _get_inputs_dict)(cast("EagerCallableProtocol", GraphNoInputs)())
-    assert isinstance(res_no_inputs, dict)
+    res_no_inputs = typing.cast("EagerCallableProtocol", _get_inputs_dict)(typing.cast("EagerCallableProtocol", GraphNoInputs)())
+    assert isinstance(typing.cast("EagerValue", res_no_inputs), dict)

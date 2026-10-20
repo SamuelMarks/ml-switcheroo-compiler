@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
@@ -27,11 +27,11 @@ def jax_all_reduce(
         import jax.lax as lax
 
         if op.upper() in ("SUM", "ADD"):
-            return cast(EagerValue, getattr(lax, "psum")(tensor, axis_name=axis_name))
+            return typing.cast(EagerValue, getattr(lax, "psum")(tensor, axis_name=axis_name))
         elif op.upper() == "MAX":
-            return cast(EagerValue, getattr(lax, "pmax")(tensor, axis_name=axis_name))
+            return typing.cast(EagerValue, getattr(lax, "pmax")(tensor, axis_name=axis_name))
         elif op.upper() == "MIN":
-            return cast(EagerValue, getattr(lax, "pmin")(tensor, axis_name=axis_name))
+            return typing.cast(EagerValue, getattr(lax, "pmin")(tensor, axis_name=axis_name))
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -56,7 +56,7 @@ def jax_all_gather(
     try:
         import jax.lax as lax
 
-        return cast(EagerValue, getattr(lax, "all_gather")(tensor, axis_name=axis_name, axis=axis))
+        return typing.cast(EagerValue, getattr(lax, "all_gather")(tensor, axis_name=axis_name, axis=axis))
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

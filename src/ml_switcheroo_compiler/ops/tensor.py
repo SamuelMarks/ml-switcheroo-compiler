@@ -1,5 +1,7 @@
 """Tensor Manipulation operations."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.binary import allclose
 from ml_switcheroo_compiler.ops.shape import take_along_axis
 

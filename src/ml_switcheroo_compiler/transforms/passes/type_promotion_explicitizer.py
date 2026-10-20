@@ -1,7 +1,8 @@
 """Type Promotion Explicitizer Pass."""
 
+from __future__ import annotations
+
 import uuid
-from typing import Optional
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -36,7 +37,7 @@ def _inject_cast_node(graph: IRGraph, input_id: str, target_dt: str) -> str:
     return new_id
 
 
-def _needs_cast(dt1: Optional[str], dt2: Optional[str]) -> Optional[str]:
+def _needs_cast(dt1: str | None, dt2: str | None) -> str | None:
     """Execute needs cast for compiler processing.
 
     Args:

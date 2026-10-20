@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -19,5 +19,5 @@ def test_linear_operator_shape_inference() -> None:
 
         shape = (1, 2)
 
-    assert cast("EagerCallableProtocol", LinearOperator)().infer_shape(cast("EagerCallableProtocol", MockOperand)()) == (1, 2)
-    assert cast("EagerCallableProtocol", LinearOperator)().infer_shape(operand=cast("EagerCallableProtocol", MockOperand)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", LinearOperator)().infer_shape(typing.cast("EagerCallableProtocol", MockOperand)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", LinearOperator)().infer_shape(operand=typing.cast("EagerCallableProtocol", MockOperand)()) == (1, 2)

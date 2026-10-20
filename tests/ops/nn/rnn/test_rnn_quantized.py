@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.quantized_ops import (
@@ -38,7 +39,7 @@ from ml_switcheroo_compiler.ops.nn.rnn_cell import simple_rnn_cell
 from ml_switcheroo_compiler.ops.nn.rnn_utils import BidirectionalConfig, BidirectionalInputs, DropoutWrapperConfig, RNNCellDeviceWrapper, RNNCellDropoutWrapper, RNNCellResidualWrapper, RNNConfig, ScanConfig, bidirectional, rnn, scan
 from ml_switcheroo_compiler.ops.nn.time_distributed import TimeDistributed, time_distributed
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -55,12 +56,12 @@ def _test_quantized_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
     assert fake_quant_with_min_max_vars(t, t_min, t_max) is not None
     assert fake_quant_with_min_max_vars(t, t_min, t_max, narrow_range=True) is not None
     assert quantize_and_dequantize(t, t_min, t_max) is not None
-    (q, s) = cast("EagerCallableProtocol", abs_max_quantize)(t)
-    assert q is not None and s is not None
+    (q, s) = typing.cast("EagerCallableProtocol", abs_max_quantize)(t)
+    assert typing.cast("EagerValue", q) is not None and s is not None
     assert compute_float8_amax_history(t, t) is not None
     assert compute_float8_scale(t, t) is not None
-    (qw, qs, qb) = cast("EagerCallableProtocol", quantize)(t)
-    assert qw is not None and qs is not None and (qb is not None)
+    (qw, qs, qb) = typing.cast("EagerCallableProtocol", quantize)(t)
+    assert typing.cast("EagerValue", qw) is not None and typing.cast("EagerValue", qs) is not None and (qb is not None)
     q_conf = QuantizedOpsConfig(weight=t, scales=t, biases=t, indices=t, q_config=QuantizationConfig(transpose=False))
     q_conf_t = QuantizedOpsConfig(weight=t, scales=t, biases=t, indices=t, q_config=QuantizationConfig(transpose=True))
     assert quantized_matmul(t, q_conf) is not None
@@ -93,7 +94,7 @@ def _test_quantized_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> N
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = cast("dict[str, EagerTensorProtocol]", {})
+            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -104,20 +105,20 @@ def _test_quantized_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> N
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
-        assert cast("EagerCallableProtocol", fake_quant_with_min_max_vars)(t, t_min, t_max) is not None
-        assert cast("EagerCallableProtocol", quantize_and_dequantize)(t, t_min, t_max) is not None
-        (q, s) = cast("EagerCallableProtocol", abs_max_quantize)(t)
-        assert q is not None and s is not None
-        assert cast("EagerCallableProtocol", compute_float8_amax_history)(t, t) is not None
-        assert cast("EagerCallableProtocol", compute_float8_scale)(t, t) is not None
-        (qw, qs, qb) = cast("EagerCallableProtocol", quantize)(t)
-        assert qw is not None and qs is not None and (qb is not None)
-        assert cast("EagerCallableProtocol", quantized_matmul)(t, q_conf) is not None
-        assert cast("EagerCallableProtocol", quantized_matmul)(t, q_conf_t) is not None
-        assert cast("EagerCallableProtocol", gather_qmm)(t, q_conf) is not None
-        assert cast("EagerCallableProtocol", gather_qmm)(t, q_conf_t) is not None
-        assert cast("EagerCallableProtocol", dequantize)(t, t, t) is not None
-        assert cast("EagerCallableProtocol", quantized_conv)(t, q_conf) is not None
+        assert typing.cast("EagerCallableProtocol", fake_quant_with_min_max_vars)(t, t_min, t_max) is not None
+        assert typing.cast("EagerCallableProtocol", quantize_and_dequantize)(t, t_min, t_max) is not None
+        (q, s) = typing.cast("EagerCallableProtocol", abs_max_quantize)(t)
+        assert typing.cast("EagerValue", q) is not None and s is not None
+        assert typing.cast("EagerCallableProtocol", compute_float8_amax_history)(t, t) is not None
+        assert typing.cast("EagerCallableProtocol", compute_float8_scale)(t, t) is not None
+        (qw, qs, qb) = typing.cast("EagerCallableProtocol", quantize)(t)
+        assert typing.cast("EagerValue", qw) is not None and typing.cast("EagerValue", qs) is not None and (qb is not None)
+        assert typing.cast("EagerCallableProtocol", quantized_matmul)(t, q_conf) is not None
+        assert typing.cast("EagerCallableProtocol", quantized_matmul)(t, q_conf_t) is not None
+        assert typing.cast("EagerCallableProtocol", gather_qmm)(t, q_conf) is not None
+        assert typing.cast("EagerCallableProtocol", gather_qmm)(t, q_conf_t) is not None
+        assert typing.cast("EagerCallableProtocol", dequantize)(t, t, t) is not None
+        assert typing.cast("EagerCallableProtocol", quantized_conv)(t, q_conf) is not None
     finally:
         setattr(config, "eager_mode", original_eager)
         global_tracing_state.is_tracing = False
@@ -136,14 +137,14 @@ def _test_quantized_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> N
 
         shape = (1, 2)
 
-    assert cast("EagerCallableProtocol", QuantizeOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
-    assert cast("EagerCallableProtocol", QuantizedMatmulOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
-    assert cast("EagerCallableProtocol", GatherQMMOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
-    assert cast("EagerCallableProtocol", FakeQuantWithMinMaxVarsOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
-    assert cast("EagerCallableProtocol", QuantizeAndDequantizeOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
-    assert cast("EagerCallableProtocol", AbsMaxQuantizeOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
-    assert cast("EagerCallableProtocol", ComputeFloat8AmaxHistoryOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
-    assert cast("EagerCallableProtocol", ComputeFloat8ScaleOp)().infer_shape(cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", QuantizeOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", QuantizedMatmulOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", GatherQMMOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", FakeQuantWithMinMaxVarsOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", QuantizeAndDequantizeOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", AbsMaxQuantizeOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", ComputeFloat8AmaxHistoryOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert typing.cast("EagerCallableProtocol", ComputeFloat8ScaleOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
     getattr(_state, "update")({"DummyShape": DummyShape})
 
 
@@ -177,14 +178,14 @@ def _test_rnn_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
             inputs: Test parameter `inputs`.
             state: Test parameter `state`.
         """
-        return cast("EagerCallableProtocol", simple_rnn_cell)(inputs, state, w, rw, b)
+        return typing.cast("EagerCallableProtocol", simple_rnn_cell)(inputs, state, w, rw, b)
 
     (out, final_state) = rnn(t_in, (t_h,), dummy_cell, RNNConfig(time_major=True))
-    assert out is not None and final_state is not None
+    assert typing.cast("EagerValue", out) is not None and final_state is not None
     t_in_batch_major = Tensor(np.ones((1, 2, 4)), TensorConfig(shape=(1, 2, 4), dtype=DType("float32"), device=Device("cpu")))
     (out, final_state) = rnn(t_in_batch_major, (t_h,), dummy_cell, RNNConfig(time_major=False))
-    assert out is not None and final_state is not None
-    bidi_in = BidirectionalInputs(t_in, t_in, (t_h,), (t_h,))
+    assert typing.cast("EagerValue", out) is not None and final_state is not None
+    bidi_in = BidirectionalInputs(forward_inputs=t_in, backward_inputs=t_in, forward_initial_state=(t_h,), backward_initial_state=(t_h,))
     (out, fwd, bwd) = bidirectional(bidi_in, dummy_cell, BidirectionalConfig(merge_mode="concat", time_major=True))
     assert out is not None
     (out, fwd, bwd) = bidirectional(bidi_in, dummy_cell, BidirectionalConfig(merge_mode="sum", time_major=True))
@@ -202,11 +203,11 @@ def _test_rnn_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     (bidi_in, dummy_cell, t_h, t_in) = (_state["bidi_in"], _state["dummy_cell"], _state["t_h"], _state["t_in"])
-    (out, fwd, bwd) = cast("EagerCallableProtocol", bidirectional)(bidi_in, dummy_cell, cast("EagerCallableProtocol", BidirectionalConfig)(merge_mode="mul", time_major=True))
+    (out, fwd, bwd) = typing.cast("EagerCallableProtocol", bidirectional)(bidi_in, dummy_cell, typing.cast("EagerCallableProtocol", BidirectionalConfig)(merge_mode="mul", time_major=True))
     assert out is not None
-    (out, fwd, bwd) = cast("EagerCallableProtocol", bidirectional)(bidi_in, dummy_cell, cast("EagerCallableProtocol", BidirectionalConfig)(merge_mode="ave", time_major=True))
+    (out, fwd, bwd) = typing.cast("EagerCallableProtocol", bidirectional)(bidi_in, dummy_cell, typing.cast("EagerCallableProtocol", BidirectionalConfig)(merge_mode="ave", time_major=True))
     assert out is not None
-    (out, fwd, bwd) = cast("EagerCallableProtocol", bidirectional)(bidi_in, dummy_cell, cast("EagerCallableProtocol", BidirectionalConfig)(merge_mode="none", time_major=True))
+    (out, fwd, bwd) = typing.cast("EagerCallableProtocol", bidirectional)(bidi_in, dummy_cell, typing.cast("EagerCallableProtocol", BidirectionalConfig)(merge_mode="none", time_major=True))
     assert out is not None
 
     def scan_dummy(carry: EagerValue, x: EagerValue) -> EagerValue:
@@ -218,8 +219,8 @@ def _test_rnn_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         """
         return dummy_cell(x, carry)
 
-    (carry, ys) = cast("EagerCallableProtocol", scan)(scan_dummy, (t_h,), t_in, config=cast("EagerCallableProtocol", ScanConfig)(unroll=True, reverse=True))
-    assert carry is not None and ys is not None
+    (carry, ys) = typing.cast("EagerCallableProtocol", scan)(scan_dummy, (t_h,), t_in, config=typing.cast("EagerCallableProtocol", ScanConfig)(unroll=True, reverse=True))
+    assert typing.cast("EagerValue", carry) is not None and ys is not None
     original_eager = config.eager_mode
     getattr(_state, "update")({"bwd": bwd, "carry": carry, "fwd": fwd, "original_eager": original_eager})
     getattr(_state, "update")({"out": out, "scan_dummy": scan_dummy, "ys": ys})
@@ -244,7 +245,7 @@ def _test_rnn_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = cast("dict[str, EagerTensorProtocol]", {})
+            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -257,9 +258,9 @@ def _test_rnn_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         setattr(global_tracing_state, "active_graph", DummyGraph())
         with patch("ml_switcheroo_compiler.ops.nn.rnn_utils.cf_scan") as mock_cf_scan:
             mock_cf_scan.return_value = ("carry", "y")
-            (carry, ys) = cast("EagerCallableProtocol", scan)(scan_dummy, (t_h,), t_in, config=cast("EagerCallableProtocol", ScanConfig)(unroll=False, reverse=True))
+            (carry, ys) = typing.cast("EagerCallableProtocol", scan)(scan_dummy, (t_h,), t_in, config=typing.cast("EagerCallableProtocol", ScanConfig)(unroll=False, reverse=True))
             assert carry == "carry" and ys == "y"
-            (carry, ys) = cast("EagerCallableProtocol", scan)(scan_dummy, (t_h,), t_in, config=cast("EagerCallableProtocol", ScanConfig)(unroll=False, reverse=False))
+            (carry, ys) = typing.cast("EagerCallableProtocol", scan)(scan_dummy, (t_h,), t_in, config=typing.cast("EagerCallableProtocol", ScanConfig)(unroll=False, reverse=False))
             assert carry == "carry" and ys == "y"
     finally:
         setattr(config, "eager_mode", original_eager)
@@ -280,7 +281,7 @@ def _test_rnn_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     do_wrapper = RNNCellDropoutWrapper(dummy_cell, DropoutWrapperConfig(input_keep_prob=0.5, output_keep_prob=0.5))
     with patch("ml_switcheroo_compiler.ops.nn.rnn_utils.dropout") as mock_do:
         mock_do.return_value = t_in[0]
-        assert cast("EagerCallableProtocol", do_wrapper)(t_in[0], (t_h,)) is not None
+        assert typing.cast("EagerCallableProtocol", do_wrapper)(t_in[0], (t_h,)) is not None
     res_wrapper = RNNCellResidualWrapper(dummy_cell)
     assert res_wrapper(t_in[0], (t_h,)) is not None
     res_wrapper2 = RNNCellResidualWrapper(dummy_cell, residual_fn=lambda x, y: y)
@@ -307,7 +308,7 @@ def test_time_distributed_coverage() -> None:
         mock_op = mock_get_op.return_value.return_value
         mock_op.return_value = "timed"
         with pytest.raises(Exception, match=".*"):
-            time_distributed(t, "Dense")
+            typing.cast("EagerCallableProtocol", time_distributed)(t, "Dense")
 
 
 def test_time_distributed_inner_op_shape_inference(mocker: EagerTensorProtocol) -> None:
@@ -328,8 +329,8 @@ def test_time_distributed_inner_op_shape_inference(mocker: EagerTensorProtocol) 
                 inp: Test parameter `inp`.
                 kwargs: Test parameter `kwargs`.
             """
-            return cast("tuple[int, ...]", (cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(inp, "shape")), "__getitem__")(0)), 64))
+            return typing.cast("tuple[int, ...]", (typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(inp, "shape")), "__getitem__")(0)), 64))
 
-    cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.ops.nn.time_distributed.get_op", return_value=lambda: cast("EagerCallableProtocol", MockInnerOp)())
+    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.ops.nn.time_distributed.get_op", return_value=lambda: typing.cast("EagerCallableProtocol", MockInnerOp)())
     inferred = TimeDistributed().infer_shape(t, wrapped_op_name="Dense")
     assert inferred == (4, 10, 64)

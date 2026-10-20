@@ -3,20 +3,22 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import NodeDict
 
 import ml_switcheroo_compiler.backends.dpnp as dpnp_pkg
 from ml_switcheroo_compiler.backends.dpnp.generator import DPNPGenerator
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -35,7 +37,7 @@ def _create_sample_graph(multi_output: bool = False, no_output: bool = False) ->
     n_in2 = IRNode(id="in2", op_type="Input", inputs=[], shape_metadata=[2, 2])
     n_add = IRNode(id="add1", op_type="Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
     n_sub = IRNode(id="sub1", op_type="Sub", inputs=["in1", "in2"], shape_metadata=[2, 2])
-    g.nodes = {"in1": n_in1, "in2": n_in2, "add1": n_add, "sub1": n_sub}
+    g.nodes = NodeDict({"in1": n_in1, "in2": n_in2, "add1": n_add, "sub1": n_sub})
     g.inputs = ["in1", "in2"]
     if no_output:
         g.outputs = []
@@ -72,21 +74,21 @@ def test_dpnp_generator_and_aot() -> None:
     cfg = TensorConfig((2, 2), "float32", "cpu")
     t_in1 = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), cfg)
     t_in2 = Tensor(np.array([[5.0, 6.0], [7.0, 8.0]]), cfg)
-    res = cast("EagerCallableProtocol", runner)(t_in1, in2=cast("EagerCallableProtocol", np.array)([[5.0, 6.0], [7.0, 8.0]]))
+    res = typing.cast("EagerCallableProtocol", runner)(t_in1, in2=typing.cast("EagerCallableProtocol", np.array)([[5.0, 6.0], [7.0, 8.0]]))
     assert res is not None
 
     # AOT compile multi-output
     g_multi = _create_sample_graph(multi_output=True)
     runner_multi = gen._compile_aot_impl(g_multi)
-    res_multi = cast("EagerCallableProtocol", runner_multi)(t_in1, t_in2)
-    assert isinstance(res_multi, tuple)
+    res_multi = typing.cast("EagerCallableProtocol", runner_multi)(t_in1, t_in2)
+    assert isinstance(typing.cast("EagerValue", res_multi), tuple)
     assert len(res_multi) == 2
 
     # AOT compile no outputs
     g_no_out = _create_sample_graph(no_output=True)
     runner_no_out = gen._compile_aot_impl(g_no_out)
-    res_no_out = cast("EagerCallableProtocol", runner_no_out)(t_in1, t_in2)
-    assert isinstance(res_no_out, dict)
+    res_no_out = typing.cast("EagerCallableProtocol", runner_no_out)(t_in1, t_in2)
+    assert isinstance(typing.cast("EagerValue", res_no_out), dict)
 
 
 def test_dpnp_types() -> None:
@@ -131,8 +133,8 @@ def test_dpnp_types() -> None:
             """
             return np.array(7.5)
 
-    val_no_item = cast("EagerCallableProtocol", dpnp_pkg.item)(cast("EagerCallableProtocol", NoItemObj)())
-    assert cast("EagerCallableProtocol", np.isclose)(val_no_item, 7.5)
+    val_no_item = typing.cast("EagerCallableProtocol", dpnp_pkg.item)(typing.cast("EagerCallableProtocol", NoItemObj)())
+    assert typing.cast("EagerCallableProtocol", np.isclose)(val_no_item, 7.5)
 
     # When dpnp is mock-imported
     mock_dpnp = mock.MagicMock()
@@ -149,23 +151,23 @@ def test_dpnp_eager_dispatch() -> None:
     """Verify DPNP eager op dispatching, class context, aliases, and errors."""
     # Normal dispatch
     res = dpnp_pkg.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [4.0, 6.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [4.0, 6.0])
 
     # Classmethod invocation: cls_or_op is class
     res_cls = dpnp_pkg.DPNPGenerator.execute_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_cls, [4.0, 6.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_cls, [4.0, 6.0])
 
     # Alias mapping branch: Sub -> subtract, Mul -> multiply, Div -> divide, Neg -> negative
     sub_res = dpnp_pkg.execute_op("Sub", np.array([5.0]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(sub_res, [3.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(sub_res, [3.0])
     mul_res = dpnp_pkg.execute_op("Mul", np.array([5.0]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(mul_res, [10.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(mul_res, [10.0])
     div_res = dpnp_pkg.execute_op("Div", np.array([6.0]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(div_res, [3.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(div_res, [3.0])
     neg_res = dpnp_pkg.execute_op("Neg", np.array([5.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(neg_res, [-5.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(neg_res, [-5.0])
     truediv_res = dpnp_pkg.execute_op("TrueDivide", np.array([7.0]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(truediv_res, [3.5])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(truediv_res, [3.5])
 
     # Unsupported op
     with pytest.raises(BackendNotSupportedError, match="not supported"):

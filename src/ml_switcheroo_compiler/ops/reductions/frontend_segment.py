@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -40,9 +40,9 @@ def _emit_segment_op(
     else:
         out_shape = data_shape
 
-    return cast(
+    return typing.cast(
         Tensor,
-        cast("EagerCallableProtocol", _emit_reduction_node)(
+        typing.cast("EagerCallableProtocol", _emit_reduction_node)(
             op_type,
             inputs,
             attributes,

@@ -1,8 +1,11 @@
 # ruff: noqa: E402
 """Implementations of functional optimizer update steps for various algorithms."""
 
-from dataclasses import dataclass
-from typing import Optional  # noqa: F401
+from __future__ import annotations
+
+import typing  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -12,9 +15,10 @@ from ml_switcheroo_compiler.ops.unary import abs as abs_op
 from ml_switcheroo_compiler.ops.unary import sign, sqrt, square
 
 
-@dataclass
-class SGDConfig:
+class SGDConfig(pydantic.BaseModel):
     """Configuration settings for the Stochastic Gradient Descent (SGD) optimizer."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float
     momentum: float = 0.0
@@ -23,9 +27,10 @@ class SGDConfig:
     nesterov: bool = False
 
 
-@dataclass
-class AdagradConfig:
+class AdagradConfig(pydantic.BaseModel):
     """Configuration settings for the Adagrad optimization algorithm."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float
     lr_decay: float = 0.0
@@ -35,9 +40,10 @@ class AdagradConfig:
     step: int = 1
 
 
-@dataclass
-class AdadeltaConfig:
+class AdadeltaConfig(pydantic.BaseModel):
     """Configuration parameters for the Adadelta optimization algorithm."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float = 1.0
     rho: float = 0.9
@@ -45,9 +51,10 @@ class AdadeltaConfig:
     weight_decay: float = 0.0
 
 
-@dataclass
-class LionConfig:
+class LionConfig(pydantic.BaseModel):
     """Configuration parameters for the Lion optimization algorithm."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float
     beta1: float = 0.9
@@ -55,9 +62,10 @@ class LionConfig:
     weight_decay: float = 0.0
 
 
-@dataclass
-class AdamHyperparams:
+class AdamHyperparams(pydantic.BaseModel):
     """Hyperparameters and configuration state for the Adam optimization algorithm."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float
     beta1: float = 0.9
@@ -67,9 +75,10 @@ class AdamHyperparams:
     step: int = 1
 
 
-@dataclass
-class AdamWHyperparams:
+class AdamWHyperparams(pydantic.BaseModel):
     """Hyperparameters and configuration state for the AdamW optimization algorithm."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float
     beta1: float = 0.9
@@ -79,9 +88,10 @@ class AdamWHyperparams:
     step: int = 1
 
 
-@dataclass
-class RMSPropHyperparams:
+class RMSPropHyperparams(pydantic.BaseModel):
     """Hyperparameters and configuration state for the RMSprop optimization algorithm."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float
     alpha: float = 0.99
@@ -91,9 +101,10 @@ class RMSPropHyperparams:
     centered: bool = False
 
 
-@dataclass
-class AdamaxHyperparams:
+class AdamaxHyperparams(pydantic.BaseModel):
     """Hyperparameters and configuration state for the Adamax optimization algorithm."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     lr: float
     beta1: float = 0.9
@@ -107,7 +118,7 @@ def sgd_update(
     param: Tensor,
     grad: Tensor,
     config: SGDConfig,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Stochastic Gradient Descent (SGD) update to a parameter.
 
@@ -153,7 +164,7 @@ def adam_update(
     param: Tensor,
     grad: Tensor,
     hp: AdamHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Adam optimization update to a parameter.
 
@@ -207,7 +218,7 @@ def adamw_update(
     param: Tensor,
     grad: Tensor,
     hp: AdamWHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional AdamW optimization update to a parameter.
 
@@ -259,7 +270,7 @@ def adagrad_update(
     param: Tensor,
     grad: Tensor,
     config: AdagradConfig,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Adagrad optimization update to a parameter.
 
@@ -298,7 +309,7 @@ def rmsprop_update(
     param: Tensor,
     grad: Tensor,
     hp: RMSPropHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional RMSprop optimization update to a parameter.
 
@@ -352,7 +363,7 @@ def adadelta_update(
     param: Tensor,
     grad: Tensor,
     config: AdadeltaConfig,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Adadelta optimization update to a parameter.
 
@@ -397,7 +408,7 @@ def adamax_update(
     param: Tensor,
     grad: Tensor,
     hp: AdamaxHyperparams,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Adamax optimization update to a parameter.
 
@@ -444,7 +455,7 @@ def lion_update(
     param: Tensor,
     grad: Tensor,
     config: LionConfig,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Lion optimization update to a parameter.
 
@@ -485,7 +496,7 @@ def adafactor_update(
     param: Tensor,
     grad: Tensor,
     lr: float,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Adafactor optimization update to a parameter.
 
@@ -512,7 +523,7 @@ def muon_update(
     grad: Tensor,
     lr: float,
     momentum: float = 0.95,
-    state: Optional[dict[str, Tensor]] = None,
+    state: dict[str, Tensor] | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     """Apply a functional Muon optimization update to a parameter.
 

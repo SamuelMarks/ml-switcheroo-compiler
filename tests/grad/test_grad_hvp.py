@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import check_numerical_grads, hvp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -24,14 +25,14 @@ def test_hvp_robustness() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
+        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     v = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, out_tan = cast("EagerCallableProtocol", hvp)(f, x, v)
-    assert cast("EagerTensorProtocol", getattr(val, "item"))() == 8.0
-    assert cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
+    val, out_tan = typing.cast("EagerCallableProtocol", hvp)(f, x, v)
+    assert typing.cast("EagerTensorProtocol", getattr(val, "item"))() == 8.0
+    assert typing.cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
 
 
 def test_hessian() -> None:
@@ -43,13 +44,13 @@ def test_hessian() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
+        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     from ml_switcheroo_compiler.grad import hessian
 
-    res = cast("EagerCallableProtocol", hessian)(f)(x)
+    res = typing.cast("EagerCallableProtocol", hessian)(f)(x)
     assert res is not None
 
 
@@ -62,7 +63,7 @@ def test_check_numerical_grads() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)
+        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     check_numerical_grads(f, (x,))
@@ -78,7 +79,7 @@ def test_grad_of_grad() -> None:
     n_in = IRNode(id="x", op_type="Input")
     n_mul1 = IRNode(id="mul1", op_type="Multiply", inputs=["x", "x"])
     n_mul2 = IRNode(id="mul2", op_type="Multiply", inputs=["mul1", "x"])
-    g.nodes = {"x": n_in, "mul1": n_mul1, "mul2": n_mul2}
+    g.nodes = NodeDict({"x": n_in, "mul1": n_mul1, "mul2": n_mul2})
     g.inputs = ["x"]
     g.outputs = ["mul2"]
 
@@ -104,7 +105,7 @@ def _removed() -> None:
     g = IRGraph()
     n_in = LogicalNode(id="x", op_type="Input")
     n_if = LogicalNode(id="cond", op_type="Loop", inputs=["x"])
-    g.nodes = {"x": n_in, "cond": n_if}
+    g.nodes = NodeDict({"x": n_in, "cond": n_if})
     g.inputs = ["x"]
     g.outputs = ["cond"]
 

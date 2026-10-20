@@ -1,7 +1,9 @@
 """Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.mlx.types`)."""
 
+from __future__ import annotations
+
+import typing
 from types import ModuleType
-from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
@@ -11,7 +13,7 @@ from ml_switcheroo_compiler.backends.eager import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
-mx: Optional[ModuleType]
+mx: ModuleType | None
 try:
     import mlx.core as _mx
 
@@ -30,10 +32,10 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_zeros)(mx, shape))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_zeros)(mx, shape))
 
 
-def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
+def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
     """Execute array for compiler processing.
 
     Args:
@@ -46,7 +48,7 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
     """
     del cls
     actual_dtype = getattr(mx, dtype) if isinstance(dtype, str) and hasattr(mx, dtype) else dtype
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(mx, data, actual_dtype))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(mx, data, actual_dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -60,8 +62,8 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
             EagerValue: Result.
     """
     if hasattr(mx, "asarray"):
-        return cast(EagerValue, cast("EagerCallableProtocol", generic_asarray)(mx, data))
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(mx, data))
+        return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_asarray)(mx, data))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(mx, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -74,4 +76,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Result.
     """
-    return cast(float, cast("EagerCallableProtocol", generic_item)(mx, data))
+    return typing.cast(float, typing.cast("EagerCallableProtocol", generic_item)(mx, data))

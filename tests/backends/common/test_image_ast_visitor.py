@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, cast
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.common.mixins.image as img_mix
 from ml_switcheroo_compiler.ir.core import IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -184,8 +184,8 @@ def test_image_ast_visitor() -> None:
     Returns:
         None
     """
-    vis = cast("EagerCallableProtocol", img_mix.ImageASTVisitor)(generator=cast("EagerCallableProtocol", _DummyGenerator)())
-    node = cast("EagerCallableProtocol", IRNode)("Dummy", [], {})
+    vis = typing.cast("EagerCallableProtocol", img_mix.ImageASTVisitor)(generator=typing.cast("EagerCallableProtocol", _DummyGenerator)())
+    node = IRNode("dummy", "Dummy", inputs=[], attributes={})
 
     # With kwargs explicitly supplied
     assert vis.visit_AdjustBrightness(node, ["x"], delta=0.5) == "np_eager_adjust_brightness(x, 0.5)"

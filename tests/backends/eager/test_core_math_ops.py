@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import inspect
 import sys
+import typing
 import warnings
-from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pytest
@@ -13,8 +13,10 @@ import pytest
 import ml_switcheroo_compiler.backends.eager.core_math_ops as cmo
 import ml_switcheroo_compiler.backends.eager.core_math_ops as core_math_ops
 import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -26,7 +28,7 @@ def _test_core_math_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
     """
     res = core_math_ops._true_divide(np, 10.0, 2.0)
     assert res == 5.0
-    res = core_math_ops._true_divide(object, 10.0, 2.0)
+    res = core_math_ops._true_divide(typing.cast("BackendModuleProtocol", object), 10.0, 2.0)
     assert res is None
     res = core_math_ops._fft(np, np.array([1.0, 2.0]))
     assert res is not None
@@ -34,7 +36,7 @@ def _test_core_math_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
     assert res is not None
     res = core_math_ops._fftn(np, np.array([1.0, 2.0]))
     assert res is not None
-    res = core_math_ops._fft(object, np.array([1.0, 2.0]))
+    res = core_math_ops._fft(typing.cast("BackendModuleProtocol", object), np.array([1.0, 2.0]))
     assert res is None
     getattr(_state, "update")({"res": res})
     _state.update(locals())
@@ -46,9 +48,9 @@ def _test_core_math_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
     Args:
         _state: Shared test state dictionary.
     """
-    res = core_math_ops._rfft(object, np.array([1.0, 2.0]))
+    res = core_math_ops._rfft(typing.cast("BackendModuleProtocol", object), np.array([1.0, 2.0]))
     assert res is None
-    res = core_math_ops._fftn(object, np.array([1.0, 2.0]))
+    res = core_math_ops._fftn(typing.cast("BackendModuleProtocol", object), np.array([1.0, 2.0]))
     assert res is None
     res = core_math_ops._erf(np, 0.5)
     assert res is not None
@@ -77,7 +79,7 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 x: Test parameter `x`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", np.sign)(x))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.sign)(x))
 
         @staticmethod
         def abs(x: EagerValue) -> EagerValue:
@@ -86,7 +88,7 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 x: Test parameter `x`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", np.abs)(x))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.abs)(x))
 
         @staticmethod
         def exp(x: EagerValue) -> EagerValue:
@@ -95,7 +97,7 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 x: Test parameter `x`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", np.exp)(x))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.exp)(x))
 
         @staticmethod
         def log(x: EagerValue) -> EagerValue:
@@ -104,7 +106,7 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 x: Test parameter `x`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", np.log)(x))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.log)(x))
 
         @staticmethod
         def sqrt(x: EagerValue) -> EagerValue:
@@ -113,10 +115,10 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
             Args:
                 x: Test parameter `x`.
             """
-            return cast("EagerValue", cast("EagerCallableProtocol", np.sqrt)(x))
+            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.sqrt)(x))
 
     dummy = DummyMock()
-    res = core_math_ops._erf(dummy, 0.5)
+    res = core_math_ops._erf(typing.cast("BackendModuleProtocol", dummy), 0.5)
     assert res is not None
     getattr(_state, "update")({"DummyMock": DummyMock, "dummy": dummy, "res": res})
     _state.update(locals())
@@ -152,15 +154,15 @@ def _test_core_math_ops_coverage_part_5(_state: dict[str, EagerTensorProtocol]) 
     """
     (dummy, res) = (_state["dummy"], _state["res"])
     assert res is not None
-    res = cast("EagerTensorProtocol", core_math_ops._einsum(dummy, "i,i->", np.array([1.0]), np.array([2.0])))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._einsum(dummy, "i,i->", np.array([1.0]), np.array([2.0])))
     assert res is not None
-    res = cast("EagerTensorProtocol", core_math_ops._allclose(np, np.array([1.0]), np.array([1.0])))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._allclose(np, np.array([1.0]), np.array([1.0])))
     assert res is not None
-    res = cast("EagerTensorProtocol", core_math_ops._allclose(dummy, np.array([1.0]), np.array([1.0])))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._allclose(dummy, np.array([1.0]), np.array([1.0])))
     assert res is not None
-    res = cast("EagerTensorProtocol", core_math_ops._psum(np, np.array([1.0])))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._psum(np, np.array([1.0])))
     assert res is not None
-    res = cast("EagerTensorProtocol", core_math_ops._pmean(np, np.array([1.0])))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._pmean(np, np.array([1.0])))
     getattr(_state, "update")({"res": res})
     _state.update(locals())
 
@@ -179,7 +181,7 @@ def _test_core_math_ops_coverage_part_6(_state: dict[str, EagerTensorProtocol]) 
 
         pass
 
-    res = cast("EagerTensorProtocol", core_math_ops._polygamma(DummyMockPolygamma, 1, 1))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._polygamma(typing.cast("BackendModuleProtocol", DummyMockPolygamma), 1, 1))
     assert res is not None
 
     class DummyMockDigamma:
@@ -187,9 +189,9 @@ def _test_core_math_ops_coverage_part_6(_state: dict[str, EagerTensorProtocol]) 
 
         pass
 
-    res = cast("EagerTensorProtocol", core_math_ops._digamma(DummyMockDigamma, 1))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._digamma(typing.cast("BackendModuleProtocol", DummyMockDigamma), 1))
     assert res is not None
-    res = cast("EagerTensorProtocol", core_math_ops._np_zerofraction(np, np.array([0.0, 1.0])))
+    res = typing.cast("EagerTensorProtocol", core_math_ops._np_zerofraction(np, np.array([0.0, 1.0])))
     assert res is not None
     getattr(_state, "update")({"DummyMockDigamma": DummyMockDigamma, "DummyMockPolygamma": DummyMockPolygamma, "res": res})
     _state.update(locals())
@@ -218,11 +220,11 @@ def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) 
                 """
                 return 1.0
 
-    res = core_math_ops._np_zerofraction(MockRandomZeroFraction, np.array([0.0, 1.0]))
+    res = core_math_ops._np_zerofraction(typing.cast("BackendModuleProtocol", MockRandomZeroFraction), np.array([0.0, 1.0]))
     assert res == 0.5
     res = core_math_ops._np_zeta(np, 2.0, 1.0)
     assert res is not None
-    res = core_math_ops._np_zeta(object, 2.0, 1.0)
+    res = core_math_ops._np_zeta(typing.cast("BackendModuleProtocol", object), 2.0, 1.0)
     assert res is not None
     getattr(_state, "update")({"MockRandomZeroFraction": MockRandomZeroFraction, "res": res})
 
@@ -287,14 +289,14 @@ def test_missing_i0() -> None:
         pass
 
     x = np.array([1.0])
-    assert mod._i0(BkWithI0(), x) is not None
-    assert mod._i0(BkWithoutI0(), x) is None
-    assert mod._iscomplex(BkWithI0(), x) is not None
-    assert mod._iscomplex(BkWithoutI0(), x) is not None
-    assert mod._isreal(BkWithI0(), x) is not None
-    assert mod._isreal(BkWithoutI0(), x) is not None
-    assert mod._signbit(BkWithI0(), x) is not None
-    assert mod._signbit(BkWithoutI0(), x) is not None
+    assert mod._i0(typing.cast("BackendModuleProtocol", BkWithI0()), x) is not None
+    assert mod._i0(typing.cast("BackendModuleProtocol", BkWithoutI0()), x) is None
+    assert mod._iscomplex(typing.cast("BackendModuleProtocol", BkWithI0()), x) is not None
+    assert mod._iscomplex(typing.cast("BackendModuleProtocol", BkWithoutI0()), x) is not None
+    assert mod._isreal(typing.cast("BackendModuleProtocol", BkWithI0()), x) is not None
+    assert mod._isreal(typing.cast("BackendModuleProtocol", BkWithoutI0()), x) is not None
+    assert mod._signbit(typing.cast("BackendModuleProtocol", BkWithI0()), x) is not None
+    assert mod._signbit(typing.cast("BackendModuleProtocol", BkWithoutI0()), x) is not None
 
 
 class DummyBackend:
@@ -399,7 +401,7 @@ class AllBackend:
         if name in ("__bases__", "__class__"):
             raise AttributeError()
         if name == "nn":
-            return cast("EagerTensorProtocol", self)
+            return typing.cast("EagerTensorProtocol", self)
 
         def _dummy(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
             """Test function _dummy.
@@ -433,11 +435,11 @@ class FallbackBackend:
         Args:
             name: Test parameter `name`.
         """
-        if cast("EagerTensorProtocol", name) in cast("EagerTensorProtocol", self.hide_names):
+        if typing.cast("EagerTensorProtocol", name) in typing.cast("EagerTensorProtocol", self.hide_names):
             raise AttributeError(f"Hidden: {name}")
         if name == "nn":
-            return cast("EagerTensorProtocol", self)
-        return cast("EagerTensorProtocol", getattr(self.np, str(name)))
+            return typing.cast("EagerTensorProtocol", self)
+        return typing.cast("EagerTensorProtocol", getattr(self.np, str(name)))
 
 
 def _test_all_core_math_ops_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -472,7 +474,7 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
         args = []
         kwargs = {}
         val = arg_int if use_int else arg
-        for p in cast("EagerTensorProtocol", getattr(sig, "parameters")).values():
+        for p in typing.cast("EagerTensorProtocol", getattr(sig, "parameters")).values():
             if p.name == "backend_module":
                 args.append(bk)
             elif p.kind == inspect.Parameter.VAR_POSITIONAL:
@@ -507,7 +509,7 @@ def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol
             for use_one_arg in [False, True]:
                 (args, kwargs) = build_call(bk, use_int, use_one_arg)
                 try:
-                    cast("EagerCallableProtocol", op)(*args, **cast("dict[str, EagerValue]", kwargs))
+                    typing.cast("EagerCallableProtocol", op)(*args, **typing.cast("dict[str, EagerValue]", kwargs))
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
                 try:
@@ -543,15 +545,15 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
     (args, kwargs, op, orig_scipy) = (_state["args"], _state["kwargs"], _state["op"], _state["orig_scipy"])
     orig_scipy2 = _state["orig_scipy2"]
     try:
-        cast("EagerCallableProtocol", op)(*args, **cast("dict[str, EagerValue]", kwargs))
+        typing.cast("EagerCallableProtocol", op)(*args, **typing.cast("dict[str, EagerValue]", kwargs))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
-        if orig_scipy is not None:
+        if typing.cast("EagerValue", orig_scipy) is not None:
             getattr(sys.modules, "__setitem__")("scipy.special", orig_scipy)
         elif "scipy.special" in sys.modules:
             del sys.modules["scipy.special"]
-        if orig_scipy2 is not None:
+        if typing.cast("EagerValue", orig_scipy2) is not None:
             getattr(sys.modules, "__setitem__")("scipy.linalg", orig_scipy2)
         elif "scipy.linalg" in sys.modules:
             del sys.modules["scipy.linalg"]
@@ -610,9 +612,9 @@ def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
                 return x
 
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-    cast("EagerCallableProtocol", mod._apply_causal_mask)(cast("EagerCallableProtocol", EmptyBk)(), arg)
-    cast("EagerCallableProtocol", mod._apply_softmax)(cast("EagerCallableProtocol", NNSoftmaxBk)(), arg)
-    cast("EagerCallableProtocol", mod._apply_softmax)(cast("EagerCallableProtocol", EmptyBk)(), arg)
+    typing.cast("EagerCallableProtocol", mod._apply_causal_mask)(typing.cast("EagerCallableProtocol", EmptyBk)(), arg)
+    typing.cast("EagerCallableProtocol", mod._apply_softmax)(typing.cast("EagerCallableProtocol", NNSoftmaxBk)(), arg)
+    typing.cast("EagerCallableProtocol", mod._apply_softmax)(typing.cast("EagerCallableProtocol", EmptyBk)(), arg)
     getattr(_state, "update")({"EmptyBk": EmptyBk, "NNSoftmaxBk": NNSoftmaxBk, "arg": arg, "mod": mod})
     getattr(_state, "update")({"np": np})
     _state.update(locals())
@@ -640,8 +642,8 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
             """Test function tolist."""
             return 1.0
 
-    cast("EagerCallableProtocol", mod._allclose)(np, arg, arg, rtol=cast("EagerCallableProtocol", DummyItem)())
-    cast("EagerCallableProtocol", mod._allclose)(np, arg, arg, rtol=cast("EagerCallableProtocol", DummyList)())
+    typing.cast("EagerCallableProtocol", mod._allclose)(np, arg, arg, rtol=typing.cast("EagerCallableProtocol", DummyItem)())
+    typing.cast("EagerCallableProtocol", mod._allclose)(np, arg, arg, rtol=typing.cast("EagerCallableProtocol", DummyList)())
 
     class MatmulBk:
         """Test class MatmulBk."""
@@ -706,7 +708,7 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
             """
             return 1
 
-    cast("EagerCallableProtocol", mod._fix)(cast("EagerCallableProtocol", BkWithWhere)(), arg)
+    typing.cast("EagerCallableProtocol", mod._fix)(typing.cast("EagerCallableProtocol", BkWithWhere)(), arg)
     mod._adaptive_max_pool3d_indices(np, arg, 1)
     getattr(_state, "update")({"BkWithWhere": BkWithWhere})
     _state.update(locals())
@@ -1028,10 +1030,10 @@ def test_unfold_coverage_manual() -> None:
             """
             return x
 
-    res = _np_unfold(DummyBackend(), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 4, 4)
-    res = _np_unfold(DummyBackend(), np.ones((1, 1, 2, 2)), kernel_size=3, stride=1)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 2, 2)
+    res = _np_unfold(typing.cast("BackendModuleProtocol", DummyBackend()), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 4, 4)
+    res = _np_unfold(typing.cast("BackendModuleProtocol", DummyBackend()), np.ones((1, 1, 2, 2)), kernel_size=3, stride=1)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 2, 2)
 
 
 warnings.filterwarnings("ignore")
@@ -1057,8 +1059,8 @@ def test_final_fftn() -> None:
 
         fft = DummyFFT()
 
-    mod._fftn(BkSpecial(), np.array([1.0]))
-    mod._fftnd(BkSpecial(), np.array([1.0]))
+    mod._fftn(typing.cast("BackendModuleProtocol", BkSpecial()), np.array([1.0]))
+    mod._fftnd(typing.cast("BackendModuleProtocol", BkSpecial()), np.array([1.0]))
     assert callable(mod._fftnd)
 
 

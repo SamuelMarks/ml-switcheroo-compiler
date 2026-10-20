@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import os
 import shutil
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
@@ -21,7 +22,7 @@ from ml_switcheroo_compiler.export.export_api import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -49,7 +50,7 @@ def test_webgpu_compile_aot() -> None:
 
     gen = WebGPUCodeGenerator(g)
     bundle = gen.compile_aot()
-    assert isinstance(bundle, dict)
+    assert isinstance(typing.cast("EagerValue", bundle), dict)
     assert bundle["format"] == "webgpu_wgsl_bundle"
     assert bundle["status"] == "ready_to_dispatch"
     assert "shaderCode" in str(bundle["code"])
@@ -76,8 +77,8 @@ def test_wasm_compile_aot(tmp_path: EagerTensorProtocol) -> None:
     with patch.object(shutil, "which", return_value="/usr/bin/emcc"):
         with patch("subprocess.run"):
             res = gen.compile_aot(output_dir=str(tmp_path))
-            assert isinstance(res, tuple)
-            assert len(res) == 2
+            assert isinstance(typing.cast("EagerValue", res), tuple)
+            assert len(typing.cast("EagerTensorProtocol", res)) == 2
 
 
 def test_compile_function_strict_diagnostics() -> None:
@@ -101,7 +102,7 @@ def test_compile_function_strict_diagnostics() -> None:
     t = Tensor(np.array([1.0]), TensorConfig((1,), DType.Float32, "cpu"))
     c = compile_function(f, backend="non_existent_backend", strict=True)
     with pytest.raises(CompilationError, match="Target backend 'non_existent_backend' not found"):
-        cast("EagerCallableProtocol", c)(t)
+        typing.cast("EagerCallableProtocol", c)(t)
 
 
 def test_binary_validation_utilities(tmp_path: EagerTensorProtocol) -> None:

@@ -1,21 +1,27 @@
 """MLX backend profiler for runtime execution and memory benchmarking."""
 
+from __future__ import annotations
+
 import logging
 import resource
 import sys
 import time
+import typing
+from collections.abc import Callable
 from types import ModuleType
-from typing import Callable, Optional, Union, cast
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-
-try:
-    import mlx.core as mx
-except ImportError:
-    mx = cast(ModuleType, None)
-
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+mx: ModuleType | None
+try:
+    import mlx.core as _mx
+
+    mx = _mx
+except ImportError:
+    mx = None
 
 
 def _get_process_memory_mb() -> float:
@@ -25,7 +31,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -76,7 +83,7 @@ def _reset_mlx_peak_memory() -> None:
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
 
-def _sync_mlx_result(result: Union[EagerValue, dict[str, EagerValue], list[EagerValue], tuple[EagerValue, ...]]) -> None:
+def _sync_mlx_result(result: EagerValue | dict[str, EagerValue] | list[EagerValue] | tuple[EagerValue, ...]) -> None:
     """Force Metal evaluation synchronization on MLX arrays.
 
     Args:
@@ -95,7 +102,7 @@ def _sync_mlx_result(result: Union[EagerValue, dict[str, EagerValue], list[Eager
 
 
 def _prepare_mlx_inputs(
-    inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+    inputs: dict[str, list[float] | list[list[float]] | EagerValue],
 ) -> list[EagerValue]:
     """Convert input structures into MLX array representations.
 
@@ -124,7 +131,7 @@ class MLXProfiler:
     def _prepare_ordered_inputs(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
     ) -> list[EagerValue]:
         """Convert and order input structures into MLX array representations.
 
@@ -137,12 +144,11 @@ class MLXProfiler:
         """
         mlx_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            if isinstance(getattr(mx, "array", None), type) and isinstance(val, mx.array):
-                mlx_inputs_dict[k] = val
-            elif type(val).__name__ == "array" and "mlx" in getattr(type(val), "__module__", ""):
+            mx_array_cls = getattr(mx, "array", None)
+            if (isinstance(mx_array_cls, type) and isinstance(val, mx_array_cls)) or (type(val).__name__ == "array" and "mlx" in getattr(type(val), "__module__", "")):
                 mlx_inputs_dict[k] = val
             else:
-                mlx_inputs_dict[k] = getattr(mx, "array")(val, dtype=mx.float32)
+                mlx_inputs_dict[k] = getattr(mx, "array")(val, dtype=getattr(mx, "float32", None))
 
         sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
         input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
@@ -150,14 +156,14 @@ class MLXProfiler:
             return [mlx_inputs_dict[k] for k in input_keys]
         return list(mlx_inputs_dict.values())
 
-    def _compile_model(self, graph: IRGraph) -> Optional[Callable[..., EagerValue]]:
+    def _compile_model(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
         """Compile an IRGraph into an executable MLX model.
 
         Args:
             graph (IRGraph): IR computation graph.
 
         Returns:
-            Optional[Callable[..., object]]: Compiled MLX forward function.
+            Optional[TypedVariadicCallable[object]]: Compiled MLX forward function.
 
         Raises:
             TypeError: If CompiledModel cannot be generated from MLXCodeGenerator.
@@ -173,12 +179,12 @@ class MLXProfiler:
         model_cls = ns.get("CompiledModel")
         if model_cls is not None and callable(model_cls):
             model_inst = model_cls()
-            if hasattr(mx, "compile") and callable(mx.compile):
+            if mx is not None and hasattr(mx, "compile") and callable(mx.compile):
                 try:
-                    return cast("Callable[..., EagerValue] | None", getattr(mx, "compile")(model_inst))
+                    return typing.cast("TypedVariadicCallable[EagerValue] | None", getattr(mx, "compile")(model_inst))
                 except Exception:
-                    return cast("Callable[..., EagerValue] | None", model_inst)
-            return cast("Callable[..., EagerValue] | None", model_inst)
+                    return typing.cast("TypedVariadicCallable[EagerValue] | None", model_inst)
+            return typing.cast("TypedVariadicCallable[EagerValue] | None", model_inst)
         raise TypeError("Failed to generate valid CompiledModel from MLXCodeGenerator")
 
     def _measure_latencies(
@@ -207,11 +213,11 @@ class MLXProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[list[float], list[list[float]], EagerValue]],
-        device: Optional[str] = None,
+        inputs: dict[str, list[float] | list[list[float]] | EagerValue],
+        device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
-    ) -> dict[str, Union[list[float], float]]:
+    ) -> dict[str, list[float] | float]:
         """Profile a graph execution on MLX backend with eval synchronization.
 
         Args:
@@ -243,11 +249,11 @@ class MLXProfiler:
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         mlx_input_list: list[EagerValue] = self._prepare_ordered_inputs(graph, inputs)
 
-        compiled_fn: Optional[Callable[..., EagerValue]] = None
+        compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:
             compiled_fn = self._compile_model(graph)
 
-        def _execute_step() -> Union[EagerValue, dict[str, EagerValue]]:
+        def _execute_step() -> EagerValue | dict[str, EagerValue]:
             """Execute a single evaluation step on MLX backend.
 
             Returns:
@@ -259,11 +265,11 @@ class MLXProfiler:
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             if not mlx_input_list:
-                return mx.zeros((1,), dtype=mx.float32)
+                return typing.cast(EagerValue, getattr(mx, "zeros")((1,), dtype=getattr(mx, "float32")))
             accum = getattr(mx, "zeros_like")(mlx_input_list[0])
             for t in mlx_input_list:
                 accum = getattr(mx, "add")(accum, t)
-            return cast(Union[EagerValue, dict[str, EagerValue]], accum)
+            return typing.cast(typing.Union[EagerValue, "dict[str, EagerValue]"], accum)
 
         _reset_mlx_peak_memory()
         for _ in range(max(1, warmup_iters)):

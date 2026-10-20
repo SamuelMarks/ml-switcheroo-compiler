@@ -1,5 +1,7 @@
 """Attention operations."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar

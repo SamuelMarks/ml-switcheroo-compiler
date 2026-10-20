@@ -5,10 +5,11 @@ from __future__ import annotations
 import os
 import struct
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 import onnx
 import pytest
+from ml_switcheroo_ir import AttributeValue, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.onnx import (
     ONNXCodeGenerator,
@@ -26,7 +27,7 @@ from ml_switcheroo_compiler.backends.edge.onnx import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 pytest.importorskip("onnx")
@@ -118,10 +119,10 @@ def test_pure_python_onnx_binary_export_and_checker() -> None:
     matmul_node = LogicalNode(id="matmul_out", op_type="MatMul", inputs=["X", "W"], shape_metadata=(2, 8))
     add_node = LogicalNode(id="Y", op_type="Add", inputs=["matmul_out", "B"], shape_metadata=(2, 8))
 
-    g.nodes = {"X": in_x, "W": in_w, "B": cst_b, "matmul_out": matmul_node, "Y": add_node}
+    g.nodes = NodeDict({"X": in_x, "W": in_w, "B": cst_b, "matmul_out": matmul_node, "Y": add_node})
     g.inputs = ["X", "W"]
     g.outputs = ["Y"]
-    setattr(g, "sorted_nodes", [in_x, in_w, cst_b, matmul_node, add_node])
+    object.__setattr__(g, "sorted_nodes", [in_x, in_w, cst_b, matmul_node, add_node])
 
     gen = ONNXCodeGenerator(g)
     binary_data = gen.serialize_model_to_bytes()
@@ -156,10 +157,10 @@ def test_onnx_binary_dynamic_axes() -> None:
     in_x = LogicalNode(id="X", op_type="Input", shape_metadata=(1, 10), attributes={"dtype": "float32"})
     relu_node = LogicalNode(id="Y", op_type="Relu", inputs=["X"], shape_metadata=(1, 10))
 
-    g.nodes = {"X": in_x, "Y": relu_node}
+    g.nodes = NodeDict({"X": in_x, "Y": relu_node})
     g.inputs = ["X"]
     g.outputs = ["Y"]
-    setattr(g, "sorted_nodes", [in_x, relu_node])
+    object.__setattr__(g, "sorted_nodes", [in_x, relu_node])
 
     gen = ONNXCodeGenerator(g)
     dynamic_axes = {"X": {0: "batch_size"}, "Y": {0: "batch_size"}}
@@ -187,32 +188,32 @@ def test_onnx_binary_control_flow_subgraphs() -> None:
     then_g = IRGraph(name="then_g")
     t_in = LogicalNode(id="X", op_type="Input", shape_metadata=(2, 2))
     t_add = LogicalNode(id="then_out", op_type="Add", inputs=["X", "X"], shape_metadata=(2, 2))
-    then_g.nodes = {"X": t_in, "then_out": t_add}
+    then_g.nodes = NodeDict({"X": t_in, "then_out": t_add})
     then_g.inputs = ["X"]
     then_g.outputs = ["then_out"]
-    setattr(then_g, "sorted_nodes", [t_in, t_add])
+    object.__setattr__(then_g, "sorted_nodes", [t_in, t_add])
 
     # Else subgraph: Sub(X, X) -> else_out
     else_g = IRGraph(name="else_g")
     e_in = LogicalNode(id="X", op_type="Input", shape_metadata=(2, 2))
     e_sub = LogicalNode(id="else_out", op_type="Sub", inputs=["X", "X"], shape_metadata=(2, 2))
-    else_g.nodes = {"X": e_in, "else_out": e_sub}
+    else_g.nodes = NodeDict({"X": e_in, "else_out": e_sub})
     else_g.inputs = ["X"]
     else_g.outputs = ["else_out"]
-    setattr(else_g, "sorted_nodes", [e_in, e_sub])
+    object.__setattr__(else_g, "sorted_nodes", [e_in, e_sub])
 
     if_node = LogicalNode(
         id="Y",
         op_type="If",
         inputs=["cond"],
         shape_metadata=(2, 2),
-        attributes={"then_branch": then_g, "else_branch": else_g},
+        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": then_g, "else_branch": else_g}),
     )
 
-    main_g.nodes = {"cond": cond_node, "X": in_x, "Y": if_node}
+    main_g.nodes = NodeDict({"cond": cond_node, "X": in_x, "Y": if_node})
     main_g.inputs = ["cond", "X"]
     main_g.outputs = ["Y"]
-    setattr(main_g, "sorted_nodes", [cond_node, in_x, if_node])
+    object.__setattr__(main_g, "sorted_nodes", [cond_node, in_x, if_node])
 
     gen = ONNXCodeGenerator(main_g)
     binary_data = gen.serialize_model_to_bytes()
@@ -239,23 +240,23 @@ def test_onnx_binary_loop_subgraph() -> None:
     b_cond = LogicalNode(id="cond_in", op_type="Input", shape_metadata=(), attributes={"dtype": "bool"})
     b_v = LogicalNode(id="v_in", op_type="Input", shape_metadata=(1,), attributes={"dtype": "float32"})
     b_add = LogicalNode(id="v_out", op_type="Add", inputs=["v_in", "v_in"], shape_metadata=(1,))
-    body_g.nodes = {"iter": b_iter, "cond_in": b_cond, "v_in": b_v, "v_out": b_add}
+    body_g.nodes = NodeDict({"iter": b_iter, "cond_in": b_cond, "v_in": b_v, "v_out": b_add})
     body_g.inputs = ["iter", "cond_in", "v_in"]
     body_g.outputs = ["cond_in", "v_out"]
-    setattr(body_g, "sorted_nodes", [b_iter, b_cond, b_v, b_add])
+    object.__setattr__(body_g, "sorted_nodes", [b_iter, b_cond, b_v, b_add])
 
     loop_node = LogicalNode(
         id="loop_res",
         op_type="Loop",
         inputs=["trip_count", "cond", "v"],
         shape_metadata=(1,),
-        attributes={"body": body_g},
+        attributes=typing.cast("dict[str, AttributeValue]", {"body": body_g}),
     )
 
-    main_g.nodes = {"trip_count": trip_count, "cond": cond_node, "v": init_v, "loop_res": loop_node}
+    main_g.nodes = NodeDict({"trip_count": trip_count, "cond": cond_node, "v": init_v, "loop_res": loop_node})
     main_g.inputs = ["trip_count", "cond", "v"]
     main_g.outputs = ["loop_res"]
-    setattr(main_g, "sorted_nodes", [trip_count, cond_node, init_v, loop_node])
+    object.__setattr__(main_g, "sorted_nodes", [trip_count, cond_node, init_v, loop_node])
 
     gen = ONNXCodeGenerator(main_g)
     binary_data = gen.serialize_model_to_bytes()
@@ -334,7 +335,7 @@ def _test_onnx_additional_edges_and_validation_part_2(_state: dict[str, EagerTen
     f1, f2, f7, pytest = _state["f1"], _state["f2"], _state["f7"], _state["pytest"]
     sub_f2, sub_wt0, sub_wt2, validate_onnx_model_bytes = _state["sub_f2"], _state["sub_wt0"], _state["sub_wt2"], _state["validate_onnx_model_bytes"]
     sub_other_wt = encode_tag(5, 5) + b"\x00\x00\x00\x00"  # wire type 5 inside opset import triggers else break
-    f8 = cast("EagerCallableProtocol", encode_length_delimited)(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
+    f8 = typing.cast("EagerCallableProtocol", encode_length_delimited)(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
 
     # Top-level wire types
     f_wt0 = encode_tag(99, 0) + encode_varint(123)
@@ -362,7 +363,7 @@ def _test_onnx_additional_edges_and_validation_part_2(_state: dict[str, EagerTen
     simple_g = IRGraph(name="bounds_test")
     in_a = LogicalNode(id="a", op_type="Input", shape_metadata=(1,))
     out_b = LogicalNode(id="b", op_type="Identity", inputs=["a"], shape_metadata=(1,))
-    simple_g.nodes = {"a": in_a, "b": out_b}
+    simple_g.nodes = NodeDict({"a": in_a, "b": out_b})
     simple_g.inputs = ["a"]
     getattr(_state, "update")({"bad_payload": bad_payload, "f8": f8, "f_wt0": f_wt0, "f_wt1": f_wt1})
     getattr(_state, "update")({"f_wt2": f_wt2, "f_wt5": f_wt5, "in_a": in_a, "meta": meta})
@@ -379,9 +380,9 @@ def _test_onnx_additional_edges_and_validation_part_3(_state: dict[str, EagerTen
     """
     in_a, out_b, pytest, simple_g = _state["in_a"], _state["out_b"], _state["pytest"], _state["simple_g"]
     setattr(simple_g, "outputs", ["b"])
-    setattr(simple_g, "sorted_nodes", [in_a, out_b])
+    object.__setattr__(simple_g, "sorted_nodes", [in_a, out_b])
 
-    gen = cast("EagerCallableProtocol", ONNXCodeGenerator)(simple_g)
+    gen = typing.cast("EagerCallableProtocol", ONNXCodeGenerator)(simple_g)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 10"):
         gen.serialize_model_to_bytes(opset_version=10)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 25"):

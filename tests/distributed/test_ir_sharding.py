@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.ir.core import IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -17,6 +17,6 @@ def test_ir_node_sharding() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     node = IRNode("node_1", "Add")
-    setattr(node, "sharding", "shard_info")
+    object.__setattr__(node, "sharding", "shard_info")
     assert hasattr(node, "sharding")
-    assert cast("EagerTensorProtocol", node.sharding) == cast("EagerTensorProtocol", "shard_info")
+    assert typing.cast("EagerTensorProtocol", node.sharding) == typing.cast("EagerTensorProtocol", "shard_info")

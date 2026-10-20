@@ -8,7 +8,7 @@ detection, and graph visualization utilities (Graphviz and HTML exports).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NoReturn, cast
+import typing
 
 import numpy as np
 import pytest
@@ -27,7 +27,7 @@ from ml_switcheroo_compiler.diagnostics import (
     to_html,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -50,9 +50,9 @@ def test_debug_shapes() -> None:
         Returns:
             EagerValue: The resulting output.
         """
-        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1.0)
+        return typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", 1.0)
 
-    res = cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
+    res = typing.cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
     assert "| input | (2, 2) | float64 |" in res
     assert "| output | (2, 2) | float64 |" in res
 
@@ -67,10 +67,10 @@ def test_debug_shapes() -> None:
         """
         return 5
 
-    res = cast("EagerCallableProtocol", debug_shapes)(dummy_model_no_shape, (2, 2))
+    res = typing.cast("EagerCallableProtocol", debug_shapes)(dummy_model_no_shape, (2, 2))
     assert "| output | unknown | float64 |" in res
 
-    def failing_model(x: EagerValue) -> NoReturn:
+    def failing_model(x: EagerValue) -> typing.NoReturn:
         """Failing model.
 
         Args:
@@ -92,7 +92,7 @@ def test_debug_shapes() -> None:
 
     with pytest.MonkeyPatch().context() as m:
         m.setattr(debugger, "_FORMATTERS", dummy_dict)
-        res_custom = cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
+        res_custom = typing.cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
         assert "header" in str(res_custom)
 
         m.setattr(debugger, "_FORMATTERS", {"graphviz": {"header": "H", "node": "N", "edge": "E", "footer": "F"}})
@@ -164,8 +164,8 @@ def test_numerical_anomaly_detector() -> None:
     class NonArray:
         """Non Array class."""
 
-    t3 = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", NonArray)(), cast("EagerCallableProtocol", TensorConfig)((2,), DType.Float32, device))
-    cast("EagerCallableProtocol", check_numerical_anomaly)(t3)
+    t3 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", NonArray)(), typing.cast("EagerCallableProtocol", TensorConfig)((2,), DType.Float32, device))
+    typing.cast("EagerCallableProtocol", check_numerical_anomaly)(t3)
     config.eager_mode = False
 
 
@@ -237,7 +237,7 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     assert decoded_1c.size == (12, 12)
 
     # 4. Test write_raw_pb
-    logdir: str = str(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "tfevents"))
+    logdir: str = str(typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "tfevents"))
     write_raw_pb(b"mock_proto_data", logdir)
     with open(f"{logdir}/events.out.tfevents.pb", "rb") as f:
         assert f.read() == b"mock_proto_data"
@@ -245,6 +245,6 @@ def test_encode_image_and_write_raw_pb(tmp_path: pytest.TempPathFactory) -> None
     # 5. Test debugging.enable_dump_debug_info
     from ml_switcheroo_compiler.diagnostics.debugging import enable_dump_debug_info
 
-    dump_dir: str = str(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "dump_debug"))
+    dump_dir: str = str(typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "dump_debug"))
     enable_dump_debug_info(dump_dir)
-    assert cast("EagerCallableProtocol", (cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "dump_debug")).exists)()
+    assert typing.cast("EagerCallableProtocol", (typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "dump_debug")).exists)()

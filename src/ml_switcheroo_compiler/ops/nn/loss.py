@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
-from typing import Optional, Union, cast
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -342,7 +342,7 @@ class CategoricalGeneralizedCrossEntropy(OpDef):
 def dice_loss(
     y_true: Tensor,
     y_pred: Tensor,
-    axis: Optional[Union[tuple[int, ...], int]] = None,
+    axis: tuple[int, ...] | int | None = None,
     smooth: float = 1e-5,
 ) -> TensorOrScalar:
     """Compute the Dice loss for segmentation masks.
@@ -540,7 +540,7 @@ def binary_crossentropy(
     if label_smoothing > 0.0:
         y_true = add(multiply(y_true, 1.0 - label_smoothing), 0.5 * label_smoothing)
 
-    y_pred_prepared = cast(Tensor, _clip_and_convert_logits(y_pred, from_logits))
+    y_pred_prepared = typing.cast(Tensor, _clip_and_convert_logits(y_pred, from_logits))
     bce = _compute_bce_loss(y_true, y_pred_prepared, from_logits)
     return op_mean(bce, axis=axis)
 
@@ -572,7 +572,7 @@ def categorical_crossentropy(
         y_true = add(multiply(y_true, 1.0 - label_smoothing), smooth_val)
 
     if from_logits:
-        y_pred_log = cast(Tensor, log_softmax(y_pred, axis=axis))
+        y_pred_log = typing.cast(Tensor, log_softmax(y_pred, axis=axis))
         return negative(op_sum(multiply(y_true, y_pred_log), axis=axis))
     y_pred_clipped = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
     return negative(op_sum(multiply(y_true, log(y_pred_clipped)), axis=axis))
@@ -582,7 +582,7 @@ def sparse_categorical_crossentropy(
     y_true: Tensor,
     y_pred: Tensor,
     from_logits: bool = False,
-    ignore_class: Optional[int] = None,
+    ignore_class: int | None = None,
     axis: int = -1,
 ) -> TensorOrScalar:
     """Compute sparse categorical crossentropy loss for integer class targets.
@@ -599,13 +599,13 @@ def sparse_categorical_crossentropy(
     """
     num_classes = y_pred.shape[axis]
     y_true_one_hot = one_hot(y_true, num_classes, axis=axis)
-    loss = categorical_crossentropy(cast("Tensor", y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
+    loss = categorical_crossentropy(typing.cast("Tensor", y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
 
     if ignore_class is not None:
         valid_mask = not_equal(y_true, ignore_class)
         loss_dtype = getattr(loss, "dtype", None) or DType("float32")
         zero_loss = zeros(getattr(loss, "shape", ()), dtype=loss_dtype)
-        loss = where(valid_mask, cast("Tensor", loss), zero_loss)
+        loss = where(valid_mask, typing.cast("Tensor", loss), zero_loss)
 
     return loss
 
@@ -690,8 +690,8 @@ def _emit_adaptive_log_softmax_with_loss_node(
         id=out_id,
         op_type="AdaptiveLogSoftmaxWithLoss",
         inputs=[getattr(input_tensor.data, "id"), getattr(target.data, "id")],
-        shape_metadata=[target.shape, ()],
-        attributes=cast("Mapping[str, AttributeValue]", {"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob}),
+        shape_metadata=target.shape,
+        attributes=typing.cast("Mapping[str, AttributeValue]", {"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob}),
     )
     global_tracing_state.add_node(node)
 
@@ -725,7 +725,7 @@ def adaptive_log_softmax_with_loss(
         from ml_switcheroo_compiler.backends.registry import get_active_backend as _get_active_backend
 
         backend = _get_active_backend()
-        out, loss = cast(
+        out, loss = typing.cast(
             "tuple[TensorOrScalar, TensorOrScalar]",
             backend.execute_op(
                 "AdaptiveLogSoftmaxWithLoss",
@@ -766,7 +766,7 @@ def log_poisson_loss(
     targets: Tensor,
     log_input: Tensor,
     compute_full_loss: bool = False,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> TensorOrScalar:
     """Compute log Poisson loss: exp(log_input) - targets * log_input.
 
@@ -818,7 +818,7 @@ def in_top_k(
     targets: Tensor,
     predictions: Tensor,
     k: int,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> TensorOrScalar:
     """Determine whether target classes are within the top K predictions.
 
@@ -841,7 +841,7 @@ def in_top_k(
     return _emit_shape_node("InTopK", [targets, predictions], {"k": k, "name": name}, target_shape, "bool")
 
 
-def l2_loss(t: Tensor, name: Optional[str] = None) -> TensorOrScalar:
+def l2_loss(t: Tensor, name: str | None = None) -> TensorOrScalar:
     """Compute half the squared L2 norm of a tensor without square root: sum(t ** 2) / 2.
 
     Args:
@@ -855,7 +855,7 @@ def l2_loss(t: Tensor, name: Optional[str] = None) -> TensorOrScalar:
     return multiply(sum(multiply(t, t)), 0.5)
 
 
-def scale_regularization_loss(regularization_loss: Tensor, name: Optional[str] = None) -> TensorOrScalar:
+def scale_regularization_loss(regularization_loss: Tensor, name: str | None = None) -> TensorOrScalar:
     """Scale the sum of regularization losses across replicas.
 
     Args:

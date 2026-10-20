@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import ctypes
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,7 +18,7 @@ from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRun
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -48,7 +48,7 @@ def test_calculate_hardware_launch_config() -> None:
     assert g3[2] >= 1
 
     # 4D with symbolic / string dim handling
-    b4, g4 = cast("EagerCallableProtocol", calculate_hardware_launch_config)(["batch", 3, 32, 32])
+    b4, g4 = typing.cast("EagerCallableProtocol", calculate_hardware_launch_config)(["batch", 3, 32, 32])
     assert b4[0] == 16
     assert g4[0] == 2
 
@@ -77,7 +77,7 @@ def test_generate_nd_coordinate_offset_logic() -> None:
     assert any("offset = c_idx_1" in ln for ln in lines_bcast)
 
     # Invalid non-integer shape elements fallback to 1
-    lines_invalid = cast("EagerCallableProtocol", generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
+    lines_invalid = typing.cast("EagerCallableProtocol", generate_nd_coordinate_offset_logic)(("invalid", None), language="cuda")
     assert any("rem_idx" in ln for ln in lines_invalid)
 
 

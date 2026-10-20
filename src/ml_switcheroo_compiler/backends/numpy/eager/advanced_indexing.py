@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable
-from types import ModuleType
-from typing import cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 from .indexing import IndexingContext
 
@@ -25,7 +25,7 @@ def _gather_nd(x: EagerValue, indices: EagerValue, **kwargs: EagerValue) -> Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(x, "__getitem__")(tuple(getattr(np, "moveaxis")(indices, -1, 0))))
+    return typing.cast("EagerValue", getattr(x, "__getitem__")(tuple(getattr(np, "moveaxis")(indices, -1, 0))))
 
 
 def _scatter_nd(indices: EagerValue, updates: EagerValue, shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -81,7 +81,7 @@ def _scatter_add(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **
     for idx_val in it:
         pos: list[int] = list(it.multi_index)
         pos[dim] = int(np.asarray(idx_val).item())
-        cast(EagerTensorProtocol, y)[tuple(pos)] += getattr(src, "__getitem__")(it.multi_index)
+        typing.cast(EagerTensorProtocol, y)[tuple(pos)] += getattr(src, "__getitem__")(it.multi_index)
     return y
 
 
@@ -162,7 +162,7 @@ def _tensor_scatter_min(tensor: EagerValue, indices: EagerValue, updates: EagerV
 
 
 @numpy_eager_registry.register("TakeAlongAxis")
-def _np_take_along_axis(backend_module: ModuleType, x: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
+def _np_take_along_axis(backend_module: BackendModuleProtocol, x: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
     """Execute the eager np take along axis operation on the active backend array.
 
     Args:
@@ -174,11 +174,11 @@ def _np_take_along_axis(backend_module: ModuleType, x: EagerValue, indices: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.take_along_axis(x, indices, axis=axis))
+    return backend_module.take_along_axis(x, indices, axis=axis)
 
 
 @numpy_eager_registry.register("TensorScatterUpdate")
-def _np_tensor_scatter_update(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
+def _np_tensor_scatter_update(backend_module: BackendModuleProtocol, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Execute the eager np tensor scatter update operation on the active backend array.
 
     Args:
@@ -190,11 +190,11 @@ def _np_tensor_scatter_update(backend_module: ModuleType, tensor: EagerValue, in
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(Callable[..., EagerValue], global_eager_registry.get("TensorScatterUpdate"))(backend_module, tensor, indices, updates)
+    return typing.cast(TypedVariadicCallable[EagerValue], global_eager_registry.get("TensorScatterUpdate"))(backend_module, tensor, indices, updates)
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
-def _np_tensor_scatter_add(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
+def _np_tensor_scatter_add(backend_module: BackendModuleProtocol, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Execute the eager np tensor scatter add operation on the active backend array.
 
     Args:
@@ -206,14 +206,14 @@ def _np_tensor_scatter_add(backend_module: ModuleType, tensor: EagerValue, indic
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.array(tensor)
+    res: EagerTensorProtocol = backend_module.array(tensor)
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.add.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("TensorScatterMax")
-def _np_tensor_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
+def _np_tensor_scatter_max(backend_module: BackendModuleProtocol, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Execute the eager np tensor scatter max operation on the active backend array.
 
     Args:
@@ -225,14 +225,14 @@ def _np_tensor_scatter_max(backend_module: ModuleType, tensor: EagerValue, indic
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.array(tensor)
+    res: EagerTensorProtocol = backend_module.array(tensor)
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.maximum.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("TensorScatterMin")
-def _np_tensor_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
+def _np_tensor_scatter_min(backend_module: BackendModuleProtocol, tensor: EagerValue, indices: EagerValue, updates: EagerValue) -> EagerValue:
     """Execute the eager np tensor scatter min operation on the active backend array.
 
     Args:
@@ -244,14 +244,14 @@ def _np_tensor_scatter_min(backend_module: ModuleType, tensor: EagerValue, indic
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = backend_module.array(tensor)
+    res: EagerTensorProtocol = backend_module.array(tensor)
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.minimum.at(res, idx, backend_module.array(updates))
     return res
 
 
 @numpy_eager_registry.register("GatherNd")
-def _np_gather_nd(backend_module: ModuleType, params: EagerValue, indices: EagerValue) -> EagerValue:
+def _np_gather_nd(backend_module: BackendModuleProtocol, params: EagerValue, indices: EagerValue) -> EagerValue:
     """Execute the eager np gather nd operation on the active backend array.
 
     Args:
@@ -263,11 +263,11 @@ def _np_gather_nd(backend_module: ModuleType, params: EagerValue, indices: Eager
             tuple[int, ...]: Result.
     """
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
-    return cast(EagerValue, getattr(params, "__getitem__")(idx))
+    return typing.cast("EagerValue", getattr(params, "__getitem__")(idx))
 
 
 @numpy_eager_registry.register("ScatterNd")
-def _np_scatter_nd(backend_module: ModuleType, indices: EagerValue, updates: EagerValue, shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scatter_nd(backend_module: BackendModuleProtocol, indices: EagerValue, updates: EagerValue, shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np scatter nd operation on the active backend array.
 
     Args:
@@ -287,7 +287,7 @@ def _np_scatter_nd(backend_module: ModuleType, indices: EagerValue, updates: Eag
 
 
 @numpy_eager_registry.register("Scatter")
-def _np_scatter(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np scatter operation on the active backend array.
 
     Args:
@@ -298,17 +298,17 @@ def _np_scatter(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
-    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
-    dim: int = cast(int, kwargs.get("dim", 0))
+    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
+    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
+    dim: int = typing.cast(int, kwargs.get("dim", 0))
     out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.copy(input_data)
     getattr(np, "put_along_axis")(out, index, src, axis=dim)
     return out
 
 
 @numpy_eager_registry.register("ScatterAdd")
-def _np_scatter_add(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scatter_add(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np scatter add operation on the active backend array.
 
     Args:
@@ -320,15 +320,15 @@ def _np_scatter_add(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
             tuple[int, ...]: Result.
     """
     input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(args[0])
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
-    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
-    dim: int = cast(int, kwargs.get("dim", 0))
+    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
+    dim: int = typing.cast(int, kwargs.get("dim", 0))
     getattr(np, "put_along_axis")(input_data, index, np.add(getattr(np, "take_along_axis")(input_data, index, axis=dim), src), axis=dim)
     return input_data
 
 
 @numpy_eager_registry.register("ScatterApply")
-def _np_scatter_apply(backend_module: ModuleType, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_scatter_apply(backend_module: BackendModuleProtocol, context: IndexingContext, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np scatter apply operation on the active backend array.
 
     Args:
@@ -351,7 +351,7 @@ def _np_scatter_apply(backend_module: ModuleType, context: IndexingContext, *arg
 
     indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[1])
     updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[2])
-    reduction: str | None = cast("str | None", kwargs.get("reduction", None))
+    reduction: str | None = typing.cast("str | None", kwargs.get("reduction", None))
 
     try:
         if reduction == "add":
@@ -366,7 +366,7 @@ def _np_scatter_apply(backend_module: ModuleType, context: IndexingContext, *arg
 
 
 @numpy_eager_registry.register("ScatterMax")
-def _np_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
+def _np_scatter_max(backend_module: BackendModuleProtocol, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
     """Execute the eager np scatter max operation on the active backend array.
 
     Args:
@@ -385,7 +385,7 @@ def _np_scatter_max(backend_module: ModuleType, tensor: EagerValue, indices: Eag
 
 
 @numpy_eager_registry.register("ScatterMin")
-def _np_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
+def _np_scatter_min(backend_module: BackendModuleProtocol, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
     """Execute the eager np scatter min operation on the active backend array.
 
     Args:
@@ -404,7 +404,7 @@ def _np_scatter_min(backend_module: ModuleType, tensor: EagerValue, indices: Eag
 
 
 @numpy_eager_registry.register("ScatterMul")
-def _np_scatter_mul(backend_module: ModuleType, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
+def _np_scatter_mul(backend_module: BackendModuleProtocol, tensor: EagerValue, indices: EagerValue, updates: EagerValue, context: threading.Thread | IndexingContext | None = None) -> EagerValue:
     """Execute the eager np scatter mul operation on the active backend array.
 
     Args:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from typing import TYPE_CHECKING
+import typing
 
 import numpy as np
 import pytest
@@ -22,7 +22,7 @@ if importlib.util.find_spec("tensorflow") is not None:
 
     tf.config.run_functions_eagerly(True)
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
 

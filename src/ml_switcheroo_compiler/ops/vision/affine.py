@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -14,15 +14,16 @@ from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-@dataclass
-class AffineConfig:
+class AffineConfig(pydantic.BaseModel):
     """Affine Config."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     fill_mode: str = "reflect"
     interpolation: str = "bilinear"
-    seed = None
+    seed: int | None = None
     fill_value: float = 0.0
-    data_format = None
+    data_format: str | None = None
 
 
 def affine_transform(images: Tensor, transforms: Tensor, interpolation: str = "nearest") -> TensorOrScalar:

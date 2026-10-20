@@ -1,5 +1,7 @@
 """Convolution operations frontend."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.linalg.conv import conv_general_dilated as conv_general
 
 from .conv1d import conv1d, conv1d_transpose, depthwise_conv1d, separable_conv1d

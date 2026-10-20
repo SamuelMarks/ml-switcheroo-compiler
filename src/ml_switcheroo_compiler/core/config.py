@@ -10,50 +10,50 @@ from __future__ import annotations
 import copy
 import os
 import sys
-import typing
 from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+
+import pydantic
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
-
-if TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 
 
-@dataclass
-class ExecutionConfig:
+class ExecutionConfig(pydantic.BaseModel):
     """Execution settings."""
 
-    eager_mode: bool = field(default_factory=lambda: os.environ.get("SWITCHEROO_EAGER_MODE", "0") == "1")
-    backend: str = field(default_factory=lambda: os.environ.get("SWITCHEROO_BACKEND", "numpy"))
+    model_config = pydantic.ConfigDict(extra="forbid")
+
+    eager_mode: bool = pydantic.Field(default_factory=lambda: os.environ.get("SWITCHEROO_EAGER_MODE", "0") == "1")
+    backend: str = pydantic.Field(default_factory=lambda: os.environ.get("SWITCHEROO_BACKEND", "numpy"))
     current_stream: str = "default"
     op_determinism: bool = False
     tensor_float_32_execution: bool = True
 
 
-@dataclass
-class EnvironmentConfig:
+class EnvironmentConfig(pydantic.BaseModel):
     """Environment and typing settings."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     default_float_dtype: DType = DType.Float32
     default_int_dtype: DType = DType.Int64
-    default_device: Device = field(default_factory=lambda: Device(DeviceType.CPU, 0))
+    default_device: Device = pydantic.Field(default_factory=lambda: Device(DeviceType.CPU, 0))
     jax_enable_x64: bool = False
     layout_map: TensorOrScalar = None
     interactive_logging: bool = True
-    seed: typing.Optional[int] = None
+    seed: int | None = None
 
 
-@dataclass
-class ConfigState:
+class ConfigState(pydantic.BaseModel):
     """State held in ContextVar for configuration."""
 
-    execution: ExecutionConfig = field(default_factory=ExecutionConfig)
-    env: EnvironmentConfig = field(default_factory=EnvironmentConfig)
+    model_config = pydantic.ConfigDict(extra="forbid")
+
+    execution: ExecutionConfig = pydantic.Field(default_factory=ExecutionConfig)
+    env: EnvironmentConfig = pydantic.Field(default_factory=EnvironmentConfig)
 
     def clone(self) -> ConfigState:
         """Clone the configuration state.
@@ -88,7 +88,7 @@ class Config:
         """Initialize the Config."""
 
     @property
-    def seed(self) -> typing.Optional[int]:
+    def seed(self) -> int | None:
         """Get the global random seed.
 
         Returns:
@@ -97,7 +97,7 @@ class Config:
         return self._state.env.seed
 
     @seed.setter
-    def seed(self, value: typing.Optional[int]) -> None:
+    def seed(self, value: int | None) -> None:
         """Set the global random seed.
 
         Args:

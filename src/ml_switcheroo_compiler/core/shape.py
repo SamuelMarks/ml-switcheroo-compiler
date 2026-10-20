@@ -2,22 +2,78 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable, Mapping, Sequence
-from types import ModuleType
-from typing import TYPE_CHECKING, TypeVar, Union
+from types import BuiltinFunctionType, FunctionType, MethodType, ModuleType
 
-if TYPE_CHECKING:
+from ml_switcheroo_ir import AttributeValue
+
+DimT = typing.TypeVar("DimT", int, typing.Union[int, "str"])
+_R_co = typing.TypeVar("_R_co", covariant=True)
+
+
+class StructuralOperandProtocol(typing.Protocol):
+    """Structural protocol matching arbitrary runtime or mock operand instances."""
+
+
+class CallableObjectProtocol(typing.Protocol):
+    """Structural protocol matching any Python function, lambda, or callable with a name."""
+
+    @property
+    def __name__(self) -> str:
+        """Return the callable's name."""
+        ...
+
+
+@typing.runtime_checkable
+class VariadicCallableProtocol(typing.Protocol):
+    """Protocol for callables taking arbitrary TensorOrScalar arguments."""
+
+    def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+        """Invoke the callable.
+
+        Args:
+            *args (TensorOrScalar): Positional arguments.
+            **kwargs (TensorOrScalar): Keyword arguments.
+
+        Returns:
+            TensorOrScalar: Computed result.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class TypedVariadicCallable(typing.Protocol[_R_co]):
+    """Generic protocol for callables taking arbitrary TensorOrScalar arguments and returning `_R_co`."""
+
+    def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> _R_co:
+        """Invoke the callable.
+
+        Args:
+            *args (TensorOrScalar): Positional arguments.
+            **kwargs (TensorOrScalar): Keyword arguments.
+
+        Returns:
+            _R_co: Computed result.
+        """
+        ...
+
+
+if typing.TYPE_CHECKING:
     import builtins
     import ctypes
 
+    import pydantic
     from ml_switcheroo_ir import DType as IRDType
     from ml_switcheroo_ir import SymInt as IRSymInt
     from ml_switcheroo_ir import SymNode as IRSymNode
     from ml_switcheroo_ir import TensorShape, TensorSpec
 
     from ml_switcheroo_compiler.backends.registry import (
+        BackendModuleProtocol,
         COOTensor,
         DataclassProtocol,
+        EagerCallableProtocol,
         EagerTensorProtocol,
         ShapeProtocol,
     )
@@ -29,62 +85,88 @@ if TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import IRGraph, LogicalGraph, LogicalNode
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode, SymVar
 
-DimT = TypeVar("DimT", int, Union[int, str])
-SymbolicDim = Union[str, "SymNode", "SymInt", "SymVar", "IRSymNode", "IRSymInt"]
-ShapeLike = Union[
-    tuple[Union[int, SymbolicDim, None], ...],
-    Sequence[Union[int, SymbolicDim, None]],
-    int,
-    "SymbolicDim",
-    "TensorShape",
-    "Tensor",
-    "EagerTensorProtocol",
-    "ShapeProtocol",
-    None,
-]
-AxesLike = Union[int, Sequence[int], "Tensor", "EagerTensorProtocol", None]
-ScalarLike = Union[int, float, bool, complex]
-TensorOrScalar = Union[
-    int,
-    float,
-    complex,
-    Sequence["TensorOrScalar"],
-    Mapping["TensorOrScalar", "TensorOrScalar"],
-    Mapping[str, "TensorOrScalar"],
-    Mapping[Union[str, int], "TensorOrScalar"],
-    set["TensorOrScalar"],
-    slice,
-    str,
-    bool,
-    Callable[..., "TensorOrScalar"],
-    type,
-    ModuleType,
-    "builtins.ellipsis",
-    "ctypes.Array[ctypes.c_char]",
-    "ctypes.Array[ctypes.c_void_p]",
-    "COOTensor",
-    "TensorLike",
-    "GradTensorProtocol",
-    "Tensor",
-    "DType",
-    "IRDType",
-    "Device",
-    "TensorShape",
-    "TensorSpec",
-    "SymVar",
-    "SymNode",
-    "SymInt",
-    "IRSymNode",
-    "IRSymInt",
-    "LogicalNode",
-    "LogicalGraph",
-    "IRGraph",
-    "DataclassProtocol",
-    "EagerTensorProtocol",
-    "ShapeProtocol",
-    None,
-]
-AttrValue = TensorOrScalar
+    SliceType = slice[int | float | str | None, int | float | str | None, int | float | str | None]
+    CallableLike = typing.Union[  # noqa: UP007
+        Callable[[], _R_co],
+        Callable[[typing.NoReturn], _R_co],
+        Callable[[typing.NoReturn, typing.NoReturn], _R_co],
+        Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
+        Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
+        Callable[[typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn, typing.NoReturn], _R_co],
+        TypedVariadicCallable[_R_co],
+    ]
+    SymbolicDim = typing.Union[str, SymNode, SymInt, SymVar, IRSymNode, IRSymInt]  # noqa: UP007
+    ShapeLike = typing.Union[  # noqa: UP007
+        tuple[int | SymbolicDim | None, ...],
+        Sequence[int | SymbolicDim | None],
+        int,
+        SymbolicDim,
+        TensorShape,
+        Tensor,
+        EagerTensorProtocol,
+        ShapeProtocol,
+        None,
+    ]
+    AxesLike = typing.Union[int, Sequence[int], Tensor, EagerTensorProtocol | None]  # noqa: UP007
+    ScalarLike = typing.Union[int, float, bool, complex]  # noqa: UP007
+    TensorOrScalar = typing.Union[  # noqa: UP007
+        int,
+        float,
+        complex,
+        str,
+        bool,
+        None,
+        Tensor,
+        DType,
+        IRDType,
+        Device,
+        TensorShape,
+        TensorSpec,
+        SymVar,
+        SymNode,
+        SymInt,
+        IRSymNode,
+        IRSymInt,
+        LogicalNode,
+        LogicalGraph,
+        IRGraph,
+        pydantic.BaseModel,
+        COOTensor,
+        SliceType,
+        type,
+        ModuleType,
+        "builtins.ellipsis",
+        "ctypes.Array[ctypes.c_char]",
+        "ctypes.Array[ctypes.c_void_p]",
+        ShapeProtocol,
+        EagerTensorProtocol,
+        BackendModuleProtocol,
+        DataclassProtocol,
+        TensorLike,
+        GradTensorProtocol,
+        FunctionType,
+        BuiltinFunctionType,
+        MethodType,
+        CallableObjectProtocol,
+        EagerCallableProtocol,
+        VariadicCallableProtocol,
+        TypedVariadicCallable["TensorOrScalar"],
+        Sequence["TensorOrScalar"],
+        Mapping["TensorOrScalar", "TensorOrScalar"],
+        Mapping[str, "TensorOrScalar"],
+        Mapping[str | int, "TensorOrScalar"],
+        set["TensorOrScalar"],
+    ]
+    AttrValue = TensorOrScalar
+else:
+    SliceType = slice
+    CallableLike = TypedVariadicCallable
+    SymbolicDim = AttributeValue
+    ShapeLike = AttributeValue
+    AxesLike = AttributeValue
+    ScalarLike = AttributeValue
+    TensorOrScalar = AttributeValue
+    AttrValue = AttributeValue
 
 
 def _broadcast_dim(

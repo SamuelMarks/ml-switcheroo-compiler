@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -37,8 +37,9 @@ from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _np_tridiagonal_solve,
     _parse_dot_dimension_numbers,
 )
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -70,7 +71,7 @@ class DummyBackend:
         Args:
             shape: Test parameter `shape`.
         """
-        return cast("EagerCallableProtocol", np.zeros)(shape)
+        return typing.cast("EagerCallableProtocol", np.zeros)(shape)
 
     @staticmethod
     def ones(shape: EagerValue, dtype: EagerValue) -> EagerValue:
@@ -80,7 +81,7 @@ class DummyBackend:
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
         """
-        return cast("EagerCallableProtocol", np.ones)(shape, dtype=dtype)
+        return typing.cast("EagerCallableProtocol", np.ones)(shape, dtype=dtype)
 
     @staticmethod
     def cross(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -90,7 +91,7 @@ class DummyBackend:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
         """
-        return cast("EagerCallableProtocol", np.cross)(*args, **kwargs)
+        return typing.cast("EagerCallableProtocol", np.cross)(*args, **kwargs)
 
     linalg = np.linalg
 
@@ -103,26 +104,26 @@ def _test_linalg_extras_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     assert _get_uncontracted_dims([1, 2, 3], [0], [2]) == [2]
     dn = (((2,), (1,)), ((0,), (0,)))
-    assert cast("EagerCallableProtocol", _parse_dot_dimension_numbers)(dn) == ((2,), (1,), (0,), (0,))
+    assert typing.cast("EagerCallableProtocol", _parse_dot_dimension_numbers)(dn) == ((2,), (1,), (0,), (0,))
     a = np.ones((2, 3, 4))
     b = np.ones((2, 4, 5))
     res = _dot_general(a, b, dn)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 3, 5)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 3, 5)
     a = np.array([[1, 2], [3, 4]])
-    assert _np_trace(DummyBackend(), a) == 5
-    assert _np_matrix_rank(DummyBackend(), a) == 2
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_matrix_transpose)(cast("EagerCallableProtocol", DummyBackend)(), a), a.T)
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_sqrtm)(a), a)
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_adjoint)(cast("EagerCallableProtocol", DummyBackend)(), a), cast("EagerCallableProtocol", a.T.conj)())
-    assert _np_cholesky_solve(DummyBackend(), 1) == 1
+    assert _np_trace(typing.cast("BackendModuleProtocol", DummyBackend()), a) == 5
+    assert _np_matrix_rank(typing.cast("BackendModuleProtocol", DummyBackend()), a) == 2
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_matrix_transpose)(typing.cast("EagerCallableProtocol", DummyBackend)(), a), a.T)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_sqrtm)(a), a)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_adjoint)(typing.cast("EagerCallableProtocol", DummyBackend)(), a), typing.cast("EagerCallableProtocol", a.T.conj)())
+    assert _np_cholesky_solve(typing.cast("BackendModuleProtocol", DummyBackend()), 1) == 1
     A = np.array([[2, -1], [-1, 2]], dtype=float)
     b = np.array([1, 0], dtype=float)
     L = np.linalg.cholesky(A)
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", _np_cholesky_solve)(cast("EagerCallableProtocol", DummyBackend)(), b, L, upper=False), [2 / 3, 1 / 3])
-    assert _np_eigh_tridiagonal(DummyBackend(), 1) == 1
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", _np_cholesky_solve)(typing.cast("EagerCallableProtocol", DummyBackend)(), b, L, upper=False), [2 / 3, 1 / 3])
+    assert _np_eigh_tridiagonal(typing.cast("BackendModuleProtocol", DummyBackend()), 1) == 1
     alpha = np.array([2, 2, 2], dtype=float)
     beta = np.array([-1, -1], dtype=float)
-    (vals, vecs) = cast("EagerCallableProtocol", _np_eigh_tridiagonal)(cast("EagerCallableProtocol", DummyBackend)(), alpha, beta)
+    (vals, vecs) = typing.cast("EagerCallableProtocol", _np_eigh_tridiagonal)(typing.cast("EagerCallableProtocol", DummyBackend)(), alpha, beta)
     getattr(_state, "update")({"A": A, "L": L, "a": a, "alpha": alpha})
     getattr(_state, "update")({"b": b, "beta": beta, "dn": dn, "res": res})
     getattr(_state, "update")({"vals": vals, "vecs": vecs})
@@ -137,18 +138,18 @@ def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (A, b, vals) = (_state["A"], _state["b"], _state["vals"])
     assert vals.shape == (3,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(_np_qr(DummyBackend(), A), "__getitem__")(0)), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(_np_qr(typing.cast("BackendModuleProtocol", DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
     v1 = np.array([1, 0, 0])
     v2 = np.array([0, 1, 0])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_cross)(cast("EagerCallableProtocol", DummyBackend)(), v1, v2, axes={"axis": None}), [0, 0, 1])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_cross)(cast("EagerCallableProtocol", DummyBackend)(), v1, v2, axis=None), [0, 0, 1])
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", _np_slogdet)(cast("EagerCallableProtocol", DummyBackend)(), A)) == 2
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_cross)(typing.cast("EagerCallableProtocol", DummyBackend)(), v1, v2, axes={"axis": None}), [0, 0, 1])
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_cross)(typing.cast("EagerCallableProtocol", DummyBackend)(), v1, v2, axis=None), [0, 0, 1])
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", _np_slogdet)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)) == 2
     for op in ["Qr", "Solve", "Tensorinv", "Tensorsolve", "Eig", "Eigh", "Eigvals", "Eigvalsh", "Norm", "Cond", "MultiDot"]:
         func = numpy_eager_registry._registry[op]
         if op == "Solve":
-            assert cast("EagerTensorProtocol", getattr(func(DummyBackend(), A, b), "shape")) == (2,)
+            assert typing.cast("EagerTensorProtocol", getattr(func(DummyBackend(), A, b), "shape")) == (2,)
         elif op == "MultiDot":
-            assert cast("EagerTensorProtocol", getattr(func(DummyBackend(), [A, A]), "shape")) == (2, 2)
+            assert typing.cast("EagerTensorProtocol", getattr(func(DummyBackend(), [A, A]), "shape")) == (2, 2)
         elif op in ["Eigvals", "Eigvalsh", "Norm", "Cond", "Eigh", "Eig"]:
             res = func(DummyBackend(), A)
         else:
@@ -156,10 +157,10 @@ def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
                 func(DummyBackend(), A)
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                 _caught_err = True
-    (p, _lower, u) = cast("EagerCallableProtocol", _np_lu)(cast("EagerCallableProtocol", DummyBackend)(), A)
-    (lu, piv) = cast("EagerCallableProtocol", _np_lu_factor)(cast("EagerCallableProtocol", DummyBackend)(), A)
-    assert cast("EagerTensorProtocol", getattr(_np_lu_solve(DummyBackend(), lu, piv, b), "shape")) == (2,)
-    assert cast("EagerTensorProtocol", getattr(_np_lu_pivots(DummyBackend(), [1, 1], 2), "shape")) == (2,)
+    (p, _lower, u) = typing.cast("EagerCallableProtocol", _np_lu)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)
+    (lu, piv) = typing.cast("EagerCallableProtocol", _np_lu_factor)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)
+    assert typing.cast("EagerTensorProtocol", getattr(_np_lu_solve(typing.cast("BackendModuleProtocol", DummyBackend()), lu, piv, b), "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(_np_lu_pivots(typing.cast("BackendModuleProtocol", DummyBackend()), [1, 1], 2), "shape")) == (2,)
     getattr(_state, "update")({"_lower": _lower, "lu": lu, "p": p, "piv": piv})
     getattr(_state, "update")({"u": u, "v1": v1, "v2": v2})
     _state.update(locals())
@@ -172,28 +173,28 @@ def _test_linalg_extras_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     A = _state["A"]
-    assert cast("EagerTensorProtocol", getattr(_np_matrix_exponential(DummyBackend(), A), "shape")) == (2, 2)
-    (h, q) = cast("EagerCallableProtocol", _np_hessenberg)(cast("EagerCallableProtocol", DummyBackend)(), A)
-    assert cast("EagerTensorProtocol", getattr(h, "shape")) == (2, 2)
-    (d, od, q) = cast("EagerCallableProtocol", _np_tridiagonal)(cast("EagerCallableProtocol", DummyBackend)(), A)
-    assert cast("EagerTensorProtocol", getattr(d, "shape")) == (2,)
-    assert cast("EagerTensorProtocol", getattr(od, "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(_np_matrix_exponential(typing.cast("BackendModuleProtocol", DummyBackend()), A), "shape")) == (2, 2)
+    (h, q) = typing.cast("EagerCallableProtocol", _np_hessenberg)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)
+    assert typing.cast("EagerTensorProtocol", getattr(h, "shape")) == (2, 2)
+    (d, od, q) = typing.cast("EagerCallableProtocol", _np_tridiagonal)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)
+    assert typing.cast("EagerTensorProtocol", getattr(d, "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(od, "shape")) == (1,)
     dl = np.array([-1], dtype=float)
-    d = cast("EagerTensorProtocol", np.array([2, 2], dtype=float))
+    d = typing.cast("EagerTensorProtocol", np.array([2, 2], dtype=float))
     du = np.array([-1], dtype=float)
     b_tri = np.array([1, 0], dtype=float)
-    assert cast("EagerTensorProtocol", getattr(_np_tridiagonal_solve(DummyBackend(), dl, d, du, b_tri), "shape")) == (2,)
-    (c, i) = cast("EagerCallableProtocol", _np_cholesky_ex)(cast("EagerCallableProtocol", DummyBackend)(), A)
+    assert typing.cast("EagerTensorProtocol", getattr(_np_tridiagonal_solve(typing.cast("BackendModuleProtocol", DummyBackend()), dl, d, du, b_tri), "shape")) == (2,)
+    (c, i) = typing.cast("EagerCallableProtocol", _np_cholesky_ex)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)
     assert i == 0
-    (c_fail, i_fail) = cast("EagerCallableProtocol", _np_cholesky_ex)(cast("EagerCallableProtocol", DummyBackend)(), cast("EagerCallableProtocol", np.array)([[0, 0], [0, 0]]))
-    assert cast("EagerTensorProtocol", getattr(i_fail, "all"))() == 1
-    (i1, e1) = cast("EagerCallableProtocol", _np_inv_ex)(cast("EagerCallableProtocol", DummyBackend)(), A)
+    (c_fail, i_fail) = typing.cast("EagerCallableProtocol", _np_cholesky_ex)(typing.cast("EagerCallableProtocol", DummyBackend)(), typing.cast("EagerCallableProtocol", np.array)([[0, 0], [0, 0]]))
+    assert typing.cast("EagerTensorProtocol", getattr(i_fail, "all"))() == 1
+    (i1, e1) = typing.cast("EagerCallableProtocol", _np_inv_ex)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)
     assert e1 == 0
-    (i2, e2) = cast("EagerCallableProtocol", _np_inv_ex)(cast("EagerCallableProtocol", DummyBackend)(), cast("EagerCallableProtocol", np.array)([[0, 0], [0, 0]]))
-    assert cast("EagerTensorProtocol", getattr(e2, "all"))() == 1
-    assert cast("EagerTensorProtocol", getattr(_np_pinv(DummyBackend(), A), "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(_np_polar(DummyBackend(), A), "__getitem__")(0)), "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(_np_qdwh(DummyBackend(), A), "__getitem__")(0)), "shape")) == (2, 2)
+    (i2, e2) = typing.cast("EagerCallableProtocol", _np_inv_ex)(typing.cast("EagerCallableProtocol", DummyBackend)(), typing.cast("EagerCallableProtocol", np.array)([[0, 0], [0, 0]]))
+    assert typing.cast("EagerTensorProtocol", getattr(e2, "all"))() == 1
+    assert typing.cast("EagerTensorProtocol", getattr(_np_pinv(typing.cast("BackendModuleProtocol", DummyBackend()), A), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(_np_polar(typing.cast("BackendModuleProtocol", DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(_np_qdwh(typing.cast("BackendModuleProtocol", DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
     getattr(_state, "update")({"b_tri": b_tri, "c": c, "c_fail": c_fail, "d": d})
     getattr(_state, "update")({"dl": dl, "du": du, "e1": e1, "e2": e2})
     getattr(_state, "update")({"h": h, "i": i, "i1": i1, "i2": i2})
@@ -208,12 +209,12 @@ def _test_linalg_extras_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     (A, b) = (_state["A"], _state["b"])
-    (s, e) = cast("EagerCallableProtocol", _np_solve_ex)(cast("EagerCallableProtocol", DummyBackend)(), A, b)
+    (s, e) = typing.cast("EagerCallableProtocol", _np_solve_ex)(typing.cast("EagerCallableProtocol", DummyBackend)(), A, b)
     assert e == 0
-    (s_fail, e_fail) = cast("EagerCallableProtocol", _np_solve_ex)(cast("EagerCallableProtocol", DummyBackend)(), cast("EagerCallableProtocol", np.array)([[0, 0], [0, 0]]), b)
-    assert cast("EagerTensorProtocol", getattr(e_fail, "all"))() == 1
-    (u, s, vh) = cast("EagerCallableProtocol", _np_svd)(cast("EagerCallableProtocol", DummyBackend)(), A)
-    assert cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
+    (s_fail, e_fail) = typing.cast("EagerCallableProtocol", _np_solve_ex)(typing.cast("EagerCallableProtocol", DummyBackend)(), typing.cast("EagerCallableProtocol", np.array)([[0, 0], [0, 0]]), b)
+    assert typing.cast("EagerTensorProtocol", getattr(e_fail, "all"))() == 1
+    (u, s, vh) = typing.cast("EagerCallableProtocol", _np_svd)(typing.cast("EagerCallableProtocol", DummyBackend)(), A)
+    assert typing.cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
     getattr(_state, "update")({"e": e, "e_fail": e_fail, "s": s, "s_fail": s_fail})
     getattr(_state, "update")({"u": u, "vh": vh})
 
@@ -243,25 +244,25 @@ def test_dot_general() -> None:
     a = np.ones((2, 3, 4))
     b = np.ones((2, 4, 5))
     res = _dot_general(a, b, (([2], [1]), ([0], [0])))
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 3, 5)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 3, 5)
 
 
 def test_np_trace() -> None:
     """Test function test_np_trace."""
     a = np.eye(3)
-    assert _np_trace(None, a) == 3.0
+    assert _np_trace(typing.cast("BackendModuleProtocol", None), a) == 3.0
 
 
 def test_np_matrix_rank() -> None:
     """Test function test_np_matrix_rank."""
     a = np.eye(3)
-    assert _np_matrix_rank(None, a) == 3
+    assert _np_matrix_rank(typing.cast("BackendModuleProtocol", None), a) == 3
 
 
 def test_np_matrix_transpose() -> None:
     """Test function test_np_matrix_transpose."""
     a = np.ones((2, 3))
-    assert cast("EagerTensorProtocol", getattr(_np_matrix_transpose(None, a), "shape")) == (3, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(_np_matrix_transpose(typing.cast("BackendModuleProtocol", None), a), "shape")) == (3, 2)
 
 
 def test_np_sqrtm() -> None:
@@ -273,9 +274,9 @@ def test_np_sqrtm() -> None:
 def test_np_adjoint() -> None:
     """Test function test_np_adjoint."""
     a = np.array([[1 + 1j, 2], [3, 4]])
-    res = _np_adjoint(None, a)
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1 - 1j
-    assert cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 1))) == 3
+    res = _np_adjoint(typing.cast("BackendModuleProtocol", None), a)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 0))) == 1 - 1j
+    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")((0, 1))) == 3
 
 
 def test_np_cholesky_solve() -> None:
@@ -285,7 +286,7 @@ def test_np_cholesky_solve() -> None:
     u = np.linalg.cholesky(np.array([[2, 1], [1, 2]]))
     b = np.array([1, 2])
     res = _np_cholesky_solve(np, b, u, upper=False)
-    assert cast("EagerCallableProtocol", len)(res) == 2
+    assert typing.cast("EagerCallableProtocol", len)(res) == 2
 
 
 def test_np_eigh_tridiagonal() -> None:
@@ -294,15 +295,15 @@ def test_np_eigh_tridiagonal() -> None:
     assert np.all(_np_eigh_tridiagonal(np, a) == a)
     alpha = np.array([2.0, 2.0, 2.0])
     beta = np.array([1.0, 1.0])
-    (vals, vecs) = cast("EagerCallableProtocol", _np_eigh_tridiagonal)(np, alpha, beta)
-    assert cast("EagerCallableProtocol", len)(vals) == 3
+    (vals, vecs) = typing.cast("EagerCallableProtocol", _np_eigh_tridiagonal)(np, alpha, beta)
+    assert typing.cast("EagerCallableProtocol", len)(vals) == 3
 
 
 def test_np_qr() -> None:
     """Test function test_np_qr."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (q, r) = cast("EagerCallableProtocol", _np_qr)(np, a)
-    assert cast("EagerTensorProtocol", getattr(q, "shape")) == (2, 2)
+    (q, r) = typing.cast("EagerCallableProtocol", _np_qr)(np, a)
+    assert typing.cast("EagerTensorProtocol", getattr(q, "shape")) == (2, 2)
 
 
 def test_np_cross() -> None:
@@ -318,7 +319,7 @@ def test_np_cross() -> None:
 def test_np_slogdet() -> None:
     """Test function test_np_slogdet."""
     a = np.eye(3)
-    (sign, logdet) = cast("EagerCallableProtocol", _np_slogdet)(np, a)
+    (sign, logdet) = typing.cast("EagerCallableProtocol", _np_slogdet)(np, a)
     assert sign == 1.0
     assert logdet == 0.0
 
@@ -326,62 +327,62 @@ def test_np_slogdet() -> None:
 def test_linalg_wrappers() -> None:
     """Test function test_linalg_wrappers."""
     a = np.eye(3)
-    res = cast("EagerCallableProtocol", numpy_eager_registry.get)("Solve")(np, a, cast("EagerCallableProtocol", np.ones)(3))
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3,)
-    res = cast("EagerCallableProtocol", numpy_eager_registry.get)("MultiDot")(np, [a, a])
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
+    res = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("Solve")(np, a, typing.cast("EagerCallableProtocol", np.ones)(3))
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3,)
+    res = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("MultiDot")(np, [a, a])
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
 
 
 def test_np_lu() -> None:
     """Test function test_np_lu."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (p, _lower, _u) = cast("EagerCallableProtocol", _np_lu)(None, a)
-    assert cast("EagerTensorProtocol", getattr(p, "shape")) == (2, 2)
+    (p, _lower, _u) = typing.cast("EagerCallableProtocol", _np_lu)(None, a)
+    assert typing.cast("EagerTensorProtocol", getattr(p, "shape")) == (2, 2)
 
 
 def test_np_lu_factor() -> None:
     """Test function test_np_lu_factor."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (lu, piv) = cast("EagerCallableProtocol", _np_lu_factor)(None, a)
-    assert cast("EagerTensorProtocol", getattr(lu, "shape")) == (2, 2)
+    (lu, piv) = typing.cast("EagerCallableProtocol", _np_lu_factor)(None, a)
+    assert typing.cast("EagerTensorProtocol", getattr(lu, "shape")) == (2, 2)
 
 
 def test_np_lu_solve() -> None:
     """Test function test_np_lu_solve."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (lu, piv) = cast("EagerCallableProtocol", _np_lu_factor)(None, a)
+    (lu, piv) = typing.cast("EagerCallableProtocol", _np_lu_factor)(None, a)
     b = np.array([1.0, 2.0])
-    res = _np_lu_solve(None, lu, piv, b)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+    res = _np_lu_solve(typing.cast("BackendModuleProtocol", None), lu, piv, b)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
 
 
 def test_np_lu_pivots() -> None:
     """Test function test_np_lu_pivots."""
     pivots = np.array([1, 1])
-    perm = _np_lu_pivots(None, pivots, 2)
-    assert cast("EagerTensorProtocol", getattr(perm, "shape")) == (2,)
+    perm = _np_lu_pivots(typing.cast("BackendModuleProtocol", None), pivots, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(perm, "shape")) == (2,)
 
 
 def test_np_matrix_exponential() -> None:
     """Test function test_np_matrix_exponential."""
     a = np.eye(2)
-    res = _np_matrix_exponential(None, a)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    res = _np_matrix_exponential(typing.cast("BackendModuleProtocol", None), a)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
 def test_np_hessenberg() -> None:
     """Test function test_np_hessenberg."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (h, q) = cast("EagerCallableProtocol", _np_hessenberg)(None, a)
-    assert cast("EagerTensorProtocol", getattr(h, "shape")) == (2, 2)
+    (h, q) = typing.cast("EagerCallableProtocol", _np_hessenberg)(None, a)
+    assert typing.cast("EagerTensorProtocol", getattr(h, "shape")) == (2, 2)
 
 
 def test_np_tridiagonal() -> None:
     """Test function test_np_tridiagonal."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (d, od, q) = cast("EagerCallableProtocol", _np_tridiagonal)(None, a)
-    assert cast("EagerCallableProtocol", len)(d) == 2
-    assert cast("EagerCallableProtocol", len)(od) == 1
+    (d, od, q) = typing.cast("EagerCallableProtocol", _np_tridiagonal)(None, a)
+    assert typing.cast("EagerCallableProtocol", len)(d) == 2
+    assert typing.cast("EagerCallableProtocol", len)(od) == 1
 
 
 def test_np_tridiagonal_solve() -> None:
@@ -390,49 +391,49 @@ def test_np_tridiagonal_solve() -> None:
     d = np.array([2.0, 2.0])
     du = np.array([1.0])
     b = np.array([1.0, 2.0])
-    res = _np_tridiagonal_solve(None, dl, d, du, b)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+    res = _np_tridiagonal_solve(typing.cast("BackendModuleProtocol", None), dl, d, du, b)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
 
 
 def test_np_cholesky_ex() -> None:
     """Test function test_np_cholesky_ex."""
     a = np.array([[2.0, 1.0], [1.0, 2.0]])
-    (_lower, info) = cast("EagerCallableProtocol", _np_cholesky_ex)(None, a)
+    (_lower, info) = typing.cast("EagerCallableProtocol", _np_cholesky_ex)(None, a)
     assert info == 0
     bad = np.array([[0.0, 1.0], [1.0, 0.0]])
-    (_lower, info) = cast("EagerCallableProtocol", _np_cholesky_ex)(None, bad)
+    (_lower, info) = typing.cast("EagerCallableProtocol", _np_cholesky_ex)(None, bad)
     assert info == 1
 
 
 def test_np_inv_ex() -> None:
     """Test function test_np_inv_ex."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (inv, info) = cast("EagerCallableProtocol", _np_inv_ex)(None, a)
+    (inv, info) = typing.cast("EagerCallableProtocol", _np_inv_ex)(None, a)
     assert info == 0
     bad = np.array([[1.0, 1.0], [1.0, 1.0]])
-    (inv, info) = cast("EagerCallableProtocol", _np_inv_ex)(None, bad)
+    (inv, info) = typing.cast("EagerCallableProtocol", _np_inv_ex)(None, bad)
     assert info == 1
 
 
 def test_np_pinv() -> None:
     """Test function test_np_pinv."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    res = _np_pinv(None, a)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    res = _np_pinv(typing.cast("BackendModuleProtocol", None), a)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
 
 
 def test_np_polar() -> None:
     """Test function test_np_polar."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (u, p) = cast("EagerCallableProtocol", _np_polar)(None, a)
-    assert cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
+    (u, p) = typing.cast("EagerCallableProtocol", _np_polar)(None, a)
+    assert typing.cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
 
 
 def test_np_qdwh() -> None:
     """Test function test_np_qdwh."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (u, p, iters, conv) = cast("EagerCallableProtocol", _np_qdwh)(None, a)
-    assert cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
+    (u, p, iters, conv) = typing.cast("EagerCallableProtocol", _np_qdwh)(None, a)
+    assert typing.cast("EagerTensorProtocol", getattr(u, "shape")) == (2, 2)
     assert conv
 
 
@@ -440,15 +441,15 @@ def test_np_solve_ex() -> None:
     """Test function test_np_solve_ex."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     b = np.array([1.0, 2.0])
-    (res, info) = cast("EagerCallableProtocol", _np_solve_ex)(None, a, b)
+    (res, info) = typing.cast("EagerCallableProtocol", _np_solve_ex)(None, a, b)
     assert info == 0
     bad = np.array([[1.0, 1.0], [1.0, 1.0]])
-    (res, info) = cast("EagerCallableProtocol", _np_solve_ex)(None, bad, b)
+    (res, info) = typing.cast("EagerCallableProtocol", _np_solve_ex)(None, bad, b)
     assert info == 1
 
 
 def test_np_svd() -> None:
     """Test function test_np_svd."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
-    (u, s, vh) = cast("EagerCallableProtocol", _np_svd)(None, a)
-    assert cast("EagerTensorProtocol", getattr(s, "shape")) == (2,)
+    (u, s, vh) = typing.cast("EagerCallableProtocol", _np_svd)(None, a)
+    assert typing.cast("EagerTensorProtocol", getattr(s, "shape")) == (2,)

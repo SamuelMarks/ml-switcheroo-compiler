@@ -8,7 +8,7 @@ operations.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -17,7 +17,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -33,9 +33,9 @@ def test_evaluate_graph() -> None:
     g.nodes["add"] = LogicalNode(id="add", op_type="Add", inputs=["in", "c"])
     g.nodes["out"] = LogicalNode(id="out", op_type="Relu", inputs=["add"])
     inputs = {"in": np.array([-3.0, 1.0])}
-    outputs = cast("EagerCallableProtocol", evaluate_graph)(g, inputs)
+    outputs = typing.cast("EagerCallableProtocol", evaluate_graph)(g, inputs)
     assert "out" in outputs
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(outputs["out"], cast("EagerCallableProtocol", np.array)([0.0, 3.0]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(outputs["out"], typing.cast("EagerCallableProtocol", np.array)([0.0, 3.0]))
 
 
 def test_missing_input() -> None:
@@ -60,7 +60,7 @@ def test_not_implemented() -> None:
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     g.nodes["out"] = LogicalNode(id="out", op_type="UnknownOp", inputs=["in"])
     with pytest.raises(Exception, match=r".*"):
-        cast("EagerCallableProtocol", evaluate_graph)(g, {"in": cast("EagerCallableProtocol", np.array)([1.0])})
+        typing.cast("EagerCallableProtocol", evaluate_graph)(g, {"in": typing.cast("EagerCallableProtocol", np.array)([1.0])})
 
 
 def test_missing_output() -> None:
@@ -72,7 +72,7 @@ def test_missing_output() -> None:
     g = LogicalGraph(outputs=["missing"])
     g.nodes["in"] = LogicalNode(id="in", op_type="Input")
     with pytest.raises(RuntimeError, match="never evaluated"):
-        cast("EagerCallableProtocol", evaluate_graph)(g, {"in": cast("EagerCallableProtocol", np.array)([1.0])})
+        typing.cast("EagerCallableProtocol", evaluate_graph)(g, {"in": typing.cast("EagerCallableProtocol", np.array)([1.0])})
 
 
 def test_all_ops() -> None:
@@ -102,6 +102,6 @@ def test_all_ops() -> None:
     g.nodes["expand"] = LogicalNode(id="expand", op_type="Expand", inputs=["min"], shape_metadata=(2,))
     g.nodes["out"] = LogicalNode(id="out", op_type="Add", inputs=["expand", "expand"])
     inputs = {"in1": np.array([2.0, 3.0]), "in2": np.array([1.0, 1.0]), "in3": np.array([[1.0, 2.0], [3.0, 4.0]])}
-    res = cast("EagerCallableProtocol", evaluate_graph)(g, inputs)
+    res = typing.cast("EagerCallableProtocol", evaluate_graph)(g, inputs)
     assert "out" in res
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res["out"], cast("EagerCallableProtocol", np.array)([-12.0, -12.0]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res["out"], typing.cast("EagerCallableProtocol", np.array)([-12.0, -12.0]))

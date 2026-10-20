@@ -1,6 +1,8 @@
 # ruff: noqa: E501
 """Test AST parsing of generated code."""
 
+from __future__ import annotations
+
 import ast
 
 import pytest

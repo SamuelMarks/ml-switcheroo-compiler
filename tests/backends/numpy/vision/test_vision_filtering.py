@@ -3,22 +3,22 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_degeneration, _np_gaussian_blur, _np_median_filter, _np_sharpen
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
-BlurConfig = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.ops.vision.filtering"), "BlurConfig"))
+BlurConfig = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.ops.vision.filtering"), "BlurConfig"))
 
 
 def test_np_degeneration() -> None:
     """Test function test_np_degeneration."""
     res = _np_degeneration(np, np.ones((2, 2)))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, cast("EagerCallableProtocol", np.ones)((2, 2)))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
 
 
 def test_np_gaussian_blur() -> None:
@@ -42,5 +42,5 @@ def test_np_sharpen() -> None:
 def test_gaussian_blur_cov() -> None:
     """Test function test_gaussian_blur_cov."""
     config = BlurConfig(kernel_size=(3, 3), sigma=(1.0, 1.0))
-    _np_gaussian_blur(np, np.ones((1, 3, 3, 1)), config=config)
+    _np_gaussian_blur(np, np.ones((1, 3, 3, 1)), config=typing.cast("dict[str, tuple[int, int] | tuple[float, float] | str | None]", config))
     assert config is not None

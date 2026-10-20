@@ -1,9 +1,10 @@
 """WebRTC Signaling Server using standard library http.server for in-browser peer-to-peer."""
 
+from __future__ import annotations
+
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -98,7 +99,7 @@ class SignalingServer:
         self.host = host
         self.port = port
         self.server = HTTPServer((self.host, self.port), SignalingHandler)
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
 
     def start(self) -> None:
         """Start the signaling server in a background thread."""

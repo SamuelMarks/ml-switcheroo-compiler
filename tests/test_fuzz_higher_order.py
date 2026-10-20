@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import hypothesis.strategies as st
 import numpy as np
@@ -16,7 +16,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import hvp
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 pytest.importorskip("hypothesis")
@@ -57,10 +57,10 @@ def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: Eager
         x = Tensor(arr_x, TensorConfig((1,), DType.Float32, Device("cpu")))
         v = Tensor(arr_v, TensorConfig((1,), DType.Float32, Device("cpu")))
 
-        _, tan = cast("EagerCallableProtocol", hvp)(f, (x,), (v,))
+        _, tan = typing.cast("EagerCallableProtocol", hvp)(f, (x,), (v,))
         computed = float(np.asarray(backend.asarray(tan))[0])
 
         expected = 6.0 * val1
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(computed, expected, rtol=1e-2, atol=1e-2)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(computed, expected, rtol=1e-2, atol=1e-2)
     finally:
         config.backend = prev

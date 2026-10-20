@@ -5,7 +5,7 @@ from __future__ import annotations
 # ruff: noqa: E501
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
@@ -28,7 +28,7 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
     unpack_x_y_sample_weight,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -155,4 +155,4 @@ def test_pad_sequences() -> None:
 
 def test_split_dataset() -> None:
     """Test function test_split_dataset."""
-    assert cast("EagerCallableProtocol", split_dataset)("ds") == ("ds", "ds")
+    assert typing.cast("EagerCallableProtocol", split_dataset)("ds") == ("ds", "ds")

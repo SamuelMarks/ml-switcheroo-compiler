@@ -1,7 +1,9 @@
 """Gradient norm clipping primitive."""
 
+from __future__ import annotations
+
+import typing  # noqa: F401
 from collections.abc import Iterable
-from typing import Union  # noqa: F401
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.binary import add, divide, minimum, multiply, power
@@ -63,11 +65,11 @@ def _scale_gradients(parameters: list[Tensor], max_norm: float, total_norm: Tens
 
 
 def clip_grad_norm(
-    parameters: Union[Tensor, Iterable[Tensor]],
+    parameters: Tensor | Iterable[Tensor],
     max_norm: float,
     norm_type: float = 2.0,
     error_if_nonfinite: bool = False,
-) -> tuple[Union[Tensor, list[Tensor]], Tensor]:
+) -> tuple[Tensor | list[Tensor], Tensor]:
     """Clip gradient norm of an iterable of parameters.
 
     The norm is computed over all gradients together, as if they were

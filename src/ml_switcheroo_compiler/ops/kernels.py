@@ -1,11 +1,10 @@
 """Implementation of kernels operations and utilities for the ops subsystem (`ml_switcheroo_compiler.ops.kernels`)."""
 
-from dataclasses import dataclass
-from typing import (
-    Callable,
-    Optional,  # noqa: F401
-    cast,
-)
+from __future__ import annotations
+
+import typing
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -73,18 +72,20 @@ class PrecompiledCudaKernelOp(OpDef):
         return ()
 
 
-@dataclass
-class KernelLaunchConfig:
+class KernelLaunchConfig(pydantic.BaseModel):
     """Configuration for kernel launch."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     grid: tuple[int, ...]
     block: tuple[int, ...]
     name: str = "custom_kernel"
 
 
-@dataclass
-class KernelContext:
+class KernelContext(pydantic.BaseModel):
     """Provide context for kernel execution."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     op_type: str
     code_or_binary: str
@@ -125,7 +126,7 @@ def cuda_kernel(
     inputs: list[Tensor],
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
-    launch_config: Optional[KernelLaunchConfig] = None,
+    launch_config: KernelLaunchConfig | None = None,
 ) -> list[Tensor]:
     """Injects and compiles an inline CUDA kernel.
 
@@ -139,13 +140,13 @@ def cuda_kernel(
     Returns:
         list: Result.
     """
-    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext("CudaKernel", source, output_shapes, output_dtypes, conf))
+        return _eager_custom_kernel(inputs, KernelContext(op_type="CudaKernel", code_or_binary=source, output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs = {
+        attrs: dict[str, TensorOrScalar] = {
             "source": source,
             "grid": conf.grid,
             "block": conf.block,
@@ -153,7 +154,7 @@ def cuda_kernel(
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
-        outputs.append(cast("Callable[..., Tensor]", _emit_shape_node)("CudaKernel", inputs, attrs, shape, dtype))
+        outputs.append(_emit_shape_node("CudaKernel", inputs, attrs, shape, dtype))
     return outputs
 
 
@@ -162,7 +163,7 @@ def metal_kernel(
     inputs: list[Tensor],
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
-    launch_config: Optional[KernelLaunchConfig] = None,
+    launch_config: KernelLaunchConfig | None = None,
 ) -> list[Tensor]:
     """Injects and compiles an inline Metal kernel.
 
@@ -176,13 +177,13 @@ def metal_kernel(
     Returns:
         list: Result.
     """
-    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext("MetalKernel", source, output_shapes, output_dtypes, conf))
+        return _eager_custom_kernel(inputs, KernelContext(op_type="MetalKernel", code_or_binary=source, output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs = {
+        attrs: dict[str, TensorOrScalar] = {
             "source": source,
             "grid": conf.grid,
             "block": conf.block,
@@ -190,7 +191,7 @@ def metal_kernel(
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
-        outputs.append(cast("Callable[..., Tensor]", _emit_shape_node)("MetalKernel", inputs, attrs, shape, dtype))
+        outputs.append(_emit_shape_node("MetalKernel", inputs, attrs, shape, dtype))
     return outputs
 
 
@@ -199,7 +200,7 @@ def precompiled_cuda_kernel(
     inputs: list[Tensor],
     output_shapes: list[tuple[int, ...]],
     output_dtypes: list[DType],
-    launch_config: Optional[KernelLaunchConfig] = None,
+    launch_config: KernelLaunchConfig | None = None,
 ) -> list[Tensor]:
     """Injects and executes a precompiled CUDA binary (PTX/CUBIN).
 
@@ -213,13 +214,13 @@ def precompiled_cuda_kernel(
     Returns:
         list: Result.
     """
-    conf = launch_config if launch_config is not None else KernelLaunchConfig((1,), (1,), "custom_kernel")
+    conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext("PrecompiledCudaKernel", cast("str", binary), output_shapes, output_dtypes, conf))
+        return _eager_custom_kernel(inputs, KernelContext(op_type="PrecompiledCudaKernel", code_or_binary=typing.cast("str", binary), output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):
-        attrs = {
+        attrs: dict[str, TensorOrScalar] = {
             "binary": binary,
             "grid": conf.grid,
             "block": conf.block,
@@ -227,5 +228,5 @@ def precompiled_cuda_kernel(
             "output_idx": i,
             "num_outputs": len(output_shapes),
         }
-        outputs.append(cast("Callable[..., Tensor]", _emit_shape_node)("PrecompiledCudaKernel", inputs, attrs, shape, dtype))
+        outputs.append(_emit_shape_node("PrecompiledCudaKernel", inputs, attrs, shape, dtype))
     return outputs

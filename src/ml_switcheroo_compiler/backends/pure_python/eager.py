@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import math
-from typing import Callable, Union
+import typing
+from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.pure_python.types import PurePythonTensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-Operand = Union[PurePythonTensor, int, float]
-OpHandler = Callable[[tuple[Operand, ...]], Union[PurePythonTensor, float, int]]
+Operand = typing.Union[PurePythonTensor, int, "float"]
+OpHandler = Callable[[tuple[Operand, ...]], typing.Union[PurePythonTensor, float, "int"]]
 
 
 def _to_tensor(val: Operand) -> PurePythonTensor:

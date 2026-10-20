@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg.einsum_frontend import _generate_tensordot_einsum_strings, _tensordot_einsum_routing, _validate_tensordot_axes
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 

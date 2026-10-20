@@ -6,7 +6,7 @@ import argparse
 import json
 import os
 import sys
-from typing import TextIO
+import typing
 
 # Ensure src is discoverable when invoked directly or via pre-commit
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -57,8 +57,8 @@ def _is_breaking_param_change(
     Returns:
         bool: True if parameter changes are backwards-incompatible.
     """
-    p1_map: dict[str, dict[str, AttributeValue]] = {str(p.get("name")): p for p in p1_list if isinstance(p, dict)}
-    p2_map: dict[str, dict[str, AttributeValue]] = {str(p.get("name")): p for p in p2_list if isinstance(p, dict)}
+    p1_map: dict[str, dict[str, AttributeValue]] = {str(p.get("name")): p for p in p1_list}
+    p2_map: dict[str, dict[str, AttributeValue]] = {str(p.get("name")): p for p in p2_list}
 
     if any(name not in p2_map for name in p1_map):
         return True
@@ -303,24 +303,24 @@ def _resolve_target_path(raw_target: str | None, fallback: str) -> str:
         str: Resolved target path.
     """
     target: str = raw_target if raw_target is not None else fallback
-    if os.path.basename(os.path.normpath(target)) in ("ml-framework-snapshots", "ml-ecosystem-snapshots") and not os.path.exists(target):
+    if os.path.basename(os.path.normpath(target)) == "ml-ecosystem-snapshots" and (not os.path.isdir(target) or not any(f.endswith((".json", ".json.gz")) for f in os.listdir(target))):
         return str(_resolve_default_snapshot_dir())
     if os.path.isdir(target) and os.path.isdir(os.path.join(target, "snapshots")):
         return os.path.join(target, "snapshots")
     return target
 
 
-def main(argv: list[str] | None = None, stdout: TextIO | None = None) -> int:
-    """Execute snapshot drift detection workflow.
+def main(argv: list[str] | None = None, stdout: typing.TextIO | None = None) -> int:
+    """CLI entry point for checking snapshot drift.
 
     Args:
         argv (list[str] | None): Optional explicit argument list. Defaults to sys.argv[1:].
-        stdout (TextIO | None): Optional output stream. Defaults to sys.stdout.
+        stdout (typing.TextIO | None): Optional output stream. Defaults to sys.stdout.
 
     Returns:
         int: Exit status code (0 for success, 1 on unallowed breaking changes).
     """
-    out: TextIO = stdout if stdout is not None else sys.stdout
+    out: typing.TextIO = stdout if stdout is not None else sys.stdout
     args = parse_arguments(argv if argv is not None else sys.argv[1:])
 
     old_target: str = _resolve_target_path(args.old, _resolve_default_snapshot_dir())

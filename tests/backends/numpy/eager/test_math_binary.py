@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_binary as mb
 from ml_switcheroo_compiler.backends.numpy.eager.math_binary import _np_polygamma, _np_zeta
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -25,9 +26,9 @@ def test_math_binary_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("a", "b", "x", "y"):
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
             else:
-                cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -72,12 +73,12 @@ def test_missing_math_binary() -> None:
             """
             return np.asarray(x)
 
-    res = mb._np_polygamma(DummyBk(), np.array([1.0]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(res, cast("EagerCallableProtocol", np.array)([0.64493407]))
-    res2 = mb._np_zeta(DummyBk(), np.array([1.0]), np.array([2.0]))
-    cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(res2, cast("EagerCallableProtocol", np.array)([cast("EagerCallableProtocol", float)("inf")]))
-    mb._np_zeta(DummyBk(), np.array([1.0]))
-    mb._np_zeta(DummyBk(), np.array([1.0]), q=np.array([1.0]))
+    res = mb._np_polygamma(typing.cast("BackendModuleProtocol", DummyBk()), np.array([1.0]), np.array([2.0]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(res, typing.cast("EagerCallableProtocol", np.array)([0.64493407]))
+    res2 = mb._np_zeta(typing.cast("BackendModuleProtocol", DummyBk()), np.array([1.0]), np.array([2.0]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(res2, typing.cast("EagerCallableProtocol", np.array)([typing.cast("EagerCallableProtocol", float)("inf")]))
+    mb._np_zeta(typing.cast("BackendModuleProtocol", DummyBk()), np.array([1.0]))
+    mb._np_zeta(typing.cast("BackendModuleProtocol", DummyBk()), np.array([1.0]), q=np.array([1.0]))
 
 
 def test_polygamma_zeta_missing_args_2() -> None:
@@ -93,6 +94,6 @@ def test_polygamma_zeta_kwargs() -> None:
     """Test function test_polygamma_zeta_kwargs."""
     a = np.array([1.0])
     res1 = _np_polygamma(np, a, x=a)
-    assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(res1, "shape")) == (1,)
     res2 = _np_zeta(np, a, q=a)
-    assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (1,)

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.dpnp import eager as dpnp_eager
 from ml_switcheroo_compiler.backends.dpnp.eager import _get_target_function, execute_op
@@ -39,7 +40,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -52,7 +53,7 @@ def _make_unary_graph() -> IRGraph:
     g = IRGraph()
     n_in = IRNode(id="x", op_type="Input", inputs=[], shape_metadata=[2, 2])
     n_abs = IRNode(id="out", op_type="Abs", inputs=["x"], shape_metadata=[2, 2])
-    g.nodes = {"x": n_in, "out": n_abs}
+    g.nodes = NodeDict({"x": n_in, "out": n_abs})
     g.inputs = ["x"]
     g.outputs = ["out"]
     return g
@@ -99,22 +100,22 @@ def test_dpnp_unary_math_parity() -> None:
     for op_name, np_fn in unary_ops:
         input_data = x + 1.0 if op_name == "Acosh" else x
         actual = execute_op(op_name, input_data)
-        expected = cast("EagerCallableProtocol", np_fn)(input_data)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(actual, expected, rtol=1e-5, atol=1e-5)
+        expected = typing.cast("EagerCallableProtocol", np_fn)(input_data)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(actual, expected, rtol=1e-5, atol=1e-5)
 
     # Boolean & integer unary
     b = np.array([True, False, True])
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("LogicalNot", b), cast("EagerCallableProtocol", np.logical_not)(b))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("LogicalNot", b), typing.cast("EagerCallableProtocol", np.logical_not)(b))
 
     i = np.array([1, 2, -3], dtype=np.int32)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("BitwiseNot", i), cast("EagerCallableProtocol", np.bitwise_not)(i))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Invert", i), cast("EagerCallableProtocol", np.invert)(i))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("BitwiseNot", i), typing.cast("EagerCallableProtocol", np.bitwise_not)(i))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Invert", i), typing.cast("EagerCallableProtocol", np.invert)(i))
 
     # Floating point predicates
     nan_arr = np.array([np.nan, 1.0, np.inf])
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Isnan", nan_arr), cast("EagerCallableProtocol", np.isnan)(nan_arr))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Isinf", nan_arr), cast("EagerCallableProtocol", np.isinf)(nan_arr))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Isfinite", nan_arr), cast("EagerCallableProtocol", np.isfinite)(nan_arr))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Isnan", nan_arr), typing.cast("EagerCallableProtocol", np.isnan)(nan_arr))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Isinf", nan_arr), typing.cast("EagerCallableProtocol", np.isinf)(nan_arr))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Isfinite", nan_arr), typing.cast("EagerCallableProtocol", np.isfinite)(nan_arr))
 
 
 def test_dpnp_binary_math_parity() -> None:
@@ -150,41 +151,41 @@ def test_dpnp_binary_math_parity() -> None:
 
     for op_name, np_fn in binary_ops:
         actual = execute_op(op_name, a, b)
-        expected = cast("EagerCallableProtocol", np_fn)(a, b)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(actual, expected, rtol=1e-5, atol=1e-5)
+        expected = typing.cast("EagerCallableProtocol", np_fn)(a, b)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(actual, expected, rtol=1e-5, atol=1e-5)
 
     # Logical binary
     bool_a = np.array([True, True, False, False])
     bool_b = np.array([True, False, True, False])
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("LogicalAnd", bool_a, bool_b), cast("EagerCallableProtocol", np.logical_and)(bool_a, bool_b))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("LogicalOr", bool_a, bool_b), cast("EagerCallableProtocol", np.logical_or)(bool_a, bool_b))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("LogicalXor", bool_a, bool_b), cast("EagerCallableProtocol", np.logical_xor)(bool_a, bool_b))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("LogicalAnd", bool_a, bool_b), typing.cast("EagerCallableProtocol", np.logical_and)(bool_a, bool_b))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("LogicalOr", bool_a, bool_b), typing.cast("EagerCallableProtocol", np.logical_or)(bool_a, bool_b))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("LogicalXor", bool_a, bool_b), typing.cast("EagerCallableProtocol", np.logical_xor)(bool_a, bool_b))
 
     # Bitwise binary
     int_a = np.array([1, 2, 4], dtype=np.int32)
     int_b = np.array([3, 2, 1], dtype=np.int32)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("BitwiseAnd", int_a, int_b), cast("EagerCallableProtocol", np.bitwise_and)(int_a, int_b))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("BitwiseOr", int_a, int_b), cast("EagerCallableProtocol", np.bitwise_or)(int_a, int_b))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("BitwiseXor", int_a, int_b), cast("EagerCallableProtocol", np.bitwise_xor)(int_a, int_b))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("LeftShift", int_a, cast("EagerCallableProtocol", np.array)([1, 1, 1], dtype=np.int32)), cast("EagerCallableProtocol", np.left_shift)(int_a, 1))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("RightShift", int_a, cast("EagerCallableProtocol", np.array)([1, 1, 1], dtype=np.int32)), cast("EagerCallableProtocol", np.right_shift)(int_a, 1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("BitwiseAnd", int_a, int_b), typing.cast("EagerCallableProtocol", np.bitwise_and)(int_a, int_b))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("BitwiseOr", int_a, int_b), typing.cast("EagerCallableProtocol", np.bitwise_or)(int_a, int_b))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("BitwiseXor", int_a, int_b), typing.cast("EagerCallableProtocol", np.bitwise_xor)(int_a, int_b))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("LeftShift", int_a, typing.cast("EagerCallableProtocol", np.array)([1, 1, 1], dtype=np.int32)), typing.cast("EagerCallableProtocol", np.left_shift)(int_a, 1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("RightShift", int_a, typing.cast("EagerCallableProtocol", np.array)([1, 1, 1], dtype=np.int32)), typing.cast("EagerCallableProtocol", np.right_shift)(int_a, 1))
 
 
 def test_dpnp_reduction_parity() -> None:
     """Verify numerical parity of reduction operations between DPNP eager and NumPy."""
     x = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32)
 
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Sum", x), cast("EagerCallableProtocol", np.sum)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Prod", x), cast("EagerCallableProtocol", np.prod)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Mean", x), cast("EagerCallableProtocol", np.mean)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Std", x), cast("EagerCallableProtocol", np.std)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Var", x), cast("EagerCallableProtocol", np.var)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Max", x), cast("EagerCallableProtocol", np.max)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Min", x), cast("EagerCallableProtocol", np.min)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Argmax", x), cast("EagerCallableProtocol", np.argmax)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Argmin", x), cast("EagerCallableProtocol", np.argmin)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Cumsum", x), cast("EagerCallableProtocol", np.cumsum)(x))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Cumprod", x), cast("EagerCallableProtocol", np.cumprod)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Sum", x), typing.cast("EagerCallableProtocol", np.sum)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Prod", x), typing.cast("EagerCallableProtocol", np.prod)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Mean", x), typing.cast("EagerCallableProtocol", np.mean)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Std", x), typing.cast("EagerCallableProtocol", np.std)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Var", x), typing.cast("EagerCallableProtocol", np.var)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Max", x), typing.cast("EagerCallableProtocol", np.max)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Min", x), typing.cast("EagerCallableProtocol", np.min)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Argmax", x), typing.cast("EagerCallableProtocol", np.argmax)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Argmin", x), typing.cast("EagerCallableProtocol", np.argmin)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Cumsum", x), typing.cast("EagerCallableProtocol", np.cumsum)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Cumprod", x), typing.cast("EagerCallableProtocol", np.cumprod)(x))
 
     b_arr = np.array([[True, True], [False, True]])
     assert bool(execute_op("All", b_arr)) is False
@@ -196,53 +197,57 @@ def test_dpnp_linalg_parity() -> None:
     m1 = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
     m2 = np.array([[2.0, 0.0], [1.0, 2.0]], dtype=np.float64)
 
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Dot", m1, m2), cast("EagerCallableProtocol", np.dot)(m1, m2))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Matmul", m1, m2), cast("EagerCallableProtocol", np.matmul)(m1, m2))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Tensordot", m1, m2, axes=1), cast("EagerCallableProtocol", np.tensordot)(m1, m2, axes=1))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Outer", cast("EagerCallableProtocol", np.array)([1.0, 2.0]), cast("EagerCallableProtocol", np.array)([3.0, 4.0])), cast("EagerCallableProtocol", np.outer)([1.0, 2.0], [3.0, 4.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Inner", cast("EagerCallableProtocol", np.array)([1.0, 2.0]), cast("EagerCallableProtocol", np.array)([3.0, 4.0])), cast("EagerCallableProtocol", np.inner)([1.0, 2.0], [3.0, 4.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Kron", m1, m2), cast("EagerCallableProtocol", np.kron)(m1, m2))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Trace", m1), cast("EagerCallableProtocol", np.trace)(m1))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Transpose", m1), cast("EagerCallableProtocol", np.transpose)(m1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Dot", m1, m2), typing.cast("EagerCallableProtocol", np.dot)(m1, m2))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Matmul", m1, m2), typing.cast("EagerCallableProtocol", np.matmul)(m1, m2))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Tensordot", m1, m2, axes=1), typing.cast("EagerCallableProtocol", np.tensordot)(m1, m2, axes=1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(
+        typing.cast("EagerCallableProtocol", execute_op)("Outer", typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0]), typing.cast("EagerCallableProtocol", np.array)([3.0, 4.0])), typing.cast("EagerCallableProtocol", np.outer)([1.0, 2.0], [3.0, 4.0])
+    )
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(
+        typing.cast("EagerCallableProtocol", execute_op)("Inner", typing.cast("EagerCallableProtocol", np.array)([1.0, 2.0]), typing.cast("EagerCallableProtocol", np.array)([3.0, 4.0])), typing.cast("EagerCallableProtocol", np.inner)([1.0, 2.0], [3.0, 4.0])
+    )
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Kron", m1, m2), typing.cast("EagerCallableProtocol", np.kron)(m1, m2))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Trace", m1), typing.cast("EagerCallableProtocol", np.trace)(m1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Transpose", m1), typing.cast("EagerCallableProtocol", np.transpose)(m1))
 
     # Decompositions & solvers on positive-definite matrix
     pos_def = np.array([[4.0, 2.0], [2.0, 5.0]], dtype=np.float64)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Cholesky", pos_def), cast("EagerCallableProtocol", np.linalg.cholesky)(pos_def))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Det", pos_def), cast("EagerCallableProtocol", np.linalg.det)(pos_def))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Inv", pos_def), cast("EagerCallableProtocol", np.linalg.inv)(pos_def))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", execute_op)("Norm", pos_def), cast("EagerCallableProtocol", np.linalg.norm)(pos_def))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Cholesky", pos_def), typing.cast("EagerCallableProtocol", np.linalg.cholesky)(pos_def))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Det", pos_def), typing.cast("EagerCallableProtocol", np.linalg.det)(pos_def))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Inv", pos_def), typing.cast("EagerCallableProtocol", np.linalg.inv)(pos_def))
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", execute_op)("Norm", pos_def), typing.cast("EagerCallableProtocol", np.linalg.norm)(pos_def))
 
-    q, r = cast("EagerCallableProtocol", execute_op)("Qr", pos_def)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(q @ r, pos_def, atol=1e-5)
+    q, r = typing.cast("EagerCallableProtocol", execute_op)("Qr", pos_def)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(q @ r, pos_def, atol=1e-5)
 
-    u, s, vt = cast("EagerCallableProtocol", execute_op)("Svd", pos_def)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(u @ cast("EagerCallableProtocol", np.diag)(s) @ vt, pos_def, atol=1e-5)
+    u, s, vt = typing.cast("EagerCallableProtocol", execute_op)("Svd", pos_def)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(u @ typing.cast("EagerCallableProtocol", np.diag)(s) @ vt, pos_def, atol=1e-5)
 
     b_vec = np.array([1.0, 2.0], dtype=np.float64)
     sol = execute_op("Solve", pos_def, b_vec)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerTensorProtocol", pos_def) @ cast("EagerTensorProtocol", sol), b_vec, atol=1e-5)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerTensorProtocol", pos_def) @ typing.cast("EagerTensorProtocol", sol), b_vec, atol=1e-5)
 
 
 def test_dpnp_shape_and_manipulation() -> None:
     """Verify tensor shape and manipulation operations."""
     x = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
 
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Reshape", x, (4,)), cast("EagerCallableProtocol", x.reshape)(4))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Flatten", x), cast("EagerCallableProtocol", x.ravel)())
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("ExpandDims", x, axis=0), cast("EagerCallableProtocol", np.expand_dims)(x, axis=0))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Reshape", x, (4,)), typing.cast("EagerCallableProtocol", x.reshape)(4))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Flatten", x), typing.cast("EagerCallableProtocol", x.ravel)())
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("ExpandDims", x, axis=0), typing.cast("EagerCallableProtocol", np.expand_dims)(x, axis=0))
     sq_in = np.expand_dims(x, axis=0)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Squeeze", sq_in), cast("EagerCallableProtocol", np.squeeze)(sq_in))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Squeeze", sq_in), typing.cast("EagerCallableProtocol", np.squeeze)(sq_in))
 
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Concatenate", (x, x), axis=0), cast("EagerCallableProtocol", np.concatenate)((x, x), axis=0))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Stack", (x, x), axis=0), cast("EagerCallableProtocol", np.stack)((x, x), axis=0))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Tile", x, (2, 1)), cast("EagerCallableProtocol", np.tile)(x, (2, 1)))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Repeat", x, 2), cast("EagerCallableProtocol", np.repeat)(x, 2))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Clip", x, 2.0, 3.0), cast("EagerCallableProtocol", np.clip)(x, 2.0, 3.0))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Concatenate", (x, x), axis=0), typing.cast("EagerCallableProtocol", np.concatenate)((x, x), axis=0))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Stack", (x, x), axis=0), typing.cast("EagerCallableProtocol", np.stack)((x, x), axis=0))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Tile", x, (2, 1)), typing.cast("EagerCallableProtocol", np.tile)(x, (2, 1)))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Repeat", x, 2), typing.cast("EagerCallableProtocol", np.repeat)(x, 2))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Clip", x, 2.0, 3.0), typing.cast("EagerCallableProtocol", np.clip)(x, 2.0, 3.0))
 
     cond = np.array([[True, False], [False, True]])
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Where", cond, x, -x), cast("EagerCallableProtocol", np.where)(cond, x, -x))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Flip", x), cast("EagerCallableProtocol", np.flip)(x))
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(cast("EagerCallableProtocol", execute_op)("Roll", x, 1), cast("EagerCallableProtocol", np.roll)(x, 1))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Where", cond, x, -x), typing.cast("EagerCallableProtocol", np.where)(cond, x, -x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Flip", x), typing.cast("EagerCallableProtocol", np.flip)(x))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", execute_op)("Roll", x, 1), typing.cast("EagerCallableProtocol", np.roll)(x, 1))
 
 
 def test_dpnp_eager_helpers_and_tensor_unwrap() -> None:
@@ -253,7 +258,7 @@ def test_dpnp_eager_helpers_and_tensor_unwrap() -> None:
 
     # Tensor unwrapping
     res = execute_op("Add", t1, t2)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [4.0, 6.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [4.0, 6.0])
 
     # Resolving target functions in nested paths
     assert _get_target_function(np, "linalg.inv") is not None
@@ -298,28 +303,28 @@ def test_dpnp_types_buffer_management() -> None:
 
     # Basic creation calls
     z = zeros((3, 3), dtype="float32", device="cpu", usm_type="host")
-    assert cast("EagerTensorProtocol", getattr(z, "shape")) == (3, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(z, "shape")) == (3, 3)
 
     o = ones((2, 2), dtype="float64")
-    assert cast("EagerTensorProtocol", getattr(o, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(o, "shape")) == (2, 2)
     assert np.all(o == 1.0)
 
     e = empty((2, 4))
-    assert cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 4)
+    assert typing.cast("EagerTensorProtocol", getattr(e, "shape")) == (2, 4)
 
     f = full((2, 3), 7.0, dtype="float32")
-    assert cast("EagerTensorProtocol", getattr(f, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(f, "shape")) == (2, 3)
     assert np.all(f == 7.0)
 
-    f_cls = cast("EagerTensorProtocol", getattr(DPNPGenerator, "full"))((2, 2), 9.0)
+    f_cls = typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "full"))((2, 2), 9.0)
     assert f_cls.shape == (2, 2)
     assert np.all(f_cls == 9.0)
 
     arr = array([10.0, 20.0], dtype="float32")
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(arr, [10.0, 20.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(arr, [10.0, 20.0])
 
     as_arr = asarray([30.0, 40.0])
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(as_arr, [30.0, 40.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(as_arr, [30.0, 40.0])
 
     # Host NumPy bridge (asnumpy, to_numpy, from_numpy)
     host_arr = asnumpy(arr)
@@ -337,7 +342,7 @@ def test_dpnp_types_buffer_management() -> None:
             """
             return np.array([99.0])
 
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", asnumpy)(cast("EagerCallableProtocol", CustomAsNumpyObj)()), "__getitem__")(0)) == 99.0
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", asnumpy)(typing.cast("EagerCallableProtocol", CustomAsNumpyObj)()), "__getitem__")(0)) == 99.0
 
     from_np = from_numpy(np.array([5.0, 6.0]), device="auto", usm_type="shared")
     assert from_np is not None
@@ -351,17 +356,17 @@ def test_dpnp_types_buffer_management() -> None:
         sycl_queue = fake_q
 
     mock_sycl = SyclBufferObj()
-    assert cast("EagerCallableProtocol", get_device)(mock_sycl) == "gpu:0"
-    assert cast("EagerCallableProtocol", get_usm_type)(mock_sycl) == "shared"
-    assert bool(cast("EagerCallableProtocol", is_sycl_array)(mock_sycl)) is True
+    assert typing.cast("EagerCallableProtocol", get_device)(mock_sycl) == "gpu:0"
+    assert typing.cast("EagerCallableProtocol", get_usm_type)(mock_sycl) == "shared"
+    assert bool(typing.cast("EagerCallableProtocol", is_sycl_array)(mock_sycl)) is True
 
     class AltSyclObj:
         """Mock object with sycl_device."""
 
         sycl_device = "cpu:0"
 
-    assert cast("EagerCallableProtocol", get_device)(cast("EagerCallableProtocol", AltSyclObj)()) == "cpu:0"
-    assert cast("EagerCallableProtocol", get_usm_type)(cast("EagerCallableProtocol", AltSyclObj)()) is None
+    assert typing.cast("EagerCallableProtocol", get_device)(typing.cast("EagerCallableProtocol", AltSyclObj)()) == "cpu:0"
+    assert typing.cast("EagerCallableProtocol", get_usm_type)(typing.cast("EagerCallableProtocol", AltSyclObj)()) is None
     assert is_sycl_array(np.array([1])) is False
     assert get_device(np.array([1])) == "cpu"
 
@@ -379,7 +384,7 @@ def test_dpnp_profiler_and_timing() -> None:
     metrics = profiler.profile_graph(g, inputs={"x": [[1.0, -2.0], [-3.0, 4.0]]}, device="auto", num_iters=3, warmup_iters=1)
 
     assert "latencies_ms" in metrics
-    assert cast("EagerCallableProtocol", len)(metrics["latencies_ms"]) == 3
+    assert typing.cast("EagerCallableProtocol", len)(metrics["latencies_ms"]) == 3
     assert getattr(metrics, "__getitem__")("mean_ms") >= 0.0
     assert getattr(metrics, "__getitem__")("median_ms") >= 0.0
     assert getattr(metrics, "__getitem__")("min_ms") >= 0.0
@@ -552,7 +557,7 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
                 kwargs: Test parameter `kwargs`.
             """
             _check_usm(kwargs)
-            return cast("EagerCallableProtocol", np.zeros)(shape, dtype=cast("EagerCallableProtocol", kwargs.get)("dtype", float))
+            return typing.cast("EagerCallableProtocol", np.zeros)(shape, dtype=typing.cast("EagerCallableProtocol", kwargs.get)("dtype", float))
 
         @staticmethod
         def ones(shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -563,7 +568,7 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
                 kwargs: Test parameter `kwargs`.
             """
             _check_usm(kwargs)
-            return cast("EagerCallableProtocol", np.ones)(shape, dtype=cast("EagerCallableProtocol", kwargs.get)("dtype", float))
+            return typing.cast("EagerCallableProtocol", np.ones)(shape, dtype=typing.cast("EagerCallableProtocol", kwargs.get)("dtype", float))
 
         @staticmethod
         def empty(shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -574,7 +579,7 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
                 kwargs: Test parameter `kwargs`.
             """
             _check_usm(kwargs)
-            return cast("EagerCallableProtocol", np.empty)(shape, dtype=cast("EagerCallableProtocol", kwargs.get)("dtype", float))
+            return typing.cast("EagerCallableProtocol", np.empty)(shape, dtype=typing.cast("EagerCallableProtocol", kwargs.get)("dtype", float))
 
         @staticmethod
         def full(shape: EagerValue, fill_value: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -586,7 +591,7 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
                 kwargs: Test parameter `kwargs`.
             """
             _check_usm(kwargs)
-            return cast("EagerCallableProtocol", np.full)(shape, fill_value, dtype=cast("EagerCallableProtocol", kwargs.get)("dtype", None))
+            return typing.cast("EagerCallableProtocol", np.full)(shape, fill_value, dtype=typing.cast("EagerCallableProtocol", kwargs.get)("dtype", None))
 
         @staticmethod
         def array(data: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -597,7 +602,7 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
                 kwargs: Test parameter `kwargs`.
             """
             _check_usm(kwargs)
-            return cast("EagerCallableProtocol", np.array)(data, dtype=cast("EagerCallableProtocol", kwargs.get)("dtype", None))
+            return typing.cast("EagerCallableProtocol", np.array)(data, dtype=typing.cast("EagerCallableProtocol", kwargs.get)("dtype", None))
 
         @staticmethod
         def asarray(data: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -608,7 +613,7 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
                 kwargs: Test parameter `kwargs`.
             """
             _check_usm(kwargs)
-            return cast("EagerCallableProtocol", np.asarray)(data, dtype=cast("EagerCallableProtocol", kwargs.get)("dtype", None))
+            return typing.cast("EagerCallableProtocol", np.asarray)(data, dtype=typing.cast("EagerCallableProtocol", kwargs.get)("dtype", None))
 
         @staticmethod
         def asnumpy(a: EagerValue) -> EagerValue:
@@ -658,31 +663,31 @@ def _test_dpnp_exhaustive_edge_coverage_part_4(_state: dict[str, EagerTensorProt
     """
     FallbackModule = _state["FallbackModule"]
     with mock.patch("ml_switcheroo_compiler.backends.dpnp.types._get_dpnp_module", return_value=FallbackModule):
-        assert cast("EagerTensorProtocol", getattr(zeros((2, 2), dtype="nonexistent_type", usm_type="shared"), "shape")) == (2, 2)
-        assert cast("EagerTensorProtocol", getattr(ones((2, 2), usm_type="shared"), "shape")) == (2, 2)
-        assert cast("EagerTensorProtocol", getattr(empty((2, 2), usm_type="shared"), "shape")) == (2, 2)
-        assert cast("EagerTensorProtocol", getattr(full((2, 2), 5.0, usm_type="shared"), "shape")) == (2, 2)
-        assert cast("EagerTensorProtocol", getattr(array([1, 2], usm_type="shared"), "shape")) == (2,)
-        assert cast("EagerTensorProtocol", getattr(asarray([1, 2], usm_type="shared"), "shape")) == (2,)
+        assert typing.cast("EagerTensorProtocol", getattr(zeros((2, 2), dtype="nonexistent_type", usm_type="shared"), "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(ones((2, 2), usm_type="shared"), "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(empty((2, 2), usm_type="shared"), "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(full((2, 2), 5.0, usm_type="shared"), "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(array([1, 2], usm_type="shared"), "shape")) == (2,)
+        assert typing.cast("EagerTensorProtocol", getattr(asarray([1, 2], usm_type="shared"), "shape")) == (2,)
 
         # asnumpy fallback when dpnp_mod.asnumpy raises
         res_host = asnumpy(np.array([42]))
-        assert cast("EagerTensorProtocol", getattr(res_host, "__getitem__")(0)) == 42
+        assert typing.cast("EagerTensorProtocol", getattr(res_host, "__getitem__")(0)) == 42
 
     # 6. DPNPGenerator classmethods for buffer management
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", DPNPGenerator.zeros)((1,), dtype=None), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", DPNPGenerator.zeros)((1,), dtype="float32"), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "ones"))((1,), dtype=None).shape == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "ones"))((1,), dtype="float32").shape == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "empty"))((1,), dtype=None).shape == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "empty"))((1,), dtype="float32").shape == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "full"))((1,), 3.0, dtype=None).shape == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "full"))((1,), 3.0, dtype="float32").shape == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator.array([1], dtype=None), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator.array([1], dtype="float32"), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", DPNPGenerator.asarray)([1], dtype=None), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", DPNPGenerator.asarray)([1], dtype="float32"), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "asnumpy"))(np.array([1]))[0] == 1
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", DPNPGenerator.zeros)((1,), dtype=None), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", DPNPGenerator.zeros)((1,), dtype="float32"), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "ones"))((1,), dtype=None).shape == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "ones"))((1,), dtype="float32").shape == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "empty"))((1,), dtype=None).shape == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "empty"))((1,), dtype="float32").shape == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "full"))((1,), 3.0, dtype=None).shape == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "full"))((1,), 3.0, dtype="float32").shape == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator.array([1], dtype=None), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator.array([1], dtype="float32"), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", DPNPGenerator.asarray)([1], dtype=None), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", DPNPGenerator.asarray)([1], dtype="float32"), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "asnumpy"))(np.array([1]))[0] == 1
     getattr(_state, "update")({"res_host": res_host})
     _state.update(locals())
 
@@ -693,11 +698,11 @@ def _test_dpnp_exhaustive_edge_coverage_part_5(_state: dict[str, EagerTensorProt
     Args:
         _state: Shared test state dictionary.
     """
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "to_numpy"))(np.array([1]))[0] == 1
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "from_numpy"))(np.array([1])) is not None
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "get_device"))(np.array([1])) == "cpu"
-    assert cast("EagerTensorProtocol", getattr(DPNPGenerator, "get_usm_type"))(np.array([1])) is None
-    assert bool(cast("EagerTensorProtocol", getattr(DPNPGenerator, "is_sycl_array"))(np.array([1]))) is False
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "to_numpy"))(np.array([1]))[0] == 1
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "from_numpy"))(np.array([1])) is not None
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "get_device"))(np.array([1])) == "cpu"
+    assert typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "get_usm_type"))(np.array([1])) is None
+    assert bool(typing.cast("EagerTensorProtocol", getattr(DPNPGenerator, "is_sycl_array"))(np.array([1]))) is False
 
     # 7. Eager dispatch edge cases: op directly in linalg, alias resolution failure, no linalg submodule
     class LinalgOnlyModule:
@@ -715,12 +720,12 @@ def _test_dpnp_exhaustive_edge_coverage_part_5(_state: dict[str, EagerTensorProt
                 Args:
                     x: Test parameter `x`.
                 """
-                return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 100)
+                return typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", 100)
 
             non_callable = 42
 
     with mock.patch.dict(sys.modules, {"dpnp": LinalgOnlyModule}):
-        assert cast("EagerTensorProtocol", getattr(execute_op("custom_linalg_op", np.array([5])), "__getitem__")(0)) == 105
+        assert typing.cast("EagerTensorProtocol", getattr(execute_op("custom_linalg_op", np.array([5])), "__getitem__")(0)) == 105
         with pytest.raises(BackendNotSupportedError):
             execute_op("non_callable_root")
         with pytest.raises(BackendNotSupportedError):

@@ -1,6 +1,8 @@
 """Distributed operations."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -194,8 +196,8 @@ class AllGather(OpDef):
             tuple[int, ...]: Result.
         """
         shape = list(getattr(tensor, "shape", ()))
-        world_size = int(cast(int, kwargs.get("world_size", kwargs.get("num_shards", 1))))
-        axis = int(cast(int, kwargs.get("axis", 0)))
+        world_size = int(typing.cast(int, kwargs.get("world_size", kwargs.get("num_shards", 1))))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
         if shape and world_size > 1 and 0 <= axis < len(shape):
             shape[axis] = shape[axis] * world_size
         return tuple(shape)
@@ -314,8 +316,8 @@ class ReduceScatter(OpDef):
             tuple[int, ...]: Result.
         """
         shape = list(getattr(tensor, "shape", ()))
-        world_size = int(cast(int, kwargs.get("world_size", kwargs.get("num_shards", 1))))
-        axis = int(cast(int, kwargs.get("axis", 0)))
+        world_size = int(typing.cast(int, kwargs.get("world_size", kwargs.get("num_shards", 1))))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
         if shape and world_size > 1 and 0 <= axis < len(shape):
             shape[axis] = shape[axis] // world_size
         return tuple(shape)
@@ -423,7 +425,7 @@ class BroadcastToRank(OpDef):
         rank = kwargs.get("rank", 1)
         if args and hasattr(args[0], "shape"):
             shape = args[0].shape
-            return (1,) * (int(cast(int, rank)) - len(shape)) + tuple(shape) if len(shape) < int(cast(int, rank)) else shape
+            return (1,) * (int(typing.cast(int, rank)) - len(shape)) + tuple(shape) if len(shape) < int(typing.cast(int, rank)) else shape
         return ()
 
 
@@ -670,8 +672,8 @@ class Pswapaxes(OpDef):
         shape = list(getattr(x, "shape", ()))
         if not shape:
             return ()
-        axis1 = int(cast(int, kwargs.get("axis1", args[1] if len(args) > 1 else 0)))
-        axis2 = int(cast(int, kwargs.get("axis2", args[2] if len(args) > 2 else 1)))
+        axis1 = int(typing.cast(int, kwargs.get("axis1", args[1] if len(args) > 1 else 0)))
+        axis2 = int(typing.cast(int, kwargs.get("axis2", args[2] if len(args) > 2 else 1)))
         if axis1 < 0:
             axis1 += len(shape)
         if axis2 < 0:
@@ -718,12 +720,12 @@ class PsumScatter(OpDef):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else None
-        scatter_dimension = int(cast(int, kwargs.get("scatter_dimension", 0)))
+        scatter_dimension = int(typing.cast(int, kwargs.get("scatter_dimension", 0)))
         world_size = kwargs.get("world_size")
         shape = list(getattr(x, "shape", ()))
         if shape and 0 <= scatter_dimension < len(shape):
             if world_size is not None and shape[scatter_dimension] is not None:
-                shape[scatter_dimension] = shape[scatter_dimension] // int(cast(int, world_size))
+                shape[scatter_dimension] = shape[scatter_dimension] // int(typing.cast(int, world_size))
             else:
                 shape[scatter_dimension] = None
         return tuple(shape)

@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.ir.core import IRGraph
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -25,10 +25,10 @@ def test_numpy_profiler_runtime() -> None:
         assert getattr(res_linux, "__getitem__")("peak_memory_mb") > 0.0
     res_empty = profiler.profile_graph(IRGraph(), {}, num_iters=1, warmup_iters=1)
     assert getattr(res_empty, "__getitem__")("latency_ms") >= 0.0
-    assert cast("EagerCallableProtocol", len)(res_empty["latencies"]) == 1
+    assert typing.cast("EagerCallableProtocol", len)(res_empty["latencies"]) == 1
     inp = {"a": [1.0, 2.0], "b": np.array([3.0, 4.0], dtype=np.float32)}
-    res_full = cast("EagerCallableProtocol", profiler.profile_graph)(cast("EagerCallableProtocol", IRGraph)(), inp, num_iters=2, warmup_iters=1)
-    assert cast("EagerCallableProtocol", len)(res_full["latencies"]) == 2
+    res_full = typing.cast("EagerCallableProtocol", profiler.profile_graph)(typing.cast("EagerCallableProtocol", IRGraph)(), inp, num_iters=2, warmup_iters=1)
+    assert typing.cast("EagerCallableProtocol", len)(res_full["latencies"]) == 2
 
 
 def test_jax_profiler_runtime() -> None:
@@ -51,7 +51,7 @@ def test_jax_profiler_runtime() -> None:
 
     arr = jnp.array([1.0, 2.0], dtype=jnp.float32)
     res_jax = profiler.profile_graph(IRGraph(), {"x": arr, "y": [3.0, 4.0]}, num_iters=2, warmup_iters=1)
-    assert cast("EagerCallableProtocol", len)(res_jax["latencies"]) == 2
+    assert typing.cast("EagerCallableProtocol", len)(res_jax["latencies"]) == 2
 
 
 def _test_pytorch_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -228,7 +228,7 @@ def _test_mlx_profiler_runtime_part_2(_state: dict[str, EagerTensorProtocol]) ->
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = real_mlx_pkg
     with patch.dict(sys.modules, {"mlx": None, "mlx.core": None}):
         importlib.reload(mlx_prof)
-        assert cast("EagerTensorProtocol", getattr(mlx_prof, "mx")) is None
+        assert typing.cast("EagerTensorProtocol", getattr(mlx_prof, "mx")) is None
     importlib.reload(mlx_prof)
     from ml_switcheroo_ir import LogicalNode
 
@@ -265,9 +265,9 @@ def _test_mlx_profiler_runtime_part_3(_state: dict[str, EagerTensorProtocol]) ->
     MockMlxArray.__name__ = "array"
     m_arr = MockMlxArray()
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", MagicMock()):
-        assert cast("EagerCallableProtocol", _prepare_mlx_inputs)({"custom": m_arr}) == [m_arr]
+        assert typing.cast("EagerCallableProtocol", _prepare_mlx_inputs)({"custom": m_arr}) == [m_arr]
     g_ops = IRGraph()
-    g_ops.nodes["relu"] = LogicalNode("relu", "Relu", ["in1"])
+    g_ops.nodes["relu"] = IRNode(id="relu", op_type="Relu", inputs=[])
     mock_mlx_ops = MagicMock()
     mock_mlx_ops.compile.side_effect = lambda fn: fn
     getattr(_state, "update")({"MockMlxArray": MockMlxArray, "g_ops": g_ops, "m_arr": m_arr, "mock_eval": mock_eval})
@@ -337,7 +337,7 @@ def _test_cupy_profiler_runtime_part_1(_state: dict[str, EagerTensorProtocol]) -
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", None):
         res_none = profiler.profile_graph(IRGraph(), {"a": [1.0]}, num_iters=2)
         assert res_none["latency_ms"] == 0.0
-        assert cast("EagerCallableProtocol", len)(res_none["latencies"]) == 2
+        assert typing.cast("EagerCallableProtocol", len)(res_none["latencies"]) == 2
     mock_cp = MagicMock()
     dummy_arr = MagicMock()
     mock_cp.ndarray = type("DummyArray", (), {})
@@ -370,7 +370,7 @@ def _test_cupy_profiler_runtime_part_2(_state: dict[str, EagerTensorProtocol]) -
         from ml_switcheroo_compiler.ir.core import IRNode
 
         graph_with_ops = IRGraph()
-        getattr(graph_with_ops.nodes, "__setitem__")("relu1", cast("EagerCallableProtocol", IRNode)("Relu", "relu1", ["arr"]))
+        graph_with_ops.nodes["relu1"] = IRNode("Relu", "relu1", inputs=["arr"])
         with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"relu1": inst}) as mock_eval:
             res_ops = profiler.profile_graph(graph_with_ops, {"arr": inst}, num_iters=1, warmup_iters=1)
             assert mock_eval.called
@@ -401,7 +401,7 @@ def _test_cupy_profiler_runtime_part_3(_state: dict[str, EagerTensorProtocol]) -
 
     with patch.dict(sys.modules, {"cupy": None}):
         importlib.reload(cupy_prof)
-        assert cast("EagerTensorProtocol", getattr(cupy_prof, "cp")) is None
+        assert typing.cast("EagerTensorProtocol", getattr(cupy_prof, "cp")) is None
     importlib.reload(cupy_prof)
     from ml_switcheroo_compiler.backends.cupy.profiler import _get_cupy_peak_memory_mb
 
@@ -482,7 +482,7 @@ def _test_cupy_profiler_runtime_part_5(_state: dict[str, EagerTensorProtocol]) -
         assert _is_cupy_available() is True
     mod_cuda_unavail = CustomMod()
     setattr(mod_cuda_unavail, "cuda", CustomMod())
-    setattr(cast("EagerTensorProtocol", getattr(mod_cuda_unavail, "cuda")), "is_available", lambda: False)
+    setattr(typing.cast("EagerTensorProtocol", getattr(mod_cuda_unavail, "cuda")), "is_available", lambda: False)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_unavail):
         assert _is_cupy_available() is False
     mod_cuda_avail = CustomMod()
@@ -512,7 +512,7 @@ def _test_cupy_profiler_runtime_part_6(_state: dict[str, EagerTensorProtocol]) -
     mod_cuda_zero = CustomMod()
     setattr(mod_cuda_zero, "cuda", CustomMod())
     setattr(mod_cuda_zero.cuda, "is_available", lambda: True)
-    setattr(mod_cuda_zero.cuda, "runtime", cast("EagerCallableProtocol", CustomMod)())
+    setattr(mod_cuda_zero.cuda, "runtime", typing.cast("EagerCallableProtocol", CustomMod)())
     setattr(getattr(mod_cuda_zero.cuda, "runtime"), "getDeviceCount", lambda: 0)
     with patch("ml_switcheroo_compiler.backends.cupy.profiler.cp", mod_cuda_zero):
         assert bool(_is_cupy_available()) is False

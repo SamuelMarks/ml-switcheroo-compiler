@@ -1,5 +1,7 @@
 """Tests for creation operation exception handling outside active tracing contexts."""
 
+from __future__ import annotations
+
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType

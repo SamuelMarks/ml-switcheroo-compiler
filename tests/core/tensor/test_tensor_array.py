@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -77,5 +77,5 @@ def test_tensor_array() -> None:
     ta.write(t_idx_proxy, t_val_proxy)
     s = ta.stack()
 
-    assert len(cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "nodes"))) >= 3
+    assert len(typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "nodes"))) >= 3
     state.global_tracing_state.is_tracing = False

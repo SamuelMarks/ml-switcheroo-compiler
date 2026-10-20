@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -21,6 +21,6 @@ def test_frontend_utils_missing() -> None:
 
         shape = (10,)
 
-    assert cast("EagerCallableProtocol", _multinomial_shape)(cast("EagerCallableProtocol", MockTensor)(), size=5) == (5,)
+    assert typing.cast("EagerCallableProtocol", _multinomial_shape)(typing.cast("EagerCallableProtocol", MockTensor)(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)

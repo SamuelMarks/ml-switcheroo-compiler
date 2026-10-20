@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Union
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -24,7 +23,7 @@ class RaggedTensor:
         self.row_splits = row_splits
 
     @property
-    def shape(self) -> Sequence[Union[int, str]]:
+    def shape(self) -> Sequence[int | str]:
         """Return the ragged tensor shape with `-1` marking the ragged dimension.
 
         Returns:

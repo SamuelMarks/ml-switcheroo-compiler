@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Optional, cast
+import typing
 
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 
-def to_categorical(x: TensorOrScalar, num_classes: Optional[int] = None, dtype: str = "float32") -> TensorOrScalar:
+def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str = "float32") -> TensorOrScalar:
     """Convert an integer class index tensor into a one-hot binary class matrix.
 
     Args:
@@ -27,7 +27,7 @@ def to_categorical(x: TensorOrScalar, num_classes: Optional[int] = None, dtype: 
     indices = ops.arange(num_classes)
     x_expanded = ops.expand_dims(x_ops, -1)
     one_hot = ops.equal(x_expanded, indices)
-    return cast(TensorOrScalar, ops.cast(one_hot, dtype))
+    return typing.cast(TensorOrScalar, ops.cast(one_hot, dtype))
 
 
 def normalize(x: TensorOrScalar, axis: int = -1, order: int = 2) -> TensorOrScalar:

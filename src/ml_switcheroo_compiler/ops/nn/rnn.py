@@ -1,5 +1,7 @@
 """RNN operations frontend."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.nn.conv_lstm import conv1d_lstm_cell, conv2d_lstm_cell, conv3d_lstm_cell, conv_lstm_cell
 from ml_switcheroo_compiler.ops.nn.gru import gru_cell
 from ml_switcheroo_compiler.ops.nn.lstm import lstm_cell

@@ -1,5 +1,7 @@
 """Passes package exposing middle-end graph transformation passes."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
 from ml_switcheroo_compiler.transforms.passes.batch_norm_folding import batch_norm_folding_pass
 from ml_switcheroo_compiler.transforms.passes.broadcast_explicitizer import broadcast_explicitizer_pass

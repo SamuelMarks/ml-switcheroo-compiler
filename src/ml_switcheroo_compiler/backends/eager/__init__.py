@@ -1,5 +1,7 @@
 """Eager backend utilities."""
 
+from __future__ import annotations
+
 from .audio import istft_eager, mel_filterbank_eager, mfcc_eager
 from .core_group_ops import _group_mean, _group_norm, _group_variance
 from .core_math_ops import (

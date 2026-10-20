@@ -1,5 +1,7 @@
 """Core Random."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 

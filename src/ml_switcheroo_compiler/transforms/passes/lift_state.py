@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.passes.state_lifting import (
     StateEntry,
@@ -22,7 +22,7 @@ StateValue = StateEntry
 
 
 def flatten_state_dict(
-    state_dict: dict[str, typing.Union[StateValue, dict[str, StateValue]]],
+    state_dict: dict[str, StateValue | dict[str, StateValue]],
     prefix: str = "",
 ) -> dict[str, StateValue]:
     """Flatten a nested state dictionary into a dot-delimited flat map.
@@ -46,7 +46,7 @@ def flatten_state_dict(
 
 def unflatten_state_dict(
     flat_state: dict[str, StateValue],
-) -> dict[str, typing.Union[StateValue, dict[str, StateValue]]]:
+) -> dict[str, StateValue | dict[str, StateValue]]:
     """Unflatten a dot-delimited state dictionary back into a nested structure.
 
     Args:
@@ -55,7 +55,7 @@ def unflatten_state_dict(
     Returns:
         dict[str, typing.Union[StateValue, dict[str, StateValue]]]: Nested state dictionary.
     """
-    nested: dict[str, typing.Union[StateValue, dict[str, StateValue]]] = {}
+    nested: dict[str, StateValue | dict[str, StateValue]] = {}
     for k, v in flat_state.items():
         parts: list[str] = k.split(".")
         d: dict[str, StateValue] = nested
@@ -129,15 +129,15 @@ def lift_module_state(container: TensorOrScalar) -> tuple[dict[str, StateValue],
 
 
 def lift_state(
-    container: Callable[..., TensorOrScalar],
-) -> tuple[dict[str, StateValue], Callable[..., tuple[StateValue, dict[str, StateValue]]]]:
+    container: TypedVariadicCallable[TensorOrScalar],
+) -> tuple[dict[str, StateValue], TypedVariadicCallable[tuple[StateValue, dict[str, StateValue]]]]:
     """Functionalize a callable variable container into pure signature (state, *args) -> (out, new_state).
 
     Args:
-        container (Callable[..., TensorOrScalar]): Callable stateful container.
+        container (TypedVariadicCallable[TensorOrScalar]): Callable stateful container.
 
     Returns:
-        tuple[dict[str, StateValue], Callable[..., tuple[StateValue, dict[str, StateValue]]]]: Initial state dict and pure callable.
+        tuple[dict[str, StateValue], TypedVariadicCallable[tuple[StateValue, dict[str, StateValue]]]]: Initial state dict and pure callable.
     """
     return StateLiftingPass().functionalize(container)
 

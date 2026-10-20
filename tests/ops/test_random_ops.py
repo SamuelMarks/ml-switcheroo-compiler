@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.random_ops import binomial, categorical, choice, dirichlet, permutation, truncated_normal
 from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -26,12 +26,12 @@ def test_random_ops_infer_shape() -> None:
         None.
     """
     t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
-    assert cast("EagerCallableProtocol", categorical)().infer_shape(t) == (2, 2)
-    assert cast("EagerCallableProtocol", dirichlet)().infer_shape(t) == (2, 2)
-    assert cast("EagerCallableProtocol", binomial)().infer_shape(t) == (2, 2)
-    assert cast("EagerCallableProtocol", truncated_normal)().infer_shape(t) == (2, 2)
-    assert cast("EagerCallableProtocol", permutation)().infer_shape(t) == (2, 2)
-    assert cast("EagerCallableProtocol", choice)().infer_shape(t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", categorical)().infer_shape(t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", dirichlet)().infer_shape(t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", binomial)().infer_shape(t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", truncated_normal)().infer_shape(t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", permutation)().infer_shape(t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", choice)().infer_shape(t) == (2, 2)
 
     assert Rademacher().infer_shape(DummyShape().shape) == (2, 2)
     assert Rademacher().infer_shape() == ()

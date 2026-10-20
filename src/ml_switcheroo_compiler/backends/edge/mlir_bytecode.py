@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import struct
-from typing import Callable, Optional, Union, cast
 
 import yaml
 
@@ -22,12 +21,12 @@ class MLIRBytecodeEncoder:
         self.types: list[str] = []
         self.type_map: dict[str, int] = {}
         self.ssa_values: dict[str, int] = {}
-        self.ops: list[dict[str, Union[str, list[str], list[int]]]] = []
+        self.ops: list[dict[str, str | list[str] | list[int]]] = []
 
         path: str = os.path.join(os.path.dirname(__file__), "mlir_spec.yaml")
         with open(path) as f:
-            data: dict[str, Union[str, int, list[str], dict[str, int]]] = yaml.safe_load(f)
-            self.spec: MlirSpecConfig = cast("Callable[..., MlirSpecConfig]", MlirSpecConfig)(**data)
+            data: dict[str, str | int | list[str] | dict[str, int]] = yaml.safe_load(f)
+            self.spec: MlirSpecConfig = MlirSpecConfig.model_validate(data)
 
         # Pre-seed dialects from spec
         for d in self.spec.default_dialects:
@@ -94,7 +93,7 @@ class MLIRBytecodeEncoder:
         op_name: str,
         args: list[str],
         rets: list[str],
-        ret_types: Optional[list[str]] = None,
+        ret_types: list[str] | None = None,
     ) -> None:
         """Add op with explicit SSA identifiers and return types.
 

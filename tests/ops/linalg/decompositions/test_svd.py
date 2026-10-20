@@ -4,16 +4,17 @@ from __future__ import annotations
 
 # ruff: noqa: E501
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.svd import Svd, svd
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -28,15 +29,15 @@ def test_svd_dummy() -> None:
         shape = (2, 3, 4)
 
     t = MockTensor()
-    (u_shape, s_shape, vh_shape) = cast("EagerCallableProtocol", op.infer_shape)(t, compute_uv=True, full_matrices=True)
+    (u_shape, s_shape, vh_shape) = typing.cast("EagerCallableProtocol", op.infer_shape)(t, compute_uv=True, full_matrices=True)
     assert u_shape == (2, 3, 3)
     assert s_shape == (2, 3)
     assert vh_shape == (2, 4, 4)
-    (u_shape, s_shape, vh_shape) = cast("EagerCallableProtocol", op.infer_shape)(t, compute_uv=True, full_matrices=False)
+    (u_shape, s_shape, vh_shape) = typing.cast("EagerCallableProtocol", op.infer_shape)(t, compute_uv=True, full_matrices=False)
     assert u_shape == (2, 3, 3)
     assert s_shape == (2, 3)
     assert vh_shape == (2, 3, 4)
-    res = cast("EagerCallableProtocol", op.infer_shape)(t, compute_uv=False)
+    res = typing.cast("EagerCallableProtocol", op.infer_shape)(t, compute_uv=False)
     assert res == ((2, 3),)
 
 
@@ -61,10 +62,10 @@ def test_svd_eager() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.array([[1.0, 0.0], [0.0, 1.0]]), np.array([1.0, 1.0]), np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]))
         mock_backend.return_value.array = lambda x: x
-        (res1, res2, res3) = cast("EagerCallableProtocol", svd)(t)
-        assert isinstance(res1, Tensor)
-        assert isinstance(res2, Tensor)
-        assert isinstance(res3, Tensor)
+        (res1, res2, res3) = typing.cast("EagerCallableProtocol", svd)(t)
+        assert isinstance(typing.cast("EagerValue", res1), Tensor)
+        assert isinstance(typing.cast("EagerValue", res2), Tensor)
+        assert isinstance(typing.cast("EagerValue", res3), Tensor)
 
 
 def test_svd_full_matrices_true() -> None:

@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from typing import Union, cast
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -48,11 +47,11 @@ class SparseGenerator(PythonStringGenerator):
         res: list[str] = []
         return res
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
         """Retrieve operation formatting templates for Sparse COO kernels.
 
         Args:
-            kwargs (dict[str, object]): Keyword arguments passed to the visitor.
+            kwargs (dict[str, object] | None): Keyword arguments passed to the visitor.
 
         Returns:
             dict[str, str]: Map from op_type to formatting template.
@@ -108,11 +107,11 @@ class SparseGenerator(PythonStringGenerator):
         self.indent_level -= 1
         return "\n".join(self.code)
 
-    def compile_fn(self) -> Callable[..., Union[COOTensor, EagerValue, tuple[Union[COOTensor, EagerValue], ...]]]:
+    def compile_fn(self) -> TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]]:
         """Compile the generated Python code into an executable callable.
 
         Returns:
-            Callable[..., Union[COOTensor, EagerValue, tuple[Union[COOTensor, EagerValue], ...]]]: Compiled function.
+            TypedVariadicCallable[Union[COOTensor, EagerValue, tuple[Union[COOTensor, EagerValue], ...]]]: Compiled function.
 
         Raises:
             RuntimeError: If evaluation function was not defined in generated script.
@@ -124,8 +123,8 @@ class SparseGenerator(PythonStringGenerator):
         if not callable(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        return cast(
-            Callable[..., Union[COOTensor, EagerValue, tuple[Union[COOTensor, EagerValue], ...]]],
+        return typing.cast(
+            "TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]]",
             func,
         )
 
@@ -406,11 +405,11 @@ class SparseGenerator(PythonStringGenerator):
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict), backend=BackendRegistry.get("numpy"))
+            res_dict = evaluate_graph(graph, feed_dict, backend=BackendRegistry.get("numpy"))
             if not graph.outputs:
-                return cast(EagerValue, res_dict)
+                return typing.cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:
-                return cast(EagerValue, res_dict.get(graph.outputs[0]))
+                return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
 
         return CompiledArtifact(

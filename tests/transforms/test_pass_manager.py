@@ -6,15 +6,16 @@ hashing, and the iterative execution of optimization passes within the PassManag
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter, IRValidator, PassManager, _graph_hash
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -230,9 +231,9 @@ def test_pass_manager_nodes_list() -> None:
 
     IRValidator()
     mock_g = MockGraph()
-    cast("EagerCallableProtocol", IRValidator.check_shapes)(mock_g)
-    h = cast("EagerCallableProtocol", _graph_hash)(mock_g)
-    assert isinstance(h, str)
+    typing.cast("EagerCallableProtocol", IRValidator.check_shapes)(mock_g)
+    h = typing.cast("EagerCallableProtocol", _graph_hash)(mock_g)
+    assert isinstance(typing.cast("EagerValue", h), str)
 
 
 def test_pass_pipeline_load_and_prerequisites() -> None:
@@ -294,7 +295,7 @@ def test_pass_manager_coverage_branches() -> None:
 
     g_list = IRGraph()
     n_item = IRNode(id="n1", op_type="Input")
-    setattr(g_list, "nodes", [n_item])
+    object.__setattr__(g_list, "nodes", [n_item])
     snap = _snapshot_graph(g_list)
     assert "n1" in snap["nodes"]
     _restore_graph(g_list, snap)
@@ -305,11 +306,11 @@ def test_pass_manager_coverage_branches() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
     dg = DummyGraphWithoutIO()
-    cast("EagerCallableProtocol", _restore_graph)(dg, snap)
-    cast("EagerCallableProtocol", _restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
+    typing.cast("EagerCallableProtocol", _restore_graph)(dg, snap)
+    typing.cast("EagerCallableProtocol", _restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
     from ml_switcheroo_ir import LogicalGraph
 
     lg = LogicalGraph("test_lg")

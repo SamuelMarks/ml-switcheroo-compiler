@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -29,7 +29,7 @@ def crelu(features: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrSca
 
     from ml_switcheroo_compiler.ops.binary import maximum
 
-    return maximum(concatenate([cast(Tensor, features), negative(features)], axis=cast("int", axis)), 0.0)
+    return maximum(concatenate([typing.cast(Tensor, features), negative(features)], axis=typing.cast("int", axis)), 0.0)
 
 
 def isotonic_regression(y: TensorOrScalar, sample_weights: TensorOrScalar = None, increasing: TensorOrScalar = True, name: TensorOrScalar = None) -> TensorOrScalar:
@@ -123,7 +123,7 @@ def softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwargs: 
         return get_active_backend().execute_op("Softmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Softmax", [cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "Softmax", [typing.cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
 
 
 @register_op("LogSoftmax")
@@ -173,7 +173,7 @@ def log_softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwar
         return get_active_backend().execute_op("LogSoftmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "LogSoftmax", [cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "LogSoftmax", [typing.cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
 
 
 @register_op("Sigmoid")
@@ -214,17 +214,15 @@ def sigmoid(x: Tensor | str, *args: int | float | str | None, **kwargs: int | fl
     Returns:
             tuple[int, ...]: Result.
     """
-    from typing import cast
-
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast(Tensor, get_active_backend().execute_op("Sigmoid", x))
+        return typing.cast(Tensor, get_active_backend().execute_op("Sigmoid", x))
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return cast(Tensor, emit_ir_node(None, "Sigmoid", [str(x)], getattr(x, "shape_metadata", None), {}))
+    return typing.cast(Tensor, emit_ir_node(None, "Sigmoid", [str(x)], getattr(x, "shape_metadata", None), {}))
 
 
 @register_op("OneHot")
@@ -252,7 +250,7 @@ class OneHot(OpDef):
         if axis == -1:
             return indices_shape + (depth,)
         else:
-            return indices_shape[: int(cast(int, axis))] + (depth,) + indices_shape[int(cast(int, axis)) :]
+            return indices_shape[: int(typing.cast(int, axis))] + (depth,) + indices_shape[int(typing.cast(int, axis)) :]
 
 
 def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -282,7 +280,7 @@ def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs
     meta = copy.copy(getattr(indices, "shape_metadata", None))
     if meta is not None:
         meta.shape = shape
-    return emit_ir_node(None, "OneHot", [cast(str, indices)], meta, kwargs)
+    return emit_ir_node(None, "OneHot", [typing.cast(str, indices)], meta, kwargs)
 
 
 @register_op("Rrelu")
@@ -331,7 +329,7 @@ def rrelu(x: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) ->
         return get_active_backend().execute_op("Rrelu", x, *args, **kwargs)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Rrelu", [cast(str, x)], getattr(x, "shape_metadata", None), kwargs)
+    return emit_ir_node(None, "Rrelu", [typing.cast(str, x)], getattr(x, "shape_metadata", None), kwargs)
 
 
 @register_op("HardSilu")

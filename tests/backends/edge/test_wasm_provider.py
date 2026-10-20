@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 from unittest import mock
 from unittest.mock import mock_open, patch
 
@@ -13,7 +13,7 @@ import yaml
 import ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider as provider
 from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_simd_op, get_wasm_simd_ops, get_wasm_template, load_yaml, load_yaml_dir
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -76,7 +76,7 @@ def test_load_yaml() -> None:
     yaml_data = {"templates": {"test": {"body": "code"}}, "js_orchestration": {}, "cpp_helpers": []}
     with patch("builtins.open", mock_open(read_data=yaml.dump(yaml_data))):
         res = load_yaml("test.yaml")
-        assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("test")), "__getitem__")("body")) == "code"
+        assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("test")), "__getitem__")("body")) == "code"
 
 
 def test_load_yaml_dir(monkeypatch: EagerTensorProtocol) -> None:
@@ -106,22 +106,22 @@ def test_load_yaml_dir(monkeypatch: EagerTensorProtocol) -> None:
             kwargs: Test parameter `kwargs`.
         """
         if file == "file1.yaml":
-            return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data1))())
+            return typing.cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data1))())
         elif file == "file2.yaml":
-            return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data2))())
+            return typing.cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data2))())
         else:
-            return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data3))())
+            return typing.cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(mock_data3))())
 
     with patch("glob.glob", side_effect=mock_glob):
         with patch("pathlib.Path.is_dir", return_value=True):
             with patch("builtins.open", side_effect=mock_open_impl):
                 res = load_yaml_dir("mock_dir")
                 assert "t1" in res["templates"]
-                assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t1")) == {"body": "string body"}
+                assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t1")) == {"body": "string body"}
                 assert "t2" in res["templates"]
-                assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t2")) == {"body": "dict body"}
+                assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t2")) == {"body": "dict body"}
                 assert "t3" in res["templates"]
-                assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t3")) == ["list", "body"]
+                assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")("templates")), "__getitem__")("t3")) == ["list", "body"]
 
 
 def test_load_yaml_dir_not_dir() -> None:

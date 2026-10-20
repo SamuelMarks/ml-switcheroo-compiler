@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.grad.testing import check_jvp_vjp_duality
 from ml_switcheroo_compiler.ops import linalg
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -32,7 +32,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             Returns:
                 EagerValue: Product matrix.
             """
-            return cast("EagerCallableProtocol", linalg.matmul)(x, y)
+            return typing.cast("EagerCallableProtocol", linalg.matmul)(x, y)
 
         x_val = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         y_val = np.array([[0.5, -1.0], [1.5, 2.0]], dtype=np.float32)
@@ -47,7 +47,7 @@ def test_jvp_vjp_duality_linear_ops() -> None:
             Returns:
                 EagerValue: Scaled matrix.
             """
-            return cast("EagerValue", cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.5))
+            return typing.cast("EagerValue", typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2.5))
 
         check_jvp_vjp_duality(scale_fn, (x_val,))
     assert callable(test_jvp_vjp_duality_linear_ops)
@@ -70,7 +70,9 @@ def test_jvp_vjp_duality_transcendental_ops() -> None:
             Returns:
                 EagerValue: Evaluated array.
             """
-            return (((cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)) - ((cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", 2.0))) + (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 0.5))
+            return (((typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)) - ((typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", 2.0))) + (
+                typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 0.5)
+            )
 
         arr = np.array([0.2, -0.5, 0.8, -1.2], dtype=np.float32)
         check_jvp_vjp_duality(poly_fn, (arr,))
@@ -94,7 +96,7 @@ def test_jvp_vjp_duality_reductions() -> None:
             Returns:
                 EagerValue: Linear combination.
             """
-            return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 1.5)) + (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 0.75))
+            return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 1.5)) + (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 0.75))
 
         arr = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         check_jvp_vjp_duality(linear_comb_fn, (arr,))
@@ -118,7 +120,7 @@ def test_jvp_vjp_duality_failure_raises() -> None:
             Returns:
                 EagerValue: Scaled array.
             """
-            return cast("EagerValue", cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0))
+            return typing.cast("EagerValue", typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2.0))
 
         arr = np.array([1.0, 2.0], dtype=np.float32)
         tan = np.array([0.5, 0.5], dtype=np.float32)

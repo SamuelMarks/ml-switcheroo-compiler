@@ -8,22 +8,44 @@ operations.
 from __future__ import annotations
 
 import os
-from collections.abc import Callable
-from typing import Optional, Union
+import typing
+from collections.abc import Callable, Sequence
 
 import yaml
+from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
-JVPRuleCallable = Callable[..., Union[str, tuple[str, ...], UnconnectedGradients, None]]
+
+class JVPRuleCallable(typing.Protocol):
+    """Protocol for Jacobian-Vector Product (JVP) rule callables."""
+
+    def __call__(
+        self,
+        graph: LogicalGraph,
+        node: LogicalNode,
+        tangents: Sequence[str] | str,
+        /,
+    ) -> str | tuple[str, ...] | UnconnectedGradients | None:
+        """Evaluate the JVP rule for a node.
+
+        Args:
+            graph (LogicalGraph): Target IR graph.
+            node (LogicalNode): Target IR node.
+            tangents (Sequence[str] | str): Incoming tangent node ID(s).
+
+        Returns:
+            str | tuple[str, ...] | UnconnectedGradients | None: Output tangent(s).
+        """
+        ...
 
 
 class JVPRuleModel(BaseModel):
     """Declarative Jacobian-Vector Product (JVP) rule specification."""
 
     jvp: str = Field(description="Symbolic derivative expression for the forward tangent propagation.")
-    description: Optional[str] = Field(default=None, description="Human-readable description of the rule.")
+    description: str | None = Field(default=None, description="Human-readable description of the rule.")
 
 
 class PrimitiveJVPsModel(BaseModel):
@@ -32,10 +54,10 @@ class PrimitiveJVPsModel(BaseModel):
     rules: dict[str, JVPRuleModel] = Field(default_factory=dict, description="Mapping of op_name to JVP rule.")
 
 
-_DECLARATIVE_JVP_CACHE: Optional[dict[str, JVPRuleModel]] = None
+_DECLARATIVE_JVP_CACHE: dict[str, JVPRuleModel] | None = None
 
 
-def load_primitive_jvp_rules(path: Optional[str] = None) -> dict[str, JVPRuleModel]:
+def load_primitive_jvp_rules(path: str | None = None) -> dict[str, JVPRuleModel]:
     """Load and validate declarative primitive JVP rules via Pydantic model.
 
     Args:
@@ -118,9 +140,9 @@ def get_jvp(op_name: str) -> JVPRuleCallable:
     data_jvp = get_jvp_from_data(op_name)
     if data_jvp is not None:
         return data_jvp
-    if op_name not in _JVP_REGISTRY:
-        raise ValueError(f"No JVP rule registered for operation: {op_name}")
-    return _JVP_REGISTRY[op_name]
+    if op_name in _JVP_REGISTRY:
+        return _JVP_REGISTRY[op_name]
+    raise ValueError(f"No JVP rule registered for operation: {op_name}")
 
 
 def has_jvp(op_name: str) -> bool:
@@ -134,6 +156,4 @@ def has_jvp(op_name: str) -> bool:
     """
     if op_name in _JVP_REGISTRY:
         return True
-    if get_jvp_from_data(op_name) is not None:
-        return True
-    return op_name in _JVP_REGISTRY
+    return get_jvp_from_data(op_name) is not None

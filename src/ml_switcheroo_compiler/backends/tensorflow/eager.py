@@ -1,5 +1,7 @@
 """Dedicated eager execution handlers and dispatch for the TensorFlow backend."""
 
+from __future__ import annotations
+
 import sys
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue

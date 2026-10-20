@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -29,7 +29,7 @@ class DummyTensor:
 
     def __len__(self) -> EagerValue:
         """Test function __len__."""
-        return cast("EagerTensorProtocol", getattr(self.shape, "__getitem__")(0))
+        return typing.cast("EagerTensorProtocol", getattr(self.shape, "__getitem__")(0))
 
 
 def test_ragged_tensor() -> None:
@@ -37,7 +37,7 @@ def test_ragged_tensor() -> None:
     v = DummyTensor((4, 2))
     r = DummyTensor((3,))
 
-    rt = cast("EagerCallableProtocol", RaggedTensor)(v, r)
+    rt = typing.cast("EagerCallableProtocol", RaggedTensor)(v, r)
     assert rt.values == v
     assert rt.row_splits == r
 
@@ -49,5 +49,5 @@ def test_ragged_tensor() -> None:
     # Empty
     v2 = DummyTensor(())
     r2 = DummyTensor((0,))
-    rt2 = cast("EagerCallableProtocol", RaggedTensor)(v2, r2)
+    rt2 = typing.cast("EagerCallableProtocol", RaggedTensor)(v2, r2)
     assert rt2.shape == (0,)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_stats import approx_max_k, approx_min_k, corrcoef, correlate, cov, ctc_loss, pmean, psum
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -55,7 +55,7 @@ def test_approx_max_k(mocker: EagerTensorProtocol) -> None:
     state.global_tracing_state.active_graph = MagicMock()
     mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats._emit_reduction_node", return_value=MagicMock(data=MagicMock(id="val")))
     x = Tensor(1.0, TensorConfig((), "float32", "cpu"))
-    assert getattr(getattr(cast("EagerTensorProtocol", getattr(approx_max_k(x, 5), "__getitem__")(0)), "data", cast("EagerTensorProtocol", getattr(approx_max_k(x, 5), "__getitem__")(0))), "id", cast("EagerTensorProtocol", getattr(approx_max_k(x, 5), "__getitem__")(0))) == "val"
+    assert getattr(getattr(typing.cast("EagerTensorProtocol", getattr(approx_max_k(x, 5), "__getitem__")(0)), "data", typing.cast("EagerTensorProtocol", getattr(approx_max_k(x, 5), "__getitem__")(0))), "id", typing.cast("EagerTensorProtocol", getattr(approx_max_k(x, 5), "__getitem__")(0))) == "val"
 
 
 def test_approx_min_k(mocker: EagerTensorProtocol) -> None:
@@ -69,7 +69,7 @@ def test_approx_min_k(mocker: EagerTensorProtocol) -> None:
     state.global_tracing_state.active_graph = MagicMock()
     mocker.patch("ml_switcheroo_compiler.ops.reductions.frontend_stats._emit_reduction_node", return_value=MagicMock(data=MagicMock(id="val")))
     x = Tensor(1.0, TensorConfig((), "float32", "cpu"))
-    assert getattr(getattr(cast("EagerTensorProtocol", getattr(approx_min_k(x, 5), "__getitem__")(0)), "data", cast("EagerTensorProtocol", getattr(approx_min_k(x, 5), "__getitem__")(0))), "id", cast("EagerTensorProtocol", getattr(approx_min_k(x, 5), "__getitem__")(0))) == "val"
+    assert getattr(getattr(typing.cast("EagerTensorProtocol", getattr(approx_min_k(x, 5), "__getitem__")(0)), "data", typing.cast("EagerTensorProtocol", getattr(approx_min_k(x, 5), "__getitem__")(0))), "id", typing.cast("EagerTensorProtocol", getattr(approx_min_k(x, 5), "__getitem__")(0))) == "val"
 
 
 def test_ctc_loss(mocker: EagerTensorProtocol) -> None:
@@ -110,9 +110,9 @@ def test_corrcoef(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol)
         disable_compile()  # sets eager_mode = True
 
         res1 = corrcoef(x)  # y is None
-        assert cast("EagerTensorProtocol", getattr(res1, "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(res1, "shape")) == (2, 2)
         res2 = corrcoef(x, x)  # y is not None
-        assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (4, 4)
+        assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (4, 4)
     finally:
         sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = True
         enable_compile()
@@ -144,7 +144,7 @@ def test_correlate(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol
     try:
         sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = False
         disable_compile()
-        assert cast("EagerTensorProtocol", getattr(correlate(x, x), "shape")) == (1,)
+        assert typing.cast("EagerTensorProtocol", getattr(correlate(x, x), "shape")) == (1,)
     finally:
         sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = True
         enable_compile()
@@ -179,8 +179,8 @@ def test_cov(mocker: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> N
     try:
         sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = False
         disable_compile()
-        assert cast("EagerTensorProtocol", getattr(cov(x), "shape")) == (2, 2)
-        assert cast("EagerTensorProtocol", getattr(cov(x, x), "shape")) == (4, 4)
+        assert typing.cast("EagerTensorProtocol", getattr(cov(x), "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(cov(x, x), "shape")) == (4, 4)
     finally:
         sys.modules["ml_switcheroo_compiler.tracing.state"].global_tracing_state.is_tracing = True
         enable_compile()

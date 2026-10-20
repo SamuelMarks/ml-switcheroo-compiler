@@ -4,14 +4,14 @@ from __future__ import annotations
 
 # ruff: noqa: E501
 import sys
-from typing import TYPE_CHECKING
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]

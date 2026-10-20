@@ -1,12 +1,14 @@
 """RNN operations."""
 
-from collections.abc import Callable, Sequence
-from typing import Optional, cast  # noqa: F401
+from __future__ import annotations
+
+import typing  # noqa: F401
+from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
@@ -40,7 +42,7 @@ def gru_cell(
     state: Tensor,
     kernel: Tensor,
     recurrent_kernel: Tensor,
-    bias: Optional[Tensor] = None,
+    bias: Tensor | None = None,
 ) -> TensorOrScalar:
     """Fused GRU cell math.
 
@@ -60,8 +62,8 @@ def gru_cell(
 
     matrix_inner = matmul(state, recurrent_kernel)
 
-    x_parts = cast(Callable[..., Sequence[Tensor]], split)(matrix_x, 3, axis=-1)
-    r_parts = cast(Callable[..., Sequence[Tensor]], split)(matrix_inner, 3, axis=-1)
+    x_parts = typing.cast(TypedVariadicCallable[Sequence[Tensor]], split)(matrix_x, 3, axis=-1)
+    r_parts = typing.cast(TypedVariadicCallable[Sequence[Tensor]], split)(matrix_inner, 3, axis=-1)
 
     h_new = _compute_gru_gates(x_parts, r_parts, state)
     return h_new, h_new

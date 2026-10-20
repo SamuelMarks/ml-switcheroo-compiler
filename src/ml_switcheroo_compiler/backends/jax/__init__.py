@@ -1,10 +1,12 @@
 """Jax Code Generator Package."""
 
+from __future__ import annotations
+
 import importlib.util
 import sys
-from typing import cast
+import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 try:
     _has_pkg = importlib.util.find_spec("jax") is not None
@@ -18,7 +20,64 @@ from .distributed_collectives import jax_all_gather, jax_all_reduce, jax_broadca
 from .eager import execute_op
 from .generator import JAXCodeGenerator
 
-type.__setattr__(JAXCodeGenerator, "execute_op", cast("EagerCallableProtocol", classmethod)(execute_op))
-type.__setattr__(JAXCodeGenerator, "all_reduce", staticmethod(jax_all_reduce))
-type.__setattr__(JAXCodeGenerator, "all_gather", staticmethod(jax_all_gather))
-type.__setattr__(JAXCodeGenerator, "broadcast", staticmethod(jax_broadcast))
+__all__ = [
+    "JAXCodeGenerator",
+    "execute_op",
+    "jax_all_gather",
+    "jax_all_reduce",
+    "jax_broadcast",
+]
+
+
+def _all_reduce(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Delegate all_reduce to distributed_collectives.jax_all_reduce.
+
+    Args:
+        *args (EagerValue): Positional arguments.
+        **kwargs (EagerValue): Keyword arguments.
+
+    Returns:
+        EagerValue: Reduced tensor result.
+    """
+    import importlib
+
+    dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
+    return typing.cast("EagerCallableProtocol", getattr(dc, "jax_all_reduce"))(*args, **kwargs)
+
+
+def _all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Delegate all_gather to distributed_collectives.jax_all_gather.
+
+    Args:
+        *args (EagerValue): Positional arguments.
+        **kwargs (EagerValue): Keyword arguments.
+
+    Returns:
+        EagerValue: Gathered tensor result.
+    """
+    import importlib
+
+    dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
+    return typing.cast("EagerCallableProtocol", getattr(dc, "jax_all_gather"))(*args, **kwargs)
+
+
+def _broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+    """Delegate broadcast to distributed_collectives.jax_broadcast.
+
+    Args:
+        *args (EagerValue): Positional arguments.
+        **kwargs (EagerValue): Keyword arguments.
+
+    Returns:
+        EagerValue: Broadcasted tensor result.
+    """
+    import importlib
+
+    dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
+    return typing.cast("EagerCallableProtocol", getattr(dc, "jax_broadcast"))(*args, **kwargs)
+
+
+type.__setattr__(JAXCodeGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(JAXCodeGenerator, "all_reduce", staticmethod(_all_reduce))
+type.__setattr__(JAXCodeGenerator, "all_gather", staticmethod(_all_gather))
+type.__setattr__(JAXCodeGenerator, "broadcast", staticmethod(_broadcast))

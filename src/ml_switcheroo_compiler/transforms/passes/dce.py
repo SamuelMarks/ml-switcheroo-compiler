@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import os
+import typing
 from collections.abc import Set
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
@@ -44,7 +46,7 @@ def _node_has_side_effects(node: IRNode) -> bool:
                 return True
 
     for attr_name in SUBGRAPH_ATTR_KEYS:
-        sub = node.attributes.get(attr_name)
+        sub = typing.cast("IRGraph | AttributeValue", node.attributes.get(attr_name))
         if isinstance(sub, IRGraph):
             if any(_node_has_side_effects(sn) for sn in sub.nodes.values()):
                 return True
@@ -79,7 +81,7 @@ def _prune_nested_subgraphs(node: IRNode) -> bool:
             if sub_mod:
                 modified = True
     for attr_name in SUBGRAPH_ATTR_KEYS:
-        sub = node.attributes.get(attr_name)
+        sub = typing.cast("IRGraph | AttributeValue", node.attributes.get(attr_name))
         if isinstance(sub, IRGraph):
             sub_mod = dce_pass(sub)
             if sub_mod:

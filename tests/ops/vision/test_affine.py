@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.affine import affine_generator, affine_grid, affine_transform, grid_sample, random_crop, random_elastic_transform, random_flip, random_perspective, random_rotation, random_shear, random_translation, random_zoom
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -56,18 +56,18 @@ def test_vision_affine_funcs(mocker: EagerTensorProtocol) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.affine.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert cast("EagerTensorProtocol", getattr(affine_transform(t, t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(affine_generator(1, t, t, t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_flip(t), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_rotation(t, 0.1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_crop(t, (1, 1)), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_zoom(t, (0.5, 0.5)), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_translation(t, 0.1, 0.1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_shear(t, 0.1, 0.1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_perspective(t, 0.1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(random_elastic_transform(t, 0.1, 0.1), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(affine_grid(t, (2, 3)), "config")).shape == (2, 3)
-    assert cast("EagerTensorProtocol", getattr(grid_sample(t, t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(affine_transform(t, t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(affine_generator(1, t, t, t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_flip(t), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_rotation(t, 0.1), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_crop(t, (1, 1)), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_zoom(t, (0.5, 0.5)), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_translation(t, 0.1, 0.1), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_shear(t, 0.1, 0.1), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_perspective(t, 0.1), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(random_elastic_transform(t, 0.1, 0.1), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(affine_grid(t, (2, 3)), "config")).shape == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(grid_sample(t, t), "config")).shape == (2, 3)
 
 
 def test_affine_opdef_infer_shape() -> None:
@@ -80,7 +80,7 @@ def test_affine_opdef_infer_shape() -> None:
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert cast("EagerCallableProtocol", AffineGenerator)().infer_shape(t) == (1, 2, 3)
-    assert cast("EagerCallableProtocol", AffineGrid)().infer_shape(t) == (1, 2, 3)
-    assert cast("EagerCallableProtocol", AffineTransform)().infer_shape(t) == (1, 2, 3)
-    assert cast("EagerCallableProtocol", PerspectiveTransform)().infer_shape(t) == (1, 2, 3)
+    assert typing.cast("EagerCallableProtocol", AffineGenerator)().infer_shape(t) == (1, 2, 3)
+    assert typing.cast("EagerCallableProtocol", AffineGrid)().infer_shape(t) == (1, 2, 3)
+    assert typing.cast("EagerCallableProtocol", AffineTransform)().infer_shape(t) == (1, 2, 3)
+    assert typing.cast("EagerCallableProtocol", PerspectiveTransform)().infer_shape(t) == (1, 2, 3)

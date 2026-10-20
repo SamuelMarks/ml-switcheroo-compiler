@@ -5,26 +5,6 @@ from __future__ import annotations
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
-class _DummyBadShape:
-    """Shape object whose iterator raises TypeError."""
-
-    def __iter__(self) -> _DummyBadShape:
-        """Return self as iterator.
-
-        Returns:
-            _DummyBadShape: Self.
-        """
-        return self
-
-    def __next__(self) -> int:
-        """Raise TypeError on iteration.
-
-        Raises:
-            TypeError: Simulated invalid dimension.
-        """
-        raise TypeError("Not iterable dimension")
-
-
 def test_memory_profiler_exhaustive() -> None:
     """Verify memory profiler across valid shapes, bad shapes, and missing metadata."""
     from ml_switcheroo_compiler.diagnostics.memory_profiler import memory_profiler
@@ -36,9 +16,9 @@ def test_memory_profiler_exhaustive() -> None:
     n0.shape_metadata = (2, 3, 4)
     graph.nodes["n0"] = n0
 
-    # 2. Bad shape metadata (raises TypeError): 4 bytes fallback
+    # 2. Bad shape metadata (raises ValueError on int("invalid_dim")): 4 bytes fallback
     n1 = LogicalNode("n1", "Sub")
-    n1.shape_metadata = _DummyBadShape()
+    n1.shape_metadata = ("invalid_dim",)
     graph.nodes["n1"] = n1
 
     # 3. Missing shape metadata: 4 bytes fallback

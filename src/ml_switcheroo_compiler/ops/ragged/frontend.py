@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Union, cast
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -10,8 +10,8 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
-RaggedArg = Union[Tensor, int, float, str, bool, list[int], tuple[int, ...], None]
-RaggedKwarg = Union[int, float, str, bool, tuple[int, ...], None]
+RaggedArg = typing.Union[Tensor, int, float, str, bool, list[int], tuple[int, ...], "None"]
+RaggedKwarg = typing.Union[int, float, str, bool, tuple[int, ...], "None"]
 
 
 def _ragged_op(
@@ -47,9 +47,9 @@ def _ragged_op(
     op = op_cls()
     out_shape = op.infer_shape(*args, **kwargs)
     tensor_inputs = [a for a in args if isinstance(a, Tensor)]
-    return cast(
+    return typing.cast(
         "Tensor | tuple[Tensor, ...]",
-        cast("EagerCallableProtocol", _emit_linalg_node)(
+        typing.cast("EagerCallableProtocol", _emit_linalg_node)(
             op_name,
             tensor_inputs,
             kwargs,

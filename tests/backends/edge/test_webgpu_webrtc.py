@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import mock_open, patch
 
 import yaml
 
 from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_init, emit_webrtc_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -23,7 +23,7 @@ def test_webrtc_no_handlers_yaml() -> None:
             Args:
                 path: Test parameter `path`.
             """
-            return cast("EagerTensorProtocol", "webrtc_topology.yaml") in cast("EagerTensorProtocol", path)
+            return typing.cast("EagerTensorProtocol", "webrtc_topology.yaml") in typing.cast("EagerTensorProtocol", path)
 
         mock_exists.side_effect = fake_exists
 
@@ -63,11 +63,11 @@ def test_webrtc_with_handlers_yaml() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            if cast("EagerTensorProtocol", "webrtc_topology") in cast("EagerTensorProtocol", path):
-                return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(topology_data))())
-            elif cast("EagerTensorProtocol", "webrtc_collectives") in cast("EagerTensorProtocol", path):
-                return cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(handlers_data))())
-            return cast("EagerTensorProtocol", mock_open(read_data="")())
+            if typing.cast("EagerTensorProtocol", "webrtc_topology") in typing.cast("EagerTensorProtocol", path):
+                return typing.cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(topology_data))())
+            elif typing.cast("EagerTensorProtocol", "webrtc_collectives") in typing.cast("EagerTensorProtocol", path):
+                return typing.cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(handlers_data))())
+            return typing.cast("EagerTensorProtocol", mock_open(read_data="")())
 
         with patch("builtins.open", side_effect=mock_open_file):
             init_str = emit_webrtc_init()

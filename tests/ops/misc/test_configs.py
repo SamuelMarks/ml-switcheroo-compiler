@@ -18,16 +18,16 @@ from ml_switcheroo_compiler.ops.configs import (
 
 def test_configs() -> None:
     """Test configs."""
-    ConvDimensionNumbers([1], [1], [1])
-    ConvGeneralDilatedDimensionNumbers([1], [1], [1])
-    DotDimensionNumbers([1], [1], [1], [1])
-    GatherDimensionNumbers([1], [1], [1])
+    ConvDimensionNumbers(lhs_spec=[1], rhs_spec=[1], out_spec=[1])
+    ConvGeneralDilatedDimensionNumbers(lhs_spec=[1], rhs_spec=[1], out_spec=[1])
+    DotDimensionNumbers(lhs_contracting_dimensions=[1], rhs_contracting_dimensions=[1], lhs_batch_dimensions=[1], rhs_batch_dimensions=[1])
+    GatherDimensionNumbers(offset_dims=[1], collapsed_slice_dims=[1], start_index_map=[1])
     GatherScatterMode()
     Precision()
     PrecisionLike()
     RandomAlgorithm()
     RoundingMethod()
-    ScatterDimensionNumbers([1], [1], [1])
+    ScatterDimensionNumbers(update_window_dims=[1], inserted_window_dims=[1], scatter_dims_to_operand_dims=[1])
     assert callable(ScatterDimensionNumbers)
 
 

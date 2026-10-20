@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_webgl_generator() -> None:
     """Test WebGL code generation."""
     graph = IRGraph()
-    graph.nodes = {"matmul": IRNode(id="matmul", op_type="MatMul", inputs=[])}
+    graph.nodes = NodeDict({"matmul": IRNode(id="matmul", op_type="MatMul", inputs=[])})
     gen = WebGLCodeGenerator(graph)
     out = gen.generate()
     assert "shader_matmul" in out
@@ -23,7 +25,7 @@ def test_webgl_generator() -> None:
 def test_webgl_generator_coverage() -> None:
     """Test WebGL generator coverage."""
     graph = IRGraph()
-    graph.nodes = {"input": IRNode(id="input", op_type="Input", inputs=[])}
+    graph.nodes = NodeDict({"input": IRNode(id="input", op_type="Input", inputs=[])})
     gen = WebGLCodeGenerator(graph)
     out = gen.generate()
     assert "shader_input" not in out
@@ -37,7 +39,7 @@ def test_webgl_generator_shapes_and_inputs() -> None:
     n2 = IRNode(id="n2", op_type="MatMul", inputs=["n0", "n1"], shape_metadata=(16, 64))
     n3 = IRNode(id="n3", op_type="Add", inputs=["n2", "n2"], shape_metadata=(16, 64))
     n4 = IRNode(id="n4", op_type="Exp", inputs=["n3"], shape_metadata=(64,))
-    graph.nodes = {"n0": n0, "n1": n1, "n2": n2, "n3": n3, "n4": n4}
+    graph.nodes = NodeDict({"n0": n0, "n1": n1, "n2": n2, "n3": n3, "n4": n4})
     gen = WebGLCodeGenerator(graph)
     out = gen.generate()
     assert "shader_n2" in out
@@ -52,7 +54,7 @@ def test_webgl_generator_missing_op() -> None:
 
     graph = IRGraph()
     n = IRNode(id="n", op_type="MissingOp", inputs=[])
-    graph.nodes = {"n": n}
+    graph.nodes = NodeDict({"n": n})
     gen = WebGLCodeGenerator(graph)
     with pytest.raises(ValueError, match="Missing WebGL shader template for operation: MissingOp"):
         gen.generate()
@@ -62,7 +64,7 @@ def test_webgl_generator_custom_setup() -> None:
     """Test function test_webgl_generator_custom_setup."""
     graph = IRGraph()
     n = IRNode(id="n", op_type="Add", inputs=[], shape_metadata=(16, 32))
-    graph.nodes = {"n": n}
+    graph.nodes = NodeDict({"n": n})
     gen = WebGLCodeGenerator(graph)
     from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplateConfig
 
@@ -80,7 +82,7 @@ def test_webgl_generator_custom_setup_no_in_shape() -> None:
     graph = IRGraph()
     n_in = IRNode(id="n_in", op_type="Input", inputs=[], shape_metadata=())
     n = IRNode(id="n", op_type="Add", inputs=["n_in"], shape_metadata=(16, 32))
-    graph.nodes = {"n_in": n_in, "n": n}
+    graph.nodes = NodeDict({"n_in": n_in, "n": n})
     gen = WebGLCodeGenerator(graph)
     from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplateConfig
 
@@ -188,7 +190,7 @@ def test_webgl_multipass_pingpong() -> None:
     n1 = IRNode(id="relu1", op_type="ReLU", inputs=["inp"], shape_metadata=(32, 32))
     n2 = IRNode(id="relu2", op_type="ReLU", inputs=["relu1"], shape_metadata=(32, 32))
     n3 = IRNode(id="relu3", op_type="ReLU", inputs=["relu2"], shape_metadata=(32, 32))
-    graph.nodes = {"inp": n_in, "relu1": n1, "relu2": n2, "relu3": n3}
+    graph.nodes = NodeDict({"inp": n_in, "relu1": n1, "relu2": n2, "relu3": n3})
 
     gen = WebGLCodeGenerator(graph)
     out = gen.generate()
@@ -242,7 +244,7 @@ def test_webgl_generator_missing_node_pass_template() -> None:
 
     graph = IRGraph()
     n = IRNode(id="n0", op_type="Add", inputs=[], shape_metadata=(16, 32))
-    graph.nodes = {"n0": n}
+    graph.nodes = NodeDict({"n0": n})
     gen = WebGLCodeGenerator(graph)
 
     # Custom setup with a blank line in middle to cover line 127 branch
@@ -265,7 +267,7 @@ def test_webgl_nd_packing_and_mrt() -> None:
         shape_metadata=(2, 3, 4, 5),
         attributes={"num_outputs": 2},
     )
-    graph.nodes = {"in0": in0, "split_node": mrt_node}
+    graph.nodes = NodeDict({"in0": in0, "split_node": mrt_node})
     gen = WebGLCodeGenerator(graph)
     gen.config.js_orchestration.pop("node_pass", None)
     out = gen.generate()
@@ -286,7 +288,7 @@ def test_webgl_generator_conv2d_shape_branches() -> None:
     node_in = LogicalNode(id="in_0", op_type="Input", shape_metadata=(1, 3, 32, 32))
     node_w = LogicalNode(id="w_0", op_type="Input", shape_metadata=(16, 3, 3, 3))
     node_conv = LogicalNode(id="conv_0", op_type="Conv2D", inputs=["in_0", "w_0"], shape_metadata=(1, 16, 30, 30))
-    graph.nodes = {"in_0": node_in, "w_0": node_w, "conv_0": node_conv}
+    graph.nodes = NodeDict({"in_0": node_in, "w_0": node_w, "conv_0": node_conv})
     graph.inputs = ["in_0", "w_0"]
     graph.outputs = ["conv_0"]
     gen = WebGLCodeGenerator(graph)
@@ -294,7 +296,7 @@ def test_webgl_generator_conv2d_shape_branches() -> None:
 
     graph_sym = IRGraph(name="webgl_sym")
     node_sym = LogicalNode(id="sym_add", op_type="Add", inputs=[], shape_metadata=("batch", 4, 8))
-    graph_sym.nodes = {"sym_add": node_sym}
+    graph_sym.nodes = NodeDict({"sym_add": node_sym})
     graph_sym.inputs = []
     graph_sym.outputs = ["sym_add"]
     gen_sym = WebGLCodeGenerator(graph_sym)
@@ -318,12 +320,14 @@ def test_webgl_new_operator_templates() -> None:
 
     for nid, op, inps, shape in ops_to_test:
         graph = IRGraph(name=f"test_{op}")
-        graph.nodes = {
-            "in_a": IRNode(id="in_a", op_type="Input", shape_metadata=(16, 16)),
-            "in_b": IRNode(id="in_b", op_type="Input", shape_metadata=(16, 16)),
-            "in_c": IRNode(id="in_c", op_type="Input", shape_metadata=(16, 16)),
-            nid: IRNode(id=nid, op_type=op, inputs=inps, shape_metadata=shape),
-        }
+        graph.nodes = NodeDict(
+            {
+                "in_a": IRNode(id="in_a", op_type="Input", shape_metadata=(16, 16)),
+                "in_b": IRNode(id="in_b", op_type="Input", shape_metadata=(16, 16)),
+                "in_c": IRNode(id="in_c", op_type="Input", shape_metadata=(16, 16)),
+                nid: IRNode(id=nid, op_type=op, inputs=inps, shape_metadata=shape),
+            }
+        )
         graph.outputs = [nid]
         gen = WebGLCodeGenerator(graph)
         out = gen.generate()
@@ -340,17 +344,17 @@ def test_webgl_aot_runner_execution() -> None:
     graph = IRGraph(name="test_webgl_runner_single")
     n_in = IRNode(id="x", op_type="Input", shape_metadata=(2, 2))
     n_add = IRNode(id="y", op_type="Add", inputs=["x", "x"], shape_metadata=(2, 2))
-    graph.nodes = {"x": n_in, "y": n_add}
+    graph.nodes = NodeDict({"x": n_in, "y": n_add})
     graph.inputs = ["x"]
     graph.outputs = ["y"]
     gen = WebGLCodeGenerator(graph)
     artifact = gen.compile_aot(graph)
     inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     res_single = artifact(inp)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_single, inp + inp)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_single, inp + inp)
     # Extra argument branch coverage
     res_extra = artifact(inp, "extra_arg")
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_extra, inp + inp)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_extra, inp + inp)
 
     # 2. Multiple outputs
     n_sub = IRNode(id="z", op_type="Sub", inputs=["y", "x"], shape_metadata=(2, 2))
@@ -361,12 +365,12 @@ def test_webgl_aot_runner_execution() -> None:
     artifact_multi = gen_multi.compile_aot(graph, opt_level=1)
     res_multi = artifact_multi(inp)
     assert isinstance(res_multi, tuple) and len(res_multi) == 2
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[0], inp + inp)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[1], inp)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[0], inp + inp)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[1], inp)
 
     # 3. Empty outputs
     graph_empty = IRGraph(name="test_webgl_runner_empty")
-    graph_empty.nodes = {"x": n_in}
+    graph_empty.nodes = NodeDict({"x": n_in})
     graph_empty.inputs = ["x"]
     graph_empty.outputs = []
     gen_empty = WebGLCodeGenerator(graph_empty)

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import builtins
 import math
+import typing
 from collections.abc import Sequence
-from typing import cast
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 
@@ -23,7 +23,7 @@ def slice(
     axis: int,
     start: int | None = None,
     end: int | None = None,
-    step: int = 1,
+    step: int | None = 1,
 ) -> TensorOrScalar:
     """Slice the input tensor along a specific dimension.
 
@@ -40,7 +40,7 @@ def slice(
     if config.eager_mode:
         sl = [builtins.slice(None)] * len(input.shape)
         sl[axis] = builtins.slice(start, end, step)
-        data = cast(EagerTensorProtocol, input.data)[tuple(sl)]
+        data = typing.cast(EagerTensorProtocol, input.data)[tuple(sl)]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -55,11 +55,12 @@ def slice(
         else:
             st = min(dim_len, st)
 
-        en = end if end is not None else (dim_len if s > 0 else -1)
-        if en < 0 and end is not None:
-            en = max(0, en + dim_len)
-        elif end is not None:
-            en = min(dim_len, en)
+        if end is None:
+            en = dim_len if s > 0 else -1
+        elif end < 0:
+            en = max(0, end + dim_len)
+        else:
+            en = min(dim_len, end)
 
         if s > 0:
             slice_dim = max(0, math.ceil((en - st) / s))
@@ -96,7 +97,7 @@ def strided_slice(
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
-        data = cast(EagerTensorProtocol, input.data)[idx]
+        data = typing.cast(EagerTensorProtocol, input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -199,7 +200,7 @@ class IndexInDim(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         index = args[1] if len(args) > 1 else kwargs.get("index", kwargs.get("indices"))
-        axis = int(cast(int, kwargs.get("axis", 0)))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
         keepdims = bool(kwargs.get("keepdims", True))
         raw_shape = getattr(operand, "shape", getattr(operand, "shape_metadata", operand if isinstance(operand, (list, tuple)) else ()))
         shape = list(int(d) for d in raw_shape)

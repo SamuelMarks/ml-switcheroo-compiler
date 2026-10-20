@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 
 import pytest
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
+from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.export.export_api import ExportArchive
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -36,7 +36,7 @@ def test_track() -> None:
     """Test function test_track."""
     archive = ExportArchive()
     resource = {"some": "data"}
-    cast("EagerCallableProtocol", archive.track)(resource)
+    typing.cast("EagerCallableProtocol", archive.track)(resource)
     assert id(resource) in archive.trackables
 
 
@@ -90,7 +90,7 @@ def test_build_signature_def_with_graph() -> None:
     output_node = LogicalNode(id="n2", op_type="Add")
     setattr(output_node, "dtype", "float32")
 
-    graph.nodes = {"n1": input_node, "n2": output_node}
+    graph.nodes = NodeDict({"n1": input_node, "n2": output_node})
     graph.outputs = ["n2"]
 
     sig = archive._build_signature_def("test_sig", graph)
@@ -103,7 +103,7 @@ def test_build_signature_def_with_graph_no_outputs() -> None:
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
     setattr(input_node, "dtype", "float32")
-    graph.nodes = {"n1": input_node}
+    graph.nodes = NodeDict({"n1": input_node})
     graph.outputs = []
 
     sig = archive._build_signature_def("test_sig", graph)
@@ -126,7 +126,7 @@ def test_build_graph_def_with_graph() -> None:
     output_node = LogicalNode(id="n2", op_type="Add")
     output_node.inputs = ["n1"]
 
-    graph.nodes = {"n1": input_node, "n2": output_node}
+    graph.nodes = NodeDict({"n1": input_node, "n2": output_node})
     graph.outputs = ["n2"]
 
     graph_def = archive._build_graph_def(graph)
@@ -141,7 +141,7 @@ def test_build_saved_model() -> None:
     input_node.inputs = []
     output_node = LogicalNode(id="n2", op_type="Add")
     output_node.inputs = ["n1"]
-    graph.nodes = {"n1": input_node, "n2": output_node}
+    graph.nodes = NodeDict({"n1": input_node, "n2": output_node})
     graph.outputs = ["n2"]
 
     archive.add_endpoint("test", lambda: None)
@@ -157,7 +157,7 @@ def test_write_out() -> None:
     input_node.inputs = []
     output_node = LogicalNode(id="n2", op_type="Add")
     output_node.inputs = ["n1"]
-    graph.nodes = {"n1": input_node, "n2": output_node}
+    graph.nodes = NodeDict({"n1": input_node, "n2": output_node})
     graph.outputs = ["n2"]
 
     archive.add_endpoint("test", lambda: None)

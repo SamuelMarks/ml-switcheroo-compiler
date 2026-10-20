@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ops.creation.basic import Arange, Bartlett, Blackman, ConstantOfShape, CreationOp, Frombuffer, Full, Hamming, Hanning, Kaiser, Logspace, ManualSeed, Rand, Randint, Range, TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -38,17 +39,17 @@ def test_creation_basic() -> None:
     assert ri.infer_shape(0, 10, (2, 2)) == (2, 2)
     assert ri.infer_shape(0, 10) == ()
 
-    assert cast("EagerCallableProtocol", ManualSeed)().infer_shape(42) == ()
+    assert typing.cast("EagerCallableProtocol", ManualSeed)().infer_shape(42) == ()
 
-    assert cast("EagerCallableProtocol", ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", ConstantOfShape)().infer_shape((2, 2)) == (2, 2)
     assert ConstantOfShape().infer_shape() == ()
 
-    assert cast("EagerCallableProtocol", Range)().infer_shape((2, 2)) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", Range)().infer_shape((2, 2)) == (2, 2)
     assert Range().infer_shape() == ()
 
     for cls in [Blackman, Bartlett, Hamming, Hanning, Kaiser]:
         assert cls().infer_shape(5) == (5,)
-        assert cls().infer_shape(DummyItem()) == (5,)
+        assert cls().infer_shape(typing.cast("EagerValue", DummyItem())) == (5,)
 
     for cls in [TrilIndices, TrilIndicesFrom, TriuIndices, TriuIndicesFrom]:
         assert cls().infer_shape((2, 2)) == (2, 2)

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.variable import VariableASTVisitor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -37,6 +37,6 @@ def test_variable_mixin() -> None:
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert cast("EagerCallableProtocol", vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
-    assert cast("EagerCallableProtocol", vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
-    assert cast("EagerCallableProtocol", vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"

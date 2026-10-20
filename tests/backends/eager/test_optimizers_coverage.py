@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, cast
+import typing
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.optimizers as opt_mod
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -136,7 +137,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
+        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -151,7 +152,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -181,7 +182,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -201,7 +202,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -273,16 +274,16 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Delegate to numpy module.
 
         Args:
             name (str): Attribute name.
 
         Returns:
-            Callable[..., np.ndarray]: Resolved callable attribute.
+            TypedVariadicCallable[np.ndarray]: Resolved callable attribute.
         """
-        return cast("Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
+        return typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
 
     def pad(
         self,
@@ -340,14 +341,14 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def __getattr__(self, name: str) -> Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Dynamically return callable only on second check.
 
         Args:
             name (str): Attribute name.
 
         Returns:
-            Callable[..., np.ndarray]: Function result.
+            TypedVariadicCallable[np.ndarray]: Function result.
 
         Raises:
             AttributeError: On first check.
@@ -502,28 +503,28 @@ def test_optimizers_coverage() -> None:
     grad = np.full((2, 2), 0.1, dtype=np.float64)
 
     # 1. Adam
-    p_new, m_new, v_new = cast("EagerCallableProtocol", opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
-    assert cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(m_new, "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(v_new, "shape")) == (2, 2)
+    p_new, m_new, v_new = typing.cast("EagerCallableProtocol", opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
+    assert typing.cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(m_new, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(v_new, "shape")) == (2, 2)
 
     # 2. Adagrad
     accum = np.zeros((2, 2), dtype=np.float64)
-    p_new_ada, accum_new_ada = cast("EagerCallableProtocol", opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
-    assert cast("EagerTensorProtocol", getattr(p_new_ada, "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(accum_new_ada, "shape")) == (2, 2)
+    p_new_ada, accum_new_ada = typing.cast("EagerCallableProtocol", opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
+    assert typing.cast("EagerTensorProtocol", getattr(p_new_ada, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(accum_new_ada, "shape")) == (2, 2)
 
     # 3. Ftrl
     linear = np.zeros((2, 2), dtype=np.float64)
-    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = cast("EagerCallableProtocol", opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
-    assert cast("EagerTensorProtocol", getattr(p_new_ftrl, "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(accum_new_ftrl, "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(linear_new_ftrl, "shape")) == (2, 2)
+    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = typing.cast("EagerCallableProtocol", opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
+    assert typing.cast("EagerTensorProtocol", getattr(p_new_ftrl, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(accum_new_ftrl, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(linear_new_ftrl, "shape")) == (2, 2)
 
     # 4. RMSProp
     ms = np.ones((2, 2), dtype=np.float64)
     mom = np.zeros((2, 2), dtype=np.float64)
-    p_new_rms, ms_new_rms, mom_new_rms = cast("EagerCallableProtocol", opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
-    assert cast("EagerTensorProtocol", getattr(p_new_rms, "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(ms_new_rms, "shape")) == (2, 2)
-    assert cast("EagerTensorProtocol", getattr(mom_new_rms, "shape")) == (2, 2)
+    p_new_rms, ms_new_rms, mom_new_rms = typing.cast("EagerCallableProtocol", opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
+    assert typing.cast("EagerTensorProtocol", getattr(p_new_rms, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(ms_new_rms, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(mom_new_rms, "shape")) == (2, 2)

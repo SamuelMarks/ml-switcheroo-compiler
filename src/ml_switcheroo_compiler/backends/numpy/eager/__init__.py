@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 import typing
-from typing import cast
 
 import numpy as np
 
@@ -55,14 +54,15 @@ import ml_switcheroo_compiler.backends.numpy.eager.vision_geometry
 import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms
 import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F401
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 def execute_op(
     cls: type,
     op_type: str,
-    *args: typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-) -> typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+) -> EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager execute op operation on the active backend array.
 
     Args:
@@ -92,14 +92,14 @@ def execute_op(
 
         msg = f"Operation {op_type} is not implemented in interpreter."
         raise UnimplementedMathError(msg) from None
-    return cast(typing.Union[EagerValue, np.ndarray[tuple[int, ...], np.dtype[np.generic]]], func(*args, **kwargs))
+    return typing.cast(typing.Union[EagerValue, "np.ndarray[tuple[int, ...], np.dtype[np.generic]]"], func(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Clone")
 def clone_op(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    np_mod: BackendModuleProtocol | EagerValue,
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Clone an array using np.copy.
 
@@ -112,14 +112,14 @@ def clone_op(
         np.ndarray: Copied array.
     """
     del np_mod, kwargs
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "copy")(args[0]))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "copy")(args[0]))
 
 
 @numpy_eager_registry.register("Repeat")
 def repeat(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    np_mod: BackendModuleProtocol | EagerValue,
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Repeat.
 
@@ -131,14 +131,14 @@ def repeat(
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "repeat")(*args, **kwargs))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "repeat")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Searchsorted")
 def searchsorted(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    np_mod: BackendModuleProtocol | EagerValue,
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Searchsorted.
 
@@ -150,17 +150,17 @@ def searchsorted(
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "searchsorted")(*args, **kwargs))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "searchsorted")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Split")
 def split(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    num_or_size_splits: typing.Union[int, list[int], tuple[int, ...]],
+    np_mod: BackendModuleProtocol | EagerValue,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
+    num_or_size_splits: int | list[int] | tuple[int, ...] | EagerValue,
     axis: int = 0,
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> list[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
     """Split array.
 
@@ -175,17 +175,17 @@ def split(
     Returns:
         List of output arrays.
     """
-    split_fn = getattr(np_mod, "split", np.split)
+    split_fn = getattr(np_mod, "split", getattr(np, "split"))
     return list(split_fn(x, num_or_size_splits, axis=axis))
 
 
 @numpy_eager_registry.register("Squeeze")
 def squeeze(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    axis: typing.Optional[int] = None,
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    np_mod: BackendModuleProtocol | EagerValue,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
+    axis: int | None = None,
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Squeeze array.
 
@@ -199,16 +199,16 @@ def squeeze(
     Returns:
         Squeezed array.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "squeeze")(x, axis=axis))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "squeeze")(x, axis=axis))
 
 
 @numpy_eager_registry.register("Stack")
 def stack(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    arrays: typing.Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    np_mod: BackendModuleProtocol | EagerValue,
+    arrays: typing.Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]] | EagerValue,
     axis: int = 0,
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Stack arrays.
 
@@ -222,16 +222,16 @@ def stack(
     Returns:
         Stacked array.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "stack")(arrays, axis=axis))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "stack")(arrays, axis=axis))
 
 
 @numpy_eager_registry.register("Unstack")
 def unstack(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    np_mod: BackendModuleProtocol | EagerValue,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
     axis: int = 0,
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
 ) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], ...]:
     """Unstack array.
 
@@ -247,22 +247,22 @@ def unstack(
     """
     # unstack is basically split into 1-sized chunks along axis and squeezed
     if hasattr(x, "shape"):
-        num_splits = x.shape[axis]
-        split_fn = getattr(np_mod, "split", np.split)
+        num_splits = getattr(x, "shape")[axis]
+        split_fn = getattr(np_mod, "split", getattr(np, "split"))
         splits = split_fn(x, num_splits, axis=axis)
-        squeeze_fn = getattr(np_mod, "squeeze", np.squeeze)
+        squeeze_fn = getattr(np_mod, "squeeze", getattr(np, "squeeze"))
         return tuple(squeeze_fn(s, axis=axis) for s in splits)
-    return tuple(x)
+    return tuple(getattr(x, "__iter__")())
 
 
 @numpy_eager_registry.register("Equal")
 def equal(
-    np_mod: typing.Union[str, int, float, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], bool, None],
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    *args: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-    **kwargs: typing.Union[int, float, str, bool, list[EagerValue], tuple[EagerValue, ...], dict[str, EagerValue], None, np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-) -> typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], bool]:
+    np_mod: BackendModuleProtocol | EagerValue,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
+    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | bool:
     """Check if x and y are equal.
 
     Args:
@@ -275,7 +275,7 @@ def equal(
     Returns: np.ndarray: A boolean array where x == y.
     """
     try:
-        return cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], bool], getattr(np_mod, "equal")(x, y))
+        return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], "bool"], getattr(np_mod, "equal")(x, y))
     except Exception:
         # Fallback for incompatible types
-        return cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], bool], x == y)
+        return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], "bool"], x == y)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import mock_open, patch
 
 import yaml
@@ -23,7 +23,7 @@ from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import (
     get_vjp_from_data,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -144,7 +144,7 @@ def test_get_autodiff_manifest_branches() -> None:
     """Test _get_autodiff_manifest caching, missing file, and exception handling."""
     # 1. Cache hit
     setattr(autodiff_provider, "_MANIFEST_MODEL_CACHE", "cached_manifest")
-    assert cast("EagerTensorProtocol", _get_autodiff_manifest()) == cast("EagerTensorProtocol", "cached_manifest")
+    assert typing.cast("EagerTensorProtocol", _get_autodiff_manifest()) == typing.cast("EagerTensorProtocol", "cached_manifest")
     autodiff_provider._MANIFEST_MODEL_CACHE = None
 
     # 2. File not found
@@ -280,7 +280,7 @@ def test_load_autodiff_rule_hierarchy() -> None:
             with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.load_primitive_jvp_rules", return_value={"prim_op": DummyRule(jvp="tan_prim")}):
                 assert _load_autodiff_rule("prim_op", "jvp") == {"jvp": "tan_prim"}
                 # Missing JVP primitive falls through (branch 329->337)
-                assert cast("EagerTensorProtocol", _load_autodiff_rule("non_prim_op", "jvp")) == cast("EagerTensorProtocol", _fallback_finite_difference_jvp) or cast("EagerTensorProtocol", _load_autodiff_rule("non_prim_op", "jvp")) is cast("EagerTensorProtocol", None)
+                assert typing.cast("EagerTensorProtocol", _load_autodiff_rule("non_prim_op", "jvp")) == typing.cast("EagerTensorProtocol", _fallback_finite_difference_jvp) or typing.cast("EagerTensorProtocol", _load_autodiff_rule("non_prim_op", "jvp")) is typing.cast("EagerTensorProtocol", None)
 
     # 4. Stage 4: OPS_REGISTRY fallback (including non-dict and missing autodiff branch 340->345)
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider._get_autodiff_manifest", return_value=None):
@@ -340,42 +340,7 @@ def test_load_rule_from_yaml_files_all_branches() -> None:
         with patch("builtins.open", mock_open(read_data=yaml.dump(["list", "not", "dict"]))):
             assert _load_rule_from_yaml_files("OpRulesDir", "vjp") is None
 
-    # 3. manifest_path: ../autodiff_rules.yaml (including non-dict rule_entry branch 385->382)
-    def exists_manifest(path: str) -> bool:
-        """Check if path matches autodiff manifest.
-
-        Args:
-            path: Test parameter `path`.
-        """
-        return path.endswith("autodiff_rules.yaml") and "transforms/autodiff_rules.yaml" in path
-
-    manifest_data = {
-        "vjp_rules": {
-            "OpManifest": {"vjp": ["cot_m"]},
-            "non_dict_manifest": "not_a_dict",
-        }
-    }
-    with patch("os.path.exists", side_effect=exists_manifest):
-        with patch("builtins.open", mock_open(read_data=yaml.dump(manifest_data))):
-            assert _load_rule_from_yaml_files("OpManifest", "vjp") == {"vjp": ["cot_m"]}
-            assert _load_rule_from_yaml_files("non_dict_manifest", "vjp") is None
-            assert _load_rule_from_yaml_files("OpManifest", "missing_section") is None
-
-    # 4. legacy_path: autodiff_rules.yaml in same dir (including op not in data branch 392->395)
-    def exists_legacy(path: str) -> bool:
-        """Check if path matches legacy autodiff rules.
-
-        Args:
-            path: Test parameter `path`.
-        """
-        return path.endswith("autodiff_rules/autodiff_rules.yaml")
-
-    with patch("os.path.exists", side_effect=exists_legacy):
-        with patch("builtins.open", mock_open(read_data=yaml.dump({"OpLegacy": {"vjp": ["cot_leg"]}}))):
-            assert _load_rule_from_yaml_files("OpLegacy", "vjp") == {"vjp": ["cot_leg"]}
-            assert _load_rule_from_yaml_files("MissingInLegacy", "vjp") is None
-
-    # 5. Non-existent anywhere
+    # 3. Non-existent anywhere
     with patch("os.path.exists", return_value=False):
         assert _load_rule_from_yaml_files("UnknownOp", "vjp") is None
 

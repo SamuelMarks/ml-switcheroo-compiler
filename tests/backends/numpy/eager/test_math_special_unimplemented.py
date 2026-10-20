@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_debuginfs,
     _np_debugnans,
@@ -22,7 +23,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_vecdot,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -41,7 +42,7 @@ def test_np_vecdot() -> None:
 def test_np_debuginfs() -> None:
     """Test _np_debuginfs."""
     x = np.array([1.0, 2.0])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_debuginfs)(np, x), x)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_debuginfs)(np, x), x)
     with pytest.raises(ValueError):
         _np_debuginfs(np, np.array([np.inf]))
 
@@ -49,15 +50,15 @@ def test_np_debuginfs() -> None:
 def test_np_debugnans() -> None:
     """Test _np_debugnans."""
     x = np.array([1.0, 2.0])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_debugnans)(np, x), x)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_debugnans)(np, x), x)
     with pytest.raises(ValueError):
         _np_debugnans(np, np.array([np.nan]))
 
 
 def test_np_tensor() -> None:
     """Test _np_tensor."""
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_tensor)(np, [1, 2]), cast("EagerCallableProtocol", np.array)([1, 2]))
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_tensor)(np), cast("EagerCallableProtocol", np.array)([]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_tensor)(np, [1, 2]), typing.cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_tensor)(np), typing.cast("EagerCallableProtocol", np.array)([]))
 
 
 def test_np_tensorarray() -> None:
@@ -71,21 +72,21 @@ def test_np_tensorarray() -> None:
     assert _np_tensorarrayread(np, arr, 2) == 100
 
     stacked = _np_tensorarraystack(np, [np.array([1]), np.array([2])])
-    assert cast("EagerCallableProtocol", np.array_equal)(stacked, cast("EagerCallableProtocol", np.array)([[1], [2]]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(stacked, typing.cast("EagerCallableProtocol", np.array)([[1], [2]]))
 
 
 def test_raw_and_switch_ops() -> None:
     # rawmerge
     """Test function test_raw_and_switch_ops."""
-    res1, i1 = cast("EagerCallableProtocol", _np_rawmerge)(np, [cast("EagerCallableProtocol", np.array)([1]), cast("EagerCallableProtocol", np.array)([2])])
-    assert cast("EagerCallableProtocol", np.array_equal)(res1, cast("EagerCallableProtocol", np.array)([1]))
-    assert i1 == 0
+    res1, i1 = typing.cast("EagerCallableProtocol", _np_rawmerge)(np, [typing.cast("EagerCallableProtocol", np.array)([1]), typing.cast("EagerCallableProtocol", np.array)([2])])
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res1, typing.cast("EagerCallableProtocol", np.array)([1]))
+    assert typing.cast("EagerValue", i1) == 0
 
-    res2, i2 = cast("EagerCallableProtocol", _np_rawmerge)(np, cast("EagerCallableProtocol", np.array)([1]))
-    assert cast("EagerCallableProtocol", np.array_equal)(res2, cast("EagerCallableProtocol", np.array)([1]))
+    res2, i2 = typing.cast("EagerCallableProtocol", _np_rawmerge)(np, typing.cast("EagerCallableProtocol", np.array)([1]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res2, typing.cast("EagerCallableProtocol", np.array)([1]))
 
-    res3, i3 = cast("EagerCallableProtocol", _np_rawmerge)(np)
-    assert res3 is None
+    res3, i3 = typing.cast("EagerCallableProtocol", _np_rawmerge)(np)
+    assert typing.cast("EagerValue", res3) is None
     assert i3 == -1
 
     # rawop
@@ -93,19 +94,19 @@ def test_raw_and_switch_ops() -> None:
     assert _np_rawop(np) is None
 
     # rawswitch
-    out_f, out_t = cast("EagerCallableProtocol", _np_rawswitch)(np, 42, False)
+    out_f, out_t = typing.cast("tuple[EagerValue, EagerValue]", typing.cast("EagerCallableProtocol", _np_rawswitch)(np, 42, False))
     assert out_f == 42
     assert out_t is None
 
-    out_f, out_t = cast("EagerTensorProtocol", cast("EagerCallableProtocol", _np_rawswitch)(np, 42, pred=True))
+    out_f, out_t = typing.cast("tuple[EagerValue, EagerValue]", typing.cast("EagerCallableProtocol", _np_rawswitch)(np, 42, pred=True))
     assert out_f is None
     assert out_t == 42
 
     # switchop
-    out_f, out_t = cast("EagerTensorProtocol", cast("EagerCallableProtocol", _np_switchop)(np, 42, False))
+    out_f, out_t = typing.cast("tuple[EagerValue, EagerValue]", typing.cast("EagerCallableProtocol", _np_switchop)(np, 42, False))
     assert out_f == 42
 
-    out_f, out_t = cast("EagerTensorProtocol", cast("EagerCallableProtocol", _np_switchop)(np, 42, pred=True))
+    out_f, out_t = typing.cast("tuple[EagerValue, EagerValue]", typing.cast("EagerCallableProtocol", _np_switchop)(np, 42, pred=True))
     assert out_t == 42
 
 
@@ -119,17 +120,17 @@ def test_scan_op() -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return cast("EagerTensorProtocol", a) + cast("EagerTensorProtocol", b)
+        return typing.cast("EagerTensorProtocol", a) + typing.cast("EagerTensorProtocol", b)
 
     elems = np.array([1, 2, 3])
 
     # With initial acc
     res = _np_scanop(np, fn, elems, 10)
-    assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([11, 13, 16]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.array)([11, 13, 16]))
 
     # Without initial acc
     res2 = _np_scanop(np, fn, elems)
-    assert cast("EagerCallableProtocol", np.array_equal)(res2, cast("EagerCallableProtocol", np.array)([1, 3, 6]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res2, typing.cast("EagerCallableProtocol", np.array)([1, 3, 6]))
 
     # None args
     assert _np_scanop(np) is None

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 from ml_switcheroo_compiler.ops.io import TFRecordOptions, TFRecordWriter, decode_base64, encode_base64, gfile_copy, gfile_glob, gfile_makedirs, gfile_stat
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -46,9 +46,9 @@ def test_base64_ops() -> None:
     config.eager_mode = False
     global_tracing_state.start_tracing()
     if True:
-        cast("EagerCallableProtocol", encode_base64)(None)
+        typing.cast("EagerCallableProtocol", encode_base64)(None)
     if True:
-        cast("EagerCallableProtocol", decode_base64)(None)
+        typing.cast("EagerCallableProtocol", decode_base64)(None)
     assert callable(global_tracing_state.start_tracing)
 
 
@@ -67,7 +67,7 @@ def test_tfrecord_writer() -> None:
     opts = TFRecordOptions("ZLIB")
     assert opts.compression_type == "ZLIB"
     with TFRecordWriter("path", opts) as writer:
-        cast("EagerCallableProtocol", writer.write)(None)
+        typing.cast("EagerCallableProtocol", writer.write)(None)
 
 
 def test_base64_ops_success() -> None:

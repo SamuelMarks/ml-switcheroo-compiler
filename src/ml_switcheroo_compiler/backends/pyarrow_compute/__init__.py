@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
@@ -45,7 +45,7 @@ type.__setattr__(PyArrowComputeGenerator, "table", staticmethod(table))
 type.__setattr__(PyArrowComputeGenerator, "tensor", staticmethod(tensor))
 type.__setattr__(PyArrowComputeGenerator, "check_parity", staticmethod(check_parity))
 type.__setattr__(PyArrowComputeGenerator, "item", staticmethod(item))
-type.__setattr__(PyArrowComputeGenerator, "execute_op", cast("EagerCallableProtocol", staticmethod)(execute_op))
+type.__setattr__(PyArrowComputeGenerator, "execute_op", typing.cast("EagerCallableProtocol", staticmethod)(execute_op))
 type.__setattr__(PyArrowComputeGenerator, "tensor_to_arrow_tensor", staticmethod(tensor_to_arrow_tensor))
 type.__setattr__(PyArrowComputeGenerator, "arrow_tensor_to_tensor", staticmethod(arrow_tensor_to_tensor))
 type.__setattr__(PyArrowComputeGenerator, "tensor_to_record_batch", staticmethod(tensor_to_record_batch))

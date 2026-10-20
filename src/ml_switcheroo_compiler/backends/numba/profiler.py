@@ -5,12 +5,21 @@ from __future__ import annotations
 import resource
 import sys
 import time
-from typing import Callable
+from types import ModuleType
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numba import kernels
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+numba: ModuleType | None = None
+try:
+    import numba as _numba_mod
+
+    numba = _numba_mod
+except ImportError:
+    numba = None
 
 
 def _get_process_memory_mb() -> float:
@@ -20,7 +29,8 @@ def _get_process_memory_mb() -> float:
         float: Peak RSS in megabytes.
     """
     rusage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    if sys.platform == "darwin":
+    platform_name: str = sys.platform
+    if platform_name == "darwin":
         return float(rusage) / (1024.0 * 1024.0)
     return float(rusage) / 1024.0
 
@@ -55,14 +65,14 @@ class NumbaProfiler:
             return [nb_inputs_dict[k] for k in input_keys]
         return list(nb_inputs_dict.values())
 
-    def _compile_graph(self, graph: IRGraph) -> Callable[..., EagerValue] | None:
+    def _compile_graph(self, graph: IRGraph) -> TypedVariadicCallable[EagerValue] | None:
         """Compile an IRGraph into an executable Numba JIT function.
 
         Args:
             graph (IRGraph): The IR computation graph.
 
         Returns:
-            Callable[..., EagerValue] | None: JIT-compiled evaluate function.
+            TypedVariadicCallable[EagerValue] | None: JIT-compiled evaluate function.
         """
         from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 
@@ -98,7 +108,7 @@ class NumbaProfiler:
         nb_inputs = self._prepare_inputs(graph, inputs)
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        compiled_fn: Callable[..., EagerValue] | None = None
+        compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:
             try:
                 compiled_fn = self._compile_graph(graph)

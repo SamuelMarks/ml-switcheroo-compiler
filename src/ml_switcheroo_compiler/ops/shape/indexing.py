@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Union, cast
+
+import pydantic
 
 # pylint: disable=duplicate-code
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -16,8 +17,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-@dataclass
-class IndexSpec:
+class IndexSpec(pydantic.BaseModel):
     """Specifies the parameters for an indexing operation.
 
     Attributes:
@@ -26,6 +26,8 @@ class IndexSpec:
         stride: The step size between elements.
         axis: The axis along which to apply the slice.
     """
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     start_index: int
     limit_index: int
@@ -225,7 +227,7 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> TensorOrScalar:
         "Where",
         inputs,
         {},
-        cast("Sequence[Union[int, str]]", out_shape),
+        typing.cast("Sequence[int | str]", out_shape),
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
 
@@ -275,7 +277,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tenso
         "BooleanMask",
         inputs,
         attributes,
-        cast("Sequence[Union[int, str]]", out_shape),
+        typing.cast("Sequence[int | str]", out_shape),
         tensor.dtype,
     )
 
@@ -333,7 +335,7 @@ class DynamicPartition(OpDef):
 
     op_name = "DynamicPartition"
 
-    def infer_shape(self, data: EagerTensorProtocol, partitions: EagerTensorProtocol, num_partitions: int, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, data: TensorOrScalar, partitions: TensorOrScalar, num_partitions: int, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the dynamic partition operation.
 
         Args:
@@ -359,7 +361,7 @@ class DynamicStitch(OpDef):
 
     op_name = "DynamicStitch"
 
-    def infer_shape(self, indices: EagerTensorProtocol, data: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, indices: TensorOrScalar, data: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the dynamic stitch operation.
 
         Args:
@@ -388,7 +390,7 @@ class TensorScatterSub(OpDef):
 
     op_name = "TensorScatterSub"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the tensor scatter sub operation.
 
         Args:
@@ -408,7 +410,7 @@ class ExtractVolumePatches(OpDef):
 
     op_name = "ExtractVolumePatches"
 
-    def infer_shape(self, input: EagerTensorProtocol, ksizes: list[int], strides: list[int], padding: str, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, input: TensorOrScalar, ksizes: list[int], strides: list[int], padding: str, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the extract volume patches operation.
 
         Args:
@@ -450,7 +452,7 @@ class UnravelIndex(OpDef):
 
     op_name = "UnravelIndex"
 
-    def infer_shape(self, indices: EagerTensorProtocol, dims: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, indices: TensorOrScalar, dims: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the unravel index operation.
 
         Args:
@@ -475,7 +477,7 @@ class DynamicSliceInDim(OpDef):
 
     op_name = "DynamicSliceInDim"
 
-    def infer_shape(self, operand: EagerTensorProtocol, start_index: EagerTensorProtocol, slice_size: int, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, operand: TensorOrScalar, start_index: TensorOrScalar, slice_size: int, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the dynamic slice in axis operation.
 
         Args:
@@ -500,7 +502,7 @@ class DynamicUpdateSliceInDim(OpDef):
 
     op_name = "DynamicUpdateSliceInDim"
 
-    def infer_shape(self, operand: EagerTensorProtocol, update: EagerTensorProtocol, start_index: EagerTensorProtocol, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, operand: TensorOrScalar, update: TensorOrScalar, start_index: TensorOrScalar, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the dynamic update slice in axis operation.
 
         Args:
@@ -522,7 +524,7 @@ class DynamicIndexInDim(OpDef):
 
     op_name = "DynamicIndexInDim"
 
-    def infer_shape(self, operand: EagerTensorProtocol, index: EagerTensorProtocol, axis: int = 0, keepdims: bool = True, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, operand: TensorOrScalar, index: TensorOrScalar, axis: int = 0, keepdims: bool = True, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the dynamic index in axis operation.
 
         Args:
@@ -550,7 +552,7 @@ class DynamicUpdateIndexInDim(OpDef):
 
     op_name = "DynamicUpdateIndexInDim"
 
-    def infer_shape(self, operand: EagerTensorProtocol, update: EagerTensorProtocol, index: EagerTensorProtocol, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, operand: TensorOrScalar, update: TensorOrScalar, index: TensorOrScalar, axis: int = 0, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the dynamic update index in axis operation.
 
         Args:
@@ -574,7 +576,7 @@ class SliceInDim(OpDef):
 
     def infer_shape(
         self,
-        operand: EagerTensorProtocol,
+        operand: TensorOrScalar,
         spec: IndexSpec,
         **kwargs: TensorOrScalar,
     ) -> TensorOrScalar:
@@ -599,7 +601,7 @@ class ScatterApply(OpDef):
 
     op_name = "ScatterApply"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, func: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, func: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the scatter apply operation.
 
         Args:
@@ -620,7 +622,7 @@ class ScatterMax(OpDef):
 
     op_name = "ScatterMax"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the scatter max operation.
 
         Args:
@@ -640,7 +642,7 @@ class ScatterMin(OpDef):
 
     op_name = "ScatterMin"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the scatter min operation.
 
         Args:
@@ -660,7 +662,7 @@ class ScatterMul(OpDef):
 
     op_name = "ScatterMul"
 
-    def infer_shape(self, tensor: EagerTensorProtocol, indices: EagerTensorProtocol, updates: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, tensor: TensorOrScalar, indices: TensorOrScalar, updates: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the scatter mul operation.
 
         Args:
@@ -680,7 +682,7 @@ class PutAlongAxis(OpDef):
 
     op_name = "PutAlongAxis"
 
-    def infer_shape(self, arr: EagerTensorProtocol, indices: EagerTensorProtocol, values: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, arr: TensorOrScalar, indices: TensorOrScalar, values: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infers the output shape for the put along axis operation.
 
         Args:

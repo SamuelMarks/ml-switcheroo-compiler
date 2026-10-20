@@ -1,5 +1,7 @@
 """Test state.py."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ir.state import create_assign_variable, create_read_variable, create_scatter_update
 
 

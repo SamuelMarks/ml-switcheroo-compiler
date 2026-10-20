@@ -1,19 +1,23 @@
 """Graph Compilation and AST Processing for AutoGraph capabilities."""
 
+from __future__ import annotations
+
 import functools  # noqa: F401
+import typing
+from collections.abc import Callable
 from types import TracebackType
-from typing import Callable, Optional, TypeVar, Union
 
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-F = TypeVar("F", bound=Callable[..., object])
+F = typing.TypeVar("F")
 
-ShapeInvariantType = Union[
-    tuple[Optional[int], ...],
-    list[tuple[Optional[int], ...]],
-    dict[str, tuple[Optional[int], ...]],
-    list[Optional[int]],
-    tuple[list[Optional[int]], ...],
+ShapeInvariantType = typing.Union[
+    tuple[typing.Union[int, "None"], ...],
+    list[tuple[typing.Union[int, "None"], ...]],
+    dict[str, tuple[typing.Union[int, "None"], ...]],
+    list[typing.Union[int, "None"]],
+    tuple[list[typing.Union[int, "None"]], ...],
+    "None",
 ]
 
 
@@ -22,10 +26,10 @@ class LoopOptions:
 
     def __init__(
         self,
-        parallel_iterations: Optional[int] = None,
-        swap_memory: Optional[bool] = None,
-        maximum_iterations: Optional[int] = None,
-        shape_invariants: Optional[ShapeInvariantType] = None,
+        parallel_iterations: int | None = None,
+        swap_memory: bool | None = None,
+        maximum_iterations: int | None = None,
+        shape_invariants: ShapeInvariantType | None = None,
     ) -> None:
         """Initialize the LoopOptions.
 
@@ -35,13 +39,13 @@ class LoopOptions:
             maximum_iterations (Optional[int]): The maximum number of loop iterations to execute.
             shape_invariants (Optional[ShapeInvariantType]): Metadata describing the invariant shape constraints of loop variables.
         """
-        self.parallel_iterations: Optional[int] = parallel_iterations
-        self.swap_memory: Optional[bool] = swap_memory
-        self.maximum_iterations: Optional[int] = maximum_iterations
-        self.shape_invariants: Optional[ShapeInvariantType] = shape_invariants
-        self._prev_options: Optional[LoopOptions] = None
+        self.parallel_iterations: int | None = parallel_iterations
+        self.swap_memory: bool | None = swap_memory
+        self.maximum_iterations: int | None = maximum_iterations
+        self.shape_invariants: ShapeInvariantType | None = shape_invariants
+        self._prev_options: LoopOptions | None = None
 
-    def __enter__(self) -> "LoopOptions":
+    def __enter__(self) -> LoopOptions:
         """Enter loop options context and inject onto active tracing state.
 
         Returns:
@@ -50,7 +54,7 @@ class LoopOptions:
         self._prev_options = global_tracing_state.current_loop_options
         global_tracing_state.current_loop_options = self
         if global_tracing_state.active_graph is not None:
-            setattr(global_tracing_state.active_graph, "loop_options", self)
+            object.__setattr__(global_tracing_state.active_graph, "loop_options", self)
             metadata = getattr(global_tracing_state.active_graph, "metadata", None)
             if isinstance(metadata, dict):
                 metadata["loop_options"] = self
@@ -58,9 +62,9 @@ class LoopOptions:
 
     def __exit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit loop options context and restore previous tracing state.
 
@@ -71,17 +75,17 @@ class LoopOptions:
         """
         global_tracing_state.current_loop_options = self._prev_options
         if global_tracing_state.active_graph is not None:
-            setattr(global_tracing_state.active_graph, "loop_options", self._prev_options)
+            object.__setattr__(global_tracing_state.active_graph, "loop_options", self._prev_options)
             metadata = getattr(global_tracing_state.active_graph, "metadata", None)
             if isinstance(metadata, dict):
                 metadata["loop_options"] = self._prev_options
 
 
 def set_loop_options(
-    parallel_iterations: Optional[int] = None,
-    swap_memory: Optional[bool] = None,
-    maximum_iterations: Optional[int] = None,
-    shape_invariants: Optional[ShapeInvariantType] = None,
+    parallel_iterations: int | None = None,
+    swap_memory: bool | None = None,
+    maximum_iterations: int | None = None,
+    shape_invariants: ShapeInvariantType | None = None,
 ) -> LoopOptions:
     """Set dynamic loop unrolling options for a loop in the active graph trace.
 
@@ -102,14 +106,14 @@ def set_loop_options(
     )
     if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
         global_tracing_state.current_loop_options = options
-        setattr(global_tracing_state.active_graph, "loop_options", options)
+        object.__setattr__(global_tracing_state.active_graph, "loop_options", options)
         metadata = getattr(global_tracing_state.active_graph, "metadata", None)
         if isinstance(metadata, dict):
             metadata["loop_options"] = options
     return options
 
 
-def do_not_convert(func: Optional[F] = None) -> Union[F, Callable[[F], F]]:
+def do_not_convert(func: F | None = None) -> F | Callable[[F], F]:
     """Decorate to prevent AutoGraph from converting a function into a graph representation.
 
     Args:

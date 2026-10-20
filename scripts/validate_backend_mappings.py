@@ -1,4 +1,4 @@
-"""Validation script to ground backend mappings against ml-framework-snapshots with zero skip lists."""
+"""Validation script to ground backend mappings against ml-ecosystem-snapshots with zero skip lists."""
 
 from __future__ import annotations
 

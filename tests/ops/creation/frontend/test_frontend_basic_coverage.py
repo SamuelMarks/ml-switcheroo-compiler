@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -24,7 +24,7 @@ from ml_switcheroo_compiler.ops.creation.frontend_basic import (
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -80,7 +80,7 @@ def test_frontend_basic_dtype_object_and_unknown() -> None:
 
         dtype = "int32"
 
-    assert cast("EagerCallableProtocol", _infer_dtype)(cast("EagerCallableProtocol", DummyObj)()) == DType.Int32
+    assert typing.cast("EagerCallableProtocol", _infer_dtype)(typing.cast("EagerCallableProtocol", DummyObj)()) == DType.Int32
 
 
 def test_frontend_basic_get_dtype_val() -> None:

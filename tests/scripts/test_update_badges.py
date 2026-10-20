@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import json
 import subprocess
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import mock_open, patch
 
 from scripts.update_badges import (
@@ -19,7 +19,7 @@ from scripts.update_badges import (
     update_readme,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
@@ -87,7 +87,7 @@ def f_none_name(x: int) -> None:
     pass
 '''
     )
-    f1 = cast(ast.FunctionDef, tree.body[0])
+    f1 = typing.cast(ast.FunctionDef, tree.body[0])
     assert _extract_expected_arg_names(f1.args) == ["x", "args", "y", "kwargs"]
     assert _has_non_none_return(f1.returns) is True
     assert _has_non_none_return(None) is False
@@ -95,16 +95,16 @@ def f_none_name(x: int) -> None:
     assert _has_non_none_return(ast.Name(id="None")) is False
     assert _is_function_doc_complete(f1) is True
 
-    f_bad_any = cast(ast.FunctionDef, tree.body[1])
+    f_bad_any = typing.cast(ast.FunctionDef, tree.body[1])
     assert _is_function_doc_complete(f_bad_any) is False
 
-    f_missing_arg = cast(ast.FunctionDef, tree.body[2])
+    f_missing_arg = typing.cast(ast.FunctionDef, tree.body[2])
     assert _is_function_doc_complete(f_missing_arg) is False
 
-    f_missing_return = cast(ast.FunctionDef, tree.body[3])
+    f_missing_return = typing.cast(ast.FunctionDef, tree.body[3])
     assert _is_function_doc_complete(f_missing_return) is False
 
-    f_none_name = cast(ast.FunctionDef, tree.body[4])
+    f_none_name = typing.cast(ast.FunctionDef, tree.body[4])
     assert _is_function_doc_complete(f_none_name) is True
 
 
@@ -156,7 +156,7 @@ def test_get_doc_coverage_no_files() -> None:
 
 def test_get_doc_coverage_success() -> None:
     """Verify `get_doc_coverage` across documented and undocumented modules/classes/functions."""
-    mock_walk = cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])])
+    mock_walk = typing.cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])])
 
     core_content = '''"""Module doc."""
 class MyClass:
@@ -197,10 +197,10 @@ def no_doc_func():
             FileNotFoundError: If an unexpected path is opened.
         """
         _ = (args, kwargs)
-        if cast("EagerTensorProtocol", "core.py") in cast("EagerTensorProtocol", path):
-            return cast("EagerTensorProtocol", mock_open(read_data=core_content)())
-        if cast("EagerTensorProtocol", "bad.py") in cast("EagerTensorProtocol", path):
-            return cast("EagerTensorProtocol", mock_open(read_data=bad_content)())
+        if typing.cast("EagerTensorProtocol", "core.py") in typing.cast("EagerTensorProtocol", path):
+            return typing.cast("EagerTensorProtocol", mock_open(read_data=core_content)())
+        if typing.cast("EagerTensorProtocol", "bad.py") in typing.cast("EagerTensorProtocol", path):
+            return typing.cast("EagerTensorProtocol", mock_open(read_data=bad_content)())
         raise FileNotFoundError("File not found")
 
     with (
@@ -215,7 +215,7 @@ def no_doc_func():
 
 def test_get_doc_coverage_exception_in_file() -> None:
     """Verify `get_doc_coverage` gracefully handles syntax errors in inspected files."""
-    mock_walk = cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["fail.py"])])
+    mock_walk = typing.cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["fail.py"])])
     with (
         patch("os.path.exists", return_value=True),
         patch("os.walk", return_value=mock_walk),

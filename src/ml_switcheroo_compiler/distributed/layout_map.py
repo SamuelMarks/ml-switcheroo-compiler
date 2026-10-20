@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import re
+import typing
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 
 
 class ShardingSpec:
     """Specification of how a tensor is sharded across a DeviceMesh."""
 
-    def __init__(self, mesh: TensorOrScalar, mesh_mapping: Sequence[Optional[str]]) -> None:
+    def __init__(self, mesh: TensorOrScalar, mesh_mapping: Sequence[str | None]) -> None:
         """Initialize ShardingSpec.
 
         Args:
@@ -70,7 +70,7 @@ class LayoutMap:
         """
         self._map[path] = spec
 
-    def get(self, path: str) -> Optional[ShardingSpec]:
+    def get(self, path: str) -> ShardingSpec | None:
         """Get the sharding specification for a tensor path.
 
         Args:
@@ -102,7 +102,7 @@ class LayoutMap:
         """
         self._map[key] = value
 
-    def __getitem__(self, key: str) -> Optional[ShardingSpec]:
+    def __getitem__(self, key: str) -> ShardingSpec | None:
         """Get the sharding spec for a given key.
 
         Args:
@@ -142,7 +142,7 @@ class LayoutMap:
         return yaml.safe_dump(self.to_dict(), sort_keys=False)
 
     @classmethod
-    def from_yaml(cls, yaml_content: str, device_mesh: Optional[DeviceMesh] = None) -> LayoutMap:
+    def from_yaml(cls, yaml_content: str, device_mesh: DeviceMesh | None = None) -> LayoutMap:
         """Construct a LayoutMap from declarative YAML content.
 
         Args:

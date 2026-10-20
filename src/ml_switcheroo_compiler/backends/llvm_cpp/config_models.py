@@ -1,6 +1,6 @@
 """Pydantic models for C++ generator configuration."""
 
-from typing import Optional
+from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
@@ -41,10 +41,10 @@ class CppTemplateConfig(BaseModel):
         simd (Optional[CppSimdConfig]): SIMD configuration.
     """
 
-    body: Optional[str] = None
-    includes: Optional[list[str]] = None
-    tiling: Optional[CppTilingConfig] = None
-    simd: Optional[CppSimdConfig] = None
+    body: str | None = None
+    includes: list[str] | None = None
+    tiling: CppTilingConfig | None = None
+    simd: CppSimdConfig | None = None
     model_config = {"extra": "allow"}
 
 
@@ -60,8 +60,8 @@ class CppOpConfig(BaseModel):
 
     template: str = Field(description="Template name for operation")
     scalar_expr: str = Field(description="Scalar C++ compute expression")
-    init_val: Optional[str] = Field(default=None, description="Initial value for reduction templates")
-    final_combine: Optional[str] = Field(default=None, description="Final combine expression for reduction templates")
+    init_val: str | None = Field(default=None, description="Initial value for reduction templates")
+    final_combine: str | None = Field(default=None, description="Final combine expression for reduction templates")
     model_config = {"extra": "allow"}
 
 
@@ -74,6 +74,6 @@ class CppTemplatesConfig(BaseModel):
         operations (dict[str, CppOpConfig]): Declarative operation mappings to templates and expressions.
     """
 
-    prelude: Optional[str] = None
+    prelude: str | None = None
     templates: dict[str, CppTemplateConfig] = Field(default_factory=dict)
     operations: dict[str, CppOpConfig] = Field(default_factory=dict)

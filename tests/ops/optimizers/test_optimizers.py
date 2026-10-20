@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from unittest.mock import patch
@@ -40,7 +40,7 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
     sgd_update,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -51,18 +51,18 @@ def test_optimizers_coverage() -> None:
     grad = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
     assert sgd_update(t, grad, SGDConfig(lr=0.1, weight_decay=0.1, momentum=0.9, nesterov=True)) is not None
-    state = cast("dict[str, EagerTensorProtocol]", {})
-    assert cast("EagerCallableProtocol", sgd_update)(t, grad, cast("EagerCallableProtocol", SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
-    assert cast("EagerCallableProtocol", sgd_update)(t, grad, cast("EagerCallableProtocol", SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
+    state = typing.cast("dict[str, EagerTensorProtocol]", {})
+    assert typing.cast("EagerCallableProtocol", sgd_update)(t, grad, typing.cast("EagerCallableProtocol", SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
+    assert typing.cast("EagerCallableProtocol", sgd_update)(t, grad, typing.cast("EagerCallableProtocol", SGDConfig)(lr=0.1, momentum=0.9, nesterov=False), state) is not None
 
     assert adam_update(t, grad, AdamHyperparams(lr=0.1, weight_decay=0.1)) is not None
     assert adamw_update(t, grad, AdamWHyperparams(lr=0.1, weight_decay=0.1)) is not None
     assert adagrad_update(t, grad, AdagradConfig(lr=0.1, weight_decay=0.1)) is not None
 
     assert rmsprop_update(t, grad, RMSPropHyperparams(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9)) is not None
-    state_rms = cast("dict[str, EagerTensorProtocol]", {})
-    assert cast("EagerCallableProtocol", rmsprop_update)(t, grad, cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
-    assert cast("EagerCallableProtocol", rmsprop_update)(t, grad, cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
+    state_rms = typing.cast("dict[str, EagerTensorProtocol]", {})
+    assert typing.cast("EagerCallableProtocol", rmsprop_update)(t, grad, typing.cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
+    assert typing.cast("EagerCallableProtocol", rmsprop_update)(t, grad, typing.cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1, weight_decay=0.1, centered=True, momentum=0.9), state_rms) is not None
 
     assert adadelta_update(t, grad, AdadeltaConfig(lr=0.1, weight_decay=0.1)) is not None
     assert adamax_update(t, grad, AdamaxHyperparams(lr=0.1, weight_decay=0.1)) is not None
@@ -70,10 +70,10 @@ def test_optimizers_coverage() -> None:
     assert adafactor_update(t, grad, 0.1) is not None
     assert muon_update(t, grad, 0.1) is not None
 
-    assert cast("EagerCallableProtocol", ApplyAdam)().infer_shape(t, t, t) == (2, 2)
-    assert cast("EagerCallableProtocol", ApplyAdagrad)().infer_shape(t, t) == (2, 2)
-    assert cast("EagerCallableProtocol", ApplyFtrl)().infer_shape(t, t, t) == (2, 2)
-    assert cast("EagerCallableProtocol", ApplyRMSProp)().infer_shape(t, t, t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", ApplyAdam)().infer_shape(t, t, t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", ApplyAdagrad)().infer_shape(t, t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", ApplyFtrl)().infer_shape(t, t, t) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", ApplyRMSProp)().infer_shape(t, t, t) == (2, 2)
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.side_effect = Exception("ValueError mock")
@@ -89,7 +89,7 @@ def test_optimizers_coverage() -> None:
                 """Test class DummyGraph."""
 
                 name = "dummy"
-                nodes = cast("dict[str, EagerTensorProtocol]", {})
+                nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
                 def add_node(self, node: EagerValue) -> None:
                     """Test function add_node.

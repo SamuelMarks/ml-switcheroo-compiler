@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import Union, cast
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.backends.sparse.types import (
@@ -29,7 +29,7 @@ def coo_sum_duplicates(
     Returns:
         COOTensor: Canonical COO tensor with unique sorted coordinates.
     """
-    values_arr = cast(EagerTensorProtocol, values)
+    values_arr = typing.cast(EagerTensorProtocol, values)
     if values_arr.size == 0:
         return COOTensor(indices=indices, values=values, shape=shape)
 
@@ -49,7 +49,7 @@ def coo_sum_duplicates(
     unique_flat, split_indices = _SP_BACKEND.unique(sorted_flat, return_index=True)
     summed_values = _SP_BACKEND.add.reduceat(sorted_values, split_indices)
 
-    non_zeros = cast(EagerTensorProtocol, cast(EagerValue, summed_values) != 0)
+    non_zeros = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, summed_values) != 0)
     unique_flat = unique_flat[non_zeros]
     summed_values = summed_values[non_zeros]
 
@@ -64,9 +64,9 @@ def coo_sum_duplicates(
 
 
 def coo_fromdense(
-    mat: Union[EagerValue, Sequence[float], COOTensor],
+    mat: EagerValue | Sequence[float] | COOTensor,
     nse: int | None = None,
-    index_dtype: Union[EagerValue, str] | None = None,
+    index_dtype: EagerValue | str | None = None,
 ) -> COOTensor:
     """Create a COO-format sparse matrix from a dense matrix.
 
@@ -89,7 +89,7 @@ def coo_fromdense(
         return mat
 
     dense_arr = _SP_BACKEND.asarray(mat)
-    nonzero_mask = cast(EagerTensorProtocol, cast(EagerValue, dense_arr) != 0)
+    nonzero_mask = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, dense_arr) != 0)
     indices = _SP_BACKEND.vstack(_SP_BACKEND.nonzero(nonzero_mask))
     if index_dtype is not None:
         indices = indices.astype(index_dtype)
@@ -97,7 +97,7 @@ def coo_fromdense(
     return COOTensor(indices=indices, values=values, shape=dense_arr.shape)
 
 
-def coo_todense(mat: Union[COOTensor, EagerValue, Sequence[float]]) -> EagerTensorProtocol:
+def coo_todense(mat: COOTensor | EagerValue | Sequence[float]) -> EagerTensorProtocol:
     """Convert a COO-format sparse matrix to a dense matrix.
 
     Args:
@@ -108,14 +108,14 @@ def coo_todense(mat: Union[COOTensor, EagerValue, Sequence[float]]) -> EagerTens
     """
     if isinstance(mat, COOTensor):
         return mat.to_dense()
-    return cast(EagerTensorProtocol, _SP_BACKEND.asarray(mat))
+    return typing.cast(EagerTensorProtocol, _SP_BACKEND.asarray(mat))
 
 
 def coo_matmat(
-    mat: Union[COOTensor, EagerValue],
-    B: Union[COOTensor, EagerValue],
+    mat: COOTensor | EagerValue,
+    B: COOTensor | EagerValue,
     transpose: bool = False,
-) -> Union[COOTensor, EagerValue]:
+) -> COOTensor | EagerValue:
     """Product of COO sparse matrix and a dense or sparse matrix.
 
     Args:
@@ -142,7 +142,7 @@ def coo_matmat(
                 shape=out_shape,
             )
 
-        match_mask = cast(EagerTensorProtocol, cast(EagerValue, a_coo.indices[1, :, None]) == cast(EagerValue, B.indices[0, None, :]))
+        match_mask = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, a_coo.indices[1, :, None]) == typing.cast(EagerValue, B.indices[0, None, :]))
         a_matches, b_matches = _SP_BACKEND.nonzero(match_mask)
 
         if a_matches.size == 0:
@@ -166,12 +166,12 @@ def coo_matmat(
         col_indices = a_coo.indices[1]
         contributions = a_coo.values[:, None] * b_dense[col_indices]
         _SP_BACKEND.add.at(res_dense, row_indices, contributions)
-    return cast(Union[COOTensor, EagerValue], res_dense)
+    return typing.cast(typing.Union[COOTensor, "EagerValue"], res_dense)
 
 
 def coo_matvec(
-    mat: Union[COOTensor, EagerValue],
-    v: Union[COOTensor, EagerValue],
+    mat: COOTensor | EagerValue,
+    v: COOTensor | EagerValue,
     transpose: bool = False,
 ) -> EagerValue:
     """Product of COO sparse matrix and a dense vector.
@@ -196,7 +196,7 @@ def coo_matvec(
         col_indices = a_coo.indices[1]
         contributions = a_coo.values * v_dense[col_indices]
         _SP_BACKEND.add.at(res, row_indices, contributions)
-    return cast(EagerValue, res)
+    return typing.cast(EagerValue, res)
 
 
 def coo_transpose(
@@ -227,9 +227,9 @@ def coo_transpose(
 
 
 def coo_add(
-    a: Union[COOTensor, EagerValue, float],
-    b: Union[COOTensor, EagerValue, float],
-) -> Union[COOTensor, EagerValue]:
+    a: COOTensor | EagerValue | float,
+    b: COOTensor | EagerValue | float,
+) -> COOTensor | EagerValue:
     """Element-wise addition for sparse COO tensors.
 
     Args:
@@ -252,10 +252,10 @@ def coo_add(
         return coo_sum_duplicates(stacked_indices, stacked_values, a.shape)
 
     if isinstance(a, COOTensor):
-        return a.to_dense() + cast(EagerTensorProtocol, b)
+        return a.to_dense() + typing.cast(EagerTensorProtocol, b)
     if isinstance(b, COOTensor):
-        return cast(EagerTensorProtocol, a) + b.to_dense()
-    return cast(Union[COOTensor, EagerValue], _SP_BACKEND.asarray(a) + _SP_BACKEND.asarray(b))
+        return typing.cast(EagerTensorProtocol, a) + b.to_dense()
+    return typing.cast(typing.Union[COOTensor, "EagerValue"], _SP_BACKEND.asarray(a) + _SP_BACKEND.asarray(b))
 
 
 def coo_neg(a: COOTensor) -> COOTensor:
@@ -271,9 +271,9 @@ def coo_neg(a: COOTensor) -> COOTensor:
 
 
 def coo_sub(
-    a: Union[COOTensor, EagerValue, float],
-    b: Union[COOTensor, EagerValue, float],
-) -> Union[COOTensor, EagerValue]:
+    a: COOTensor | EagerValue | float,
+    b: COOTensor | EagerValue | float,
+) -> COOTensor | EagerValue:
     """Element-wise subtraction for sparse COO tensors.
 
     Args:
@@ -285,10 +285,10 @@ def coo_sub(
     """
     if isinstance(b, COOTensor):
         return coo_add(a, coo_neg(b))
-    return coo_add(a, -cast(EagerTensorProtocol, b))
+    return coo_add(a, -typing.cast(EagerTensorProtocol, b))
 
 
-def _coo_mul_scalar(t: COOTensor, scalar: Union[int, float, EagerValue]) -> COOTensor:
+def _coo_mul_scalar(t: COOTensor, scalar: int | float | EagerValue) -> COOTensor:
     """Multiply sparse COO tensor by a scalar value.
 
     Args:
@@ -304,7 +304,7 @@ def _coo_mul_scalar(t: COOTensor, scalar: Union[int, float, EagerValue]) -> COOT
             values=_SP_BACKEND.empty((0,), dtype=t.dtype),
             shape=t.shape,
         )
-    return COOTensor(indices=t.indices.copy(), values=t.values * cast(EagerTensorProtocol, scalar), shape=t.shape)
+    return COOTensor(indices=t.indices.copy(), values=t.values * typing.cast(EagerTensorProtocol, scalar), shape=t.shape)
 
 
 def _coo_mul_coo(a: COOTensor, b: COOTensor) -> COOTensor:
@@ -358,9 +358,9 @@ def _coo_mul_dense(a: COOTensor, b_dense: EagerTensorProtocol) -> COOTensor:
 
 
 def coo_mul(
-    a: Union[COOTensor, EagerValue, float, int],
-    b: Union[COOTensor, EagerValue, float, int],
-) -> Union[COOTensor, EagerValue]:
+    a: COOTensor | EagerValue | float | int,
+    b: COOTensor | EagerValue | float | int,
+) -> COOTensor | EagerValue:
     """Element-wise multiplication (Hadamard product) for sparse COO tensors.
 
     Args:
@@ -371,16 +371,16 @@ def coo_mul(
         Union[COOTensor, _SP_BACKEND.ndarray]: Product result.
     """
     if isinstance(a, (int, float, _SP_BACKEND.number)):
-        return _coo_mul_scalar(cast(COOTensor, b), a)
+        return _coo_mul_scalar(typing.cast(COOTensor, b), a)
     if isinstance(b, (int, float, _SP_BACKEND.number)):
-        return _coo_mul_scalar(cast(COOTensor, a), b)
+        return _coo_mul_scalar(typing.cast(COOTensor, a), b)
     if isinstance(a, COOTensor) and isinstance(b, COOTensor):
         return _coo_mul_coo(a, b)
     if isinstance(a, COOTensor):
         return _coo_mul_dense(a, _SP_BACKEND.asarray(b))
     if isinstance(b, COOTensor):
         return _coo_mul_dense(b, _SP_BACKEND.asarray(a))
-    return cast(Union[COOTensor, EagerValue], _SP_BACKEND.asarray(a) * _SP_BACKEND.asarray(b))
+    return typing.cast(typing.Union[COOTensor, "EagerValue"], _SP_BACKEND.asarray(a) * _SP_BACKEND.asarray(b))
 
 
 def coo_abs(a: COOTensor) -> COOTensor:
@@ -438,9 +438,9 @@ def coo_reshape(a: COOTensor, shape: tuple[int, ...]) -> COOTensor:
 
 def _coo_sum_empty(
     a: COOTensor,
-    axis: Union[int, Sequence[int]] | None,
+    axis: int | Sequence[int] | None,
     keepdims: bool,
-) -> Union[COOTensor, float]:
+) -> COOTensor | float:
     """Compute sum reduction for empty sparse tensor.
 
     Args:
@@ -467,9 +467,9 @@ def _coo_sum_empty(
 
 def _coo_sum_axis(
     a: COOTensor,
-    axis: Union[int, Sequence[int]],
+    axis: int | Sequence[int],
     keepdims: bool,
-) -> Union[COOTensor, float, EagerValue]:
+) -> COOTensor | float | EagerValue:
     """Compute sum reduction along specified axis or axes.
 
     Args:
@@ -500,9 +500,9 @@ def _coo_sum_axis(
 
 def coo_sum(
     a: COOTensor,
-    axis: Union[int, Sequence[int]] | None = None,
+    axis: int | Sequence[int] | None = None,
     keepdims: bool = False,
-) -> Union[COOTensor, float, EagerValue]:
+) -> COOTensor | float | EagerValue:
     """Sum elements of a sparse COO tensor over given axes.
 
     Args:
@@ -530,9 +530,9 @@ def coo_sum(
 
 def coo_mean(
     a: COOTensor,
-    axis: Union[int, Sequence[int]] | None = None,
+    axis: int | Sequence[int] | None = None,
     keepdims: bool = False,
-) -> Union[COOTensor, float, EagerValue]:
+) -> COOTensor | float | EagerValue:
     """Compute mean of elements in a sparse COO tensor over given axes.
 
     Args:
@@ -545,26 +545,26 @@ def coo_mean(
     """
     if axis is None:
         num_elements: int = a.size
-        sum_val: Union[COOTensor, float, EagerValue] = coo_sum(a, axis=None, keepdims=keepdims)
+        sum_val: COOTensor | float | EagerValue = coo_sum(a, axis=None, keepdims=keepdims)
         if isinstance(sum_val, COOTensor):
             return COOTensor(indices=sum_val.indices.copy(), values=sum_val.values / num_elements, shape=sum_val.shape)
-        return float(cast(float, sum_val)) / num_elements
+        return float(typing.cast(float, sum_val)) / num_elements
 
     axes_list: list[int] = [axis] if isinstance(axis, int) else [int(ax) for ax in axis]
     num_reduced: int = 1
     for ax in axes_list:
         num_reduced *= a.shape[ax % a.ndim]
 
-    sum_res: Union[COOTensor, float, EagerValue] = coo_sum(a, axis=axis, keepdims=keepdims)
+    sum_res: COOTensor | float | EagerValue = coo_sum(a, axis=axis, keepdims=keepdims)
     if isinstance(sum_res, COOTensor):
         return COOTensor(indices=sum_res.indices.copy(), values=sum_res.values / num_reduced, shape=sum_res.shape)
-    return float(cast(float, sum_res)) / num_reduced
+    return float(typing.cast(float, sum_res)) / num_reduced
 
 
 def coo_dot(
-    a: Union[COOTensor, EagerValue],
-    b: Union[COOTensor, EagerValue],
-) -> Union[COOTensor, EagerValue, float]:
+    a: COOTensor | EagerValue,
+    b: COOTensor | EagerValue,
+) -> COOTensor | EagerValue | float:
     """Dot product for sparse COO tensors.
 
     Args:
@@ -574,15 +574,15 @@ def coo_dot(
     Returns:
         Union[COOTensor, _SP_BACKEND.ndarray, float]: Dot product result.
     """
-    ndim_a: int = a.ndim if isinstance(a, COOTensor) else cast(EagerTensorProtocol, a).ndim
-    ndim_b: int = b.ndim if isinstance(b, COOTensor) else cast(EagerTensorProtocol, b).ndim
+    ndim_a: int = a.ndim if isinstance(a, COOTensor) else typing.cast(EagerTensorProtocol, a).ndim
+    ndim_b: int = b.ndim if isinstance(b, COOTensor) else typing.cast(EagerTensorProtocol, b).ndim
 
     if ndim_a == 2 and ndim_b == 2:
         return coo_matmat(a, b)
     if ndim_a == 2 and ndim_b == 1:
         return coo_matvec(a, b)
     if ndim_a == 1 and ndim_b == 1:
-        elem: Union[COOTensor, EagerValue] = coo_mul(a, b)
+        elem: COOTensor | EagerValue = coo_mul(a, b)
         if isinstance(elem, COOTensor):
             return float(_SP_BACKEND.sum(elem.values))
         return float(_SP_BACKEND.sum(elem))
@@ -591,7 +591,7 @@ def coo_dot(
 
 
 def spmm(
-    sparse_mat: Union[CSRTensor, CSCTensor, COOTensor, EagerValue],
+    sparse_mat: CSRTensor | CSCTensor | COOTensor | EagerValue,
     dense_mat: EagerValue,
 ) -> EagerTensorProtocol:
     """Perform sparse-dense matrix multiplication (SpMM): out = sparse_mat @ dense_mat.
@@ -616,7 +616,7 @@ def spmm(
                 c = sparse_mat.indices[idx]
                 val = sparse_mat.data[idx]
                 out[r] += val * b_arr[c]
-        return cast(EagerTensorProtocol, out)
+        return typing.cast(EagerTensorProtocol, out)
 
     if isinstance(sparse_mat, CSCTensor):
         return spmm(sparse_mat.to_csr(), b_arr)
@@ -624,12 +624,12 @@ def spmm(
     if isinstance(sparse_mat, COOTensor):
         return spmm(sparse_mat.to_csr(), b_arr)
 
-    return cast(EagerTensorProtocol, _SP_BACKEND.matmul(sparse_mat, b_arr))
+    return typing.cast(EagerTensorProtocol, _SP_BACKEND.matmul(sparse_mat, b_arr))
 
 
 def spgemm(
-    a: Union[CSRTensor, CSCTensor, COOTensor, EagerValue],
-    b: Union[CSRTensor, CSCTensor, COOTensor, EagerValue],
+    a: CSRTensor | CSCTensor | COOTensor | EagerValue,
+    b: CSRTensor | CSCTensor | COOTensor | EagerValue,
 ) -> CSRTensor:
     """Perform sparse-sparse matrix multiplication (SpGEMM): out = A @ B.
 
@@ -655,7 +655,7 @@ def spgemm(
 
 
 def spmm_grad(
-    sparse_mat: Union[CSRTensor, CSCTensor, COOTensor],
+    sparse_mat: CSRTensor | CSCTensor | COOTensor,
     dense_mat: EagerValue,
     cotangent: EagerValue,
 ) -> tuple[CSRTensor, EagerValue]:
@@ -703,9 +703,9 @@ def spmm_grad(
 
 
 def spgemm_grad(
-    a: Union[CSRTensor, CSCTensor, COOTensor],
-    b: Union[CSRTensor, CSCTensor, COOTensor],
-    cotangent: Union[CSRTensor, CSCTensor, COOTensor, EagerValue],
+    a: CSRTensor | CSCTensor | COOTensor,
+    b: CSRTensor | CSCTensor | COOTensor,
+    cotangent: CSRTensor | CSCTensor | COOTensor | EagerValue,
 ) -> tuple[CSRTensor, CSRTensor]:
     """Compute gradients for sparse-sparse matrix multiplication (SpGEMM).
 
@@ -723,18 +723,18 @@ def spgemm_grad(
 
     dense_b = csr_b.to_dense()
     dense_grad_a = _SP_BACKEND.matmul(dense_cot, dense_b.T)
-    grad_a_csr = CSRTensor.from_dense(dense_grad_a * cast(EagerValue, cast(EagerValue, csr_a.to_dense()) != 0))
+    grad_a_csr = CSRTensor.from_dense(dense_grad_a * typing.cast(EagerValue, typing.cast(EagerValue, csr_a.to_dense()) != 0))
 
     dense_a = csr_a.to_dense()
     dense_grad_b = _SP_BACKEND.matmul(dense_a.T, dense_cot)
-    grad_b_csr = CSRTensor.from_dense(dense_grad_b * cast(EagerValue, cast(EagerValue, csr_b.to_dense()) != 0))
+    grad_b_csr = CSRTensor.from_dense(dense_grad_b * typing.cast(EagerValue, typing.cast(EagerValue, csr_b.to_dense()) != 0))
 
     return grad_a_csr, grad_b_csr
 
 
 def dense_spmm(
     dense_mat: EagerValue,
-    sparse_mat: Union[CSRTensor, CSCTensor, COOTensor, EagerValue],
+    sparse_mat: CSRTensor | CSCTensor | COOTensor | EagerValue,
 ) -> EagerValue:
     """Perform dense-sparse matrix multiplication: out = dense_mat @ sparse_mat.
 
@@ -752,7 +752,7 @@ def dense_spmm(
         d_t = d_arr.T
         res_t = spmm(s_t, d_t)
         return res_t.T
-    return cast(EagerValue, _SP_BACKEND.matmul(d_arr, sparse_mat))
+    return typing.cast(EagerValue, _SP_BACKEND.matmul(d_arr, sparse_mat))
 
 
 def csr_add(a: CSRTensor, b: CSRTensor) -> CSRTensor:
@@ -808,8 +808,8 @@ def csc_add(a: CSCTensor, b: CSCTensor) -> CSCTensor:
 
 
 def sparse_mask(
-    tensor: Union[COOTensor, EagerValue],
-    mask: Union[COOTensor, CSRTensor, CSCTensor, EagerValue],
+    tensor: COOTensor | EagerValue,
+    mask: COOTensor | CSRTensor | CSCTensor | EagerValue,
 ) -> COOTensor:
     """Filter a dense or sparse tensor using a sparse boolean/coordinate mask.
 
@@ -823,12 +823,12 @@ def sparse_mask(
     """
     t_dense = tensor.to_dense() if isinstance(tensor, COOTensor) else _SP_BACKEND.asarray(tensor)
     m_dense = mask.to_dense() if isinstance(mask, (COOTensor, CSRTensor, CSCTensor)) else _SP_BACKEND.asarray(mask)
-    filtered = _SP_BACKEND.where(cast(EagerValue, m_dense) != 0, t_dense, 0)
+    filtered = _SP_BACKEND.where(typing.cast(EagerValue, m_dense) != 0, t_dense, 0)
     return COOTensor.from_dense(filtered)
 
 
 def _prepare_conv2d_tensors(
-    x: Union[COOTensor, EagerValue],
+    x: COOTensor | EagerValue,
     weight: EagerValue,
 ) -> tuple[EagerTensorProtocol, EagerTensorProtocol]:
     """Normalize input and weight dimensions to 4D tensors for convolution.
@@ -852,7 +852,7 @@ def _prepare_conv2d_tensors(
 
 def _apply_sparse_mask(
     dense_out: EagerTensorProtocol,
-    mask: Union[COOTensor, CSRTensor, CSCTensor, EagerValue],
+    mask: COOTensor | CSRTensor | CSCTensor | EagerValue,
 ) -> COOTensor:
     """Filter evaluated dense convolution activations by an expanded sparse mask.
 
@@ -864,7 +864,7 @@ def _apply_sparse_mask(
         COOTensor: Filtered sparse COO tensor.
     """
     mask_coo = mask if isinstance(mask, COOTensor) else (mask.to_coo() if isinstance(mask, (CSRTensor, CSCTensor)) else COOTensor.from_dense(_SP_BACKEND.asarray(mask)))
-    mask_dense = cast(EagerTensorProtocol, cast(EagerValue, mask_coo.to_dense()) != 0)
+    mask_dense = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, mask_coo.to_dense()) != 0)
     while mask_dense.ndim < dense_out.ndim:
         mask_dense = mask_dense[None, :]
     mask_broadcast = _SP_BACKEND.broadcast_to(mask_dense, dense_out.shape)
@@ -873,9 +873,9 @@ def _apply_sparse_mask(
 
 
 def sparse_conv2d_mask(
-    x: Union[COOTensor, EagerValue],
+    x: COOTensor | EagerValue,
     weight: EagerValue,
-    mask: Union[COOTensor, CSRTensor, CSCTensor, EagerValue],
+    mask: COOTensor | CSRTensor | CSCTensor | EagerValue,
     stride: tuple[int, int] = (1, 1),
     padding: tuple[int, int] = (0, 0),
 ) -> COOTensor:
@@ -948,7 +948,7 @@ def csr_sub(a: CSRTensor, b: CSRTensor) -> CSRTensor:
         return b_neg.to_csr()
     if b.nnz == 0:
         return a
-    return cast(COOTensor, coo_sub(a.to_coo(), b.to_coo())).to_csr()
+    return typing.cast(COOTensor, coo_sub(a.to_coo(), b.to_coo())).to_csr()
 
 
 def csc_sub(a: CSCTensor, b: CSCTensor) -> CSCTensor:
@@ -972,12 +972,12 @@ def csc_sub(a: CSCTensor, b: CSCTensor) -> CSCTensor:
         return b_neg.to_csc()
     if b.nnz == 0:
         return a
-    return cast(COOTensor, coo_sub(a.to_coo(), b.to_coo())).to_csc()
+    return typing.cast(COOTensor, coo_sub(a.to_coo(), b.to_coo())).to_csc()
 
 
 def sparse_softmax(
-    matrix: Union[COOTensor, CSRTensor, CSCTensor, EagerValue],
-    mask: Union[COOTensor, EagerValue] | None = None,
+    matrix: COOTensor | CSRTensor | CSCTensor | EagerValue,
+    mask: COOTensor | EagerValue | None = None,
 ) -> COOTensor:
     """Compute row-wise softmax exclusively over non-zero elements for GNN attention.
 
@@ -1024,7 +1024,7 @@ def sparse_softmax(
 
 
 def graph_norm_adjacency(
-    adj: Union[COOTensor, CSRTensor, CSCTensor, EagerValue],
+    adj: COOTensor | CSRTensor | CSCTensor | EagerValue,
     add_self_loops: bool = True,
 ) -> COOTensor:
     """Compute symmetric normalized graph adjacency matrix D^{-1/2} A D^{-1/2}.
@@ -1043,7 +1043,7 @@ def graph_norm_adjacency(
         diag_indices = _SP_BACKEND.stack([_SP_BACKEND.arange(n), _SP_BACKEND.arange(n)], axis=0)
         diag_values = _SP_BACKEND.ones(n, dtype=coo.values.dtype)
         eye_coo = COOTensor(indices=diag_indices, values=diag_values, shape=(n, n))
-        coo = cast(COOTensor, coo_add(coo, eye_coo))
+        coo = typing.cast(COOTensor, coo_add(coo, eye_coo))
 
     # Compute row degrees
     deg = _SP_BACKEND.zeros(n, dtype=_SP_BACKEND.float64)
@@ -1052,7 +1052,7 @@ def graph_norm_adjacency(
 
     # D^{-1/2}
     deg_inv_sqrt = _SP_BACKEND.zeros(n, dtype=_SP_BACKEND.float64)
-    nonzero_mask = cast(EagerTensorProtocol, deg > 0)
+    nonzero_mask = typing.cast(EagerTensorProtocol, deg > 0)
     deg_inv_sqrt[nonzero_mask] = 1.0 / _SP_BACKEND.sqrt(deg[nonzero_mask])
 
     # Multiply entries: D^{-1/2}[i] * A[i, j] * D^{-1/2}[j]
@@ -1064,9 +1064,9 @@ def graph_norm_adjacency(
 
 
 def gnn_spmm_attention(
-    adj: Union[COOTensor, CSRTensor, CSCTensor, EagerValue],
+    adj: COOTensor | CSRTensor | CSCTensor | EagerValue,
     features: EagerValue,
-    attention_weights: Union[COOTensor, EagerValue] | None = None,
+    attention_weights: COOTensor | EagerValue | None = None,
 ) -> EagerValue:
     """Compute Graph Neural Network message aggregation with optional attention weights.
 
@@ -1087,11 +1087,11 @@ def gnn_spmm_attention(
 
 
 def sparse_dropout(
-    tensor: Union[COOTensor, CSRTensor, CSCTensor],
+    tensor: COOTensor | CSRTensor | CSCTensor,
     drop_rate: float = 0.5,
     training: bool = True,
     seed: int | None = None,
-) -> Union[COOTensor, CSRTensor, CSCTensor]:
+) -> COOTensor | CSRTensor | CSCTensor:
     """Apply edge dropout to non-zero values of a sparse matrix for DropEdge regularization.
 
     Args:
@@ -1116,7 +1116,7 @@ def sparse_dropout(
         keep_prob = 1.0 - drop_rate
         scale = 1.0 / keep_prob
         rng = _SP_BACKEND.random.default_rng(seed)
-        keep_mask = cast(EagerTensorProtocol, rng.uniform(0.0, 1.0, size=coo.nnz) < keep_prob)
+        keep_mask = typing.cast(EagerTensorProtocol, rng.uniform(0.0, 1.0, size=coo.nnz) < keep_prob)
         if not _SP_BACKEND.any(keep_mask):
             empty_indices = _SP_BACKEND.zeros((len(coo.shape), 0), dtype=coo.indices.dtype)
             empty_values = _SP_BACKEND.zeros(0, dtype=coo.values.dtype)
@@ -1146,5 +1146,5 @@ def __getattr__(name: str) -> EagerValue:
         AttributeError: If attribute is not found in numpy.
     """
     if hasattr(_SP_BACKEND, name):
-        return cast(EagerValue, getattr(_SP_BACKEND, name))
+        return typing.cast(EagerValue, getattr(_SP_BACKEND, name))
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

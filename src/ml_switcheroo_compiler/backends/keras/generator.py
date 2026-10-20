@@ -1,16 +1,18 @@
 # ruff: noqa: E402
 """Keras backend generator that maps LogicalNodes and IR layers to Keras equivalent code representations."""
 
+from __future__ import annotations
+
 import os
+import typing
 from collections.abc import Callable
-from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
@@ -118,7 +120,7 @@ class KerasCodeGenerator(BaseGenerator):
         import pickle
 
         with open(filepath, "rb") as f:
-            return cast(EagerValue, pickle.load(f))
+            return typing.cast(EagerValue, pickle.load(f))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -176,7 +178,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras"
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[CodeGeneratorVisitor]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: list[CodeGeneratorVisitor] | None = None) -> None:
         """Initialize the generator.
 
         Args:
@@ -243,7 +245,7 @@ class KerasCodeGenerator(BaseGenerator):
         """
         return "keras.ops"
 
-    def get_ops_map(self, kwargs: dict[str, EagerValue]) -> dict[str, str]:
+    def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
         """Get the operation mapping dictionary.
 
         Args:
@@ -252,11 +254,12 @@ class KerasCodeGenerator(BaseGenerator):
         Returns:
             dict[str, str]: The ops map.
         """
-        ops = super().get_ops_map(kwargs)
-        ops["Zeros"] = KerasTensorManipulator.format_zeros_like("zeros", kwargs)
-        ops["Ones"] = KerasTensorManipulator.format_zeros_like("ones", kwargs)
-        ops["Full"] = KerasTensorManipulator.format_full(kwargs)
-        ops["Transpose"] = KerasTensorManipulator.format_transpose(kwargs)
+        kw = kwargs if kwargs is not None else {}
+        ops = super().get_ops_map(kw)
+        ops["Zeros"] = KerasTensorManipulator.format_zeros_like("zeros", kw)
+        ops["Ones"] = KerasTensorManipulator.format_zeros_like("ones", kw)
+        ops["Full"] = KerasTensorManipulator.format_full(kw)
+        ops["Transpose"] = KerasTensorManipulator.format_transpose(kw)
         return ops
 
     def _emit_input_assignment(self, var_name: str, node: IRNode, input_prefix: str, input_idx: int) -> None:
@@ -343,7 +346,7 @@ class KerasCodeGenerator(BaseGenerator):
         try:
             exec(source_code, scope)
             if "get_model" in scope:
-                model_obj = cast(Callable[[], EagerValue], scope["get_model"])()
+                model_obj = typing.cast(Callable[[], EagerValue], scope["get_model"])()
         except Exception:
             model_obj = None
 
@@ -358,7 +361,7 @@ class KerasCodeGenerator(BaseGenerator):
                 EagerValue: Model execution output or evaluated graph output.
             """
             if model_obj is not None:
-                return cast(Callable[..., EagerValue], model_obj)(*args, **runner_kwargs)
+                return typing.cast(TypedVariadicCallable[EagerValue], model_obj)(*args, **runner_kwargs)
 
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
@@ -366,11 +369,11 @@ class KerasCodeGenerator(BaseGenerator):
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
-            res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict))
+            res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
-                return cast(EagerValue, res_dict)
+                return typing.cast(EagerValue, res_dict)
             if len(graph.outputs) == 1:
-                return cast(EagerValue, res_dict.get(graph.outputs[0]))
+                return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
 
         return CompiledArtifact(

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -152,7 +152,7 @@ def test_rocm_runner_allocate_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
         runner = ROCmRunner()
         ptr = runner.allocate_buffer(100)
-        assert cast("EagerTensorProtocol", getattr(ptr, "value")) == 12345
+        assert typing.cast("EagerTensorProtocol", getattr(ptr, "value")) == 12345
 
 
 def test_rocm_runner_allocate_ctypes() -> None:
@@ -199,7 +199,7 @@ def test_rocm_runner_allocate_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = ROCmRunner()
             ptr = runner.allocate_buffer(100)
-            assert cast("EagerTensorProtocol", getattr(ptr, "value")) is None
+            assert typing.cast("EagerTensorProtocol", getattr(ptr, "value")) is None
 
 
 def test_rocm_runner_write_cupy() -> None:
@@ -257,7 +257,7 @@ def test_rocm_runner_write_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert cast("EagerCallableProtocol", runner.write_buffer)(None, b"test") is None
+    assert typing.cast("EagerCallableProtocol", runner.write_buffer)(None, b"test") is None
 
 
 def test_rocm_runner_read_cupy() -> None:
@@ -318,7 +318,7 @@ def test_rocm_runner_read_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert cast("EagerCallableProtocol", runner.read_buffer)(None, 4) == b"\x00" * 4
+    assert typing.cast("EagerCallableProtocol", runner.read_buffer)(None, 4) == b"\x00" * 4
 
 
 def test_rocm_runner_read_no_lib() -> None:
@@ -369,7 +369,7 @@ def test_rocm_runner_free_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    cast("EagerCallableProtocol", runner.free_buffer)(None)
+    typing.cast("EagerCallableProtocol", runner.free_buffer)(None)
     assert isinstance(runner, ROCmRunner)
 
 

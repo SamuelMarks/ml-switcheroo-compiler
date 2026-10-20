@@ -1,14 +1,16 @@
 """Dedicated eager execution handlers and dispatch for the Keras backend."""
 
+from __future__ import annotations
+
 import sys
-from typing import Optional, cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.mapping_loader import OpMappingSchema
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 
-def _get_keras_module() -> Optional[EagerValue]:
+def _get_keras_module() -> EagerValue | None:
     """Safely obtain or import keras module.
 
     Returns:
@@ -23,7 +25,7 @@ def _get_keras_module() -> Optional[EagerValue]:
     return keras
 
 
-def _convert_arg(arg: EagerValue, keras: Optional[EagerValue]) -> EagerValue:
+def _convert_arg(arg: EagerValue, keras: EagerValue | None) -> EagerValue:
     """Convert input sequence argument to Keras tensor if possible.
 
     Args:
@@ -36,7 +38,7 @@ def _convert_arg(arg: EagerValue, keras: Optional[EagerValue]) -> EagerValue:
     ops_mod = getattr(keras, "ops", None) if keras is not None else None
     if isinstance(arg, (list, tuple)) and ops_mod is not None and hasattr(ops_mod, "convert_to_tensor"):
         try:
-            return cast(EagerValue, ops_mod.convert_to_tensor(arg))
+            return typing.cast(EagerValue, ops_mod.convert_to_tensor(arg))
         except Exception:
             return arg
     return arg
@@ -44,10 +46,10 @@ def _convert_arg(arg: EagerValue, keras: Optional[EagerValue]) -> EagerValue:
 
 def _try_dispatch_mapped_op(
     op_spec: OpMappingSchema,
-    keras: Optional[EagerValue],
+    keras: EagerValue | None,
     args: list[EagerValue],
     kwargs: dict[str, EagerValue],
-) -> Optional[EagerValue]:
+) -> EagerValue | None:
     """Attempt to dispatch operation from mapping schema.
 
     Args:
@@ -66,16 +68,16 @@ def _try_dispatch_mapped_op(
     if not (target_api or custom_code):
         return None
 
-    func = resolve_target_api(cast("str", target_api), custom_code, keras)
+    func = resolve_target_api(typing.cast("str", target_api), custom_code, keras)
     if func is None or not callable(func):
         return None
 
     kwarg_trans = getattr(op_spec, "kwarg_translations", {}) or {}
     translated_kwargs: dict[str, EagerValue] = {kwarg_trans.get(k, k): v for k, v in kwargs.items()}
     if getattr(op_spec, "is_method", False) and args:
-        method = getattr(args[0], cast("str", target_api), None)
+        method = getattr(args[0], typing.cast("str", target_api), None)
         if method is not None and callable(method):
-            return cast(Optional[EagerValue], method(*args[1:], **translated_kwargs))
+            return typing.cast(typing.Union[EagerValue, "None"], method(*args[1:], **translated_kwargs))
     return func(*args, **translated_kwargs)
 
 

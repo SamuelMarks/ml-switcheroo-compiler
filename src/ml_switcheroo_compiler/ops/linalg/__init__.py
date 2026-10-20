@@ -124,12 +124,10 @@ class Vecdot(OpDef):
         Returns:
             tuple[int, ...]: Resulting shape after contracting vector dimension.
         """
-        if not args or len(args) < 2:
+        if not args or len(args) < 2 or not getattr(args[0], "shape", ()) or not getattr(args[1], "shape", ()):
             return ()
         x_shape = getattr(args[0], "shape", ())
         y_shape = getattr(args[1], "shape", ())
-        if not x_shape or not y_shape:
-            return ()
         axis = int(cast(int, kwargs.get("axis", -1)))
         x_norm = axis if axis >= 0 else len(x_shape) + axis
         y_norm = axis if axis >= 0 else len(y_shape) + axis
@@ -156,12 +154,10 @@ class CustomLinearSolve(OpDef):
         Returns:
             tuple[int, ...]: Resulting shape matching broadcasted solution X.
         """
-        if not args or len(args) < 2:
+        if not args or len(args) < 2 or len(getattr(args[0], "shape", ())) < 2 or len(getattr(args[1], "shape", ())) < 1:
             return ()
         a_shape: tuple[int, ...] = getattr(args[0], "shape", ())
         b_shape: tuple[int, ...] = getattr(args[1], "shape", ())
-        if len(a_shape) < 2 or len(b_shape) < 1:
-            return ()
         m = a_shape[-1]
         batch_a = a_shape[:-2]
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
@@ -210,7 +206,6 @@ __all__ = [
     "Dot",
     "DotGeneral",
     "EagerTensorProtocol",
-    "TensorOrScalar",
     "Einsum",
     "LinearOperator",
     "LinearOperatorAdjoint",
@@ -238,6 +233,7 @@ __all__ = [
     "MatrixTranspose",
     "Pdot",
     "Sqrtm",
+    "TensorOrScalar",
     "Trace",
     "Vecdot",
     "addmm",

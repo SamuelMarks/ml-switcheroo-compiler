@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import typing
-from typing import TYPE_CHECKING, cast
 
 import pytest
+from ml_switcheroo_ir import AttributeValue, NodeDict
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.state_lifting import (
@@ -21,7 +23,7 @@ from ml_switcheroo_compiler.transforms.passes.state_lifting import (
     state_lifting_pass,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -56,7 +58,7 @@ def test_state_lifting() -> None:
     n1 = IRNode("n1", "ReadVariable", attributes={"variable_name": "v1"})
     n2 = IRNode("n2", "AssignVariable", attributes={"variable_name": "v2"})
     n3 = IRNode("n3", "Add", attributes={})
-    graph.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    graph.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3})
     graph.outputs = []
     res = state_lifting_pass(graph)
     assert res is True
@@ -65,7 +67,7 @@ def test_state_lifting() -> None:
     b = DummyBlock()
     n4 = IRNode("n4", "ReadVariable", attributes={})
     b.nodes = {"n4": n4}
-    n5 = IRNode("n5", "If", attributes={"body": b})
+    n5 = IRNode("n5", "If", attributes=typing.cast("dict[str, AttributeValue]", {"body": b}))
     graph.nodes["n5"] = n5
     res = state_lifting_pass(graph)
     assert res is True
@@ -73,7 +75,7 @@ def test_state_lifting() -> None:
 
 def test_get_node_items() -> None:
     """Test _get_node_items with None, list, and dict node representations."""
-    assert cast("EagerCallableProtocol", _get_node_items)(None) == []
+    assert typing.cast("EagerCallableProtocol", _get_node_items)(None) == []
 
     class DummyBlockList:
         """Dummy block containing list of nodes."""
@@ -83,7 +85,7 @@ def test_get_node_items() -> None:
             n = IRNode("n1", "Add", attributes={})
             self.nodes = [n]
 
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", list)(cast("EagerCallableProtocol", _get_node_items)(cast("EagerCallableProtocol", DummyBlockList)()))) == 1
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", list)(typing.cast("EagerCallableProtocol", _get_node_items)(typing.cast("EagerCallableProtocol", DummyBlockList)()))) == 1
 
 
 def test_state_lifting_already_in_outputs() -> None:
@@ -106,7 +108,7 @@ def test_state_lifting_no_outputs() -> None:
             self.nodes = {"assign1": IRNode(id="assign1", op_type="AssignVariable", inputs=["some_input"], attributes={"variable_name": "my_var"})}
 
     block = DummyBlockNoOutputs()
-    cast("EagerCallableProtocol", _lift_block)(block)
+    typing.cast("EagerCallableProtocol", _lift_block)(block)
     assert block.nodes["assign1"].op_type == "Output"
 
 
@@ -126,9 +128,9 @@ def test_get_and_set_val() -> None:
             self.x = "hello"
 
     obj = Obj()
-    assert cast("EagerCallableProtocol", _get_val)(obj, "x") == "hello"
-    assert cast("EagerCallableProtocol", _get_val)(obj, "y") is None
-    cast("EagerCallableProtocol", _set_val)(obj, "x", "world")
+    assert typing.cast("EagerCallableProtocol", _get_val)(obj, "x") == "hello"
+    assert typing.cast("EagerCallableProtocol", _get_val)(obj, "y") is None
+    typing.cast("EagerCallableProtocol", _set_val)(obj, "x", "world")
     assert obj.x == "world"
 
 
@@ -153,24 +155,24 @@ def test_navigate() -> None:
             self.child = Child()
 
     parent = Parent()
-    assert cast("EagerCallableProtocol", _navigate)(parent, ["child", "val"]) == 123
+    assert typing.cast("EagerCallableProtocol", _navigate)(parent, ["child", "val"]) == 123
 
 
 def test_lift_node_state_defaults() -> None:
     """Test _lift_node_state with default naming fallbacks and unhandled ops."""
     block = DummyBlock()
     read_node = IRNode("read1", "ReadVariable", attributes={})
-    assert bool(cast("EagerCallableProtocol", _lift_node_state)(read_node, "read1", block)) is True
+    assert bool(typing.cast("EagerCallableProtocol", _lift_node_state)(read_node, "read1", block)) is True
     assert read_node.op_type == "Input"
     assert read_node.attributes["name"] == "var_read1"
 
     assign_node = IRNode("assign1", "AssignVariable", attributes={})
-    assert bool(cast("EagerCallableProtocol", _lift_node_state)(assign_node, "assign1", block)) is True
+    assert bool(typing.cast("EagerCallableProtocol", _lift_node_state)(assign_node, "assign1", block)) is True
     assert assign_node.op_type == "Output"
     assert assign_node.attributes["name"] == "var_assign1_out"
 
     other_node = IRNode("n3", "Add", attributes={})
-    assert bool(cast("EagerCallableProtocol", _lift_node_state)(other_node, "n3", block)) is False
+    assert bool(typing.cast("EagerCallableProtocol", _lift_node_state)(other_node, "n3", block)) is False
 
 
 def test_extract_state_reflection() -> None:
@@ -206,7 +208,7 @@ def test_extract_state_reflection() -> None:
             self.instance_fn = lambda: 123
 
     model = RootModel()
-    params, buffers = cast("EagerCallableProtocol", pass_obj.extract_state)(model)
+    params, buffers = typing.cast("EagerCallableProtocol", pass_obj.extract_state)(model)
     assert "weight" in params
     assert "bias" in buffers
     assert "real_tensor" in params
@@ -228,7 +230,7 @@ def test_extract_state_no_dict() -> None:
 
         __slots__ = ()
 
-    params, buffers = cast("EagerCallableProtocol", StateLiftingPass)().extract_state(cast("EagerCallableProtocol", SlotsModel)())
+    params, buffers = typing.cast("EagerCallableProtocol", StateLiftingPass)().extract_state(typing.cast("EagerCallableProtocol", SlotsModel)())
     assert params == {}
     assert buffers == {}
 
@@ -246,7 +248,7 @@ def test_lift_model_to_graph() -> None:
             self.running_mean = MockTensor(shape=(4,), dtype="float32", requires_grad=False)
 
     model = SimpleModel()
-    combined_state, graph = cast("EagerCallableProtocol", pass_obj.lift)(model)
+    combined_state, graph = typing.cast("EagerCallableProtocol", pass_obj.lift)(model)
     assert "w" in combined_state
     assert "running_mean" in combined_state
     assert graph.name == "functional_SimpleModel"
@@ -292,7 +294,7 @@ def test_functionalize_callable() -> None:
     setattr(model, "weight", MockTensor(shape=(1,), dtype="float32", requires_grad=True))
     setattr(model, "counter", MockTensor(shape=(), dtype="int32", requires_grad=False))
 
-    init_state, pure_fn = pass_obj.functionalize(model)
+    init_state, pure_fn = pass_obj.functionalize(typing.cast("TypedVariadicCallable[EagerValue]", model))
     assert "weight" in init_state
     assert "counter" in init_state
 
@@ -317,7 +319,7 @@ def test_functionalize_type_error_restore() -> None:
             self.p = MockTensor()
 
     model = InertModel()
-    init_state, pure_fn = cast("EagerCallableProtocol", pass_obj.functionalize)(model)
+    init_state, pure_fn = typing.cast("EagerCallableProtocol", pass_obj.functionalize)(model)
     with pytest.raises(TypeError, match="is not callable"):
         pure_fn({"p": "temporary"})
     assert id(model.p) == id(init_state["p"])
@@ -353,7 +355,7 @@ def test_functionalize_nested_state() -> None:
             return typing.cast(int, self.inner.param) * factor
 
     outer = OuterSub()
-    _, pure_fn = cast("EagerCallableProtocol", pass_obj.functionalize)(outer)
+    _, pure_fn = typing.cast("EagerCallableProtocol", pass_obj.functionalize)(outer)
     res, new_st = pure_fn({"inner.param": 7}, 3)
     assert res == 21
     assert new_st["inner.param"] == 7

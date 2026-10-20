@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import os
 import struct
-from typing import TYPE_CHECKING
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -21,7 +23,7 @@ def test_export_mlirbc(tmp_path: EagerTensorProtocol) -> None:
     """
     g = IRGraph()
     n1 = IRNode(id="n1", op_type="Input")
-    g.nodes = {"n1": n1}
+    g.nodes = NodeDict({"n1": n1})
 
     gen = StableHLOCodeGenerator(g)
     out_file = os.path.join(tmp_path, "model.mlirbc")

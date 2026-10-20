@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Union, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _to_channels_last
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("AdjustBrightness")
 def _np_adjust_brightness(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     delta: float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Adjust the brightness of images by delta.
 
@@ -34,10 +34,10 @@ def _np_adjust_brightness(
 
 @numpy_eager_registry.register("AdjustContrast")
 def _np_adjust_contrast(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     contrast_factor: float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Adjust the contrast of images.
 
@@ -51,15 +51,15 @@ def _np_adjust_contrast(
         np.ndarray: Contrast adjusted images clipped to [0, 1].
     """
     mean = getattr(np, "mean")(images, axis=(-3, -2), keepdims=True)
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.clip((images - mean) * contrast_factor + mean, 0.0, 1.0))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.clip((images - mean) * contrast_factor + mean, 0.0, 1.0))
 
 
 @numpy_eager_registry.register("AdjustHue")
 def _np_adjust_hue(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     delta: float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Adjust the hue of RGB images by delta.
 
@@ -77,10 +77,10 @@ def _np_adjust_hue(
 
 @numpy_eager_registry.register("AdjustSaturation")
 def _np_adjust_saturation(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
     saturation_factor: float,
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Adjust the saturation of RGB images.
 
@@ -94,14 +94,14 @@ def _np_adjust_saturation(
         np.ndarray: Saturation adjusted images clipped to [0, 1].
     """
     gray = np.asarray(_np_rgb_to_grayscale(backend_module, images))
-    return np.asarray(np.clip(gray + (images - gray) * saturation_factor, 0.0, 1.0))
+    return np.asarray(np.clip(np.add(gray, np.subtract(images, gray) * saturation_factor), 0.0, 1.0))
 
 
 @numpy_eager_registry.register("AutoContrast")
 def _np_auto_contrast(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: Union[tuple[int, int], str, float, None],
+    **kwargs: tuple[int, int] | str | float | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Maximize the contrast of an image by stretching range.
 
@@ -120,7 +120,7 @@ def _np_auto_contrast(
     diff = high - low
     diff = np.where(diff == 0.0, 1.0, diff)
     out = (images - low) / diff
-    return cast(
+    return typing.cast(
         np.ndarray[tuple[int, ...], np.dtype[np.generic]],
         np.clip(
             out * (value_range[1] - value_range[0]) + value_range[0],
@@ -132,9 +132,9 @@ def _np_auto_contrast(
 
 @numpy_eager_registry.register("Equalization")
 def _np_equalization(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: Union[float, int, str, None],
+    **kwargs: float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Equalize image histogram across channels.
 
@@ -164,9 +164,9 @@ def _np_equalization(
 
 @numpy_eager_registry.register("Invert")
 def _np_invert(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: Union[tuple[int, int], float, int, str, None],
+    **kwargs: tuple[int, int] | float | int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Invert pixel values within specified range.
 
@@ -185,9 +185,9 @@ def _np_invert(
 
 @numpy_eager_registry.register("Posterize")
 def _np_posterize(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: Union[int, float, str, None],
+    **kwargs: int | float | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Reduce the number of bits for each color channel.
 
@@ -209,9 +209,9 @@ def _np_posterize(
 
 @numpy_eager_registry.register("RgbToGrayscale")
 def _np_rgb_to_grayscale(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: Union[str, float, int, None],
+    **kwargs: str | float | int | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Convert RGB images to grayscale.
 
@@ -234,9 +234,9 @@ def _np_rgb_to_grayscale(
 
 @numpy_eager_registry.register("Solarize")
 def _np_solarize(
-    backend_module: ModuleType,
+    backend_module: BackendModuleProtocol,
     images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: Union[float, tuple[int, int], str, None],
+    **kwargs: float | tuple[int, int] | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Invert pixel values above a threshold.
 
@@ -249,7 +249,7 @@ def _np_solarize(
         np.ndarray: Solarized images array.
     """
     threshold_val = kwargs.get("threshold", 0.5)
-    threshold = float(cast(float, threshold_val)) if threshold_val is not None else 0.5
+    threshold = float(typing.cast(float, threshold_val)) if threshold_val is not None else 0.5
     value_range_val = kwargs.get("value_range", (0, 255))
     value_range = value_range_val if isinstance(value_range_val, tuple) else (0, 255)
     return np.where(np.greater_equal(images, threshold), np.add(np.subtract(value_range[1], images), value_range[0]), images)

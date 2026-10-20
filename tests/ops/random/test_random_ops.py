@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from unittest.mock import patch
@@ -58,7 +58,7 @@ from ml_switcheroo_compiler.ops.random_ops.core import Rademacher, rademacher
 from ml_switcheroo_compiler.ops.random_ops.frontend import sobol_sample
 from ml_switcheroo_compiler.ops.random_ops.sobol import SobolSample, generate_sobol
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -137,8 +137,8 @@ def test_random_ops_coverage() -> None:
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value="dispatched_rademacher"):
         assert rademacher(5) == "dispatched_rademacher"
 
-    assert cast("EagerCallableProtocol", RngBitGenerator)().infer_shape(1, (1, 2), "float32") == (1, 2)
-    assert cast("EagerCallableProtocol", RngUniform)().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
+    assert typing.cast("EagerCallableProtocol", RngBitGenerator)().infer_shape(1, (1, 2), "float32") == (1, 2)
+    assert typing.cast("EagerCallableProtocol", RngUniform)().infer_shape(0.0, 1.0, (1, 2), "float32") == (1, 2)
     assert SobolSample().infer_shape(2, 10, skip=0) == (10, 2)
 
     assert generate_sobol(2, 10, 0).shape == (10, 2)
@@ -156,7 +156,7 @@ def test_random_ops_coverage() -> None:
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = cast("dict[str, EagerTensorProtocol]", {})
+            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.

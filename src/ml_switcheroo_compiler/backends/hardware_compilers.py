@@ -11,12 +11,12 @@ import os
 import shutil
 import subprocess
 import tempfile
-from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+import typing
+
+import pydantic
 
 
-@dataclass
-class HardwareCompilationResult:
+class HardwareCompilationResult(pydantic.BaseModel):
     """Result of an accelerator kernel compilation invocation.
 
     Attributes:
@@ -29,6 +29,8 @@ class HardwareCompilationResult:
         returncode (int): Process exit code.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     success: bool
     compiler_cli: str
     output_path: str | None = None
@@ -38,8 +40,8 @@ class HardwareCompilationResult:
     returncode: int = 0
 
 
-@runtime_checkable
-class HardwareCompilerProtocol(Protocol):
+@typing.runtime_checkable
+class HardwareCompilerProtocol(typing.Protocol):
     """Protocol contract for hardware kernel compilers."""
 
     target_name: str

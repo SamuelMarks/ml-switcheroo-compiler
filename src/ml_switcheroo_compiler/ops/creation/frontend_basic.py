@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Sequence
-from typing import cast
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
@@ -91,13 +90,13 @@ def _try_create_array(
     """
     if dtype_val is None:
         try:
-            return cast(TensorOrScalar, getattr(backend, "array")(obj))
+            return typing.cast(TensorOrScalar, getattr(backend, "array")(obj))
         except ValueError:
-            return cast(TensorOrScalar, getattr(backend, "array")(obj, dtype="Any"))
+            return typing.cast(TensorOrScalar, getattr(backend, "array")(obj, dtype="Any"))
     try:
-        return cast(TensorOrScalar, getattr(backend, "array")(obj, dtype=dtype_val))
+        return typing.cast(TensorOrScalar, getattr(backend, "array")(obj, dtype=dtype_val))
     except TypeError:
-        return cast(TensorOrScalar, getattr(backend, "array")(obj))
+        return typing.cast(TensorOrScalar, getattr(backend, "array")(obj))
 
 
 def _create_backend_array(
@@ -214,7 +213,7 @@ def zeros(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return cast(Tensor, _emit_creation_node("Zeros", shape, dtype, {}))
+    return typing.cast(Tensor, _emit_creation_node("Zeros", shape, dtype, {}))
 
 
 def ones(
@@ -243,7 +242,7 @@ def ones(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return cast(Tensor, _emit_creation_node("Ones", shape, dtype, {}))
+    return typing.cast(Tensor, _emit_creation_node("Ones", shape, dtype, {}))
 
 
 def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int | bool:
@@ -305,7 +304,7 @@ def full(
     if config.eager_mode:
         return _full_eager(shape, fill_value, dtype, device)
 
-    return cast(
+    return typing.cast(
         Tensor,
         _emit_creation_node(
             "Full",
@@ -340,7 +339,7 @@ def zeros_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
-    return cast(Tensor, _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0}))
+    return typing.cast(Tensor, _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0}))
 
 
 def ones_like(
@@ -367,7 +366,7 @@ def ones_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
-    return cast(Tensor, _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1}))
+    return typing.cast(Tensor, _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1}))
 
 
 def full_like(
@@ -397,7 +396,7 @@ def full_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
-    return cast(
+    return typing.cast(
         Tensor,
         _emit_creation_node(
             "ConstantOfShape",
@@ -434,7 +433,7 @@ def empty(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return cast(Tensor, _emit_creation_node("Zeros", shape, dtype, {}))
+    return typing.cast(Tensor, _emit_creation_node("Zeros", shape, dtype, {}))
 
 
 def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
@@ -459,11 +458,14 @@ def convert_to_numpy(x: Tensor) -> TensorOrScalar:
     Returns:
         TensorOrScalar: A numpy array.
     """
-    if hasattr(x, "numpy"):
-        return x.numpy()
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-    return get_active_backend().asarray(getattr(x, "data", x))
+    backend = get_active_backend()
+    if hasattr(backend, "convert_to_numpy"):
+        return typing.cast(TensorOrScalar, getattr(backend, "convert_to_numpy")(x))
+    if hasattr(x, "numpy"):
+        return x.numpy()
+    return backend.asarray(getattr(x, "data", x))
 
 
 def frombuffer(
@@ -494,4 +496,4 @@ def frombuffer(
         )
         shape = getattr(data, "shape") if hasattr(data, "shape") else ()
         return Tensor(data, TensorConfig(shape, dtype, config.default_device))
-    return cast(Tensor, _emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset}))
+    return typing.cast(Tensor, _emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset}))

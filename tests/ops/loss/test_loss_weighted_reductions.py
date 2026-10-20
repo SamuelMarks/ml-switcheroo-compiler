@@ -1,5 +1,7 @@
 """Tests for loss extras."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device

@@ -1,10 +1,12 @@
 """Code generator visitor for traversing IR."""
 
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.backend_utils import format_shape_metadata, resolve_input_vars
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -12,7 +14,7 @@ from ml_switcheroo_compiler.ir.core import IRNode
 class CodeGeneratorVisitor:
     """Define base visitor for code generation."""
 
-    def __init__(self, generator: "BaseGenerator") -> None:
+    def __init__(self, generator: BaseGenerator) -> None:
         """Initialize the object.
 
         Args:

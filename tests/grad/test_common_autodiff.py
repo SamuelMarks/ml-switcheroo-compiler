@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -18,7 +18,7 @@ def test_autodiff_common() -> None:
         inputs = [1, 2]
 
     vjp_fn = make_zero_vjp("dummy")
-    assert cast("EagerCallableProtocol", vjp_fn)(None, cast("EagerCallableProtocol", DummyNode)(), "cot") == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
+    assert typing.cast("EagerCallableProtocol", vjp_fn)(None, typing.cast("EagerCallableProtocol", DummyNode)(), "cot") == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
 
     jvp_fn = make_zero_jvp("dummy")
-    assert cast("EagerCallableProtocol", jvp_fn)(None, None, None) == ""
+    assert typing.cast("EagerCallableProtocol", jvp_fn)(None, None, None) == ""

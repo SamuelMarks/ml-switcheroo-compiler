@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import pytest
 
 from ml_switcheroo_compiler.ops.creation.frontend_matrix import _diag_eager, diag, eye, identity
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -45,14 +45,14 @@ def test_frontend_matrix() -> None:
     setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
     import ml_switcheroo_compiler.ops.creation.frontend_matrix
 
-    orig_frontend_matrix_backend = cast("EagerTensorProtocol", getattr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend"))
+    orig_frontend_matrix_backend = typing.cast("EagerTensorProtocol", getattr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend"))
     setattr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend", lambda: DummyBackend())
 
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
-    assert cast("EagerTensorProtocol", getattr(eye(1), "shape")) == (1, 1)
-    assert cast("EagerTensorProtocol", getattr(identity(1), "shape")) == (1, 1)
+    assert typing.cast("EagerTensorProtocol", getattr(eye(1), "shape")) == (1, 1)
+    assert typing.cast("EagerTensorProtocol", getattr(identity(1), "shape")) == (1, 1)
 
     class DummyInput:
         """Test class DummyInput."""
@@ -70,10 +70,10 @@ def test_frontend_matrix() -> None:
         dtype = None
         shape = (1,)
 
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", _diag_eager)(cast("EagerCallableProtocol", DummyInput)(), 0, "cpu", "float32"), "shape")) == (1, 1)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", _diag_eager)(cast("EagerCallableProtocol", DummyInputNoDtype)(), 0, "cpu", None), "shape")) == (1, 1)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", _diag_eager)(typing.cast("EagerCallableProtocol", DummyInput)(), 0, "cpu", "float32"), "shape")) == (1, 1)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", _diag_eager)(typing.cast("EagerCallableProtocol", DummyInputNoDtype)(), 0, "cpu", None), "shape")) == (1, 1)
 
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", diag)(cast("EagerCallableProtocol", DummyInput)()), "shape")) == (1, 1)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", diag)(typing.cast("EagerCallableProtocol", DummyInput)()), "shape")) == (1, 1)
 
     class DummyInput2:
         """Test class DummyInput2."""
@@ -85,7 +85,7 @@ def test_frontend_matrix() -> None:
 
     config.eager_mode = False
     with pytest.raises(RuntimeError):
-        cast("EagerCallableProtocol", diag)(cast("EagerCallableProtocol", DummyInput2)())
+        typing.cast("EagerCallableProtocol", diag)(typing.cast("EagerCallableProtocol", DummyInput2)())
 
     import ml_switcheroo_compiler.tracing.state as state
 
@@ -94,7 +94,7 @@ def test_frontend_matrix() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -106,9 +106,9 @@ def test_frontend_matrix() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
 
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", diag)(cast("EagerCallableProtocol", DummyInput2)()), "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", diag)(typing.cast("EagerCallableProtocol", DummyInput2)()), "shape")) == (2,)
 
     with patch("ml_switcheroo_compiler.ops.creation.frontend_matrix._emit_creation_node", return_value="emitted"):
         assert eye(1) == "emitted"
@@ -125,7 +125,7 @@ def test_frontend_matrix() -> None:
 
     config.eager_mode = False
     with pytest.raises(ValueError):
-        cast("EagerCallableProtocol", diag)(cast("EagerCallableProtocol", DummyInput3)())
+        typing.cast("EagerCallableProtocol", diag)(typing.cast("EagerCallableProtocol", DummyInput3)())
 
     if has_reg_backend:
         setattr(reg, "_ACTIVE_BACKEND", orig_reg_backend)

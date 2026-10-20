@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import math
+import typing
 from collections.abc import Callable, Sequence
-from typing import Union, cast
 
 import ml_switcheroo_compiler.core.dtype as dtypes
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.configs import InitializerConfig
 
-InitializerFn = Callable[[Union[Tensor, int, None], tuple[int, ...], Union[dtypes.DType, str, None]], Tensor]
+InitializerFn = Callable[[typing.Union[Tensor, int, "None"], tuple[int, ...], typing.Union[dtypes.DType, str, "None"]], Tensor]
 
 
 def _resolve_dtype(
@@ -28,7 +29,7 @@ def _resolve_dtype(
         dtypes.DType: Resolved canonical DType enum.
     """
     target = dtype if dtype is not None else default
-    return dtypes.DType(target) if isinstance(target, str) else target
+    return dtypes.DType(target)
 
 
 def _compute_fans(
@@ -273,8 +274,8 @@ def variance_scaling(config: InitializerConfig) -> InitializerFn:
         Returns:
             Tensor: Variance-scaled initialized tensor.
         """
-        dt = cast("Callable[..., dtypes.DType]", _resolve_dtype)(init_dtype, config.dtype)
-        fan_in, fan_out = _compute_fans(shape, cast("int", config.in_axis), cast("int", config.out_axis))
+        dt = typing.cast("TypedVariadicCallable[dtypes.DType]", _resolve_dtype)(init_dtype, config.dtype)
+        fan_in, fan_out = _compute_fans(shape, typing.cast("int", config.in_axis), typing.cast("int", config.out_axis))
         if config.mode == "fan_in":
             denom = float(fan_in)
         elif config.mode == "fan_out":
@@ -531,7 +532,7 @@ def orthogonal(
             if idx != col_ax:
                 rows *= dim
         flat_matrix = ops.randn(max(rows, cols), min(rows, cols), dtype=dt)
-        q_mat, _ = cast(Callable[..., Sequence[Tensor]], getattr(ops, "qr"))(flat_matrix)
+        q_mat, _ = typing.cast(TypedVariadicCallable[Sequence[Tensor]], getattr(ops, "qr"))(flat_matrix)
         reshaped = getattr(ops, "reshape")(q_mat, shape)
         return ops.scalar_mul(reshaped, float(scale))
 

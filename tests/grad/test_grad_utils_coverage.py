@@ -5,7 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import numpy as np
-from ml_switcheroo_ir import LogicalGraph
+from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
@@ -23,7 +23,13 @@ from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 def test_grad_utils_find_wrt_tensors_branches() -> None:
     """Verify _find_wrt_tensors branch coverage when tensors have variable requirements."""
     graph = LogicalGraph(name="test_graph")
-    graph.nodes = {"node_1": MagicMock(), "node_2": MagicMock(), "node_3": MagicMock()}
+    graph.nodes = NodeDict(
+        {
+            "node_1": LogicalNode(id="node_1", op_type="Input"),
+            "node_2": LogicalNode(id="node_2", op_type="Input"),
+            "node_3": LogicalNode(id="node_3", op_type="Input"),
+        }
+    )
 
     proxy1 = ProxyTensor(id="node_1", shape=(), dtype="float32")
     t1 = Tensor(proxy1, TensorConfig((), DType.Float32, Device("cpu")))
@@ -94,7 +100,7 @@ def test_grad_utils_to_original_type_branches() -> None:
 def test_grad_utils_compute_grad_and_value_tracing_branch() -> None:
     """Verify _compute_grad_and_value under global_tracing_state with active graph."""
     graph = LogicalGraph(name="trace_compute_graph")
-    graph.nodes = {}
+    graph.nodes = NodeDict({})
 
     def f_linear(x: Tensor) -> Tensor:
         """Verify the behavior and output invariants of f linear.

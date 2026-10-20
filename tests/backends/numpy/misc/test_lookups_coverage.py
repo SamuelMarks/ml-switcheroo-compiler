@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import lookups as lookups_module
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -20,22 +20,22 @@ def test_lookups_ops() -> None:
         None
     """
     inputs = np.array([1, 2, 3])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", lookups_module._np_hashing)(np, inputs, num_bins=10), inputs)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", lookups_module._np_hashing)(np, inputs, num_bins=10), inputs)
     reg_hashing = numpy_eager_registry.get("Hashing")
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", reg_hashing)(np, inputs, num_bins=10), inputs)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", reg_hashing)(np, inputs, num_bins=10), inputs)
 
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", lookups_module._np_integer_lookup)(np, inputs), inputs)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", lookups_module._np_integer_lookup)(np, inputs), inputs)
     reg_int_lookup = numpy_eager_registry.get("IntegerLookup")
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", reg_int_lookup)(np, inputs), inputs)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", reg_int_lookup)(np, inputs), inputs)
 
     vocab = np.array([2, 3, 4])
     lookup_res = lookups_module._np_lookup(np, inputs, vocab)
-    assert cast("EagerCallableProtocol", np.array_equal)(lookup_res, cast("EagerCallableProtocol", np.array)([0, 0, 1]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(lookup_res, typing.cast("EagerCallableProtocol", np.array)([0, 0, 1]))
 
     reg_lookup = numpy_eager_registry.get("Lookup")
     assert reg_lookup is not None
 
     str_inputs = np.array(["a", "b"])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", lookups_module._np_string_lookup)(np, str_inputs), str_inputs)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", lookups_module._np_string_lookup)(np, str_inputs), str_inputs)
     reg_str_lookup = numpy_eager_registry.get("StringLookup")
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", reg_str_lookup)(np, str_inputs), str_inputs)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", reg_str_lookup)(np, str_inputs), str_inputs)

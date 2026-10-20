@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import typing
 import uuid
 from collections.abc import Sequence
-from typing import Union
 
 from ml_switcheroo_ir import LogicalNode
 
@@ -13,11 +13,11 @@ from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
-from ml_switcheroo_compiler.ops.registry import get_op
+from ml_switcheroo_compiler.ops import get_op
 from ml_switcheroo_compiler.tracing import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
-RandomArg = Union[Tensor, str, float, int, bool, Sequence[int], tuple[int, ...], dtypes.DType, None]
+RandomArg = typing.Union[Tensor, str, float, int, bool, Sequence[int], tuple[int, ...], dtypes.DType, "None"]
 
 
 def _emit_random_node(
@@ -78,10 +78,8 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args: RandomArg, **kwa
     Returns:
         TensorLike: Evaluated backend array.
     """
-    from typing import cast
-
     del func_name
-    return cast(TensorLike, get_active_backend().execute_op(op_name, *args, **kwargs))
+    return typing.cast(TensorLike, get_active_backend().execute_op(op_name, *args, **kwargs))
 
 
 def _dispatch_random(func_name: str, *args: RandomArg, **kwargs: RandomArg) -> Tensor:
@@ -95,14 +93,12 @@ def _dispatch_random(func_name: str, *args: RandomArg, **kwargs: RandomArg) -> T
     Returns:
         Tensor: Resulting tensor.
     """
-    from typing import cast
-
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:
-        return cast(Tensor, _dispatch_random_eager(func_name, op_name, *args, **kwargs))
-    op_cls = get_op(op_name)
+        return typing.cast(Tensor, _dispatch_random_eager(func_name, op_name, *args, **kwargs))
+    op_cls: type | None = get_op(op_name)
     if op_cls is not None:
-        return op_cls()(*args, **kwargs)
+        return typing.cast(Tensor, op_cls()(*args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node(op_name, list(args), dict(kwargs), (), "float32")

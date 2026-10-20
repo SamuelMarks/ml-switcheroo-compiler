@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.config_models import (
     DataParallelStrategyConfig,
@@ -74,7 +76,7 @@ def test_spmd_matmul_contracting_parallel_all_reduce() -> None:
     setattr(x, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=[None, "tp"]))
     setattr(w, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp", None]))
 
-    graph.nodes = {"x": x, "w": w, "mm": mm}
+    graph.nodes = NodeDict({"x": x, "w": w, "mm": mm})
     graph.outputs = ["mm"]
 
     assert spmd_partitioning_pass(graph) is True
@@ -93,7 +95,7 @@ def test_spmd_matmul_contracting_parallel_reduce_scatter() -> None:
     setattr(x, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=[None, "tp"]))
     setattr(w, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["tp", None]))
 
-    graph.nodes = {"x": x, "w": w, "mm": mm}
+    graph.nodes = NodeDict({"x": x, "w": w, "mm": mm})
     graph.outputs = ["mm"]
 
     assert spmd_partitioning_pass(graph) is True
@@ -110,7 +112,7 @@ def test_spmd_reduction_reduce_scatter() -> None:
 
     setattr(x, "sharding", SPMDShardingAnnotation(mesh="grid", mesh_mapping=["dp", "tp"]))
 
-    graph.nodes = {"x": x, "red": red}
+    graph.nodes = NodeDict({"x": x, "red": red})
     graph.outputs = ["red"]
 
     assert spmd_partitioning_pass(graph) is True
@@ -132,7 +134,7 @@ def test_spmd_multi_axis_dp_tp_propagation() -> None:
     # weight is replicated along dp, row-parallel
     setattr(weight, "sharding", SPMDShardingAnnotation(mesh="mesh_4x2", mesh_mapping=[None, "tp"]))
 
-    graph.nodes = {"act": act, "weight": weight, "mm": mm, "add": add}
+    graph.nodes = NodeDict({"act": act, "weight": weight, "mm": mm, "add": add})
     graph.outputs = ["add"]
 
     assert propagate_sharding(graph) is True

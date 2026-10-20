@@ -1,8 +1,10 @@
 """Pydantic models for distributed topologies and device meshes."""
 
+from __future__ import annotations
+
 import os
+import typing
 from collections.abc import ItemsView
-from typing import Optional, Union, cast
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
@@ -10,9 +12,9 @@ from pydantic import BaseModel, Field, RootModel
 
 from ml_switcheroo_compiler.core.shape import AttrValue
 
-YamlScalar = Optional[Union[str, int, float, bool]]
-YamlLeaf = Union[YamlScalar, list[YamlScalar], dict[str, YamlScalar], list[dict[str, YamlScalar]]]
-YamlNodeValue = Union[YamlLeaf, list[YamlLeaf], dict[str, Union[YamlLeaf, dict[str, YamlLeaf]]]]
+YamlScalar = typing.Union[typing.Union[str, int, float, "bool"], "None"]
+YamlLeaf = typing.Union[YamlScalar, list[YamlScalar], dict[str, YamlScalar], "list[dict[str, YamlScalar]]"]
+YamlNodeValue = typing.Union[YamlLeaf, list[YamlLeaf], dict[str, typing.Union[YamlLeaf, "dict[str, YamlLeaf]"]], "None"]
 
 
 class MicrobatchSplittingConfig(BaseModel):
@@ -63,7 +65,7 @@ class TopologyConfig(BaseModel):
     mesh_mapping: MeshMappingConfig
     stage_communication: StageCommunicationConfig
     dependencies: list[DependencyConfig] = []
-    schedule: Optional[ScheduleConfig] = None
+    schedule: ScheduleConfig | None = None
 
 
 class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
@@ -81,7 +83,7 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
         Returns:
             dict[str, AttributeValue]: Dictionary representation.
         """
-        return cast(dict[str, AttributeValue], getattr(super(), "model_dump")(*args, **kwargs))
+        return typing.cast(dict[str, AttributeValue], getattr(super(), "model_dump")(*args, **kwargs))
 
     def items(self) -> ItemsView[str, TopologyConfig]:
         """Return items from the underlying dictionary.
@@ -91,7 +93,7 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
         """
         return self.root.items()
 
-    def get(self, key: str, default: Optional[TopologyConfig] = None) -> Optional[TopologyConfig]:
+    def get(self, key: str, default: TopologyConfig | None = None) -> TopologyConfig | None:
         """Get topology config by key.
 
         Args:
@@ -139,7 +141,7 @@ class ClusterTopologyConfig(BaseModel):
     devices_per_node: int = 8
     interconnect: InterconnectBandwidthConfig = InterconnectBandwidthConfig()
     network_type: str = "cluster"
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class CollectiveAlgorithmConfig(BaseModel):
@@ -148,7 +150,7 @@ class CollectiveAlgorithmConfig(BaseModel):
     collective_op: str
     algorithm: str
     min_bytes: int = 0
-    max_bytes: Optional[int] = None
+    max_bytes: int | None = None
     topology_type: str = "ring"
 
 
@@ -159,7 +161,7 @@ class DeviceMeshGridConfig(BaseModel):
     axis_names: list[str]
     devices: list[int]
     topology: str
-    interconnect_bandwidth_gbps: Optional[float] = None
+    interconnect_bandwidth_gbps: float | None = None
     collective_algorithms: dict[str, str] = {}
 
 
@@ -171,7 +173,7 @@ class DistributedTopologyConfig(BaseModel):
     device_mesh_grids: dict[str, DeviceMeshGridConfig] = {}
     collective_algorithms: list[CollectiveAlgorithmConfig] = []
     pipeline_topologies: dict[str, TopologyConfig] = {}
-    webrtc_topology: Optional[dict[str, YamlNodeValue]] = None
+    webrtc_topology: dict[str, YamlNodeValue] | None = None
 
 
 class DeviceMeshYamlConfig(BaseModel):
@@ -190,8 +192,8 @@ class ShardingSpecConfig(BaseModel):
         mesh_mapping (list[Optional[str]]): Sharded axes or None for replicated.
     """
 
-    mesh_name: Optional[str] = None
-    mesh_mapping: list[Optional[str]] = []
+    mesh_name: str | None = None
+    mesh_mapping: list[str | None] = []
 
 
 class LayoutMapYamlConfig(BaseModel):
@@ -204,11 +206,11 @@ class LayoutMapYamlConfig(BaseModel):
     """
 
     version: str = "1.0"
-    device_mesh: Optional[str] = None
+    device_mesh: str | None = None
     specs: dict[str, ShardingSpecConfig] = {}
 
 
-def load_consolidated_topology(yaml_path: Optional[str] = None) -> DistributedTopologyConfig:
+def load_consolidated_topology(yaml_path: str | None = None) -> DistributedTopologyConfig:
     """Load and validate consolidated distributed topology schema.
 
     If yaml_path is omitted, loads distributed_topology.yaml if present, or
@@ -258,7 +260,7 @@ def load_consolidated_topology(yaml_path: Optional[str] = None) -> DistributedTo
         with open(pipe_path, encoding="utf-8") as f:
             pipe_raw = yaml.safe_load(f) or {}
         pipe_cfg = PipelineTopologiesConfig.model_validate(pipe_raw)
-        consolidated_dict["pipeline_topologies"] = cast("AttributeValue", pipe_cfg.root)
+        consolidated_dict["pipeline_topologies"] = typing.cast("AttributeValue", pipe_cfg.root)
 
     webrtc_path = os.path.join(base_dir, "webrtc_topology.yaml")
     if os.path.exists(webrtc_path):
@@ -363,7 +365,7 @@ class DistributedTopologiesRootConfig(BaseModel):
     distributed_topologies: DistributedTopologiesConfig
 
 
-def load_cluster_topology(path: Optional[str] = None) -> DeviceMeshYamlConfig:
+def load_cluster_topology(path: str | None = None) -> DeviceMeshYamlConfig:
     """Load and validate declarative cluster topology specification from device_mesh.yaml.
 
     Args:
@@ -379,7 +381,7 @@ def load_cluster_topology(path: Optional[str] = None) -> DeviceMeshYamlConfig:
     return DeviceMeshYamlConfig.model_validate(data)
 
 
-def load_distributed_topologies(path: Optional[str] = None) -> DistributedTopologiesConfig:
+def load_distributed_topologies(path: str | None = None) -> DistributedTopologiesConfig:
     """Load and validate declarative distributed cluster topologies from YAML.
 
     Args:

@@ -1,5 +1,7 @@
 """Tests for transpiler config models."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from ml_switcheroo_compiler.backends.transpiler_config_models import FrameworkConfig, TranspilerConfig, load_transpiler_config

@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import ctypes
 import sys
-from typing import TYPE_CHECKING
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.metal.metal import (
     MetalCodeGenerator,
     MetalRunner,
@@ -20,7 +22,7 @@ from ml_switcheroo_compiler.backends.metal.metal import (
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -174,7 +176,7 @@ def test_metal_generator_synthesize_template_more_than_two_inputs() -> None:
     n_binary = IRNode(id="binary", op_type="BinaryCustomOp", inputs=["in0", "in1"], shape_metadata=[128])
     # 3 inputs unmapped op
     n_ternary = IRNode(id="ternary", op_type="TernaryCustomOp", inputs=["in0", "in1", "in2"], shape_metadata=[128])
-    graph.nodes = {"in0": n_in0, "in1": n_in1, "in2": n_in2, "binary": n_binary, "ternary": n_ternary}
+    graph.nodes = NodeDict({"in0": n_in0, "in1": n_in1, "in2": n_in2, "binary": n_binary, "ternary": n_ternary})
     graph.inputs = ["in0", "in1", "in2"]
     graph.outputs = ["binary", "ternary"]
 
@@ -194,7 +196,7 @@ def test_metal_generator_fused_elementwise_codegen() -> None:
     # 0 inputs
     graph0 = IRGraph()
     fused_node0 = IRNode(id="fused_0", op_type="FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"}, shape_metadata=[64])
-    graph0.nodes = {"fused_0": fused_node0}
+    graph0.nodes = NodeDict({"fused_0": fused_node0})
     graph0.outputs = ["fused_0"]
 
     gen0 = MetalCodeGenerator(graph0)
@@ -214,7 +216,7 @@ def test_metal_generator_fused_elementwise_codegen() -> None:
         attributes={"scalar_expr": "in0 + in1"},
         shape_metadata=[64],
     )
-    graph2.nodes = {"in_a": in_a, "in_b": in_b, "fused_2": fused_node2}
+    graph2.nodes = NodeDict({"in_a": in_a, "in_b": in_b, "fused_2": fused_node2})
     graph2.inputs = ["in_a", "in_b"]
     graph2.outputs = ["fused_2"]
 
@@ -235,7 +237,7 @@ def test_metal_generator_emit_node_skipped_for_none_template() -> None:
 
     # And in _emit_kernel_definitions when template is None
     with patch.object(gen, "_ensure_template", return_value=None):
-        gen.graph.nodes = {"n": IRNode(id="n", op_type="SomeOp")}
+        gen.graph.nodes = NodeDict({"n": IRNode(id="n", op_type="SomeOp")})
         gen._emit_kernel_definitions(msl)
         assert msl == []
 
@@ -458,7 +460,7 @@ def _test_metal_runner_execute_graph_part_1(_state: dict[str, EagerTensorProtoco
     in_node = IRNode(id="in_0", op_type="Input", shape_metadata=[4])
     add_node = IRNode(id="n_add", op_type="Add", inputs=["in_0"], shape_metadata=[4])
     fused_node = IRNode(id="n_fused", op_type="FusedElementwise", inputs=["n_add"], shape_metadata=[4], attributes={"scalar_expr": "in0 * 2.0f"})
-    graph.nodes = {"in_0": in_node, "n_add": add_node, "n_fused": fused_node}
+    graph.nodes = NodeDict({"in_0": in_node, "n_add": add_node, "n_fused": fused_node})
     graph.inputs = ["in_0"]
     graph.outputs = ["n_fused", "unallocated_output"]
 
@@ -543,12 +545,12 @@ def _test_metal_runner_execute_graph_part_3(_state: dict[str, EagerTensorProtoco
             # Also verify node dispatch early exits when func is None or pipeline_state is None
             setattr(mock_lib.newFunctionWithName_, "return_value", None)
             res2 = runner.execute_graph(graph, inputs)
-            assert isinstance(res2, dict)
+            assert isinstance(typing.cast("EagerValue", res2), dict)
 
-            mock_lib.newFunctionWithName_.return_value = mock_func
-            mock_dev.newComputePipelineStateWithFunction_error_.return_value = (None, None)
+            setattr(mock_lib.newFunctionWithName_, "return_value", mock_func)
+            setattr(mock_dev.newComputePipelineStateWithFunction_error_, "return_value", (None, None))
             res3 = runner.execute_graph(graph, inputs)
-            assert isinstance(res3, dict)
+            assert isinstance(typing.cast("EagerValue", res3), dict)
     getattr(_state, "update")({"res": res, "res2": res2, "res3": res3})
 
 

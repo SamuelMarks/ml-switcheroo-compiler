@@ -1,5 +1,7 @@
 """Tests for scripts/lint_dependencies.py."""
 
+from __future__ import annotations
+
 import os
 import runpy
 import sys

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
-from typing import Optional  # noqa: F401
+import typing  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
@@ -59,9 +60,10 @@ class EinsumValidator:
             raise ValueError(f"Equation expected {len(in_parts)} inputs but got {len(shapes)}")
 
 
-@dataclass
-class ParsedEquationPart:
+class ParsedEquationPart(pydantic.BaseModel):
     """Represents a parsed named part of an einsum equation."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     chars: str
     shape: tuple[int, ...]
@@ -152,7 +154,7 @@ class EinsumPlanner:
         return num_bcast
 
     @staticmethod
-    def _combine_broadcast_shapes(broadcast_shape: Optional[tuple[int, ...]], bcast_dims: tuple[int, ...]) -> tuple[int, ...]:
+    def _combine_broadcast_shapes(broadcast_shape: tuple[int, ...] | None, bcast_dims: tuple[int, ...]) -> tuple[int, ...]:
         """Compute the combine broadcast shapes tensor operation.
 
         Args:
@@ -175,7 +177,7 @@ class EinsumPlanner:
         return tuple(new_shape)
 
     @staticmethod
-    def _handle_ellipsis(part: str, shape: tuple[int, ...], broadcast_shape: Optional[tuple[int, ...]]) -> tuple[str, tuple[int, ...], Optional[tuple[int, ...]]]:
+    def _handle_ellipsis(part: str, shape: tuple[int, ...], broadcast_shape: tuple[int, ...] | None) -> tuple[str, tuple[int, ...], tuple[int, ...] | None]:
         """Compute the handle ellipsis tensor operation.
 
         Args:
@@ -209,7 +211,7 @@ class EinsumPlanner:
             shape (tuple): The shape parameter.
             axis_map (dict): The axis_map parameter.
         """
-        parsed_part = ParsedEquationPart(part, shape)
+        parsed_part = ParsedEquationPart(chars=part, shape=shape)
         parsed_part.validate_length()
         parsed_part.validate_characters()
         parsed_part.process_axis_map(axis_map)
@@ -219,8 +221,8 @@ class EinsumPlanner:
         part: str,
         shape: tuple[int, ...],
         axis_map: dict[str, int],
-        broadcast_shape: Optional[tuple[int, ...]],
-    ) -> Optional[tuple[int, ...]]:
+        broadcast_shape: tuple[int, ...] | None,
+    ) -> tuple[int, ...] | None:
         """Compute the parse ellipsis part tensor operation.
 
         Args:
@@ -237,7 +239,7 @@ class EinsumPlanner:
         return new_broadcast_shape
 
     @staticmethod
-    def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
+    def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], tuple[int, ...] | None]:
         """Compute the build axis size map tensor operation.
 
         Args:
@@ -249,7 +251,7 @@ class EinsumPlanner:
         """
         in_parts = in_subs.split(",")
         axis_map: dict[str, int] = {}
-        broadcast_shape: Optional[tuple[int, ...]] = None
+        broadcast_shape: tuple[int, ...] | None = None
 
         for part, shape in zip(in_parts, shapes):
             if "..." in part:
@@ -263,7 +265,7 @@ class EinsumPlanner:
     def _compute_output_shape_with_ellipsis(
         parts: list[str],
         axis_map: dict[str, int],
-        broadcast_shape: Optional[tuple[int, ...]],
+        broadcast_shape: tuple[int, ...] | None,
     ) -> list[int]:
         """Compute the compute output shape with ellipsis tensor operation.
 
@@ -310,7 +312,7 @@ class EinsumPlanner:
     def compute_output_shape(
         out_sub: str,
         axis_map: dict[str, int],
-        broadcast_shape: Optional[tuple[int, ...]],
+        broadcast_shape: tuple[int, ...] | None,
     ) -> tuple[int, ...]:
         """Compute the compute output shape tensor operation.
 
@@ -353,7 +355,7 @@ class EinsumEquationParser:
         return EinsumLexer.parse_equation_sides(equation)
 
     @staticmethod
-    def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], Optional[tuple[int, ...]]]:
+    def build_axis_size_map(in_subs: str, shapes: list[tuple[int, ...]]) -> tuple[dict[str, int], tuple[int, ...] | None]:
         """Compute the build axis size map tensor operation.
 
         Args:
@@ -388,7 +390,7 @@ class EinsumEquationParser:
     def compute_output_shape(
         out_sub: str,
         axis_map: dict[str, int],
-        broadcast_shape: Optional[tuple[int, ...]],
+        broadcast_shape: tuple[int, ...] | None,
     ) -> tuple[int, ...]:
         """Compute the compute output shape tensor operation.
 
@@ -451,7 +453,7 @@ class Einsum(OpDef):
         raise ValueError("Einsum requires an 'equation' string attribute.")
 
     @staticmethod
-    def _extract_shapes(args: TensorOrScalar) -> Optional[list[tuple[int, ...]]]:
+    def _extract_shapes(args: TensorOrScalar) -> list[tuple[int, ...]] | None:
         """Compute the extract shapes tensor operation.
 
         Args:

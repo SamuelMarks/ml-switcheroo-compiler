@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -11,7 +11,7 @@ import ml_switcheroo_compiler.ops.nn.dropout as dropout_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -43,14 +43,14 @@ def test_dropout_ops_full_coverage() -> None:
     t_in = Tensor(np.ones((2, 2), dtype=np.float32), TensorConfig((2, 2), "float32", "cpu"))
 
     dp_op = dropout_mod.Dropout()
-    assert cast("EagerCallableProtocol", dp_op.infer_shape)(t_in) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", dp_op.infer_shape)(t_in) == (2, 2)
 
     alpha_op = dropout_mod.AlphaDropout()
-    assert cast("EagerCallableProtocol", alpha_op.infer_shape)(t_in) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", alpha_op.infer_shape)(t_in) == (2, 2)
 
     act_op = dropout_mod.ActivityRegularization()
-    assert cast("EagerCallableProtocol", act_op.infer_shape)(t_in) == (2, 2)
-    assert cast("EagerCallableProtocol", act_op.infer_shape)((t_in, t_in)) == (t_in, t_in)
+    assert typing.cast("EagerCallableProtocol", act_op.infer_shape)(t_in) == (2, 2)
+    assert typing.cast("EagerCallableProtocol", act_op.infer_shape)((t_in, t_in)) == (t_in, t_in)
 
     with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
         mock_inst = MagicMock()
@@ -62,16 +62,16 @@ def test_dropout_ops_full_coverage() -> None:
         assert dropout_mod.activity_regularization(t_in, l1=0.01, l2=0.02) is t_in
 
     dp1d_op = dropout_mod.Dropout1d()
-    assert cast("EagerCallableProtocol", dp1d_op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)((2, 4))) == (2, 4)
-    assert cast("EagerCallableProtocol", dp1d_op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
+    assert typing.cast("EagerCallableProtocol", dp1d_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)((2, 4))) == (2, 4)
+    assert typing.cast("EagerCallableProtocol", dp1d_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
 
     dp2d_op = dropout_mod.Dropout2d()
-    assert cast("EagerCallableProtocol", dp2d_op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)((2, 4, 4))) == (2, 4, 4)
-    assert cast("EagerCallableProtocol", dp2d_op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
+    assert typing.cast("EagerCallableProtocol", dp2d_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)((2, 4, 4))) == (2, 4, 4)
+    assert typing.cast("EagerCallableProtocol", dp2d_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
 
     dp3d_op = dropout_mod.Dropout3d()
-    assert cast("EagerCallableProtocol", dp3d_op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)((2, 4, 4, 4))) == (2, 4, 4, 4)
-    assert cast("EagerCallableProtocol", dp3d_op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
+    assert typing.cast("EagerCallableProtocol", dp3d_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)((2, 4, 4, 4))) == (2, 4, 4, 4)
+    assert typing.cast("EagerCallableProtocol", dp3d_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)()) == ()
 
     original_eager = config.eager_mode
     try:

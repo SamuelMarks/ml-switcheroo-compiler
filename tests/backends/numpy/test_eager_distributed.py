@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_all_gather, _np_all_reduce, _np_all_to_all, _np_axis_index, _np_broadcast, _np_reduce, _np_reduce_scatter, _np_shard_tensor, set_np_distributed_context
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -61,7 +61,7 @@ def test_tcp_context_initialize() -> None:
 def test_tcp_context_all_reduce_ring() -> None:
     """Test function test_tcp_context_all_reduce_ring."""
     ctx = TCPDistributedContext(world_size=1)
-    assert cast("EagerCallableProtocol", ctx.all_reduce_ring)("tensor", backend_module=np) == "tensor"
+    assert typing.cast("EagerCallableProtocol", ctx.all_reduce_ring)("tensor", backend_module=np) == "tensor"
 
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.send_conns = [MagicMock()]
@@ -106,8 +106,8 @@ def test_tcp_context_shutdown() -> None:
     ctx.listener = MagicMock()
 
     ctx.shutdown()
-    cast("EagerTensorProtocol", getattr(ctx.recv_conns[0].close, "assert_called"))()
-    cast("EagerTensorProtocol", getattr(ctx.send_conns[0].close, "assert_called"))()
+    typing.cast("EagerTensorProtocol", getattr(ctx.recv_conns[0].close, "assert_called"))()
+    typing.cast("EagerTensorProtocol", getattr(ctx.send_conns[0].close, "assert_called"))()
     ctx.listener.close.assert_called()
 
 
@@ -124,7 +124,7 @@ def test_np_all_reduce() -> None:
     """Test function test_np_all_reduce."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_reduce)(np, tensor), tensor)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_all_reduce)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
@@ -137,20 +137,20 @@ def test_np_all_gather() -> None:
     """Test function test_np_all_gather."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_gather)(np, tensor), cast("EagerCallableProtocol", np.array)([[1]]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_all_gather)(np, tensor), typing.cast("EagerCallableProtocol", np.array)([[1]]))
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
         ctx.all_gather_tensors.return_value = [np.array([1]), np.array([2])]
         res = _np_all_gather(np, tensor, axis=0)
-        assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([1, 2]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.array)([1, 2]))
 
 
 def test_np_broadcast() -> None:
     """Test function test_np_broadcast."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_broadcast)(np, tensor), tensor)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_broadcast)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
@@ -162,7 +162,7 @@ def test_np_reduce_scatter() -> None:
     """Test function test_np_reduce_scatter."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_reduce_scatter)(np, tensor), tensor)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_reduce_scatter)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
@@ -174,7 +174,7 @@ def test_np_reduce_scatter() -> None:
 
         # sum
         res = _np_reduce_scatter(np, tensor, op_type="sum")
-        assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([4]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.array)([4]))
 
         # prod
         res = _np_reduce_scatter(np, tensor, op_type="prod")
@@ -193,7 +193,7 @@ def test_np_reduce() -> None:
     """Test function test_np_reduce."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_reduce)(np, tensor), tensor)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_reduce)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
@@ -205,7 +205,7 @@ def test_np_reduce() -> None:
 
         # sum
         res = _np_reduce(np, tensor, root_rank=0, op_type="sum")
-        assert cast("EagerCallableProtocol", np.array_equal)(res, cast("EagerCallableProtocol", np.array)([4, 6]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.array)([4, 6]))
 
         # not root rank
         ctx.rank = 1
@@ -230,7 +230,7 @@ def test_np_all_to_all() -> None:
     """Test function test_np_all_to_all."""
     set_np_distributed_context(1, 0)
     tensor = np.array([1])
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_all_to_all)(np, tensor), tensor)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_all_to_all)(np, tensor), tensor)
 
     with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed._tcp_dist_ctx") as ctx:
         ctx.world_size = 2
@@ -240,4 +240,4 @@ def test_np_all_to_all() -> None:
 
 def test_np_shard_tensor() -> None:
     """Test function test_np_shard_tensor."""
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", _np_shard_tensor)(np, [1, 2]), cast("EagerCallableProtocol", np.array)([1, 2]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_shard_tensor)(np, [1, 2]), typing.cast("EagerCallableProtocol", np.array)([1, 2]))

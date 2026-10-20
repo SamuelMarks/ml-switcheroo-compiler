@@ -7,12 +7,13 @@ import random
 import sys
 import tarfile
 import time
+import typing
 import urllib.request
 import zipfile
 from collections.abc import Iterable
-from dataclasses import dataclass, field
 from types import ModuleType
-from typing import cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core import config
@@ -55,44 +56,49 @@ __all__ = [
 ]
 
 
-@dataclass
-class HashConfig:
+class HashConfig(pydantic.BaseModel):
     """Hash verification configuration for downloaded files."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     md5_hash: str | None = None
     file_hash: str | None = None
     hash_algorithm: str = "auto"
 
 
-@dataclass
-class ArchiveConfig:
+class ArchiveConfig(pydantic.BaseModel):
     """Archive extraction configuration for downloaded files."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     untar: bool = False
     extract: bool = False
     archive_format: str = "auto"
 
 
-@dataclass
-class CacheConfig:
+class CacheConfig(pydantic.BaseModel):
     """Local filesystem cache directory configuration."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     cache_subdir: str = "datasets"
     cache_dir: str | None = None
 
 
-@dataclass
-class GetFileConfig:
+class GetFileConfig(pydantic.BaseModel):
     """Composite configuration for `get_file` caching, hashing, and extraction."""
 
-    hash_config: HashConfig = field(default_factory=HashConfig)
-    archive_config: ArchiveConfig = field(default_factory=ArchiveConfig)
-    cache_config: CacheConfig = field(default_factory=CacheConfig)
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    hash_config: HashConfig = pydantic.Field(default_factory=HashConfig)
+    archive_config: ArchiveConfig = pydantic.Field(default_factory=ArchiveConfig)
+    cache_config: CacheConfig = pydantic.Field(default_factory=CacheConfig)
 
 
-@dataclass
-class ProgbarConfig:
+class ProgbarConfig(pydantic.BaseModel):
     """Display configuration for `Progbar` CLI progress reporting."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     width: int = 30
     verbose: int = 1
@@ -206,9 +212,10 @@ def get_file(
     return fpath
 
 
-@dataclass
-class ProgbarState:
+class ProgbarState(pydantic.BaseModel):
     """Mutable runtime tracking state for a `Progbar` instance."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     dynamic_display: bool
     total_width: int
@@ -261,17 +268,16 @@ class Progbar:
             current (int): Current step index.
             values (TensorOrScalar): Iterable of `(metric_name, metric_value)` pairs.
         """
-        pairs: Iterable[TensorOrScalar] = cast("Iterable[TensorOrScalar]", values) if isinstance(values, Iterable) else ()
+        pairs: Iterable[tuple[TensorOrScalar, TensorOrScalar]] = typing.cast("Iterable[tuple[TensorOrScalar, TensorOrScalar]]", values) if isinstance(values, Iterable) else ()
         for item in pairs:
-            if isinstance(item, (list, tuple)) and len(item) >= 2:
-                k = str(item[0])
-                v = float(cast(float, item[1]))
-                if k not in self._values_order:
-                    self._values_order.append(k)
-                if k in self.stateful_metrics:
-                    self._values[k] = [v, 1]
-                else:
-                    self._update_stateless_metric(k, v, current)
+            k = str(item[0])
+            v = float(typing.cast(float, item[1]))
+            if k not in self._values_order:
+                self._values_order.append(k)
+            if k in self.stateful_metrics:
+                self._values[k] = [v, 1]
+            else:
+                self._update_stateless_metric(k, v, current)
 
     def _update_stateless_metric(self, k: str, v: float, current: int) -> None:
         """Accumulate weighted running sum and weight for stateless metric `k`.
@@ -493,10 +499,10 @@ class bounding_boxes:
         Raises:
             ValueError: If relative coordinates are used without `image_shape` or format is unknown.
         """
-        c0 = cast(EagerTensorProtocol, arr)[..., 0]
-        c1 = cast(EagerTensorProtocol, arr)[..., 1]
-        c2 = cast(EagerTensorProtocol, arr)[..., 2]
-        c3 = cast(EagerTensorProtocol, arr)[..., 3]
+        c0 = typing.cast(EagerTensorProtocol, arr)[..., 0]
+        c1 = typing.cast(EagerTensorProtocol, arr)[..., 1]
+        c2 = typing.cast(EagerTensorProtocol, arr)[..., 2]
+        c3 = typing.cast(EagerTensorProtocol, arr)[..., 3]
         if src_lower == "xyxy":
             return c0, c1, c2, c3
         if src_lower == "xywh":
@@ -539,19 +545,19 @@ class bounding_boxes:
         """
         x1, y1, x2, y2 = coords
         if tgt_lower == "xyxy":
-            return cast(TensorOrScalar, backend_mod.stack([x1, y1, x2, y2], axis=-1))
+            return typing.cast(TensorOrScalar, backend_mod.stack([x1, y1, x2, y2], axis=-1))
         if tgt_lower == "xywh":
-            return cast(TensorOrScalar, backend_mod.stack([x1, y1, x2 - x1, y2 - y1], axis=-1))
+            return typing.cast(TensorOrScalar, backend_mod.stack([x1, y1, x2 - x1, y2 - y1], axis=-1))
         if tgt_lower == "center_xywh":
-            return cast(TensorOrScalar, backend_mod.stack([(x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1], axis=-1))
+            return typing.cast(TensorOrScalar, backend_mod.stack([(x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1], axis=-1))
         if tgt_lower == "yxyx":
-            return cast(TensorOrScalar, backend_mod.stack([y1, x1, y2, x2], axis=-1))
+            return typing.cast(TensorOrScalar, backend_mod.stack([y1, x1, y2, x2], axis=-1))
         if tgt_lower == "rel_xyxy":
             if image_shape is None:
                 msg = "image_shape (height, width) is required to convert to relative bounding box format."
                 raise ValueError(msg)
             h_img, w_img = image_shape
-            return cast(TensorOrScalar, backend_mod.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1))
+            return typing.cast(TensorOrScalar, backend_mod.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1))
         return arr
 
     @classmethod
@@ -591,9 +597,9 @@ class bounding_boxes:
         src_lower = source.lower()
         tgt_lower = target.lower()
         if src_lower == tgt_lower:
-            return cast(TensorOrScalar, arr)
+            return typing.cast(TensorOrScalar, arr)
 
-        coords = cast(
+        coords = typing.cast(
             "tuple[EagerTensorProtocol, ...]",
             cls._unpack_to_xyxy(arr, source, src_lower, image_shape),
         )

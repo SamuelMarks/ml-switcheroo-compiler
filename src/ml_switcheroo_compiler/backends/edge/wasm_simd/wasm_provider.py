@@ -1,16 +1,19 @@
 """WASM Provider for Edge Runtime."""
 
+from __future__ import annotations
+
+import typing
 from pathlib import Path
-from typing import Callable, Union, cast
 
 import yaml
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
-_WASM_TEMPLATES: dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]] = {}
+_WASM_TEMPLATES: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = {}
 
 
-def load_yaml(file_name: str) -> dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]:
+def load_yaml(file_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]:
     """Load yaml.
 
     Args:
@@ -23,11 +26,11 @@ def load_yaml(file_name: str) -> dict[str, Union[dict[str, dict[str, str]], dict
     with open(file_path) as f:
         from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmTemplatesConfig
 
-        raw: dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]] = yaml.safe_load(f)
-        return cast(dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]], cast("Callable[..., WasmTemplatesConfig]", WasmTemplatesConfig)(**raw).model_dump())
+        raw: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = yaml.safe_load(f)
+        return typing.cast(dict[str, typing.Union[dict[str, dict[str, str]], dict[str, str], "list[str]"]], typing.cast("TypedVariadicCallable[WasmTemplatesConfig]", WasmTemplatesConfig)(**raw).model_dump())
 
 
-def load_yaml_dir(dir_name: str) -> dict[str, Union[dict[str, dict[str, str]], dict[str, str], list[str]]]:
+def load_yaml_dir(dir_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]:
     """Load all yaml files in a directory.
 
     Args:
@@ -69,7 +72,7 @@ def get_wasm_template(template_name: str) -> dict[str, str]:
     if not _WASM_TEMPLATES:
         _WASM_TEMPLATES = load_yaml_dir("wasm_templates")
 
-    templates: Union[dict[str, dict[str, str]], dict[str, str], list[str]] = _WASM_TEMPLATES.get("templates", {})
+    templates: dict[str, dict[str, str]] | dict[str, str] | list[str] = _WASM_TEMPLATES.get("templates", {})
     if isinstance(templates, dict):
         res = templates.get(template_name)
         if not res:
@@ -92,7 +95,7 @@ def get_js_orchestration_template(name: str) -> str:
     if not _WASM_TEMPLATES:
         _WASM_TEMPLATES = load_yaml_dir("wasm_templates")
 
-    js_orch: Union[dict[str, dict[str, str]], dict[str, str], list[str]] = _WASM_TEMPLATES.get("js_orchestration", {})
+    js_orch: dict[str, dict[str, str]] | dict[str, str] | list[str] = _WASM_TEMPLATES.get("js_orchestration", {})
     if isinstance(js_orch, dict):
         return str(js_orch.get(name, ""))
     return ""
@@ -134,7 +137,7 @@ def get_wasm_simd_ops() -> dict[str, EagerValue]:
     return _WASM_SIMD_OPS
 
 
-def get_wasm_simd_op(op_name: str) -> dict[str, Union[str, int, float, None]]:
+def get_wasm_simd_op(op_name: str) -> dict[str, str | int | float | None]:
     """Retrieve SIMD intrinsic specification for an operation.
 
     Args:
@@ -147,5 +150,5 @@ def get_wasm_simd_op(op_name: str) -> dict[str, Union[str, int, float, None]]:
     if isinstance(ops, dict) and op_name in ops:
         val = ops[op_name]
         if isinstance(val, dict):
-            return cast("dict[str, Union[str, int, float, None]]", val)
+            return typing.cast("dict[str, str | int | float | None]", val)
     return {}

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Optional, cast
+import typing
 
 from ml_switcheroo_compiler.backends.dpnp.types import _get_dpnp_module
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 _DPNP_OP_ALIASES: dict[str, str] = {
     # Unary arithmetic & elementary functions
@@ -197,7 +197,7 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
         EagerValue: Unwrapped buffer or original value.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return cast(EagerValue, getattr(arg, "data"))
+        return typing.cast(EagerValue, getattr(arg, "data"))
     return arg
 
 
@@ -214,7 +214,7 @@ def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | N
     if hasattr(dpnp_mod, fn_name):
         fn = getattr(dpnp_mod, fn_name)
         if callable(fn):
-            return cast(Optional[EagerValue], fn)
+            return typing.cast(typing.Union[EagerValue, "None"], fn)
 
     target_path = _DPNP_OP_ALIASES.get(fn_name)
     if target_path is not None:
@@ -226,7 +226,7 @@ def _resolve_dpnp_callable(dpnp_mod: EagerValue, fn_name: str) -> EagerValue | N
     if linalg_mod is not None and hasattr(linalg_mod, fn_name):
         fn = getattr(linalg_mod, fn_name)
         if callable(fn):
-            return cast(Optional[EagerValue], fn)
+            return typing.cast(typing.Union[EagerValue, "None"], fn)
 
     return None
 
@@ -254,7 +254,7 @@ def execute_op(
 
     fn = _resolve_dpnp_callable(dpnp_mod, op_type.lower())
     if fn is not None:
-        return cast(Callable[..., EagerValue], fn)(*actual_args, **kwargs)
+        return typing.cast(TypedVariadicCallable[EagerValue], fn)(*actual_args, **kwargs)
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 

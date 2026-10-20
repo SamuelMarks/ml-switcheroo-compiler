@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import ast
-from typing import (
-    Callable,  # noqa: F401
-    cast,
-)
+import typing
+from collections.abc import Callable
+
+import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import SliceType
 
 
 def _eval_constant(node: ast.AST) -> EagerValue:
@@ -25,31 +26,29 @@ def _eval_constant(node: ast.AST) -> EagerValue:
     return getattr(node, "value", None)
 
 
-def _eval_slice_call(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> slice:
+def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> SliceType:
     """Execute the eager eval slice call operation on the active backend array.
 
     Args:
         node (ast.AST): The node parameter.
-        _eval_fn (Callable[..., EagerValue]): The _eval_fn parameter.
+        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
 
     Returns:
-        slice: Result.
+        SliceType: Result.
     """
-    return slice(*[_eval_fn(a) for a in getattr(node, "args", [])])
+    return slice(*[typing.cast("int | float | str | None", _eval_fn(a)) for a in getattr(node, "args", [])])
 
 
-def _eval_array_call(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> EagerValue:
+def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> EagerValue:
     """Execute the eager eval array call operation on the active backend array.
 
     Args:
         node (ast.AST): The node parameter.
-        _eval_fn (Callable[..., EagerValue]): The _eval_fn parameter.
+        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    import numpy as np
-
     return np.array([_eval_fn(a) for a in getattr(node, "args", [])])
 
 
@@ -68,25 +67,24 @@ def _is_np_array_call(node: ast.AST) -> bool:
     return False
 
 
-def _eval_call(node: ast.AST, _eval_fn: EagerValue) -> EagerValue:
+def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> EagerValue:
     """Execute the eager eval call operation on the active backend array.
 
     Args:
         node (ast.AST): The node parameter.
-        _eval_fn (EagerValue): The _eval_fn parameter.
+        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    eval_fn_callable = cast(Callable[[ast.AST], EagerValue], _eval_fn)
     func = getattr(node, "func", None)
     if isinstance(func, ast.Name):
         if getattr(func, "id", "") == "slice":
-            return cast(EagerValue, _eval_slice_call(node, eval_fn_callable))
+            return _eval_slice_call(node, _eval_fn)
         if getattr(func, "id", "") == "array":
-            return _eval_array_call(node, eval_fn_callable)
+            return _eval_array_call(node, _eval_fn)
     if _is_np_array_call(node):
-        return _eval_array_call(node, eval_fn_callable)
+        return _eval_array_call(node, _eval_fn)
     raise ValueError("Unsupported Call")
 
 
@@ -107,40 +105,37 @@ def _eval_name(node: ast.AST) -> EagerValue:
     raise ValueError("Unsupported Name")
 
 
-def _eval_unary_op(node: ast.AST, _eval_fn: Callable[..., EagerValue]) -> EagerValue:
+def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> EagerValue:
     """Execute the eager eval unary op operation on the active backend array.
 
     Args:
         node (ast.AST): The node parameter.
-        _eval_fn (Callable[..., EagerValue]): The _eval_fn parameter.
+        _eval_fn (Callable[[ast.AST], EagerValue]): The _eval_fn parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
     if isinstance(getattr(node, "op", None), ast.USub):
-        val = _eval_fn(getattr(node, "operand", None))
+        val = _eval_fn(typing.cast(ast.AST, getattr(node, "operand", None)))
         if isinstance(val, (int, float)):
             return -val
     raise ValueError("Unsupported UnaryOp")
 
 
-def _get_node_evaluators() -> dict[type[ast.AST], Callable[..., EagerValue]]:
+def _get_node_evaluators() -> dict[type[ast.AST], Callable[[ast.AST, Callable[[ast.AST], EagerValue]], EagerValue]]:
     """Get the dictionary mapping AST node types to evaluation functions.
 
     Returns:
         A dictionary mapping AST node types to their corresponding evaluation functions.
     """
-    return cast(
-        dict[type[ast.AST], Callable[..., EagerValue]],
-        {
-            ast.Constant: lambda n, e: _eval_constant(n),
-            ast.Tuple: lambda n, e: tuple[object, ...](e(elt) for elt in getattr(n, "elts", [])),
-            ast.List: lambda n, e: list[object](e(elt) for elt in getattr(n, "elts", [])),
-            ast.Call: _eval_call,
-            ast.Name: lambda n, e: _eval_name(n),
-            ast.UnaryOp: _eval_unary_op,
-        },
-    )
+    return {
+        ast.Constant: lambda n, e: _eval_constant(n),
+        ast.Tuple: lambda n, e: tuple(e(elt) for elt in getattr(n, "elts", [])),
+        ast.List: lambda n, e: [e(elt) for elt in getattr(n, "elts", [])],
+        ast.Call: _eval_call,
+        ast.Name: lambda n, e: _eval_name(n),
+        ast.UnaryOp: _eval_unary_op,
+    }
 
 
 def _safe_parse_key(key_str: str) -> EagerValue:

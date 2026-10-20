@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -26,7 +26,7 @@ def test_checkpoint_grad() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
+        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
 
     cp_fun = checkpoint(my_fun)
 
@@ -37,11 +37,11 @@ def test_checkpoint_grad() -> None:
 
     from ml_switcheroo_compiler.grad.jit import jit
 
-    jitted_std = cast("EagerCallableProtocol", jit)(vg_std)
-    jitted_cp = cast("EagerCallableProtocol", jit)(vg_cp)
+    jitted_std = typing.cast("EagerCallableProtocol", jit)(vg_std)
+    jitted_cp = typing.cast("EagerCallableProtocol", jit)(vg_cp)
 
     v1, g1 = jitted_std(x)
     v2, g2 = jitted_cp(x)
 
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(v1, "numpy")))(), cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(v2, "numpy")))())
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(g1, "numpy")))(), cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(g2, "numpy")))())
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(v1, "numpy")))(), typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(v2, "numpy")))())
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(g1, "numpy")))(), typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(g2, "numpy")))())

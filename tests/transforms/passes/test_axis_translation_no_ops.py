@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
 
@@ -11,7 +13,7 @@ def test_axis_translation_empty_inputs() -> None:
     g = IRGraph()
     n = IRNode("conv", "Conv2D", inputs=[])
     n.attributes["layout"] = "NCHW"
-    g.nodes = {"conv": n}
+    g.nodes = NodeDict({"conv": n})
     g.outputs = ["conv"]
 
     axis_translation_pass(g)

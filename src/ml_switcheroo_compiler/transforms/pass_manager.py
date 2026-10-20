@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import typing
 from collections.abc import Callable, Iterable, Sequence  # noqa: F401
-from typing import TYPE_CHECKING
 
 from ml_switcheroo_ir import AttributeValue
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ConvergenceCriteria
 
 from ml_switcheroo_compiler.core.errors import CompilationError
@@ -45,7 +45,7 @@ class IRValidator:
         Raises:
             CompilationError: If a node is missing shape metadata.
         """
-        nodes_iterable: Iterable[IRNode] = graph.nodes.values() if isinstance(graph.nodes, dict) else graph.nodes
+        nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else typing.cast(Iterable[IRNode], graph.nodes)
         for node in nodes_iterable:
             if getattr(node, "shape_metadata", None) is None:
                 msg = f"Node {getattr(node, 'id', '')} is missing shape_metadata."
@@ -62,7 +62,7 @@ def _graph_hash(graph: IRGraph) -> str:
         str: MD5 hash digest of the serialized graph structure.
     """
     state: dict[str, dict[str, str | list[str]]] = {}
-    nodes_iterable: Iterable[IRNode] = graph.nodes.values() if isinstance(graph.nodes, dict) else graph.nodes
+    nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else typing.cast(Iterable[IRNode], graph.nodes)
     for node in nodes_iterable:
         state[getattr(node, "id", "")] = {
             "op": str(getattr(node, "op_type", "")),
@@ -82,11 +82,11 @@ def _snapshot_graph(graph: IRGraph) -> dict[str, dict[str, IRNode] | list[str]]:
     """
     nodes_copy: dict[str, IRNode] = {}
     nodes_iterable = graph.nodes
-    if isinstance(nodes_iterable, dict):
+    if hasattr(nodes_iterable, "items"):
         for nid, n in nodes_iterable.items():
             nodes_copy[nid] = clone_logical_node(n)
     else:
-        for n in nodes_iterable:
+        for n in typing.cast(Iterable[IRNode], nodes_iterable):
             nodes_copy[getattr(n, "id", "")] = clone_logical_node(n)
 
     inputs_copy: list[str] = list(graph.inputs) if hasattr(graph, "inputs") and graph.inputs is not None else []
@@ -103,11 +103,11 @@ def _restore_graph(graph: IRGraph, snapshot: dict[str, dict[str, IRNode] | list[
     """
     nodes_data = snapshot["nodes"]
     if isinstance(nodes_data, dict):
-        if isinstance(graph.nodes, dict):
+        if hasattr(graph.nodes, "clear") and hasattr(graph.nodes, "update"):
             graph.nodes.clear()
             graph.nodes.update(nodes_data)
         else:
-            graph.nodes = list(nodes_data.values())
+            object.__setattr__(graph, "nodes", list(nodes_data.values()))
     if hasattr(graph, "inputs") and "inputs" in snapshot:
         graph.inputs = list(snapshot["inputs"])
     if hasattr(graph, "outputs") and "outputs" in snapshot:

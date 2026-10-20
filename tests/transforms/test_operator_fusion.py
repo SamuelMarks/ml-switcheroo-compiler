@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 import ml_switcheroo_compiler.transforms.passes.operator_fusion as of
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -14,7 +16,7 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     match_pattern,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_ir import LogicalNode
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
@@ -25,8 +27,8 @@ def test_operator_fusion_extra_coverage() -> None:
     g = IRGraph()
     # 1. pattern capture=None for non-string input
     p = NodePattern(op_type=None, capture=None)
-    cap = cast("dict[str, EagerTensorProtocol]", {})
-    assert cast("EagerCallableProtocol", match_pattern)(g, 123, p, cap)
+    cap = typing.cast("dict[str, EagerTensorProtocol]", {})
+    assert typing.cast("EagerCallableProtocol", match_pattern)(g, 123, p, cap)
 
     # 2. rule apply returns {}
     class EmptyRule(YamlFusionRule):
@@ -34,9 +36,9 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize EmptyRule."""
-            cast("EagerCallableProtocol", super().__init__)("EmptyRule", cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            typing.cast("EagerCallableProtocol", super().__init__)("EmptyRule", typing.cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
-        def apply(self, graph: EagerValue, capture_map: EagerValue) -> Optional[dict[str, LogicalNode]]:
+        def apply(self, graph: EagerValue, capture_map: EagerValue) -> dict[str, LogicalNode] | None:
             """Apply empty replacement.
 
             Args:
@@ -56,9 +58,9 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize DownstreamRule."""
-            cast("EagerCallableProtocol", super().__init__)("Downstream", cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "A"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            typing.cast("EagerCallableProtocol", super().__init__)("Downstream", typing.cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "A"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
-        def apply(self, graph: EagerValue, capture_map: EagerValue) -> Optional[dict[str, LogicalNode]]:
+        def apply(self, graph: EagerValue, capture_map: EagerValue) -> dict[str, LogicalNode] | None:
             """Apply downstream replacements.
 
             Args:
@@ -94,9 +96,9 @@ def test_operator_fusion_extra_coverage() -> None:
 
         def __init__(self) -> None:
             """Initialize CostRule."""
-            cast("EagerCallableProtocol", super().__init__)("Cost", cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "Exp"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
+            typing.cast("EagerCallableProtocol", super().__init__)("Cost", typing.cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "Exp"}, "replacement": {"op_type": "None", "inputs": [], "capture_to_replace": "foo"}}))
 
-        def apply(self, graph: EagerValue, capture_map: EagerValue) -> Optional[dict[str, LogicalNode]]:
+        def apply(self, graph: EagerValue, capture_map: EagerValue) -> dict[str, LogicalNode] | None:
             """Apply cost replacement.
 
             Args:
@@ -118,13 +120,13 @@ def test_operator_fusion_extra_coverage() -> None:
 
     g = IRGraph()
     g.nodes["e"] = IRNode("e", "Exp")
-    op_pass = cast("PatternMatchingEngine", cast("EagerCallableProtocol", PatternMatchingEngine)([cast("EagerCallableProtocol", CostRule)()], cast("EagerCallableProtocol", RejectCostModel)()))
+    op_pass = typing.cast("PatternMatchingEngine", typing.cast("EagerCallableProtocol", PatternMatchingEngine)([typing.cast("EagerCallableProtocol", CostRule)()], typing.cast("EagerCallableProtocol", RejectCostModel)()))
     assert not op_pass.apply_passes(g)
 
 
 def test_yaml_rule_apply_returns_none() -> None:
     """Test YamlFusionRule apply edge case returning None on invalid target."""
-    rule = cast("EagerCallableProtocol", YamlFusionRule)("Test", cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"}}))
+    rule = typing.cast("EagerCallableProtocol", YamlFusionRule)("Test", typing.cast("EagerCallableProtocol", FusionPatternConfig)(**{"pattern": {"op_type": "Dummy"}, "replacement": {"capture_to_replace": "val", "inputs": ["in_node", "in_val"], "op_type": "NewOp"}}))
     assert rule.apply(IRGraph(), {"val": 1.0}) is None
 
     n1 = IRNode("n1", "OldOp")
@@ -220,7 +222,7 @@ def test_vertical_fusion_conv_bias_relu() -> None:
     bias_add = IRNode("bias_add", "BiasAdd", inputs=["conv", "b"], shape_metadata=[1, 16, 30, 30])
     relu = IRNode("relu", "Relu", inputs=["bias_add"], shape_metadata=[1, 16, 30, 30])
 
-    g.nodes = {"x": x, "w": w, "b": bias, "conv": conv, "bias_add": bias_add, "relu": relu}
+    g.nodes = NodeDict({"x": x, "w": w, "b": bias, "conv": conv, "bias_add": bias_add, "relu": relu})
     g.inputs = ["x", "w", "b"]
     g.outputs = ["relu"]
 
@@ -246,7 +248,7 @@ def test_vertical_fusion_elementwise_activation() -> None:
     add = IRNode("add", "Add", inputs=["in1", "in2"], shape_metadata=[4, 4])
     sig = IRNode("sig", "Sigmoid", inputs=["add"], shape_metadata=[4, 4])
 
-    g.nodes = {"in1": in1, "in2": in2, "add": add, "sig": sig}
+    g.nodes = NodeDict({"in1": in1, "in2": in2, "add": add, "sig": sig})
     g.inputs = ["in1", "in2"]
     g.outputs = ["sig"]
 
@@ -267,7 +269,7 @@ def test_horizontal_fusion_siblings() -> None:
     r2 = IRNode("r2", "Sigmoid", inputs=["x"], shape_metadata=[8, 8])
     out = IRNode("out", "Add", inputs=["r1", "r2"], shape_metadata=[8, 8])
 
-    g.nodes = {"x": x, "r1": r1, "r2": r2, "out": out}
+    g.nodes = NodeDict({"x": x, "r1": r1, "r2": r2, "out": out})
     g.inputs = ["x"]
     g.outputs = ["out"]
 
@@ -301,7 +303,7 @@ def _test_fusion_edge_cases_part_1(_state: dict[str, EagerTensorProtocol]) -> No
     add = IRNode("add", "Add", inputs=["x", "y"], shape_metadata=[2, 2])
     r1 = IRNode("r1", "Relu", inputs=["add"], shape_metadata=[2, 2])
     other = IRNode("other", "Mul", inputs=["add", "x"], shape_metadata=[2, 2])
-    g.nodes = {"x": x, "y": y, "add": add, "r1": r1, "other": other}
+    g.nodes = NodeDict({"x": x, "y": y, "add": add, "r1": r1, "other": other})
     g.outputs = ["r1", "other"]
 
     assert of.fuse_elementwise_activation(g) is False
@@ -335,7 +337,7 @@ def _test_fusion_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> No
     g4 = _state["g4"]
     g4.nodes["non_bias"] = IRNode("non_bias", "Mul", inputs=["a", "b"])
     g4.nodes["act"] = IRNode("act", "Relu", inputs=["non_bias"])
-    assert bool(cast("EagerCallableProtocol", of.fuse_conv_bias_relu)(g4)) is False
+    assert bool(typing.cast("EagerCallableProtocol", of.fuse_conv_bias_relu)(g4)) is False
     g5 = IRGraph()
     g5.nodes["in_a"] = IRNode("in_a", "Input")
     g5.nodes["in_b"] = IRNode("in_b", "Input")
@@ -373,7 +375,7 @@ def _test_fusion_edge_cases_part_3(_state: dict[str, EagerTensorProtocol]) -> No
     g7, s1, s2 = _state["g7"], _state["s1"], _state["s2"]
     g7.nodes["s1"] = s1
     g7.nodes["s2"] = s2
-    assert bool(cast("EagerCallableProtocol", of.fuse_horizontal_patterns)(g7)) is False
+    assert bool(typing.cast("EagerCallableProtocol", of.fuse_horizontal_patterns)(g7)) is False
 
     # OperatorFusionPass class run
     pass_runner = of.OperatorFusionPass()

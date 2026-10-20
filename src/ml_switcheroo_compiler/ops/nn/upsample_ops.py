@@ -1,19 +1,24 @@
 """Upsampling operations."""
 
-from collections.abc import Sequence
-from typing import Callable, Optional, Union, cast  # noqa: F401
+from __future__ import annotations
+
+import typing
+from collections.abc import (
+    Callable,  # noqa: F401
+    Sequence,
+)
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops import image
 
 
 def _resolve_scale_factor(
     input: Tensor,
-    scale_factor: Union[float, Sequence[float]],
+    scale_factor: float | Sequence[float],
     spatial_dims: int,
-) -> Optional[tuple[int, ...]]:
+) -> tuple[int, ...] | None:
     """Resolve the scale factor for upsampling.
 
     Args:
@@ -45,8 +50,8 @@ def _resolve_scale_factor(
 
 def _upsample_resolve_size(
     input: Tensor,
-    size: Optional[Union[int, Sequence[int]]],
-    scale_factor: Optional[Union[float, Sequence[float]]],
+    size: int | Sequence[int] | None,
+    scale_factor: float | Sequence[float] | None,
 ) -> tuple[int, ...]:
     """Compute the upsample resolve size tensor operation.
 
@@ -73,7 +78,7 @@ def _upsample_resolve_size(
     spatial_dims = len(input.shape) - 2 if len(input.shape) >= 3 else 1
 
     if has_sf or size is None:
-        return cast("Callable[..., Optional[tuple[int, ...]]]", _resolve_scale_factor)(input, scale_factor, spatial_dims) or ()
+        return typing.cast("TypedVariadicCallable[tuple[int, ...] | None]", _resolve_scale_factor)(input, scale_factor, spatial_dims) or ()
 
     if isinstance(size, int):
         return tuple([size] * spatial_dims)
@@ -84,8 +89,8 @@ def _upsample_resolve_size(
 def _upsample_dispatch(
     input: Tensor,
     mode: str,
-    size: Optional[Union[int, Sequence[int]]],
-    scale_factor: Optional[Union[float, Sequence[float]]],
+    size: int | Sequence[int] | None,
+    scale_factor: float | Sequence[float] | None,
     align_corners: bool,
 ) -> TensorOrScalar:
     """Compute the upsample dispatch tensor operation.
@@ -113,7 +118,7 @@ def _upsample_dispatch(
             "bicubic": image.resize_bicubic,
         }
         fn = dispatch_map.get(mode, image.resize_nearest)
-        return cast(TensorOrScalar, cast("EagerCallableProtocol", fn)(input, size=target_size, align_corners=align_corners))
+        return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", fn)(input, size=target_size, align_corners=align_corners))
 
     # 1D or 3D fallback
     dispatch_map_fallback = {
@@ -128,10 +133,10 @@ def _upsample_dispatch(
 
 def upsample(
     input: Tensor,
-    size: Optional[Union[int, Sequence[int]]] = None,
-    scale_factor: Optional[Union[float, Sequence[float]]] = None,
+    size: int | Sequence[int] | None = None,
+    scale_factor: float | Sequence[float] | None = None,
     mode: str = "nearest",
-    align_corners: Optional[bool] = None,
+    align_corners: bool | None = None,
 ) -> TensorOrScalar:
     """Upsamples a given multi-channel data.
 
@@ -183,8 +188,8 @@ def pixel_shuffle(input: Tensor, upscale_factor: int) -> TensorOrScalar:
 
 def upsample_nearest(
     input: Tensor,
-    size: Optional[Union[int, Sequence[int]]] = None,
-    scale_factor: Optional[Union[float, Sequence[float]]] = None,
+    size: int | Sequence[int] | None = None,
+    scale_factor: float | Sequence[float] | None = None,
 ) -> TensorOrScalar:
     """Upsamples the input using nearest-neighbor interpolation.
 
@@ -221,8 +226,8 @@ def upsample_nearest(
 
 def upsample_bilinear(
     input: Tensor,
-    size: Optional[Union[int, Sequence[int]]] = None,
-    scale_factor: Optional[Union[float, Sequence[float]]] = None,
+    size: int | Sequence[int] | None = None,
+    scale_factor: float | Sequence[float] | None = None,
 ) -> TensorOrScalar:
     """Upsamples the input using bilinear interpolation.
 
@@ -259,8 +264,8 @@ def upsample_bilinear(
 
 def upsample_bicubic(
     input: Tensor,
-    size: Optional[Union[int, Sequence[int]]] = None,
-    scale_factor: Optional[Union[float, Sequence[float]]] = None,
+    size: int | Sequence[int] | None = None,
+    scale_factor: float | Sequence[float] | None = None,
 ) -> TensorOrScalar:
     """Upsamples the input using bicubic interpolation.
 

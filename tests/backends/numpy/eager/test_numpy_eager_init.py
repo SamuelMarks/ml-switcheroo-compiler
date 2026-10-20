@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import equal, execute_op, repeat, searchsorted, split, squeeze, stack, unstack
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -21,7 +21,7 @@ def test_execute_op() -> None:
     Returns:
         None
     """
-    res = cast("EagerCallableProtocol", execute_op)(None, "Equal", cast("EagerCallableProtocol", np.array)([1]), cast("EagerCallableProtocol", np.array)([1]))
+    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Equal", typing.cast("EagerCallableProtocol", np.array)([1]), typing.cast("EagerCallableProtocol", np.array)([1]))
     assert res
 
     @global_eager_registry.register("DummyGlobalOp")
@@ -32,15 +32,15 @@ def test_execute_op() -> None:
             np_mod: Test parameter `np_mod`.
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) + cast("EagerTensorProtocol", 1)
+        return typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", 1)
 
-    assert cast("EagerCallableProtocol", execute_op)(None, "DummyGlobalOp", 1) == 2
-    res = cast("EagerCallableProtocol", execute_op)(None, "Add", cast("EagerCallableProtocol", np.array)([1]), cast("EagerCallableProtocol", np.array)([2]))
-    assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [3]
-    res = cast("EagerCallableProtocol", execute_op)(None, "Erf", cast("EagerCallableProtocol", np.array)([0.0]))
-    assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [0.0]
+    assert typing.cast("EagerCallableProtocol", execute_op)(None, "DummyGlobalOp", 1) == 2
+    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Add", typing.cast("EagerCallableProtocol", np.array)([1]), typing.cast("EagerCallableProtocol", np.array)([2]))
+    assert typing.cast("EagerTensorProtocol", getattr(res, "tolist"))() == [3]
+    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Erf", typing.cast("EagerCallableProtocol", np.array)([0.0]))
+    assert typing.cast("EagerTensorProtocol", getattr(res, "tolist"))() == [0.0]
     with pytest.raises(Exception, match=r".*"):
-        cast("EagerCallableProtocol", execute_op)(None, "NonExistentCrazyOpXYZ123")
+        typing.cast("EagerCallableProtocol", execute_op)(None, "NonExistentCrazyOpXYZ123")
 
 
 def test_repeat() -> None:
@@ -51,7 +51,7 @@ def test_repeat() -> None:
     """
     arr = np.array([1, 2])
     res = repeat(np, arr, 2, axis=0)
-    assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [1, 1, 2, 2]
+    assert typing.cast("EagerTensorProtocol", getattr(res, "tolist"))() == [1, 1, 2, 2]
 
 
 def test_searchsorted() -> None:
@@ -73,10 +73,10 @@ def test_split() -> None:
     """
     arr = np.array([1, 2, 3, 4])
     res = split(np, arr, 2, axis=0)
-    assert cast("EagerCallableProtocol", len)(res) == 2
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), "tolist"))() == [1, 2]
+    assert typing.cast("EagerCallableProtocol", len)(res) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), "tolist"))() == [1, 2]
     res2 = split(np, arr, 2, axis=0)
-    assert cast("EagerCallableProtocol", len)(res2) == 2
+    assert typing.cast("EagerCallableProtocol", len)(res2) == 2
 
 
 def test_squeeze() -> None:
@@ -87,9 +87,9 @@ def test_squeeze() -> None:
     """
     arr = np.array([[1], [2]])
     res = squeeze(np, arr, axis=1)
-    assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [1, 2]
+    assert typing.cast("EagerTensorProtocol", getattr(res, "tolist"))() == [1, 2]
     res2 = squeeze(np, arr, axis=1)
-    assert cast("EagerTensorProtocol", getattr(res2, "tolist"))() == [1, 2]
+    assert typing.cast("EagerTensorProtocol", getattr(res2, "tolist"))() == [1, 2]
 
 
 def test_stack() -> None:
@@ -101,9 +101,9 @@ def test_stack() -> None:
     arr1 = np.array([1, 2])
     arr2 = np.array([3, 4])
     res = stack(np, [arr1, arr2], axis=1)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
     res2 = stack(np, [arr1, arr2], axis=1)
-    assert cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
 
 
 def test_unstack() -> None:
@@ -114,10 +114,10 @@ def test_unstack() -> None:
     """
     arr = np.array([[1, 2], [3, 4]])
     res = unstack(np, arr, axis=1)
-    assert cast("EagerCallableProtocol", len)(res) == 2
-    assert cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), "tolist"))() == [1, 3]
+    assert typing.cast("EagerCallableProtocol", len)(res) == 2
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), "tolist"))() == [1, 3]
     res2 = unstack(np, [1, 2, 3], axis=0)
-    assert res2 == (1, 2, 3)
+    assert typing.cast("EagerValue", res2) == (1, 2, 3)
 
 
 def test_equal() -> None:
@@ -127,7 +127,7 @@ def test_equal() -> None:
         None
     """
     res = equal(np, np.array([1]), np.array([1]))
-    assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [True]
+    assert typing.cast("EagerTensorProtocol", getattr(res, "tolist"))() == [True]
 
     class IncompatibleType:
         """Test class IncompatibleType."""
@@ -140,7 +140,7 @@ def test_equal() -> None:
             """
             return True
 
-    res = equal(np, IncompatibleType(), IncompatibleType())
+    res = equal(np, typing.cast("EagerValue", IncompatibleType()), typing.cast("EagerValue", IncompatibleType()))
     assert res
 
 
@@ -156,4 +156,4 @@ def test_execute_op_attribute_error_raise() -> None:
     from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
     with pytest.raises(UnimplementedMathError):
-        cast("EagerCallableProtocol", execute_op)(None, "OpThatThrowsAttr12345", 5)
+        typing.cast("EagerCallableProtocol", execute_op)(None, "OpThatThrowsAttr12345", 5)

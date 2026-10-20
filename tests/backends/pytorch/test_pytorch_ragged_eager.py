@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import torch
 
 from ml_switcheroo_compiler.backends.pytorch.eager import _execute_ragged_tensor_to_dense
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -17,7 +17,7 @@ def test_pytorch_ragged_eager() -> None:
     """Test PyTorch ragged tensor to dense conversion branches."""
     a = [torch.tensor([1, 2]), torch.tensor([1])]
     res = _execute_ragged_tensor_to_dense(a)
-    assert cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
     assert _execute_ragged_tensor_to_dense(np.array([1, 2])) is not None
 
     # Test dictionary with values and row_splits including empty row (length == 0 branch)
@@ -26,9 +26,9 @@ def test_pytorch_ragged_eager() -> None:
         "row_splits": torch.tensor([0, 2, 2, 3]),
     }
     dense = _execute_ragged_tensor_to_dense(ragged_dict, default_value=-1.0)
-    assert cast("EagerTensorProtocol", getattr(dense, "shape")) == (3, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(dense, "shape")) == (3, 2)
     assert (
-        cast(
+        typing.cast(
             "EagerTensorProtocol",
             getattr(dense, "__getitem__")(
                 (
@@ -40,7 +40,7 @@ def test_pytorch_ragged_eager() -> None:
         == 10.0
     )
     assert (
-        cast(
+        typing.cast(
             "EagerTensorProtocol",
             getattr(dense, "__getitem__")(
                 (
@@ -52,7 +52,7 @@ def test_pytorch_ragged_eager() -> None:
         == 20.0
     )
     assert (
-        cast(
+        typing.cast(
             "EagerTensorProtocol",
             getattr(dense, "__getitem__")(
                 (
@@ -64,7 +64,7 @@ def test_pytorch_ragged_eager() -> None:
         == -1.0
     )
     assert (
-        cast(
+        typing.cast(
             "EagerTensorProtocol",
             getattr(dense, "__getitem__")(
                 (
@@ -76,7 +76,7 @@ def test_pytorch_ragged_eager() -> None:
         == -1.0
     )
     assert (
-        cast(
+        typing.cast(
             "EagerTensorProtocol",
             getattr(dense, "__getitem__")(
                 (
@@ -88,7 +88,7 @@ def test_pytorch_ragged_eager() -> None:
         == 30.0
     )
     assert (
-        cast(
+        typing.cast(
             "EagerTensorProtocol",
             getattr(dense, "__getitem__")(
                 (

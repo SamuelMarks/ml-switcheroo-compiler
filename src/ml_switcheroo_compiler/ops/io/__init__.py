@@ -1,5 +1,7 @@
 """Unified I/O operations package."""
 
+from __future__ import annotations
+
 from .async_io import (
     AsyncIOFuture,
     NonblockingLoad,

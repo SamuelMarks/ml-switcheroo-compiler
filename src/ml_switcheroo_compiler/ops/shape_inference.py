@@ -4,16 +4,40 @@ This module provides Pydantic schema models, symbolic dimension representations,
 and declarative shape transfer functions for all operations in the compiler.
 """
 
+from __future__ import annotations
+
 import logging
 import math
 import os
+import typing
 from collections.abc import Callable, Sequence
-from typing import Optional, Union, cast
 
 import yaml
 from pydantic import BaseModel, ConfigDict
 
-ShapeInferFn = Callable[..., "ShapeType"]
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+
+
+class ShapeInferFn(typing.Protocol):
+    """Protocol for shape inference callables."""
+
+    def __call__(
+        self,
+        *args: ShapeType | Sequence[int] | TensorOrScalar | None,
+        **kwargs: int | float | str | bool | ShapeType | Sequence[int] | TensorOrScalar | None,
+    ) -> ShapeType:
+        """Infer output shape from input shapes and attributes.
+
+        Args:
+            *args: Positional input shapes.
+            **kwargs: Keyword attributes.
+
+        Returns:
+            ShapeType: Inferred output shape.
+        """
+        ...
+
+
 _SHAPE_INFERENCE_REGISTRY: dict[str, ShapeInferFn] = {}
 
 
@@ -93,7 +117,7 @@ class S:
         return hash(self.name)
 
 
-DimType = Union[int, S]
+DimType = typing.Union[int, "S"]
 ShapeType = tuple[DimType, ...]
 
 
@@ -101,8 +125,8 @@ class ShapeOpSignature(BaseModel):
     """Declarative shape signature specification for an operation."""
 
     category: str
-    pattern: Optional[str] = None
-    description: Optional[str] = None
+    pattern: str | None = None
+    description: str | None = None
     model_config = ConfigDict(extra="allow")
 
 
@@ -113,7 +137,7 @@ class ShapeSignaturesConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-_CACHED_SIGNATURES: Optional[ShapeSignaturesConfig] = None
+_CACHED_SIGNATURES: ShapeSignaturesConfig | None = None
 
 
 def load_shape_signatures() -> ShapeSignaturesConfig:
@@ -159,11 +183,11 @@ def compute_contiguous_strides(shape: ShapeType) -> tuple[int, ...]:
     return tuple(strides)
 
 
-def broadcast_shapes(*shapes: ShapeType) -> ShapeType:
+def broadcast_shapes(*shapes: ShapeType | None) -> ShapeType:
     """Compute multi-operand broadcast shape according to standard rules.
 
     Args:
-        *shapes (ShapeType): One or more shapes to broadcast together.
+        *shapes (ShapeType | None): One or more shapes to broadcast together.
 
     Returns:
         ShapeType: Resulting broadcasted shape tuple.
@@ -290,9 +314,9 @@ def infer_outer(shape_a: ShapeType, shape_b: ShapeType) -> ShapeType:
 def infer_conv(
     input_shape: ShapeType,
     weight_shape: ShapeType,
-    stride: Union[int, Sequence[int]] = 1,
-    padding: Union[int, Sequence[int], str] = 0,
-    dilation: Union[int, Sequence[int]] = 1,
+    stride: int | Sequence[int] = 1,
+    padding: int | Sequence[int] | str = 0,
+    dilation: int | Sequence[int] = 1,
     spatial_dims: int = 2,
 ) -> ShapeType:
     """Infer shape for 1D, 2D, or 3D convolutions.
@@ -359,9 +383,9 @@ def infer_conv(
 
 def infer_pool(
     input_shape: ShapeType,
-    kernel_size: Union[int, Sequence[int]],
-    stride: Optional[Union[int, Sequence[int]]] = None,
-    padding: Union[int, Sequence[int]] = 0,
+    kernel_size: int | Sequence[int],
+    stride: int | Sequence[int] | None = None,
+    padding: int | Sequence[int] = 0,
     spatial_dims: int = 2,
 ) -> ShapeType:
     """Infer shape for 1D, 2D, or 3D pooling operations.
@@ -412,7 +436,7 @@ def infer_pool(
     return (batch, channels, *spatial_out)
 
 
-def infer_reshape(input_shape: ShapeType, target_shape: Sequence[Union[int, S]]) -> ShapeType:
+def infer_reshape(input_shape: ShapeType, target_shape: Sequence[int | S]) -> ShapeType:
     """Infer target shape from a reshape specification, resolving dynamic '-1' axes.
 
     Args:
@@ -433,22 +457,22 @@ def infer_reshape(input_shape: ShapeType, target_shape: Sequence[Union[int, S]])
     has_symbolic = any(isinstance(d, S) for d in input_shape) or any(isinstance(d, S) for d in target)
 
     if not has_symbolic and all(isinstance(d, int) for d in input_shape) and all(isinstance(d, int) for d in target):
-        total_in = math.prod(cast(int, d) for d in input_shape)
+        total_in = math.prod(typing.cast(int, d) for d in input_shape)
         if neg_count == 1:
             neg_idx = target.index(-1)
-            other_prod = math.prod([cast(int, d) for i, d in enumerate(target) if i != neg_idx])
+            other_prod = math.prod([typing.cast(int, d) for i, d in enumerate(target) if i != neg_idx])
             if other_prod == 0 or total_in % other_prod != 0:
                 raise ValueError(f"Cannot reshape from {input_shape} (numel={total_in}) to {target_shape}")
             target[neg_idx] = total_in // other_prod
         else:
-            total_out = math.prod(cast(int, d) for d in target)
+            total_out = math.prod(typing.cast(int, d) for d in target)
             if total_in != total_out:
                 raise ValueError(f"Cannot reshape tensor of size {total_in} into shape {target_shape} (size {total_out})")
 
     return tuple(target)
 
 
-def infer_transpose(input_shape: ShapeType, axes: Optional[Sequence[int]] = None) -> ShapeType:
+def infer_transpose(input_shape: ShapeType, axes: Sequence[int] | None = None) -> ShapeType:
     """Infer transposed shape from axis permutation.
 
     Args:
@@ -472,7 +496,7 @@ def infer_transpose(input_shape: ShapeType, axes: Optional[Sequence[int]] = None
     return tuple(input_shape[ax] for ax in norm_axes)
 
 
-def infer_squeeze(input_shape: ShapeType, axis: Optional[Union[int, Sequence[int]]] = None) -> ShapeType:
+def infer_squeeze(input_shape: ShapeType, axis: int | Sequence[int] | None = None) -> ShapeType:
     """Infer shape after squeezing singleton dimensions.
 
     Args:
@@ -543,14 +567,14 @@ def infer_flatten(input_shape: ShapeType, start_dim: int = 0, end_dim: int = -1)
     suffix = input_shape[end + 1 :]
 
     if all(isinstance(d, int) for d in middle):
-        flat_dim: DimType = math.prod(cast(int, d) for d in middle)
+        flat_dim: DimType = math.prod(typing.cast(int, d) for d in middle)
     else:
         flat_dim = S("flat_dim")
 
     return (*prefix, flat_dim, *suffix)
 
 
-def infer_split(input_shape: ShapeType, num_or_size_splits: Union[int, Sequence[int]], axis: int = 0) -> list[ShapeType]:
+def infer_split(input_shape: ShapeType, num_or_size_splits: int | Sequence[int], axis: int = 0) -> list[ShapeType]:
     """Infer output shapes after splitting a tensor along an axis.
 
     Args:
@@ -570,7 +594,7 @@ def infer_split(input_shape: ShapeType, num_or_size_splits: Union[int, Sequence[
 
     if isinstance(num_or_size_splits, int):
         num = num_or_size_splits
-        sub_dim: Union[int, S]
+        sub_dim: int | S
         if isinstance(dim, int):
             if dim % num != 0:
                 raise ValueError(f"Cannot evenly divide dimension {dim} into {num} splits")
@@ -654,7 +678,7 @@ def infer_stack(shapes: Sequence[ShapeType], axis: int = 0) -> ShapeType:
     return (*first[:norm_axis], len(shapes), *first[norm_axis:])
 
 
-def infer_reduction(input_shape: ShapeType, axis: Optional[Union[int, Sequence[int]]] = None, keepdims: bool = False) -> ShapeType:
+def infer_reduction(input_shape: ShapeType, axis: int | Sequence[int] | None = None, keepdims: bool = False) -> ShapeType:
     """Infer shape resulting from a reduction operation.
 
     Args:
@@ -680,8 +704,8 @@ def infer_reduction(input_shape: ShapeType, axis: Optional[Union[int, Sequence[i
 def _dispatch_elementwise_and_reduction(
     category: str,
     valid_shapes: list[ShapeType],
-    kwargs: dict[str, Union[int, float, str, bool, ShapeType, Sequence[int], None]],
-) -> Optional[ShapeType]:
+    kwargs: dict[str, int | float | str | bool | ShapeType | Sequence[int] | None],
+) -> ShapeType | None:
     """Dispatch elementwise and reduction operations.
 
     Args:
@@ -701,7 +725,7 @@ def _dispatch_elementwise_and_reduction(
         keepdims = bool(kwargs.get("keepdims", False))
         return infer_reduction(
             valid_shapes[0],
-            axis=cast("Optional[Union[int, Sequence[int]]]", axis if isinstance(axis, (int, list, tuple)) else None),
+            axis=typing.cast("int | Sequence[int] | None", axis if isinstance(axis, (int, list, tuple)) else None),
             keepdims=keepdims,
         )
     return None
@@ -710,8 +734,8 @@ def _dispatch_elementwise_and_reduction(
 def _dispatch_view_ops(
     category: str,
     valid_shapes: list[ShapeType],
-    kwargs: dict[str, Union[int, float, str, bool, ShapeType, Sequence[int], None]],
-) -> Optional[ShapeType]:
+    kwargs: dict[str, int | float | str | bool | ShapeType | Sequence[int] | None],
+) -> ShapeType | None:
     """Dispatch view transformations (reshape, transpose, squeeze, expand_dims).
 
     Args:
@@ -730,12 +754,12 @@ def _dispatch_view_ops(
         return infer_reshape(valid_shapes[0], target) if isinstance(target, (list, tuple)) else valid_shapes[0]
     if category == "transpose":
         axes = kwargs.get("axes", kwargs.get("permutation"))
-        return infer_transpose(valid_shapes[0], cast("Optional[Sequence[int]]", axes if isinstance(axes, (list, tuple)) else None))
+        return infer_transpose(valid_shapes[0], typing.cast("Sequence[int] | None", axes if isinstance(axes, (list, tuple)) else None))
     if category == "squeeze":
         axis = kwargs.get("axis")
         return infer_squeeze(
             valid_shapes[0],
-            axis=cast("Optional[Union[int, Sequence[int]]]", axis if isinstance(axis, (int, list, tuple)) else None),
+            axis=typing.cast("int | Sequence[int] | None", axis if isinstance(axis, (int, list, tuple)) else None),
         )
     if category == "expand_dims":
         axis = kwargs.get("axis", 0)
@@ -746,8 +770,8 @@ def _dispatch_view_ops(
 def _dispatch_group_ops(
     category: str,
     valid_shapes: list[ShapeType],
-    kwargs: dict[str, Union[int, float, str, bool, ShapeType, Sequence[int], None]],
-) -> Optional[ShapeType]:
+    kwargs: dict[str, int | float | str | bool | ShapeType | Sequence[int] | None],
+) -> ShapeType | None:
     """Dispatch tensor grouping operations (flatten, split, concat, stack).
 
     Args:
@@ -764,17 +788,17 @@ def _dispatch_group_ops(
     if category == "flatten":
         return infer_flatten(
             valid_shapes[0],
-            start_dim=int(cast(int, kwargs.get("start_dim", 0))),
-            end_dim=int(cast(int, kwargs.get("end_dim", -1))),
+            start_dim=int(typing.cast(int, kwargs.get("start_dim", 0))),
+            end_dim=int(typing.cast(int, kwargs.get("end_dim", -1))),
         )
     if category == "split":
         splits = kwargs.get("num_or_size_splits", kwargs.get("chunks", 2))
-        res = cast("Callable[..., list[ShapeType]]", infer_split)(valid_shapes[0], splits, axis=int(cast(int, kwargs.get("axis", 0))))
+        res = infer_split(valid_shapes[0], typing.cast("int | Sequence[int]", splits), axis=int(typing.cast(int, kwargs.get("axis", 0))))
         return res[0] if res else ()
     if category == "concat":
-        return infer_concat(valid_shapes, axis=int(cast(int, kwargs.get("axis", 0))))
+        return infer_concat(valid_shapes, axis=int(typing.cast(int, kwargs.get("axis", 0))))
     if category == "stack":
-        return infer_stack(valid_shapes, axis=int(cast(int, kwargs.get("axis", 0))))
+        return infer_stack(valid_shapes, axis=int(typing.cast(int, kwargs.get("axis", 0))))
     return None
 
 
@@ -782,7 +806,7 @@ def _dispatch_contracting(
     op_type: str,
     category: str,
     valid_shapes: list[ShapeType],
-) -> Optional[ShapeType]:
+) -> ShapeType | None:
     """Dispatch contracting operations (e.g. matrix multiplication).
 
     Args:
@@ -809,8 +833,8 @@ def _dispatch_spatial_and_pooling(
     op_type: str,
     category: str,
     valid_shapes: list[ShapeType],
-    kwargs: dict[str, Union[int, float, str, bool, ShapeType, Sequence[int], None]],
-) -> Optional[ShapeType]:
+    kwargs: dict[str, int | float | str | bool | ShapeType | Sequence[int] | None],
+) -> ShapeType | None:
     """Dispatch spatial convolutions and pooling operations.
 
     Args:
@@ -836,9 +860,9 @@ def _dispatch_spatial_and_pooling(
             return infer_conv(
                 valid_shapes[0],
                 valid_shapes[1],
-                stride=cast("Union[int, Sequence[int]]", kwargs.get("stride", kwargs.get("strides", 1))),
-                padding=cast("Union[int, Sequence[int], str]", kwargs.get("padding", 0)),
-                dilation=cast("Union[int, Sequence[int]]", kwargs.get("dilation", kwargs.get("dilations", 1))),
+                stride=typing.cast("int | Sequence[int]", kwargs.get("stride", kwargs.get("strides", 1))),
+                padding=typing.cast("int | Sequence[int] | str", kwargs.get("padding", 0)),
+                dilation=typing.cast("int | Sequence[int]", kwargs.get("dilation", kwargs.get("dilations", 1))),
                 spatial_dims=s_dims,
             )
         raise ValueError(f"Spatial op '{op_type}' requires input and weight shapes")
@@ -852,9 +876,9 @@ def _dispatch_spatial_and_pooling(
                 s_dims = 2
             return infer_pool(
                 valid_shapes[0],
-                kernel_size=cast("Union[int, Sequence[int]]", kwargs.get("kernel_size", kwargs.get("window_size", 2))),
-                stride=cast("Optional[Union[int, Sequence[int]]]", kwargs.get("stride", kwargs.get("strides"))),
-                padding=cast("Union[int, Sequence[int]]", kwargs.get("padding", 0)),
+                kernel_size=typing.cast("int | Sequence[int]", kwargs.get("kernel_size", kwargs.get("window_size", 2))),
+                stride=typing.cast("int | Sequence[int] | None", kwargs.get("stride", kwargs.get("strides"))),
+                padding=typing.cast("int | Sequence[int]", kwargs.get("padding", 0)),
                 spatial_dims=s_dims,
             )
         raise ValueError(f"Pooling op '{op_type}' requires an input shape")
@@ -863,8 +887,8 @@ def _dispatch_spatial_and_pooling(
 
 def infer_op_shape_declarative(
     op_type: str,
-    *shapes: ShapeType,
-    **kwargs: Union[int, float, str, bool, ShapeType, Sequence[int], None],
+    *shapes: ShapeType | None,
+    **kwargs: int | float | str | bool | ShapeType | Sequence[int] | None,
 ) -> ShapeType:
     """Evaluate shape inference for an operation declaratively against shape_signatures.yaml.
 
@@ -909,8 +933,8 @@ def infer_op_shape_declarative(
 
 
 def _normalize_inputs_to_shapes(
-    args: tuple[Union[ShapeType, Sequence[int], None], ...],
-    kwargs: dict[str, Union[int, float, str, bool, ShapeType, Sequence[int], None]],
+    args: tuple[ShapeType | Sequence[int] | None, ...],
+    kwargs: dict[str, int | float | str | bool | ShapeType | Sequence[int] | None],
 ) -> list[ShapeType]:
     """Normalize positional and keyword inputs into concrete shape tuples.
 
@@ -945,8 +969,8 @@ def _normalize_inputs_to_shapes(
 
 def infer_shape(
     op_type: str,
-    *args: Union[ShapeType, Sequence[int], None],
-    **kwargs: Union[int, float, str, bool, ShapeType, Sequence[int], None],
+    *args: ShapeType | Sequence[int] | None,
+    **kwargs: int | float | str | bool | ShapeType | Sequence[int] | None,
 ) -> ShapeType:
     """Infer output shape for an operation from positional and keyword inputs.
 
@@ -975,10 +999,11 @@ def infer_shape(
                 return ()
             if not hasattr(op_cls, "_yaml_data"):
                 instance = op_cls()
+                infer_fn = typing.cast(ShapeInferFn, getattr(instance, "infer_shape"))
                 try:
-                    return cast(tuple[int, ...], instance.infer_shape(*shapes, **kwargs))
+                    return typing.cast(tuple[int, ...], infer_fn(*shapes, **kwargs))
                 except Exception:
-                    return cast(tuple[int, ...], instance.infer_shape(*args, **kwargs))
+                    return typing.cast(tuple[int, ...], infer_fn(*args, **kwargs))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

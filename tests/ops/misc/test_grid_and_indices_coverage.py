@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import ml_switcheroo_compiler.ops.info_and_histograms.grid_and_indices as grid_mod
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -36,14 +36,14 @@ def test_grid_and_indices_coverage() -> None:
     # Indices infer_shape
     indices_op = grid_mod.Indices()
     assert indices_op.infer_shape() == ()
-    assert cast("EagerCallableProtocol", indices_op.infer_shape)((2, 3)) == (2, 2, 3)
-    assert cast("EagerCallableProtocol", indices_op.infer_shape)(42) == ()
+    assert typing.cast("EagerCallableProtocol", indices_op.infer_shape)((2, 3)) == (2, 2, 3)
+    assert typing.cast("EagerCallableProtocol", indices_op.infer_shape)(42) == ()
 
     # Ix infer_shape
     ix_op = grid_mod.Ix()
     assert ix_op.infer_shape() == ()
-    assert cast("EagerCallableProtocol", ix_op.infer_shape)(cast("EagerCallableProtocol", DummyWithShape)((5,)), cast("EagerCallableProtocol", DummyWithShape)((3,))) == (5, 1)
-    assert cast("EagerCallableProtocol", ix_op.infer_shape)(cast("EagerCallableProtocol", DummyWithoutShape)(), cast("EagerCallableProtocol", DummyWithShape)((3,))) == (1, 1)
+    assert typing.cast("EagerCallableProtocol", ix_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)((5,)), typing.cast("EagerCallableProtocol", DummyWithShape)((3,))) == (5, 1)
+    assert typing.cast("EagerCallableProtocol", ix_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)(), typing.cast("EagerCallableProtocol", DummyWithShape)((3,))) == (1, 1)
 
     # MaskIndices infer_shape
     assert grid_mod.MaskIndices().infer_shape() == (None,)

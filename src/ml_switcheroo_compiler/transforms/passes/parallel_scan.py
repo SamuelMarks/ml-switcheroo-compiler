@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, cast
+import typing
 
 import yaml
 from ml_switcheroo_ir import AttributeValue, LogicalGraph
@@ -23,7 +23,7 @@ def _load_scan_rules() -> dict[str, AttributeValue]:
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
             if isinstance(data, dict):
-                return cast(dict[str, AttributeValue], data)
+                return typing.cast(dict[str, AttributeValue], data)
     return {}
 
 
@@ -40,8 +40,8 @@ def detect_associative_reduction(body_graph: IRGraph | None, rules: dict[str, At
     if not body_graph:
         return None
 
-    nodes = body_graph.nodes if isinstance(body_graph.nodes, dict) else {n.id: n for n in getattr(body_graph, "nodes", [])}
-    assoc_map = cast(dict[str, dict[str, str]], rules.get("associative_ops", {}))
+    nodes = body_graph.nodes if hasattr(body_graph.nodes, "values") else {n.id: n for n in getattr(body_graph, "nodes", [])}
+    assoc_map = typing.cast(dict[str, dict[str, str]], rules.get("associative_ops", {}))
 
     # Check non-input/output operational nodes
     compute_nodes = [n for n in nodes.values() if getattr(n, "op_type", "") not in ("Input", "Output")]
@@ -70,7 +70,7 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
 
     for node_id, node in graph.nodes.items():
         if getattr(node, "op_type", "") == "Scan":
-            body = cast("Optional[LogicalGraph]", node.attributes.get("body"))
+            body = typing.cast("LogicalGraph | None", node.attributes.get("body"))
             reduction_info = detect_associative_reduction(body, rules)
 
             if reduction_info is not None:
@@ -117,7 +117,7 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
                 new_nodes[node_id] = IRNode(**identity.__dict__)
                 continue
 
-        new_nodes[node_id] = node if isinstance(node, IRNode) else IRNode(**node.__dict__)
+        new_nodes[node_id] = node if type(node) is IRNode else IRNode(**node.__dict__)
 
     if transformed:
         graph.nodes.clear()

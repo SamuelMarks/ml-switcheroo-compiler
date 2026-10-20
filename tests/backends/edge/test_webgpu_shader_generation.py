@@ -40,7 +40,7 @@ def test_webgpu_missing_coverage() -> None:
             g2.nodes["dummy"] = n_dummy2
             g2.inputs = ["dummy"]
             g2.outputs = ["ar"]
-            setattr(g2, "attributes", {"distributed": True})
+            object.__setattr__(g2, "attributes", {"distributed": True})
             gen2 = WebGPUCodeGenerator(g2)
             gen2.generate()
     assert gen is not None

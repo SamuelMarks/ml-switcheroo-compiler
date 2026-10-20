@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
     BufferAllocationPass,
@@ -48,7 +50,7 @@ def test_coloring_allocator_exhaustive() -> None:
     n2.attributes["dtype"] = "float32"
     n3 = IRNode(id="n3", op_type="Relu", inputs=["n2"], shape_metadata=(16, 16))
     n3.attributes["dtype"] = "float32"
-    g.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    g.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3})
     g.outputs = ["n3"]
 
     allocator = InterferenceGraphColoringAllocator(alignment=256)
@@ -82,7 +84,7 @@ def test_coloring_allocator_with_symbolic_sizes() -> None:
     g = IRGraph(name="test_symbolic")
     n1 = IRNode(id="n1", op_type="Input", inputs=["external_input_not_in_nodes"], shape_metadata=["B", 16])
     n2 = IRNode(id="n2", op_type="Add", inputs=["n1"], shape_metadata=["B", 16])
-    g.nodes = {"n1": n1, "n2": n2}
+    g.nodes = NodeDict({"n1": n1, "n2": n2})
     g.outputs = ["n2", "non_existent_output_id"]
 
     allocator = InterferenceGraphColoringAllocator(alignment=256)
@@ -96,7 +98,7 @@ def test_buffer_allocation_pass_colored_wrappers() -> None:
     g = IRGraph(name="test_wrappers")
     n1 = IRNode(id="n1", op_type="Input", shape_metadata=(8, 8))
     n1.attributes["dtype"] = "float32"
-    g.nodes = {"n1": n1}
+    g.nodes = NodeDict({"n1": n1})
     g.outputs = ["n1"]
 
     allocs = pass_obj.allocate_colored(g, alignment=256)
@@ -114,8 +116,8 @@ def test_buffer_allocation_run_branches() -> None:
     g = IRGraph(name="test_skip")
     n1 = IRNode(id="n1", op_type="Input", shape_metadata=(8, 8))
     n1.attributes["dtype"] = "float32"
-    g.nodes = {"n1": n1}
-    setattr(g, "attributes", {"skip_coloring": True})
+    g.nodes = NodeDict({"n1": n1})
+    object.__setattr__(g, "attributes", {"skip_coloring": True})
     res = pass_obj.run(g)
     assert res is True
     assert "buffer_color" not in n1.attributes
@@ -124,8 +126,8 @@ def test_buffer_allocation_run_branches() -> None:
     g2 = IRGraph(name="test_none_attrs")
     n2 = IRNode(id="n2", op_type="Input", shape_metadata=(8, 8))
     n2.attributes["dtype"] = "float32"
-    g2.nodes = {"n2": n2}
-    setattr(g2, "attributes", None)
+    g2.nodes = NodeDict({"n2": n2})
+    object.__setattr__(g2, "attributes", None)
     res2 = pass_obj.run(g2)
     assert res2 is True
     assert "buffer_color" in n2.attributes
@@ -134,7 +136,7 @@ def test_buffer_allocation_run_branches() -> None:
     g3 = IRGraph(name="test_coloring_exception")
     n3 = IRNode(id="n3", op_type="Input", shape_metadata=(8, 8))
     n3.attributes["dtype"] = "float32"
-    g3.nodes = {"n3": n3}
+    g3.nodes = NodeDict({"n3": n3})
     with patch.object(InterferenceGraph, "color_registers", side_effect=RuntimeError("Forced coloring error")):
         res3 = pass_obj.run(g3)
         assert res3 is True
@@ -146,7 +148,7 @@ def test_buffer_allocation_run_branches() -> None:
     n4.attributes["dtype"] = "float32"
     phantom = IRNode(id="phantom", op_type="Input", shape_metadata=(8, 8))
     phantom.attributes["dtype"] = "float32"
-    g4.nodes = {"n4": n4}  # phantom is not in g4.nodes
+    g4.nodes = NodeDict({"n4": n4})  # phantom is not in g4.nodes
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n4, phantom]):
         res4 = pass_obj.run(g4)
         assert res4 is True
@@ -159,7 +161,7 @@ def test_allocate_arena_symbolic_1d_shape() -> None:
     g = IRGraph(name="test_symbolic_1d")
     n1 = IRNode(id="n1", op_type="Input", shape_metadata=["B"])
     n1.attributes["dtype"] = "float32"
-    g.nodes = {"n1": n1}
+    g.nodes = NodeDict({"n1": n1})
     g.outputs = ["n1"]
 
     with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value="sym_size"):

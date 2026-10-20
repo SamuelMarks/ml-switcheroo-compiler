@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
+import typing
 from collections.abc import Sequence
-from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
@@ -39,7 +39,7 @@ def _split_along_axis(data: TensorLike, num_splits: int, axis: int = 0) -> list[
     Returns:
         list[TensorLike]: List of partitioned tensor slices.
     """
-    shape = cast(tuple[int, ...], getattr(data, "shape", ()))
+    shape = typing.cast(tuple[int, ...], getattr(data, "shape", ()))
     ndim = len(shape)
     norm_axis = axis if axis >= 0 else ndim + axis
     axis_len = shape[norm_axis]
@@ -87,7 +87,7 @@ def _all_reduce_eager(
         ir_op = "Add"
     for item in items[1:]:
         acc = _exec_collective_op(ir_op, acc, item)
-    return cast(TensorLike, acc)
+    return typing.cast(TensorLike, acc)
 
 
 def _all_gather_eager(
@@ -107,7 +107,7 @@ def _all_gather_eager(
     """
     if all_ranks_data is None:
         return data.copy() if hasattr(data, "copy") else data
-    return cast(TensorLike, _exec_collective_op("Concatenate", list(all_ranks_data), axis=axis))
+    return typing.cast(TensorLike, _exec_collective_op("Concatenate", list(all_ranks_data), axis=axis))
 
 
 def _reduce_scatter_eager(
@@ -161,7 +161,7 @@ def _all_to_all_eager(
         return data.copy() if hasattr(data, "copy") else data
     split_ranks: list[list[TensorLike]] = [_split_along_axis(rank_arr, world_size, axis=scatter_dim) for rank_arr in all_ranks_data]
     rank_slices: list[TensorLike] = [split_ranks[r][rank] for r in range(world_size)]
-    return cast(TensorLike, _exec_collective_op("Concatenate", rank_slices, axis=gather_dim))
+    return typing.cast(TensorLike, _exec_collective_op("Concatenate", rank_slices, axis=gather_dim))
 
 
 class HostCollectiveCommunicator:
@@ -323,7 +323,7 @@ def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
         }
         datatype = dt_map.get(str(getattr(tensor, "dtype", "float32")), NCCL_FLOAT32)
         op_map = {"SUM": NCCL_SUM, "ADD": NCCL_SUM, "PROD": NCCL_PROD, "MAX": NCCL_MAX, "MIN": NCCL_MIN}
-        return cast(TensorOrScalar, (drv, datatype, op_map.get(op_str.upper(), NCCL_SUM)))
+        return typing.cast(TensorOrScalar, (drv, datatype, op_map.get(op_str.upper(), NCCL_SUM)))
     except Exception:
         return None
 
@@ -362,7 +362,7 @@ def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
         }
         datatype = dt_map.get(str(getattr(tensor, "dtype", "float32")), RCCL_FLOAT32)
         op_map = {"SUM": RCCL_SUM, "ADD": RCCL_SUM, "PROD": RCCL_PROD, "MAX": RCCL_MAX, "MIN": RCCL_MIN}
-        return cast(TensorOrScalar, (drv, datatype, op_map.get(op_str.upper(), RCCL_SUM)))
+        return typing.cast(TensorOrScalar, (drv, datatype, op_map.get(op_str.upper(), RCCL_SUM)))
     except Exception:
         return None
 
@@ -430,8 +430,8 @@ def _invoke_driver_op(
     """
     send_ptr, recv_ptr = ptrs
     count, recv_count = counts
-    world_size = int(cast(int, kwargs.get("world_size", 1)))
-    root = int(cast(int, kwargs.get("root", 0)))
+    world_size = int(typing.cast(int, kwargs.get("world_size", 1)))
+    root = int(typing.cast(int, kwargs.get("root", 0)))
 
     if op_name == "AllReduce":
         getattr(driver, "all_reduce")(send_ptr, recv_ptr, count=count, datatype=datatype, op=op_code, comm=comm, stream=stream)
@@ -477,21 +477,21 @@ def _emulate_collective_ground_truth(
     if op_name == "AllReduce":
         res = comm_emulator.all_reduce(tensor, op=str(kwargs.get("op", "SUM")), all_ranks_data=ranks_seq)
     elif op_name == "AllGather":
-        res = comm_emulator.all_gather(tensor, axis=int(cast(int, kwargs.get("axis", 0))), all_ranks_data=ranks_seq)
+        res = comm_emulator.all_gather(tensor, axis=int(typing.cast(int, kwargs.get("axis", 0))), all_ranks_data=ranks_seq)
     elif op_name == "ReduceScatter":
         res = comm_emulator.reduce_scatter(
             tensor,
             op=str(kwargs.get("op", "SUM")),
-            scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0))),
+            scatter_dim=int(typing.cast(int, kwargs.get("scatter_dim", 0))),
             all_ranks_data=ranks_seq,
         )
     elif op_name == "Broadcast":
-        res = comm_emulator.broadcast(tensor, root=int(cast(int, kwargs.get("root", 0))), all_ranks_data=ranks_seq)
+        res = comm_emulator.broadcast(tensor, root=int(typing.cast(int, kwargs.get("root", 0))), all_ranks_data=ranks_seq)
     elif op_name == "AllToAll":
         res = comm_emulator.all_to_all(
             tensor,
-            scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0))),
-            gather_dim=int(cast(int, kwargs.get("gather_dim", 0))),
+            scatter_dim=int(typing.cast(int, kwargs.get("scatter_dim", 0))),
+            gather_dim=int(typing.cast(int, kwargs.get("gather_dim", 0))),
             all_ranks_data=ranks_seq,
         )
     return res
@@ -525,21 +525,21 @@ def _dispatch_accelerator_collective(
     if resolved is None:
         return None
 
-    driver, datatype, op_code = cast(tuple[TensorOrScalar, int, int], resolved)
+    driver, datatype, op_code = typing.cast(tuple[TensorOrScalar, int, int], resolved)
 
     try:
         all_ranks_data = kwargs.get("all_ranks_data")
         ranks_seq = all_ranks_data if isinstance(all_ranks_data, (list, tuple)) else None
-        world_size = len(ranks_seq) if ranks_seq is not None else int(cast(int, kwargs.get("world_size", 1)))
-        rank = int(cast(int, kwargs.get("rank", 0)))
+        world_size = len(ranks_seq) if ranks_seq is not None else int(typing.cast(int, kwargs.get("world_size", 1)))
+        rank = int(typing.cast(int, kwargs.get("rank", 0)))
         comm = kwargs.get("comm")
         comm_val = int(comm) if isinstance(comm, (int, float)) else None
         stream = kwargs.get("stream")
         stream_val = int(stream) if isinstance(stream, (int, float)) else None
 
-        axis = int(cast(int, kwargs.get("axis", 0)))
-        scatter_dim = int(cast(int, kwargs.get("scatter_dim", 0)))
-        gather_dim = int(cast(int, kwargs.get("gather_dim", 0)))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
+        scatter_dim = int(typing.cast(int, kwargs.get("scatter_dim", 0)))
+        gather_dim = int(typing.cast(int, kwargs.get("gather_dim", 0)))
         _ = _compute_collective_shape(op_name, tensor.shape, world_size, axis, scatter_dim, gather_dim)
         clean_kwargs = {k: v for k, v in kwargs.items() if k not in ("rank", "world_size")}
         ground_truth = _emulate_collective_ground_truth(op_name, tensor, ranks_seq, world_size, rank, **clean_kwargs)
@@ -550,7 +550,7 @@ def _dispatch_accelerator_collective(
 
         try:
             getattr(driver, "copy_host_to_device")(tensor, send_ptr)
-            root = int(cast(int, kwargs.get("root", 0)))
+            root = int(typing.cast(int, kwargs.get("root", 0)))
             _invoke_driver_op(
                 driver,
                 op_name,
@@ -601,13 +601,13 @@ def _dispatch_pytorch_collective(
         )
 
         if op_name == "AllReduce":
-            return cast(TensorLike, pytorch_all_reduce(tensor, op=str(kwargs.get("op", "SUM"))))
+            return typing.cast(TensorLike, pytorch_all_reduce(tensor, op=str(kwargs.get("op", "SUM"))))
         if op_name == "AllGather":
-            return cast(TensorLike, pytorch_all_gather(tensor, axis=int(cast(int, kwargs.get("axis", 0)))))
+            return typing.cast(TensorLike, pytorch_all_gather(tensor, axis=int(typing.cast(int, kwargs.get("axis", 0)))))
         if op_name == "ReduceScatter":
-            return cast(TensorLike, pytorch_reduce_scatter(tensor, op=str(kwargs.get("op", "SUM")), scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0)))))
+            return typing.cast(TensorLike, pytorch_reduce_scatter(tensor, op=str(kwargs.get("op", "SUM")), scatter_dim=int(typing.cast(int, kwargs.get("scatter_dim", 0)))))
         if op_name == "Broadcast":
-            return cast(TensorLike, pytorch_broadcast(tensor, src=int(cast(int, kwargs.get("root", 0)))))
+            return typing.cast(TensorLike, pytorch_broadcast(tensor, src=int(typing.cast(int, kwargs.get("root", 0)))))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
@@ -636,11 +636,11 @@ def _dispatch_jax_collective(
         )
 
         if op_name == "AllReduce":
-            return cast(TensorLike, jax_all_reduce(tensor, op=str(kwargs.get("op", "SUM")), axis_name=str(kwargs.get("mesh_axis", "data"))))
+            return typing.cast(TensorLike, jax_all_reduce(tensor, op=str(kwargs.get("op", "SUM")), axis_name=str(kwargs.get("mesh_axis", "data"))))
         if op_name == "AllGather":
-            return cast(TensorLike, jax_all_gather(tensor, axis_name=str(kwargs.get("mesh_axis", "data")), axis=int(cast(int, kwargs.get("axis", 0)))))
+            return typing.cast(TensorLike, jax_all_gather(tensor, axis_name=str(kwargs.get("mesh_axis", "data")), axis=int(typing.cast(int, kwargs.get("axis", 0)))))
         if op_name == "Broadcast":
-            return cast(TensorLike, jax_broadcast(tensor, src=int(cast(int, kwargs.get("root", 0)))))
+            return typing.cast(TensorLike, jax_broadcast(tensor, src=int(typing.cast(int, kwargs.get("root", 0)))))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
@@ -664,19 +664,19 @@ def _dispatch_numpy_collective(
     all_ranks_data = kwargs.get("all_ranks_data")
     ranks_seq = all_ranks_data if isinstance(all_ranks_data, (list, tuple)) else None
     world_size = len(ranks_seq) if ranks_seq is not None else 1
-    rank = int(cast(int, kwargs.get("rank", 0)))
+    rank = int(typing.cast(int, kwargs.get("rank", 0)))
     comm = HostCollectiveCommunicator(world_size=world_size, rank=rank)
 
     if op_name == "AllReduce":
         return comm.all_reduce(tensor, op=str(kwargs.get("op", "SUM")), all_ranks_data=ranks_seq)
     if op_name == "AllGather":
-        return comm.all_gather(tensor, axis=int(cast(int, kwargs.get("axis", 0))), all_ranks_data=ranks_seq)
+        return comm.all_gather(tensor, axis=int(typing.cast(int, kwargs.get("axis", 0))), all_ranks_data=ranks_seq)
     if op_name == "ReduceScatter":
-        return comm.reduce_scatter(tensor, op=str(kwargs.get("op", "SUM")), scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0))), all_ranks_data=ranks_seq)
+        return comm.reduce_scatter(tensor, op=str(kwargs.get("op", "SUM")), scatter_dim=int(typing.cast(int, kwargs.get("scatter_dim", 0))), all_ranks_data=ranks_seq)
     if op_name == "AllToAll":
-        return comm.all_to_all(tensor, scatter_dim=int(cast(int, kwargs.get("scatter_dim", 0))), gather_dim=int(cast(int, kwargs.get("gather_dim", 0))), all_ranks_data=ranks_seq)
+        return comm.all_to_all(tensor, scatter_dim=int(typing.cast(int, kwargs.get("scatter_dim", 0))), gather_dim=int(typing.cast(int, kwargs.get("gather_dim", 0))), all_ranks_data=ranks_seq)
     if op_name == "Broadcast":
-        return comm.broadcast(tensor, root=int(cast(int, kwargs.get("root", 0))), all_ranks_data=ranks_seq)
+        return comm.broadcast(tensor, root=int(typing.cast(int, kwargs.get("root", 0))), all_ranks_data=ranks_seq)
 
     return tensor.copy() if hasattr(tensor, "copy") else tensor
 
@@ -742,11 +742,11 @@ def all_reduce(
         return _dispatch_eager_collective("AllReduce", tensor, op=op, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = cast(TensorLike, tensor.data)
+        raw_arr = typing.cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("AllReduce", raw_arr, op=op, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=typing.cast("str | None", tensor.dtype), device=getattr(tensor, "device")))
 
-    return _emit_shape_node("AllReduce", [tensor], {"op": op, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, cast("Optional[str]", tensor.dtype))
+    return _emit_shape_node("AllReduce", [tensor], {"op": op, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, typing.cast("str | None", tensor.dtype))
 
 
 def psum(
@@ -784,13 +784,13 @@ def pmean(
     """
     summed = all_reduce(tensor, op="SUM", mesh_axis=mesh_axis, **kwargs)
     all_ranks_data = kwargs.get("all_ranks_data")
-    denom = float(len(all_ranks_data)) if isinstance(all_ranks_data, (list, tuple)) and all_ranks_data else float(cast(int, kwargs.get("world_size", 1) or 1))
+    denom = float(len(all_ranks_data)) if isinstance(all_ranks_data, (list, tuple)) and all_ranks_data else float(typing.cast(int, kwargs.get("world_size", 1) or 1))
     if not isinstance(summed, Tensor):
-        return cast(TensorLike, _exec_collective_op("Divide", summed, denom))
+        return typing.cast(TensorLike, _exec_collective_op("Divide", summed, denom))
     if config.eager_mode and getattr(summed, "data", None) is not None:
-        div_arr = cast(TensorLike, _exec_collective_op("Divide", summed.data, denom))
-        return Tensor(div_arr, TensorConfig(shape=div_arr.shape, dtype=cast("Optional[str]", summed.dtype), device=getattr(summed, "device")))
-    return _emit_shape_node("PMean", [tensor], {"mesh_axis": mesh_axis, **kwargs}, tensor.shape, cast("Optional[str]", tensor.dtype))
+        div_arr = typing.cast(TensorLike, _exec_collective_op("Divide", summed.data, denom))
+        return Tensor(div_arr, TensorConfig(shape=div_arr.shape, dtype=typing.cast("str | None", summed.dtype), device=getattr(summed, "device")))
+    return _emit_shape_node("PMean", [tensor], {"mesh_axis": mesh_axis, **kwargs}, tensor.shape, typing.cast("str | None", tensor.dtype))
 
 
 def all_gather(
@@ -816,14 +816,14 @@ def all_gather(
         return _dispatch_eager_collective("AllGather", tensor, axis=axis, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = cast(TensorLike, tensor.data)
+        raw_arr = typing.cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("AllGather", raw_arr, axis=axis, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=typing.cast("str | None", tensor.dtype), device=getattr(tensor, "device")))
 
     out_shape = list(tensor.shape)
     if 0 <= axis < len(out_shape):
         out_shape[axis] *= world_size
-    return _emit_shape_node("AllGather", [tensor], {"axis": axis, "mesh_axis": mesh_axis, **kwargs}, tuple(out_shape), cast("Optional[str]", tensor.dtype))
+    return _emit_shape_node("AllGather", [tensor], {"axis": axis, "mesh_axis": mesh_axis, **kwargs}, tuple(out_shape), typing.cast("str | None", tensor.dtype))
 
 
 def all_to_all(
@@ -849,11 +849,11 @@ def all_to_all(
         return _dispatch_eager_collective("AllToAll", tensor, scatter_dim=scatter_dim, gather_dim=gather_dim, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = cast(TensorLike, tensor.data)
+        raw_arr = typing.cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("AllToAll", raw_arr, scatter_dim=scatter_dim, gather_dim=gather_dim, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=typing.cast("str | None", tensor.dtype), device=getattr(tensor, "device")))
 
-    return _emit_shape_node("AllToAll", [tensor], {"scatter_dim": scatter_dim, "gather_dim": gather_dim, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, cast("Optional[str]", tensor.dtype))
+    return _emit_shape_node("AllToAll", [tensor], {"scatter_dim": scatter_dim, "gather_dim": gather_dim, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, typing.cast("str | None", tensor.dtype))
 
 
 def reduce_scatter(
@@ -881,14 +881,14 @@ def reduce_scatter(
         return _dispatch_eager_collective("ReduceScatter", tensor, op=op, scatter_dim=scatter_dim, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = cast(TensorLike, tensor.data)
+        raw_arr = typing.cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("ReduceScatter", raw_arr, op=op, scatter_dim=scatter_dim, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=typing.cast("str | None", tensor.dtype), device=getattr(tensor, "device")))
 
     out_shape = list(tensor.shape)
     if 0 <= scatter_dim < len(out_shape):
         out_shape[scatter_dim] = max(1, out_shape[scatter_dim] // world_size)
-    return _emit_shape_node("ReduceScatter", [tensor], {"op": op, "scatter_dim": scatter_dim, "mesh_axis": mesh_axis, **kwargs}, tuple(out_shape), cast("Optional[str]", tensor.dtype))
+    return _emit_shape_node("ReduceScatter", [tensor], {"op": op, "scatter_dim": scatter_dim, "mesh_axis": mesh_axis, **kwargs}, tuple(out_shape), typing.cast("str | None", tensor.dtype))
 
 
 def broadcast(
@@ -912,8 +912,8 @@ def broadcast(
         return _dispatch_eager_collective("Broadcast", tensor, root=root, mesh_axis=mesh_axis, **kwargs)
 
     if config.eager_mode:
-        raw_arr = cast(TensorLike, tensor.data)
+        raw_arr = typing.cast(TensorLike, tensor.data)
         res = _dispatch_eager_collective("Broadcast", raw_arr, root=root, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=cast("Optional[str]", tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=typing.cast("str | None", tensor.dtype), device=getattr(tensor, "device")))
 
-    return _emit_shape_node("Broadcast", [tensor], {"root": root, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, cast("Optional[str]", tensor.dtype))
+    return _emit_shape_node("Broadcast", [tensor], {"root": root, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, typing.cast("str | None", tensor.dtype))

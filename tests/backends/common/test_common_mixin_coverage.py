@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_common_ast_visitor_mixin() -> None:
     """Verify CommonASTVisitor delegation and fallback prefix."""
     visitor_self = CommonASTVisitor()
-    assert cast("EagerTensorProtocol", visitor_self.generator) is cast("EagerTensorProtocol", visitor_self)
+    assert typing.cast("EagerTensorProtocol", visitor_self.generator) is typing.cast("EagerTensorProtocol", visitor_self)
     assert visitor_self.get_fallback_prefix() == ""
 
     mock_gen = MagicMock()

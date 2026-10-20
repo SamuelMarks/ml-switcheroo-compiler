@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import ml_dtypes
@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.backends.edge import ONNXCodeGenerator, StableHLOCod
 from ml_switcheroo_compiler.core.errors import CompilationError, UnimplementedMathError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -44,23 +44,23 @@ def global_wasm_mock() -> Iterator[None]:
             Args:
                 template_name: Test parameter `template_name`.
             """
-            body = cast("EagerTensorProtocol", "// ") + cast("EagerTensorProtocol", template_name)
+            body = typing.cast("EagerTensorProtocol", "// ") + typing.cast("EagerTensorProtocol", template_name)
             if template_name == "mock_template_Add":
-                body = cast("EagerTensorProtocol", "wasm_f32x4_add(a, b); wasm_v128_load")
+                body = typing.cast("EagerTensorProtocol", "wasm_f32x4_add(a, b); wasm_v128_load")
             elif template_name == "mock_template_Constant":
-                body = cast("EagerTensorProtocol", "wasm_f32x4_splat(a);")
+                body = typing.cast("EagerTensorProtocol", "wasm_f32x4_splat(a);")
             elif template_name == "mock_template_Exp":
-                body = cast("EagerTensorProtocol", "std::exp(in0_val);")
+                body = typing.cast("EagerTensorProtocol", "std::exp(in0_val);")
             elif template_name == "mock_template_Tanh":
-                body = cast("EagerTensorProtocol", "std::tanh(in0_val);")
+                body = typing.cast("EagerTensorProtocol", "std::tanh(in0_val);")
             elif template_name == "mock_template_Conv2D":
-                body = cast("EagerTensorProtocol", "Dummy Pool/Conv")
+                body = typing.cast("EagerTensorProtocol", "Dummy Pool/Conv")
             elif template_name == "mock_template_MaxPool2D":
-                body = cast("EagerTensorProtocol", "Dummy Pool/Conv")
+                body = typing.cast("EagerTensorProtocol", "Dummy Pool/Conv")
             elif template_name == "mock_template_AvgPool2D":
-                body = cast("EagerTensorProtocol", "Dummy Pool/Conv")
+                body = typing.cast("EagerTensorProtocol", "Dummy Pool/Conv")
             elif template_name == "mock_template_UnknownOp":
-                body = cast("EagerTensorProtocol", "Unimplemented UnknownOp")
+                body = typing.cast("EagerTensorProtocol", "Unimplemented UnknownOp")
             return {"body": body}
 
         mock_get_wasm_template.side_effect = mock_template_resolver

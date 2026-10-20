@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
@@ -31,14 +31,14 @@ def test_exp_op() -> None:
     """Test function test_exp_op."""
     a = Tensor(np.array([0, 1, 2], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Exp", a)
-    cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "numpy")))(), cast("EagerCallableProtocol", np.array)([1, np.e, np.e**2], dtype=np.float32), decimal=6)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([1, np.e, np.e**2], dtype=np.float32), decimal=6)
 
 
 def test_log_op() -> None:
     """Test function test_log_op."""
     a = Tensor(np.array([1, np.e, np.e**2], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Log", a)
-    cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "numpy")))(), cast("EagerCallableProtocol", np.array)([0, 1, 2], dtype=np.float32), decimal=6)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([0, 1, 2], dtype=np.float32), decimal=6)
 
 
 def test_pow_op() -> None:
@@ -46,4 +46,4 @@ def test_pow_op() -> None:
     a = Tensor(np.array([1, 2, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     b = Tensor(np.array([2, 3, 2], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Power", a, b)
-    cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(res, "numpy")))(), cast("EagerCallableProtocol", np.array)([1, 8, 9], dtype=np.float32), decimal=6)
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_almost_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([1, 8, 9], dtype=np.float32), decimal=6)

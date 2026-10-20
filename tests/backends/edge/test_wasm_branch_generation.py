@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import typing
+
+from ml_switcheroo_ir import AttributeValue
+
 
 def test_wasm_cond_missing_inputs() -> None:
     """Test WASM branch generation when inputs are missing."""
@@ -13,11 +17,11 @@ def test_wasm_cond_missing_inputs() -> None:
     branch_graph.inputs = ["missing_input"]  # Missing from parent inputs
 
     node = IRNode("cond_1", "Cond", inputs=[], shape_metadata=[2, 2])
-    node.attributes = {"then_branch": branch_graph}
+    node.attributes = typing.cast("dict[str, AttributeValue]", {"then_branch": branch_graph})
 
     subnode = IRNode("add_1", "Add", inputs=["missing_input", "other_input"], shape_metadata=[2, 2])
     branch_graph.nodes["add_1"] = subnode
-    setattr(branch_graph, "sorted_nodes", [subnode])
+    object.__setattr__(branch_graph, "sorted_nodes", [subnode])
 
     generator = WasmCodeGenerator(graph, [])
 
@@ -34,7 +38,8 @@ def test_wasm_in0_shape() -> None:
 
     graph = IRGraph()
     in0 = IRNode("in0", "Placeholder", inputs=[], shape_metadata=[])
-    in1 = IRNode("in1", "Placeholder", inputs=[], shape_metadata=1)
+    in1 = IRNode("in1", "Placeholder", inputs=[])
+    object.__setattr__(in1, "shape_metadata", 1)
 
     node = IRNode("cust", "Custom", inputs=["in0"], shape_metadata=[1, 1])
     node2 = IRNode("cust2", "Custom", inputs=["in1"], shape_metadata=[1, 1])
@@ -43,7 +48,7 @@ def test_wasm_in0_shape() -> None:
     graph.nodes["in1"] = in1
     graph.nodes["cust"] = node
     graph.nodes["cust2"] = node2
-    setattr(graph, "sorted_nodes", [in0, in1, node, node2])
+    object.__setattr__(graph, "sorted_nodes", [in0, in1, node, node2])
     generator = WasmCodeGenerator(graph, [])
 
     with patch.dict("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"Custom": {"variants": {"edge_wasm_simd": {"template": "custom", "body": "a+b"}}}}):

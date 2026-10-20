@@ -1,6 +1,8 @@
 """Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.numpy.types`)."""
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 import numpy as np
 
@@ -30,7 +32,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
 
     Returns: np.ndarray: The array tensor.
     """
-    return cast(EagerValue, cast("EagerCallableProtocol", generic_array)(np, data, dtype))
+    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(np, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -55,4 +57,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return cast(float, np.asarray(data).item())
+    return typing.cast(float, np.asarray(data).item())

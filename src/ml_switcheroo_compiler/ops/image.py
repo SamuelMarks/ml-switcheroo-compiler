@@ -1,5 +1,7 @@
 """Image processing operations (alias for vision module)."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.vision import (
     adjust_brightness,  # noqa: F401
     adjust_contrast,

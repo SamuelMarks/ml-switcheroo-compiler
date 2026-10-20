@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
 
@@ -62,4 +62,4 @@ def resolve_output_dtype_and_device(
     else:
         out_dtype = DType.Float32
     device = first_tensor.device if first_tensor is not None else None
-    return cast("DType | str", out_dtype), device
+    return typing.cast("DType | str", out_dtype), device

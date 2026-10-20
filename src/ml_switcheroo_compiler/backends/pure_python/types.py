@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
-from typing import Callable, Union, cast
+import typing
+from collections.abc import Callable, Sequence
 
-Numeric = Union[int, float]
-NestedList = Union[Numeric, list["NestedList"]]
+Numeric = typing.Union[int, "float"]
+NestedList = typing.Union[Numeric, "list['NestedList']"]
 
 
 class PurePythonTensor:
@@ -127,7 +127,7 @@ class PurePythonTensor:
             """
             if isinstance(a, list) and isinstance(b, list):
                 return [_add(ai, bi) for ai, bi in zip(a, b)]
-            return float(cast(float, a)) + float(cast(float, b))
+            return float(typing.cast(float, a)) + float(typing.cast(float, b))
 
         return PurePythonTensor(_add(self.data, other.data), shape=self.shape, dtype=self.dtype)
 
@@ -155,7 +155,7 @@ class PurePythonTensor:
             """
             if isinstance(a, list) and isinstance(b, list):
                 return [_sub(ai, bi) for ai, bi in zip(a, b)]
-            return float(cast(float, a)) - float(cast(float, b))
+            return float(typing.cast(float, a)) - float(typing.cast(float, b))
 
         return PurePythonTensor(_sub(self.data, other.data), shape=self.shape, dtype=self.dtype)
 
@@ -183,7 +183,7 @@ class PurePythonTensor:
             """
             if isinstance(a, list) and isinstance(b, list):
                 return [_mul(ai, bi) for ai, bi in zip(a, b)]
-            return float(cast(float, a)) * float(cast(float, b))
+            return float(typing.cast(float, a)) * float(typing.cast(float, b))
 
         return PurePythonTensor(_mul(self.data, other.data), shape=self.shape, dtype=self.dtype)
 
@@ -212,7 +212,7 @@ class PurePythonTensor:
             """
             if isinstance(a, list) and isinstance(b, list):
                 return [_div(ai, bi) for ai, bi in zip(a, b)]
-            return float(cast(float, a)) / float(cast(float, b))
+            return float(typing.cast(float, a)) / float(typing.cast(float, b))
 
         return PurePythonTensor(_div(self.data, other.data), shape=self.shape, dtype=self.dtype)
 

@@ -5,7 +5,9 @@ This module provides operations for working with ragged tensors, which are
 tensors with non-uniform shapes across one or more dimensions.
 """
 
-from typing import cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
@@ -87,12 +89,12 @@ class RaggedTensorToDense(OpDef):
 
 
 def ragged_tensor_to_dense(
-    rt_input: "Tensor",
+    rt_input: Tensor,
     default_value: TensorOrScalar = None,
     row_partition_tensors: TensorOrScalar = None,
     row_partition_types: TensorOrScalar = None,
     shape: TensorOrScalar = None,
-) -> "Tensor":
+) -> Tensor:
     """Convert a ragged tensor representation into a regular dense tensor.
 
     Pads the variable-length dimensions of the input ragged tensor with the
@@ -282,7 +284,7 @@ class RaggedCrossHashed(OpDef):
 
         inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not inputs and "inputs" in kwargs:
-            inputs = cast(list[EagerTensorProtocol], kwargs["inputs"])
+            inputs = typing.cast(list[EagerTensorProtocol], kwargs["inputs"])
         if not inputs:
             return ()
         first = inputs[0]
@@ -396,12 +398,12 @@ class RaggedStack(OpDef):
         """
         rt_inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not rt_inputs and "values" in kwargs:
-            rt_inputs = cast(list[EagerTensorProtocol], kwargs["values"])
+            rt_inputs = typing.cast(list[EagerTensorProtocol], kwargs["values"])
         if not rt_inputs:
             return ()
         first = rt_inputs[0]
         f_shape = tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
-        axis = int(cast(int, kwargs.get("axis", 0)))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
         n = len(rt_inputs)
         s = list(f_shape)
         if axis < 0:
@@ -432,7 +434,7 @@ class RaggedStackDynamicPartitions(OpDef):
         """
         from ml_switcheroo_compiler.ir.shape_system import SymVar
 
-        num_partitions = int(cast(int, kwargs.get("num_partitions", 2)))
+        num_partitions = int(typing.cast(int, kwargs.get("num_partitions", 2)))
         data = args[0] if args else kwargs.get("data")
         trailing = ()
         if data is not None:

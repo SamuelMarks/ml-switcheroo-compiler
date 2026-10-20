@@ -1,7 +1,8 @@
 """Neural network operations and layers for the ML Switcheroo compiler."""
 
-# auto-generate-all
+from __future__ import annotations
 
+# auto-generate-all
 from ml_switcheroo_compiler.ops.reductions import adaptive_avg_pool2d, adaptive_max_pool2d  # noqa: F401
 
 from .attention import scaled_dot_product_attention as scaled_dot_product_attention

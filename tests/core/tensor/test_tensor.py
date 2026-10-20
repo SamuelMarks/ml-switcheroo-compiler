@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -36,8 +36,8 @@ def test_tensor_backward_and_view() -> None:
     config.eager_mode = True
     t = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, "cpu"))
     t.backward()
-    assert cast("EagerTensorProtocol", getattr(t.view(1), "shape")) == (1,)
-    assert cast("EagerTensorProtocol", getattr(cast("EagerCallableProtocol", t.view)([1]), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(t.view(1), "shape")) == (1,)
+    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", t.view)([1]), "shape")) == (1,)
 
 
 def test_tensor_more_methods() -> None:
@@ -89,7 +89,7 @@ def test_tensor_view() -> None:
         res = t.view(2, 2)
         assert res is t
 
-        res2 = cast("EagerCallableProtocol", t.view)([2, 2])
+        res2 = typing.cast("EagerCallableProtocol", t.view)([2, 2])
         assert id(res2) == id(t)
 
 
@@ -101,4 +101,4 @@ def test_valid_force_edge_cases() -> None:
 
     t2 = Tensor(np.zeros((0, 5)), TensorConfig((0, 5), DType.Float32, "cpu"))
     assert t2.shape == (0, 5)
-    assert cast("EagerTensorProtocol", getattr(t2.data, "size")) == 0
+    assert typing.cast("EagerTensorProtocol", getattr(t2.data, "size")) == 0

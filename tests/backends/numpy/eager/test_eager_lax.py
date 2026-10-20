@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -32,19 +32,19 @@ def test_numpy_lax_mocks() -> None:
             Returns:
                 EagerValue: The evaluated or processed output.
             """
-            return cast("EagerCallableProtocol", numpy_eager_registry.get)(op)(np, *args, **kwargs)
+            return typing.cast("EagerCallableProtocol", numpy_eager_registry.get)(op)(np, *args, **kwargs)
 
-        (a, b) = cast("EagerCallableProtocol", execute)("ApproxMaxK", cast("EagerCallableProtocol", np.array)([1, 2]))
-        assert cast("EagerCallableProtocol", np.array_equal)(a, cast("EagerCallableProtocol", np.array)([2]))
-        assert cast("EagerCallableProtocol", np.array_equal)(b, cast("EagerCallableProtocol", np.array)([1]))
-        (a, b) = cast("EagerCallableProtocol", execute)("ApproxMaxK", cast("EagerCallableProtocol", np.array)([]))
-        assert cast("EagerTensorProtocol", getattr(a, "size")) == 0
-        assert cast("EagerTensorProtocol", getattr(b, "size")) == 0
+        (a, b) = typing.cast("EagerCallableProtocol", execute)("ApproxMaxK", typing.cast("EagerCallableProtocol", np.array)([1, 2]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(a, typing.cast("EagerCallableProtocol", np.array)([2]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(b, typing.cast("EagerCallableProtocol", np.array)([1]))
+        (a, b) = typing.cast("EagerCallableProtocol", execute)("ApproxMaxK", typing.cast("EagerCallableProtocol", np.array)([]))
+        assert typing.cast("EagerTensorProtocol", getattr(a, "size")) == 0
+        assert typing.cast("EagerTensorProtocol", getattr(b, "size")) == 0
         c = execute("ForiLoop", None, None, np.array([3]))
-        assert cast("EagerCallableProtocol", np.array_equal)(c, cast("EagerCallableProtocol", np.array)([3]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(c, typing.cast("EagerCallableProtocol", np.array)([3]))
         c = execute("ForiLoop", None)
-        assert cast("EagerCallableProtocol", np.array_equal)(c, cast("EagerCallableProtocol", np.array)(0))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(c, typing.cast("EagerCallableProtocol", np.array)(0))
         d = execute("IgammaGradA", np.array([4]))
-        assert cast("EagerCallableProtocol", np.array_equal)(d, cast("EagerCallableProtocol", np.array)([4]))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(d, typing.cast("EagerCallableProtocol", np.array)([4]))
         d = execute("IgammaGradA")
-        assert cast("EagerCallableProtocol", np.array_equal)(d, cast("EagerCallableProtocol", np.array)(0))
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(d, typing.cast("EagerCallableProtocol", np.array)(0))

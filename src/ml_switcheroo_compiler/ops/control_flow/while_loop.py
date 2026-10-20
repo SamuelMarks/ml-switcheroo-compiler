@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Callable
-from typing import TypeVar
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
 
-State = TypeVar("State")
+State = typing.TypeVar("State")
 
 
 def while_loop(

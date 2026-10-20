@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.mlx.eager import _mlx_partition, _mlx_zeros
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -57,7 +58,7 @@ def test_mlx_eager_dtype_resolution_not_str(monkeypatch: EagerTensorProtocol) ->
             return "int32"
 
     dtype_obj = NonStrDtype()
-    assert _mlx_zeros(mock_backend_module, [1], dtype=dtype_obj) == "mock_zeros"
+    assert _mlx_zeros(mock_backend_module, [1], dtype=typing.cast("EagerValue", dtype_obj)) == "mock_zeros"
 
 
 def test_mlx_eager_dtype_resolution_mapping_hit(monkeypatch: EagerTensorProtocol) -> None:
@@ -98,7 +99,7 @@ def test_mlx_eager_dtype_resolution_not_str_coverage(monkeypatch: EagerTensorPro
             return "float64"
 
     dtype_obj = NonStrDtype()
-    assert _mlx_zeros(mock_backend_module, [1], dtype=dtype_obj) == "mock_zeros"
+    assert _mlx_zeros(mock_backend_module, [1], dtype=typing.cast("EagerValue", dtype_obj)) == "mock_zeros"
 
 
 def test_mlx_eager_dtype_resolution_not_str_coverage2(monkeypatch: EagerTensorProtocol) -> None:
@@ -142,9 +143,9 @@ def _test_mlx_eager_missing_coverage_part_1(_state: dict[str, EagerTensorProtoco
     from ml_switcheroo_compiler.backends.mlx.eager import execute_op
 
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        cast("EagerCallableProtocol", execute_op)(None, "FakeOp", dim=1)
+        typing.cast("EagerCallableProtocol", execute_op)(None, "FakeOp", dim=1)
     global_eager_registry.register("TestGlobalMlx")(lambda *args, **kwargs: "global_hit")
-    assert cast("EagerCallableProtocol", execute_op)(None, "TestGlobalMlx") == "global_hit"
+    assert typing.cast("EagerCallableProtocol", execute_op)(None, "TestGlobalMlx") == "global_hit"
 
     class MockMXMap:
         """Test class MockMXMap."""
@@ -163,7 +164,7 @@ def _test_mlx_eager_missing_coverage_part_1(_state: dict[str, EagerTensorProtoco
 
     import ml_switcheroo_compiler.backends.mlx.eager as mx_eager
 
-    orig_mx = cast("EagerTensorProtocol", getattr(mx_eager, "mx"))
+    orig_mx = typing.cast("EagerTensorProtocol", getattr(mx_eager, "mx"))
     setattr(mx_eager, "mx", MockMXMap())
     getattr(_state, "update")({"MockMXMap": MockMXMap, "execute_op": execute_op, "global_eager_registry": global_eager_registry, "mx_eager": mx_eager})
     getattr(_state, "update")({"orig_mx": orig_mx})
@@ -261,10 +262,10 @@ def _test_mlx_eager_missing_coverage_part_3(_state: dict[str, EagerTensorProtoco
                     """
                     pass
 
-            return cast("EagerTensorProtocol", DummyRes())
+            return typing.cast("EagerTensorProtocol", DummyRes())
 
-    assert cast("EagerCallableProtocol", func)(cast("EagerCallableProtocol", MockMXScatter)(), cast("EagerCallableProtocol", DummyIndices)(), cast("EagerCallableProtocol", DummyUpdates)(), cast("EagerCallableProtocol", DummyShape)()) is not None
-    assert cast("EagerCallableProtocol", func)(cast("EagerCallableProtocol", MockMXScatter)(), cast("EagerCallableProtocol", DummyIndices)(), cast("EagerCallableProtocol", DummyUpdates)(), shape=cast("EagerCallableProtocol", DummyShape)()) is not None
+    assert typing.cast("EagerCallableProtocol", func)(typing.cast("EagerCallableProtocol", MockMXScatter)(), typing.cast("EagerCallableProtocol", DummyIndices)(), typing.cast("EagerCallableProtocol", DummyUpdates)(), typing.cast("EagerCallableProtocol", DummyShape)()) is not None
+    assert typing.cast("EagerCallableProtocol", func)(typing.cast("EagerCallableProtocol", MockMXScatter)(), typing.cast("EagerCallableProtocol", DummyIndices)(), typing.cast("EagerCallableProtocol", DummyUpdates)(), shape=typing.cast("EagerCallableProtocol", DummyShape)()) is not None
     func = mx_eager.mlx_eager_registry.get("Reshape")
     getattr(_state, "update")({"DummyIndices": DummyIndices, "DummyUpdates": DummyUpdates, "MockMXScatter": MockMXScatter, "func": func})
     _state.update(locals())
@@ -297,8 +298,8 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
             """
             return shape
 
-    assert cast("EagerCallableProtocol", func)(cast("EagerCallableProtocol", MockMXReshape)(), "x", cast("EagerCallableProtocol", DummyShapeList)()) == [1, 2]
-    assert cast("EagerCallableProtocol", func)(cast("EagerCallableProtocol", MockMXReshape)(), input="x", shape=cast("EagerCallableProtocol", DummyShapeList)()) == [1, 2]
+    assert typing.cast("EagerCallableProtocol", func)(typing.cast("EagerCallableProtocol", MockMXReshape)(), "x", typing.cast("EagerCallableProtocol", DummyShapeList)()) == [1, 2]
+    assert typing.cast("EagerCallableProtocol", func)(typing.cast("EagerCallableProtocol", MockMXReshape)(), input="x", shape=typing.cast("EagerCallableProtocol", DummyShapeList)()) == [1, 2]
 
     class DummyMXWithFloat32:
         """Test class DummyMXWithFloat32."""
@@ -314,7 +315,7 @@ def _test_mlx_eager_missing_coverage_part_4(_state: dict[str, EagerTensorProtoco
             """
             return dtype
 
-    assert cast("EagerCallableProtocol", mx_eager._mlx_zeros)(cast("EagerCallableProtocol", DummyMXWithFloat32)(), [1], dtype="bfloat16") == "mock_float32"
+    assert typing.cast("EagerCallableProtocol", mx_eager._mlx_zeros)(typing.cast("EagerCallableProtocol", DummyMXWithFloat32)(), [1], dtype="bfloat16") == "mock_float32"
     func = mx_eager.mlx_eager_registry.get("NanToNum")
     getattr(_state, "update")({"DummyMXWithFloat32": DummyMXWithFloat32, "DummyShapeList": DummyShapeList, "MockMXReshape": MockMXReshape, "func": func})
     _state.update(locals())
@@ -340,7 +341,7 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
             """
             return kwargs
 
-    res = cast("EagerCallableProtocol", func)(cast("EagerCallableProtocol", MockMXNan)(), "x", nan=None, posinf=None)
+    res = typing.cast("EagerCallableProtocol", func)(typing.cast("EagerCallableProtocol", MockMXNan)(), "x", nan=None, posinf=None)
     assert "nan" not in res or res["nan"] is None
 
     class DummyItemData:
@@ -355,9 +356,9 @@ def _test_mlx_eager_missing_coverage_part_5(_state: dict[str, EagerTensorProtoco
 
         data = DummyData()
 
-    res = cast("EagerCallableProtocol", func)(cast("EagerCallableProtocol", MockMXNan)(), "x", posinf=cast("EagerCallableProtocol", DummyItemData)())
+    res = typing.cast("EagerCallableProtocol", func)(typing.cast("EagerCallableProtocol", MockMXNan)(), "x", posinf=typing.cast("EagerCallableProtocol", DummyItemData)())
     assert res["posinf"] == 1.0
-    res = cast("EagerCallableProtocol", func)(cast("EagerCallableProtocol", MockMXNan)(), "x", invalid_key=1.0)
+    res = typing.cast("EagerCallableProtocol", func)(typing.cast("EagerCallableProtocol", MockMXNan)(), "x", invalid_key=1.0)
     assert "invalid_key" not in res
     getattr(_state, "update")({"DummyItemData": DummyItemData, "MockMXNan": MockMXNan, "res": res})
 

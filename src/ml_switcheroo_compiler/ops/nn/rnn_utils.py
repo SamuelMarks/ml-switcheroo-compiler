@@ -1,11 +1,15 @@
 """RNN operations."""
 
-from dataclasses import dataclass
-from typing import Callable, Optional, cast  # noqa: F401
+from __future__ import annotations
+
+import typing
+from collections.abc import Callable, Sequence  # noqa: F401
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import config as global_config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
@@ -19,8 +23,17 @@ from ml_switcheroo_compiler.ops.shape import (
 from ml_switcheroo_compiler.ops.shape import flip as cf_reverse
 
 
-@dataclass
-class RNNConfig:
+class _PositionalRNNModel(pydantic.BaseModel):
+    """Base RNN configuration model supporting positional and keyword initialization."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    def __init__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
+        """Initialize model from positional or keyword arguments."""
+        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+
+
+class RNNConfig(_PositionalRNNModel):
     """Configuration for RNN ops."""
 
     time_major: bool = False
@@ -29,8 +42,7 @@ class RNNConfig:
     return_all_outputs: bool = True
 
 
-@dataclass
-class BidirectionalInputs:
+class BidirectionalInputs(_PositionalRNNModel):
     """Inputs for bidirectional RNN."""
 
     forward_inputs: Tensor
@@ -39,52 +51,48 @@ class BidirectionalInputs:
     backward_initial_state: tuple[Tensor, ...]
 
 
-@dataclass
-class BidirectionalConfig:
+class BidirectionalConfig(_PositionalRNNModel):
     """Configuration for bidirectional RNN."""
 
-    merge_mode: str = "concat"
+    merge_mode: str | None = "concat"
     time_major: bool = False
     unroll: bool = False
 
 
-@dataclass
-class RNNWeights:
+class RNNWeights(_PositionalRNNModel):
     """Weights for RNN cell."""
 
     kernel: Tensor
     recurrent_kernel: Tensor
-    bias: Optional[Tensor] = None
+    bias: Tensor | None = None
 
 
-@dataclass
-class ConvLSTMConfig:
+class ConvLSTMConfig(_PositionalRNNModel):
     """Configuration for ConvLSTM cell."""
 
-    strides: int = 1
+    strides: int | Sequence[int] = 1
     padding: str = "SAME"
     data_format: str = "channels_last"
 
 
-@dataclass
-class ScanConfig:
+class ScanConfig(_PositionalRNNModel):
     """Configuration for scan."""
 
-    length: Optional[int] = None
+    length: int | None = None
     reverse: bool = False
     unroll: bool = False
 
 
 def scan(
-    f: Callable[..., TensorOrScalar],
+    f: TensorOrScalar,
     init: tuple[Tensor, ...],
     xs: Tensor,
-    config: Optional[ScanConfig] = None,
+    config: ScanConfig | None = None,
 ) -> tuple[tuple[Tensor, ...], Tensor]:
     """Scan loop construct.
 
     Args:
-        f (Callable[..., TensorOrScalar]): The f parameter.
+        f (TensorOrScalar): The f parameter.
         init (tuple): The init parameter.
         xs (Tensor): The xs parameter.
         config (Optional): The config parameter.
@@ -93,26 +101,27 @@ def scan(
         tuple: Result.
     """
     conf = config if config is not None else ScanConfig()
+    fn_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], f)
 
     if global_config.eager_mode or conf.unroll:
         xs_unstacked = unstack(xs, axis=0)
 
         if conf.reverse:
-            xs_unstacked = list(cast("EagerCallableProtocol", reversed)(xs_unstacked))
+            xs_unstacked = list(typing.cast("EagerCallableProtocol", reversed)(xs_unstacked))
 
         carry = init
         ys = []
 
         for x in getattr(xs_unstacked, "__iter__")():
-            carry, y = getattr(f(carry, x), "__iter__")()
+            carry, y = getattr(fn_callable(carry, x), "__iter__")()
             ys.append(y)
 
-        return cast(tuple[tuple[Tensor, ...], Tensor], (carry, stack(ys, axis=0)))
+        return typing.cast(tuple[tuple[Tensor, ...], Tensor], (carry, stack(ys, axis=0)))
     else:
         if conf.reverse:
             xs = cf_reverse(xs, (0,))
 
-        carry, y = cast("Callable[..., tuple[tuple[Tensor, ...], Tensor]]", cf_scan)(f, init, xs, conf.length)
+        carry, y = typing.cast("TypedVariadicCallable[tuple[tuple[Tensor, ...], Tensor]]", cf_scan)(fn_callable, init, xs, conf.length)
 
         return carry, y
 
@@ -120,7 +129,7 @@ def scan(
 def bidirectional(
     inputs: BidirectionalInputs,
     cell_fn: TensorOrScalar,
-    config: Optional[BidirectionalConfig] = None,
+    config: BidirectionalConfig | None = None,
 ) -> tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]]:
     """Bidirectional RNN wrapper.
 
@@ -135,14 +144,14 @@ def bidirectional(
             Merged output sequence, forward final states, backward final states.
     """
     conf = config if config is not None else BidirectionalConfig()
-    forward_out, forward_state = cast("Callable[..., tuple[Tensor, tuple[Tensor, ...]]]", rnn)(
+    forward_out, forward_state = typing.cast("TypedVariadicCallable[tuple[Tensor, tuple[Tensor, ...]]]", rnn)(
         inputs.forward_inputs,
         inputs.forward_initial_state,
         cell_fn,
         config=RNNConfig(time_major=conf.time_major, unroll=conf.unroll, go_backwards=False),
     )
 
-    backward_out, backward_state = cast("Callable[..., tuple[Tensor, tuple[Tensor, ...]]]", rnn)(
+    backward_out, backward_state = typing.cast("TypedVariadicCallable[tuple[Tensor, tuple[Tensor, ...]]]", rnn)(
         inputs.backward_inputs,
         inputs.backward_initial_state,
         cell_fn,
@@ -162,7 +171,7 @@ def bidirectional(
         # None
         merged_out = (forward_out, backward_out)
 
-    return cast(tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]], (merged_out, forward_state, backward_state))
+    return typing.cast(tuple[Tensor, tuple[Tensor, ...], tuple[Tensor, ...]], (merged_out, forward_state, backward_state))
 
 
 def _permute_time_major(inputs: Tensor) -> TensorOrScalar:
@@ -182,23 +191,24 @@ def _permute_time_major(inputs: Tensor) -> TensorOrScalar:
 def rnn(
     inputs: Tensor,
     initial_state: tuple[Tensor, ...],
-    cell_fn: Callable[..., TensorOrScalar],
-    config: Optional[RNNConfig] = None,
+    cell_fn: TensorOrScalar,
+    config: RNNConfig | None = None,
 ) -> tuple[Tensor, tuple[Tensor, ...]]:
     """Define base recurrent loop evaluation.
 
     Args:
         inputs (Tensor): The inputs parameter.
         initial_state (tuple): The initial_state parameter.
-        cell_fn (Callable[..., TensorOrScalar]): The cell_fn parameter.
+        cell_fn (TensorOrScalar): The cell_fn parameter.
         config (Optional): The config parameter.
 
     Returns:
         tuple: Result.
     """
     conf = config if config is not None else RNNConfig()
+    cell_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], cell_fn)
     if not conf.time_major:
-        inputs = cast(Tensor, _permute_time_major(inputs))
+        inputs = typing.cast(Tensor, _permute_time_major(inputs))
 
     def scan_fn(carry: Tensor, x: Tensor) -> TensorOrScalar:
         """Compute the scan fn tensor operation.
@@ -210,7 +220,7 @@ def rnn(
         Returns:
             tuple: Result.
         """
-        out, new_carry = getattr(cell_fn(x, carry), "__iter__")()
+        out, new_carry = getattr(cell_callable(x, carry), "__iter__")()
         return new_carry, out
 
     final_state, outputs = scan(
@@ -223,7 +233,7 @@ def rnn(
         outputs = outputs[-1] if conf.time_major else outputs[:, -1]
 
     if not conf.time_major:
-        outputs = cast(Tensor, _permute_time_major(outputs))
+        outputs = typing.cast(Tensor, _permute_time_major(outputs))
 
     return outputs, final_state
 
@@ -253,21 +263,22 @@ class RNNCellDeviceWrapper:
         Returns:
         tuple: Result.
         """
-        return cast(TensorOrScalar, cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs))
+        return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs))
 
 
-@dataclass
-class DropoutWrapperConfig:
+class DropoutWrapperConfig(pydantic.BaseModel):
     """Configuration for RNNCellDropoutWrapper."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     input_keep_prob: float = 1.0
     output_keep_prob: float = 1.0
     state_keep_prob: float = 1.0
     variational_recurrent: bool = False
-    input_size: Optional[int] = None
-    dtype = None
-    seed: Optional[int] = None
-    dropout_state_filter_visitor = None
+    input_size: int | None = None
+    dtype: TensorOrScalar = None
+    seed: int | None = None
+    dropout_state_filter_visitor: TensorOrScalar = None
 
 
 class RNNCellDropoutWrapper:
@@ -276,7 +287,7 @@ class RNNCellDropoutWrapper:
     def __init__(
         self,
         cell: TensorOrScalar,
-        config: Optional[DropoutWrapperConfig] = None,
+        config: DropoutWrapperConfig | None = None,
         **kwargs: TensorOrScalar,
     ) -> None:
         """Initialize the RNNCellDropoutWrapper.
@@ -301,8 +312,8 @@ class RNNCellDropoutWrapper:
             tuple[Tensor, tuple[Tensor, ...]]: Output tensor and new state.
         """
         if self._config.input_keep_prob < 1.0:
-            inputs = cast(Tensor, dropout(inputs, rate=1.0 - self._config.input_keep_prob))
-        out, new_state = getattr(cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs), "__iter__")()
+            inputs = typing.cast(Tensor, dropout(inputs, rate=1.0 - self._config.input_keep_prob))
+        out, new_state = getattr(typing.cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._config.output_keep_prob < 1.0:
             out = dropout(out, rate=1.0 - self._config.output_keep_prob)
         return out, new_state
@@ -333,9 +344,9 @@ class RNNCellResidualWrapper:
         Returns:
             tuple: Result.
         """
-        out, new_state = getattr(cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs), "__iter__")()
+        out, new_state = getattr(typing.cast("EagerCallableProtocol", self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._residual_fn is not None:
-            out = cast("EagerCallableProtocol", self._residual_fn)(inputs, out)
+            out = typing.cast("EagerCallableProtocol", self._residual_fn)(inputs, out)
         else:
             out = add(inputs, out)
         return out, new_state

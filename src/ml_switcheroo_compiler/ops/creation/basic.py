@@ -150,7 +150,7 @@ class ManualSeed(OpDef):
 
     op_name = "ManualSeed"
 
-    def infer_shape(self, seed: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, seed: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer scalar `()` shape for `ManualSeed`.
 
         Args:
@@ -168,7 +168,7 @@ class ManualSeed(OpDef):
 class ConstantOfShape(OpDef):
     """Generate a tensor of a given shape filled with a constant value."""
 
-    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *shapes: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer output shape from the first shape argument.
 
         Args:
@@ -186,7 +186,7 @@ class ConstantOfShape(OpDef):
 class Range(OpDef):
     """Generate a 1D range sequence tensor."""
 
-    def infer_shape(self, *shapes: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, *shapes: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer output shape for `Range`.
 
         Args:
@@ -204,7 +204,7 @@ class Range(OpDef):
 class Blackman(OpDef):
     """Return the Blackman window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer 1D `(M,)` output shape for `Blackman`.
 
         Args:
@@ -222,7 +222,7 @@ class Blackman(OpDef):
 class Bartlett(OpDef):
     """Return the Bartlett triangular window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer 1D `(M,)` output shape for `Bartlett`.
 
         Args:
@@ -240,7 +240,7 @@ class Bartlett(OpDef):
 class Hamming(OpDef):
     """Return the Hamming window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer 1D `(M,)` output shape for `Hamming`.
 
         Args:
@@ -258,7 +258,7 @@ class Hamming(OpDef):
 class Hanning(OpDef):
     """Return the Hanning (Hann) window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer 1D `(M,)` output shape for `Hanning`.
 
         Args:
@@ -276,7 +276,7 @@ class Hanning(OpDef):
 class Kaiser(OpDef):
     """Return the Kaiser window of length `M`."""
 
-    def infer_shape(self, M: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, M: EagerTensorProtocol | int, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer 1D `(M,)` output shape for `Kaiser`.
 
         Args:

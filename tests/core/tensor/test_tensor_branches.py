@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import typing
+
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -18,5 +21,5 @@ def test_tensor_symnode_and_shape_tuple_branches() -> None:
 
     t = Tensor(data=np.zeros((1, 10)), config=cfg_tuple)
     first_dim = t.shape[0]
-    assert isinstance(first_dim, SymNode)
+    assert isinstance(typing.cast("EagerValue", first_dim), SymNode)
     assert t.shape[1] == 10

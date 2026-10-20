@@ -1,5 +1,7 @@
 """Config models for serialization formats."""
 
+from __future__ import annotations
+
 from pydantic import BaseModel
 
 

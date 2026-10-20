@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock
 
 import libcst as cst
 import pytest
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.ast_to_ir import parse_ast_to_ir
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.ir_to_ast import (
     _build_attribute_chain,
     _emit_call_args,
@@ -31,7 +33,7 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -51,12 +53,12 @@ def _test_mapping_loader_resolution_and_dispatch_part_1(_state: dict[str, EagerT
             raise RuntimeError("Attr access failure")
 
     mod = BadModule()
-    fn = _resolve_custom_code("lambda x: x + 1", mod)
+    fn = _resolve_custom_code("lambda x: x + 1", typing.cast("EagerValue", mod))
     assert callable(fn)
     assert fn(2) == 3
 
     # Invalid custom code syntax
-    assert _resolve_custom_code("lambda (: 123", mod) is None
+    assert _resolve_custom_code("lambda (: 123", typing.cast("EagerValue", mod)) is None
 
     # 2. _resolve_by_import failure
     assert _resolve_by_import("non_existent_module_xyz.some_attr") is None
@@ -76,10 +78,10 @@ def _test_mapping_loader_resolution_and_dispatch_part_1(_state: dict[str, EagerT
             Args:
                 x: Test parameter `x`.
             """
-            return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
+            return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2)
 
     dmod = DirectModule()
-    resolved = resolve_target_api("direct_func", backend_module=dmod)
+    resolved = resolve_target_api("direct_func", backend_module=typing.cast("EagerValue", dmod))
     assert callable(resolved)
     assert resolved(5) == 10
     getattr(_state, "update")({"BadModule": BadModule, "DirectModule": DirectModule, "dmod": dmod, "fn": fn})
@@ -100,7 +102,7 @@ def _test_mapping_loader_resolution_and_dispatch_part_2(_state: dict[str, EagerT
     assert res_dotted() == 99
 
     # Unresolvable API
-    assert resolve_target_api("unresolvable_attr", backend_module=object()) is None
+    assert resolve_target_api("unresolvable_attr", backend_module=typing.cast("EagerValue", object())) is None
 
     # 4. _read_and_merge with various YAML shapes
     with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as f:
@@ -125,16 +127,16 @@ def _test_mapping_loader_resolution_and_dispatch_part_3(_state: dict[str, EagerT
     """
     f1, f2, f3 = _state["f1"], _state["f2"], _state["f3"]
     try:
-        t1 = cast("dict[str, EagerTensorProtocol]", {})
-        cast("EagerCallableProtocol", _read_and_merge)(f1, t1)
+        t1 = typing.cast("dict[str, EagerTensorProtocol]", {})
+        typing.cast("EagerCallableProtocol", _read_and_merge)(f1, t1)
         assert "not_dict" in t1
 
-        t2 = cast("dict[str, EagerTensorProtocol]", {})
-        cast("EagerCallableProtocol", _read_and_merge)(f2, t2)
+        t2 = typing.cast("dict[str, EagerTensorProtocol]", {})
+        typing.cast("EagerCallableProtocol", _read_and_merge)(f2, t2)
         assert "OpA" in t2
 
-        t3 = cast("dict[str, EagerTensorProtocol]", {})
-        cast("EagerCallableProtocol", _read_and_merge)(f3, t3)
+        t3 = typing.cast("dict[str, EagerTensorProtocol]", {})
+        typing.cast("EagerCallableProtocol", _read_and_merge)(f3, t3)
         assert t3 == {}
     finally:
         os.unlink(f1)
@@ -145,8 +147,8 @@ def _test_mapping_loader_resolution_and_dispatch_part_3(_state: dict[str, EagerT
             f.write("ignored")
         with open(os.path.join(tmpdir, "valid.yaml"), "w") as f:
             f.write("OpB: {target_api: b.c}\n")
-        target_dict = cast("dict[str, EagerTensorProtocol]", {})
-        cast("EagerCallableProtocol", _load_yaml_dir)(tmpdir, target_dict)
+        target_dict = typing.cast("dict[str, EagerTensorProtocol]", {})
+        typing.cast("EagerCallableProtocol", _load_yaml_dir)(tmpdir, target_dict)
         assert "OpB" in target_dict
 
     _load_yaml_dir("/path/does/not/exist", {})
@@ -206,9 +208,9 @@ def _test_mapping_loader_resolution_and_dispatch_part_4(_state: dict[str, EagerT
     res_m = dispatch_eager_op(
         "test_backend",
         "MethodOp",
-        [obj, "arg1"],
+        [typing.cast("EagerValue", obj), "arg1"],
         {"b": 2},
-        backend_module=obj,
+        backend_module=typing.cast("EagerValue", obj),
     )
     assert res_m == "method_result_arg1_2"
     getattr(_state, "update")({"TargetObj": TargetObj, "_MAPPING_CACHE": _MAPPING_CACHE, "mock_mod": mock_mod, "obj": obj})
@@ -233,7 +235,7 @@ def _test_mapping_loader_resolution_and_dispatch_part_5(_state: dict[str, EagerT
         pass
 
     setattr(mock_mod, "run_method", lambda *a, **k: "fallback_func_result")
-    res_nometh = dispatch_eager_op("test_backend", "MethodOp", [DummyNoMethod()], {}, backend_module=mock_mod)
+    res_nometh = dispatch_eager_op("test_backend", "MethodOp", [typing.cast("EagerValue", DummyNoMethod())], {}, backend_module=mock_mod)
     assert res_nometh == "fallback_func_result"
     getattr(_state, "update")({"DummyNoMethod": DummyNoMethod, "res_nometh": res_nometh})
 
@@ -253,8 +255,8 @@ def test_ir_to_ast_generation() -> None:
     """Verify code emission patterns and class generation in ir_to_ast."""
     # 1. _build_attribute_chain
     assert isinstance(_build_attribute_chain([]), cst.Name)
-    assert cast("EagerTensorProtocol", getattr(_build_attribute_chain([]), "value")) == "empty"
-    assert cast("EagerTensorProtocol", getattr(_build_attribute_chain(["single"]), "value")) == "single"
+    assert typing.cast("EagerTensorProtocol", getattr(_build_attribute_chain([]), "value")) == "empty"
+    assert typing.cast("EagerTensorProtocol", getattr(_build_attribute_chain(["single"]), "value")) == "single"
     chain = _build_attribute_chain(["a", "b", "c"])
     assert isinstance(chain, cst.Attribute)
 
@@ -263,14 +265,17 @@ def test_ir_to_ast_generation() -> None:
         id="test_node",
         op_type="Add",
         inputs=["x", "y"],
-        attributes={
-            "dim": 1,
-            "epsilon": 1e-5,
-            "mode": "constant",
-            "flag": True,
-            "custom_obj": object(),  # triggers line 65 (else: cst.Name(str(v)))
-            "is_parameter": True,  # should be skipped
-        },
+        attributes=typing.cast(
+            "dict[str, AttributeValue]",
+            {
+                "dim": 1,
+                "epsilon": 1e-5,
+                "mode": "constant",
+                "flag": True,
+                "custom_obj": object(),  # triggers line 65 (else: cst.Name(str(v)))
+                "is_parameter": True,  # should be skipped
+            },
+        ),
     )
     # Target framework not in frameworks config (covers branch 49->52)
     args_unknown = _emit_call_args(node, "unregistered_framework_xyz")
@@ -292,11 +297,11 @@ def test_ir_to_ast_generation() -> None:
     # Node with and without var_name
     add_named = IRNode(id="n0", op_type="Add", inputs=["x", "y"], attributes={"var_name": "res"})
     stmt_named = _emit_node_statement(add_named, "pytorch")
-    assert isinstance(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(stmt_named, "body")), "__getitem__")(0)), cst.Assign)
+    assert isinstance(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(stmt_named, "body")), "__getitem__")(0)), cst.Assign)
 
     add_unnamed = IRNode(id="n1", op_type="Add", inputs=["x", "y"])
     stmt_unnamed = _emit_node_statement(add_unnamed, "pytorch")
-    assert isinstance(cast("EagerTensorProtocol", getattr(cast("EagerTensorProtocol", getattr(stmt_unnamed, "body")), "__getitem__")(0)), cst.Expr)
+    assert isinstance(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(stmt_unnamed, "body")), "__getitem__")(0)), cst.Expr)
 
     # 4. emit_ir_to_class edge cases
     # Class with no user inputs (defaults to param x)
@@ -423,11 +428,11 @@ def _test_ast_to_ir_lowering_and_scoping_part_3(_state: dict[str, EagerTensorPro
     """
     g_kw = _state["g_kw"]
     add_node = next(n for n in g_kw.nodes.values() if n.op_type == "Add")
-    assert add_node.attributes["dim"] == 1
-    assert add_node.attributes["eps"] == 0.001
-    assert add_node.attributes["mode"] == "reflect"
-    assert add_node.attributes["name"] == "target_var"
-    assert add_node.attributes["extra"] is None
+    assert typing.cast("EagerValue", add_node.attributes["dim"]) == 1
+    assert typing.cast("EagerValue", add_node.attributes["eps"]) == 0.001
+    assert typing.cast("EagerValue", add_node.attributes["mode"]) == "reflect"
+    assert typing.cast("EagerValue", add_node.attributes["name"]) == "target_var"
+    assert typing.cast("EagerValue", add_node.attributes["extra"]) is None
 
     # 6. Nested calls and attributes in call arguments
     src_nested = """
@@ -528,8 +533,8 @@ def test_ast_to_ir_control_flow_subgraphs() -> None:
     cond_node = next(n for n in g_cond.nodes.values() if n.op_type == "Cond")
     assert "true_branch" in cond_node.attributes
     assert "false_branch" in cond_node.attributes
-    assert any(n.op_type == "Add" for n in cond_node.attributes["true_branch"].nodes.values())
-    assert any(n.op_type == "Sub" for n in cond_node.attributes["false_branch"].nodes.values())
+    assert any(n.op_type == "Add" for n in typing.cast("EagerTensorProtocol", cond_node.attributes["true_branch"]).nodes.values())
+    assert any(n.op_type == "Sub" for n in typing.cast("EagerTensorProtocol", cond_node.attributes["false_branch"]).nodes.values())
 
     src_while = """def loop_fn(cond, x):
     while cond:
@@ -539,7 +544,7 @@ def test_ast_to_ir_control_flow_subgraphs() -> None:
     g_while = parse_ast_to_ir(src_while)
     while_node = next(n for n in g_while.nodes.values() if n.op_type == "WhileLoop")
     assert "body_subgraph" in while_node.attributes
-    assert any(n.op_type == "Add" for n in while_node.attributes["body_subgraph"].nodes.values())
+    assert any(n.op_type == "Add" for n in typing.cast("EagerTensorProtocol", while_node.attributes["body_subgraph"]).nodes.values())
 
     src_for = """def scan_fn(items, accum):
     for item in items:
@@ -550,7 +555,7 @@ def test_ast_to_ir_control_flow_subgraphs() -> None:
     scan_node = next(n for n in g_for.nodes.values() if n.op_type == "Scan")
     assert "body_subgraph" in scan_node.attributes
     assert scan_node.attributes["target_var"] == "item"
-    assert any(n.op_type == "Add" for n in scan_node.attributes["body_subgraph"].nodes.values())
+    assert any(n.op_type == "Add" for n in typing.cast("EagerTensorProtocol", scan_node.attributes["body_subgraph"]).nodes.values())
 
     # Compound test expression in If
     src_cond_expr = """def branch_expr(x, y):
@@ -629,7 +634,7 @@ def test_ast_to_ir_exception_handling_and_roundtrip_control_flow() -> None:
     try_node = next(n for n in g.nodes.values() if n.op_type == "TryExcept")
     assert "try_subgraph" in try_node.attributes
     assert "fallback_subgraph" in try_node.attributes
-    assert any(n.op_type == "Assert" for n in try_node.attributes["fallback_subgraph"].nodes.values())
+    assert any(n.op_type == "Assert" for n in typing.cast("EagerTensorProtocol", try_node.attributes["fallback_subgraph"]).nodes.values())
 
 
 def _test_ast_to_ir_scoped_visitor_resolution_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -665,7 +670,7 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_1(_state: dict[str, EagerTens
 
     # Case D: graph.inputs is not a list
     vis_d = ASTToIRVisitor(parent_scope={"p_var": "val"})
-    setattr(vis_d.graph, "inputs", "not_a_list")
+    object.__setattr__(vis_d.graph, "inputs", "not_a_list")
     res_d = vis_d._lookup_var("p_var")
     assert res_d == "p_var"
 
@@ -690,7 +695,7 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
         _state: Shared test state dictionary.
     """
     ASTToIRVisitor, patch, src_attr_unpack = _state["ASTToIRVisitor"], _state["patch"], _state["src_attr_unpack"]
-    g_attr_unpack = cast("EagerCallableProtocol", parse_ast_to_ir)(src_attr_unpack)
+    g_attr_unpack = typing.cast("EagerCallableProtocol", parse_ast_to_ir)(src_attr_unpack)
     assert any(n.op_type == "GetItem" for n in g_attr_unpack.nodes.values())
 
     # 4. _handle_dict_unpack and _handle_unpack_assign with Dict target (lines 169-181, 199-202)
@@ -702,8 +707,8 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
             cst.StarredDictElement(value=cst.Name("rest")),  # non-DictElement
         ]
     )
-    assign_node = cast("EagerCallableProtocol", cst.Assign)(
-        targets=[cast("EagerCallableProtocol", cst.AssignTarget)(target=dict_target)],
+    assign_node = typing.cast("EagerCallableProtocol", cst.Assign)(
+        targets=[typing.cast("EagerCallableProtocol", cst.AssignTarget)(target=dict_target)],
         value=cst.Name("source_dict"),
     )
     vis_dict = ASTToIRVisitor()
@@ -714,8 +719,8 @@ def _test_ast_to_ir_scoped_visitor_resolution_part_2(_state: dict[str, EagerTens
     assert "source_dict_node_dict_1" in vis_dict.graph.nodes
 
     # Dict unpack when val_node_id is None (covers branch 200->202)
-    assign_node_none = cast("EagerCallableProtocol", cst.Assign)(
-        targets=[cast("EagerCallableProtocol", cst.AssignTarget)(target=dict_target)],
+    assign_node_none = typing.cast("EagerCallableProtocol", cst.Assign)(
+        targets=[typing.cast("EagerCallableProtocol", cst.AssignTarget)(target=dict_target)],
         value=cst.Name("missing_dict"),
     )
     with patch.object(vis_dict, "_resolve_target_val_node_id", return_value=None):

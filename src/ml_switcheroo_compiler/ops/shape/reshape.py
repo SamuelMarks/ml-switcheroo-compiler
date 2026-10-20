@@ -4,12 +4,12 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
-from typing import Callable, cast
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, broadcast_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -23,18 +23,10 @@ def _get_shape_list(x: Tensor | tuple[int, ...] | list[int] | int | None) -> lis
     Returns:
         list: Result.
     """
-    if isinstance(x, (tuple, list)):
-        return list(x)
-    if not hasattr(x, "shape") or getattr(x, "shape") is None:
-        return []
-    s = getattr(x, "shape")
-    if isinstance(s, tuple):
+    s = getattr(x, "shape", x)
+    if isinstance(s, (tuple, list)):
         return list(s)
-    if isinstance(s, int):
-        return [s]
-    if isinstance(s, list):
-        return list(s)
-    return []
+    return [s] if isinstance(s, int) else []
 
 
 def _normalize_axes(axes: int | Sequence[int], length: int) -> list[int]:
@@ -134,7 +126,7 @@ class Transpose(OpDef):
 class BroadcastTo(OpDef):
     """Provide an operator definition for broadcasting a tensor to a new shape."""
 
-    def infer_shape(self, x: EagerTensorProtocol, shape: EagerTensorProtocol, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    def infer_shape(self, x: TensorOrScalar, shape: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Infer the output shape of the operation.
 
         Args:
@@ -169,9 +161,9 @@ class BroadcastInDim(OpDef):
 
     def infer_shape(
         self,
-        x: EagerTensorProtocol,
-        shape: EagerTensorProtocol,
-        broadcast_dimensions: EagerTensorProtocol,
+        x: TensorOrScalar,
+        shape: TensorOrScalar,
+        broadcast_dimensions: TensorOrScalar,
         **kwargs: TensorOrScalar,
     ) -> TensorOrScalar:
         """Infer the output shape of the broadcasting operation.
@@ -184,7 +176,7 @@ class BroadcastInDim(OpDef):
 
         Returns: Tensor: The computed result.
         """
-        return tuple(shape)
+        return tuple(getattr(shape, "__iter__")())
 
 
 @register_op("Resize")
@@ -216,8 +208,8 @@ class Resize(OpDef):
         # assuming shape is (new_h, new_w) and image is either (..., H, W, C) or something.
         # Often it's (..., H, W, C) in Keras.
         if len(out_shape) >= MIN_CONV_RANK:
-            cast(EagerTensorProtocol, out_shape)[-3] = getattr(shape, "__getitem__")(0)
-            cast(EagerTensorProtocol, out_shape)[-2] = getattr(shape, "__getitem__")(1)
+            typing.cast(EagerTensorProtocol, out_shape)[-3] = getattr(shape, "__getitem__")(0)
+            typing.cast(EagerTensorProtocol, out_shape)[-2] = getattr(shape, "__getitem__")(1)
         return tuple(out_shape)
 
 
@@ -240,7 +232,7 @@ class Atleast1d(OpDef):
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (1,)
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
         if len(shape) < 1:
             shape.insert(0, 1)
         return tuple(shape)
@@ -265,7 +257,7 @@ class Atleast2d(OpDef):
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (1, 1)
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
         if len(shape) == 0:
             return (1, 1)
         if len(shape) == 1:
@@ -292,7 +284,7 @@ class Atleast3d(OpDef):
         x = args[0] if len(args) > 0 else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (1, 1, 1)
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
         if len(shape) == 0:
             return (1, 1, 1)
         if len(shape) == 1:
@@ -322,11 +314,11 @@ class ExpandDims(OpDef):
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
         if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return (None,)
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
         if axis is None:
             return tuple(shape)
-        if int(cast(int, axis)) < 0:
-            axis = cast(EagerTensorProtocol, axis) + cast(EagerTensorProtocol, len(shape)) + 1
+        if int(typing.cast(int, axis)) < 0:
+            axis = typing.cast(EagerTensorProtocol, axis) + typing.cast(EagerTensorProtocol, len(shape)) + 1
         getattr(shape, "insert")(axis, 1)
         return tuple(shape)
 
@@ -431,7 +423,7 @@ class DiagIndices(OpDef):
         """
         n = args[0] if args else kwargs.get("n")
         ndim = args[1] if len(args) > 1 else kwargs.get("ndim", 2)
-        return tuple([(n,)] * int(cast(int, ndim)))
+        return tuple([(n,)] * int(typing.cast(int, ndim)))
 
 
 @register_op("DiagIndicesFrom")
@@ -479,7 +471,7 @@ class Diagflat(OpDef):
 
         size = math.prod(getattr(v, "shape"))
         k = args[1] if len(args) > 1 else kwargs.get("k", 0)
-        s = size + cast("EagerCallableProtocol", abs)(k)
+        s = size + typing.cast("EagerCallableProtocol", abs)(k)
         return (s, s)
 
 
@@ -546,7 +538,7 @@ class Moveaxis(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not hasattr(x, "shape") or getattr(x, "shape") is None:
             return None
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
         source = args[1] if len(args) > 1 else kwargs.get("source")
         destination = args[2] if len(args) > 2 else kwargs.get("destination")
         return self._calc_shape(shape, source, destination)
@@ -563,8 +555,8 @@ class Moveaxis(OpDef):
             tuple: The calculated shape.
         """
         length = len(shape)
-        sl = cast("Callable[..., list[int]]", _normalize_axes)(source, length)
-        dl = cast("Callable[..., list[int]]", _normalize_axes)(destination, length)
+        sl = typing.cast("TypedVariadicCallable[list[int]]", _normalize_axes)(source, length)
+        dl = typing.cast("TypedVariadicCallable[list[int]]", _normalize_axes)(destination, length)
         order = [i for i in range(length) if i not in sl]
         for dest, src in sorted(zip(dl, sl)):
             order.insert(dest, src)
@@ -590,7 +582,7 @@ class Permute(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
         dims = args[1] if len(args) > 1 else kwargs.get("dims")
         if dims is None:
             return tuple(shape[::-1])
@@ -616,7 +608,7 @@ class Roll(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))
+        return tuple(typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x))
 
 
 @register_op("Squeeze")
@@ -638,7 +630,7 @@ class Squeeze(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
         axis = args[1] if len(args) > 1 else kwargs.get("axis")
         return self._calc_shape(shape, axis)
 
@@ -678,9 +670,9 @@ class Swapaxes(OpDef):
         x = args[0] if args else kwargs.get("a", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        shape = cast("Callable[..., list[int]]", _get_shape_list)(x)
-        axis1 = int(cast(int, args[1] if len(args) > 1 else kwargs.get("axis1", 0)))
-        axis2 = int(cast(int, args[2] if len(args) > 2 else kwargs.get("axis2", 0)))
+        shape = typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x)
+        axis1 = int(typing.cast(int, args[1] if len(args) > 1 else kwargs.get("axis1", 0)))
+        axis2 = int(typing.cast(int, args[2] if len(args) > 2 else kwargs.get("axis2", 0)))
         a1 = axis1 + len(shape) if axis1 < 0 else axis1
         a2 = axis2 + len(shape) if axis2 < 0 else axis2
         shape[a1], shape[a2] = shape[a2], shape[a1]
@@ -706,7 +698,7 @@ class Flip(OpDef):
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))
+        return tuple(typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x))
 
 
 @register_op("Fliplr")
@@ -728,7 +720,7 @@ class Fliplr(OpDef):
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))
+        return tuple(typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x))
 
 
 @register_op("Flipud")
@@ -750,4 +742,4 @@ class Flipud(OpDef):
         x = args[0] if args else kwargs.get("m", kwargs.get("x"))
         if not isinstance(x, (tuple, list)) and not hasattr(x, "shape"):
             return None
-        return tuple(cast("Callable[..., list[int]]", _get_shape_list)(x))
+        return tuple(typing.cast("TypedVariadicCallable[list[int]]", _get_shape_list)(x))

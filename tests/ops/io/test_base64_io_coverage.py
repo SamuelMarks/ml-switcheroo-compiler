@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -47,7 +47,7 @@ def test_base64_io_coverage() -> None:
     raw_str = "hello world"
     encoded_unpadded = b64_mod._eager_base64("encode", raw_str, pad=False)
     encoded_padded = b64_mod._eager_base64("encode", raw_str, pad=True)
-    assert not cast("EagerTensorProtocol", getattr(encoded_unpadded, "endswith"))(b"=")
+    assert not typing.cast("EagerTensorProtocol", getattr(encoded_unpadded, "endswith"))(b"=")
     assert encoded_padded == base64.b64encode(raw_str.encode("utf-8"))
 
     # 3. Decode bytes

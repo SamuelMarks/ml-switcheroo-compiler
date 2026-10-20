@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.distributed.host_collectives import (
@@ -22,8 +23,9 @@ from ml_switcheroo_compiler.distributed.host_collectives import (
     broadcast,
     reduce_scatter,
 )
+from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -90,46 +92,46 @@ def test_host_collectives_eager_numpy_dispatch() -> None:
         t1 = Tensor(arr1, TensorConfig(shape=(3,), dtype="float32", device="cpu"))
 
         # AllReduce
-        ar_res = cast("EagerCallableProtocol", all_reduce)(t1, op="SUM", all_ranks_data=ranks_data)
-        assert isinstance(ar_res, Tensor)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(ar_res.data, cast("EagerCallableProtocol", np.array)([5.0, 7.0, 9.0]))
+        ar_res = typing.cast("EagerCallableProtocol", all_reduce)(t1, op="SUM", all_ranks_data=ranks_data)
+        assert isinstance(typing.cast("EagerValue", ar_res), Tensor)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(ar_res.data, typing.cast("EagerCallableProtocol", np.array)([5.0, 7.0, 9.0]))
 
         # AllGather
-        ag_res = cast("EagerCallableProtocol", all_gather)(t1, axis=0, all_ranks_data=ranks_data)
-        assert isinstance(ag_res, Tensor)
+        ag_res = typing.cast("EagerCallableProtocol", all_gather)(t1, axis=0, all_ranks_data=ranks_data)
+        assert isinstance(typing.cast("EagerValue", ag_res), Tensor)
         assert ag_res.shape == (6,)
 
         # ReduceScatter
-        rs_res = cast("EagerCallableProtocol", reduce_scatter)(t1, op="SUM", scatter_dim=0, all_ranks_data=ranks_data)
-        assert isinstance(rs_res, Tensor)
+        rs_res = typing.cast("EagerCallableProtocol", reduce_scatter)(t1, op="SUM", scatter_dim=0, all_ranks_data=ranks_data)
+        assert isinstance(typing.cast("EagerValue", rs_res), Tensor)
 
         # AllToAll
         arr_2d_1 = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         arr_2d_2 = np.array([[5.0, 6.0], [7.0, 8.0]], dtype=np.float32)
         t_2d = Tensor(arr_2d_1, TensorConfig(shape=(2, 2), dtype="float32", device="cpu"))
-        a2a_res = all_to_all(t_2d, scatter_dim=0, gather_dim=0, all_ranks_data=[arr_2d_1, arr_2d_2])
+        a2a_res = all_to_all(t_2d, scatter_dim=0, gather_dim=0, all_ranks_data=typing.cast("list[TensorLike]", [arr_2d_1, arr_2d_2]))
         assert isinstance(a2a_res, Tensor)
 
         # Broadcast
-        bc_res = cast("EagerCallableProtocol", broadcast)(t1, root=1, all_ranks_data=ranks_data)
-        assert isinstance(bc_res, Tensor)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(bc_res.data, arr2)
+        bc_res = typing.cast("EagerCallableProtocol", broadcast)(t1, root=1, all_ranks_data=ranks_data)
+        assert isinstance(typing.cast("EagerValue", bc_res), Tensor)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(bc_res.data, arr2)
 
         # Raw numpy array inputs
-        raw_ar = cast("EagerCallableProtocol", all_reduce)(arr1, op="SUM", all_ranks_data=ranks_data)
+        raw_ar = typing.cast("EagerValue", typing.cast("EagerCallableProtocol", all_reduce)(arr1, op="SUM", all_ranks_data=ranks_data))
         assert isinstance(raw_ar, np.ndarray)
         np.testing.assert_allclose(raw_ar, np.array([5.0, 7.0, 9.0]))
 
-        raw_ag = all_gather(arr1, axis=0, all_ranks_data=ranks_data)
+        raw_ag = typing.cast("EagerValue", typing.cast("EagerCallableProtocol", all_gather)(arr1, axis=0, all_ranks_data=ranks_data))
         assert isinstance(raw_ag, np.ndarray)
 
-        raw_rs = reduce_scatter(arr1, op="SUM", scatter_dim=0, all_ranks_data=ranks_data)
+        raw_rs = typing.cast("EagerValue", typing.cast("EagerCallableProtocol", reduce_scatter)(arr1, op="SUM", scatter_dim=0, all_ranks_data=ranks_data))
         assert isinstance(raw_rs, np.ndarray)
 
-        raw_a2a = all_to_all(arr_2d_1, scatter_dim=0, gather_dim=0, all_ranks_data=[arr_2d_1, arr_2d_2])
+        raw_a2a = typing.cast("EagerValue", typing.cast("EagerCallableProtocol", all_to_all)(arr_2d_1, scatter_dim=0, gather_dim=0, all_ranks_data=[arr_2d_1, arr_2d_2]))
         assert isinstance(raw_a2a, np.ndarray)
 
-        raw_bc = broadcast(arr1, root=0, all_ranks_data=ranks_data)
+        raw_bc = typing.cast("EagerValue", typing.cast("EagerCallableProtocol", broadcast)(arr1, root=0, all_ranks_data=ranks_data))
         assert isinstance(raw_bc, np.ndarray)
 
     finally:
@@ -151,43 +153,43 @@ def test_host_collectives_backend_routing() -> None:
                 with patch("ml_switcheroo_compiler.distributed.host_collectives._dispatch_accelerator_collective", return_value=inp):
                     from ml_switcheroo_compiler.distributed.host_collectives import _dispatch_eager_collective
 
-                    res = cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp, op="SUM")
-                    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp)
+                    res = typing.cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp, op="SUM")
+                    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp)
 
         # ROCm backend mock
         rocm_backend = MagicMock()
         rocm_backend.name = "rocm"
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=rocm_backend):
             with patch("ml_switcheroo_compiler.backends.rocm.rccl_collectives.RCCLDriver.is_available", return_value=True):
-                res = cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
-                cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp)
+                res = typing.cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
+                typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp)
 
         # PyTorch backend mock
         pt_backend = MagicMock()
         pt_backend.name = "pytorch"
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=pt_backend):
-            res = cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
+            res = typing.cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
             assert res is not None
-            assert cast("EagerCallableProtocol", all_gather)(inp, axis=0) is not None
-            assert cast("EagerCallableProtocol", reduce_scatter)(inp, op="SUM", scatter_dim=0) is not None
-            assert cast("EagerCallableProtocol", broadcast)(inp, root=0) is not None
+            assert typing.cast("EagerCallableProtocol", all_gather)(inp, axis=0) is not None
+            assert typing.cast("EagerCallableProtocol", reduce_scatter)(inp, op="SUM", scatter_dim=0) is not None
+            assert typing.cast("EagerCallableProtocol", broadcast)(inp, root=0) is not None
 
         # PyTorch backend fallback when pytorch collective returns None (line 552)
         pt_backend = MagicMock()
         pt_backend.name = "pytorch"
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=pt_backend):
             with patch("ml_switcheroo_compiler.distributed.host_collectives._dispatch_pytorch_collective", return_value=None):
-                res_pt_none = cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
-                cast("EagerCallableProtocol", np.testing.assert_allclose)(res_pt_none, inp)
+                res_pt_none = typing.cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
+                typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_pt_none, inp)
 
         # JAX backend mock
         jax_backend = MagicMock()
         jax_backend.name = "jax"
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=jax_backend):
-            res = cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
+            res = typing.cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
             assert res is not None
-            assert cast("EagerCallableProtocol", all_gather)(inp, axis=0) is not None
-            assert cast("EagerCallableProtocol", broadcast)(inp, root=0) is not None
+            assert typing.cast("EagerCallableProtocol", all_gather)(inp, axis=0) is not None
+            assert typing.cast("EagerCallableProtocol", broadcast)(inp, root=0) is not None
     finally:
         config.eager_mode = old_eager
 
@@ -197,16 +199,16 @@ def test_dispatch_hardware_collective_edge_cases() -> None:
     inp = np.array([1.0, 2.0], dtype=np.float32)
 
     with patch("ml_switcheroo_compiler.backends.cuda.nccl_collectives.NCCLDriver.is_available", return_value=False):
-        assert cast("EagerCallableProtocol", _dispatch_hardware_collective)("cuda", inp) is None
+        assert typing.cast("EagerCallableProtocol", _dispatch_hardware_collective)("cuda", inp) is None
 
     with patch("ml_switcheroo_compiler.backends.cuda.nccl_collectives.NCCLDriver", side_effect=RuntimeError("nccl error")):
-        assert cast("EagerCallableProtocol", _dispatch_hardware_collective)("cuda", inp) is None
+        assert typing.cast("EagerCallableProtocol", _dispatch_hardware_collective)("cuda", inp) is None
 
     with patch("ml_switcheroo_compiler.backends.rocm.rccl_collectives.RCCLDriver.is_available", return_value=False):
-        assert cast("EagerCallableProtocol", _dispatch_hardware_collective)("rocm", inp) is None
+        assert typing.cast("EagerCallableProtocol", _dispatch_hardware_collective)("rocm", inp) is None
 
     with patch("ml_switcheroo_compiler.backends.rocm.rccl_collectives.RCCLDriver", side_effect=RuntimeError("rccl error")):
-        assert cast("EagerCallableProtocol", _dispatch_hardware_collective)("rocm", inp) is None
+        assert typing.cast("EagerCallableProtocol", _dispatch_hardware_collective)("rocm", inp) is None
 
 
 def test_dispatch_eager_collective_fallbacks_and_errors() -> None:
@@ -215,10 +217,10 @@ def test_dispatch_eager_collective_fallbacks_and_errors() -> None:
 
     # PyTorch and JAX exception handling and unknown op fallback
     with patch("ml_switcheroo_compiler.backends.pytorch.distributed_collectives.pytorch_all_reduce", side_effect=RuntimeError("pt fail")):
-        assert cast("EagerCallableProtocol", _dispatch_pytorch_collective)("AllReduce", inp) is None
+        assert typing.cast("EagerCallableProtocol", _dispatch_pytorch_collective)("AllReduce", inp) is None
 
-    assert cast("EagerCallableProtocol", _dispatch_pytorch_collective)("UnknownOp", inp) is None
-    assert cast("EagerCallableProtocol", _dispatch_jax_collective)("UnknownOp", inp) is None
+    assert typing.cast("EagerCallableProtocol", _dispatch_pytorch_collective)("UnknownOp", inp) is None
+    assert typing.cast("EagerCallableProtocol", _dispatch_jax_collective)("UnknownOp", inp) is None
 
     # Unhandled collective op in _invoke_driver_op fallback branch
     from ml_switcheroo_compiler.distributed.host_collectives import (
@@ -241,55 +243,55 @@ def test_dispatch_eager_collective_fallbacks_and_errors() -> None:
     assert mock_driver.all_reduce.called
 
     # _emulate_collective_ground_truth with ranks_seq is None
-    ground_none = cast("EagerCallableProtocol", _emulate_collective_ground_truth)("AllReduce", inp, None, 1, 0)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(ground_none, inp)
+    ground_none = typing.cast("EagerCallableProtocol", _emulate_collective_ground_truth)("AllReduce", inp, None, 1, 0)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(ground_none, inp)
 
     # _emulate_collective_ground_truth with Broadcast
-    ground_bc = cast("EagerCallableProtocol", _emulate_collective_ground_truth)("Broadcast", inp, [inp, inp * 2], 2, 0, root=1)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(ground_bc, inp * 2)
+    ground_bc = typing.cast("EagerCallableProtocol", _emulate_collective_ground_truth)("Broadcast", inp, [inp, inp * 2], 2, 0, root=1)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(ground_bc, inp * 2)
 
     # _emulate_collective_ground_truth with unknown op (fall-through branch returning copied tensor)
-    ground_unknown = cast("EagerCallableProtocol", _emulate_collective_ground_truth)("UnknownOp123", inp, [inp, inp * 2], 2, 0)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(ground_unknown, inp)
+    ground_unknown = typing.cast("EagerCallableProtocol", _emulate_collective_ground_truth)("UnknownOp123", inp, [inp, inp * 2], 2, 0)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(ground_unknown, inp)
 
     # dispatch_eager_collective when get_active_backend() raises an exception (falls back to backend_name = 'numpy')
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=RuntimeError("no active backend")):
-        res_backend_err = cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
+        res_backend_err = typing.cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
         assert res_backend_err is not None
 
     # test unhandled backend in dispatch_eager_collective (e.g. backend_name not matching torch, jax, etc.)
     unknown_backend = MagicMock()
     unknown_backend.name = "custom_unknown_backend"
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=unknown_backend):
-        res_custom = cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
+        res_custom = typing.cast("EagerCallableProtocol", all_reduce)(inp, op="SUM")
         assert res_custom is not None
 
     with patch("ml_switcheroo_compiler.backends.jax.distributed_collectives.jax_all_reduce", side_effect=RuntimeError("jax fail")):
-        assert cast("EagerCallableProtocol", _dispatch_jax_collective)("AllReduce", inp) is None
+        assert typing.cast("EagerCallableProtocol", _dispatch_jax_collective)("AllReduce", inp) is None
 
     # NumPy unknown op fallback
-    unknown_res = cast("EagerCallableProtocol", _dispatch_numpy_collective)("UnknownOp", inp)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(unknown_res, inp)
+    unknown_res = typing.cast("EagerCallableProtocol", _dispatch_numpy_collective)("UnknownOp", inp)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(unknown_res, inp)
 
     # Backend resolution exception fallback to numpy
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=RuntimeError("no active backend")):
-        res = cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp)
+        res = typing.cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, inp)
 
     # Fallback to numpy when pytorch/jax returns None
     pt_mock = MagicMock()
     pt_mock.name = "pytorch"
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=pt_mock):
         with patch("ml_switcheroo_compiler.distributed.host_collectives._dispatch_pytorch_collective", return_value=None):
-            res_pt = cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp)
-            cast("EagerCallableProtocol", np.testing.assert_allclose)(res_pt, inp)
+            res_pt = typing.cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp)
+            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_pt, inp)
 
     jax_mock = MagicMock()
     jax_mock.name = "jax"
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=jax_mock):
         with patch("ml_switcheroo_compiler.distributed.host_collectives._dispatch_jax_collective", return_value=None):
-            res_jax = cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp)
-            cast("EagerCallableProtocol", np.testing.assert_allclose)(res_jax, inp)
+            res_jax = typing.cast("EagerCallableProtocol", _dispatch_eager_collective)("AllReduce", inp)
+            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_jax, inp)
 
 
 def test_host_collective_communicator_edge_cases() -> None:
@@ -298,18 +300,18 @@ def test_host_collective_communicator_edge_cases() -> None:
     data = np.array([2.0, 3.0], dtype=np.float32)
 
     # When all_ranks_data is None
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm.all_reduce)(data, all_ranks_data=None), data)
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm.all_gather)(data, all_ranks_data=None), data)
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm.broadcast)(data, all_ranks_data=None), data)
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm.all_to_all)(data, all_ranks_data=None), data)
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm.all_reduce)(data, all_ranks_data=None), data)
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm.all_gather)(data, all_ranks_data=None), data)
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm.broadcast)(data, all_ranks_data=None), data)
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm.all_to_all)(data, all_ranks_data=None), data)
 
     # Different reduction operators
     ranks = [np.array([2.0, 10.0]), np.array([4.0, 5.0])]
     comm2 = HostCollectiveCommunicator(world_size=2, rank=0)
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm2.all_reduce)(data, op="MAX", all_ranks_data=ranks), cast("EagerCallableProtocol", np.array)([4.0, 10.0]))
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm2.all_reduce)(data, op="MIN", all_ranks_data=ranks), cast("EagerCallableProtocol", np.array)([2.0, 5.0]))
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm2.all_reduce)(data, op="PROD", all_ranks_data=ranks), cast("EagerCallableProtocol", np.array)([8.0, 50.0]))
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", comm2.all_reduce)(data, op="OTHER", all_ranks_data=ranks), cast("EagerCallableProtocol", np.array)([6.0, 15.0]))
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm2.all_reduce)(data, op="MAX", all_ranks_data=ranks), typing.cast("EagerCallableProtocol", np.array)([4.0, 10.0]))
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm2.all_reduce)(data, op="MIN", all_ranks_data=ranks), typing.cast("EagerCallableProtocol", np.array)([2.0, 5.0]))
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm2.all_reduce)(data, op="PROD", all_ranks_data=ranks), typing.cast("EagerCallableProtocol", np.array)([8.0, 50.0]))
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", comm2.all_reduce)(data, op="OTHER", all_ranks_data=ranks), typing.cast("EagerCallableProtocol", np.array)([6.0, 15.0]))
 
 
 def test_accelerator_collective_nccl_full_mathematical_parity() -> None:
@@ -326,36 +328,36 @@ def test_accelerator_collective_nccl_full_mathematical_parity() -> None:
         ranks = [arr1, arr2]
 
         # AllReduce SUM
-        res_sum = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="AllReduce", op="SUM", all_ranks_data=ranks)
+        res_sum = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="AllReduce", op="SUM", all_ranks_data=ranks)
         assert res_sum is not None
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_sum, [11.0, 22.0, 33.0, 44.0])
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_sum, [11.0, 22.0, 33.0, 44.0])
 
         # AllReduce PROD
-        res_prod = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="AllReduce", op="PROD", all_ranks_data=ranks)
+        res_prod = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="AllReduce", op="PROD", all_ranks_data=ranks)
         assert res_prod is not None
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_prod, [10.0, 40.0, 90.0, 160.0])
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_prod, [10.0, 40.0, 90.0, 160.0])
 
         # AllGather
-        res_ag = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="AllGather", axis=0, all_ranks_data=ranks)
+        res_ag = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="AllGather", axis=0, all_ranks_data=ranks)
         assert res_ag is not None
         assert res_ag.shape == (8,)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_ag, cast("EagerCallableProtocol", np.concatenate)(ranks, axis=0))
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_ag, typing.cast("EagerCallableProtocol", np.concatenate)(ranks, axis=0))
 
         # ReduceScatter
-        res_rs = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="ReduceScatter", op="SUM", scatter_dim=0, rank=0, all_ranks_data=ranks)
+        res_rs = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="ReduceScatter", op="SUM", scatter_dim=0, rank=0, all_ranks_data=ranks)
         assert res_rs is not None
         assert res_rs.shape == (2,)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_rs, [11.0, 22.0])
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_rs, [11.0, 22.0])
 
         # Broadcast
-        res_bc = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="Broadcast", root=1, all_ranks_data=ranks)
+        res_bc = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr1, op_name="Broadcast", root=1, all_ranks_data=ranks)
         assert res_bc is not None
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_bc, arr2)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_bc, arr2)
 
         # AllToAll
         arr2d_1 = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         arr2d_2 = np.array([[5.0, 6.0], [7.0, 8.0]], dtype=np.float32)
-        res_a2a = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr2d_1, op_name="AllToAll", scatter_dim=0, gather_dim=0, rank=0, all_ranks_data=[arr2d_1, arr2d_2])
+        res_a2a = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("cuda", arr2d_1, op_name="AllToAll", scatter_dim=0, gather_dim=0, rank=0, all_ranks_data=[arr2d_1, arr2d_2])
         assert res_a2a is not None
 
 
@@ -372,13 +374,13 @@ def test_accelerator_collective_rccl_full_mathematical_parity() -> None:
         arr2 = np.array([2.0, 8.0], dtype=np.float64)
         ranks = [arr1, arr2]
 
-        res_max = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("rocm", arr1, op_name="AllReduce", op="MAX", all_ranks_data=ranks)
+        res_max = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("rocm", arr1, op_name="AllReduce", op="MAX", all_ranks_data=ranks)
         assert res_max is not None
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_max, [5.0, 15.0])
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_max, [5.0, 15.0])
 
-        res_min = cast("EagerCallableProtocol", _dispatch_accelerator_collective)("rocm", arr1, op_name="AllReduce", op="MIN", all_ranks_data=ranks)
+        res_min = typing.cast("EagerCallableProtocol", _dispatch_accelerator_collective)("rocm", arr1, op_name="AllReduce", op="MIN", all_ranks_data=ranks)
         assert res_min is not None
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(res_min, [2.0, 8.0])
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_min, [2.0, 8.0])
 
 
 def test_nccl_and_rccl_driver_buffer_methods() -> None:
@@ -411,8 +413,8 @@ def test_nccl_and_rccl_driver_buffer_methods() -> None:
     )
 
     res_add = _exec_collective_op("Add", np.array([1.0, 2.0]), np.array([3.0, 4.0]))
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res_add, np.array([4.0, 6.0]))
-    uneven_chunks = _split_along_axis(np.array([1.0, 2.0, 3.0]), 2, axis=0)
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_add, np.array([4.0, 6.0]))
+    uneven_chunks = _split_along_axis(typing.cast("TensorLike", np.array([1.0, 2.0, 3.0])), 2, axis=0)
     assert len(uneven_chunks) == 2
 
     # Test psum and pmean in eager and symbolic modes
@@ -421,12 +423,12 @@ def test_nccl_and_rccl_driver_buffer_methods() -> None:
         config.eager_mode = True
         r1 = np.array([2.0, 4.0], dtype=np.float32)
         r2 = np.array([6.0, 8.0], dtype=np.float32)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(psum(r1, all_ranks_data=[r1, r2]), np.array([8.0, 12.0]))
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(pmean(r1, all_ranks_data=[r1, r2]), np.array([4.0, 6.0]))
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(psum(typing.cast("Tensor", r1), all_ranks_data=[typing.cast("TensorLike", r1), typing.cast("TensorLike", r2)]), np.array([8.0, 12.0]))
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(pmean(typing.cast("Tensor", r1), all_ranks_data=[typing.cast("TensorLike", r1), typing.cast("TensorLike", r2)]), np.array([4.0, 6.0]))
         t_in = Tensor(r1, TensorConfig(shape=(2,), dtype="float32", device="cpu"))
-        pm_eager = pmean(t_in, all_ranks_data=[r1, r2])
+        pm_eager = pmean(t_in, all_ranks_data=[typing.cast("TensorLike", r1), typing.cast("TensorLike", r2)])
         assert isinstance(pm_eager, Tensor)
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(pm_eager.data, np.array([4.0, 6.0]))
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(pm_eager.data, np.array([4.0, 6.0]))
 
         config.eager_mode = False
         pm_sym = pmean(t_in)
@@ -438,4 +440,4 @@ def test_nccl_and_rccl_driver_buffer_methods() -> None:
     bad_drv = MagicMock()
     bad_drv.allocate_buffer.side_effect = RuntimeError("alloc fail")
     with patch("ml_switcheroo_compiler.distributed.host_collectives._resolve_cuda_driver", return_value=(bad_drv, 0, 0)):
-        assert _dispatch_accelerator_collective("cuda", np.array([1.0])) is None
+        assert _dispatch_accelerator_collective("cuda", typing.cast("TensorLike", np.array([1.0]))) is None

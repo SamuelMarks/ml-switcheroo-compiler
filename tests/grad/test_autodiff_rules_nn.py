@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
@@ -17,7 +17,7 @@ try:
     get_vjp("ExpandDims")
 except ValueError:
 
-    @cast("EagerCallableProtocol", register_vjp)("ExpandDims")
+    @typing.cast("EagerCallableProtocol", register_vjp)("ExpandDims")
     def _expand_vjp(graph: EagerValue, node: EagerValue, cotangent: EagerValue) -> EagerValue:
         """Test function _expand_vjp.
 
@@ -31,7 +31,7 @@ except ValueError:
         from ml_switcheroo_ir import LogicalNode
 
         sqz_id = uuid.uuid4().hex
-        sqz_node = cast("EagerCallableProtocol", LogicalNode)(id=sqz_id, op_type="Squeeze", inputs=[cotangent], attributes={"axis": cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(node, "attributes")).get)("axis", 0)})
+        sqz_node = typing.cast("EagerCallableProtocol", LogicalNode)(id=sqz_id, op_type="Squeeze", inputs=[cotangent], attributes={"axis": typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(node, "attributes")).get)("axis", 0)})
         getattr(getattr(graph, "nodes"), "__setitem__")(sqz_id, sqz_node)
         return (sqz_id,)
 
@@ -40,7 +40,7 @@ try:
     get_vjp("Squeeze")
 except ValueError:
 
-    @cast("EagerCallableProtocol", register_vjp)("Squeeze")
+    @typing.cast("EagerCallableProtocol", register_vjp)("Squeeze")
     def _squeeze_vjp(graph: EagerValue, node: EagerValue, cotangent: EagerValue) -> EagerValue:
         """Test function _squeeze_vjp.
 
@@ -54,12 +54,12 @@ except ValueError:
         from ml_switcheroo_ir import LogicalNode
 
         exp_id = uuid.uuid4().hex
-        exp_node = cast("EagerCallableProtocol", LogicalNode)(id=exp_id, op_type="ExpandDims", inputs=[cotangent], attributes={"axis": cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(node, "attributes")).get)("axis", 0)})
+        exp_node = typing.cast("EagerCallableProtocol", LogicalNode)(id=exp_id, op_type="ExpandDims", inputs=[cotangent], attributes={"axis": typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(node, "attributes")).get)("axis", 0)})
         getattr(getattr(graph, "nodes"), "__setitem__")(exp_id, exp_node)
         return (exp_id,)
 
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -73,7 +73,7 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return cast("EagerCallableProtocol", Tensor)(val, cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, cast("EagerCallableProtocol", Device)("cpu")))
+    return typing.cast("EagerCallableProtocol", Tensor)(val, typing.cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
 
 
 def test_shape_rules() -> None:
@@ -113,22 +113,22 @@ def test_shape_rules() -> None:
 
     x = make_tensor([[1.0, 2.0], [3.0, 4.0]])
     cot_res = make_tensor([1.0, 1.0, 1.0, 1.0])
-    out, vjp_fn = cast("EagerCallableProtocol", vjp)(f_reshape, x)
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", vjp_fn)(cot_res)) == 1
+    out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f_reshape, x)
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", vjp_fn)(cot_res)) == 1
 
     cot_t = make_tensor([[1.0, 1.0], [1.0, 1.0]])
-    out, vjp_fn = cast("EagerCallableProtocol", vjp)(f_transpose, x)
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", vjp_fn)(cot_t)) == 1
+    out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f_transpose, x)
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", vjp_fn)(cot_t)) == 1
 
     x2 = make_tensor([1.0, 2.0])
-    out, vjp_fn = cast("EagerCallableProtocol", vjp)(f_expand, x2)
+    out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f_expand, x2)
     cot_exp = make_tensor([[1.0, 2.0]])
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", vjp_fn)(cot_exp)) == 1
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", vjp_fn)(cot_exp)) == 1
 
     x3 = make_tensor([[1.0, 2.0]])
-    out, vjp_fn = cast("EagerCallableProtocol", vjp)(f_squeeze, x3)
+    out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f_squeeze, x3)
     cot_sqz = make_tensor([1.0, 2.0])
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", vjp_fn)(cot_sqz)) == 1
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", vjp_fn)(cot_sqz)) == 1
 
 
 def test_nn_rules() -> None:
@@ -163,8 +163,8 @@ def test_nn_rules() -> None:
 
     for f in [f_relu, f_sigmoid, f_softmax]:
         try:
-            out, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x)
-            grads = cast("EagerCallableProtocol", vjp_fn)(cot)
-            assert cast("EagerCallableProtocol", len)(grads) == 1
+            out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x)
+            grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
+            assert typing.cast("EagerCallableProtocol", len)(grads) == 1
         except Exception as e:
             print(f"Failed {f}: {e}")

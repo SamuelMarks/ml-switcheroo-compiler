@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
@@ -21,7 +21,7 @@ def test_mlx_eager_distributed_all_reduce_fallback() -> None:
 
         with patch("builtins.hasattr", return_value=False):
             res = _mlx_all_reduce(mock_mx, mock_tensor)
-            assert cast("EagerTensorProtocol", getattr(res, "tolist"))() == [1.0]
+            assert typing.cast("EagerTensorProtocol", getattr(res, "tolist"))() == [1.0]
 
 
 def test_mlx_eager_distributed_all_gather_fallback() -> None:
@@ -37,7 +37,7 @@ def test_mlx_eager_distributed_all_gather_fallback() -> None:
 
         with patch("builtins.hasattr", return_value=False):
             res = _mlx_all_gather(mock_mx, mock_tensor)
-            assert cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1)
+            assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1)
             mock_mx.expand_dims.assert_called_once_with(mock_tensor, axis=0)
 
 

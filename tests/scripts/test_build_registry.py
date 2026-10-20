@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import runpy
 import sys
+import typing
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
 from unittest.mock import mock_open, patch
 
 import yaml
 
 import scripts.build_registry as br
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -73,7 +74,7 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
         _state: Shared test state dictionary.
     """
     tmp_path = _state["tmp_path"]
-    empty_maps = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(cast("EagerCallableProtocol", str)(tmp_path / "nonexistent"))
+    empty_maps = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(typing.cast("EagerCallableProtocol", str)(tmp_path / "nonexistent"))
     assert empty_maps == {}
 
     # Setup dummy backends directory
@@ -92,7 +93,7 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
     (numpy_map_dir / "not_yaml.txt").write_text("ignore", encoding="utf-8")
     (numpy_map_dir / "z_another.yaml").write_text("Z:\n  target_api: np.z\n", encoding="utf-8")
 
-    loaded_maps = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(cast("EagerCallableProtocol", str)(backends_dir))
+    loaded_maps = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(br, "load_backend_mappings")))(typing.cast("EagerCallableProtocol", str)(backends_dir))
     assert "numpy" in loaded_maps
     assert loaded_maps["numpy"].get("Add") == "np.add"
 
@@ -106,9 +107,9 @@ def _test_load_backend_mappings_and_normalization_part_1(_state: dict[str, Eager
             "custom": {"generator": "emit_custom"},
         },
     }
-    norm_add = cast("EagerCallableProtocol", cast("EagerTensorProtocol", getattr(br, "_normalize_and_validate_op")))("Add", op_add, loaded_maps)
+    norm_add = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(br, "_normalize_and_validate_op")))("Add", op_add, loaded_maps)
     variants = norm_add["variants"]
-    assert isinstance(variants, dict)
+    assert isinstance(typing.cast("EagerValue", variants), dict)
     getattr(_state, "update")({"backends_dir": backends_dir, "empty_maps": empty_maps, "loaded_maps": loaded_maps, "norm_add": norm_add})
     getattr(_state, "update")({"numpy_map_dir": numpy_map_dir, "op_add": op_add, "variants": variants})
     _state.update(locals())
@@ -121,11 +122,11 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
         _state: Shared test state dictionary.
     """
     loaded_maps, op_add, tmp_path, variants = _state["loaded_maps"], _state["op_add"], _state["tmp_path"], _state["variants"]
-    assert variants["numpy"] == {"target_api": "np.add", "supported": True}
-    assert variants["cupy"] == {"supported": False}
-    assert variants["llvm_cpp"]["scalar_expr"] == "in0_val + in1_val"
-    assert bool(variants["llvm_cpp"]["supported"]) is True
-    assert bool(variants["custom"]["supported"]) is True
+    assert typing.cast("EagerValue", variants["numpy"]) == {"target_api": "np.add", "supported": True}
+    assert typing.cast("EagerValue", variants["cupy"]) == {"supported": False}
+    assert typing.cast("EagerValue", variants["llvm_cpp"]["scalar_expr"]) == "in0_val + in1_val"
+    assert typing.cast("EagerValue", bool(variants["llvm_cpp"]["supported"])) is True
+    assert typing.cast("EagerValue", bool(variants["custom"]["supported"])) is True
 
     # Test normalization of op with unsupported llvm_cpp fallback
     op_unknown = {
@@ -135,11 +136,11 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
         },
         "math_semantics": {"differentiable": False},
     }
-    norm_unk = cast("EagerCallableProtocol", getattr(br, "_normalize_and_validate_op"))("UnknownOp", op_unknown, loaded_maps)
+    norm_unk = typing.cast("EagerCallableProtocol", getattr(br, "_normalize_and_validate_op"))("UnknownOp", op_unknown, loaded_maps)
     unk_variants = norm_unk["variants"]
-    assert isinstance(unk_variants, dict)
-    assert unk_variants["llvm_cpp"] == {"supported": False}
-    assert norm_unk["math_semantics"] == {"differentiable": False}
+    assert isinstance(typing.cast("EagerValue", unk_variants), dict)
+    assert typing.cast("EagerValue", unk_variants["llvm_cpp"]) == {"supported": False}
+    assert typing.cast("EagerValue", norm_unk["math_semantics"]) == {"differentiable": False}
 
     # Test normalization of Identity op preserving in0_val
     op_ident = {
@@ -148,11 +149,12 @@ def _test_load_backend_mappings_and_normalization_part_2(_state: dict[str, Eager
             "llvm_cpp": {"template": "unary", "scalar_expr": "in0_val"},
         },
     }
-    norm_ident = cast("EagerCallableProtocol", getattr(br, "_normalize_and_validate_op"))("Identity", op_ident, loaded_maps)
+    norm_ident = typing.cast("EagerCallableProtocol", getattr(br, "_normalize_and_validate_op"))("Identity", op_ident, loaded_maps)
     ident_variants = norm_ident["variants"]
-    assert isinstance(ident_variants, dict)
-    assert cast("EagerTensorProtocol", cast("EagerTensorProtocol", ident_variants)["llvm_cpp"])["scalar_expr"] == "in0_val"
-    assert cast("EagerTensorProtocol", cast("EagerTensorProtocol", ident_variants)["llvm_cpp"])["supported"] is True
+    assert isinstance(typing.cast("EagerValue", ident_variants), dict)
+    llvm_cpp_var = typing.cast("dict[str, EagerValue]", ident_variants["llvm_cpp"])
+    assert llvm_cpp_var["scalar_expr"] == "in0_val"
+    assert llvm_cpp_var["supported"] is True
 
     # Test custom out_yaml build
     def_dir = tmp_path / "definitions"
@@ -202,7 +204,7 @@ def test_load_backend_mappings_and_normalization(tmp_path: Path) -> None:
     Args:
         tmp_path (Path): Pytest fixture for temporary directory.
     """
-    _state: dict[str, EagerTensorProtocol] = cast("dict[str, EagerTensorProtocol]", {"tmp_path": tmp_path})
+    _state: dict[str, EagerTensorProtocol] = typing.cast("dict[str, EagerTensorProtocol]", {"tmp_path": tmp_path})
     _test_load_backend_mappings_and_normalization_part_1(_state)
     _test_load_backend_mappings_and_normalization_part_2(_state)
     _test_load_backend_mappings_and_normalization_part_3(_state)

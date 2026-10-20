@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchScatterVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -40,14 +40,14 @@ def test_generator_basics(monkeypatch: EagerTensorProtocol) -> None:
     gen = PyTorchCodeGenerator(g)
     assert gen.get_fallback_prefix() == "torch"
     n_power = DummyNode({"num_iters": 2}, "PowerIteration")
-    res = cast("EagerCallableProtocol", gen.visit_PowerIteration)(n_power, ["x", "u"])
+    res = typing.cast("EagerCallableProtocol", gen.visit_PowerIteration)(n_power, ["x", "u"])
     assert res == "pt_power_iteration(x, 2, u)"
-    res = cast("EagerCallableProtocol", gen.visit_PowerIteration)(n_power, ["x"])
+    res = typing.cast("EagerCallableProtocol", gen.visit_PowerIteration)(n_power, ["x"])
     assert res == "pt_power_iteration(x, 2, None)"
     n_ragged = DummyNode({}, "RaggedDot")
-    assert cast("EagerCallableProtocol", gen.visit_RaggedDot)(n_ragged, ["x", "y"]) == "pt_ragged_dot(x, y)"
+    assert typing.cast("EagerCallableProtocol", gen.visit_RaggedDot)(n_ragged, ["x", "y"]) == "pt_ragged_dot(x, y)"
     n_einsum = DummyNode({}, "Einsum")
-    assert cast("EagerCallableProtocol", gen.visit_Einsum)(n_einsum, ["x", "y"], equation="ij,jk->ik") == "torch.einsum('ij,jk->ik', x, y)"
+    assert typing.cast("EagerCallableProtocol", gen.visit_Einsum)(n_einsum, ["x", "y"], equation="ij,jk->ik") == "torch.einsum('ij,jk->ik', x, y)"
     gen._emit_constant_assignment("var", "val")
     assert "var = self.var" in gen.code[0]
     prefix = gen._get_prefix_code()
@@ -57,7 +57,7 @@ def test_generator_basics(monkeypatch: EagerTensorProtocol) -> None:
     gen.code = []
     assert gen._emit_init_body() is True
     assert "register_parameter" in gen.code[0]
-    setattr(gen, "sorted_nodes", [cast("EagerCallableProtocol", DummyNode)({}, "Unknown")])
+    setattr(gen, "sorted_nodes", [typing.cast("EagerCallableProtocol", DummyNode)({}, "Unknown")])
     assert gen._emit_init_body() is False
     monkeypatch.setattr(torch, "save", lambda *args, **kwargs: "mock_save")
     monkeypatch.setattr(torch, "load", lambda *args, **kwargs: "mock_load")
@@ -71,10 +71,10 @@ def test_pytorch_scatter_visitor() -> None:
     """Test function test_pytorch_scatter_visitor."""
     vis = PyTorchScatterVisitor()
     node = DummyNode()
-    assert cast("EagerCallableProtocol", vis.visit_TensorScatterUpdate)(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u)"
-    assert cast("EagerCallableProtocol", vis.visit_TensorScatterAdd)(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u, accumulate=True)"
-    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True)" in cast("EagerCallableProtocol", vis.visit_TensorScatterMax)(node, ["t", "i", "u"])
-    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True)" in cast("EagerCallableProtocol", vis.visit_TensorScatterMin)(node, ["t", "i", "u"])
+    assert typing.cast("EagerCallableProtocol", vis.visit_TensorScatterUpdate)(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_TensorScatterAdd)(node, ["t", "i", "u"]) == "t.clone().index_put_(tuple(i.unbind(-1)), u, accumulate=True)"
+    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amax', include_self=True)" in typing.cast("EagerCallableProtocol", vis.visit_TensorScatterMax)(node, ["t", "i", "u"])
+    assert "scatter_reduce_(0, sum(i[..., d] * t.stride(d) for d in range(i.shape[-1])).flatten(), u.flatten(), reduce='amin', include_self=True)" in typing.cast("EagerCallableProtocol", vis.visit_TensorScatterMin)(node, ["t", "i", "u"])
 
 
 def test_pytorch_generator_distributed_visitor() -> None:
@@ -82,21 +82,21 @@ def test_pytorch_generator_distributed_visitor() -> None:
     from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchDistributedVisitor
 
     vis = PyTorchDistributedVisitor()
-    assert cast("EagerCallableProtocol", vis.visit_AllGather)(None, ["tensor"]) == "torch.distributed.all_gather_into_tensor(output, tensor)"
-    assert cast("EagerCallableProtocol", vis.visit_ReduceScatter)(None, ["tensor"]) == "torch.distributed.reduce_scatter_tensor(torch.empty_like(tensor), tensor)"
-    assert cast("EagerCallableProtocol", vis.visit_AllReduce)(None, ["tensor"]) == "torch.distributed.all_reduce(tensor)"
-    assert cast("EagerCallableProtocol", vis.visit_AllToAll)(None, ["tensor"]) == "torch.distributed.all_to_all_single(torch.empty_like(tensor), tensor)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AllGather)(None, ["tensor"]) == "torch.distributed.all_gather_into_tensor(output, tensor)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_ReduceScatter)(None, ["tensor"]) == "torch.distributed.reduce_scatter_tensor(torch.empty_like(tensor), tensor)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AllReduce)(None, ["tensor"]) == "torch.distributed.all_reduce(tensor)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_AllToAll)(None, ["tensor"]) == "torch.distributed.all_to_all_single(torch.empty_like(tensor), tensor)"
 
     class DummyBcNode:
         """Test class DummyBcNode."""
 
         attributes = {"root": 2}
 
-    assert cast("EagerCallableProtocol", vis.visit_Broadcast)(cast("EagerCallableProtocol", DummyBcNode)(), ["tensor"]) == "torch.distributed.broadcast(tensor, src=2)"
+    assert typing.cast("EagerCallableProtocol", vis.visit_Broadcast)(typing.cast("EagerCallableProtocol", DummyBcNode)(), ["tensor"]) == "torch.distributed.broadcast(tensor, src=2)"
     from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchNNMixin
 
     nn_vis = PyTorchNNMixin()
-    lines = cast("list[EagerTensorProtocol]", [])
+    lines = typing.cast("list[EagerTensorProtocol]", [])
     setattr(nn_vis, "add_line", lines.append)
 
     class DummyNode:
@@ -111,10 +111,10 @@ def test_pytorch_generator_distributed_visitor() -> None:
             self.attributes = attrs or {}
             self.id = "n1"
 
-    res_send = cast("EagerCallableProtocol", nn_vis.visit_Send)(cast("EagerCallableProtocol", DummyNode)({"dst_rank": 1, "tag": 2}), ["tensor"])
+    res_send = typing.cast("EagerCallableProtocol", nn_vis.visit_Send)(typing.cast("EagerCallableProtocol", DummyNode)({"dst_rank": 1, "tag": 2}), ["tensor"])
     assert res_send == ""
     assert "torch.distributed.isend(tensor, dst=1, tag=2)" in lines[0]
-    res_recv = cast("EagerCallableProtocol", nn_vis.visit_Recv)(cast("EagerCallableProtocol", DummyNode)({"src_rank": 1, "tag": 2, "shape": (2, 2), "dtype": "float32"}), [])
+    res_recv = typing.cast("EagerCallableProtocol", nn_vis.visit_Recv)(typing.cast("EagerCallableProtocol", DummyNode)({"src_rank": 1, "tag": 2, "shape": (2, 2), "dtype": "float32"}), [])
     assert res_recv == "v_n1"
     assert "v_n1 = torch.empty([2, 2], dtype=torch.float32, device=self.device)" in lines[1]
     assert "torch.distributed.irecv(v_n1, src=1, tag=2)" in lines[2]
@@ -139,4 +139,4 @@ def test_missing_methods() -> None:
     assert gen._get_creation_ops({}) is not None
     assert gen._get_array_ops({}) is not None
     assert gen.get_ops_map({}) is not None
-    cast("EagerCallableProtocol", gen.visit)(cast("EagerCallableProtocol", DummyNode)({}, "SomeUnknownOp"), [])
+    typing.cast("EagerCallableProtocol", gen.visit)(typing.cast("EagerCallableProtocol", DummyNode)({}, "SomeUnknownOp"), [])

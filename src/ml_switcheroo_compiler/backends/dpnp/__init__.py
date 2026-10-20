@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
@@ -38,7 +38,7 @@ type.__setattr__(DPNPGenerator, "get_device", staticmethod(get_device))
 type.__setattr__(DPNPGenerator, "get_usm_type", staticmethod(get_usm_type))
 type.__setattr__(DPNPGenerator, "is_sycl_array", staticmethod(is_sycl_array))
 type.__setattr__(DPNPGenerator, "item", staticmethod(item))
-type.__setattr__(DPNPGenerator, "execute_op", cast("EagerCallableProtocol", staticmethod)(execute_op))
+type.__setattr__(DPNPGenerator, "execute_op", typing.cast("EagerCallableProtocol", staticmethod)(execute_op))
 
 __all__ = [
     "DPNPGenerator",

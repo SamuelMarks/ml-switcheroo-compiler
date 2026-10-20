@@ -1,9 +1,8 @@
 """RNN operations."""
 
-from typing import (
-    Optional,  # noqa: F401
-    cast,
-)
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.core.constants import (
     CONV_2D_TENSOR_RANK,
@@ -27,7 +26,7 @@ def conv_lstm_cell(
     inputs: Tensor,
     state: tuple[Tensor, Tensor],
     weights: RNNWeights,
-    config: Optional[ConvLSTMConfig] = None,
+    config: ConvLSTMConfig | None = None,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """Provide generic Convolutional LSTM cell.
 
@@ -96,7 +95,7 @@ def conv1d_lstm_cell(
     inputs: Tensor,
     state: tuple[Tensor, Tensor],
     weights: RNNWeights,
-    config: Optional[ConvLSTMConfig] = None,
+    config: ConvLSTMConfig | None = None,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """1D Convolutional LSTM cell.
 
@@ -127,14 +126,14 @@ def conv1d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(cast("Tensor", x_conv), cast("Tensor", h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(typing.cast("Tensor", x_conv), typing.cast("Tensor", h_conv), state, weights, conf.data_format)
 
 
 def conv2d_lstm_cell(
     inputs: Tensor,
     state: tuple[Tensor, Tensor],
     weights: RNNWeights,
-    config: Optional[ConvLSTMConfig] = None,
+    config: ConvLSTMConfig | None = None,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """2D Convolutional LSTM cell.
 
@@ -165,14 +164,14 @@ def conv2d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(cast("Tensor", x_conv), cast("Tensor", h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(typing.cast("Tensor", x_conv), typing.cast("Tensor", h_conv), state, weights, conf.data_format)
 
 
 def conv3d_lstm_cell(
     inputs: Tensor,
     state: tuple[Tensor, Tensor],
     weights: RNNWeights,
-    config: Optional[ConvLSTMConfig] = None,
+    config: ConvLSTMConfig | None = None,
 ) -> tuple[Tensor, tuple[Tensor, Tensor]]:
     """3D Convolutional LSTM cell.
 
@@ -203,7 +202,7 @@ def conv3d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(cast("Tensor", x_conv), cast("Tensor", h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(typing.cast("Tensor", x_conv), typing.cast("Tensor", h_conv), state, weights, conf.data_format)
 
 
 def _sigmoid(x: Tensor) -> Tensor:

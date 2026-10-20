@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import pytest
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.export import export_to_dot
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
 
 
@@ -44,18 +44,18 @@ def test_export() -> None:
 
         id = "n2"
 
-    t = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyData)(), cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
+    t = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyData)(), typing.cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
 
     state.global_tracing_state.active_graph = None
     with pytest.raises(RuntimeError):
-        cast("EagerCallableProtocol", export_to_dot)("test.dot", t)
+        typing.cast("EagerCallableProtocol", export_to_dot)("test.dot", t)
 
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
 
     import io
 
     f = io.StringIO()
-    cast("EagerCallableProtocol", export_to_dot)(f, t)
+    typing.cast("EagerCallableProtocol", export_to_dot)(f, t)
 
     lines = f.getvalue().split("\n")
     assert "digraph G {" in lines
@@ -66,7 +66,7 @@ def test_export() -> None:
     # Test string file path
     import os
 
-    cast("EagerCallableProtocol", export_to_dot)("test_export.dot", t)
+    typing.cast("EagerCallableProtocol", export_to_dot)("test_export.dot", t)
     assert os.path.exists("test_export.dot")
     os.remove("test_export.dot")
 
@@ -76,8 +76,8 @@ def test_export() -> None:
 
         id = "n3"
 
-    t_inv = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyDataInvalid)(), cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
+    t_inv = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyDataInvalid)(), typing.cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
 
     f2 = io.StringIO()
-    cast("EagerCallableProtocol", export_to_dot)(f2, t_inv)
+    typing.cast("EagerCallableProtocol", export_to_dot)(f2, t_inv)
     assert "n3" not in f2.getvalue()

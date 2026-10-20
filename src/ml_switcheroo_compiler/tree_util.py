@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import builtins
 import functools
-from collections.abc import Iterable, Iterator
-from typing import Callable, TypeVar, Union, cast
+import typing
+from collections.abc import Callable, Iterable, Iterator
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 
-T = TypeVar("T")
-PyTree = Union[TensorOrScalar, "TreeDef"]
+T = typing.TypeVar("T")
+PyTree = typing.Union[TensorOrScalar, "TreeDef"]
 
 
 class TreeDef:
@@ -74,8 +74,6 @@ def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
     Returns:
         tuple[list[TensorOrScalar], TreeDef]: The flattened leaves and the tree definition.
     """
-    from typing import cast
-
     if isinstance(tree, dict):
         keys = sorted(tree.keys())
         leaves: list[TensorOrScalar] = []
@@ -93,7 +91,7 @@ def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
             leaves.extend(child_leaves)
             children_defs.append(child_def)
         return leaves, TreeDef(type(tree), children_defs)
-    return [cast(TensorOrScalar, tree)], TreeDef(type(None))
+    return [typing.cast(TensorOrScalar, tree)], TreeDef(type(None))
 
 
 def _unflatten_leaf(leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
@@ -199,11 +197,11 @@ def tree_unflatten(treedef: TreeDef, leaves: Iterable[TensorOrScalar]) -> Tensor
     return res
 
 
-def tree_map(f: Callable[..., TensorOrScalar], tree: PyTree, *rest: PyTree) -> TensorOrScalar:
+def tree_map(f: TensorOrScalar, tree: PyTree, *rest: PyTree) -> TensorOrScalar:
     """Map a function over the leaves of a PyTree.
 
     Args:
-        f (Callable[..., TensorOrScalar]): The function to apply.
+        f (TensorOrScalar): The function to apply.
         tree (PyTree): The primary PyTree.
         *rest (PyTree): Additional PyTrees of the same structure.
 
@@ -222,7 +220,8 @@ def tree_map(f: Callable[..., TensorOrScalar], tree: PyTree, *rest: PyTree) -> T
             raise ValueError(msg)
         rest_leaves.append(r_leaves)
 
-    mapped_leaves = [f(leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
+    fn = typing.cast(TypedVariadicCallable[TensorOrScalar], f)
+    mapped_leaves = [fn(leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
     return tree_unflatten(treedef, mapped_leaves)
 
 
@@ -286,7 +285,7 @@ def tree_reduce(
     if initializer is None:
         return functools.reduce(f, leaves)
 
-    return cast(TensorOrScalar, getattr(functools, "reduce")(f, leaves, initializer))
+    return typing.cast(TensorOrScalar, getattr(functools, "reduce")(f, leaves, initializer))
 
 
 def _count_leaves(t_def: TreeDef) -> int:

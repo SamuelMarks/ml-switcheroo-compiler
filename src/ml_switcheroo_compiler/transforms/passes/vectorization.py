@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import os
-from typing import Callable, cast
+import typing
 
 import yaml
 from ml_switcheroo_ir import LogicalGraph
 
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 
 
@@ -23,7 +24,7 @@ def _load_vmap_rules() -> dict[str, dict[str, AttributeValue]]:
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
             if isinstance(data, dict) and "rules" in data:
-                return cast(dict[str, dict[str, AttributeValue]], data["rules"])
+                return typing.cast(dict[str, dict[str, AttributeValue]], data["rules"])
     return {}
 
 
@@ -160,20 +161,20 @@ def _apply_batch_axis_policy(
         str: Final lifted operation type name.
     """
     if policy == "shift_axis":
-        if isinstance(new_attrs.get("axis"), int) and int(cast(int, new_attrs["axis"])) >= 0:
-            new_attrs["axis"] = int(cast(int, new_attrs["axis"])) + 1
-        if isinstance(new_attrs.get("dim"), int) and int(cast(int, new_attrs["dim"])) >= 0:
-            new_attrs["dim"] = int(cast(int, new_attrs["dim"])) + 1
+        if isinstance(new_attrs.get("axis"), int) and int(typing.cast(int, new_attrs["axis"])) >= 0:
+            new_attrs["axis"] = int(typing.cast(int, new_attrs["axis"])) + 1
+        if isinstance(new_attrs.get("dim"), int) and int(typing.cast(int, new_attrs["dim"])) >= 0:
+            new_attrs["dim"] = int(typing.cast(int, new_attrs["dim"])) + 1
         if isinstance(new_attrs.get("axes"), (list, tuple)):
             new_attrs["axes"] = tuple(a + 1 if isinstance(a, int) and a >= 0 else a for a in getattr(new_attrs["axes"], "__iter__")())
     elif policy == "shift_permutation":
-        perm = list(cast(tuple[int, ...], new_attrs.get("permutation", ())))
+        perm = list(typing.cast(tuple[int, ...], new_attrs.get("permutation", ())))
         new_attrs["permutation"] = tuple([0] + [p + 1 for p in perm])
     elif policy == "prepend_batch_dim":
         if isinstance(new_attrs.get("shape"), (list, tuple)):
-            new_attrs["shape"] = (batch_size, *cast(tuple[int, ...], new_attrs["shape"]))
+            new_attrs["shape"] = (batch_size, *typing.cast(tuple[int, ...], new_attrs["shape"]))
         if isinstance(new_attrs.get("newshape"), (list, tuple)):
-            new_attrs["newshape"] = (batch_size, *cast(tuple[int, ...], new_attrs["newshape"]))
+            new_attrs["newshape"] = (batch_size, *typing.cast(tuple[int, ...], new_attrs["newshape"]))
     elif policy == "batch_matmul":
         return "BatchMatMul"
     return lift_op
@@ -305,11 +306,11 @@ def _infer_vmap_batch_size(graph: IRGraph, node: IRNode, in_axes: int | tuple[in
     return int(first_shape[axis]) if axis < len(first_shape) else 1
 
 
-def _ensure_ir_graph(body_graph: IRGraph) -> IRGraph:
+def _ensure_ir_graph(body_graph: IRGraph | TensorOrScalar) -> IRGraph:
     """Convert a LogicalGraph-like body into an IRGraph if needed.
 
     Args:
-        body_graph (IRGraph): Body graph attribute from a Vmap node.
+        body_graph (IRGraph | TensorOrScalar): Body graph attribute from a Vmap node.
 
     Returns:
         IRGraph: Normalized IRGraph instance.
@@ -319,9 +320,10 @@ def _ensure_ir_graph(body_graph: IRGraph) -> IRGraph:
     b_graph = IRGraph(name=getattr(body_graph, "id", "body"))
     b_graph.inputs = list(getattr(body_graph, "inputs", []))
     b_graph.outputs = list(getattr(body_graph, "outputs", []))
-    b_nodes = body_graph.nodes if isinstance(body_graph.nodes, list) else list(body_graph.nodes.values())
+    raw_nodes = getattr(body_graph, "nodes", [])
+    b_nodes = raw_nodes if isinstance(raw_nodes, list) else list(raw_nodes.values())
     for n in b_nodes:
-        b_graph.nodes[n.id] = IRNode(**n.__dict__) if not isinstance(n, IRNode) else n
+        b_graph.nodes[n.id] = IRNode(**n.__dict__) if type(n) is not IRNode else n
     return b_graph
 
 
@@ -348,8 +350,8 @@ def _inline_vmap_node(
 
     in_axes = node.attributes.get("in_axes", 0)
     out_axes = node.attributes.get("out_axes", 0)
-    batch_size = cast("Callable[..., int]", _infer_vmap_batch_size)(graph, node, in_axes)
-    v_body = cast("Callable[..., IRGraph]", vectorize_graph)(_ensure_ir_graph(cast("LogicalGraph", body_graph)), in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
+    batch_size = typing.cast("TypedVariadicCallable[int]", _infer_vmap_batch_size)(graph, node, in_axes)
+    v_body = typing.cast("TypedVariadicCallable[IRGraph]", vectorize_graph)(_ensure_ir_graph(typing.cast("LogicalGraph", body_graph)), in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
 
     id_map: dict[str, str] = dict(zip(v_body.inputs, node.inputs))
     for b_id, b_node in v_body.nodes.items():
@@ -385,7 +387,7 @@ def vectorization_pass(graph: IRGraph) -> IRGraph:
             if _inline_vmap_node(graph, node_id, node, new_nodes):
                 continue
 
-        new_nodes[node_id] = node if isinstance(node, IRNode) else IRNode(**node.__dict__)
+        new_nodes[node_id] = node if type(node) is IRNode else IRNode(**node.__dict__)
 
     if has_vmap:
         graph.nodes.clear()

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import typing
 from types import ModuleType
 
 import ml_switcheroo_compiler.ops.reductions.aggregations as _aggregations
@@ -50,164 +49,56 @@ _ = _distributed
 _ = _statistical
 
 
-try:
-    sum = get_op("Sum")()
-except KeyError:
-    sum = typing.cast(OpDef, None)
-try:
-    prod = get_op("Prod")()
-except KeyError:
-    prod = typing.cast(OpDef, None)
-try:
-    mean = get_op("Mean")()
-except KeyError:
-    mean = typing.cast(OpDef, None)
-try:
-    variance = get_op("Variance")()
-except KeyError:
-    variance = typing.cast(OpDef, None)
-try:
-    std = get_op("Std")()
-except KeyError:
-    std = typing.cast(OpDef, None)
-try:
-    max = get_op("Max")()
-except KeyError:
-    max = typing.cast(OpDef, None)
-try:
-    min = get_op("Min")()
-except KeyError:
-    min = typing.cast(OpDef, None)
-try:
-    argmax = get_op("Argmax")()
-except KeyError:
-    argmax = typing.cast(OpDef, None)
-try:
-    argmin = get_op("Argmin")()
-except KeyError:
-    argmin = typing.cast(OpDef, None)
-try:
-    all = get_op("All")()
-except KeyError:
-    all = typing.cast(OpDef, None)
-try:
-    any = get_op("Any")()
-except KeyError:
-    any = typing.cast(OpDef, None)
+def _safe_get_op(name: str) -> OpDef:
+    """Instantiate a registered reduction op or return None if missing.
 
-try:
-    logsumexp = get_op("Logsumexp")()
-except KeyError:
-    logsumexp = typing.cast(OpDef, None)
-try:
-    nanargmax = get_op("Nanargmax")()
-except KeyError:
-    nanargmax = typing.cast(OpDef, None)
-try:
-    nanargmin = get_op("Nanargmin")()
-except KeyError:
-    nanargmin = typing.cast(OpDef, None)
-try:
-    nancumprod = get_op("Nancumprod")()
-except KeyError:
-    nancumprod = typing.cast(OpDef, None)
-try:
-    nancumsum = get_op("Nancumsum")()
-except KeyError:
-    nancumsum = typing.cast(OpDef, None)
-try:
-    nanmax = get_op("Nanmax")()
-except KeyError:
-    nanmax = typing.cast(OpDef, None)
-try:
-    nanmean = get_op("Nanmean")()
-except KeyError:
-    nanmean = typing.cast(OpDef, None)
-try:
-    nanmedian = get_op("Nanmedian")()
-except KeyError:
-    nanmedian = typing.cast(OpDef, None)
-try:
-    nanmin = get_op("Nanmin")()
-except KeyError:
-    nanmin = typing.cast(OpDef, None)
-try:
-    nanpercentile = get_op("Nanpercentile")()
-except KeyError:
-    nanpercentile = typing.cast(OpDef, None)
-try:
-    nanprod = get_op("Nanprod")()
-except KeyError:
-    nanprod = typing.cast(OpDef, None)
-try:
-    nanquantile = get_op("Nanquantile")()
-except KeyError:
-    nanquantile = typing.cast(OpDef, None)
-try:
-    nanstd = get_op("Nanstd")()
-except KeyError:
-    nanstd = typing.cast(OpDef, None)
-try:
-    nansum = get_op("Nansum")()
-except KeyError:
-    nansum = typing.cast(OpDef, None)
-try:
-    nanvar = get_op("Nanvar")()
-except KeyError:
-    nanvar = typing.cast(OpDef, None)
+    Args:
+        name (str): Registered operation name.
+
+    Returns:
+        OpDef: Instantiated operation definition.
+    """
+    try:
+        return get_op(name)()
+    except KeyError:
+        return None  # type: ignore[return-value]
 
 
-try:
-    count_nonzero = get_op("CountNonzero")()
-except KeyError:
-    count_nonzero = typing.cast(OpDef, None)
-try:
-    norm = get_op("Norm")()
-except KeyError:
-    norm = typing.cast(OpDef, None)
-try:
-    cumsum = get_op("Cumsum")()
-except KeyError:
-    cumsum = typing.cast(OpDef, None)
-
-try:
-    cummax = get_op("Cummax")()
-except KeyError:
-    cummax = typing.cast(OpDef, None)
-try:
-    cummin = get_op("Cummin")()
-except KeyError:
-    cummin = typing.cast(OpDef, None)
-
-try:
-    cumprod = get_op("Cumprod")()
-except KeyError:
-    cumprod = typing.cast(OpDef, None)
-
-
-try:
-    logcumsumexp = get_op("Logcumsumexp")()
-except KeyError:
-    logcumsumexp = typing.cast(OpDef, None)
-
-
-try:
-    accumulate_n = get_op("AccumulateN")()
-except KeyError:
-    accumulate_n = typing.cast(OpDef, None)
-try:
-    add_n = get_op("AddN")()
-except KeyError:
-    add_n = typing.cast(OpDef, None)
-try:
-    cumulative_logsumexp = get_op("CumulativeLogsumexp")()
-except KeyError:
-    cumulative_logsumexp = typing.cast(OpDef, None)
-try:
-    reduce_euclidean_norm = get_op("ReduceEuclideanNorm")()
-except KeyError:
-    reduce_euclidean_norm = typing.cast(OpDef, None)
-try:
-    reduce_logsumexp = get_op("Logsumexp")()
-except KeyError:
-    reduce_logsumexp = typing.cast(OpDef, None)
+sum = _safe_get_op("Sum")
+prod = _safe_get_op("Prod")
+mean = _safe_get_op("Mean")
+variance = _safe_get_op("Variance")
+std = _safe_get_op("Std")
+max = _safe_get_op("Max")
+min = _safe_get_op("Min")
+argmax = _safe_get_op("Argmax")
+argmin = _safe_get_op("Argmin")
+all = _safe_get_op("All")
+any = _safe_get_op("Any")
+logsumexp = _safe_get_op("Logsumexp")
+nanargmax = _safe_get_op("Nanargmax")
+nanargmin = _safe_get_op("Nanargmin")
+nancumprod = _safe_get_op("Nancumprod")
+nancumsum = _safe_get_op("Nancumsum")
+nanmax = _safe_get_op("Nanmax")
+nanmean = _safe_get_op("Nanmean")
+nanmedian = _safe_get_op("Nanmedian")
+nanmin = _safe_get_op("Nanmin")
+nanpercentile = _safe_get_op("Nanpercentile")
+nanprod = _safe_get_op("Nanprod")
+nanquantile = _safe_get_op("Nanquantile")
+nanstd = _safe_get_op("Nanstd")
+nansum = _safe_get_op("Nansum")
+nanvar = _safe_get_op("Nanvar")
+count_nonzero = _safe_get_op("CountNonzero")
+norm = _safe_get_op("Norm")
+cumsum = _safe_get_op("Cumsum")
+cummax = _safe_get_op("Cummax")
+cummin = _safe_get_op("Cummin")
+cumprod = _safe_get_op("Cumprod")
+logcumsumexp = _safe_get_op("Logcumsumexp")
+accumulate_n = _safe_get_op("AccumulateN")
+add_n = _safe_get_op("AddN")
+cumulative_logsumexp = _safe_get_op("CumulativeLogsumexp")
+reduce_euclidean_norm = _safe_get_op("ReduceEuclideanNorm")
+reduce_logsumexp = _safe_get_op("Logsumexp")

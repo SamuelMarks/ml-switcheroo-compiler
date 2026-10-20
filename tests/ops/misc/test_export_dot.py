@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import pytest
@@ -12,7 +12,7 @@ import ml_switcheroo_compiler.ops.export as export_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -94,20 +94,20 @@ def test_export_to_dot_full_coverage(tmp_path: pytest.TempPathFactory) -> None:
             """
             self.id: str = node_id
 
-    t_arr = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", MockProxy)("node_2"), cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
-    t_untracked = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", MockProxy)("missing_node"), cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
-    t_no_id = cast("EagerCallableProtocol", Tensor)(cast("EagerCallableProtocol", DummyWithoutShape)(), cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
+    t_arr = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockProxy)("node_2"), typing.cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
+    t_untracked = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockProxy)("missing_node"), typing.cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
+    t_no_id = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyWithoutShape)(), typing.cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
 
     with patch.object(global_tracing_state, "active_graph", graph):
         str_io = io.StringIO()
-        cast("EagerCallableProtocol", export_mod.export_to_dot)(str_io, t_arr, t_untracked, t_no_id)
+        typing.cast("EagerCallableProtocol", export_mod.export_to_dot)(str_io, t_arr, t_untracked, t_no_id)
         dot_str = str_io.getvalue()
         assert "digraph G {" in dot_str
         assert '"node_2"' in dot_str
         assert '"node_1"' in dot_str
 
-        file_path = cast("EagerCallableProtocol", str)(cast("EagerTensorProtocol", tmp_path) / cast("EagerTensorProtocol", "out.dot"))
-        cast("EagerCallableProtocol", export_mod.export_to_dot)(file_path, t_arr)
+        file_path = typing.cast("EagerCallableProtocol", str)(typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "out.dot"))
+        typing.cast("EagerCallableProtocol", export_mod.export_to_dot)(file_path, t_arr)
         with open(file_path, encoding="utf-8") as f:
             content = f.read()
             assert "digraph G {" in content

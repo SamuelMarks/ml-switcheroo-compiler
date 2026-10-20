@@ -133,9 +133,9 @@ class Fftfreq(OpDef):
 
     def infer_shape(
         self,
-        n: EagerTensorProtocol,
+        n: TensorOrScalar,
         d: TensorOrScalar = 1.0,
-        *args: EagerTensorProtocol,
+        *args: TensorOrScalar,
         **kwargs: TensorOrScalar,
     ) -> TensorOrScalar:
         """Infer 1D `(n,)` output shape for `Fftfreq`.

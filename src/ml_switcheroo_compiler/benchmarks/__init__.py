@@ -1,5 +1,7 @@
 """Cross-Backend Benchmarking Framework."""
 
+from __future__ import annotations
+
 from .config_models import (
     BenchmarkPlan,
     BenchmarkRunResult,

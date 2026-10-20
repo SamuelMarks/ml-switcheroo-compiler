@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Union  # noqa: F401
+import typing  # noqa: F401
 
 from ml_switcheroo_compiler.ir.core import IRNode
 

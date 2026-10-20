@@ -1,5 +1,7 @@
 """Attention mechanism operations."""
 
+from __future__ import annotations
+
 import math
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend

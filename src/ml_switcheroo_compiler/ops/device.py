@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -47,7 +47,7 @@ def get_peak_memory() -> int:
 
     backend = get_active_backend()
     if hasattr(backend, "get_peak_memory"):
-        return cast(int, backend.get_peak_memory())
+        return typing.cast(int, backend.get_peak_memory())
     return 0
 
 

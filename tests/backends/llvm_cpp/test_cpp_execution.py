@@ -6,6 +6,8 @@ import os
 import subprocess
 import tempfile
 
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
@@ -17,7 +19,7 @@ def test_cpp_compile_and_execute() -> None:
     n1.shape_metadata = (1, 1)
     n2 = LogicalNode(id="out", op_type="Add", inputs=["in1", "in1"])
     n2.shape_metadata = (1, 1)
-    graph.nodes = {"in1": n1, "out": n2}
+    graph.nodes = NodeDict({"in1": n1, "out": n2})
 
     gen = CppGenerator(graph)
     code = gen.generate(graph)
@@ -67,7 +69,7 @@ def test_cpp_compile_and_execute_matmul() -> None:
     n2.shape_metadata = (2, 2)
     n3 = LogicalNode(id="out", op_type="MatMul", inputs=["in1", "in2"])
     n3.shape_metadata = (2, 2)
-    graph.nodes = {"in1": n1, "in2": n2, "out": n3}
+    graph.nodes = NodeDict({"in1": n1, "in2": n2, "out": n3})
 
     gen = CppGenerator(graph)
     code = gen.generate(graph)

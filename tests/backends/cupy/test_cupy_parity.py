@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.cupy.eager import (
@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.backends.cupy.eager import (
     execute_op,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -43,7 +43,7 @@ class MockGPUArray:
             data (EagerValue): Memory buffer.
         """
         self.shape = shape
-        self.ndim = cast("EagerCallableProtocol", len)(shape)
+        self.ndim = typing.cast("EagerCallableProtocol", len)(shape)
         self.dtype = dtype or "float32"
         self.data = data if data is not None else MockGPUData("cuda:0")
 
@@ -53,7 +53,7 @@ class MockGPUArray:
         Returns:
             MockGPUArray: Copied array on GPU.
         """
-        return cast("MockGPUArray", cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
+        return typing.cast("MockGPUArray", typing.cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=typing.cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
 
     def __add__(self, other: EagerValue) -> MockGPUArray:
         """Mock addition returning GPU array.
@@ -61,7 +61,7 @@ class MockGPUArray:
         Args:
             other: Test parameter `other`.
         """
-        return cast("MockGPUArray", cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
+        return typing.cast("MockGPUArray", typing.cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=typing.cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
 
     def __mul__(self, other: EagerValue) -> MockGPUArray:
         """Mock multiplication returning GPU array.
@@ -69,7 +69,7 @@ class MockGPUArray:
         Args:
             other: Test parameter `other`.
         """
-        return cast("MockGPUArray", cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
+        return typing.cast("MockGPUArray", typing.cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=typing.cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
 
     def __truediv__(self, other: EagerValue) -> MockGPUArray:
         """Mock division returning GPU array.
@@ -77,7 +77,7 @@ class MockGPUArray:
         Args:
             other: Test parameter `other`.
         """
-        return cast("MockGPUArray", cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
+        return typing.cast("MockGPUArray", typing.cast("EagerCallableProtocol", MockGPUArray)(shape=self.shape, dtype=self.dtype, data=typing.cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
 
     def __getitem__(self, key: EagerValue) -> MockGPUArray:
         """Mock slicing returning GPU array.
@@ -85,7 +85,7 @@ class MockGPUArray:
         Args:
             key: Test parameter `key`.
         """
-        return cast("MockGPUArray", cast("EagerCallableProtocol", MockGPUArray)(shape=(2, 2), dtype=self.dtype, data=cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
+        return typing.cast("MockGPUArray", typing.cast("EagerCallableProtocol", MockGPUArray)(shape=(2, 2), dtype=self.dtype, data=typing.cast("EagerCallableProtocol", MockGPUData)("cuda:0")))
 
 
 def _create_mock_cupy() -> MagicMock:
@@ -105,9 +105,9 @@ def _create_mock_cupy() -> MagicMock:
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
         """
-        if isinstance(x, MockGPUArray):
+        if type(x).__name__ == "MockGPUArray":
             return x
-        return cast("EagerTensorProtocol", MockGPUArray(shape=(2, 2)))
+        return typing.cast("EagerTensorProtocol", MockGPUArray(shape=(2, 2)))
 
     mock_cp.asarray.side_effect = asarray_fn
     mock_cp.zeros.side_effect = lambda shape, *a, **kw: MockGPUArray(shape=shape)
@@ -144,27 +144,27 @@ def test_cupy_reductions_parity_and_residency() -> None:
             inp = MockGPUArray(shape=(4, 4))
 
             # ArgMax
-            res_argmax = cast("EagerCallableProtocol", execute_op)(None, "ArgMax", inp, dim=0)
+            res_argmax = typing.cast("EagerCallableProtocol", execute_op)(None, "ArgMax", inp, dim=0)
             _verify_gpu_residency(res_argmax)
             mock_cp.argmax.assert_called()
 
             # ArgMin
-            res_argmin = cast("EagerCallableProtocol", execute_op)(None, "ArgMin", inp, dim=1)
+            res_argmin = typing.cast("EagerCallableProtocol", execute_op)(None, "ArgMin", inp, dim=1)
             _verify_gpu_residency(res_argmin)
             mock_cp.argmin.assert_called()
 
             # ReduceL2
-            res_l2 = cast("EagerCallableProtocol", execute_op)(None, "ReduceL2", inp, axis=0)
+            res_l2 = typing.cast("EagerCallableProtocol", execute_op)(None, "ReduceL2", inp, axis=0)
             _verify_gpu_residency(res_l2)
             mock_cp.linalg.norm.assert_called()
 
             # CumSum
-            res_cumsum = cast("EagerCallableProtocol", execute_op)(None, "CumSum", inp, dim=0)
+            res_cumsum = typing.cast("EagerCallableProtocol", execute_op)(None, "CumSum", inp, dim=0)
             _verify_gpu_residency(res_cumsum)
             mock_cp.cumsum.assert_called()
 
             # CumProd
-            res_cumprod = cast("EagerCallableProtocol", execute_op)(None, "CumProd", inp, dim=0)
+            res_cumprod = typing.cast("EagerCallableProtocol", execute_op)(None, "CumProd", inp, dim=0)
             _verify_gpu_residency(res_cumprod)
             mock_cp.cumprod.assert_called()
 
@@ -178,35 +178,35 @@ def test_cupy_linalg_parity_and_residency() -> None:
             mat_b = MockGPUArray(shape=(4, 4))
 
             # Cholesky
-            res_chol = cast("EagerCallableProtocol", execute_op)(None, "Cholesky", mat_a)
+            res_chol = typing.cast("EagerCallableProtocol", execute_op)(None, "Cholesky", mat_a)
             _verify_gpu_residency(res_chol)
             mock_cp.linalg.cholesky.assert_called()
 
             # QR
-            q, r = cast("EagerCallableProtocol", execute_op)(None, "QR", mat_a)
+            q, r = typing.cast("EagerCallableProtocol", execute_op)(None, "QR", mat_a)
             _verify_gpu_residency(q)
             _verify_gpu_residency(r)
             mock_cp.linalg.qr.assert_called()
 
             # SVD
-            u, s, vh = cast("EagerCallableProtocol", execute_op)(None, "SVD", mat_a)
+            u, s, vh = typing.cast("EagerCallableProtocol", execute_op)(None, "SVD", mat_a)
             _verify_gpu_residency(u)
             _verify_gpu_residency(s)
             _verify_gpu_residency(vh)
             mock_cp.linalg.svd.assert_called()
 
             # Solve
-            res_solve = cast("EagerCallableProtocol", execute_op)(None, "Solve", mat_a, mat_b)
+            res_solve = typing.cast("EagerCallableProtocol", execute_op)(None, "Solve", mat_a, mat_b)
             _verify_gpu_residency(res_solve)
             mock_cp.linalg.solve.assert_called()
 
             # Eig and Eigh
-            w, v = cast("EagerCallableProtocol", execute_op)(None, "Eig", mat_a)
+            w, v = typing.cast("EagerCallableProtocol", execute_op)(None, "Eig", mat_a)
             _verify_gpu_residency(w)
             _verify_gpu_residency(v)
             mock_cp.linalg.eig.assert_called()
 
-            wh, vh = cast("EagerCallableProtocol", execute_op)(None, "Eigh", mat_a)
+            wh, vh = typing.cast("EagerCallableProtocol", execute_op)(None, "Eigh", mat_a)
             _verify_gpu_residency(wh)
             _verify_gpu_residency(vh)
             mock_cp.linalg.eigh.assert_called()
@@ -221,24 +221,24 @@ def test_cupy_vision_nn_parity_and_residency() -> None:
             w_conv = MockGPUArray(shape=(16, 3, 3, 3))
 
             # Conv2D
-            res_conv = cast("EagerCallableProtocol", execute_op)(None, "Conv2D", x_4d, w_conv, stride=1, padding="SAME")
+            res_conv = typing.cast("EagerCallableProtocol", execute_op)(None, "Conv2D", x_4d, w_conv, stride=1, padding="SAME")
             _verify_gpu_residency(res_conv)
 
             # MaxPool2D
-            res_maxpool = cast("EagerCallableProtocol", execute_op)(None, "MaxPool2D", x_4d, kernel_size=2, stride=2)
+            res_maxpool = typing.cast("EagerCallableProtocol", execute_op)(None, "MaxPool2D", x_4d, kernel_size=2, stride=2)
             _verify_gpu_residency(res_maxpool)
 
             # AvgPool2D
-            res_avgpool = cast("EagerCallableProtocol", execute_op)(None, "AvgPool2D", x_4d, kernel_size=2, stride=2)
+            res_avgpool = typing.cast("EagerCallableProtocol", execute_op)(None, "AvgPool2D", x_4d, kernel_size=2, stride=2)
             _verify_gpu_residency(res_avgpool)
 
             # Pad
-            res_pad = cast("EagerCallableProtocol", execute_op)(None, "Pad", x_4d, pad_width=((0, 0), (0, 0), (1, 1), (1, 1)))
+            res_pad = typing.cast("EagerCallableProtocol", execute_op)(None, "Pad", x_4d, pad_width=((0, 0), (0, 0), (1, 1), (1, 1)))
             _verify_gpu_residency(res_pad)
             mock_cp.pad.assert_called()
 
             # ResizeBilinear
-            res_resize = cast("EagerCallableProtocol", execute_op)(None, "ResizeBilinear", x_4d, size=(64, 64))
+            res_resize = typing.cast("EagerCallableProtocol", execute_op)(None, "ResizeBilinear", x_4d, size=(64, 64))
             _verify_gpu_residency(res_resize)
 
 
@@ -249,30 +249,30 @@ def test_cupy_direct_vision_kernels() -> None:
         # 4D Conv2D
         x_4d = MockGPUArray(shape=(1, 1, 4, 4))
         w_4d = MockGPUArray(shape=(1, 1, 3, 3))
-        res_conv4d = cast("EagerCallableProtocol", cupy_conv2d)(x_4d, w_4d, stride=1, padding="SAME")
+        res_conv4d = typing.cast("EagerCallableProtocol", cupy_conv2d)(x_4d, w_4d, stride=1, padding="SAME")
         assert res_conv4d is not None
 
         # 2D Conv2D
         x_2d = MockGPUArray(shape=(4, 4))
         w_2d = MockGPUArray(shape=(3, 3))
-        res_conv2d = cast("EagerCallableProtocol", cupy_conv2d)(x_2d, w_2d, stride=1, padding="SAME")
+        res_conv2d = typing.cast("EagerCallableProtocol", cupy_conv2d)(x_2d, w_2d, stride=1, padding="SAME")
         assert res_conv2d is not None
 
         # MaxPool2D
-        res_mp = cast("EagerCallableProtocol", cupy_maxpool2d)(x_4d, kernel_size=2, stride=2)
+        res_mp = typing.cast("EagerCallableProtocol", cupy_maxpool2d)(x_4d, kernel_size=2, stride=2)
         assert res_mp is not None
 
         # AvgPool2D
-        res_ap = cast("EagerCallableProtocol", cupy_avgpool2d)(x_4d, kernel_size=2, stride=2)
+        res_ap = typing.cast("EagerCallableProtocol", cupy_avgpool2d)(x_4d, kernel_size=2, stride=2)
         assert res_ap is not None
 
         # ResizeBilinear
-        res_rb = cast("EagerCallableProtocol", cupy_resize_bilinear)(x_4d, size=(8, 8))
+        res_rb = typing.cast("EagerCallableProtocol", cupy_resize_bilinear)(x_4d, size=(8, 8))
         assert res_rb is not None
 
         # Fallback when cp is None
         with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
-            assert cast("EagerCallableProtocol", cupy_conv2d)(x_4d, w_4d) == x_4d
-            assert cast("EagerCallableProtocol", cupy_maxpool2d)(x_4d) == x_4d
-            assert cast("EagerCallableProtocol", cupy_avgpool2d)(x_4d) == x_4d
-            assert cast("EagerCallableProtocol", cupy_resize_bilinear)(x_4d, size=(8, 8)) == x_4d
+            assert typing.cast("EagerCallableProtocol", cupy_conv2d)(x_4d, w_4d) == x_4d
+            assert typing.cast("EagerCallableProtocol", cupy_maxpool2d)(x_4d) == x_4d
+            assert typing.cast("EagerCallableProtocol", cupy_avgpool2d)(x_4d) == x_4d
+            assert typing.cast("EagerCallableProtocol", cupy_resize_bilinear)(x_4d, size=(8, 8)) == x_4d

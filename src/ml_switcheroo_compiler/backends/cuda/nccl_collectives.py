@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ctypes
 import logging
-from typing import Optional  # noqa: F401
+import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError

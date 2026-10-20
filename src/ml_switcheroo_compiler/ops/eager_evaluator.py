@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import abc
 import typing  # noqa: F401
-from dataclasses import dataclass
-from typing import cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.device import Device
@@ -16,15 +16,20 @@ from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 EagerPayload = TensorOrScalar
 
 
-@dataclass
-class EvaluationContext:
+class EvaluationContext(pydantic.BaseModel):
     """Provide context for eager evaluation containing operation details."""
 
-    op_cls: type
-    op_type: str
-    args: list[EagerPayload]
-    kwargs: dict[str, EagerPayload]
-    backend: type
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    op_cls: type | EagerPayload | None = None
+    op_type: str = ""
+    args: list[EagerPayload] | tuple[EagerPayload, ...] = ()
+    kwargs: dict[str, EagerPayload] = pydantic.Field(default_factory=dict)
+    backend: type | EagerPayload | None = None
+
+    def __init__(self, *args: EagerPayload, **kwargs: EagerPayload) -> None:
+        """Initialize EvaluationContext from positional or keyword arguments."""
+        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 
 class EvaluationStrategy(abc.ABC):
@@ -60,10 +65,12 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
         """
         op_cls = ctx.op_cls
         op_inst = op_cls() if isinstance(op_cls, type) else op_cls
-        if hasattr(op_inst, "eager_eval") and callable(op_inst.eager_eval):
-            return cast(EagerPayload, op_inst.eager_eval(*ctx.args, **ctx.kwargs))
-        if hasattr(op_inst, "forward") and callable(op_inst.forward):
-            return cast(EagerPayload, op_inst.forward(*ctx.args, **ctx.kwargs))
+        eager_eval_fn = getattr(op_inst, "eager_eval", None)
+        if callable(eager_eval_fn):
+            return typing.cast(EagerPayload, eager_eval_fn(*ctx.args, **ctx.kwargs))
+        forward_fn = getattr(op_inst, "forward", None)
+        if callable(forward_fn):
+            return typing.cast(EagerPayload, forward_fn(*ctx.args, **ctx.kwargs))
         raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
 
 
@@ -79,7 +86,7 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         Returns:
             EagerPayload: Evaluated raw tensor or scalar data.
         """
-        return cast(EagerPayload, getattr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
+        return typing.cast(EagerPayload, getattr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
 
 
 class EagerEvaluator:
@@ -126,7 +133,7 @@ class EagerEvaluator:
                 Tensor(
                     d,
                     TensorConfig(
-                        cast(EagerTensorProtocol, d).shape if hasattr(d, "shape") else (),
+                        typing.cast(EagerTensorProtocol, d).shape if hasattr(d, "shape") else (),
                         resolve_dtype(d, first_tensor),
                         device,
                     ),
@@ -135,7 +142,7 @@ class EagerEvaluator:
             )
 
         dtype = resolve_dtype(res_data, first_tensor)
-        shape = cast(EagerTensorProtocol, res_data).shape if hasattr(res_data, "shape") else ()
+        shape = typing.cast(EagerTensorProtocol, res_data).shape if hasattr(res_data, "shape") else ()
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod
@@ -157,7 +164,7 @@ class EagerEvaluator:
         op_cls = get_op(op_type)
         raw_args: list[EagerPayload] = [a.data if isinstance(a, Tensor) else a for a in args]
 
-        ctx = EvaluationContext(op_cls, op_type, raw_args, dict(kwargs), backend)
+        ctx = EvaluationContext(op_cls=op_cls, op_type=op_type, args=raw_args, kwargs=dict(kwargs), backend=backend)
         strategy = EagerEvaluator._get_strategy(op_cls)
         res_data = strategy.evaluate(ctx)
 

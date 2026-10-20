@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import typing
+
 # pylint: disable=duplicate-code
 import uuid
 from collections.abc import Mapping, Sequence
-from typing import Callable, cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.registry import register_util
@@ -42,13 +43,20 @@ def _emit_shape_node(
     out_id = str(uuid.uuid4())
 
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
+    flat_inputs: list[str] = [str(sub) for item in input_ids for sub in (item if isinstance(item, (list, tuple)) else (item,))]
+    from ml_switcheroo_ir import SymInt, SymNode
 
-    node = cast("Callable[..., LogicalNode]", LogicalNode)(
+    raw_out_shape: Sequence[TensorOrScalar] = out_shape
+    first_elem: TensorOrScalar = raw_out_shape[0] if len(raw_out_shape) > 0 else None
+    flat_shape: Sequence[TensorOrScalar] = first_elem if isinstance(first_elem, (tuple, list)) else raw_out_shape
+    norm_shape: tuple[int | str | SymNode | SymInt, ...] = tuple(int(d) if isinstance(d, float) else (d if isinstance(d, (int, str, SymNode, SymInt)) and not isinstance(d, bool) else ("?" if d is None else str(d))) for d in flat_shape)
+
+    node = typing.cast("TypedVariadicCallable[LogicalNode]", LogicalNode)(
         id=out_id,
         op_type=op_type,
-        inputs=input_ids,
-        attributes=cast("dict[str, AttributeValue]", attrs or {}),
-        shape_metadata=out_shape,
+        inputs=flat_inputs,
+        attributes=typing.cast("dict[str, AttributeValue]", attrs or {}),
+        shape_metadata=norm_shape,
     )
     global_tracing_state.add_node(node)
 

@@ -7,8 +7,8 @@ import ctypes.util
 import logging
 import os
 import re
+import typing
 from types import ModuleType
-from typing import Callable, Optional, Union, cast
 
 import yaml
 
@@ -25,12 +25,12 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-cupy: Optional[ModuleType] = None
+cupy: ModuleType | None = None
 
-KernelArgType = Union[ctypes.c_void_p, int, float, str, None]
+KernelArgType = typing.Union[ctypes.c_void_p, int, float, str, "None"]
 
 
 CUDA_SYNTH_MATH_MAP: dict[str, str] = {
@@ -60,7 +60,7 @@ CUDA_SYNTH_MATH_MAP: dict[str, str] = {
 }
 
 
-def _synthesize_cuda_kernel(clean_op: str, inps: list[str], scalar_expr: Optional[str] = None) -> str:
+def _synthesize_cuda_kernel(clean_op: str, inps: list[str], scalar_expr: str | None = None) -> str:
     """Synthesize a C++ CUDA kernel without fallback placeholder loops.
 
     Args:
@@ -150,7 +150,7 @@ def _prepare_cuda_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) ->
         elif hasattr(arg, "data") and hasattr(getattr(arg, "data"), "tobytes"):
             input_buffers[input_name] = getattr(arg, "data").tobytes()
         else:
-            input_buffers[input_name] = cast("Callable[..., bytes]", bytes)(arg)
+            input_buffers[input_name] = typing.cast("TypedVariadicCallable[bytes]", bytes)(arg)
     return input_buffers
 
 
@@ -167,17 +167,17 @@ def _evaluate_cuda_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Eag
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
     feed_dict: dict[str, EagerValue] = {graph.inputs[i]: getattr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
-    res_dict = evaluate_graph(graph, cast("dict[str, EvalValue]", feed_dict))
+    res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
-        return cast(EagerValue, res_dict.get(graph.outputs[0]))
-    return cast(EagerValue, tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
+        return res_dict.get(graph.outputs[0])
+    return typing.cast(EagerValue, tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
 
 
 @register_backend("cuda")
 class CudaCodeGenerator(BaseGenerator):
     """CUDA C++ Code Generator."""
 
-    def __init__(self, graph: IRGraph, delegates: Optional[list[CodeGeneratorVisitor]] = None) -> None:
+    def __init__(self, graph: IRGraph, delegates: list[CodeGeneratorVisitor] | None = None) -> None:
         """Initialize CudaCodeGenerator.
 
         Args:
@@ -281,7 +281,7 @@ class CudaCodeGenerator(BaseGenerator):
         cuda.append(f"    float* {out_name};")
         cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_name}, {bytes_alloc}));")
         cuda.append(f"    dim3 block_{node_idx}(256, 1, 1);")
-        (grid_x, grid_y, grid_z), launch_args = cast("Callable[..., tuple[tuple[str, str, str], list[str]]]", resolve_hardware_launch_grid_and_args)(node, {}, node_buffers, out_name, num_elements, node_idx, self.graph)
+        (grid_x, grid_y, grid_z), launch_args = typing.cast("TypedVariadicCallable[tuple[tuple[str, str, str], list[str]]]", resolve_hardware_launch_grid_and_args)(node, {}, node_buffers, out_name, num_elements, node_idx, self.graph)
         cuda.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
         kernel_fn = f"fused_elementwise_kernel_{node_idx}"
         cuda.append(f"    {kernel_fn}<<<grid_{node_idx}, block_{node_idx}>>>({', '.join(launch_args)});")
@@ -343,7 +343,7 @@ class CudaCodeGenerator(BaseGenerator):
         cuda.append("    }")
         self._free_dead_buffers(node, node_buffers, last_consumer, outputs_set, inputs_set, cuda)
 
-    def _ensure_template(self, node: IRNode, node_idx: int) -> Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]:
+    def _ensure_template(self, node: IRNode, node_idx: int) -> HardwareTemplateConfig | dict[str, str | int | float | list[int] | None] | list[str] | str | None:
         """Ensure an op template exists in self.config.templates, synthesizing elementwise kernels if needed.
 
         Args:
@@ -427,10 +427,10 @@ class CudaCodeGenerator(BaseGenerator):
             node_buffers[node.id] = out_name
             cuda.append(f"    float* {out_name};")
             cuda.append(f"    CUDA_CHECK(cudaMalloc(&{out_name}, {bytes_alloc}));")
-        wg = cast(list[int], getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg = typing.cast(list[int], getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
         cuda.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
-        (grid_x, grid_y, grid_z), launch_args = cast("Callable[..., tuple[tuple[str, str, str], list[str]]]", resolve_hardware_launch_grid_and_args)(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
+        (grid_x, grid_y, grid_z), launch_args = typing.cast("TypedVariadicCallable[tuple[tuple[str, str, str], list[str]]]", resolve_hardware_launch_grid_and_args)(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
         cuda.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
 
         kernel_fn = _extract_kernel_name(getattr(tpl, "get")("body", ""), op_type.lower())
@@ -569,9 +569,7 @@ class CudaCodeGenerator(BaseGenerator):
                     input_buffers = _prepare_cuda_input_buffers(graph, args)
                     out_dict = getattr(runner_inst, "execute_graph")(graph, input_buffers)
                     if len(graph.outputs) == 1:
-                        from typing import cast
-
-                        return cast(EagerValue, out_dict.get(graph.outputs[0]))
+                        return typing.cast(EagerValue, out_dict.get(graph.outputs[0]))
                     return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -586,7 +584,7 @@ class CudaCodeGenerator(BaseGenerator):
         )
 
 
-def _marshall_kernel_params(args: Optional[list[KernelArgType]]) -> Optional[ctypes.Array[ctypes.c_void_p]]:
+def _marshall_kernel_params(args: list[KernelArgType] | None) -> ctypes.Array[ctypes.c_void_p] | None:
     """Marshall Python objects into ctypes kernel parameter array.
 
     Args:
@@ -641,14 +639,14 @@ class CUDARunner:
 
     def __init__(self) -> None:
         """Initialize CUDARunner and load hardware limits."""
-        self.limits: dict[str, Union[int, list[int], str, None]] = {}
+        self.limits: dict[str, int | list[int] | str | None] = {}
         limits_path: str = os.path.join(os.path.dirname(__file__), "hardware_limits.yaml")
         if os.path.exists(limits_path):
             with open(limits_path) as f:
                 self.limits = yaml.safe_load(f) or {}
 
-        self.cuda_lib: Optional[ctypes.CDLL] = None
-        self._ctx: Optional[ctypes.c_void_p] = None
+        self.cuda_lib: ctypes.CDLL | None = None
+        self._ctx: ctypes.c_void_p | None = None
 
         if cupy is not None:
             self.mode = "cupy"
@@ -666,7 +664,7 @@ class CUDARunner:
             except Exception:
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-    def allocate_buffer(self, size: int) -> Optional[ctypes.c_void_p]:
+    def allocate_buffer(self, size: int) -> ctypes.c_void_p | None:
         """Allocate device memory.
 
         Args:
@@ -688,14 +686,14 @@ class CUDARunner:
             raise RuntimeError(f"cuMemAlloc failed with error code {res}")
         return dptr
 
-    def write_buffer(self, device_ptr: ctypes.c_void_p, host_data: bytes) -> None:
+    def write_buffer(self, device_ptr: ctypes.c_void_p | None, host_data: bytes) -> None:
         """Write to device buffer.
 
         Args:
             device_ptr (ctypes.c_void_p): Device pointer.
             host_data (bytes): Data to write.
         """
-        if not device_ptr:
+        if device_ptr is None or not getattr(device_ptr, "value", device_ptr):
             return
 
         if self.mode == "cupy" and cupy is not None:
@@ -709,7 +707,7 @@ class CUDARunner:
             if res != 0:
                 raise RuntimeError(f"cuMemcpyHtoD failed with error code {res}")
 
-    def read_buffer(self, device_ptr: ctypes.c_void_p, size: int) -> bytes:
+    def read_buffer(self, device_ptr: ctypes.c_void_p | None, size: int) -> bytes:
         """Read from device buffer.
 
         Args:
@@ -719,13 +717,13 @@ class CUDARunner:
         Returns:
             bytes: Read data.
         """
-        if not device_ptr:
+        if device_ptr is None or not getattr(device_ptr, "value", device_ptr):
             return b"\x00" * size
 
         if self.mode == "cupy" and cupy is not None:
             src = cupy.ndarray((size,), dtype=cupy.uint8, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, size, device_ptr), 0))
             arr = src.get()
-            return cast(bytes, arr.tobytes())
+            return typing.cast(bytes, arr.tobytes())
 
         if self.cuda_lib:
             host_data = ctypes.create_string_buffer(size)
@@ -735,13 +733,13 @@ class CUDARunner:
             return host_data.raw
         return b"\x00" * size
 
-    def free_buffer(self, device_ptr: ctypes.c_void_p) -> None:
+    def free_buffer(self, device_ptr: ctypes.c_void_p | None) -> None:
         """Free device memory.
 
         Args:
             device_ptr (ctypes.c_void_p): Device pointer.
         """
-        if not device_ptr:
+        if device_ptr is None or not getattr(device_ptr, "value", device_ptr):
             return
 
         if self.mode == "cupy":
@@ -753,7 +751,7 @@ class CUDARunner:
         self,
         cuda_source: str,
         source_filename: str = "kernel.cu",
-        options: Optional[list[str]] = None,
+        options: list[str] | None = None,
     ) -> str:
         """Compile CUDA source code to PTX string.
 
@@ -822,9 +820,9 @@ class CUDARunner:
         entry_point: str,
         grid_size: list[int],
         block_size: list[int],
-        args: Optional[list[KernelArgType]] = None,
+        args: list[KernelArgType] | None = None,
         shared_memory_bytes: int = 0,
-        stream: Optional[ctypes.c_void_p] = None,
+        stream: ctypes.c_void_p | None = None,
     ) -> None:
         """Compile PTX modules and launch kernels with dynamic shared memory and stream support.
 
@@ -874,7 +872,7 @@ class CUDARunner:
             if res != 0:
                 raise RuntimeError(f"cuLaunchKernel failed with error code {res}")
 
-    def create_stream(self) -> Optional[ctypes.c_void_p]:
+    def create_stream(self) -> ctypes.c_void_p | None:
         """Create an asynchronous CUDA stream.
 
         Returns:
@@ -892,7 +890,7 @@ class CUDARunner:
             return stream
         return None
 
-    def synchronize_stream(self, stream: Optional[ctypes.c_void_p] = None) -> None:
+    def synchronize_stream(self, stream: ctypes.c_void_p | None = None) -> None:
         """Synchronize an asynchronous CUDA stream.
 
         Args:
@@ -913,7 +911,7 @@ class CUDARunner:
             if res != 0:
                 raise RuntimeError(f"cuStreamSynchronize failed with error code {res}")
 
-    def create_event(self) -> Optional[ctypes.c_void_p]:
+    def create_event(self) -> ctypes.c_void_p | None:
         """Create a CUDA event for timing and synchronization.
 
         Returns:
@@ -931,7 +929,7 @@ class CUDARunner:
             return event
         return None
 
-    def record_event(self, event: Optional[ctypes.c_void_p], stream: Optional[ctypes.c_void_p] = None) -> None:
+    def record_event(self, event: ctypes.c_void_p | None, stream: ctypes.c_void_p | None = None) -> None:
         """Record a CUDA event into a stream.
 
         Args:
@@ -951,7 +949,7 @@ class CUDARunner:
             if res != 0:
                 raise RuntimeError(f"cuEventRecord failed with error code {res}")
 
-    def elapsed_time(self, start_event: Optional[ctypes.c_void_p], end_event: Optional[ctypes.c_void_p]) -> float:
+    def elapsed_time(self, start_event: ctypes.c_void_p | None, end_event: ctypes.c_void_p | None) -> float:
         """Calculate elapsed time in milliseconds between two CUDA events.
 
         Args:
@@ -1001,7 +999,7 @@ class CUDARunner:
 
     def _prepare_device_buffers(
         self,
-        inputs: dict[str, Union[bytes, memoryview, list[float]]],
+        inputs: dict[str, bytes | memoryview | list[float]],
     ) -> dict[str, ctypes.c_void_p]:
         """Allocate and populate device memory buffers for inputs.
 
@@ -1013,9 +1011,7 @@ class CUDARunner:
         """
         device_buffers: dict[str, ctypes.c_void_p] = {}
         for inp_name, data in inputs.items():
-            if isinstance(data, (bytes, memoryview)):
-                raw_bytes = bytes(data)
-            elif isinstance(data, list):
+            if isinstance(data, list):
                 float_arr = (ctypes.c_float * len(data))(*data)
                 raw_bytes = bytes(float_arr)
             else:
@@ -1054,10 +1050,11 @@ class CUDARunner:
             kernel_fn = f"fused_elementwise_kernel_{node_idx}"
             tpl = HardwareTemplateConfig(body="", workgroup_size=[256, 1, 1])
         else:
-            tpl = cast(HardwareTemplateConfig, generator.config.templates.get(op_type))
-            if not tpl:
+            tpl_opt = typing.cast("HardwareTemplateConfig | None", generator.config.templates.get(op_type))
+            if tpl_opt is None:
                 return
-            kernel_fn = _extract_kernel_name(cast("str", tpl.get("body", "")), op_type)
+            tpl = tpl_opt
+            kernel_fn = _extract_kernel_name(typing.cast("str", tpl.get("body", "")), op_type)
 
         block_cfg, grid_cfg = query_optimal_launch_geometry(
             getattr(node, "shape_metadata", None) or (num_elements,),
@@ -1076,7 +1073,7 @@ class CUDARunner:
     def execute_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, Union[bytes, memoryview, list[float]]],
+        inputs: dict[str, bytes | memoryview | list[float]],
     ) -> dict[str, bytes]:
         """Execute multi-node IRGraph through dynamic JIT compilation and kernel dispatch.
 

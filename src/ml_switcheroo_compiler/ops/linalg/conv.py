@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typing  # noqa: F401
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -21,9 +21,10 @@ from ml_switcheroo_compiler.ops.linalg.conv_ops import (
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 
-@dataclass
-class ConvLocalHyperparams:
+class ConvLocalHyperparams(pydantic.BaseModel):
     """ConvLocalHyperparams."""
+
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     window_strides: Sequence[int] | None = None
     padding: str | Sequence[tuple[int, int]] | None = None
@@ -54,16 +55,16 @@ def conv_general_dilated(
     op = ConvGeneralDilated()
 
     cfg = ConvConfig(
-        config.window_strides,
-        config.padding,
-        config.lhs_dilation,
-        config.rhs_dilation,
-        config.dimension_numbers,
-        config.feature_group_count,
+        window_strides=config.window_strides,
+        padding=config.padding,
+        lhs_dilation=config.lhs_dilation,
+        rhs_dilation=config.rhs_dilation,
+        dimension_numbers=config.dimension_numbers,
+        feature_group_count=config.feature_group_count,
     )
     out_shape = op.infer_shape(lhs, rhs, cfg)
 
-    return cast(TensorOrScalar, cast("EagerCallableProtocol", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
+    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
 
 
 @dispatch_eager("ConvGeneralDilatedLocal")

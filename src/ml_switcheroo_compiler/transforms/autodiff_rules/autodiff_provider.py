@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
+import typing
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional, cast
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.grad.config_models import AutodiffRulesManifestModel
 
 
@@ -233,27 +233,27 @@ def _fallback_finite_difference_jvp(graph: TensorOrScalar, node: TensorOrScalar,
     # JVP ~ (f(x + epsilon * t) - f(x - epsilon * t)) / (2 * epsilon)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    epsilon = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Constant", [], None, attributes={"value": 1e-4})
-    two_eps = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Constant", [], None, attributes={"value": 2e-4})
+    epsilon = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Constant", [], None, attributes={"value": 0.0001})
+    two_eps = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Constant", [], None, attributes={"value": 0.0002})
 
     pos_inputs = []
     neg_inputs = []
 
     tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
     for _idx, (inp, tang) in enumerate(zip(getattr(node, "inputs"), tangents_list)):
-        eps_t = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Multiply", [epsilon, tang], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None))
-        pos_inputs.append(emit_ir_node(cast("Optional[LogicalGraph]", graph), "Add", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
-        neg_inputs.append(emit_ir_node(cast("Optional[LogicalGraph]", graph), "Subtract", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
+        eps_t = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Multiply", [epsilon, tang], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None))
+        pos_inputs.append(emit_ir_node(typing.cast("LogicalGraph | None", graph), "Add", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
+        neg_inputs.append(emit_ir_node(typing.cast("LogicalGraph | None", graph), "Subtract", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
 
     for i in range(len(tangents_list), len(getattr(node, "inputs"))):
         pos_inputs.append(getattr(node, "inputs")[i])
         neg_inputs.append(getattr(node, "inputs")[i])
 
-    f_pos = emit_ir_node(cast("Optional[LogicalGraph]", graph), getattr(node, "op_type"), pos_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
-    f_neg = emit_ir_node(cast("Optional[LogicalGraph]", graph), getattr(node, "op_type"), neg_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
+    f_pos = emit_ir_node(typing.cast("LogicalGraph | None", graph), getattr(node, "op_type"), pos_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
+    f_neg = emit_ir_node(typing.cast("LogicalGraph | None", graph), getattr(node, "op_type"), neg_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
 
-    diff = emit_ir_node(cast("Optional[LogicalGraph]", graph), "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
-    return emit_ir_node(cast("Optional[LogicalGraph]", graph), "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
+    diff = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
+    return emit_ir_node(typing.cast("LogicalGraph | None", graph), "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
 
 
 _MANIFEST_MODEL_CACHE: AutodiffRulesManifestModel | None = None
@@ -401,7 +401,7 @@ def _lookup_primitive_registry_rule(op_type: str, rule_type: str) -> dict[str, A
     if isinstance(op_def, dict):
         ad_rules = op_def.get("autodiff", {})
         if isinstance(ad_rules, dict) and rule_type in ad_rules:
-            return cast("dict[str, AttributeValue]", ad_rules)
+            return typing.cast("dict[str, AttributeValue]", ad_rules)
     return None
 
 
@@ -484,19 +484,6 @@ def _load_rule_from_yaml_files(op_type: str, rule_type: str) -> dict[str, Attrib
         if found is not None:
             return found
 
-    manifest_data = _read_yaml_dict(os.path.abspath(os.path.join(base_dir, "..", "autodiff_rules.yaml")))
-    target_section = "vjp_rules" if rule_type == "vjp" else "jvp_rules"
-    section_dict = manifest_data.get(target_section)
-    if isinstance(section_dict, dict):
-        found = _find_candidate_in_dict(section_dict, (op_type, op_type.capitalize(), op_type.lower()))
-        if found is not None:
-            return found
-
-    legacy_data = _read_yaml_dict(os.path.join(base_dir, "autodiff_rules.yaml"))
-    legacy_val = legacy_data.get(op_type)
-    if isinstance(legacy_val, dict):
-        return {str(k): v for k, v in legacy_val.items()}
-
     return None
 
 
@@ -532,14 +519,14 @@ def get_vjp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, str], tuple[st
     return data_vjp
 
 
-def get_jvp_from_data(op_type: str) -> Callable[..., str]:
+def get_jvp_from_data(op_type: str) -> Callable[[TensorOrScalar, TensorOrScalar, TensorOrScalar], str] | None:
     """Get JVP handler from data-driven rules.
 
     Args:
         op_type (str): Operation identifier.
 
     Returns:
-        Callable[..., str]: Evaluator callable.
+        Callable[[TensorOrScalar, TensorOrScalar, TensorOrScalar], str] | None: Evaluator callable.
     """
     ad_rules = _load_autodiff_rule(op_type, "jvp")
     if not ad_rules or "jvp" not in ad_rules or not ad_rules["jvp"]:
@@ -559,6 +546,6 @@ def get_jvp_from_data(op_type: str) -> Callable[..., str]:
             str: Emitted JVP tangent node ID.
         """
         tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
-        return _parse_expression(cast("LogicalGraph", graph), cast("str", jvp_expr), cast("LogicalNode", node), tangents=tangents_list)
+        return _parse_expression(typing.cast("LogicalGraph", graph), typing.cast("str", jvp_expr), typing.cast("LogicalNode", node), tangents=tangents_list)
 
     return data_jvp

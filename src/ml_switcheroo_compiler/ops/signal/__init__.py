@@ -1,5 +1,7 @@
 """Public package exports and initialization for `ml_switcheroo_compiler.ops.signal`."""
 
+from __future__ import annotations
+
 from .common_ops import (
     _calculate_padding,
     _emit_signal_node,

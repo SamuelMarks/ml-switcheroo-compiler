@@ -1,7 +1,8 @@
 """WGSL AST definitions for robust code generation conforming to WebGPU specifications."""
 
+from __future__ import annotations
+
 import re
-from typing import Optional, Union
 
 from ml_switcheroo_compiler.core.errors import CompilationError
 
@@ -94,7 +95,7 @@ def validate_workgroup_size(x: int, y: int = 1, z: int = 1) -> None:
         raise WGSLValidationError(f"Total workgroup invocations ({x * y * z}) exceed WebGPU minimum guaranteed limit of 256")
 
 
-def validate_memory_layout(address_space: str, access_mode: Optional[str] = None) -> None:
+def validate_memory_layout(address_space: str, access_mode: str | None = None) -> None:
     """Validate memory layout address space and access mode against WebGPU specifications.
 
     Args:
@@ -243,7 +244,7 @@ class WGSLBinding(WGSLNode):
         name: str,
         type_str: str,
         address_space: str = "storage",
-        access_mode: Optional[str] = "read_write",
+        access_mode: str | None = "read_write",
     ) -> None:
         """Initialize WGSLBinding.
 
@@ -260,7 +261,7 @@ class WGSLBinding(WGSLNode):
         self.name: str = name
         self.type_str: str = type_str
         self.address_space: str = address_space
-        self.access_mode: Optional[str] = access_mode
+        self.access_mode: str | None = access_mode
 
     def validate(self) -> None:
         """Validate resource binding against WebGPU specification.
@@ -296,7 +297,7 @@ class WGSLVar(WGSLNode):
 class WGSLIndex(WGSLNode):
     """WGSL Array/Buffer Indexing."""
 
-    def __init__(self, buffer: str, index: Union[str, "WGSLNode"]) -> None:
+    def __init__(self, buffer: str, index: str | WGSLNode) -> None:
         """Initialize WGSLIndex.
 
         Args:
@@ -341,7 +342,7 @@ class WGSLBinaryOp(WGSLNode):
         ">>",
     }
 
-    def __init__(self, op: str, left: Union[str, "WGSLNode"], right: Union[str, "WGSLNode"]) -> None:
+    def __init__(self, op: str, left: str | WGSLNode, right: str | WGSLNode) -> None:
         """Initialize WGSLBinaryOp.
 
         Args:
@@ -372,7 +373,7 @@ class WGSLUnaryOp(WGSLNode):
 
     VALID_OPS: set[str] = {"-", "!", "~", "*", "&"}
 
-    def __init__(self, op: str, expr: Union[str, "WGSLNode"]) -> None:
+    def __init__(self, op: str, expr: str | WGSLNode) -> None:
         """Initialize WGSLUnaryOp.
 
         Args:
@@ -397,7 +398,7 @@ class WGSLUnaryOp(WGSLNode):
 class WGSLAssign(WGSLNode):
     """WGSL Assignment Statement."""
 
-    def __init__(self, target: Union[str, "WGSLNode"], value: Union[str, "WGSLNode"]) -> None:
+    def __init__(self, target: str | WGSLNode, value: str | WGSLNode) -> None:
         """Initialize WGSLAssign.
 
         Args:
@@ -424,7 +425,7 @@ class WGSLDecl(WGSLNode):
 
     VALID_KINDS: set[str] = {"let", "var", "const"}
 
-    def __init__(self, kind: str, name: str, value: Optional[Union[str, "WGSLNode"]] = None, type_annotation: Optional[str] = None) -> None:
+    def __init__(self, kind: str, name: str, value: str | WGSLNode | None = None, type_annotation: str | None = None) -> None:
         """Initialize WGSLDecl.
 
         Args:
@@ -454,7 +455,7 @@ class WGSLDecl(WGSLNode):
 class WGSLIf(WGSLNode):
     """WGSL If Statement."""
 
-    def __init__(self, condition: Union[str, "WGSLNode"], body: list["WGSLNode"]) -> None:
+    def __init__(self, condition: str | WGSLNode, body: list[WGSLNode]) -> None:
         """Initialize WGSLIf.
 
         Args:
@@ -480,7 +481,7 @@ class WGSLIf(WGSLNode):
 class WGSLFor(WGSLNode):
     """WGSL For Loop."""
 
-    def __init__(self, init: Union[str, "WGSLNode"], cond: Union[str, "WGSLNode"], step: Union[str, "WGSLNode"], body: list["WGSLNode"]) -> None:
+    def __init__(self, init: str | WGSLNode, cond: str | WGSLNode, step: str | WGSLNode, body: list[WGSLNode]) -> None:
         """Initialize WGSLFor.
 
         Args:
@@ -514,7 +515,7 @@ class WGSLFor(WGSLNode):
 class WGSLFunction(WGSLNode):
     """WGSL Function Definition."""
 
-    def __init__(self, name: str, params: list[str], body: list["WGSLNode"], attrs: Optional[list[str]] = None) -> None:
+    def __init__(self, name: str, params: list[str], body: list[WGSLNode], attrs: list[str] | None = None) -> None:
         """Initialize WGSLFunction.
 
         Args:
@@ -554,7 +555,7 @@ class WGSLEmitter:
         """Initialize WGSLEmitter."""
         self.indent = 0
 
-    def validate(self, node: Union[str, WGSLNode]) -> None:
+    def validate(self, node: str | WGSLNode) -> None:
         """Validate an AST node against WebGPU specifications.
 
         Args:
@@ -593,7 +594,7 @@ class WGSLEmitter:
         lines.append(f"{closing_prefix}}}")
         return "\n".join(lines)
 
-    def _emit_leaf_or_op(self, node: WGSLNode, validate: bool) -> Optional[str]:
+    def _emit_leaf_or_op(self, node: WGSLNode, validate: bool) -> str | None:
         """Emit WGSL code for leaf, binding, or operator AST nodes.
 
         Args:
@@ -603,7 +604,7 @@ class WGSLEmitter:
         Returns:
             Optional[str]: Emitted WGSL string if the node is a leaf/op node, else None.
         """
-        result: Optional[str] = None
+        result: str | None = None
         if isinstance(node, WGSLRaw):
             result = node.code
         elif isinstance(node, WGSLBinding):
@@ -648,7 +649,7 @@ class WGSLEmitter:
             result = "\n".join([*node.attrs, block_str])
         return result
 
-    def emit(self, node: Union[str, WGSLNode], validate: bool = True) -> str:
+    def emit(self, node: str | WGSLNode, validate: bool = True) -> str:
         """Emit WGSL string for a node with specification validation.
 
         Args:

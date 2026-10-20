@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Optional, Union, cast
+
+import pydantic
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
@@ -15,8 +15,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
-@dataclass
-class NormalConfig:
+class NormalConfig(pydantic.BaseModel):
     """Configuration for normal distribution parameters.
 
     Attributes:
@@ -24,12 +23,13 @@ class NormalConfig:
         stddev (float): Standard deviation of the normal distribution.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     mean: float = 0.0
     stddev: float = 1.0
 
 
-@dataclass
-class UniformConfig:
+class UniformConfig(pydantic.BaseModel):
     """Configuration for uniform distribution parameters.
 
     Attributes:
@@ -37,12 +37,13 @@ class UniformConfig:
         maxval (Optional[float]): Upper bound of the uniform interval.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     minval: float = 0.0
-    maxval: typing.Optional[float] = None
+    maxval: float | None = None
 
 
-@dataclass
-class RandomGenerationConfig:
+class RandomGenerationConfig(pydantic.BaseModel):
     """Configuration for parameterized truncated normal random number generation.
 
     Attributes:
@@ -53,11 +54,13 @@ class RandomGenerationConfig:
         name (Optional[str]): Optional operation name.
     """
 
+    model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
     means: float = 0.0
     stddevs: float = 1.0
     minvals: float = -2.0
     maxvals: float = 2.0
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class Algorithm:
@@ -158,7 +161,7 @@ def stateless_random_uniform(
     from ml_switcheroo_compiler.ops.creation import full
     from ml_switcheroo_compiler.random.continuous import uniform
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     res = uniform(seed, tuple(shape), dtype_enum)
     res = multiply(res, full(shape, maxval - minval, dtype_enum))
     res = add(res, full(shape, minval, dtype_enum))
@@ -188,7 +191,7 @@ def stateless_random_normal(
     from ml_switcheroo_compiler.ops.creation import full
     from ml_switcheroo_compiler.random.continuous import normal
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     res = normal(seed, tuple(shape), dtype_enum)
     res = multiply(res, full(shape, stddev, dtype_enum))
     res = add(res, full(shape, mean, dtype_enum))
@@ -198,8 +201,8 @@ def stateless_random_normal(
 def stateless_random_binomial(
     shape: Sequence[int],
     seed: Tensor,
-    counts: Union[float, Tensor],
-    probabilities: Union[float, Tensor],
+    counts: float | Tensor,
+    probabilities: float | Tensor,
     dtype: str | DType = "int32",
 ) -> TensorOrScalar:
     """Generate random values from a binomial distribution without maintaining state.
@@ -216,7 +219,7 @@ def stateless_random_binomial(
     """
     from ml_switcheroo_compiler.random.distributions_discrete import binomial
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     return binomial(seed, counts, probabilities, tuple(shape), dtype_enum)
 
 
@@ -243,7 +246,7 @@ def stateless_truncated_normal(
     from ml_switcheroo_compiler.ops.creation import full
     from ml_switcheroo_compiler.random.continuous import truncated_normal
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     res = truncated_normal(seed, -2.0, 2.0, tuple(shape), dtype_enum)
     res = multiply(res, full(shape, stddev, dtype_enum))
     res = add(res, full(shape, mean, dtype_enum))
@@ -270,13 +273,13 @@ def stateless_categorical(
     from ml_switcheroo_compiler.ops import cast as op_cast
     from ml_switcheroo_compiler.random.distributions_discrete import categorical
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     batch_shape = logits.shape[:-1] if logits.shape else ()
     shape = tuple(batch_shape) + (num_samples,)
 
     res = categorical(seed, logits, axis=-1, shape=shape)
     res = op_cast(res, dtype_enum)
-    return cast(TensorOrScalar, res)
+    return typing.cast(TensorOrScalar, res)
 
 
 def stateless_gamma(
@@ -298,7 +301,7 @@ def stateless_gamma(
     """
     from ml_switcheroo_compiler.random.continuous import gamma
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     return gamma(seed, alpha, tuple(shape), dtype_enum)
 
 
@@ -323,7 +326,7 @@ def stateless_beta(
     """
     from ml_switcheroo_compiler.random.continuous import beta
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     return beta(seed, alpha, beta_param, tuple(shape), dtype_enum)
 
 
@@ -350,7 +353,7 @@ def stateless_shuffle(
 def stateless_parameterized_truncated_normal(
     shape: TensorOrScalar,
     seed: TensorOrScalar,
-    config: Optional[RandomGenerationConfig] = None,
+    config: RandomGenerationConfig | None = None,
 ) -> TensorOrScalar:
     """Generate random values from a parameterized truncated normal distribution.
 
@@ -363,7 +366,7 @@ def stateless_parameterized_truncated_normal(
         TensorOrScalar: Sampled truncated normal tensor.
     """
     cfg = config or RandomGenerationConfig()
-    shape_tuple = (int(shape),) if isinstance(shape, int) else tuple(cast("Sequence[int]", shape))
+    shape_tuple = (int(shape),) if isinstance(shape, int) else tuple(typing.cast("Sequence[int]", shape))
     if core_config.eager_mode:
         k0, k1 = _extract_seed_pair(seed)
         num_elems = 1
@@ -485,7 +488,7 @@ def stateless_split(seed: TensorOrScalar, num: TensorOrScalar = 2) -> TensorOrSc
     """
     if core_config.eager_mode:
         return get_active_backend().execute_op("StatelessSplit", seed, num=num)
-    return _emit_shape_node("StatelessSplit", [seed], {"num": num}, (int(cast(int, num)), 2), "int64")
+    return _emit_shape_node("StatelessSplit", [seed], {"num": num}, (int(typing.cast(int, num)), 2), "int64")
 
 
 def stateless_poisson(
@@ -507,7 +510,7 @@ def stateless_poisson(
     """
     from ml_switcheroo_compiler.random.distributions_discrete import poisson
 
-    dtype_enum = DType(dtype) if isinstance(dtype, str) else dtype
+    dtype_enum = DType(dtype)
     return poisson(seed, lam, tuple(shape), dtype_enum)
 
 

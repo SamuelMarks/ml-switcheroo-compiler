@@ -1,15 +1,15 @@
 """Extracted logical functions for numpy eager."""
 
-from types import ModuleType
-from typing import cast
+from __future__ import annotations
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("NotEqual")
-def _np_not_equal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_not_equal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np not equal operation on the active backend array.
 
     Args:
@@ -20,11 +20,11 @@ def _np_not_equal(backend_module: ModuleType, *args: EagerValue, **kwargs: Eager
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.not_equal(*args, **kwargs))
+    return backend_module.not_equal(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Greater")
-def _np_greater(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_greater(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np greater operation on the active backend array.
 
     Args:
@@ -35,11 +35,11 @@ def _np_greater(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.greater(*args, **kwargs))
+    return backend_module.greater(*args, **kwargs)
 
 
 @numpy_eager_registry.register("GreaterEqual")
-def _np_greater_equal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_greater_equal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np greater equal operation on the active backend array.
 
     Args:
@@ -50,11 +50,11 @@ def _np_greater_equal(backend_module: ModuleType, *args: EagerValue, **kwargs: E
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.greater_equal(*args, **kwargs))
+    return backend_module.greater_equal(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Less")
-def _np_less(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_less(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np less operation on the active backend array.
 
     Args:
@@ -65,11 +65,11 @@ def _np_less(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.less(*args, **kwargs))
+    return backend_module.less(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LessEqual")
-def _np_less_equal(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_less_equal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np less equal operation on the active backend array.
 
     Args:
@@ -80,11 +80,11 @@ def _np_less_equal(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.less_equal(*args, **kwargs))
+    return backend_module.less_equal(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LogicalAnd")
-def _np_logical_and(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_logical_and(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np logical and operation on the active backend array.
 
     Args:
@@ -95,11 +95,11 @@ def _np_logical_and(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.logical_and(*args, **kwargs))
+    return backend_module.logical_and(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LogicalOr")
-def _np_logical_or(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_logical_or(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np logical or operation on the active backend array.
 
     Args:
@@ -110,11 +110,11 @@ def _np_logical_or(backend_module: ModuleType, *args: EagerValue, **kwargs: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.logical_or(*args, **kwargs))
+    return backend_module.logical_or(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LogicalNot")
-def _np_logical_not(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_logical_not(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np logical not operation on the active backend array.
 
     Args:
@@ -125,11 +125,11 @@ def _np_logical_not(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.logical_not(*args, **kwargs))
+    return backend_module.logical_not(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LogicalXor")
-def _np_logical_xor(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_logical_xor(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np logical xor operation on the active backend array.
 
     Args:
@@ -140,11 +140,11 @@ def _np_logical_xor(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.logical_xor(*args, **kwargs))
+    return backend_module.logical_xor(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Where")
-def _np_where(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_where(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np where operation on the active backend array.
 
     Args:
@@ -155,11 +155,11 @@ def _np_where(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, backend_module.where(*args, **kwargs))
+    return backend_module.where(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Assert")
-def _np_assert(backend_module: ModuleType, condition: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_assert(backend_module: BackendModuleProtocol, condition: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np assert operation on the active backend array.
 
     Args:
@@ -176,4 +176,4 @@ def _np_assert(backend_module: ModuleType, condition: EagerValue, **kwargs: Eage
     if not getattr(np, "all")(condition):
         data = kwargs.get("data", ["Assertion failed."])
         raise AssertionError(data)
-    return cast(EagerValue, backend_module.array(0))
+    return backend_module.array(0)

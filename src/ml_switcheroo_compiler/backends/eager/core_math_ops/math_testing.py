@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-from typing import cast
+import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @global_eager_registry.register("Allclose")
-def _allclose(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager allclose operation on the active backend array.
 
     Args:
@@ -38,18 +39,18 @@ def _allclose(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         """
         x_data = getattr(x, "data", x)
         if hasattr(x_data, "item") and callable(getattr(x_data, "item")):
-            return cast(EagerValue, getattr(x_data, "item")())
+            return typing.cast("EagerValue", getattr(x_data, "item")())
         if hasattr(x_data, "tolist"):
-            return cast(EagerValue, getattr(x_data, "tolist")())
+            return typing.cast("EagerValue", getattr(x_data, "tolist")())
         return x_data
 
     if hasattr(backend_module, "allclose"):
-        return cast(EagerValue, getattr(backend_module, "allclose")(a, b, rtol=float(cast(float, _val(rtol))), atol=float(cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
-    return cast(EagerValue, _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(cast(float, _val(rtol))), atol=float(cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
+        return typing.cast("EagerValue", getattr(backend_module, "allclose")(a, b, rtol=float(typing.cast(float, _val(rtol))), atol=float(typing.cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
+    return _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(typing.cast(float, _val(rtol))), atol=float(typing.cast(float, _val(atol))), equal_nan=bool(_val(equal_nan)))
 
 
 @global_eager_registry.register("ArrayEquiv")
-def _array_equiv(backend_module: EagerValue, a1: EagerValue, a2: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _array_equiv(backend_module: BackendModuleProtocol, a1: EagerValue, a2: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager array equiv operation on the active backend array.
 
     Args:
@@ -65,7 +66,7 @@ def _array_equiv(backend_module: EagerValue, a1: EagerValue, a2: EagerValue, **k
 
 
 @global_eager_registry.register("Assert")
-def _assert(backend_module: EagerValue, condition: EagerValue, data: EagerValue = None, summarize: int = 3, **kwargs: EagerValue) -> EagerValue:
+def _assert(backend_module: BackendModuleProtocol, condition: EagerValue, data: EagerValue = None, summarize: int = 3, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager assert operation on the active backend array.
 
     Args:
@@ -96,7 +97,7 @@ def _assert(backend_module: EagerValue, condition: EagerValue, data: EagerValue 
 
 
 @global_eager_registry.register("PromoteTypes")
-def _promotetypes(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager promotetypes operation on the active backend array.
 
     Args:
@@ -107,11 +108,11 @@ def _promotetypes(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, getattr(backend_module, "promote_types")(*args, **kwargs))
+    return typing.cast("EagerValue", getattr(backend_module, "promote_types")(*args, **kwargs))
 
 
 @global_eager_registry.register("ResultType")
-def _resulttype(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _resulttype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager resulttype operation on the active backend array.
 
     Args:
@@ -122,4 +123,4 @@ def _resulttype(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return cast(EagerValue, getattr(backend_module, "result_type")(*args, **kwargs))
+    return typing.cast("EagerValue", getattr(backend_module, "result_type")(*args, **kwargs))

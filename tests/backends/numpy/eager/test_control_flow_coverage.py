@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import control_flow as cf_module
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -21,7 +21,7 @@ def test_control_flow_ops() -> None:
     """
     # len(args) < 2
     res_single = cf_module._np_associative_scan(np, np.array([1, 2, 3]))
-    assert cast("EagerCallableProtocol", np.array_equal)(res_single, cast("EagerCallableProtocol", np.array)([1, 2, 3]))
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res_single, typing.cast("EagerCallableProtocol", np.array)([1, 2, 3]))
 
     # len(args) >= 2 with axis 0
     def fn(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -31,28 +31,28 @@ def test_control_flow_ops() -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return cast("EagerTensorProtocol", a) + cast("EagerTensorProtocol", b)
+        return typing.cast("EagerTensorProtocol", a) + typing.cast("EagerTensorProtocol", b)
 
     elems = [np.array([1, 2]), np.array([3, 4]), np.array([5, 6])]
     res_scan = cf_module._np_associative_scan(np, fn, elems, axis=0)
     expected_scan = np.array([[1, 2], [4, 6], [9, 12]])
-    assert cast("EagerCallableProtocol", np.array_equal)(res_scan, expected_scan)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res_scan, expected_scan)
 
     # len(args) >= 2 with axis 1
     elems_2d = np.array([[1, 2, 3], [4, 5, 6]])
     res_scan_axis1 = cf_module._np_associative_scan(np, fn, elems_2d, axis=1)
     expected_scan_axis1 = np.array([[1, 3, 6], [4, 9, 15]])
-    assert cast("EagerCallableProtocol", np.array_equal)(res_scan_axis1, expected_scan_axis1)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res_scan_axis1, expected_scan_axis1)
 
     # registry AssociativeScan
     reg_scan = numpy_eager_registry.get("AssociativeScan")
-    reg_res = cast("EagerCallableProtocol", reg_scan)(np, fn, elems, axis=0)
-    assert cast("EagerCallableProtocol", np.array_equal)(reg_res, expected_scan)
+    reg_res = typing.cast("EagerCallableProtocol", reg_scan)(np, fn, elems, axis=0)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(reg_res, expected_scan)
 
     # StopGradient
     x = np.array([1.0, 2.0])
     res_stop = cf_module._stop_gradient(np, x)
-    assert cast("EagerCallableProtocol", np.array_equal)(res_stop, x)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(res_stop, x)
 
     reg_stop = numpy_eager_registry.get("StopGradient")
-    assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerCallableProtocol", reg_stop)(np, x), x)
+    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", reg_stop)(np, x), x)

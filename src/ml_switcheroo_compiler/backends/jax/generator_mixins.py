@@ -1,6 +1,8 @@
 """JAX Generator Mixins."""
 
-from typing import Optional, cast
+from __future__ import annotations
+
+import typing
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.audio_utils import (
@@ -19,7 +21,7 @@ from ml_switcheroo_compiler.ir.core import IRNode
 class JaxDistributedVisitor:
     """Provide mixin for JAX distributed node visitors."""
 
-    def __init__(self, generator: Optional[BaseGenerator] = None) -> None:
+    def __init__(self, generator: BaseGenerator | None = None) -> None:
         """Init.
 
         Args:
@@ -47,11 +49,11 @@ class JaxDistributedVisitor:
             list[str]: Mutable code lines list.
         """
         if hasattr(target, "code") and isinstance(getattr(target, "code"), list):
-            return cast(list[str], getattr(target, "code"))
+            return typing.cast(list[str], getattr(target, "code"))
         if hasattr(target, "generator") and hasattr(getattr(target, "generator"), "code"):
             gen_code = getattr(target, "generator").code
             if isinstance(gen_code, list):
-                return cast(list[str], gen_code)
+                return typing.cast(list[str], gen_code)
         return []
 
     def visit_Send(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -192,7 +194,7 @@ class JaxDistributedVisitor:
 class JaxMathVisitor:
     """Provide mixin for JAX math node visitors."""
 
-    def __init__(self, generator: Optional[BaseGenerator] = None) -> None:
+    def __init__(self, generator: BaseGenerator | None = None) -> None:
         """Init.
 
         Args:
@@ -613,7 +615,7 @@ class JaxMathVisitor:
 class JaxControlFlowVisitor:
     """Provide mixin for JAX control flow node visitors."""
 
-    def __init__(self, generator: Optional[BaseGenerator] = None) -> None:
+    def __init__(self, generator: BaseGenerator | None = None) -> None:
         """Init.
 
         Args:

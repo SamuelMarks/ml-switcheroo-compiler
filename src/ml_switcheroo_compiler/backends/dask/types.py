@@ -1,14 +1,16 @@
 """Implementation of types operations and utilities for the backends subsystem (`ml_switcheroo_compiler.backends.dask.types`)."""
 
+from __future__ import annotations
+
+import typing
 from types import ModuleType
-from typing import Optional, cast
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 try:
     import dask.array as da
 except ImportError:
-    da = cast(ModuleType, None)
+    da = typing.cast(ModuleType, None)
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -21,10 +23,10 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
         EagerValue: The zeros tensor.
     """
-    return cast(EagerValue, getattr(da, "zeros")(shape, chunks="auto"))
+    return typing.cast(EagerValue, getattr(da, "zeros")(shape, chunks="auto"))
 
 
-def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> EagerValue:
+def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
     """Create a tensor from data.
 
     Args:
@@ -36,8 +38,8 @@ def array(cls: type, data: EagerValue, dtype: Optional[EagerValue] = None) -> Ea
         EagerValue: The array tensor.
     """
     if dtype is not None:
-        return cast(EagerValue, getattr(da, "array")(data, dtype=getattr(dtype, "value", dtype)))
-    return cast(EagerValue, getattr(da, "array")(data))
+        return typing.cast(EagerValue, getattr(da, "array")(data, dtype=getattr(dtype, "value", dtype)))
+    return typing.cast(EagerValue, getattr(da, "array")(data))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -50,7 +52,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: The array tensor.
     """
-    return cast(EagerValue, getattr(da, "asarray")(data))
+    return typing.cast(EagerValue, getattr(da, "asarray")(data))
 
 
 def item(cls: type, data: EagerValue) -> float:

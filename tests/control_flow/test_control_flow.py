@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
 
 from ml_switcheroo_compiler import ops
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -19,7 +20,7 @@ from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.ops.unary.arithmetic import Negative
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -79,8 +80,8 @@ def test_pmap_eager_extra() -> None:
             """
             return x
 
-        res = cast("EagerCallableProtocol", pmap)(f)(t)
-        assert isinstance(res, Tensor)
+        res = typing.cast("EagerCallableProtocol", pmap)(f)(t)
+        assert isinstance(typing.cast("EagerValue", res), Tensor)
     finally:
         config.eager_mode = False
 
@@ -141,7 +142,7 @@ def test_scan_tuple_return() -> None:
             """
             return (c, (x, x))
 
-        cast("EagerCallableProtocol", scan)(f, xs, xs)
+        typing.cast("EagerCallableProtocol", scan)(f, xs, xs)
     finally:
         config.eager_mode = False
     assert callable(test_scan_tuple_return)
@@ -187,7 +188,7 @@ def test_tracing_exceptions() -> None:
     with pytest.raises((RuntimeError, TracingError, Exception)):
         map_fn_tracing(lambda x: x, t)
     with pytest.raises((RuntimeError, TracingError, Exception)):
-        cast("EagerCallableProtocol", pmap_tracing)(lambda x: x)(t)
+        typing.cast("EagerCallableProtocol", pmap_tracing)(lambda x: x)(t)
     assert_value_tracing(t, "msg")
     pt = ProxyTensor(id="id", shape=(), dtype="float32")
     t2 = Tensor(pt, t.config)
@@ -203,7 +204,7 @@ def test_assert_op_infer_shape() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    assert cast("EagerCallableProtocol", AssertOp)().infer_shape(None) == ()
+    assert typing.cast("EagerCallableProtocol", AssertOp)().infer_shape(None) == ()
 
 
 def test_pmap_tracing_non_tensor() -> None:
@@ -219,7 +220,7 @@ def test_pmap_tracing_non_tensor() -> None:
     try:
         pt = ProxyTensor(id="id", shape=(1,), dtype="float32")
         t2 = Tensor(pt, t.config)
-        cast("EagerCallableProtocol", pmap_tracing)(lambda x, y: x)(t2, 42)
+        typing.cast("EagerCallableProtocol", pmap_tracing)(lambda x, y: x)(t2, 42)
     finally:
         global_tracing_state.stop_tracing()
     assert t.shape == (1,)
@@ -248,8 +249,8 @@ def test_vmap_eager() -> None:
             """
             return Tensor(getattr(t, "data") * 2, TensorConfig(getattr(t, "shape"), getattr(t, "dtype"), getattr(t, "device")))
 
-        res = cast("EagerCallableProtocol", vmap)(func)(x)
-        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res, "data")), cast("EagerCallableProtocol", np.array)([2, 4, 6]))
+        res = typing.cast("EagerCallableProtocol", vmap)(func)(x)
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(res, "data")), typing.cast("EagerCallableProtocol", np.array)([2, 4, 6]))
 
 
 def test_pmap_eager() -> None:
@@ -272,8 +273,8 @@ def test_pmap_eager() -> None:
             """
             return Tensor(getattr(t, "data") * 2, TensorConfig(getattr(t, "shape"), getattr(t, "dtype"), getattr(t, "device")))
 
-        res = cast("EagerCallableProtocol", pmap)(func)(x)
-        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(res, "data")), cast("EagerCallableProtocol", np.array)([2, 4, 6]))
+        res = typing.cast("EagerCallableProtocol", pmap)(func)(x)
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(res, "data")), typing.cast("EagerCallableProtocol", np.array)([2, 4, 6]))
 
 
 def test_vmap_trace() -> None:
@@ -297,8 +298,8 @@ def test_vmap_trace() -> None:
             return t
 
         global_tracing_state.start_tracing()
-        res = cast("EagerCallableProtocol", vmap)(func)(x)
-        assert cast("EagerTensorProtocol", getattr(res, "dtype")) == DType.Int32
+        res = typing.cast("EagerCallableProtocol", vmap)(func)(x)
+        assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == DType.Int32
         global_tracing_state.stop_tracing()
 
 
@@ -323,8 +324,8 @@ def test_pmap_trace() -> None:
             return t
 
         global_tracing_state.start_tracing()
-        res = cast("EagerCallableProtocol", pmap)(func)(x)
-        assert cast("EagerTensorProtocol", getattr(res, "dtype")) == DType.Int32
+        res = typing.cast("EagerCallableProtocol", pmap)(func)(x)
+        assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == DType.Int32
         global_tracing_state.stop_tracing()
 
 
@@ -348,7 +349,7 @@ def test_trace_function_type_error() -> None:
 
     try:
         with pytest.raises(TypeError, match="Control flow functions must return a Tensor or a tuple of Tensors."):
-            cast("EagerCallableProtocol", _trace_function)(bad_func, (), "test")
+            typing.cast("EagerCallableProtocol", _trace_function)(bad_func, (), "test")
     finally:
         global_tracing_state.is_tracing = False
         global_tracing_state.active_graph = None
@@ -369,9 +370,9 @@ def test_control_flow_outside_tracing() -> None:
         with pytest.raises((RuntimeError, TracingError, Exception), match="Cannot emit Scan node outside of a tracing context."):
             scan(lambda c, x: (c, x), pred, pred)
         with pytest.raises((RuntimeError, TracingError, Exception), match="Cannot emit Vmap outside of a tracing context."):
-            cast("EagerCallableProtocol", vmap)(lambda x: x)(pred)
+            typing.cast("EagerCallableProtocol", vmap)(lambda x: x)(pred)
         with pytest.raises((RuntimeError, TracingError, Exception), match="Cannot emit Pmap outside of a tracing context."):
-            cast("EagerCallableProtocol", pmap)(lambda x: x)(pred)
+            typing.cast("EagerCallableProtocol", pmap)(lambda x: x)(pred)
 
 
 def test_stop_gradient() -> None:
@@ -402,7 +403,7 @@ def test_stop_gradient() -> None:
         assert node2.op_type == "StopGradient"
         assert node2.inputs == ["input_proxy"]
         val = 42.0
-        assert id(cast("EagerCallableProtocol", stop_gradient)(val)) == id(val)
+        assert id(typing.cast("EagerCallableProtocol", stop_gradient)(val)) == id(val)
     finally:
         global_tracing_state.stop_tracing()
 
@@ -429,8 +430,8 @@ def test_vmap_tuple_axes() -> None:
 
         vmap_f = vmap(f, in_axes=(0,), out_axes=(0,))
         x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
-        y = cast("EagerCallableProtocol", vmap_f)(x)
-        assert cast("EagerCallableProtocol", np.array_equal)(cast("EagerTensorProtocol", getattr(y, "data")), cast("EagerCallableProtocol", np.array)([-1, -2]))
+        y = typing.cast("EagerCallableProtocol", vmap_f)(x)
+        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(y, "data")), typing.cast("EagerCallableProtocol", np.array)([-1, -2]))
 
 
 def test_new_control_flow_fori() -> None:
@@ -509,7 +510,7 @@ def test_new_control_flow_custom_gradient() -> None:
         """
         return (ops.multiply(x, 2.0), lambda g: ops.multiply(g, 2.0))
 
-    res_custom = cast("EagerCallableProtocol", my_fn)(arg)
+    res_custom = typing.cast("EagerCallableProtocol", my_fn)(arg)
     assert res_custom is not None
 
 
@@ -520,7 +521,7 @@ def test_switch_empty() -> None:
     from ml_switcheroo_compiler.ops.control_flow import switch
 
     with pytest.raises(ValueError, match="branches cannot be empty"):
-        cast("EagerCallableProtocol", switch)(0, [])
+        typing.cast("EagerCallableProtocol", switch)(0, [])
 
 
 def test_map_fn_lazy() -> None:
@@ -572,18 +573,18 @@ def test_dyn_custom_grad_infer_shape_and_vjp() -> None:
         graph = global_tracing_state.start_tracing()
         try:
             pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
-            out = cast("EagerCallableProtocol", my_op)(pt)
+            out = typing.cast("EagerCallableProtocol", my_op)(pt)
             assert out is not None
-            node = cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(cast("EagerTensorProtocol", getattr(out, "_data")).id))
+            node = typing.cast("EagerTensorProtocol", getattr(graph.nodes, "__getitem__")(typing.cast("EagerTensorProtocol", getattr(out, "_data")).id))
             op_obj = getattr(node, "op", getattr(node, "op_type", None))
             from ml_switcheroo_compiler.ops.registry import get_op
 
-            OpCls = cast("EagerCallableProtocol", get_op)(op_obj)
+            OpCls = typing.cast("EagerCallableProtocol", get_op)(op_obj)
             inst = OpCls()
             assert inst.infer_shape() == (1,)
             from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
 
-            vjp_fn = cast("EagerCallableProtocol", get_vjp)(op_obj)
+            vjp_fn = typing.cast("EagerCallableProtocol", get_vjp)(op_obj)
             assert vjp_fn(graph, None, "cot") == tuple()
         finally:
             global_tracing_state.stop_tracing()
@@ -603,7 +604,7 @@ def test_case_and_switch_case() -> None:
         config.eager_mode = True
         with pytest.raises(ValueError, match="case requires at least one"):
             case([])
-        assert cast("EagerCallableProtocol", case)([], default=lambda: 42) == 42
+        assert typing.cast("EagerCallableProtocol", case)([], default=lambda: 42) == 42
         with pytest.raises(ValueError, match="switch_case requires at least one branch"):
             from ml_switcheroo_compiler.core.device import Device, DeviceType
             from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -618,7 +619,7 @@ def test_case_and_switch_case() -> None:
         import numpy as np
 
         t_index = Tensor(np.array(1), TensorConfig((), "int32", Device(DeviceType.CPU)))
-        cast("EagerCallableProtocol", switch_case)(t_index, {0: lambda: 10, 1: lambda: 20})
+        typing.cast("EagerCallableProtocol", switch_case)(t_index, {0: lambda: 10, 1: lambda: 20})
     finally:
         config.eager_mode = orig
 
@@ -631,7 +632,7 @@ def test_infer_shapes() -> None:
     assert DebugInfs().infer_shape(1) == 1
     assert DebugNans().infer_shape() == ()
     assert DebugNans().infer_shape(2) == 2
-    assert cast("EagerCallableProtocol", SwitchOp)().infer_shape(None, None) == ()
+    assert typing.cast("EagerCallableProtocol", SwitchOp)().infer_shape(None, None) == ()
     assert ScanOp().infer_shape() == ()
     assert AssociativeScan().infer_shape() == ()
     assert AssociativeScan().infer_shape(3) == 3
@@ -671,7 +672,7 @@ def test_associative_scan_lazy() -> None:
         try:
             pt = ProxyTensor(id="pt", shape=(2, 2), dtype="float32")
             out = associative_scan(pt)
-            assert getattr(out, "shape", cast("EagerTensorProtocol", getattr(out, "_data")).shape) == (2, 2)
+            assert getattr(out, "shape", typing.cast("EagerTensorProtocol", getattr(out, "_data")).shape) == (2, 2)
         finally:
             global_tracing_state.stop_tracing()
     finally:
@@ -682,5 +683,5 @@ def test_scan_bind() -> None:
     """Test scan_bind."""
     from ml_switcheroo_compiler.ops.control_flow import scan_bind
 
-    (f, xs) = cast("EagerCallableProtocol", scan_bind)(lambda x: x, [1, 2], 3, kw=4)
+    (f, xs) = typing.cast("EagerCallableProtocol", scan_bind)(lambda x: x, [1, 2], 3, kw=4)
     assert xs == [1, 2]

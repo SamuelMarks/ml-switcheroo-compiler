@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
-if TYPE_CHECKING:
+from ml_switcheroo_ir import LogicalNode, NodeDict
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -27,9 +31,9 @@ def test_strategy_resolvers() -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     c = Coordinator()
-    assert not c.joined
+    assert not typing.cast("EagerValue", c.joined)
     c.join()
-    assert c.joined
+    assert typing.cast("EagerValue", c.joined)
 
     # Cluster topology and distributed topologies
     cluster_top = load_cluster_topology()
@@ -53,16 +57,16 @@ def test_strategy_resolvers() -> None:
     m = SPMDShardingStrategy(layout_map={"n_out": "spec"})
     g_mesh = IRGraph()
     n_in_mesh = IRNode(id="n_in_mesh", op_type="Input")
-    n_in_mesh.sharding = "in_spec"
+    object.__setattr__(n_in_mesh, "sharding", "in_spec")
     n_out_mesh = IRNode(id="n_out_mesh", op_type="Add", inputs=["n_in_mesh"])
-    g_mesh.nodes = {"n_in_mesh": n_in_mesh, "n_out_mesh": n_out_mesh}
+    g_mesh.nodes = NodeDict({"n_in_mesh": n_in_mesh, "n_out_mesh": n_out_mesh})
     m.propagate_layouts(g_mesh)
-    assert g_mesh.nodes["n_out_mesh"].sharding == "in_spec"
+    assert typing.cast("EagerValue", g_mesh.nodes["n_out_mesh"].sharding) == "in_spec"
 
     n_out_mesh2 = IRNode(id="n_out", op_type="Add", inputs=["n_in_mesh"])
     g_mesh.nodes["n_out"] = n_out_mesh2
     m.propagate_layouts(g_mesh)
-    assert g_mesh.nodes["n_out"].sharding == "spec"
+    assert typing.cast("EagerValue", g_mesh.nodes["n_out"].sharding) == "spec"
 
     with patch("ml_switcheroo_compiler.transforms.passes.spmd.inject_spmd_communication_pass", return_value=True):
         assert m.lower_sharding(g_mesh) is True
@@ -93,7 +97,7 @@ def _test_strategy_more_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
     n_in = IRNode(id="x", op_type="Input")
     n_lin = IRNode(id="linear", op_type="Linear", inputs=["x"])
     n_act = IRNode(id="relu", op_type="Relu", inputs=["linear"])
-    g_mp.nodes = {"x": n_in, "linear": n_lin, "relu": n_act}
+    g_mp.nodes = NodeDict({"x": n_in, "linear": n_lin, "relu": n_act})
     assert mp.partition_linear(g_mp) is True
     assert "linear_tp_all_reduce" in g_mp.nodes
 
@@ -156,33 +160,33 @@ def _test_strategy_more_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
     """
     IRGraph, PerWorkerValue, PipelineParallelismStrategy, RemoteValue = _state["IRGraph"], _state["PerWorkerValue"], _state["PipelineParallelismStrategy"], _state["RemoteValue"]
     os, p_nonexist, patch, pytest = _state["os"], _state["p_nonexist"], _state["patch"], _state["pytest"]
-    assert p_nonexist.restore_latest_checkpoint() is None
+    assert typing.cast("EagerValue", p_nonexist.restore_latest_checkpoint()) is None
 
     from ml_switcheroo_compiler.distributed.config_models import (
         load_distributed_topologies,
     )
 
     dt_cfg = load_distributed_topologies()
-    assert "mesh_dp_tp" in dt_cfg.cluster_meshes
-    assert "host_0" in dt_cfg.device_topologies
-    assert "default_webrtc" in dt_cfg.signaling_topologies
+    assert typing.cast("EagerValue", "mesh_dp_tp") in dt_cfg.cluster_meshes
+    assert typing.cast("EagerValue", "host_0") in dt_cfg.device_topologies
+    assert typing.cast("EagerValue", "default_webrtc") in dt_cfg.signaling_topologies
 
     explicit_dt_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "distributed", "distributed_topologies.yaml")
     if os.path.exists(explicit_dt_path):
-        dt_cfg2 = cast("EagerCallableProtocol", load_distributed_topologies)(path=explicit_dt_path)
+        dt_cfg2 = typing.cast("EagerCallableProtocol", load_distributed_topologies)(path=explicit_dt_path)
         assert "mesh_dp_tp" in dt_cfg2.cluster_meshes
 
     # PerWorkerValue
     pwv = PerWorkerValue([1, 2])
-    assert pwv.values == [1, 2]
+    assert typing.cast("EagerValue", pwv.values) == [1, 2]
 
     # RemoteValue
     rv = RemoteValue()
-    assert rv.value is None
+    assert typing.cast("EagerValue", rv.value) is None
 
     # PipelineParallelismStrategy
     with patch("ml_switcheroo_compiler.distributed.config_models.PipelineTopologiesConfig") as mock_conf:
-        mock_conf.return_value.get.return_value = None
+        setattr(mock_conf.return_value.get, "return_value", None)
         with pytest.raises(ValueError):
             PipelineParallelismStrategy(topology_name="missing_topology")
 
@@ -215,11 +219,11 @@ def _test_strategy_more_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     strategy = PipelineParallelismStrategy(num_microbatches=4)
-    g = cast("EagerTensorProtocol", IRGraph())
+    g = typing.cast("EagerTensorProtocol", IRGraph())
     # Add input and compute nodes for microbatch loop
     n_in = IRNode(id="n_in", op_type="Input")
     n_out = IRNode(id="n_out", op_type="Add", inputs=["n_in"])
-    setattr(g, "nodes", {"n_in": n_in, "n_out": n_out})
+    setattr(g, "nodes", NodeDict(typing.cast("dict[str, LogicalNode]", {"n_in": n_in, "n_out": n_out})))
     setattr(g, "inputs", ["n_in"])
     setattr(g, "outputs", ["n_out"])
 
@@ -227,7 +231,7 @@ def _test_strategy_more_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     setattr(strategy, "config", MagicMock())
     strategy.config.schedule = None
 
-    cast("EagerCallableProtocol", strategy.generate_microbatch_loop)(g)
+    typing.cast("EagerCallableProtocol", strategy.generate_microbatch_loop)(g)
     assert "microbatch_loop" in g.nodes
     getattr(_state, "update")({"IRGraph": IRGraph, "IRNode": IRNode, "PipelineParallelismStrategy": PipelineParallelismStrategy, "g": g})
     getattr(_state, "update")({"n": n, "n_in": n_in, "n_out": n_out, "patch": patch})
@@ -253,7 +257,7 @@ def _test_strategy_more_coverage_part_5(_state: dict[str, EagerTensorProtocol]) 
     n_in2 = IRNode(id="n_in2", op_type="Input")
     n_grad = IRNode(id="n_grad", op_type="Grad", inputs=["n_in2"])
     n_opt = IRNode(id="n_opt", op_type="OptimizerStep", inputs=["n_grad"])
-    setattr(g2, "nodes", {"n_in2": n_in2, "n_grad": n_grad, "n_opt": n_opt})
+    setattr(g2, "nodes", NodeDict(typing.cast("dict[str, LogicalNode]", {"n_in2": n_in2, "n_grad": n_grad, "n_opt": n_opt})))
     strategy.track_gradient_accumulation(g2)
     assert "n_grad_accum" in g2.nodes
 

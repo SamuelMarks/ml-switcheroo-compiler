@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 import numpy as np
 import pytest
@@ -30,7 +30,7 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
     sgd_update,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -59,9 +59,9 @@ def test_sgd(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", sgd_update)(p, g, cast("EagerCallableProtocol", SGDConfig)(lr=0.1))
+    (new_p, state) = typing.cast("EagerCallableProtocol", sgd_update)(p, g, typing.cast("EagerCallableProtocol", SGDConfig)(lr=0.1))
     assert new_p is not None
-    (new_p2, state2) = cast("EagerCallableProtocol", sgd_update)(p, g, cast("EagerCallableProtocol", SGDConfig)(lr=0.1, momentum=0.9, weight_decay=0.01))
+    (new_p2, state2) = typing.cast("EagerCallableProtocol", sgd_update)(p, g, typing.cast("EagerCallableProtocol", SGDConfig)(lr=0.1, momentum=0.9, weight_decay=0.01))
     assert new_p2 is not None
 
 
@@ -75,7 +75,7 @@ def test_adam(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", adam_update)(p, g, cast("EagerCallableProtocol", AdamHyperparams)(lr=0.1))
+    (new_p, state) = typing.cast("EagerCallableProtocol", adam_update)(p, g, typing.cast("EagerCallableProtocol", AdamHyperparams)(lr=0.1))
     assert new_p is not None
 
 
@@ -89,7 +89,7 @@ def test_adamw(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", adamw_update)(p, g, cast("EagerCallableProtocol", AdamWHyperparams)(lr=0.1))
+    (new_p, state) = typing.cast("EagerCallableProtocol", adamw_update)(p, g, typing.cast("EagerCallableProtocol", AdamWHyperparams)(lr=0.1))
     assert new_p is not None
 
 
@@ -103,7 +103,7 @@ def test_adagrad(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", adagrad_update)(p, g, cast("EagerCallableProtocol", AdagradConfig)(lr=0.1))
+    (new_p, state) = typing.cast("EagerCallableProtocol", adagrad_update)(p, g, typing.cast("EagerCallableProtocol", AdagradConfig)(lr=0.1))
     assert new_p is not None
 
 
@@ -117,9 +117,9 @@ def test_rmsprop(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", rmsprop_update)(p, g, cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1))
+    (new_p, state) = typing.cast("EagerCallableProtocol", rmsprop_update)(p, g, typing.cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1))
     assert new_p is not None
-    (new_p2, state2) = cast("EagerCallableProtocol", rmsprop_update)(p, g, cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1, momentum=0.9, centered=True))
+    (new_p2, state2) = typing.cast("EagerCallableProtocol", rmsprop_update)(p, g, typing.cast("EagerCallableProtocol", RMSPropHyperparams)(lr=0.1, momentum=0.9, centered=True))
     assert new_p2 is not None
 
 
@@ -133,7 +133,7 @@ def test_adadelta(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", adadelta_update)(p, g, cast("EagerCallableProtocol", AdadeltaConfig)(lr=1.0))
+    (new_p, state) = typing.cast("EagerCallableProtocol", adadelta_update)(p, g, typing.cast("EagerCallableProtocol", AdadeltaConfig)(lr=1.0))
     assert new_p is not None
 
 
@@ -147,7 +147,7 @@ def test_adamax(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", adamax_update)(p, g, cast("EagerCallableProtocol", AdamaxHyperparams)(lr=0.1))
+    (new_p, state) = typing.cast("EagerCallableProtocol", adamax_update)(p, g, typing.cast("EagerCallableProtocol", AdamaxHyperparams)(lr=0.1))
     assert new_p is not None
 
 
@@ -161,7 +161,7 @@ def test_lion(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", lion_update)(p, g, cast("EagerCallableProtocol", LionConfig)(lr=0.1))
+    (new_p, state) = typing.cast("EagerCallableProtocol", lion_update)(p, g, typing.cast("EagerCallableProtocol", LionConfig)(lr=0.1))
     assert new_p is not None
 
 
@@ -175,7 +175,7 @@ def test_adafactor(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", adafactor_update)(p, g, lr=0.1)
+    (new_p, state) = typing.cast("EagerCallableProtocol", adafactor_update)(p, g, lr=0.1)
     assert new_p is not None
 
 
@@ -189,7 +189,7 @@ def test_muon(tensor_fixtures: EagerTensorProtocol) -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     (p, g) = tensor_fixtures
-    (new_p, state) = cast("EagerCallableProtocol", muon_update)(p, g, lr=0.1)
+    (new_p, state) = typing.cast("EagerCallableProtocol", muon_update)(p, g, lr=0.1)
     assert new_p is not None
 
 
@@ -202,7 +202,7 @@ def test_apply_adam(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adam
 
-    (p_new, m_new, v_new) = cast("EagerCallableProtocol", apply_adam)(p, p, p, g, 0.1)
+    (p_new, m_new, v_new) = typing.cast("EagerCallableProtocol", apply_adam)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -215,7 +215,7 @@ def test_apply_adagrad(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_adagrad
 
-    (p_new, a_new) = cast("EagerCallableProtocol", apply_adagrad)(p, p, g, 0.1)
+    (p_new, a_new) = typing.cast("EagerCallableProtocol", apply_adagrad)(p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -228,7 +228,7 @@ def test_apply_ftrl(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_ftrl
 
-    (p_new, a_new, l_new) = cast("EagerCallableProtocol", apply_ftrl)(p, p, p, g, 0.1)
+    (p_new, a_new, l_new) = typing.cast("EagerCallableProtocol", apply_ftrl)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -241,7 +241,7 @@ def test_apply_rmsprop(tensor_fixtures: EagerTensorProtocol) -> None:
     (p, g) = tensor_fixtures
     from ml_switcheroo_compiler.ops.optimizers.updates import apply_rmsprop
 
-    (p_new, m_new, mom_new) = cast("EagerCallableProtocol", apply_rmsprop)(p, p, p, g, 0.1)
+    (p_new, m_new, mom_new) = typing.cast("EagerCallableProtocol", apply_rmsprop)(p, p, p, g, 0.1)
     assert p_new is not None
 
 
@@ -266,9 +266,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return cast("EagerCallableProtocol", apply_adam)(a, a, a, b, 0.1)
+        return typing.cast("EagerCallableProtocol", apply_adam)(a, a, a, b, 0.1)
 
-    out1 = cast("EagerCallableProtocol", _trace_function)(run_adam, (p, g), "adam")
+    out1 = typing.cast("EagerCallableProtocol", _trace_function)(run_adam, (p, g), "adam")
     assert out1 is not None
 
     def run_adagrad(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -278,9 +278,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return cast("EagerCallableProtocol", apply_adagrad)(a, a, b, 0.1)
+        return typing.cast("EagerCallableProtocol", apply_adagrad)(a, a, b, 0.1)
 
-    out2 = cast("EagerCallableProtocol", _trace_function)(run_adagrad, (p, g), "adagrad")
+    out2 = typing.cast("EagerCallableProtocol", _trace_function)(run_adagrad, (p, g), "adagrad")
     assert out2 is not None
 
     def run_ftrl(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -290,9 +290,9 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return cast("EagerCallableProtocol", apply_ftrl)(a, a, a, b, 0.1)
+        return typing.cast("EagerCallableProtocol", apply_ftrl)(a, a, a, b, 0.1)
 
-    out3 = cast("EagerCallableProtocol", _trace_function)(run_ftrl, (p, g), "ftrl")
+    out3 = typing.cast("EagerCallableProtocol", _trace_function)(run_ftrl, (p, g), "ftrl")
     assert out3 is not None
 
     def run_rmsprop(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -302,7 +302,7 @@ def test_apply_trace_fallback(tensor_fixtures: EagerTensorProtocol) -> None:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return cast("EagerCallableProtocol", apply_rmsprop)(a, a, a, b, 0.1)
+        return typing.cast("EagerCallableProtocol", apply_rmsprop)(a, a, a, b, 0.1)
 
-    out4 = cast("EagerCallableProtocol", _trace_function)(run_rmsprop, (p, g), "rmsprop")
+    out4 = typing.cast("EagerCallableProtocol", _trace_function)(run_rmsprop, (p, g), "rmsprop")
     assert out4 is not None

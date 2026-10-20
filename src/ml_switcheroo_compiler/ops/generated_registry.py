@@ -130,17 +130,7 @@ def load_backend_mappings(backends_dir: str = "src/ml_switcheroo_compiler/backen
     return mappings
 
 
-OpRegistryValue = typing.Union[
-    str,
-    int,
-    float,
-    bool,
-    list["OpRegistryValue"],
-    dict[str, "OpRegistryValue"],
-    Mapping[str, "OpRegistryValue"],
-    tuple["OpRegistryValue", ...],
-    None,
-]
+OpRegistryValue = typing.Union[str, int, float, bool, list["OpRegistryValue"], dict[str, "OpRegistryValue"], Mapping[str, "OpRegistryValue"], tuple["OpRegistryValue", ...], "None"]
 
 
 def _normalize_backend_variant_rule(

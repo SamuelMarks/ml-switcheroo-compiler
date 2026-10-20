@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest import mock
 
 import numpy as np
@@ -34,7 +34,7 @@ from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -131,7 +131,7 @@ def test_ragged_shape_and_broadcasting() -> None:
     assert to_list(b_rev_b) == [[20, 20, 20], [20], [20, 20]]
 
     # Classmethod invocation
-    res_pair = cast("EagerTensorProtocol", getattr(AwkwardGenerator, "broadcast_ragged"))(5, [[1], [2, 3]])
+    res_pair = typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "broadcast_ragged"))(5, [[1], [2, 3]])
     assert to_list(res_pair[0]) == [[5], [5, 5]]
 
 
@@ -141,7 +141,7 @@ def test_layout_conversions() -> None:
 
     # to_regular padding
     regular_padded = to_regular(jagged, fill_value=0)
-    cast("EagerCallableProtocol", np.testing.assert_array_equal)(regular_padded, cast("EagerCallableProtocol", np.array)([[1, 2], [3, 0]]))
+    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(regular_padded, typing.cast("EagerCallableProtocol", np.array)([[1, 2], [3, 0]]))
 
     # from_regular
     from_reg = from_regular([[1, 2], [3, 4]])
@@ -165,15 +165,15 @@ def test_layout_conversions() -> None:
     assert layout_info["is_ragged"] is True
 
     # Classmethods on AwkwardGenerator
-    assert bool(cast("EagerTensorProtocol", getattr(AwkwardGenerator, "is_ragged"))([[1], [2, 3]])) is True
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "ragged_shape"))([[1], [2]]) == (2, 1)
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "to_regular"))([[1, 2], [3]]) is not None
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "from_regular"))([[1, 2]]) is not None
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "to_numpy"))(np.array([1])) is not None
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "from_numpy"))(np.array([1])) is not None
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "to_list"))([1, 2]) == [1, 2]
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "from_iter"))([1, 2]) is not None
-    assert cast("EagerTensorProtocol", getattr(AwkwardGenerator, "get_layout"))([[1]]) is not None
+    assert bool(typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "is_ragged"))([[1], [2, 3]])) is True
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "ragged_shape"))([[1], [2]]) == (2, 1)
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "to_regular"))([[1, 2], [3]]) is not None
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "from_regular"))([[1, 2]]) is not None
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "to_numpy"))(np.array([1])) is not None
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "from_numpy"))(np.array([1])) is not None
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "to_list"))([1, 2]) == [1, 2]
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "from_iter"))([1, 2]) is not None
+    assert typing.cast("EagerTensorProtocol", getattr(AwkwardGenerator, "get_layout"))([[1]]) is not None
 
 
 def test_generator_dedicated_visitors() -> None:
@@ -208,7 +208,7 @@ def test_eager_dispatch_error_and_fallbacks() -> None:
     assert _unwrap_arg(t1) is not None
     assert _unwrap_arg(5) == 5
     res = execute_op("Add", t1, t2)
-    cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [4.0, 6.0])
+    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [4.0, 6.0])
 
     # Classmethod dispatch
     assert ak_pkg.execute_op("Add", 1, 2) == 3
@@ -360,9 +360,9 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
     FakeNoToRegularAk = _state["FakeNoToRegularAk"]
     with mock.patch("ml_switcheroo_compiler.backends.awkward.types._get_ak_module", return_value=FakeNoToRegularAk):
         res_reg = to_regular([[1, 2], 3], fill_value=9)
-        assert cast("EagerTensorProtocol", getattr(res_reg, "shape")) == (2, 2)
+        assert typing.cast("EagerTensorProtocol", getattr(res_reg, "shape")) == (2, 2)
         assert (
-            cast(
+            typing.cast(
                 "EagerTensorProtocol",
                 getattr(res_reg, "__getitem__")(
                     (
@@ -375,7 +375,7 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
         )
 
         res_non_list = to_regular(np.array([1, 2]))
-        assert cast("EagerCallableProtocol", len)(res_non_list) == 2
+        assert typing.cast("EagerCallableProtocol", len)(res_non_list) == 2
 
     class FakeBrokenConversionsAk:
         """Test class FakeBrokenConversionsAk."""
@@ -441,14 +441,14 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_4(_state: dict[str, 
             """Test function tolist."""
             return [10, 20]
 
-    assert cast("EagerCallableProtocol", to_list)(cast("EagerCallableProtocol", ObjectWithToList)()) == [10, 20]
+    assert typing.cast("EagerCallableProtocol", to_list)(typing.cast("EagerCallableProtocol", ObjectWithToList)()) == [10, 20]
 
     class ObjectWithLayout:
         """Test class ObjectWithLayout."""
 
         layout = "dummy_layout"
 
-    assert cast("EagerCallableProtocol", get_layout)(cast("EagerCallableProtocol", ObjectWithLayout)()) == "dummy_layout"
+    assert typing.cast("EagerCallableProtocol", get_layout)(typing.cast("EagerCallableProtocol", ObjectWithLayout)()) == "dummy_layout"
     getattr(_state, "update")({"ObjectWithLayout": ObjectWithLayout, "ObjectWithToList": ObjectWithToList})
 
 
@@ -477,7 +477,7 @@ def test_awkward_full_branches_and_edge_cases() -> None:
         """
         if name == "awkward":
             raise ImportError("no awkward")
-        return cast("EagerCallableProtocol", real_import)(name, *args, **kwargs)
+        return typing.cast("EagerCallableProtocol", real_import)(name, *args, **kwargs)
 
     with mock.patch("importlib.import_module", side_effect=fake_import):
         res = execute_op("Sum", [[1, 2], [3]], axis=1)

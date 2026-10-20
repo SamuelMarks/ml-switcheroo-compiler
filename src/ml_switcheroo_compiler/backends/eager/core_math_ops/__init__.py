@@ -1,5 +1,7 @@
 """Public package exports and initialization for `ml_switcheroo_compiler.backends.eager.core_math_ops`."""
 
+from __future__ import annotations
+
 import builtins  # noqa: F401
 
 from .math_arithmetic import (

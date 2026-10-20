@@ -269,13 +269,13 @@ def test_main_mixed_paths_error(tmp_path: Path) -> None:
 
 
 def test_main_framework_snapshots_resolution(tmp_path: Path) -> None:
-    """Test resolving ../ml-framework-snapshots and snapshots/ subdirectories.
+    """Test resolving ../ml-ecosystem-snapshots and snapshots/ subdirectories.
 
     Args:
         tmp_path (Path): Temporary test directory path.
     """
     buf = io.StringIO()
-    exit_code = main(["--old", "../ml-framework-snapshots", "--new", "../ml-framework-snapshots"], stdout=buf)
+    exit_code = main(["--old", "../ml-ecosystem-snapshots", "--new", "../ml-ecosystem-snapshots"], stdout=buf)
     assert exit_code == 0
     assert "Directory snapshot drift check passed" in buf.getvalue()
 

@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Union, cast
+import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("Mvlgamma")
 def _np_mvlgamma(
-    backend_module: ModuleType,
-    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, float],
-    **kwargs: Union[int, float],
+    backend_module: BackendModuleProtocol,
+    *args: EagerValue,
+    **kwargs: int | float,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Execute the eager np mvlgamma operation on the active backend array.
 
@@ -26,4 +26,4 @@ def _np_mvlgamma(
     Returns:
         np.ndarray: Log multivariate gamma evaluation.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.mvlgamma(*args, **kwargs))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.mvlgamma(*args, **kwargs))

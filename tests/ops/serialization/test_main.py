@@ -5,11 +5,12 @@ from __future__ import annotations
 # ruff: noqa: E501
 import os
 import tempfile
+import typing
 import zipfile
-from typing import TYPE_CHECKING, cast
 
 import pytest
 
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.serialization import (
     CustomObjectScope,
     KerasFileEditor,
@@ -56,7 +57,7 @@ from ml_switcheroo_compiler.serialization import (
     serialize_object,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -115,7 +116,7 @@ class MockModel:
                 """Test function numpy."""
                 return "ema2_data"
 
-        cast("EagerCallableProtocol", self.ema_variables.append)(cast("EagerCallableProtocol", EMA2)())
+        typing.cast("EagerCallableProtocol", self.ema_variables.append)(typing.cast("EagerCallableProtocol", EMA2)())
 
     def get_config(self) -> EagerValue:
         """Test function get_config."""
@@ -160,7 +161,7 @@ def test_save_load_helpers(mocker: EagerTensorProtocol) -> None:
 
 def test_validate_and_map_weights() -> None:
     """Test function test_validate_and_map_weights."""
-    assert cast("EagerCallableProtocol", _validate_and_map_weights)({"a": 1}) == {"a": 1}
+    assert typing.cast("EagerCallableProtocol", _validate_and_map_weights)({"a": 1}) == {"a": 1}
 
 
 def test_load_save_weights(mocker: EagerTensorProtocol) -> None:
@@ -172,7 +173,7 @@ def test_load_save_weights(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.serialization.PickleWeightFormat.load", return_value={"a": 1})
     assert load_weights("test.pkl") == {"a": 1}
     with tempfile.NamedTemporaryFile() as f:
-        cast("EagerCallableProtocol", save_weights)(cast("EagerCallableProtocol", MockModel)(), f.name)
+        typing.cast("EagerCallableProtocol", save_weights)(typing.cast("EagerCallableProtocol", MockModel)(), f.name)
         assert os.path.exists(f.name)
 
 
@@ -185,10 +186,10 @@ def test_export_funcs(mocker: EagerTensorProtocol) -> None:
     mock_graph = mocker.MagicMock()
     setattr(mock_graph.to_json, "return_value", "{}")
     with tempfile.NamedTemporaryFile() as f:
-        cast("EagerCallableProtocol", export_to_onnx)(mock_graph, f.name)
-        cast("EagerCallableProtocol", export_to_tflite)(mock_graph, f.name)
-        cast("EagerCallableProtocol", export_model_topology)(mock_graph, f.name)
-    assert cast("EagerCallableProtocol", graph_to_json)(mock_graph) == "{}"
+        typing.cast("EagerCallableProtocol", export_to_onnx)(mock_graph, f.name)
+        typing.cast("EagerCallableProtocol", export_to_tflite)(mock_graph, f.name)
+        typing.cast("EagerCallableProtocol", export_model_topology)(mock_graph, f.name)
+    assert typing.cast("EagerCallableProtocol", graph_to_json)(mock_graph) == "{}"
 
 
 def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
@@ -205,15 +206,15 @@ def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
         pass
 
     m2 = MockModelNoConfig()
-    cast("EagerCallableProtocol", _compile_model_metadata)(m2)
+    typing.cast("EagerCallableProtocol", _compile_model_metadata)(m2)
     m = MockModel()
-    weights = cast("EagerCallableProtocol", _extract_model_weights)(m)
+    weights = typing.cast("EagerCallableProtocol", _extract_model_weights)(m)
     assert weights == {"w1": "w1_data", "weight_1": "w2_data"}
-    state = cast("dict[str, EagerTensorProtocol]", {})
-    cast("EagerCallableProtocol", _extract_optimizer_state)(m, state)
+    state = typing.cast("dict[str, EagerTensorProtocol]", {})
+    typing.cast("EagerCallableProtocol", _extract_optimizer_state)(m, state)
     assert state == {"v1": "v1_data", "opt_state_1": "v2_data", "m1": "m1_data", "momentum_1": "m2_data"}
     state = {}
-    cast("EagerCallableProtocol", _extract_non_trainable_state)(m, state, weights)
+    typing.cast("EagerCallableProtocol", _extract_non_trainable_state)(m, state, weights)
 
     class NT2:
         """Test class NT2."""
@@ -224,19 +225,19 @@ def test_extract_model_state(mocker: EagerTensorProtocol) -> None:
             """Test function numpy."""
             return "nt2_data"
 
-    cast("EagerCallableProtocol", _extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
+    typing.cast("EagerCallableProtocol", _extract_non_trainable_state)(m, state, {"nt2": "nt2_data"})
     pass
     state = {}
-    cast("EagerCallableProtocol", _extract_ema_state)(m, state)
+    typing.cast("EagerCallableProtocol", _extract_ema_state)(m, state)
     pass
-    state = cast("dict[str, EagerTensorProtocol]", cast("EagerCallableProtocol", _extract_model_state)(m, weights))
+    state = typing.cast("dict[str, EagerTensorProtocol]", typing.cast("EagerCallableProtocol", _extract_model_state)(m, weights))
 
     class MockModelNoOptimizer:
         """Test class MockModelNoOptimizer."""
 
         pass
 
-    cast("EagerCallableProtocol", _extract_optimizer_state)(cast("EagerCallableProtocol", MockModelNoOptimizer)(), {})
+    typing.cast("EagerCallableProtocol", _extract_optimizer_state)(typing.cast("EagerCallableProtocol", MockModelNoOptimizer)(), {})
     pass
 
 
@@ -249,9 +250,9 @@ def test_compile_model_metadata() -> None:
         pass
 
     m2 = MockModelNoConfig()
-    cast("EagerCallableProtocol", _compile_model_metadata)(m2)
+    typing.cast("EagerCallableProtocol", _compile_model_metadata)(m2)
     m = MockModel()
-    (config, meta) = cast("EagerCallableProtocol", _compile_model_metadata)(m)
+    (config, meta) = typing.cast("EagerCallableProtocol", _compile_model_metadata)(m)
     assert config == {"conf": "mock"}
     assert "keras_version" in meta
 
@@ -269,7 +270,7 @@ def test_write_h5_to_zip(mocker: EagerTensorProtocol, tmp_path: EagerTensorProto
             _write_h5_to_zip(zf, "test.h5", {})
 
     keras_path = str(tmp_path / "model_bundle.keras")
-    ctx = KerasSerializationContext(keras_path, {}, {}, {}, {})
+    ctx = KerasSerializationContext(filepath=keras_path, config_dict={}, metadata={}, weights_store={}, state_store={})
     _write_keras_zip(ctx)
     assert os.path.exists(keras_path)
 
@@ -290,10 +291,10 @@ def test_keras_zip_save_load(mocker: EagerTensorProtocol) -> None:
         pass
 
     m2 = MockModelNoConfig()
-    cast("EagerCallableProtocol", _compile_model_metadata)(m2)
+    typing.cast("EagerCallableProtocol", _compile_model_metadata)(m2)
     m = MockModel()
     with tempfile.NamedTemporaryFile() as f:
-        cast("EagerCallableProtocol", save_model)(m, f.name)
+        typing.cast("EagerCallableProtocol", save_model)(m, f.name)
         m_loaded = load_model(f.name)
         assert m_loaded.config == {"conf": "mock"}
 
@@ -342,7 +343,7 @@ def test_deserialize_serialize_keras_object() -> None:
             """Test function get_config."""
             return {"a": 1}
 
-    assert serialize_object(Obj()) == {"a": 1}
+    assert serialize_object(typing.cast("EagerValue", Obj())) == {"a": 1}
     assert serialize_object() == {}
 
 

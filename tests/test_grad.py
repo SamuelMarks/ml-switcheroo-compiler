@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from typing import cast
-from typing import TYPE_CHECKING
+import typing
 
 # ruff: noqa
 from ml_switcheroo_compiler.grad import CustomVJPFunction, RegisterGradient, checkpoint, custom_jvp, hvp, ir_grad, jvp, recompute_grad, remat, value_and_grad_wrt_vars, vjp
@@ -33,13 +32,13 @@ from ml_switcheroo_compiler.grad import (
     vjp,
 )
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
     from collections.abc import Callable
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-CustomJVPFunction = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
-CustomJVPFunction = cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
+CustomJVPFunction = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
+CustomJVPFunction = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
 
 
 def test_grad() -> None:
@@ -66,8 +65,8 @@ def test_grad() -> None:
 
         id = "id"
 
-    t = cast("EagerCallableProtocol", Tensor)(data=cast("EagerCallableProtocol", DummyData)(), config=cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, "cpu"))
-    assert cast("EagerCallableProtocol", len)(cast("EagerCallableProtocol", vjp_fun._extract_tensor_args)((t, 1))) == 1
+    t = typing.cast("EagerCallableProtocol", Tensor)(data=typing.cast("EagerCallableProtocol", DummyData)(), config=typing.cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, "cpu"))
+    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", vjp_fun._extract_tensor_args)((t, 1))) == 1
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -82,7 +81,7 @@ def test_grad() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -116,10 +115,10 @@ def test_grad() -> None:
     from ml_switcheroo_compiler.core.errors import TracingError
 
     with pytest.raises(TracingError):
-        cast("EagerCallableProtocol", backward)(tg)
+        typing.cast("EagerCallableProtocol", backward)(tg)
     with pytest.raises(TracingError):
-        cast("EagerCallableProtocol", backward)(tng)
-    assert isinstance(cast("EagerCallableProtocol", custom_jvp)(my_fun), cast("type", CustomJVPFunction))
+        typing.cast("EagerCallableProtocol", backward)(tng)
+    assert isinstance(typing.cast("EagerCallableProtocol", custom_jvp)(my_fun), typing.cast("type", CustomJVPFunction))
     check_numerical_grads(my_fun, (1,))
     check_numerical_grads(my_fun, (1,), GradCheckOptions())
     RegisterGradient("op")
@@ -127,21 +126,21 @@ def test_grad() -> None:
     assert callable(checkpoint(my_fun))
     assert callable(remat(my_fun))
     assert callable(recompute_grad(my_fun))
-    assert cast("EagerCallableProtocol", ir_grad)(my_fun)(1) == 1
+    assert typing.cast("EagerCallableProtocol", ir_grad)(my_fun)(1) == 1
     assert grad(my_fun)(1) == 1
-    assert cast("EagerCallableProtocol", value_and_grad)(my_fun)(1) == (1, 1)
-    assert cast("EagerCallableProtocol", jit)(my_fun)(1) == 1
+    assert typing.cast("EagerCallableProtocol", value_and_grad)(my_fun)(1) == (1, 1)
+    assert typing.cast("EagerCallableProtocol", jit)(my_fun)(1) == 1
     with disable_jit():
         pass
     assert eval_shape(my_fun, 1) == 1
     assert jvp(my_fun, (1,), (2,)) == (1, 2)
     assert jvp(lambda x: (x, x), (1,), (2,), has_aux=True) == ((1, 1), 2)
-    (res, fn) = cast("EagerCallableProtocol", vjp)(my_fun, 1)
+    (res, fn) = typing.cast("EagerCallableProtocol", vjp)(my_fun, 1)
     assert res == 1
-    assert cast("EagerCallableProtocol", fn)(2) == (2,)
-    (res, fn) = cast("EagerCallableProtocol", vjp)(lambda x: (x, x), 1, has_aux=True)
+    assert typing.cast("EagerCallableProtocol", fn)(2) == (2,)
+    (res, fn) = typing.cast("EagerCallableProtocol", vjp)(lambda x: (x, x), 1, has_aux=True)
     assert res == (1, 1)
-    assert cast("EagerCallableProtocol", fn)(2) == (2,)
+    assert typing.cast("EagerCallableProtocol", fn)(2) == (2,)
     assert hvp(my_fun, (1,), (2,)) == (1, 0.0)
     assert hvp(lambda x: (x, x), (1,), (2,), has_aux=True) == ((1, 1), 0.0)
 
@@ -151,7 +150,7 @@ def test_grad_branches() -> None:
     from ml_switcheroo_compiler.grad import CustomVJPFunction
 
     vjp_fun2 = CustomVJPFunction(lambda x: x)
-    assert cast("EagerCallableProtocol", vjp_fun2._trace_fwd_graph)([1]) is None
+    assert typing.cast("EagerCallableProtocol", vjp_fun2._trace_fwd_graph)([1]) is None
     assert vjp_fun2._resolve_output_metadata([]) == ((), "float32", "cpu")
     from ml_switcheroo_compiler.grad import overwrite_with_gradient
 
@@ -192,7 +191,7 @@ def test_grad_overwrite_bwd() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -211,10 +210,10 @@ def test_grad_overwrite_bwd() -> None:
 
         id = "id"
 
-    t1 = cast("EagerCallableProtocol", Tensor)(data=cast("EagerCallableProtocol", DummyData)(), config=cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, "cpu"))
-    t2 = cast("EagerCallableProtocol", Tensor)(data=cast("EagerCallableProtocol", DummyData)(), config=cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, "cpu"))
+    t1 = typing.cast("EagerCallableProtocol", Tensor)(data=typing.cast("EagerCallableProtocol", DummyData)(), config=typing.cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, "cpu"))
+    t2 = typing.cast("EagerCallableProtocol", Tensor)(data=typing.cast("EagerCallableProtocol", DummyData)(), config=typing.cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, "cpu"))
     overwrite_with_gradient(t1, t2)
-    n = cast("EagerTensorProtocol", getattr(list(cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "nodes")).values()), "__getitem__")(0)) if cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "nodes")) else None
+    n = typing.cast("EagerTensorProtocol", getattr(list(typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "nodes")).values()), "__getitem__")(0)) if typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "nodes")) else None
     if n is not None:
         bwd_fn = n.attributes["bwd_fn"]
     if n is not None:
@@ -237,7 +236,7 @@ def test_custom_vjp_function_none() -> None:
         return x
 
     cg = CustomVJPFunction(f)
-    assert cast("EagerCallableProtocol", cg._trace_fwd_graph)([1, 2]) is None
+    assert typing.cast("EagerCallableProtocol", cg._trace_fwd_graph)([1, 2]) is None
 
 
 def test_value_and_grad_wrt_vars() -> None:
@@ -284,7 +283,7 @@ def test_register_gradient() -> None:
         pass
 
     dec(f)
-    assert dec.op_type == "my_op"
+    assert getattr(dec, "op_type") == "my_op"
 
 
 def test_checkpoint_remat() -> None:
@@ -312,7 +311,7 @@ def test_jvp_vjp_hvp() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2)
+        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2)
 
     def f_aux(x: EagerValue) -> EagerValue:
         """Test function f_aux.
@@ -320,9 +319,9 @@ def test_jvp_vjp_hvp() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2), {"a": 1})
+        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2), {"a": 1})
 
-    (val, tan) = cast("EagerCallableProtocol", jvp)(f_aux, (1.0,), (0.5,), has_aux=True)
+    (val, tan) = typing.cast("EagerCallableProtocol", jvp)(f_aux, (1.0,), (0.5,), has_aux=True)
     assert val == (2.0, {"a": 1})
 
     # --- Shape and Dtype Inference Tests for AD Backward Passes ---
@@ -335,36 +334,36 @@ def test_jvp_vjp_hvp() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", x)) * cast("EagerTensorProtocol", x)
+        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
 
     primal_x = np.array([2.0, 3.0], dtype=np.float32)
     tangent_v = np.array([1.0, 1.0], dtype=np.float32)
 
     # HVP of x^3 is d(3x^2)/dx * v = 6x * v
-    val_hvp, out_tan_hvp = cast("EagerCallableProtocol", hvp)(hvp_test_func, primal_x, tangent_v)
-    assert cast("EagerTensorProtocol", getattr(val_hvp, "shape")) == (2,)
-    assert cast("EagerTensorProtocol", getattr(val_hvp, "dtype")) in (np.float32, np.float64)
-    assert cast("EagerTensorProtocol", getattr(out_tan_hvp, "shape")) == (2,)
-    assert cast("EagerTensorProtocol", getattr(out_tan_hvp, "dtype")) in (np.float32, np.float64)
-    assert cast("EagerCallableProtocol", np.allclose)(out_tan_hvp, [12.0, 18.0])
+    val_hvp, out_tan_hvp = typing.cast("EagerCallableProtocol", hvp)(hvp_test_func, primal_x, tangent_v)
+    assert typing.cast("EagerTensorProtocol", getattr(val_hvp, "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(val_hvp, "dtype")) in (np.float32, np.float64)
+    assert typing.cast("EagerTensorProtocol", getattr(out_tan_hvp, "shape")) == (2,)
+    assert typing.cast("EagerTensorProtocol", getattr(out_tan_hvp, "dtype")) in (np.float32, np.float64)
+    assert typing.cast("EagerCallableProtocol", np.allclose)(out_tan_hvp, [12.0, 18.0])
     # --------------------------------------------------------------
     assert tan == 1.0
-    (val, tan) = cast("EagerCallableProtocol", jvp)(f_aux, (1.0,), ((0.5,),), has_aux=True)
+    (val, tan) = typing.cast("EagerCallableProtocol", jvp)(f_aux, (1.0,), ((0.5,),), has_aux=True)
     assert tan == (1.0,)
-    (val, tan) = cast("EagerCallableProtocol", jvp)(f, (1.0,), ((0.5,),), has_aux=False)
+    (val, tan) = typing.cast("EagerCallableProtocol", jvp)(f, (1.0,), ((0.5,),), has_aux=False)
     assert tan == (1.0,)
-    (val, vjp_fn) = cast("EagerCallableProtocol", vjp)(f_aux, 1.0, has_aux=True)
+    (val, vjp_fn) = typing.cast("EagerCallableProtocol", vjp)(f_aux, 1.0, has_aux=True)
     assert val == (2.0, {"a": 1})
-    assert cast("EagerCallableProtocol", vjp_fn)(0.5) == (1.0,)
-    (val, vjp_fn) = cast("EagerCallableProtocol", vjp)(f, 1.0)
+    assert typing.cast("EagerCallableProtocol", vjp_fn)(0.5) == (1.0,)
+    (val, vjp_fn) = typing.cast("EagerCallableProtocol", vjp)(f, 1.0)
     assert val == 2.0
-    assert cast("EagerCallableProtocol", vjp_fn)(0.5) == (1.0,)
-    (val, tan) = cast("EagerCallableProtocol", hvp)(f_aux, (1.0,), (0.5,), has_aux=True)
+    assert typing.cast("EagerCallableProtocol", vjp_fn)(0.5) == (1.0,)
+    (val, tan) = typing.cast("EagerCallableProtocol", hvp)(f_aux, (1.0,), (0.5,), has_aux=True)
     assert val == (2.0, {"a": 1})
     assert tan == 0.0
-    (val, tan) = cast("EagerCallableProtocol", hvp)(f_aux, (1.0,), ((0.5,),), has_aux=True)
+    (val, tan) = typing.cast("EagerCallableProtocol", hvp)(f_aux, (1.0,), ((0.5,),), has_aux=True)
     assert tan == (0.0,)
-    (val, tan) = cast("EagerCallableProtocol", hvp)(f, (1.0,), ((0.5,),), has_aux=False)
+    (val, tan) = typing.cast("EagerCallableProtocol", hvp)(f, (1.0,), ((0.5,),), has_aux=False)
     assert tan == (0.0,)
 
 
@@ -430,7 +429,7 @@ def test_backward_under_tracing() -> None:
 
         # Under x^2 derivative at x=2 is 2x = 4.0
         assert v.grad is not None
-        cast("EagerCallableProtocol", np.testing.assert_allclose)(v.grad, 4.0)
+        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(v.grad, 4.0)
 
         # Non-scalar tensor backward should raise SwitcherooError
         p_non_scalar = ProxyTensor(id="non_scalar", shape=(2,), dtype="float32")
@@ -463,8 +462,8 @@ def test_non_trivial_analytical_grad() -> None:
     irg = ir_grad(f)
 
     assert g(4.0) == 11.0
-    assert cast("EagerCallableProtocol", vg)(4.0) == (28.0, 11.0)
-    assert cast("EagerCallableProtocol", irg)(4.0) == 11.0
+    assert typing.cast("EagerCallableProtocol", vg)(4.0) == (28.0, 11.0)
+    assert typing.cast("EagerCallableProtocol", irg)(4.0) == 11.0
 
 
 def test_analytical_vs_numerical_grads() -> None:
@@ -543,7 +542,7 @@ def test_grad_missing_coverage() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0)
+        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2.0)
 
     with patch("ml_switcheroo_compiler.grad.testing.vjp") as mock_vjp:
         # Mock vjp to return a wrong gradient
@@ -585,7 +584,9 @@ def test_grad_missing_coverage() -> None:
 
             pass
 
-        grad_multi = cast("EagerCallableProtocol", grad)(f_bool, cast("EagerCallableProtocol", GradOptions)(argnums=cast("EagerCallableProtocol", MyArgnums)()))
+        opts_bad = GradOptions()
+        object.__setattr__(opts_bad, "argnums", MyArgnums())
+        grad_multi = typing.cast("EagerCallableProtocol", grad)(f_bool, opts_bad)
         res_multi = grad_multi(1.0)
         assert res_multi is not None
 
@@ -596,11 +597,11 @@ def test_grad_missing_coverage() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 2.0), {"info": "aux"}
+        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 2.0), {"info": "aux"}
 
     grad_aux = grad(f_aux, GradOptions(has_aux=True))
     res_aux = grad_aux(3.0)
-    assert cast("EagerTensorProtocol", getattr(res_aux, "__getitem__")(0)) == 2.0
+    assert typing.cast("EagerTensorProtocol", getattr(res_aux, "__getitem__")(0)) == 2.0
 
     # 5. grad with argnums as list/tuple (line 631-634)
     def f_multi(x: EagerValue, y: EagerValue) -> EagerValue:
@@ -610,9 +611,9 @@ def test_grad_missing_coverage() -> None:
             x: Test parameter `x`.
             y: Test parameter `y`.
         """
-        return (cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 3.0)) + (cast("EagerTensorProtocol", y) * cast("EagerTensorProtocol", 2.0))
+        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 3.0)) + (typing.cast("EagerTensorProtocol", y) * typing.cast("EagerTensorProtocol", 2.0))
 
-    grad_multi = cast("EagerTensorProtocol", grad(f_multi, GradOptions(argnums=(0, 1))))
+    grad_multi = typing.cast("EagerTensorProtocol", grad(f_multi, GradOptions(argnums=(0, 1))))
     res_multi = grad_multi(1.0, 1.0)
     assert res_multi == (3.0, 2.0)
 
@@ -623,10 +624,10 @@ def test_grad_missing_coverage() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return cast("EagerTensorProtocol", x) * cast("EagerTensorProtocol", 3.0), {"aux": 1}
+        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", 3.0), {"aux": 1}
 
     jac_aux = jacrev(f_jac_aux, GradOptions(has_aux=True))
-    j_res, _ = cast("EagerCallableProtocol", jac_aux)(cast("EagerCallableProtocol", np.array)([2.0, 3.0]))
+    j_res, _ = typing.cast("EagerCallableProtocol", jac_aux)(typing.cast("EagerCallableProtocol", np.array)([2.0, 3.0]))
     print(f"J_RES SHAPE {j_res.shape}")
     # assert j_res.shape == (2, 2)
 
@@ -643,14 +644,14 @@ def test_vjp_pytree_support() -> None:
     x_primal = (2.0, 3.0)
     y_primal = (4.0, 5.0)
 
-    val, vjp_fn = cast("EagerCallableProtocol", vjp)(f, x_primal, y_primal)
+    val, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x_primal, y_primal)
 
     # Output value is (2.0*4.0, 3.0*5.0) = (8.0, 15.0)
     assert val == (8.0, 15.0)
 
     # Cotangent matching output structure
     cotangent = (1.0, 1.0)
-    grads = cast("EagerCallableProtocol", vjp_fn)(cotangent)
+    grads = typing.cast("EagerCallableProtocol", vjp_fn)(cotangent)
 
     # Gradients w.r.t x: (y[0], y[1]) = (4.0, 5.0)
     # Gradients w.r.t y: (x[0], x[1]) = (2.0, 3.0)
@@ -670,8 +671,8 @@ def test_higher_order_derivatives() -> None:
     jr = jacrev(f1)
 
     # Jacobian of f1 with respect to [x0, x1] is [x1, x0] = [4.0, 3.0]
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", jf)(x_primal), [4.0, 3.0])
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", jr)(x_primal), [4.0, 3.0])
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", jf)(x_primal), [4.0, 3.0])
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", jr)(x_primal), [4.0, 3.0])
 
     # 2. Vector-to-vector function f2(x) = (x_0^2, x_1^3)
     f2 = lambda x: (x[0] * x[0], x[1] * x[1] * x[1])
@@ -686,8 +687,8 @@ def test_higher_order_derivatives() -> None:
     jr2 = jacrev(f2)
     x_primal2 = np.array([2.0, 3.0])
 
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", jf2)(x_primal2), [[4.0, 0.0], [0.0, 27.0]])
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", jr2)(x_primal2), [[4.0, 0.0], [0.0, 27.0]])
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", jf2)(x_primal2), [[4.0, 0.0], [0.0, 27.0]])
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", jr2)(x_primal2), [[4.0, 0.0], [0.0, 27.0]])
 
     # 3. Hessian of f3(x) = 0.5 * x_0^2 + 2.0 * x_0 * x_1 + 3.0 * x_1^2
     # grad(f3) = [x0 + 2*x1, 2*x0 + 6*x1]
@@ -696,4 +697,4 @@ def test_higher_order_derivatives() -> None:
     f3 = lambda x: 0.5 * x[0] * x[0] + 2.0 * x[0] * x[1] + 3.0 * x[1] * x[1]
 
     h_fn = hessian(f3)
-    assert cast("EagerCallableProtocol", np.allclose)(cast("EagerCallableProtocol", h_fn)(x_primal), [[1.0, 2.0], [2.0, 6.0]])
+    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", h_fn)(x_primal), [[1.0, 2.0], [2.0, 6.0]])

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 # ruff: noqa: E501
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import numpy as np
@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.lu import LuPivotsToPermutation, lu_factor, lu_pivots_to_permutation
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -26,8 +26,8 @@ def test_lu_dummy() -> None:
         shape = (2, 3)
 
     t = MockTensor()
-    assert cast("EagerCallableProtocol", LuPivotsToPermutation)().infer_shape(t, permutation_size=4) == (2, 4)
-    assert cast("EagerCallableProtocol", LuPivotsToPermutation)().infer_shape(t) == (2, 0)
+    assert typing.cast("EagerCallableProtocol", LuPivotsToPermutation)().infer_shape(t, permutation_size=4) == (2, 4)
+    assert typing.cast("EagerCallableProtocol", LuPivotsToPermutation)().infer_shape(t) == (2, 0)
     assert LuPivotsToPermutation().infer_shape() == ()
     assert LuPivotsToPermutation().infer_shape(None) == ()
 
@@ -39,11 +39,11 @@ def test_lu_dummy() -> None:
 
         shape = (5,)
 
-    assert cast("EagerCallableProtocol", LuFactor)().infer_shape(cast("EagerCallableProtocol", Mock1DTensor)()) == ((5,), (5,))
+    assert typing.cast("EagerCallableProtocol", LuFactor)().infer_shape(typing.cast("EagerCallableProtocol", Mock1DTensor)()) == ((5,), (5,))
 
     # kwargs 'a' and 'input'
-    assert cast("EagerCallableProtocol", LuFactor)().infer_shape(a=cast("EagerCallableProtocol", MockTensor)()) == ((2, 3), (2,))
-    assert cast("EagerCallableProtocol", LuFactor)().infer_shape(input=cast("EagerCallableProtocol", MockTensor)()) == ((2, 3), (2,))
+    assert typing.cast("EagerCallableProtocol", LuFactor)().infer_shape(a=typing.cast("EagerCallableProtocol", MockTensor)()) == ((2, 3), (2,))
+    assert typing.cast("EagerCallableProtocol", LuFactor)().infer_shape(input=typing.cast("EagerCallableProtocol", MockTensor)()) == ((2, 3), (2,))
 
 
 def test_lu_factor() -> None:
@@ -81,14 +81,14 @@ def test_lu_factor_trace() -> None:
     with patch.object(lu_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_lu", "mock_piv")
         (res1, res2) = lu_factor(t)
-        assert cast("EagerTensorProtocol", res1) == cast("EagerTensorProtocol", "mock_lu")
-        assert cast("EagerTensorProtocol", res2) == cast("EagerTensorProtocol", "mock_piv")
+        assert typing.cast("EagerTensorProtocol", res1) == typing.cast("EagerTensorProtocol", "mock_lu")
+        assert typing.cast("EagerTensorProtocol", res2) == typing.cast("EagerTensorProtocol", "mock_piv")
 
         # Non-tuple fallback branch
         mock_emit.return_value = "single_res"
         (res3, res4) = lu_factor(t)
-        assert cast("EagerTensorProtocol", res3) == cast("EagerTensorProtocol", "single_res")
-        assert cast("EagerTensorProtocol", res4) == cast("EagerTensorProtocol", "single_res")
+        assert typing.cast("EagerTensorProtocol", res3) == typing.cast("EagerTensorProtocol", "single_res")
+        assert typing.cast("EagerTensorProtocol", res4) == typing.cast("EagerTensorProtocol", "single_res")
 
 
 def test_lu_pivots_trace() -> None:
@@ -100,9 +100,9 @@ def test_lu_pivots_trace() -> None:
     with patch.object(lu_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = "mock_perm"
         res = lu_pivots_to_permutation(t, 2)
-        assert cast("EagerTensorProtocol", res) == cast("EagerTensorProtocol", "mock_perm")
+        assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "mock_perm")
 
         # Tuple branch
         mock_emit.return_value = ("tuple_perm",)
         res_tuple = lu_pivots_to_permutation(t, 2)
-        assert cast("EagerTensorProtocol", res_tuple) == cast("EagerTensorProtocol", "tuple_perm")
+        assert typing.cast("EagerTensorProtocol", res_tuple) == typing.cast("EagerTensorProtocol", "tuple_perm")

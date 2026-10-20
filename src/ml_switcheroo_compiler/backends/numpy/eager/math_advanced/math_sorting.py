@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from types import ModuleType
-from typing import Union, cast
+import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("ArgPartition")
 def _np_argpartition(
-    backend_module: ModuleType,
-    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, tuple[int, ...], None],
-    **kwargs: Union[int, tuple[int, ...], str, None],
+    backend_module: BackendModuleProtocol,
+    *args: EagerValue,
+    **kwargs: int | tuple[int, ...] | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Perform an indirect partition along the given axis.
 
@@ -26,14 +26,14 @@ def _np_argpartition(
     Returns:
         np.ndarray: The computed partition indices.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.argpartition(*args, **kwargs))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.argpartition(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Lexsort")
 def _np_lexsort_(
-    backend_module: ModuleType,
-    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], ...], list[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]],
-    **kwargs: Union[int, str, None],
+    backend_module: BackendModuleProtocol,
+    *args: EagerValue,
+    **kwargs: int | str | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement Lexsort via lexsort.
 
@@ -45,14 +45,14 @@ def _np_lexsort_(
     Returns:
         np.ndarray: The computed lexicographical sort order.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.lexsort(*args, **kwargs))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.lexsort(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Median")
 def _np_median_(
-    backend_module: ModuleType,
-    *args: Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, tuple[int, ...], None],
-    **kwargs: Union[int, tuple[int, ...], bool, None],
+    backend_module: BackendModuleProtocol,
+    *args: EagerValue,
+    **kwargs: int | tuple[int, ...] | bool | None,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
     """Implement Median via median.
 
@@ -64,4 +64,4 @@ def _np_median_(
     Returns:
         np.ndarray: The computed median value.
     """
-    return cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.median(*args, **kwargs))
+    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.median(*args, **kwargs))

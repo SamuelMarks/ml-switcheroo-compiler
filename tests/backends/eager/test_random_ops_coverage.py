@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, cast
+import typing
 
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.random_ops as rand_ops_mod
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
@@ -136,7 +138,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
+        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -151,7 +153,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -181,7 +183,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -201,7 +203,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -273,16 +275,16 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Delegate to numpy module.
 
         Args:
             name (str): Attribute name.
 
         Returns:
-            Callable[..., np.ndarray]: Resolved callable attribute.
+            TypedVariadicCallable[np.ndarray]: Resolved callable attribute.
         """
-        return cast("Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
+        return typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
 
     def pad(
         self,
@@ -340,14 +342,14 @@ class MockRandFallbackModule:
         """Initialize mock module."""
         self.calls: dict[str, int] = {}
 
-    def __getattr__(self, name: str) -> Callable[..., np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
         """Dynamically return callable only on second check.
 
         Args:
             name (str): Attribute name.
 
         Returns:
-            Callable[..., np.ndarray]: Function result.
+            TypedVariadicCallable[np.ndarray]: Function result.
 
         Raises:
             AttributeError: On first check.
@@ -499,7 +501,7 @@ def test_random_ops_prng_and_split() -> None:
     backend_without_array = 123  # does not have array attribute
 
     # 1. prng_key
-    k1 = rand_ops_mod.prng_key(backend_with_array, 42)
+    k1 = rand_ops_mod.prng_key(typing.cast("EagerValue", backend_with_array), 42)
     assert isinstance(k1, np.ndarray)
     np.testing.assert_array_equal(k1, np.array([0, 42], dtype=np.uint32))
 
@@ -507,7 +509,7 @@ def test_random_ops_prng_and_split() -> None:
     assert k2 == [0, 42]
 
     # 2. random_split
-    s1 = rand_ops_mod.random_split(backend_with_array, k1, 3)
+    s1 = rand_ops_mod.random_split(typing.cast("EagerValue", backend_with_array), k1, 3)
     assert isinstance(s1, np.ndarray)
     assert s1.shape == (3, 2)
 
@@ -516,7 +518,7 @@ def test_random_ops_prng_and_split() -> None:
     assert len(s2) == 2
 
     # 3. random_fold_in with indexed key
-    f1 = rand_ops_mod.random_fold_in(backend_with_array, [10, 20], 5)
+    f1 = rand_ops_mod.random_fold_in(typing.cast("EagerValue", backend_with_array), [10, 20], 5)
     assert isinstance(f1, np.ndarray)
     np.testing.assert_array_equal(f1, np.array([15, 20], dtype=np.uint32))
 
@@ -529,56 +531,56 @@ def test_random_ops_rand_and_randn() -> None:
     """Verify rand, randn, and randint under various backend capabilities."""
     # 1. rand with shape in kwargs as nested list
     res_rand1 = rand_ops_mod.rand(np, shape=[(2, 3)])
-    assert cast("EagerTensorProtocol", getattr(res_rand1, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res_rand1, "shape")) == (2, 3)
 
     # rand with args shape
     res_rand2 = rand_ops_mod.rand(np, 2, 4)
-    assert cast("EagerTensorProtocol", getattr(res_rand2, "shape")) == (2, 4)
+    assert typing.cast("EagerTensorProtocol", getattr(res_rand2, "shape")) == (2, 4)
 
     # rand with random module without uniform (only rand)
-    res_rand3 = rand_ops_mod.rand(MockBackendWithRandOnly(), 3, 3)
-    assert cast("EagerTensorProtocol", getattr(res_rand3, "shape")) == (3, 3)
+    res_rand3 = rand_ops_mod.rand(typing.cast("EagerValue", MockBackendWithRandOnly()), 3, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res_rand3, "shape")) == (3, 3)
 
     # rand with direct rand
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.rand(MockBackendDirectRand(), 2, 2), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.rand(typing.cast("EagerValue", MockBackendDirectRand()), 2, 2), "shape")) == (2, 2)
 
     # rand with direct uniform
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.rand(MockBackendDirectUniform(), 2, 2), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.rand(typing.cast("EagerValue", MockBackendDirectUniform()), 2, 2), "shape")) == (2, 2)
 
     # rand fallback line 93
     fb_backend = MockBackendWithFallback()
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.rand(fb_backend, 2, 2), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.rand(typing.cast("EagerValue", fb_backend), 2, 2), "shape")) == (2, 2)
 
     # 2. randn tests
     res_randn1 = rand_ops_mod.randn(np, shape=[(3, 2)])
-    assert cast("EagerTensorProtocol", getattr(res_randn1, "shape")) == (3, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(res_randn1, "shape")) == (3, 2)
 
     res_randn2 = rand_ops_mod.randn(np, 3, 5)
-    assert cast("EagerTensorProtocol", getattr(res_randn2, "shape")) == (3, 5)
+    assert typing.cast("EagerTensorProtocol", getattr(res_randn2, "shape")) == (3, 5)
 
     # randn with random module having only randn
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(MockBackendWithRandnOnly(), 2, 2), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(typing.cast("EagerValue", MockBackendWithRandnOnly()), 2, 2), "shape")) == (2, 2)
 
     # randn with direct randn
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(MockBackendDirectRandn(), 2, 2), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(typing.cast("EagerValue", MockBackendDirectRandn()), 2, 2), "shape")) == (2, 2)
 
     # randn with direct normal
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(MockBackendDirectNormal(), 2, 2), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(typing.cast("EagerValue", MockBackendDirectNormal()), 2, 2), "shape")) == (2, 2)
 
     # randn fallback line 122
     fb_backend_normal = MockBackendWithFallback()
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(fb_backend_normal, 2, 2), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.randn(typing.cast("EagerValue", fb_backend_normal), 2, 2), "shape")) == (2, 2)
 
     # 3. randint tests
     res_randint1 = rand_ops_mod.randint(np, 0, 10, (2, 3))
-    assert cast("EagerTensorProtocol", getattr(res_randint1, "shape")) == (2, 3)
+    assert typing.cast("EagerTensorProtocol", getattr(res_randint1, "shape")) == (2, 3)
 
     res_randint2 = rand_ops_mod.randint(np, low=2, high=8, shape=(4,))
-    assert cast("EagerTensorProtocol", getattr(res_randint2, "shape")) == (4,)
+    assert typing.cast("EagerTensorProtocol", getattr(res_randint2, "shape")) == (4,)
 
     res_randint3 = rand_ops_mod.randint(np)
-    assert cast("EagerTensorProtocol", getattr(res_randint3, "shape")) == ()
+    assert typing.cast("EagerTensorProtocol", getattr(res_randint3, "shape")) == ()
 
     # randint fallback line 143
     fb_backend_randint = MockBackendWithFallback()
-    assert cast("EagerTensorProtocol", getattr(rand_ops_mod.randint(fb_backend_randint, 0, 5, (2, 2)), "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(rand_ops_mod.randint(typing.cast("EagerValue", fb_backend_randint), 0, 5, (2, 2)), "shape")) == (2, 2)

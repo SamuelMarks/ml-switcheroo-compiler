@@ -1,5 +1,7 @@
 """Mixins."""
 
+from __future__ import annotations
+
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue

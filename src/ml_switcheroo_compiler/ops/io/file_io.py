@@ -52,11 +52,11 @@ def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
-        from typing import cast
+        import typing
 
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return cast("Tensor | None", get_active_backend().execute_op("WriteFile", filename, contents, name=name))
+        return typing.cast("Tensor | None", get_active_backend().execute_op("WriteFile", filename, contents, name=name))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")

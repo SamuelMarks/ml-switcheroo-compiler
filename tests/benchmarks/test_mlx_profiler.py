@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import sys
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.backends.mlx.profiler import (
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -32,7 +32,7 @@ def test_mlx_import_error() -> None:
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
     with patch.dict(sys.modules, {"mlx": None, "mlx.core": None}):
         importlib.reload(mlx_prof_module)
-        assert cast("EagerTensorProtocol", getattr(mlx_prof_module, "mx")) is None
+        assert typing.cast("EagerTensorProtocol", getattr(mlx_prof_module, "mx")) is None
 
     # Reload back to normal state
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
@@ -185,7 +185,7 @@ def test_prepare_mlx_inputs_exhaustive() -> None:
     custom_inst = CustomMlxArray()
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = cast("EagerCallableProtocol", _prepare_mlx_inputs)(
+        res = typing.cast("EagerCallableProtocol", _prepare_mlx_inputs)(
             {
                 "is_inst": dummy_inst,
                 "custom": custom_inst,
@@ -231,7 +231,7 @@ def test_prepare_ordered_inputs_branches() -> None:
     g.nodes["k2"] = IRNode(id="k2", op_type="Input")
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = cast("EagerCallableProtocol", profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst})
+        res = typing.cast("EagerCallableProtocol", profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst, "k3": [1.0]})
         assert id(res[0]) == id(dummy_inst)
         assert id(res[1]) == id(custom_inst)
 

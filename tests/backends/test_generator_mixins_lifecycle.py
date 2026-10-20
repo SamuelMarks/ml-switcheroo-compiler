@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
 
@@ -162,7 +162,7 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     gen = _MockDummyGenerator(graph)
     assert gen._generate_file_header() == ["# Header comment"]
     assert gen._resolve_imports() == []
-    assert cast("EagerCallableProtocol", gen._generate_return_block)() is None
+    assert typing.cast("EagerCallableProtocol", gen._generate_return_block)() is None
 
     code_str = gen.generate()
     assert "# Header comment" in code_str
@@ -176,17 +176,17 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
     assert _MockEagerBackendWithModule.zeros((2, 3)) == ("custom_zeros", (2, 3))
     assert _MockEagerBackendWithModule.array([1, 2], dtype="float32") == ("custom_array", [1, 2], "float32")
     assert _MockEagerBackendWithModule.asarray([3, 4]) == ("custom_asarray", [3, 4])
-    assert cast("EagerCallableProtocol", _MockEagerBackendWithModule.item)(cast("EagerCallableProtocol", _MockScalarHolder)()) == 33.3
+    assert typing.cast("EagerCallableProtocol", _MockEagerBackendWithModule.item)(typing.cast("EagerCallableProtocol", _MockScalarHolder)()) == 33.3
 
     # Eager zeros, array, asarray, item with default numpy fallback
     z_def = _MockEagerBackendDefault.zeros((2, 2))
-    assert cast("EagerTensorProtocol", getattr(z_def, "shape")) == (2, 2)
+    assert typing.cast("EagerTensorProtocol", getattr(z_def, "shape")) == (2, 2)
 
     arr_def = _MockEagerBackendDefault.array([5, 6])
-    assert cast("EagerTensorProtocol", getattr(arr_def, "tolist"))() == [5, 6]
+    assert typing.cast("EagerTensorProtocol", getattr(arr_def, "tolist"))() == [5, 6]
 
     as_arr_def = _MockEagerBackendDefault.asarray([7.5, 8.5])
-    assert cast("EagerTensorProtocol", getattr(as_arr_def, "tolist"))() == [7.5, 8.5]
+    assert typing.cast("EagerTensorProtocol", getattr(as_arr_def, "tolist"))() == [7.5, 8.5]
 
-    item_val = cast("EagerCallableProtocol", _MockEagerBackendDefault.item)(cast("EagerCallableProtocol", _MockScalarHolder)())
+    item_val = typing.cast("EagerCallableProtocol", _MockEagerBackendDefault.item)(typing.cast("EagerCallableProtocol", _MockScalarHolder)())
     assert item_val == 33.3

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 from types import ModuleType
-from typing import Union, cast
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
@@ -23,10 +23,10 @@ class _SparseBackendProxy:
         """
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        return cast(EagerValue, getattr(BackendRegistry.get("numpy").get_module(), name))
+        return typing.cast(EagerValue, getattr(BackendRegistry.get("numpy").get_module(), name))
 
 
-_SP_BACKEND: ModuleType = cast(ModuleType, _SparseBackendProxy())
+_SP_BACKEND: ModuleType = typing.cast(ModuleType, _SparseBackendProxy())
 
 
 class COOTensor:
@@ -97,12 +97,12 @@ class COOTensor:
         arr_np: EagerTensorProtocol = _SP_BACKEND.asarray(arr)
         if arr_np.ndim == 0:
             arr_np_1d: EagerTensorProtocol = _SP_BACKEND.atleast_1d(arr_np)
-            nonzero_mask_0d = cast(EagerTensorProtocol, cast(EagerValue, arr_np_1d) != 0)
+            nonzero_mask_0d = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, arr_np_1d) != 0)
             indices_0d: EagerTensorProtocol = _SP_BACKEND.empty((0, int(nonzero_mask_0d.sum())), dtype=_SP_BACKEND.int64)
             values_0d: EagerTensorProtocol = arr_np_1d[nonzero_mask_0d]
             return cls(indices=indices_0d, values=values_0d, shape=())
 
-        nonzero_mask = cast(EagerTensorProtocol, cast(EagerValue, arr_np) != 0)
+        nonzero_mask = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, arr_np) != 0)
         indices: EagerTensorProtocol = _SP_BACKEND.vstack(_SP_BACKEND.nonzero(nonzero_mask))
         values: EagerTensorProtocol = arr_np[nonzero_mask]
         return cls(indices=indices, values=values, shape=arr_np.shape)
@@ -115,7 +115,7 @@ class COOTensor:
         """
         if self.ndim == 0:
             val = self.values[0] if self.nnz > 0 else 0
-            return cast(EagerTensorProtocol, _SP_BACKEND.array(val, dtype=self.dtype))
+            return typing.cast(EagerTensorProtocol, _SP_BACKEND.array(val, dtype=self.dtype))
 
         dense: EagerTensorProtocol = _SP_BACKEND.zeros(self.shape, dtype=self.dtype)
         if self.nnz > 0:
@@ -123,7 +123,7 @@ class COOTensor:
             dense[coords_tuple] = self.values
         return dense
 
-    def astype(self, dtype: Union[EagerValue, str]) -> COOTensor:
+    def astype(self, dtype: EagerValue | str) -> COOTensor:
         """Cast tensor values to a new data type.
 
         Args:
@@ -251,7 +251,7 @@ class CSRTensor:
             end = int(self.indptr[r + 1])
             for idx in range(start, end):
                 dense[r, self.indices[idx]] = self.data[idx]
-        return cast(EagerTensorProtocol, dense)
+        return typing.cast(EagerTensorProtocol, dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSRTensor directly to a COOTensor without dense materialization.
@@ -366,7 +366,7 @@ class CSCTensor:
             end = int(self.indptr[c + 1])
             for idx in range(start, end):
                 dense[self.indices[idx], c] = self.data[idx]
-        return cast(EagerTensorProtocol, dense)
+        return typing.cast(EagerTensorProtocol, dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSCTensor directly to a COOTensor without dense materialization.
@@ -552,8 +552,8 @@ def zeros(cls: type, shape: tuple[int, ...]) -> COOTensor:
 
 def array(
     cls: type,
-    data: Union[Sequence[float], EagerValue, COOTensor],
-    dtype: Union[EagerValue, str] | None = None,
+    data: Sequence[float] | EagerValue | COOTensor,
+    dtype: EagerValue | str | None = None,
 ) -> COOTensor:
     """Create a Sparse COO tensor from input data.
 
@@ -577,7 +577,7 @@ def array(
     return COOTensor.from_dense(dense)
 
 
-def asarray(cls: type, data: Union[Sequence[float], EagerValue, COOTensor]) -> COOTensor:
+def asarray(cls: type, data: Sequence[float] | EagerValue | COOTensor) -> COOTensor:
     """Convert input data to a Sparse COO tensor.
 
     Args:
@@ -593,7 +593,7 @@ def asarray(cls: type, data: Union[Sequence[float], EagerValue, COOTensor]) -> C
     return COOTensor.from_dense(_SP_BACKEND.asarray(data))
 
 
-def item(cls: type, data: Union[COOTensor, EagerValue]) -> float:
+def item(cls: type, data: COOTensor | EagerValue) -> float:
     """Extract a scalar item value from a single-element tensor.
 
     Args:
@@ -606,5 +606,5 @@ def item(cls: type, data: Union[COOTensor, EagerValue]) -> float:
     del cls
     if isinstance(data, COOTensor):
         dense = data.to_dense()
-        return float(cast(float, dense.item()))
+        return float(typing.cast(float, dense.item()))
     return float(_SP_BACKEND.asarray(data).item())

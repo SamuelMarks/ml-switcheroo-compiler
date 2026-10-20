@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import typing
 
 import numpy as np
 
@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.stats.descriptive import confusion_matrix, trapezoidal_integral
 from ml_switcheroo_compiler.tracing import global_tracing_state
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     pass
 
 

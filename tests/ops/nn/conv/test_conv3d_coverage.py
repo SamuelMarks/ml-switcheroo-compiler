@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -50,7 +50,7 @@ def test_conv3d_full_coverage() -> None:
             TensorConfig((2, 2, 2, 2, 4), DType("float32"), Device("cpu")),
         )
 
-        cfg = cast("EagerCallableProtocol", ConvConfig)(
+        cfg = typing.cast("EagerCallableProtocol", ConvConfig)(
             window_strides=(1, 1, 1),
             padding="VALID",
             dimension_numbers=((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)),

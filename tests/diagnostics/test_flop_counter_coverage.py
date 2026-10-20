@@ -42,7 +42,7 @@ def test_flop_counter_exhaustive() -> None:
 
     # 3. Node with invalid shape_metadata (raises TypeError)
     n_bad_shape = LogicalNode("n2", "Relu", inputs=["n1"])
-    n_bad_shape.shape_metadata = _DummyBadShape()
+    object.__setattr__(n_bad_shape, "shape_metadata", _DummyBadShape())
     graph.nodes["n2"] = n_bad_shape
 
     # 4. Node without shape_metadata and op_type != 'Foo'

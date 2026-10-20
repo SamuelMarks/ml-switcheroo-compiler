@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import cast
+import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot as RaggedDot
@@ -110,7 +110,7 @@ class SparseDenseMatMul(OpDef):
 
     op_name = "SparseDenseMatMul"
 
-    def infer_shape(self, sp_a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse to dense operation.
 
         Args:
@@ -137,7 +137,7 @@ class SparseAdd(OpDef):
 
     op_name = "SparseAdd"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse add operation.
 
         Args:
@@ -159,7 +159,7 @@ class SparseSampledAdd(OpDef):
 
     op_name = "SparseSampledAdd"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse sampled add operation.
 
         Args:
@@ -181,7 +181,7 @@ class Smm(OpDef):
 
     op_name = "Smm"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the smm operation.
 
         Args:
@@ -208,7 +208,7 @@ class SparseReduceSum(OpDef):
 
     op_name = "SparseReduceSum"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse reduce sum operation.
 
         Args:
@@ -223,7 +223,7 @@ class SparseReduceSum(OpDef):
             return ()
         axis = kwargs.get("axis")
         keepdims = bool(kwargs.get("keepdims", False))
-        return cast(tuple[int, ...], cast("EagerCallableProtocol", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
+        return typing.cast(tuple[int, ...], typing.cast("EagerCallableProtocol", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
 
 
 @register_op("SparseSoftmax")
@@ -232,7 +232,7 @@ class SparseSoftmax(OpDef):
 
     op_name = "SparseSoftmax"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse softmax operation.
 
         Args:
@@ -251,7 +251,7 @@ class SparseReduceMax(OpDef):
 
     op_name = "SparseReduceMax"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse reduce max operation.
 
         Args:
@@ -266,7 +266,7 @@ class SparseReduceMax(OpDef):
             return ()
         axis = kwargs.get("axis")
         keepdims = bool(kwargs.get("keepdims", False))
-        return cast(tuple[int, ...], cast("EagerCallableProtocol", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
+        return typing.cast(tuple[int, ...], typing.cast("EagerCallableProtocol", _reduce_sparse_shape)(shape, axis=axis, keepdims=keepdims))
 
 
 @register_op("SparseBincount")
@@ -275,7 +275,7 @@ class SparseBincount(OpDef):
 
     op_name = "SparseBincount"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse bincount operation.
 
         Args:
@@ -287,7 +287,7 @@ class SparseBincount(OpDef):
         """
         shape = _get_dense_shape(a)
         batch = shape[0] if shape else 1
-        size = int(cast(int, kwargs.get("size", kwargs.get("maxlength", 0))))
+        size = int(typing.cast(int, kwargs.get("size", kwargs.get("maxlength", 0))))
         return (batch, size) if size > 0 else (batch,)
 
 
@@ -297,7 +297,7 @@ class SparseCrossHashed(OpDef):
 
     op_name = "SparseCrossHashed"
 
-    def infer_shape(self, inputs: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, inputs: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse cross hashed operation.
 
         Args:
@@ -310,7 +310,7 @@ class SparseCrossHashed(OpDef):
         inp_list = inputs if isinstance(inputs, (list, tuple)) else [inputs]
         first_shape = _get_dense_shape(inp_list[0]) if inp_list else ()
         batch = first_shape[0] if first_shape else 1
-        num_buckets = int(cast(int, kwargs.get("num_buckets", 1)))
+        num_buckets = int(typing.cast(int, kwargs.get("num_buckets", 1)))
         return (batch, num_buckets)
 
 
@@ -320,7 +320,7 @@ class SparseExpandDims(OpDef):
 
     op_name = "SparseExpandDims"
 
-    def infer_shape(self, a: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse expand dims operation.
 
         Args:
@@ -331,7 +331,7 @@ class SparseExpandDims(OpDef):
             tuple[int, ...]: Result.
         """
         shape = list(_get_dense_shape(a))
-        axis = int(cast(int, kwargs.get("axis", 0)))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
         if axis < 0:
             axis += len(shape) + 1
         shape.insert(axis, 1)
@@ -344,7 +344,7 @@ class SparseEye(OpDef):
 
     op_name = "SparseEye"
 
-    def infer_shape(self, num_rows: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, num_rows: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse eye operation.
 
         Args:
@@ -354,8 +354,8 @@ class SparseEye(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        r = int(getattr(num_rows, "value", num_rows)) if isinstance(num_rows, int) or hasattr(num_rows, "value") else 1
-        c = int(cast(int, kwargs.get("num_columns", r)))
+        r = int(typing.cast(int, getattr(num_rows, "value", num_rows))) if isinstance(num_rows, int) or hasattr(num_rows, "value") else 1
+        c = int(typing.cast(int, kwargs.get("num_columns", r)))
         return (r, c)
 
 
@@ -365,7 +365,7 @@ class SparseFillEmptyRows(OpDef):
 
     op_name = "SparseFillEmptyRows"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, default_value: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, default_value: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse fill empty rows operation.
 
         Args:
@@ -385,7 +385,7 @@ class SparseMapValues(OpDef):
 
     op_name = "SparseMapValues"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse map values operation.
 
         Args:
@@ -404,7 +404,7 @@ class SparseMask(OpDef):
 
     op_name = "SparseMask"
 
-    def infer_shape(self, a: EagerTensorProtocol, mask: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, mask: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse mask operation.
 
         Args:
@@ -424,7 +424,7 @@ class SparseMaximum(OpDef):
 
     op_name = "SparseMaximum"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse maximum operation.
 
         Args:
@@ -444,7 +444,7 @@ class SparseMinimum(OpDef):
 
     op_name = "SparseMinimum"
 
-    def infer_shape(self, a: EagerTensorProtocol, b: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, a: TensorOrScalar, b: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse minimum operation.
 
         Args:
@@ -464,7 +464,7 @@ class SparseReorder(OpDef):
 
     op_name = "SparseReorder"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse reorder operation.
 
         Args:
@@ -483,7 +483,7 @@ class SparseResetShape(OpDef):
 
     op_name = "SparseResetShape"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse reset shape operation.
 
         Args:
@@ -505,7 +505,7 @@ class SparseReshape(OpDef):
 
     op_name = "SparseReshape"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, shape: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, shape: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse reshape operation.
 
         Args:
@@ -527,7 +527,7 @@ class SparseRetain(OpDef):
 
     op_name = "SparseRetain"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, to_retain: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, to_retain: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse retain operation.
 
         Args:
@@ -547,7 +547,7 @@ class SparseSegmentMean(OpDef):
 
     op_name = "SparseSegmentMean"
 
-    def infer_shape(self, data: EagerTensorProtocol, indices: TensorOrScalar = None, segment_ids: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, data: TensorOrScalar, indices: TensorOrScalar = None, segment_ids: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse segment mean operation.
 
         Args:
@@ -560,7 +560,7 @@ class SparseSegmentMean(OpDef):
             tuple[int, ...]: Result.
         """
         d_shape = _get_dense_shape(data)
-        num_segments = int(cast(int, kwargs.get("num_segments", 1)))
+        num_segments = int(typing.cast(int, kwargs.get("num_segments", 1)))
         return (num_segments,) + d_shape[1:]
 
 
@@ -570,7 +570,7 @@ class SparseSegmentSqrtN(OpDef):
 
     op_name = "SparseSegmentSqrtN"
 
-    def infer_shape(self, data: EagerTensorProtocol, indices: TensorOrScalar = None, segment_ids: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, data: TensorOrScalar, indices: TensorOrScalar = None, segment_ids: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse segment sqrt n operation.
 
         Args:
@@ -583,7 +583,7 @@ class SparseSegmentSqrtN(OpDef):
             tuple[int, ...]: Result.
         """
         d_shape = _get_dense_shape(data)
-        num_segments = int(cast(int, kwargs.get("num_segments", 1)))
+        num_segments = int(typing.cast(int, kwargs.get("num_segments", 1)))
         return (num_segments,) + d_shape[1:]
 
 
@@ -593,7 +593,7 @@ class SparseSegmentSum(OpDef):
 
     op_name = "SparseSegmentSum"
 
-    def infer_shape(self, data: EagerTensorProtocol, indices: TensorOrScalar = None, segment_ids: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, data: TensorOrScalar, indices: TensorOrScalar = None, segment_ids: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse segment sum operation.
 
         Args:
@@ -606,7 +606,7 @@ class SparseSegmentSum(OpDef):
             tuple[int, ...]: Result.
         """
         d_shape = _get_dense_shape(data)
-        num_segments = int(cast(int, kwargs.get("num_segments", 1)))
+        num_segments = int(typing.cast(int, kwargs.get("num_segments", 1)))
         return (num_segments,) + d_shape[1:]
 
 
@@ -616,7 +616,7 @@ class SparseSlice(OpDef):
 
     op_name = "SparseSlice"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, start: TensorOrScalar = None, size: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, start: TensorOrScalar = None, size: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse slice operation.
 
         Args:
@@ -640,7 +640,7 @@ class SparseToIndicator(OpDef):
 
     op_name = "SparseToIndicator"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, vocab_size: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, vocab_size: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse to indicator operation.
 
         Args:
@@ -664,7 +664,7 @@ class SparseTranspose(OpDef):
 
     op_name = "SparseTranspose"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse transpose operation.
 
         Args:
@@ -710,7 +710,7 @@ class SparseConcat(OpDef):
 
     op_name = "SparseConcat"
 
-    def infer_shape(self, sp_inputs: EagerTensorProtocol, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sp_inputs: TensorOrScalar, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse concat operation.
 
         Args:
@@ -724,7 +724,7 @@ class SparseConcat(OpDef):
         if not inps:
             return ()
         first_shape = list(_get_dense_shape(inps[0]))
-        axis = int(cast(int, kwargs.get("axis", 0)))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
         if axis < 0 and first_shape:
             axis += len(first_shape)
         total_dim = 0
@@ -743,7 +743,7 @@ class SparseSplit(OpDef):
 
     op_name = "SparseSplit"
 
-    def infer_shape(self, sp_input: EagerTensorProtocol, num_split: TensorOrScalar = 1, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], ...] | tuple[int, ...]:
+    def infer_shape(self, sp_input: TensorOrScalar, num_split: TensorOrScalar = 1, **kwargs: TensorOrScalar) -> tuple[tuple[int, ...], ...] | tuple[int, ...]:
         """Infers the output shape for the sparse split operation.
 
         Args:
@@ -757,7 +757,7 @@ class SparseSplit(OpDef):
         shape = list(_get_dense_shape(sp_input))
         n_split = num_split if num_split is not None else kwargs.get("num_split", 1)
         n = int(n_split) if isinstance(n_split, int) else 1
-        axis = int(cast(int, kwargs.get("axis", 0)))
+        axis = int(typing.cast(int, kwargs.get("axis", 0)))
         if axis < 0 and shape:
             axis += len(shape)
         if shape and len(shape) > axis:
@@ -772,7 +772,7 @@ class SparseToDense(OpDef):
 
     op_name = "SparseToDense"
 
-    def infer_shape(self, sparse_indices: EagerTensorProtocol, output_shape: EagerTensorProtocol, sparse_values: TensorOrScalar = None, default_value: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
+    def infer_shape(self, sparse_indices: TensorOrScalar, output_shape: TensorOrScalar, sparse_values: TensorOrScalar = None, default_value: TensorOrScalar = None, **kwargs: TensorOrScalar) -> tuple[int, ...]:
         """Infers the output shape for the sparse to dense operation.
 
         Args:

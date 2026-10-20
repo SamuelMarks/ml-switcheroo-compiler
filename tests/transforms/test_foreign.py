@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 
 # ruff: noqa: E501
 from unittest.mock import MagicMock
@@ -12,16 +12,16 @@ from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.transforms.foreign import _handle_fx_call_function, _handle_fx_output, _handle_fx_placeholder, _translate_jax_equation, ingest_jaxpr, ingest_torch_fx
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 def test_handle_fx_placeholder() -> None:
     """Test function test_handle_fx_placeholder."""
     graph = LogicalGraph()
-    node_map = cast("dict[str, EagerTensorProtocol]", {})
+    node_map = typing.cast("dict[str, EagerTensorProtocol]", {})
     node = MagicMock(name="ph")
-    cast("EagerCallableProtocol", _handle_fx_placeholder)(node, graph, node_map)
+    typing.cast("EagerCallableProtocol", _handle_fx_placeholder)(node, graph, node_map)
     assert node.name in node_map
 
 
@@ -52,24 +52,24 @@ def test_handle_fx_call_function() -> None:
 def test_handle_fx_output() -> None:
     """Test function test_handle_fx_output."""
     graph = LogicalGraph()
-    node_map = cast("dict[str, EagerTensorProtocol]", {})
+    node_map = typing.cast("dict[str, EagerTensorProtocol]", {})
     node = MagicMock()
     arg1 = MagicMock()
     arg1.name = "out1"
     arg2 = MagicMock()
     del arg2.name
     node.args = [(arg1, arg2)]
-    cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
+    typing.cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == ["out1"]
     node.args = [arg1]
-    cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
+    typing.cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == ["out1"]
 
     # Test args not a tuple and no name
     no_name_arg = MagicMock()
     del no_name_arg.name
     node.args = [no_name_arg]
-    cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
+    typing.cast("EagerCallableProtocol", _handle_fx_output)(node, graph, node_map)
     assert graph.outputs == []  # It resets graph.outputs to empty
 
 

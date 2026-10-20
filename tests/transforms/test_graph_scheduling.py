@@ -1,5 +1,9 @@
 """Unit tests for concrete hardware graph scheduling cost models and passes."""
 
+from __future__ import annotations
+
+from ml_switcheroo_ir import NodeDict
+
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.graph_scheduling import (
@@ -206,7 +210,7 @@ def test_symbolic_compute_costs_and_stream_merging() -> None:
     n1 = IRNode("n1", "Input", stream="stream_1")
     n2 = IRNode("n2", "Input", stream="stream_2")
     n3 = IRNode("n3", "Add", inputs=["n1", "n2"])
-    graph.nodes = {"n1": n1, "n2": n2, "n3": n3}
+    graph.nodes = NodeDict({"n1": n1, "n2": n2, "n3": n3})
 
     scheduler = GraphSchedulingPass()
     scheduler.run(graph)

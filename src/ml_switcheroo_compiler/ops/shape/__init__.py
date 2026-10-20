@@ -1,5 +1,7 @@
 """Shape ops."""
 
+from __future__ import annotations
+
 from . import concat as concat
 from . import dynamic_slicing as dynamic_slicing
 from . import frontend as frontend

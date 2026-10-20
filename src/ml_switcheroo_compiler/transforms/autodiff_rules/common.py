@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import enum
-from collections.abc import Callable
-from typing import TYPE_CHECKING
+import typing
+from collections.abc import Callable, Sequence
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 
@@ -18,7 +18,7 @@ class UnconnectedGradients(enum.Enum):
 
 
 VJPCallable = Callable[["LogicalGraph", "LogicalNode", str], tuple[UnconnectedGradients, ...]]
-JVPCallable = Callable[["LogicalGraph", "LogicalNode", tuple[str, ...]], str]
+JVPCallable = Callable[["LogicalGraph", "LogicalNode", typing.Union[Sequence[str], str]], str]  # noqa: UP007
 
 
 def make_zero_vjp(name: str) -> VJPCallable:
@@ -57,13 +57,13 @@ def make_zero_jvp(name: str) -> JVPCallable:
         JVPCallable: The generated JVP function.
     """
 
-    def jvp(graph: LogicalGraph, node: LogicalNode, tangents: tuple[str, ...]) -> str:
+    def jvp(graph: LogicalGraph, node: LogicalNode, tangents: Sequence[str] | str) -> str:
         """Return empty string to represent a zero tangent.
 
         Args:
             graph (LogicalGraph): The IR graph.
             node (LogicalNode): The node.
-            tangents (tuple[str, ...]): The input tangents.
+            tangents (Sequence[str] | str): The input tangents.
 
         Returns:
             str: Empty string representing zero tangent.

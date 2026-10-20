@@ -1,9 +1,9 @@
 BCELoss:
   autodiff:
-    vjp_rule_id: BCELoss_vjp
+    jvp: null
     jvp_rule_id: BCELoss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: BCELoss_vjp
   broadcast_semantics: numpy
   description: Auto-generated mapping for BCELoss.
   domain: loss
@@ -19,15 +19,15 @@ BCELoss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     edge_wasm_simd:
@@ -40,27 +40,12 @@ BCELoss:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 BCEWithLogitsLoss:
   autodiff:
-    vjp_rule_id: BCEWithLogitsLoss_vjp
+    jvp: null
     jvp_rule_id: BCEWithLogitsLoss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: BCEWithLogitsLoss_vjp
   broadcast_semantics: numpy
   description: Auto-generated mapping for BCEWithLogitsLoss.
   domain: loss
@@ -74,15 +59,15 @@ BCEWithLogitsLoss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     edge_wasm_simd:
@@ -95,27 +80,12 @@ BCEWithLogitsLoss:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 CrossEntropyLoss:
   autodiff:
-    vjp_rule_id: CrossEntropyLoss_vjp
+    jvp: null
     jvp_rule_id: CrossEntropyLoss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: CrossEntropyLoss_vjp
   broadcast_semantics: numpy
   description: Auto-generated from jax_code_defs
   domain: loss
@@ -129,41 +99,26 @@ CrossEntropyLoss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 HuberLoss:
   autodiff:
-    vjp_rule_id: HuberLoss_vjp
+    jvp: null
     jvp_rule_id: HuberLoss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: HuberLoss_vjp
   broadcast_semantics: numpy
   description: Computes Huber loss value.
   domain: loss
@@ -177,41 +132,26 @@ HuberLoss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 KLDivLoss:
   autodiff:
-    vjp_rule_id: KLDivLoss_vjp
+    jvp: null
     jvp_rule_id: KLDivLoss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: KLDivLoss_vjp
   broadcast_semantics: numpy
   description: Auto-generated mapping for KLDivLoss.
   domain: loss
@@ -225,41 +165,26 @@ KLDivLoss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 L1Loss:
   autodiff:
-    vjp_rule_id: L1Loss_vjp
+    jvp: null
     jvp_rule_id: L1Loss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: L1Loss_vjp
   broadcast_semantics: numpy
   description: Auto-generated mapping for L1Loss.
   domain: loss
@@ -273,41 +198,26 @@ L1Loss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 MSELoss:
   autodiff:
-    vjp_rule_id: MSELoss_vjp
+    jvp: null
     jvp_rule_id: MSELoss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: MSELoss_vjp
   broadcast_semantics: numpy
   description: Auto-generated from jax_code_defs
   domain: loss
@@ -321,41 +231,26 @@ MSELoss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 NLLLoss:
   autodiff:
-    vjp_rule_id: NLLLoss_vjp
+    jvp: null
     jvp_rule_id: NLLLoss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: NLLLoss_vjp
   broadcast_semantics: numpy
   description: Auto-generated mapping for NLLLoss.
   domain: loss
@@ -369,41 +264,26 @@ NLLLoss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null
 SmoothL1Loss:
   autodiff:
-    vjp_rule_id: SmoothL1Loss_vjp
+    jvp: null
     jvp_rule_id: SmoothL1Loss_jvp
     vjp: null
-    jvp: null
+    vjp_rule_id: SmoothL1Loss_vjp
   broadcast_semantics: numpy
   description: Auto-generated mapping for SmoothL1Loss.
   domain: loss
@@ -417,32 +297,17 @@ SmoothL1Loss:
   output_tensors:
   - out
   signature:
-    args: []
-    input_tensors:
-    - x
-    output_tensors:
-    - out
-    has_variadic_args: false
-    has_variadic_kwargs: false
-    keyword_constraints: {}
-    keyword_defaults: {}
+    args:
+    - is_variadic: false
+      name: predictions
+      type: Tensor
+    - is_variadic: false
+      name: targets
+      type: Tensor
+    output_dtype_formula: promote(x1.dtype, x2.dtype)
+    output_shape_formula: broadcast(x1.shape, x2.shape)
   type_promotion: standard
   variants:
     llvm_cpp:
       scalar_expr: in0_val
       template: unary
-  dtype_rules:
-    promotion_matrix: standard
-    allowed_input_dtypes:
-    - all
-    output_dtype_inference: in0
-  shape_signature:
-    pattern: in0
-    symbolic_expression: '[*shape] -> [*shape]'
-    category: unary
-  invariants:
-    is_commutative: false
-    is_associative: false
-    is_idempotent: false
-    identity_value: null
-    absorbing_value: null

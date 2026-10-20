@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Union, cast
+import typing
+from collections.abc import Sequence
 
-if TYPE_CHECKING:
-    from ml_switcheroo_ir import TensorShape
+import pydantic
 
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
 from ml_switcheroo_compiler.core.config import config
@@ -58,7 +59,7 @@ class ArrayAt:
         val = getattr(value, "data", value)
         ndim = getattr(data, "ndim", 0)
         if data is not None and hasattr(data, "copy") and isinstance(ndim, int) and ndim > 0:
-            copied: TensorOrScalar = cast(TensorOrScalar, getattr(data, "copy")())
+            copied: TensorOrScalar = typing.cast(TensorOrScalar, getattr(data, "copy")())
             cur = getattr(copied, "__getitem__")(idx)
             if op_name == "add":
                 new_val = getattr(cur, "__add__")(val)
@@ -153,7 +154,7 @@ class ArrayAtIndexer:
         return ArrayAt(self.tensor, indices)
 
 
-def _normalize_config_dtype(dt: Union[DType, str, TensorOrScalar, None]) -> Union[DType, str, TensorOrScalar]:
+def _normalize_config_dtype(dt: DType | str | TensorOrScalar | None) -> DType | str | TensorOrScalar:
     """Normalize a raw dtype specification into a `DType` enum when valid.
 
     Args:
@@ -173,35 +174,64 @@ def _normalize_config_dtype(dt: Union[DType, str, TensorOrScalar, None]) -> Unio
         return dt
 
 
-@dataclass(frozen=True)
-class TensorConfig:
+class TensorConfig(pydantic.BaseModel):
     """Configuration for a Tensor."""
 
-    shape: Union[tuple[Union[int, str, SymNode, None], ...], Sequence[Union[int, str, SymNode, None]], TensorShape, ShapeLike, TensorOrScalar, None] = ()
-    dtype: Union[DType, str, TensorOrScalar, None] = DType.Float32
-    device: Union[Device, str, TensorOrScalar, None] = "cpu"
+    model_config = pydantic.ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    shape: ShapeLike = ()
+    dtype: TensorOrScalar = DType.Float32
+    device: TensorOrScalar = "cpu"
     requires_grad: bool = False
     trainable: bool = False
 
-    def __post_init__(self) -> None:
-        """Post initialization."""
-        if self.shape is None:
-            object.__setattr__(self, "shape", ())
-        elif not isinstance(self.shape, tuple):
+    def __init__(
+        self,
+        shape: ShapeLike = (),
+        dtype: TensorOrScalar = DType.Float32,
+        device: TensorOrScalar = "cpu",
+        requires_grad: bool = False,
+        trainable: bool = False,
+    ) -> None:
+        """Initialize TensorConfig.
+
+        Args:
+            shape (ShapeLike): Tensor shape specification.
+            dtype (TensorOrScalar): Data type specification.
+            device (TensorOrScalar): Execution device specification.
+            requires_grad (bool): Whether gradient tracking is enabled.
+            trainable (bool): Whether tensor is a trainable parameter.
+        """
+        norm_shape: ShapeLike
+        if shape is None:
+            norm_shape = ()
+        elif not isinstance(shape, tuple):
             try:
-                object.__setattr__(self, "shape", tuple(cast("Sequence[Union[int, str, SymNode, None]]", self.shape)))
+                norm_shape = tuple(typing.cast("Sequence[int | str | SymNode | None]", shape))
             except TypeError:
-                object.__setattr__(self, "shape", ())
-        object.__setattr__(self, "dtype", _normalize_config_dtype(self.dtype))
-        if self.device is None:
-            object.__setattr__(self, "device", Device("cpu"))
-        elif isinstance(self.device, str):
-            object.__setattr__(self, "device", Device(self.device))
-        elif not isinstance(self.device, Device) and not hasattr(self.device, "device_type"):
-            object.__setattr__(self, "device", Device(str(self.device)))
+                norm_shape = ()
+        else:
+            norm_shape = shape
+        norm_dtype = _normalize_config_dtype(dtype)
+        norm_device: TensorOrScalar
+        if device is None:
+            norm_device = Device("cpu")
+        elif isinstance(device, str):
+            norm_device = Device(device)
+        elif not isinstance(device, Device) and not hasattr(device, "device_type"):
+            norm_device = Device(str(device))
+        else:
+            norm_device = device
+        super().__init__(
+            shape=norm_shape,
+            dtype=norm_dtype,
+            device=norm_device,
+            requires_grad=requires_grad,
+            trainable=trainable,
+        )
 
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     _TensorMixinBase = TensorIndexingMixin
 else:
 
@@ -232,7 +262,7 @@ class Tensor(
         """
         self._data = data
 
-        def _parse_dim(s: int | str | SymNode) -> Union[int, str, SymNode]:
+        def _parse_dim(s: int | str | SymNode) -> int | str | SymNode:
             """Parse dimension.
 
             Args:
@@ -251,9 +281,9 @@ class Tensor(
                 return str(s)
 
         shape_tuple = config.shape if isinstance(config.shape, tuple) else ()
-        self._shape: tuple[Union[int, str, SymNode], ...] = tuple(cast("Callable[..., Union[int, str, SymNode]]", _parse_dim)(s) for s in shape_tuple)
-        self._dtype = cast(DType, config.dtype)
-        self._device = cast(Device, config.device)
+        self._shape: tuple[int | str | SymNode, ...] = tuple(typing.cast("TypedVariadicCallable[int | str | SymNode]", _parse_dim)(s) for s in shape_tuple)
+        self._dtype = typing.cast(DType, config.dtype)
+        self._device = typing.cast(Device, config.device)
         self._requires_grad = config.requires_grad
         self.config = config
 
@@ -317,7 +347,7 @@ class Tensor(
         except KeyError:
             reshape_fn = get_op("Reshape")()
 
-        res = cast(Callable[..., Tensor], reshape_fn)(self, tuple(flat_shape))
+        res = typing.cast(TypedVariadicCallable[Tensor], reshape_fn)(self, tuple(flat_shape))
         return res
 
     def contiguous(self) -> Tensor:
@@ -434,4 +464,4 @@ class Parameter(Variable):
         Returns:
             int: The integer value.
         """
-        return int(cast(int, self.numpy()))
+        return int(typing.cast(int, self.numpy()))

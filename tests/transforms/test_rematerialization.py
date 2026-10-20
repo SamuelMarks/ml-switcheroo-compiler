@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
+
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, _load_rules, rematerialization_pass
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
@@ -33,7 +35,7 @@ def test_rematerialization_pass() -> None:
     n3 = IRNode(id="n3", op_type="MatMul", inputs=[prev, "n2"])
     nodes["n3"] = n3
 
-    g.nodes = nodes
+    g.nodes = NodeDict(nodes)
 
     modified = rematerialization_pass(g)
     assert modified
@@ -44,19 +46,19 @@ def test_rematerialization_pass() -> None:
 
     # Also coverage for the internal functions:
     assert _estimate_memory(n1) == 4.0
-    n1.shape_metadata = 5
+    object.__setattr__(n1, "shape_metadata", 5)
     assert _estimate_memory(n1) == 4.0
     assert _estimate_compute(n1, rules) == 1.0
     n3.op_type = "Conv2D"
-    n3.shape_metadata = [10, 10]
+    n3.shape_metadata = (10, 10)
     assert _estimate_compute(n3, rules) == 10000.0
     n3.shape_metadata = None
     assert _estimate_compute(n3, rules) == 1.0
     assert _estimate_memory(n3) == 4.0
 
-    n1.shape_metadata = [5, 5]
+    n1.shape_metadata = (5, 5)
     assert _estimate_compute(n1, rules) == 25.0
-    n3.shape_metadata = [10, 10]
+    n3.shape_metadata = (10, 10)
     assert _estimate_compute(n3, rules) == 10000.0
     n3.shape_metadata = None
     assert _estimate_compute(n3, rules) == 1.0
@@ -89,7 +91,7 @@ def test_rematerialization_already_exists() -> None:
     n2_rec = IRNode(id="n2_remat", op_type="Add")
     nodes["n2_remat"] = n2_rec
 
-    g.nodes = nodes
+    g.nodes = NodeDict(nodes)
 
     modified = rematerialization_pass(g)
     # the cloned node is already in graph, but the inputs to consumers will still be updated if they weren't
@@ -109,7 +111,7 @@ def test_rematerialization_max_dist() -> None:
 
     rules = {"target_ops": ["A"], "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0}}
 
-    res = cast("EagerCallableProtocol", _find_target_nodes)([node], consumers, node_indices, rules)
+    res = typing.cast("EagerCallableProtocol", _find_target_nodes)([node], consumers, node_indices, rules)
     assert not res
 
 

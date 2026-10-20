@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence  # noqa: F401
-from types import ModuleType
-from typing import cast
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 @numpy_eager_registry.register("Rsqrt")
-def _np_rsqrt(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_rsqrt(backend_module: BackendModuleProtocol, x: EagerValue, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np rsqrt operation on the active backend array.
 
     Args:
@@ -26,11 +26,11 @@ def _np_rsqrt(backend_module: ModuleType, x: EagerValue, *args: EagerValue, **kw
             tuple[int, ...]: Result.
     """
     with np.errstate(divide="ignore", invalid="ignore"):
-        return cast(EagerValue, 1.0 / getattr(np, "sqrt")(x))
+        return typing.cast(EagerValue, 1.0 / getattr(np, "sqrt")(x))
 
 
 @numpy_eager_registry.register("Trace")
-def _np_trace(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_trace(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Return the sum along diagonals of the array.
 
     Args:
@@ -40,11 +40,11 @@ def _np_trace(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, getattr(np, "trace")(np.asarray(args[0]), *args[1:], **kwargs))
+    return typing.cast(EagerValue, getattr(np, "trace")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("Vander")
-def _np_vander(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Execute the eager np vander operation on the active backend array.
 
     Args:
@@ -55,11 +55,11 @@ def _np_vander(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
     Returns:
             tuple[int, ...]: Result.
     """
-    return cast(EagerValue, getattr(np, "vander")(np.asarray(args[0]), *args[1:], **kwargs))
+    return typing.cast(EagerValue, getattr(np, "vander")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("Cholesky")
-def _np_linalg_cholesky_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_linalg_cholesky_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Cholesky via linalg.cholesky.
 
     Args:
@@ -69,11 +69,11 @@ def _np_linalg_cholesky_(backend_module: ModuleType, *args: EagerValue, **kwargs
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.linalg.cholesky(*args, **kwargs))
+    return typing.cast(EagerValue, backend_module.linalg.cholesky(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Det")
-def _np_linalg_det_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_linalg_det_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Det via linalg.det.
 
     Args:
@@ -83,11 +83,11 @@ def _np_linalg_det_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.linalg.det(*args, **kwargs))
+    return typing.cast(EagerValue, backend_module.linalg.det(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Svd")
-def _np_linalg_svd_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_linalg_svd_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Svd via linalg.svd.
 
     Args:
@@ -97,11 +97,11 @@ def _np_linalg_svd_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.linalg.svd(*args, **kwargs))
+    return typing.cast(EagerValue, backend_module.linalg.svd(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Inv")
-def _np_linalg_inv_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_linalg_inv_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Inv via linalg.inv.
 
     Args:
@@ -111,11 +111,11 @@ def _np_linalg_inv_(backend_module: ModuleType, *args: EagerValue, **kwargs: Eag
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.linalg.inv(*args, **kwargs))
+    return typing.cast(EagerValue, backend_module.linalg.inv(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Pinv")
-def _np_linalg_pinv_(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_linalg_pinv_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Pinv via linalg.pinv.
 
     Args:
@@ -125,11 +125,11 @@ def _np_linalg_pinv_(backend_module: ModuleType, *args: EagerValue, **kwargs: Ea
 
     Returns: np.ndarray: The computed result.
     """
-    return cast(EagerValue, backend_module.linalg.pinv(*args, **kwargs))
+    return typing.cast(EagerValue, backend_module.linalg.pinv(*args, **kwargs))
 
 
 @numpy_eager_registry.register("CustomLinearSolve")
-def _np_customlinearsolve(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_customlinearsolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement CustomLinearSolve.
 
     Args:
@@ -143,13 +143,13 @@ def _np_customlinearsolve(backend_module: ModuleType, *args: EagerValue, **kwarg
     if callable(args[0]):
         solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
         if solve:
-            return cast(EagerValue, cast("EagerCallableProtocol", solve)(args[0], args[1]))
+            return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", solve)(args[0], args[1]))
         return args[1]
-    return cast(EagerValue, getattr(np.linalg, "solve")(args[0], args[1]))
+    return typing.cast(EagerValue, getattr(np.linalg, "solve")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("LinearOperatorInversion")
-def _np_linearoperatorinversion(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_linearoperatorinversion(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement LinearOperatorInversion.
 
     Args:
@@ -166,7 +166,7 @@ def _np_linearoperatorinversion(backend_module: ModuleType, *args: EagerValue, *
 
 
 @numpy_eager_registry.register("Vecdot")
-def _np_vecdot(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+def _np_vecdot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """Implement Vecdot.
 
     Args:
@@ -181,9 +181,9 @@ def _np_vecdot(backend_module: ModuleType, *args: EagerValue, **kwargs: EagerVal
     y = args[1]
     axis = kwargs.get("axis", -1)
     if hasattr(backend_module, "linalg") and hasattr(backend_module.linalg, "vecdot"):
-        return cast(EagerValue, backend_module.linalg.vecdot(x, y, axis=axis))
+        return typing.cast(EagerValue, backend_module.linalg.vecdot(x, y, axis=axis))
     if hasattr(backend_module, "vecdot"):
-        return cast(EagerValue, backend_module.vecdot(x, y, axis=axis))
+        return typing.cast(EagerValue, backend_module.vecdot(x, y, axis=axis))
     if backend_module.iscomplexobj(x):
         x = backend_module.conj(x)
-    return cast(EagerValue, backend_module.sum(cast(EagerTensorProtocol, x) * cast(EagerTensorProtocol, y), axis=axis))
+    return typing.cast(EagerValue, backend_module.sum(typing.cast(EagerTensorProtocol, x) * typing.cast(EagerTensorProtocol, y), axis=axis))

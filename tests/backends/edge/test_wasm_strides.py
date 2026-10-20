@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+import typing
 from unittest.mock import patch
 
 import pytest
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 
-if TYPE_CHECKING:
+if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
@@ -51,7 +52,7 @@ def global_wasm_mock() -> Iterator[None]:
             Args:
                 template_name: Test parameter `template_name`.
             """
-            return {"body": cast("EagerCallableProtocol", mock_bodies.get)(template_name, cast("EagerTensorProtocol", "// ") + cast("EagerTensorProtocol", template_name))}
+            return {"body": typing.cast("EagerCallableProtocol", mock_bodies.get)(template_name, typing.cast("EagerTensorProtocol", "// ") + typing.cast("EagerTensorProtocol", template_name))}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
 
@@ -71,7 +72,7 @@ def test_wasm_simd_broadcast_generation() -> None:
     n2.shape_metadata = (32, 64)
     n3 = LogicalNode(id="out", op_type="Add", inputs=["in1", "in2"])
     n3.shape_metadata = (32, 64)
-    graph.nodes = {"in1": n1, "in2": n2, "out": n3}
+    graph.nodes = NodeDict({"in1": n1, "in2": n2, "out": n3})
 
     gen = WasmCodeGenerator(graph)
     code = gen.generate()
@@ -85,7 +86,7 @@ def test_wasm_simd_tanh() -> None:
     n1 = LogicalNode(id="in1", op_type="Input")
     n1.shape_metadata = (32,)
     n2 = LogicalNode(id="out", op_type="Tanh", inputs=["in1"])
-    graph.nodes = {"in1": n1, "out": n2}
+    graph.nodes = NodeDict({"in1": n1, "out": n2})
 
     gen = WasmCodeGenerator(graph)
     code = gen.generate()
