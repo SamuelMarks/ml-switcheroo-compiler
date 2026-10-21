@@ -17,9 +17,10 @@ from ml_switcheroo_compiler.backends.snapshot_grounding import (
     _extract_item_endpoints,
     load_backend_snapshot_targets,
 )
+from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_load_backend_snapshot_targets_default() -> None:
@@ -101,8 +102,8 @@ def test_snapshot_grounding_engine_endpoints() -> None:
     assert not engine.is_endpoint_valid("numpy", "numpy.completely_fake_endpoint_12345")
 
     # Test caching
-    data1: dict[str, EagerValue] = typing.cast("dict[str, EagerValue]", engine.load_snapshot("numpy"))
-    data2: dict[str, EagerValue] = typing.cast("dict[str, EagerValue]", engine.load_snapshot("numpy"))
+    data1 = as_attrs(engine.load_snapshot("numpy"))
+    data2 = as_attrs(engine.load_snapshot("numpy"))
     assert data1 is data2
     eps1: set[str] = engine.get_valid_endpoints("numpy")
     eps2: set[str] = engine.get_valid_endpoints("numpy")
@@ -121,7 +122,7 @@ def test_snapshot_grounding_engine_env_and_custom_dir(tmp_path: EagerTensorProto
     assert engine.snapshot_dir == custom_dir
 
     # Test via environment variable
-    monkeypatch.setenv("ML_FRAMEWORK_SNAPSHOTS_DIR", custom_dir)
+    monkeypatch.setenv("ML_ECOSYSTEM_SNAPSHOTS_DIR", custom_dir)
     engine_env: SnapshotGroundingEngine = SnapshotGroundingEngine()
     assert engine_env.snapshot_dir == custom_dir
 
@@ -771,7 +772,7 @@ def test_snapshot_grounding_cache_resolution_and_alt_roots(tmp_path: EagerTensor
         tmp_path: Test parameter `tmp_path`.
         monkeypatch: Test parameter `monkeypatch`.
     """
-    _state: dict[str, EagerTensorProtocol] = typing.cast("dict[str, EagerTensorProtocol]", {"tmp_path": tmp_path, "monkeypatch": monkeypatch})
+    _state: dict[str, EagerTensorProtocol] = as_tensor_dict({"tmp_path": tmp_path, "monkeypatch": monkeypatch})
     _test_snapshot_grounding_cache_resolution_and_alt_roots_part_1(_state)
     _test_snapshot_grounding_cache_resolution_and_alt_roots_part_2(_state)
     _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state)
@@ -1033,7 +1034,7 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_5(_state: dict
     _split_signature_params(
         [
             {"name": "x", "kind": "POSITIONAL_OR_KEYWORD"},
-            typing.cast("dict[str, EagerValue]", FrameHackingDict()),  # curr_sig IS empty (triggers branch 315->317)
+            as_attrs(FrameHackingDict()),  # curr_sig IS empty (triggers branch 315->317)
         ]
     )
     # 6. get_endpoint_parameters when params is None and overloads is None (line 539) vs params is not None or overloads is not None (line 540)
@@ -1087,7 +1088,7 @@ def test_snapshot_grounding_remaining_undercovered_branches(tmp_path: pytest.Tem
         tmp_path: Test parameter `tmp_path`.
         monkeypatch: Test parameter `monkeypatch`.
     """
-    _state: dict[str, EagerTensorProtocol] = typing.cast("dict[str, EagerTensorProtocol]", {"tmp_path": tmp_path, "monkeypatch": monkeypatch})
+    _state: dict[str, EagerTensorProtocol] = as_tensor_dict({"tmp_path": tmp_path, "monkeypatch": monkeypatch})
     _test_snapshot_grounding_remaining_undercovered_branches_part_1(_state)
     _test_snapshot_grounding_remaining_undercovered_branches_part_2(_state)
     _test_snapshot_grounding_remaining_undercovered_branches_part_3(_state)
@@ -1104,8 +1105,8 @@ def test_snapshot_grounding_ecosystem_env_precedence(tmp_path: pytest.TempPathFa
         tmp_path (pytest.TempPathFactory): Pytest temporary path fixture.
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
     """
-    eco_dir = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "eco_snapshots")
-    fw_dir = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "fw_snapshots")
+    eco_dir = as_tensor(tmp_path) / as_tensor("eco_snapshots")
+    fw_dir = as_tensor(tmp_path) / as_tensor("fw_snapshots")
     eco_dir.mkdir(parents=True, exist_ok=True)
     fw_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1135,7 +1136,7 @@ def test_snapshot_grounding_ecosystem_importlib_and_cache(tmp_path: pytest.TempP
     monkeypatch.delenv("ML_FRAMEWORK_SNAPSHOTS_DIR", raising=False)
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
 
-    cache_dir = (typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "user_cache")) / typing.cast("EagerTensorProtocol", "snapshots")
+    cache_dir = (as_tensor(tmp_path) / as_tensor("user_cache")) / as_tensor("snapshots")
     cache_dir.mkdir(parents=True, exist_ok=True)
     (cache_dir / "cache.json").write_text("{}", encoding="utf-8")
 
@@ -1180,27 +1181,27 @@ def test_is_snapshot_file_complete(tmp_path: pytest.TempPathFactory) -> None:
     from ml_switcheroo_compiler.backends.snapshot_grounding import _is_snapshot_file_complete
 
     # Non-dask backends return True unconditionally
-    dummy_file = typing.cast("EagerCallableProtocol", str)(typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "torch_dummy.json"))
-    assert bool(typing.cast("EagerCallableProtocol", _is_snapshot_file_complete)(dummy_file, "pytorch")) is True
+    dummy_file = as_callable(str)(as_tensor(tmp_path) / as_tensor("torch_dummy.json"))
+    assert bool(as_callable(_is_snapshot_file_complete)(dummy_file, "pytorch")) is True
 
     # Complete dask snapshot with array category
-    complete_dask = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "complete_dask.json")
+    complete_dask = as_tensor(tmp_path) / as_tensor("complete_dask.json")
     complete_dask.write_text('{"categories": {"array": [{"name": "abs"}]}}', encoding="utf-8")
     assert _is_snapshot_file_complete(str(complete_dask), "dask") is True
 
     # Incomplete dask snapshot without array category
-    incomplete_dask = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "incomplete_dask.json")
+    incomplete_dask = as_tensor(tmp_path) / as_tensor("incomplete_dask.json")
     incomplete_dask.write_text('{"categories": {"util": [{"name": "Expr"}]}}', encoding="utf-8")
     assert _is_snapshot_file_complete(str(incomplete_dask), "dask") is False
 
     # Missing or invalid JSON file
-    assert bool(typing.cast("EagerCallableProtocol", _is_snapshot_file_complete)(typing.cast("EagerCallableProtocol", str)(typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "non_existent.json")), "dask")) is False
-    corrupt_dask = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "corrupt.json")
+    assert bool(as_callable(_is_snapshot_file_complete)(as_callable(str)(as_tensor(tmp_path) / as_tensor("non_existent.json")), "dask")) is False
+    corrupt_dask = as_tensor(tmp_path) / as_tensor("corrupt.json")
     corrupt_dask.write_text("{bad json", encoding="utf-8")
     assert _is_snapshot_file_complete(str(corrupt_dask), "dask") is False
 
     # Test dask gz completeness
-    dask_gz_file = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "dask_v1.0.0.json.gz")
+    dask_gz_file = as_tensor(tmp_path) / as_tensor("dask_v1.0.0.json.gz")
     import gzip
     import json
 
@@ -1208,7 +1209,7 @@ def test_is_snapshot_file_complete(tmp_path: pytest.TempPathFactory) -> None:
         json.dump({"categories": {"array": [{"name": "compute"}]}}, f)
     assert _is_snapshot_file_complete(str(dask_gz_file), "dask") is True
 
-    bad_dask_gz = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "dask_incomplete_v1.0.0.json.gz")
+    bad_dask_gz = as_tensor(tmp_path) / as_tensor("dask_incomplete_v1.0.0.json.gz")
     with gzip.open(bad_dask_gz, "wt", encoding="utf-8") as f:
         json.dump({"categories": {"other": []}}, f)
     assert _is_snapshot_file_complete(str(bad_dask_gz), "dask") is False
@@ -1258,7 +1259,7 @@ def test_compressed_snapshot_archive_support(tmp_path: pytest.TempPathFactory) -
         _is_snapshot_file_complete,
     )
 
-    gz_file = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "mockfw_v1.0.0.json.gz")
+    gz_file = as_tensor(tmp_path) / as_tensor("mockfw_v1.0.0.json.gz")
     payload = {
         "categories": {
             "math": [
@@ -1295,12 +1296,12 @@ def test_compressed_snapshot_archive_support(tmp_path: pytest.TempPathFactory) -
     assert ref.name == "gz_op"
 
     # Test dask gz completeness
-    dask_gz_file = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "dask_v1.0.0.json.gz")
+    dask_gz_file = as_tensor(tmp_path) / as_tensor("dask_v1.0.0.json.gz")
     with gzip.open(dask_gz_file, "wt", encoding="utf-8") as f:
         json.dump({"categories": {"array": [{"name": "compute"}]}}, f)
     assert _is_snapshot_file_complete(str(dask_gz_file), "dask") is True
 
-    bad_dask_gz = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "dask_incomplete_v1.0.0.json.gz")
+    bad_dask_gz = as_tensor(tmp_path) / as_tensor("dask_incomplete_v1.0.0.json.gz")
     with gzip.open(bad_dask_gz, "wt", encoding="utf-8") as f:
         json.dump({"categories": {"other": []}}, f)
     assert _is_snapshot_file_complete(str(bad_dask_gz), "dask") is False
@@ -1361,18 +1362,18 @@ def test_snapshot_grounding_remaining_branches(monkeypatch: pytest.MonkeyPatch, 
     endpoints: set[str] = set()
     item_map: dict[str, dict[str, EagerValue]] = {}
     ref_map: dict[str, EagerValue] = {}
-    typing.cast("EagerCallableProtocol", _populate_from_grounding_engine)(None, None, endpoints, item_map, ref_map)
+    as_callable(_populate_from_grounding_engine)(None, None, endpoints, item_map, ref_map)
     assert len(endpoints) == 0
 
     # 5. _find_discrepancy_replacement
     assert _find_discrepancy_replacement("axis", {"dim"}, {"dim"}, "torch", "torch.sum") == "dim"
 
     # 6. _is_snapshot_file_complete corrupt files
-    corrupt_file = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "corrupt_dask.json")
+    corrupt_file = as_tensor(tmp_path) / as_tensor("corrupt_dask.json")
     corrupt_file.write_text("invalid json syntax {{{", encoding="utf-8")
     assert _is_snapshot_file_complete(str(corrupt_file), "dask") is False
 
-    non_dict_file = typing.cast("EagerTensorProtocol", tmp_path) / typing.cast("EagerTensorProtocol", "list_dask.json")
+    non_dict_file = as_tensor(tmp_path) / as_tensor("list_dask.json")
     non_dict_file.write_text("[1, 2, 3]", encoding="utf-8")
     assert _is_snapshot_file_complete(str(non_dict_file), "dask") is False
 
@@ -1486,7 +1487,7 @@ def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTen
         framework = "fake"
 
     endpoints_set: set[str] = set()
-    typing.cast("EagerCallableProtocol", _populate_from_grounding_engine)(typing.cast("EagerCallableProtocol", MockEngineDiscoverNoLoad)(), typing.cast("EagerCallableProtocol", MockTarget)(), endpoints_set, {}, {})
+    as_callable(_populate_from_grounding_engine)(as_callable(MockEngineDiscoverNoLoad)(), as_callable(MockTarget)(), endpoints_set, {}, {})
     assert len(endpoints_set) == 0
 
     class MockEngineDiscoverFalse:
@@ -1500,9 +1501,9 @@ def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTen
             """
             return False
 
-    typing.cast("EagerCallableProtocol", _populate_from_grounding_engine)(
-        typing.cast("EagerCallableProtocol", MockEngineDiscoverFalse)(),
-        typing.cast("EagerCallableProtocol", MockTarget)(),
+    as_callable(_populate_from_grounding_engine)(
+        as_callable(MockEngineDiscoverFalse)(),
+        as_callable(MockTarget)(),
         {"existing"},
         {},
         {},
@@ -1533,7 +1534,7 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
             """
             raise RuntimeError("discover failed")
 
-    typing.cast("EagerCallableProtocol", _populate_from_grounding_engine)(typing.cast("EagerCallableProtocol", MockEngineRaising)(), typing.cast("EagerCallableProtocol", MockTarget)(), endpoints_set, {}, {})
+    as_callable(_populate_from_grounding_engine)(as_callable(MockEngineRaising)(), as_callable(MockTarget)(), endpoints_set, {}, {})
     assert len(endpoints_set) == 0
     dummy_ref_empty = ExtendedGhostRef(
         api_path="",
@@ -1556,9 +1557,9 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
             return {"loaded_sym": dummy_ref_empty}
 
     loaded_eps: set[str] = set()
-    typing.cast("EagerCallableProtocol", _populate_from_grounding_engine)(
-        typing.cast("EagerCallableProtocol", MockEngineValidLoad)(),
-        typing.cast("EagerCallableProtocol", MockTarget)(),
+    as_callable(_populate_from_grounding_engine)(
+        as_callable(MockEngineValidLoad)(),
+        as_callable(MockTarget)(),
         loaded_eps,
         {},
         {},
@@ -1567,13 +1568,13 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
     endpoints_set2: set[str] = set()
     ref_map2: dict[str, EagerTensorProtocol] = {}
     item_map2: dict[str, dict[str, EagerValue]] = {}
-    typing.cast("EagerCallableProtocol", _register_ghost_ref)("dummy_sym", dummy_ref_empty, endpoints_set2, item_map2, ref_map2)
+    as_callable(_register_ghost_ref)("dummy_sym", dummy_ref_empty, endpoints_set2, item_map2, ref_map2)
     assert "dummy_sym" in endpoints_set2
     assert "dummy_alias" in endpoints_set2
 
     # 7. _populate_from_snapshot_data with item that cannot be hydrated
     item_map_unhydrated: dict[str, dict[str, EagerValue]] = {"unhydratable": {"params": "bad"}}
-    typing.cast("EagerCallableProtocol", _populate_from_snapshot_data)(
+    as_callable(_populate_from_snapshot_data)(
         {"bad_item": [{"name": "bad", "api_path": "bad", "params": "not_valid"}]},
         endpoints_set2,
         item_map_unhydrated,
@@ -1611,7 +1612,7 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
             """Test function model_dump."""
             return "not_a_dict"
 
-    assert typing.cast("EagerCallableProtocol", _param_to_dict)(typing.cast("EagerCallableProtocol", BadModelDump)()) == {}
+    assert as_callable(_param_to_dict)(as_callable(BadModelDump)()) == {}
 
     # 9. _signatures_from_ghost_ref with empty params and overloads
     ref_empty_sigs = ExtendedGhostRef(
@@ -1622,7 +1623,7 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
         params=[],
         overloads=[{"params": []}],
     )
-    assert typing.cast("EagerValue", _signatures_from_ghost_ref(ref_empty_sigs)) == []
+    assert as_tensor(_signatures_from_ghost_ref(ref_empty_sigs)) == []
 
     # 10. _signatures_from_item with overloads
     item_overloads = {
@@ -1631,15 +1632,15 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
             "invalid_non_dict_overload",
         ]
     }
-    extracted = typing.cast("EagerCallableProtocol", _signatures_from_item)(item_overloads)
-    assert typing.cast("EagerValue", len(extracted)) == 1
+    extracted = as_callable(_signatures_from_item)(item_overloads)
+    assert as_tensor(len(extracted)) == 1
 
     # 11. SnapshotGroundingEngine.__init__ ge_cls is None branch and exception
     mock_mod_no_ge = mock.MagicMock()
     setattr(mock_mod_no_ge, "GroundingEngine", None)
     with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.grounding.engine": mock_mod_no_ge}):
         eng_no_ge_cls = SnapshotGroundingEngine()
-        assert typing.cast("EagerValue", getattr(eng_no_ge_cls, "_grounding_engine")) is None
+        assert as_tensor(getattr(eng_no_ge_cls, "_grounding_engine")) is None
 
     def mock_import_ge_fail(name: str, pkg: str | None = None) -> EagerValue:
         """Test function mock_import_ge_fail.
@@ -1666,7 +1667,7 @@ def _test_snapshot_grounding_complete_branches_part_6(_state: dict[str, EagerTen
     """
     SnapshotGroundingEngine, mock, monkeypatch = _state["SnapshotGroundingEngine"], _state["mock"], _state["monkeypatch"]
     eng_no_ge = SnapshotGroundingEngine()
-    assert typing.cast("EagerValue", eng_no_ge._grounding_engine) is None
+    assert as_tensor(eng_no_ge._grounding_engine) is None
     monkeypatch.undo()
 
     # 12. suggest_closest_endpoint with suggest_closest_symbol, None return, and exception
@@ -1759,7 +1760,7 @@ def test_snapshot_grounding_complete_branches(monkeypatch: pytest.MonkeyPatch) -
     Args:
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch fixture.
     """
-    _state: dict[str, EagerTensorProtocol] = typing.cast("dict[str, EagerTensorProtocol]", {"monkeypatch": monkeypatch})
+    _state: dict[str, EagerTensorProtocol] = as_tensor_dict({"monkeypatch": monkeypatch})
     _test_snapshot_grounding_complete_branches_part_1(_state)
     _test_snapshot_grounding_complete_branches_part_2(_state)
     _test_snapshot_grounding_complete_branches_part_3(_state)

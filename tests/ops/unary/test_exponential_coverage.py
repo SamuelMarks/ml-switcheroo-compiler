@@ -6,9 +6,10 @@ import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.unary.exponential import Exp, Exp2, Expm1, Log, Log1P, Log10, NanToNum, ZeroFraction
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_unary_exponential_ops() -> None:
@@ -31,10 +32,10 @@ def test_unary_exponential_ops() -> None:
     # Test NanToNum copy argument handling
     with patch("ml_switcheroo_compiler.ops.base.dispatch_op", return_value="mock_nanto_num") as mock_dispatch:
         res = NanToNum()(10, copy=True)
-        assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "mock_nanto_num")
+        assert as_tensor(res) == as_tensor("mock_nanto_num")
         mock_dispatch.assert_called_once_with("NanToNum", 10)
 
         mock_dispatch.reset_mock()
         res_no_copy = NanToNum()(10)
-        assert typing.cast("EagerTensorProtocol", res_no_copy) == typing.cast("EagerTensorProtocol", "mock_nanto_num")
+        assert as_tensor(res_no_copy) == as_tensor("mock_nanto_num")
         mock_dispatch.assert_called_once_with("NanToNum", 10)

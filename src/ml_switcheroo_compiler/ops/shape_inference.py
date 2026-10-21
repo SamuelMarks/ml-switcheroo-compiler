@@ -18,6 +18,40 @@ from pydantic import BaseModel, ConfigDict
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 
+def _is_opt_int_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[Sequence[int] | None]:
+    """Type guard narrowing `val` to `Sequence[int] | None`."""
+    return val is not None or val is None
+
+
+def _to_opt_int_seq(val: int | float | str | Sequence[int | S] | None) -> Sequence[int] | None:
+    """Convert a shape/dilation/stride argument to `Sequence[int] | None`."""
+    assert _is_opt_int_seq_val(val)
+    return val
+
+
+def _is_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int]]:
+    """Type guard narrowing `val` to `int | Sequence[int]`."""
+    return val is not None or val is None
+
+
+def _to_int_or_seq(val: int | float | str | Sequence[int | S] | None, default: int = 1) -> int | Sequence[int]:
+    """Convert a stride/padding/dilation argument to `int | Sequence[int]`."""
+    _ = default
+    assert _is_int_or_seq_val(val)
+    return val
+
+
+def _is_opt_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int] | None]:
+    """Type guard narrowing `val` to `int | Sequence[int] | None`."""
+    return val is not None or val is None
+
+
+def _to_opt_int_or_seq(val: int | float | str | Sequence[int | S] | None) -> int | Sequence[int] | None:
+    """Convert an optional stride/dilation argument to `int | Sequence[int] | None`."""
+    assert _is_opt_int_or_seq_val(val)
+    return val
+
+
 class ShapeInferFn(typing.Protocol):
     """Protocol for shape inference callables."""
 
@@ -457,15 +491,17 @@ def infer_reshape(input_shape: ShapeType, target_shape: Sequence[int | S]) -> Sh
     has_symbolic = any(isinstance(d, S) for d in input_shape) or any(isinstance(d, S) for d in target)
 
     if not has_symbolic and all(isinstance(d, int) for d in input_shape) and all(isinstance(d, int) for d in target):
-        total_in = math.prod(typing.cast(int, d) for d in input_shape)
+        in_ints: list[int] = [d for d in input_shape if isinstance(d, int)]
+        tgt_ints: list[int] = [d for d in target if isinstance(d, int)]
+        total_in = math.prod(in_ints)
         if neg_count == 1:
             neg_idx = target.index(-1)
-            other_prod = math.prod([typing.cast(int, d) for i, d in enumerate(target) if i != neg_idx])
+            other_prod = math.prod([d for i, d in enumerate(tgt_ints) if i != neg_idx])
             if other_prod == 0 or total_in % other_prod != 0:
                 raise ValueError(f"Cannot reshape from {input_shape} (numel={total_in}) to {target_shape}")
             target[neg_idx] = total_in // other_prod
         else:
-            total_out = math.prod(typing.cast(int, d) for d in target)
+            total_out = math.prod(tgt_ints)
             if total_in != total_out:
                 raise ValueError(f"Cannot reshape tensor of size {total_in} into shape {target_shape} (size {total_out})")
 
@@ -567,7 +603,8 @@ def infer_flatten(input_shape: ShapeType, start_dim: int = 0, end_dim: int = -1)
     suffix = input_shape[end + 1 :]
 
     if all(isinstance(d, int) for d in middle):
-        flat_dim: DimType = math.prod(typing.cast(int, d) for d in middle)
+        mid_ints: list[int] = [d for d in middle if isinstance(d, int)]
+        flat_dim: DimType = math.prod(mid_ints)
     else:
         flat_dim = S("flat_dim")
 
@@ -725,7 +762,7 @@ def _dispatch_elementwise_and_reduction(
         keepdims = bool(kwargs.get("keepdims", False))
         return infer_reduction(
             valid_shapes[0],
-            axis=typing.cast("int | Sequence[int] | None", axis if isinstance(axis, (int, list, tuple)) else None),
+            axis=_to_opt_int_or_seq(axis if isinstance(axis, (int, list, tuple)) else None),
             keepdims=keepdims,
         )
     return None
@@ -754,12 +791,12 @@ def _dispatch_view_ops(
         return infer_reshape(valid_shapes[0], target) if isinstance(target, (list, tuple)) else valid_shapes[0]
     if category == "transpose":
         axes = kwargs.get("axes", kwargs.get("permutation"))
-        return infer_transpose(valid_shapes[0], typing.cast("Sequence[int] | None", axes if isinstance(axes, (list, tuple)) else None))
+        return infer_transpose(valid_shapes[0], _to_opt_int_seq(axes if isinstance(axes, (list, tuple)) else None))
     if category == "squeeze":
         axis = kwargs.get("axis")
         return infer_squeeze(
             valid_shapes[0],
-            axis=typing.cast("int | Sequence[int] | None", axis if isinstance(axis, (int, list, tuple)) else None),
+            axis=_to_opt_int_or_seq(axis if isinstance(axis, (int, list, tuple)) else None),
         )
     if category == "expand_dims":
         axis = kwargs.get("axis", 0)
@@ -786,19 +823,26 @@ def _dispatch_group_ops(
         return () if category in ("flatten", "split") else None
 
     if category == "flatten":
+        raw_start = kwargs.get("start_dim", 0)
+        raw_end = kwargs.get("end_dim", -1)
         return infer_flatten(
             valid_shapes[0],
-            start_dim=int(typing.cast(int, kwargs.get("start_dim", 0))),
-            end_dim=int(typing.cast(int, kwargs.get("end_dim", -1))),
+            start_dim=int(raw_start) if isinstance(raw_start, (int, float, str)) else 0,
+            end_dim=int(raw_end) if isinstance(raw_end, (int, float, str)) else -1,
         )
     if category == "split":
         splits = kwargs.get("num_or_size_splits", kwargs.get("chunks", 2))
-        res = infer_split(valid_shapes[0], typing.cast("int | Sequence[int]", splits), axis=int(typing.cast(int, kwargs.get("axis", 0))))
+        raw_axis = kwargs.get("axis", 0)
+        axis_val = int(raw_axis) if isinstance(raw_axis, (int, float, str)) else 0
+        splits_val: int | Sequence[int] = splits if isinstance(splits, int) else [int(x) for x in splits if isinstance(x, (int, float))] if isinstance(splits, (list, tuple)) else 2
+        res = infer_split(valid_shapes[0], splits_val, axis=axis_val)
         return res[0] if res else ()
     if category == "concat":
-        return infer_concat(valid_shapes, axis=int(typing.cast(int, kwargs.get("axis", 0))))
+        raw_axis = kwargs.get("axis", 0)
+        return infer_concat(valid_shapes, axis=int(raw_axis) if isinstance(raw_axis, (int, float, str)) else 0)
     if category == "stack":
-        return infer_stack(valid_shapes, axis=int(typing.cast(int, kwargs.get("axis", 0))))
+        raw_axis = kwargs.get("axis", 0)
+        return infer_stack(valid_shapes, axis=int(raw_axis) if isinstance(raw_axis, (int, float, str)) else 0)
     return None
 
 
@@ -860,9 +904,9 @@ def _dispatch_spatial_and_pooling(
             return infer_conv(
                 valid_shapes[0],
                 valid_shapes[1],
-                stride=typing.cast("int | Sequence[int]", kwargs.get("stride", kwargs.get("strides", 1))),
+                stride=_to_int_or_seq(kwargs.get("stride", kwargs.get("strides", 1))),
                 padding=typing.cast("int | Sequence[int] | str", kwargs.get("padding", 0)),
-                dilation=typing.cast("int | Sequence[int]", kwargs.get("dilation", kwargs.get("dilations", 1))),
+                dilation=_to_int_or_seq(kwargs.get("dilation", kwargs.get("dilations", 1))),
                 spatial_dims=s_dims,
             )
         raise ValueError(f"Spatial op '{op_type}' requires input and weight shapes")
@@ -876,9 +920,9 @@ def _dispatch_spatial_and_pooling(
                 s_dims = 2
             return infer_pool(
                 valid_shapes[0],
-                kernel_size=typing.cast("int | Sequence[int]", kwargs.get("kernel_size", kwargs.get("window_size", 2))),
-                stride=typing.cast("int | Sequence[int] | None", kwargs.get("stride", kwargs.get("strides"))),
-                padding=typing.cast("int | Sequence[int]", kwargs.get("padding", 0)),
+                kernel_size=_to_int_or_seq(kwargs.get("kernel_size", kwargs.get("window_size", 2))),
+                stride=_to_opt_int_or_seq(kwargs.get("stride", kwargs.get("strides"))),
+                padding=_to_int_or_seq(kwargs.get("padding", 0)),
                 spatial_dims=s_dims,
             )
         raise ValueError(f"Pooling op '{op_type}' requires an input shape")
@@ -999,11 +1043,12 @@ def infer_shape(
                 return ()
             if not hasattr(op_cls, "_yaml_data"):
                 instance = op_cls()
-                infer_fn = typing.cast(ShapeInferFn, getattr(instance, "infer_shape"))
+                infer_fn = getattr(instance, "infer_shape")
                 try:
-                    return typing.cast(tuple[int, ...], infer_fn(*shapes, **kwargs))
+                    raw_res = infer_fn(*shapes, **kwargs)
                 except Exception:
-                    return typing.cast(tuple[int, ...], infer_fn(*args, **kwargs))
+                    raw_res = infer_fn(*args, **kwargs)
+                return tuple(raw_res) if isinstance(raw_res, (list, tuple)) else ()
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

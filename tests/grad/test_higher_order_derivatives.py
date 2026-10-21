@@ -17,9 +17,10 @@ from ml_switcheroo_compiler.grad.api import (
     nth_order_grad,
     nth_order_grad_graph,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_hvp_graph_symbolic_lowering() -> None:
@@ -117,7 +118,7 @@ def test_hvp_api_delegation() -> None:
             Returns:
                 EagerValue: Quad form tensor.
             """
-            return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", 0.5)
+            return (as_tensor(x) * as_tensor(x)) * as_tensor(0.5)
 
         x_val = np.array([3.0, 4.0], dtype=np.float32)
         v_val = np.array([1.0, 1.0], dtype=np.float32)
@@ -126,5 +127,5 @@ def test_hvp_api_delegation() -> None:
         # H = [[1, 0], [0, 1]]
         # H · v = [1, 1]
         primal, hvp_res = hvp(scalar_quad, (x_val,), (v_val,))
-        assert typing.cast("EagerCallableProtocol", np.allclose)(getattr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
-        assert typing.cast("EagerCallableProtocol", np.allclose)(getattr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)
+        assert as_callable(np.allclose)(getattr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
+        assert as_callable(np.allclose)(getattr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)

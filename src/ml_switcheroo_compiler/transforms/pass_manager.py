@@ -15,6 +15,8 @@ from collections.abc import Callable, Iterable, Sequence  # noqa: F401
 
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.ir.core import as_node_list
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ConvergenceCriteria
 
@@ -45,7 +47,7 @@ class IRValidator:
         Raises:
             CompilationError: If a node is missing shape metadata.
         """
-        nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else typing.cast(Iterable[IRNode], graph.nodes)
+        nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else as_node_list(graph.nodes)
         for node in nodes_iterable:
             if getattr(node, "shape_metadata", None) is None:
                 msg = f"Node {getattr(node, 'id', '')} is missing shape_metadata."
@@ -62,7 +64,7 @@ def _graph_hash(graph: IRGraph) -> str:
         str: MD5 hash digest of the serialized graph structure.
     """
     state: dict[str, dict[str, str | list[str]]] = {}
-    nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else typing.cast(Iterable[IRNode], graph.nodes)
+    nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else as_node_list(graph.nodes)
     for node in nodes_iterable:
         state[getattr(node, "id", "")] = {
             "op": str(getattr(node, "op_type", "")),
@@ -86,7 +88,7 @@ def _snapshot_graph(graph: IRGraph) -> dict[str, dict[str, IRNode] | list[str]]:
         for nid, n in nodes_iterable.items():
             nodes_copy[nid] = clone_logical_node(n)
     else:
-        for n in typing.cast(Iterable[IRNode], nodes_iterable):
+        for n in as_node_list(nodes_iterable):
             nodes_copy[getattr(n, "id", "")] = clone_logical_node(n)
 
     inputs_copy: list[str] = list(graph.inputs) if hasattr(graph, "inputs") and graph.inputs is not None else []

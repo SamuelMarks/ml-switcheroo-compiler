@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -165,16 +163,16 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, *args: EagerValu
 
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
-        num_classes = typing.cast("EagerCallableProtocol", max)(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
+        num_classes = max(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
 
     y_true = np.asarray(y_true).flatten()
     y_pred = np.asarray(y_pred).flatten()
 
-    y_true_t = typing.cast(EagerTensorProtocol, y_true)
-    y_pred_t = typing.cast(EagerTensorProtocol, y_pred)
-    num_classes_t = typing.cast(EagerTensorProtocol, num_classes)
+    y_true_t = y_true
+    y_pred_t = as_tensor(y_pred)
+    num_classes_t = as_tensor(num_classes)
     bins = getattr(np, "bincount")(y_true_t * num_classes_t + y_pred_t, minlength=num_classes_t**2)
-    return typing.cast("EagerValue", getattr(bins, "reshape")((num_classes, num_classes)))
+    return as_tensor(getattr(bins, "reshape")((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Descriptive")
@@ -252,7 +250,7 @@ def _np_randomcategorical(backend_module: BackendModuleProtocol, *args: EagerVal
     # Simple choice using flat probabilities
     # Assuming logits are 1D or batched properly
     res = getattr(np, "zeros")(shape, dtype=np.int32)
-    return typing.cast("EagerValue", res)
+    return as_tensor(res)
 
 
 @numpy_eager_registry.register("RandomPermutation")
@@ -358,7 +356,7 @@ def _np_randomchoice(backend_module: BackendModuleProtocol, *args: EagerValue, *
     if hasattr(p, "data") and p is not None:
         p = p.data
 
-    return typing.cast("EagerValue", getattr(np.random, "choice")(a, size=shape, replace=replace, p=p))
+    return as_tensor(getattr(np.random, "choice")(a, size=shape, replace=replace, p=p))
 
 
 @numpy_eager_registry.register("RandomShuffle")
@@ -380,7 +378,7 @@ def _np_randomshuffle(backend_module: BackendModuleProtocol, *args: EagerValue, 
         x = getattr(x, "data")
     x = getattr(np, "copy")(x)
     np.random.shuffle(x)
-    return typing.cast("EagerValue", x)
+    return as_tensor(x)
 
 
 @numpy_eager_registry.register("Dirichlet")
@@ -401,4 +399,4 @@ def _np_dirichlet(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     shape = kwargs.get("shape", ())
     if hasattr(alpha, "data"):
         alpha = getattr(alpha, "data")
-    return typing.cast("EagerValue", getattr(np.random, "dirichlet")(alpha, size=shape))
+    return as_tensor(getattr(np.random, "dirichlet")(alpha, size=shape))

@@ -8,9 +8,10 @@ import pytest
 
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.export import export_to_dot
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_export() -> None:
@@ -44,18 +45,18 @@ def test_export() -> None:
 
         id = "n2"
 
-    t = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyData)(), typing.cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
+    t = as_callable(Tensor)(as_callable(DummyData)(), as_callable(TensorConfig)((1,), "float32", "cpu"))
 
     state.global_tracing_state.active_graph = None
     with pytest.raises(RuntimeError):
-        typing.cast("EagerCallableProtocol", export_to_dot)("test.dot", t)
+        as_callable(export_to_dot)("test.dot", t)
 
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
 
     import io
 
     f = io.StringIO()
-    typing.cast("EagerCallableProtocol", export_to_dot)(f, t)
+    as_callable(export_to_dot)(f, t)
 
     lines = f.getvalue().split("\n")
     assert "digraph G {" in lines
@@ -66,7 +67,7 @@ def test_export() -> None:
     # Test string file path
     import os
 
-    typing.cast("EagerCallableProtocol", export_to_dot)("test_export.dot", t)
+    as_callable(export_to_dot)("test_export.dot", t)
     assert os.path.exists("test_export.dot")
     os.remove("test_export.dot")
 
@@ -76,8 +77,8 @@ def test_export() -> None:
 
         id = "n3"
 
-    t_inv = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyDataInvalid)(), typing.cast("EagerCallableProtocol", TensorConfig)((1,), "float32", "cpu"))
+    t_inv = as_callable(Tensor)(as_callable(DummyDataInvalid)(), as_callable(TensorConfig)((1,), "float32", "cpu"))
 
     f2 = io.StringIO()
-    typing.cast("EagerCallableProtocol", export_to_dot)(f2, t_inv)
+    as_callable(export_to_dot)(f2, t_inv)
     assert "n3" not in f2.getvalue()

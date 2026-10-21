@@ -8,9 +8,10 @@ import pytest
 import torch
 
 import ml_switcheroo_compiler.backends.pytorch.eager as pytorch_eager
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _test_pytorch_eager_additional_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -36,7 +37,7 @@ def _test_pytorch_eager_additional_sub_1(_state: dict[str, EagerTensorProtocol])
 
         value = "int4"
 
-    typing.cast("EagerCallableProtocol", pytorch_eager._execute_cast)(typing.cast("EagerCallableProtocol", torch.tensor)([1.0]), typing.cast("EagerCallableProtocol", DummyDtype)())
+    as_callable(pytorch_eager._execute_cast)(as_callable(torch.tensor)([1.0]), as_callable(DummyDtype)())
 
     class DummyDtypeBfloat16:
         """Test class DummyDtypeBfloat16."""
@@ -62,14 +63,14 @@ def _test_pytorch_eager_additional_sub_2(_state: dict[str, EagerTensorProtocol])
 
         value = "float16"
 
-    typing.cast("EagerCallableProtocol", pytorch_eager._execute_cast)(typing.cast("EagerCallableProtocol", torch.tensor)([1.0]), typing.cast("EagerCallableProtocol", DummyDtypeFloat16)())
+    as_callable(pytorch_eager._execute_cast)(as_callable(torch.tensor)([1.0]), as_callable(DummyDtypeFloat16)())
 
     class DummyDtypeFloat8_e4m3fn:
         """Test class DummyDtypeFloat8_e4m3fn."""
 
         value = "float8_e4m3fn"
 
-    typing.cast("EagerCallableProtocol", pytorch_eager._execute_cast)(typing.cast("EagerCallableProtocol", torch.tensor)([1.0]), typing.cast("EagerCallableProtocol", DummyDtypeFloat8_e4m3fn)())
+    as_callable(pytorch_eager._execute_cast)(as_callable(torch.tensor)([1.0]), as_callable(DummyDtypeFloat8_e4m3fn)())
     pytorch_eager._execute_cummax(torch.tensor([1, 2]), dim=0)
     pytorch_eager._execute_cummin(torch.tensor([1, 2]), dim=0)
     pytorch_eager._execute_cumlogsumexp(torch.tensor([1.0, 2.0]), dim=0)
@@ -89,24 +90,24 @@ def _test_pytorch_eager_additional_sub_3(_state: dict[str, EagerTensorProtocol])
     """
     for op in ["HardSilu", "HardSwish", "Squareplus", "Fftnd", "Ifftnd", "Irfftnd", "Rfftnd"]:
         with pytest.raises(AttributeError):
-            typing.cast("EagerTensorProtocol", getattr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](torch.tensor([1.0]))
+            as_tensor(getattr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](torch.tensor([1.0]))
     for op in ["Fftfreq", "Rfftfreq"]:
         with pytest.raises(AttributeError):
-            typing.cast("EagerTensorProtocol", getattr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](2)
+            as_tensor(getattr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](2)
 
     class DummyDtypeFloat8_e5m2:
         """Test class DummyDtypeFloat8_e5m2."""
 
         value = "float8_e5m2"
 
-    typing.cast("EagerCallableProtocol", pytorch_eager._execute_cast)(typing.cast("EagerCallableProtocol", torch.tensor)([1.0]), typing.cast("EagerCallableProtocol", DummyDtypeFloat8_e5m2)())
+    as_callable(pytorch_eager._execute_cast)(as_callable(torch.tensor)([1.0]), as_callable(DummyDtypeFloat8_e5m2)())
 
     class DummyDtypeInt32:
         """Test class DummyDtypeInt32."""
 
         value = "int32"
 
-    typing.cast("EagerCallableProtocol", pytorch_eager._execute_cast)(typing.cast("EagerCallableProtocol", torch.tensor)([1.0]), typing.cast("EagerCallableProtocol", DummyDtypeInt32)())
+    as_callable(pytorch_eager._execute_cast)(as_callable(torch.tensor)([1.0]), as_callable(DummyDtypeInt32)())
     getattr(_state, "update")({"DummyDtypeFloat8_e5m2": DummyDtypeFloat8_e5m2, "DummyDtypeInt32": DummyDtypeInt32})
     _state.update(locals())
 
@@ -119,19 +120,19 @@ def _test_pytorch_eager_additional_sub_4(_state: dict[str, EagerTensorProtocol])
     """
     with pytest.raises(ValueError):
         pytorch_eager._execute_accumulate_n(inputs=[])
-    typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Add", typing.cast("EagerCallableProtocol", torch.tensor)(1), typing.cast("EagerCallableProtocol", torch.tensor)(2))
-    typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "RaggedTensorToDense", 1)
+    as_callable(pytorch_eager.execute_op)(None, "Add", as_callable(torch.tensor)(1), as_callable(torch.tensor)(2))
+    as_callable(pytorch_eager.execute_op)(None, "RaggedTensorToDense", 1)
     try:
-        typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "unknownop", typing.cast("EagerCallableProtocol", torch.tensor)(1))
+        as_callable(pytorch_eager.execute_op)(None, "unknownop", as_callable(torch.tensor)(1))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
-    typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Zeros", 2)
+    as_callable(pytorch_eager.execute_op)(None, "Zeros", 2)
     try:
-        typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "Descriptive", typing.cast("EagerCallableProtocol", torch.tensor)([1.0]))
+        as_callable(pytorch_eager.execute_op)(None, "Descriptive", as_callable(torch.tensor)([1.0]))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     try:
-        typing.cast("EagerCallableProtocol", pytorch_eager.execute_op)(None, "totally_unknown_and_unregistered", 1)
+        as_callable(pytorch_eager.execute_op)(None, "totally_unknown_and_unregistered", 1)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     pass

@@ -9,13 +9,13 @@ from unittest.mock import patch
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.solvers import Polar, PowerIteration, TridiagonalMatmul, TridiagonalSolve, lu, lu_solve, polar, tridiagonal_solve
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_misc_infer_shapes() -> None:
@@ -28,11 +28,11 @@ def test_misc_infer_shapes() -> None:
         dtype = "float32"
 
     t = MockTensor()
-    (shapes, dtypes) = typing.cast("EagerCallableProtocol", PowerIteration)().infer_shape(t)
+    (shapes, dtypes) = as_callable(PowerIteration)().infer_shape(t)
     assert shapes == ((2, 4), (2, 3), (2,))
-    assert typing.cast("EagerCallableProtocol", Polar)().infer_shape(t) == ((2, 3, 4), (2, 3, 4))
-    assert typing.cast("EagerCallableProtocol", TridiagonalSolve)().infer_shape(t, t, t, t) == (2, 3, 4)
-    assert typing.cast("EagerCallableProtocol", TridiagonalMatmul)().infer_shape(t, t, t, t) == (2, 3, 4)
+    assert as_callable(Polar)().infer_shape(t) == ((2, 3, 4), (2, 3, 4))
+    assert as_callable(TridiagonalSolve)().infer_shape(t, t, t, t) == (2, 3, 4)
+    assert as_callable(TridiagonalMatmul)().infer_shape(t, t, t, t) == (2, 3, 4)
 
 
 def test_misc_eager_and_trace() -> None:
@@ -41,14 +41,14 @@ def test_misc_eager_and_trace() -> None:
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)), np.zeros((2, 2)))
-        (res1, res2, res3) = typing.cast("EagerCallableProtocol", lu)(t)
-        assert isinstance(typing.cast("EagerValue", res1), Tensor)
+        (res1, res2, res3) = as_callable(lu)(t)
+        assert isinstance(as_tensor(res1), Tensor)
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
         res = lu_solve((t, t), t)
         assert isinstance(res, Tensor)
         mock_backend.return_value.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)))
-        (res1, res2) = typing.cast("EagerCallableProtocol", polar)(t)
-        assert isinstance(typing.cast("EagerValue", res1), Tensor)
+        (res1, res2) = as_callable(polar)(t)
+        assert isinstance(as_tensor(res1), Tensor)
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
         res = tridiagonal_solve(t, t, t, t)
         assert isinstance(res, Tensor)

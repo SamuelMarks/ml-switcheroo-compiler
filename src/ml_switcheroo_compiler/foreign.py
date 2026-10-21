@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_int, as_str
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -49,11 +50,11 @@ def _infer_shape_from_attributes(first: TensorOrScalar) -> tuple[int, ...] | Non
     return _infer_shape_from_subgraph(first)
 
 
-def _is_int_type_sequence(seq: tuple[int | type, ...]) -> bool:
+def _is_int_type_sequence(seq: tuple[int | type | str, ...]) -> bool:
     """Check whether all elements in a type argument tuple are integers or the int type.
 
     Args:
-        seq (tuple[int | type, ...]): Sequence of type arguments.
+        seq (tuple[int | type | str, ...]): Sequence of type arguments.
 
     Returns:
         bool: True if all elements are int instances or the int type.
@@ -76,22 +77,21 @@ def _infer_shape_from_callable_annotations(first: TensorOrScalar) -> tuple[int, 
     import inspect
 
     try:
-        hint_target = first if inspect.isfunction(first) or inspect.ismethod(first) or isinstance(first, type) or not callable(first) else first.__call__
-        hints = typing.get_type_hints(hint_target)
+        hints = as_callable(typing.get_type_hints)(first)
         if "return" in hints:
             args_tuple = typing.get_args(hints["return"])
             if args_tuple and _is_int_type_sequence(args_tuple):
-                return tuple(typing.cast(int, x) for x in args_tuple if isinstance(x, int) or x is int)
+                return tuple(as_int(x) for x in args_tuple if isinstance(x, int) or x is int)
     except (TypeError, NameError) as e:
         import logging
 
         logging.getLogger(__name__).warning("Failed to infer return type hints for %s: %s", first, e)
 
     try:
-        sig = inspect.signature(first)  # type: ignore[arg-type]
+        sig = as_callable(inspect.signature)(first)
         ret_anno = sig.return_annotation
-        if hasattr(ret_anno, "__args__") and _is_int_type_sequence(ret_anno.__args__):
-            return tuple(typing.cast(int, x) for x in ret_anno.__args__ if isinstance(x, int) or x is int)
+        if hasattr(ret_anno, "__args__") and _is_int_type_sequence(tuple(getattr(ret_anno, "__args__"))):
+            return tuple(as_int(x) for x in tuple(getattr(ret_anno, "__args__")) if isinstance(x, int) or x is int)
     except (ValueError, TypeError) as e:
         from ml_switcheroo_compiler.core.errors import ShapeInferenceError
 
@@ -132,7 +132,7 @@ def _infer_shape_from_callable_ast(first: TensorOrScalar) -> tuple[int, ...] | N
     import inspect
 
     try:
-        lines = inspect.getsource(first).splitlines()  # type: ignore[arg-type]
+        lines = as_str(as_callable(inspect.getsource)(first)).splitlines()
         spaces = (len(lines[0]) - len(lines[0].lstrip())) if lines else 0
         src_code = chr(10).join(line[spaces:] if len(line) >= spaces else line for line in lines)
         return _extract_return_tuple_dims(src_code)
@@ -175,8 +175,8 @@ class ForeignCall(OpDef):
         if "output_shape" in kwargs and kwargs["output_shape"] is not None:
             shape_val = kwargs["output_shape"]
             if isinstance(shape_val, (list, tuple)):
-                return tuple(int(typing.cast(int, d)) for d in shape_val)
-            return (int(typing.cast(int, shape_val)),)
+                return tuple(int(as_int(d)) for d in shape_val)
+            return (int(as_int(shape_val)),)
 
         if args:
             first = args[0]

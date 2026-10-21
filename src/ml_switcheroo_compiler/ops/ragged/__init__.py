@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -403,7 +403,7 @@ class RaggedStack(OpDef):
             return ()
         first = rt_inputs[0]
         f_shape = tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
-        axis = int(typing.cast(int, kwargs.get("axis", 0)))
+        axis = int(as_int(kwargs.get("axis", 0)))
         n = len(rt_inputs)
         s = list(f_shape)
         if axis < 0:
@@ -434,7 +434,7 @@ class RaggedStackDynamicPartitions(OpDef):
         """
         from ml_switcheroo_compiler.ir.shape_system import SymVar
 
-        num_partitions = int(typing.cast(int, kwargs.get("num_partitions", 2)))
+        num_partitions = int(as_int(kwargs.get("num_partitions", 2)))
         data = args[0] if args else kwargs.get("data")
         trailing = ()
         if data is not None:

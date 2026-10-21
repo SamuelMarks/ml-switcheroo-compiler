@@ -14,9 +14,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.ops.io import SparsePlus, SparseSigmoid, _fallback_load, set_default_stream, set_memory_limit, set_wired_limit, sparse_plus, sparse_sigmoid
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_io_fallback_load() -> None:
@@ -197,10 +198,11 @@ def _test_io_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
         pass
         pass
     opt = TFRecordOptions("GZIP")
-    writer = TFRecordWriter("path", opt)
-    assert writer.write("data") is None
-    with writer:
-        pass
+    with tempfile.TemporaryDirectory() as tmpdir:
+        writer = TFRecordWriter(os.path.join(tmpdir, "path"), opt)
+        assert writer.write("data") is None
+        with writer:
+            pass
     getattr(_state, "update")({"mock_backend": mock_backend, "opt": opt, "writer": writer})
     _state.update(locals())
 
@@ -270,9 +272,10 @@ def test_io_stubs() -> None:
         pass
         pass
         pass
-    fh = io.TFRecordWriter("path")
-    assert typing.cast("EagerCallableProtocol", fh.write)(None) is None
-    assert typing.cast("EagerCallableProtocol", fh.close)() is None
+    with tempfile.TemporaryDirectory() as tmpdir:
+        fh = io.TFRecordWriter(os.path.join(tmpdir, "path"))
+        assert as_callable(fh.write)(None) is None
+        assert as_callable(fh.close)() is None
 
 
 def test_io_reading_writing() -> None:
@@ -286,7 +289,7 @@ def test_io_reading_writing() -> None:
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             with tempfile.TemporaryDirectory() as d:
                 path = os.path.join(d, "test.txt")
-                assert isinstance(typing.cast("EagerCallableProtocol", write_file)(path, "hello world"), Tensor)
+                assert isinstance(as_callable(write_file)(path, "hello world"), Tensor)
                 assert isinstance(read_file(path), Tensor)
                 path_npy = os.path.join(d, "test.npy")
                 t = Tensor(np.array([1, 2, 3]), TensorConfig((3,), "int64", "cpu"))
@@ -359,11 +362,11 @@ def test_numpy_io_eager_and_format_fallback() -> None:
 
     with mock.patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=MockBackend()):
         assert load("x") == "executed"
-        assert typing.cast("EagerTensorProtocol", save("x", [1])) == typing.cast("EagerTensorProtocol", "executed")
-        assert typing.cast("EagerTensorProtocol", savez("x", [1])) == typing.cast("EagerTensorProtocol", "executed")
-        assert typing.cast("EagerTensorProtocol", savez_compressed("x", [1])) == typing.cast("EagerTensorProtocol", "executed")
-        assert typing.cast("EagerTensorProtocol", save_gguf("x", {"t": [1]})) == typing.cast("EagerTensorProtocol", "executed")
-    assert typing.cast("EagerCallableProtocol", _fallback_load)(123) is None
+        assert as_tensor(save("x", [1])) == as_tensor("executed")
+        assert as_tensor(savez("x", [1])) == as_tensor("executed")
+        assert as_tensor(savez_compressed("x", [1])) == as_tensor("executed")
+        assert as_tensor(save_gguf("x", {"t": [1]})) == as_tensor("executed")
+    assert as_callable(_fallback_load)(123) is None
     assert _fallback_load("test.bin") is None
     with mock.patch("ml_switcheroo_compiler.serialization.formats.h5.H5WeightFormat.load", return_value="h5load"):
         assert _fallback_load("test.h5") == "h5load"
@@ -384,8 +387,8 @@ def test_numpy_io_infer_shape_args() -> None:
             """
             self.shape = shape
 
-    assert typing.cast("EagerCallableProtocol", Load)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)((2, 2)), typing.cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", Save)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)((2, 2)), typing.cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", Savez)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)((2, 2)), typing.cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", SavezCompressed)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)((2, 2)), typing.cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", SaveGguf)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)((2, 2)), typing.cast("EagerCallableProtocol", DummyNode)((2, 2))) == (2, 2)
+    assert as_callable(Load)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
+    assert as_callable(Save)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
+    assert as_callable(Savez)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
+    assert as_callable(SavezCompressed)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)
+    assert as_callable(SaveGguf)().infer_shape(as_callable(DummyNode)((2, 2)), as_callable(DummyNode)((2, 2))) == (2, 2)

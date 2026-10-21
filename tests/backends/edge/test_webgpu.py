@@ -6,14 +6,15 @@ import typing
 from unittest.mock import patch
 
 import pytest
-from ml_switcheroo_ir import AttributeValue, LogicalNode, NodeDict
+from ml_switcheroo_ir import LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_attrs, as_callable, as_node_dict, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_webgpu_instantiation() -> None:
@@ -42,25 +43,25 @@ def test_webgpu_shape_and_strides() -> None:
 
     node1 = IRNode("Input", "in_1", inputs=[])
     object.__setattr__(node1, "shape_metadata", [2, 3])
-    shape, strides = typing.cast("EagerCallableProtocol", generator._get_shape_and_strides)(node1)
+    shape, strides = as_callable(generator._get_shape_and_strides)(node1)
     assert shape == [2, 3]
     assert strides == [3, 1]
 
     node2 = IRNode("Input", "in_2", inputs=[])
     object.__setattr__(node2, "shape_metadata", 5)
-    shape, strides = typing.cast("EagerCallableProtocol", generator._get_shape_and_strides)(node2)
+    shape, strides = as_callable(generator._get_shape_and_strides)(node2)
     assert shape == [5]
     assert strides == [1]
 
     node3 = IRNode("Input", "in_3", inputs=[])
     object.__setattr__(node3, "shape_metadata", None)
-    shape, strides = typing.cast("EagerCallableProtocol", generator._get_shape_and_strides)(node3)
+    shape, strides = as_callable(generator._get_shape_and_strides)(node3)
     assert shape == []
     assert strides == []
 
     node4 = IRNode("Input", "in_4", inputs=[])
     object.__setattr__(node4, "shape_metadata", [])
-    shape, strides = typing.cast("EagerCallableProtocol", generator._get_shape_and_strides)(node4)
+    shape, strides = as_callable(generator._get_shape_and_strides)(node4)
     assert shape == []
     assert strides == []
 
@@ -79,7 +80,7 @@ def test_webgpu_generic_visit() -> None:
     generator = WebGPUCodeGenerator(graph, [])
     node = IRNode("Input", "in_1", inputs=[])
     setattr(node, "id", "in_1")
-    assert typing.cast("EagerCallableProtocol", generator.generic_visit)(node, []) == "in_1"
+    assert as_callable(generator.generic_visit)(node, []) == "in_1"
 
 
 def test_webgpu_gen_offset() -> None:
@@ -112,7 +113,7 @@ def test_webgpu_generate() -> None:
     object.__setattr__(out_node, "shape_metadata", [2, 2])
     setattr(out_node, "id", "out_1")
 
-    graph.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"in_1": in1, "in_2": in2, "add_1": node, "out_1": out_node}))
+    graph.nodes = NodeDict(as_node_dict({"in_1": in1, "in_2": in2, "add_1": node, "out_1": out_node}))
     object.__setattr__(graph, "sorted_nodes", [in1, in2, node, out_node])
     graph.inputs = ["in_1", "in_2"]
     graph.outputs = ["out_1"]
@@ -130,10 +131,10 @@ def test_webgpu_webrtc_methods() -> None:
     generator = WebGPUCodeGenerator(graph, [])
     node = IRNode("AllReduce", "allr_1", inputs=[])
     setattr(node, "id", "allr_1")
-    assert typing.cast("EagerCallableProtocol", generator.visit_AllReduce)(node, [])[0][0].startswith("//")
-    assert typing.cast("EagerCallableProtocol", generator.visit_AllGather)(node, [])[0][0].startswith("//")
-    assert typing.cast("EagerCallableProtocol", generator.visit_AllToAll)(node, [])[0][0].startswith("//")
-    assert typing.cast("EagerCallableProtocol", generator.visit_ReduceScatter)(node, [])[0][0].startswith("//")
+    assert as_callable(generator.visit_AllReduce)(node, [])[0][0].startswith("//")
+    assert as_callable(generator.visit_AllGather)(node, [])[0][0].startswith("//")
+    assert as_callable(generator.visit_AllToAll)(node, [])[0][0].startswith("//")
+    assert as_callable(generator.visit_ReduceScatter)(node, [])[0][0].startswith("//")
 
 
 def test_webgpu_wgsl_for_op() -> None:
@@ -153,7 +154,7 @@ def test_webgpu_wgsl_for_op() -> None:
 
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body({clean_id}) {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [2, 2], 4, "add_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node, [2, 2], 4, "add_1")
             assert len(wgsl) > 0
 
 
@@ -175,7 +176,7 @@ def test_webgpu_wgsl_for_op_branches() -> None:
 
     with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
         with pytest.raises(CompilationError, match="cannot be mapped to a valid WGSL compute kernel"):
-            typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "u_1")
+            as_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "u_1")
 
     # Test matmul
     node2 = IRNode("MatMul", "m_1", inputs=["in_1", "in_2"])
@@ -188,17 +189,17 @@ def test_webgpu_wgsl_for_op_branches() -> None:
 
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MatMul": {"variants": {"edge_wgsl": {"template": "matmul"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
 
     # Test tiled_matmul
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MatMul": {"variants": {"edge_wgsl": {"template": "tiled_matmul"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
 
     # Test conv2d
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MatMul": {"variants": {"edge_wgsl": {"template": "conv2d"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node2, [2, 2], 4, "m_1")
 
 
 def test_webgpu_wgsl_for_op_attributes() -> None:
@@ -221,13 +222,13 @@ def test_webgpu_wgsl_for_op_attributes() -> None:
 
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MaxPool2D": {"variants": {"edge_wgsl": {"template": "MaxPool2D"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "max_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "max_1")
 
     # window_size as list length 1
     setattr(node, "attributes", {"window_size": [2], "stride": [2]})
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"MaxPool2D": {"variants": {"edge_wgsl": {"template": "MaxPool2D"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "max_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "max_1")
     assert generator is not None
 
 
@@ -256,7 +257,7 @@ def test_webgpu_wgsl_for_op_attributes_2() -> None:
 
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "global_code": "fn helper() {{}}"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "add_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "add_1")
     assert generator is not None
 
 
@@ -273,7 +274,7 @@ def test_webgpu_wgsl_for_op_attributes_missing_body() -> None:
 
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise", "global_code": "fn helper() {{}}"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"global_code": "fn helper() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "add_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node, [2, 2, 2, 2], 16, "add_1")
     assert generator is not None
 
 
@@ -289,16 +290,16 @@ def test_webgpu_visit_methods() -> None:
     node_while = IRNode("WhileLoop", "wl_1", inputs=[])
     setattr(node_while, "id", "wl_1")
     object.__setattr__(node_while, "attributes", {"body": IRGraph(), "cond": IRGraph()})
-    typing.cast("EagerCallableProtocol", generator.visit_WhileLoop)(node_while, [])
+    as_callable(generator.visit_WhileLoop)(node_while, [])
 
     node_cond = IRNode("Cond", "cond_1", inputs=[])
     setattr(node_cond, "id", "cond_1")
     object.__setattr__(node_cond, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
-    typing.cast("EagerCallableProtocol", generator.visit_Cond)(node_cond, [])
+    as_callable(generator.visit_Cond)(node_cond, [])
 
     node_scan = IRNode("Scan", "scan_1", inputs=[])
     setattr(node_scan, "id", "scan_1")
-    typing.cast("EagerCallableProtocol", generator.visit_Scan)(node_scan, [])
+    as_callable(generator.visit_Scan)(node_scan, [])
     assert generator is not None
 
 
@@ -316,21 +317,21 @@ def test_webgpu_wgsl_for_op_attributes_cond_while_scan() -> None:
     setattr(sub_node, "id", "add_2")
     setattr(sub_node, "op_type", "Add")
     sub_graph = IRGraph()
-    sub_graph.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"add_2": sub_node}))
+    sub_graph.nodes = NodeDict(as_node_dict({"add_2": sub_node}))
     object.__setattr__(sub_graph, "sorted_nodes", [sub_node])
 
     object.__setattr__(node_cond, "attributes", {"then_branch": sub_graph, "else_branch": sub_graph})
 
     with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
         with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}}):
-            typing.cast("EagerCallableProtocol", generator.visit_Cond)(node_cond, [])
+            as_callable(generator.visit_Cond)(node_cond, [])
 
     node_while = IRNode("WhileLoop", "wl_1", inputs=[])
     setattr(node_while, "id", "wl_1")
     object.__setattr__(node_while, "attributes", {"body": sub_graph, "cond": sub_graph})
     with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
         with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"expr": "buf_in0_f32[in0_offset] + buf_in1_f32[in1_offset]"}}}}):
-            typing.cast("EagerCallableProtocol", generator.visit_WhileLoop)(node_while, [])
+            as_callable(generator.visit_WhileLoop)(node_while, [])
     assert generator is not None
 
 
@@ -383,7 +384,7 @@ def test_webgpu_generate_visit_Conv2D() -> None:
     setattr(generator, "sorted_nodes", [in1, in2, node])
 
     with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn conv() {{}}"}):
-        res = typing.cast("EagerCallableProtocol", generator.visit_Conv2D)(node, ["in1", "in2"], shape=[1, 64, 222, 222], nelem=1, clean_id="conv_1")
+        res = as_callable(generator.visit_Conv2D)(node, ["in1", "in2"], shape=[1, 64, 222, 222], nelem=1, clean_id="conv_1")
         assert res is not None
 
 
@@ -405,7 +406,7 @@ def test_webgpu_wgsl_for_op_attributes_padding() -> None:
 
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"AvgPool2D": {"variants": {"edge_wgsl": {"template": "AvgPool2D"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [2], 2, "avg_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node, [2], 2, "avg_1")
     assert generator is not None
 
 
@@ -422,7 +423,7 @@ def test_webgpu_wgsl_for_op_attributes_no_shape() -> None:
 
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"edge_wgsl": {"template": "elementwise"}}}}):
         with patch("ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider.get_wgsl_template", return_value={"body": "fn body() {{}}"}):
-            wgsl, x, y, z = typing.cast("EagerCallableProtocol", generator._get_wgsl_for_op)(node, [], 0, "add_1")
+            wgsl, x, y, z = as_callable(generator._get_wgsl_for_op)(node, [], 0, "add_1")
     assert generator is not None
 
 
@@ -548,8 +549,8 @@ def test_webgpu_webrtc_empty_coverage() -> None:
         """
         name = getattr(stream, "name", "")
         if "memory_schemas" in str(name):
-            return typing.cast("EagerTensorProtocol", mocked_data)
-        return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", orig_safe_load)(stream))
+            return as_tensor(mocked_data)
+        return as_tensor(as_callable(orig_safe_load)(stream))
 
     with patch("yaml.safe_load", side_effect=_conditional_safe_load), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_init", return_value=""), patch("ml_switcheroo_compiler.backends.edge.webgpu_webrtc.emit_webrtc_op", return_value=""):
         g = IRGraph()
@@ -621,7 +622,7 @@ def test_webgpu_while_loop_cond_reduce_scatter_normal() -> None:
     cond_graph.outputs = ["c_out"]
 
     g = IRGraph()
-    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes=typing.cast("dict[str, AttributeValue]", {"body": body_graph, "cond": cond_graph}))
+    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes=as_attrs({"body": body_graph, "cond": cond_graph}))
     n_while.shape_metadata = (1,)
 
     then_graph = IRGraph()
@@ -631,7 +632,7 @@ def test_webgpu_while_loop_cond_reduce_scatter_normal() -> None:
     then_graph.inputs = ["t_in"]
     then_graph.outputs = ["t_out"]
 
-    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": then_graph}))
+    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=as_attrs({"then_branch": then_graph}))
     n_cond.shape_metadata = (1,)
 
     n_reducescatter = IRNode("reducescatter", "ReduceScatter", inputs=["in1"])
@@ -740,9 +741,9 @@ def test_webgpu_additional_coverage() -> None:
 
     gen.sorted_nodes = [node_source, node_str, node_eval_ok, node_eval_fail]
     gen.apply_shape_telemetry({"src_node": [4, 16]})
-    assert typing.cast("EagerTensorProtocol", node_str.shape_metadata) == typing.cast("EagerTensorProtocol", (4, 16))
-    assert typing.cast("EagerTensorProtocol", node_eval_ok.shape_metadata) == typing.cast("EagerTensorProtocol", (8,))
-    assert typing.cast("EagerTensorProtocol", node_eval_fail.shape_metadata) == typing.cast("EagerTensorProtocol", (1,))
+    assert as_tensor(node_str.shape_metadata) == as_tensor((4, 16))
+    assert as_tensor(node_eval_ok.shape_metadata) == as_tensor((8,))
+    assert as_tensor(node_eval_fail.shape_metadata) == as_tensor((1,))
 
 
 def test_webgpu_shape_telemetry_additional_branches() -> None:
@@ -762,9 +763,9 @@ def test_webgpu_shape_telemetry_additional_branches() -> None:
     node_unsolved.shape_metadata = ("unsolved_dim",)
 
     gen.sorted_nodes = [node_not_seq, node_mismatch, node_no_meta, node_empty_meta, node_unsolved]
-    gen.apply_shape_telemetry(typing.cast("dict[str, AttributeValue]", {"not_seq": 123, "mismatch": [4, 4]}))
+    gen.apply_shape_telemetry(as_attrs({"not_seq": 123, "mismatch": [4, 4]}))
     assert node_not_seq.shape_metadata == (4, 4)
-    assert typing.cast("EagerTensorProtocol", node_mismatch.shape_metadata) == typing.cast("EagerTensorProtocol", (4, 4))
+    assert as_tensor(node_mismatch.shape_metadata) == as_tensor((4, 4))
 
 
 def _test_webgpu_parameterized_control_flow_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -840,7 +841,7 @@ def _test_webgpu_parameterized_control_flow_part_2(_state: dict[str, EagerTensor
         id="while_2",
         op_type="WhileLoop",
         inputs=["x"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"cond": cond_sub, "body": body_sub}),
+        attributes=as_attrs({"cond": cond_sub, "body": body_sub}),
     )
     wgsl_while_sub, _, _, _ = gen.visit_WhileLoop(while_cond_graph_node, ["x"], nelem=16, clean_id="while_2")
     assert any("current_state > 100.0" in line for line in wgsl_while_sub)
@@ -853,7 +854,7 @@ def _test_webgpu_parameterized_control_flow_part_2(_state: dict[str, EagerTensor
         id="while_empty",
         op_type="WhileLoop",
         inputs=["x"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body_empty}),
+        attributes=as_attrs({"body": body_empty}),
     )
     wgsl_while_empty, _, _, _ = gen.visit_WhileLoop(while_empty_body_node, ["x"], nelem=16, clean_id="while_empty")
     assert any("current_state + buf_in1_f32[idx]" in line for line in wgsl_while_empty)
@@ -935,10 +936,10 @@ def _test_webgpu_parameterized_control_flow_part_4(_state: dict[str, EagerTensor
     i3 = IRNode(id="i3", op_type="Input")
     i4 = IRNode(id="i4", op_type="Input")
     four_op = IRNode(id="four_op", op_type="Add", inputs=["i1", "i2", "i3", "i4"])
-    setattr(four_in_g, "nodes", NodeDict(typing.cast("dict[str, LogicalNode]", {"i1": i1, "i2": i2, "i3": i3, "i4": i4, "four_op": four_op})))
+    setattr(four_in_g, "nodes", NodeDict(as_node_dict({"i1": i1, "i2": i2, "i3": i3, "i4": i4, "four_op": four_op})))
     setattr(four_in_g, "inputs", ["i1", "i2", "i3", "i4"])
     setattr(four_in_g, "outputs", ["four_op"])
-    gen_four = typing.cast("EagerCallableProtocol", WebGPUCodeGenerator)(four_in_g)
+    gen_four = as_callable(WebGPUCodeGenerator)(four_in_g)
     gen_four.generate()
     getattr(_state, "update")({"four_op": four_op, "gen_four": gen_four, "i2": i2, "i3": i3})
     getattr(_state, "update")({"i4": i4})
@@ -988,8 +989,6 @@ def test_webgpu_generate_training_step() -> None:
 
 def test_webgpu_visit_broadcast_and_empty_outputs_exception() -> None:
     """Test WebGPU visit_Broadcast and compile_forward_backward empty outputs."""
-    from ml_switcheroo_ir import LogicalNode
-
     graph = IRGraph(name="webgpu_extra")
     node_bc = LogicalNode(id="bc_0", op_type="Broadcast", inputs=["in_0"], shape_metadata=(4,))
     node_out = LogicalNode(id="out_0", op_type="Relu", inputs=["bc_0"], shape_metadata=(4,))
@@ -1059,7 +1058,7 @@ def test_wgsl_grounding_schema_validation() -> None:
 
     schema = get_wgsl_grounding_schema()
     assert "ops" in schema
-    assert typing.cast("EagerCallableProtocol", len)(schema["ops"]) >= 0
+    assert as_callable(len)(schema["ops"]) >= 0
 
     assert validate_wgsl_statement("Constant") is True
     assert validate_wgsl_statement("add") is True
@@ -1143,12 +1142,12 @@ def _test_webgpu_spatial_3d_and_depthwise_ops_part_2(_state: dict[str, EagerTens
     dw_op, dw_w, dw_x, graph_dw = _state["dw_op"], _state["dw_w"], _state["dw_x"], _state["graph_dw"]
     object.__setattr__(dw_op, "shape_metadata", [1, 4, 14, 14])
     setattr(dw_op, "attributes", {"strides": (1, 1)})
-    setattr(graph_dw, "nodes", NodeDict(typing.cast("dict[str, LogicalNode]", {"dw_x": dw_x, "dw_w": dw_w, "dw_op": dw_op})))
+    setattr(graph_dw, "nodes", NodeDict(as_node_dict({"dw_x": dw_x, "dw_w": dw_w, "dw_op": dw_op})))
     object.__setattr__(graph_dw, "sorted_nodes", [dw_x, dw_w, dw_op])
     setattr(graph_dw, "inputs", ["dw_x", "dw_w"])
     setattr(graph_dw, "outputs", ["dw_op"])
 
-    gen_dw = typing.cast("EagerCallableProtocol", WebGPUCodeGenerator)(graph_dw, [])
+    gen_dw = as_callable(WebGPUCodeGenerator)(graph_dw, [])
     code_dw = gen_dw.generate()
     assert "compute_dw_op" in code_dw
 

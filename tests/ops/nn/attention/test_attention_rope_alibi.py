@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_rope_infer_shape() -> None:
@@ -25,7 +26,7 @@ def test_rope_infer_shape() -> None:
 
         shape = (1, 2)
 
-    assert typing.cast("EagerCallableProtocol", RopeOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (1, 2)
+    assert as_callable(RopeOp)().infer_shape(as_callable(DummyShape)()) == (1, 2)
 
 
 def test_rope() -> None:
@@ -98,4 +99,4 @@ def test_scaled_dot() -> None:
 
         shape = (1, 2)
 
-    assert typing.cast("EagerCallableProtocol", ScaledDotProductAttention)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)(), None, None, None) == (1, 2)
+    assert as_callable(ScaledDotProductAttention)().infer_shape(as_callable(DummyShape)(), None, None, None) == (1, 2)

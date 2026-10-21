@@ -5,7 +5,6 @@ from __future__ import annotations
 import typing
 
 import numpy as np
-from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
@@ -22,9 +21,10 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
     vectorization_pass,
     vectorize_graph,
 )
+from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_obj
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 device = Device(DeviceType.CPU, 0)
 
@@ -107,7 +107,7 @@ def test_vectorization_pass_inlining() -> None:
         id="vmap_node",
         op_type="Vmap",
         inputs=["x_batched"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body, "in_axes": 0, "out_axes": 0}),
+        attributes=as_attrs({"body": body, "in_axes": 0, "out_axes": 0}),
         shape_metadata=(3, 4),
     )
     outer.outputs = ["vmap_node"]
@@ -134,11 +134,11 @@ def test_eager_vmap_nested() -> None:
             return add(t, t)
 
         v_inner = vmap(double, in_axes=0, out_axes=0)
-        v_outer = typing.cast("EagerCallableProtocol", vmap)(v_inner, in_axes=0, out_axes=0)
-        res = typing.cast("EagerCallableProtocol", v_outer)(x)
+        v_outer = as_callable(vmap)(v_inner, in_axes=0, out_axes=0)
+        res = as_callable(v_outer)(x)
 
         expected = x_data * 2
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerTensorProtocol", getattr(res, "data")), expected)
+        as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "data")), expected)
 
 
 def test_eager_vmap_grad() -> None:
@@ -159,11 +159,11 @@ def test_eager_vmap_grad() -> None:
 
         grad_fn = grad(loss_fn)
         v_grad = vmap(grad_fn, in_axes=0, out_axes=0)
-        res = typing.cast("EagerCallableProtocol", v_grad)(x)
+        res = as_callable(v_grad)(x)
 
         # d/dt(t^2) = 2*t
         expected = 2.0 * x_data
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerTensorProtocol", getattr(res, "data")), expected, rtol=1e-4)
+        as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "data")), expected, rtol=1e-4)
 
 
 def test_eager_grad_vmap() -> None:
@@ -190,12 +190,12 @@ def test_eager_grad_vmap() -> None:
             Args:
                 t: Test parameter `t`.
             """
-            return typing.cast("Tensor", typing.cast("EagerCallableProtocol", reduce_sum)(typing.cast("EagerCallableProtocol", v_f)(t)))
+            return as_tensor_obj(as_callable(reduce_sum)(as_callable(v_f)(t)))
 
         grad_vmap = grad(total_loss)
         res = grad_vmap(x)
         expected = 2.0 * x_data
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerTensorProtocol", getattr(res, "data")), expected, rtol=1e-4)
+        as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "data")), expected, rtol=1e-4)
 
 
 def test_vectorization_helpers() -> None:
@@ -282,7 +282,7 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
     )
     setattr(g_prepend, "outputs", ["bcast", "resh"])
 
-    vec_prep = typing.cast("EagerCallableProtocol", vectorize_graph)(g_prepend, in_axes=0, batch_size=5, out_axes=0)
+    vec_prep = as_callable(vectorize_graph)(g_prepend, in_axes=0, batch_size=5, out_axes=0)
     assert vec_prep.nodes["bcast"].attributes["shape"] == (5, 2, 3)
     assert vec_prep.nodes["resh"].attributes["newshape"] == (5, 2, 3)
 
@@ -301,7 +301,7 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
         id="vmap_tuple",
         op_type="Vmap",
         inputs=["x_in"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body_v, "in_axes": (0,), "out_axes": 0}),
+        attributes=as_attrs({"body": body_v, "in_axes": (0,), "out_axes": 0}),
         shape_metadata=(4,),
     )
     outer_tuple.outputs = ["vmap_tuple"]
@@ -328,10 +328,10 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
         id="vmap_no_s",
         op_type="Vmap",
         inputs=["x_no_s"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body_v, "in_axes": 0, "out_axes": 0}),
+        attributes=as_attrs({"body": body_v, "in_axes": 0, "out_axes": 0}),
     )
     setattr(outer_no_shape, "outputs", ["vmap_no_s"])
-    opt_no_s = typing.cast("EagerCallableProtocol", vectorization_pass)(outer_no_shape)
+    opt_no_s = as_callable(vectorization_pass)(outer_no_shape)
     assert "vmap_no_s" in opt_no_s.nodes
 
     # Case where axis >= len(shape) -> axis=5, shape has len 1 -> fallback batch_size=1
@@ -342,7 +342,7 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
         id="vmap_oob",
         op_type="Vmap",
         inputs=["x_in2"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body_v, "in_axes": (5,), "out_axes": 0}),
+        attributes=as_attrs({"body": body_v, "in_axes": (5,), "out_axes": 0}),
         shape_metadata=(4,),
     )
     outer_oob.outputs = ["vmap_oob"]
@@ -388,7 +388,7 @@ def _test_vectorization_exhaustive_branches_part_4(_state: dict[str, EagerTensor
         id="vmap_list",
         op_type="Vmap",
         inputs=["x_list"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": mock_body_list, "in_axes": 0, "out_axes": 0}),
+        attributes=as_attrs({"body": mock_body_list, "in_axes": 0, "out_axes": 0}),
     )
     outer_list.outputs = ["vmap_list"]
     opt_list = vectorization_pass(outer_list)
@@ -429,7 +429,7 @@ def _test_vectorization_exhaustive_branches_part_4(_state: dict[str, EagerTensor
         id="vmap_dict",
         op_type="Vmap",
         inputs=["x_dict"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": mock_body_dict, "in_axes": 0, "out_axes": 0}),
+        attributes=as_attrs({"body": mock_body_dict, "in_axes": 0, "out_axes": 0}),
     )
     getattr(_state, "update")({"LogicalNode": LogicalNode, "MockGraphNodesDict": MockGraphNodesDict, "mock_body_dict": mock_body_dict, "opt_list": opt_list})
     getattr(_state, "update")({"outer_dict": outer_dict, "outer_list": outer_list, "pure_logical_node": pure_logical_node})
@@ -444,7 +444,7 @@ def _test_vectorization_exhaustive_branches_part_5(_state: dict[str, EagerTensor
     """
     outer_dict = _state["outer_dict"]
     setattr(outer_dict, "outputs", ["vmap_dict"])
-    opt_dict = typing.cast("EagerCallableProtocol", vectorization_pass)(outer_dict)
+    opt_dict = as_callable(vectorization_pass)(outer_dict)
     assert "vmap_dict" in opt_dict.nodes
     getattr(_state, "update")({"opt_dict": opt_dict})
 

@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.lookups import (
     _np_lookup,
     _np_string_lookup,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_hashing() -> None:
@@ -25,7 +26,7 @@ def test_hashing() -> None:
     """
     inputs = np.array([1, 2])
     res = _np_hashing(np, inputs, num_bins=10)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, inputs)
+    assert as_callable(np.array_equal)(res, inputs)
 
 
 def test_integer_lookup() -> None:
@@ -36,7 +37,7 @@ def test_integer_lookup() -> None:
     """
     inputs = np.array([1, 2])
     res = _np_integer_lookup(np, inputs)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, inputs)
+    assert as_callable(np.array_equal)(res, inputs)
 
 
 def test_lookup() -> None:
@@ -48,7 +49,7 @@ def test_lookup() -> None:
     inputs = np.array([1, 2])
     vocab = np.array([1, 2, 3])
     res = _np_lookup(np, inputs, vocab)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.array)([0, 1], dtype=np.int32))
+    assert as_callable(np.array_equal)(res, as_callable(np.array)([0, 1], dtype=np.int32))
 
 
 def test_string_lookup() -> None:
@@ -59,4 +60,4 @@ def test_string_lookup() -> None:
     """
     inputs = np.array(["a", "b"])
     res = _np_string_lookup(np, inputs)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, inputs)
+    assert as_callable(np.array_equal)(res, inputs)

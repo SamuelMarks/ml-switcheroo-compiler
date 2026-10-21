@@ -11,9 +11,10 @@ import numpy as np
 import ml_switcheroo_compiler.ops.creation.frontend_sequence as seq_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
 
@@ -48,8 +49,8 @@ def test_frontend_sequence_coverage() -> None:
 
         with patch("ml_switcheroo_compiler.ops.creation.frontend_sequence.get_active_backend", return_value=mock_backend):
             t1 = seq_mod.arange(stop=None, start=3.0)
-            assert typing.cast("EagerTensorProtocol", getattr(t1, "shape")) == (3,)
-            assert typing.cast("EagerTensorProtocol", getattr(t1, "dtype")) == config.default_float_dtype
+            assert as_tensor(getattr(t1, "shape")) == (3,)
+            assert as_tensor(getattr(t1, "dtype")) == config.default_float_dtype
             mock_backend.execute_op.assert_called_with("Arange", 0, 3.0, 1, dtype=config.default_float_dtype.value)
 
             # Eager mode with custom dtype string without .value
@@ -58,8 +59,8 @@ def test_frontend_sequence_coverage() -> None:
 
                 name: str = "float32"
 
-            t2 = typing.cast("EagerCallableProtocol", seq_mod.arange)(start=1.0, stop=5.0, step=2.0, dtype=typing.cast("EagerCallableProtocol", DummyDtypeWithoutValue)(), device=typing.cast("EagerCallableProtocol", Device)("cpu"))
-            assert typing.cast("EagerTensorProtocol", getattr(t2, "shape")) == (2,)
+            t2 = as_callable(seq_mod.arange)(start=1.0, stop=5.0, step=2.0, dtype=as_callable(DummyDtypeWithoutValue)(), device=as_callable(Device)("cpu"))
+            assert as_tensor(getattr(t2, "shape")) == (2,)
 
         # Non-eager mode
         config.eager_mode = False
@@ -78,11 +79,11 @@ def test_frontend_sequence_coverage() -> None:
         mock_backend.execute_op.return_value = np.array([0.0, 0.5, 1.0], dtype=np.float32)
         with patch("ml_switcheroo_compiler.ops.creation.frontend_sequence.get_active_backend", return_value=mock_backend):
             t3 = seq_mod.linspace(0.0, 1.0, 3)
-            assert typing.cast("EagerTensorProtocol", getattr(t3, "shape")) == (3,)
+            assert as_tensor(getattr(t3, "shape")) == (3,)
 
             # with custom dtype without .value
-            t4 = typing.cast("EagerCallableProtocol", seq_mod.linspace)(0.0, 1.0, 3, dtype=typing.cast("EagerCallableProtocol", DummyDtypeWithoutValue)(), device=typing.cast("EagerCallableProtocol", Device)("cpu"))
-            assert typing.cast("EagerTensorProtocol", getattr(t4, "shape")) == (3,)
+            t4 = as_callable(seq_mod.linspace)(0.0, 1.0, 3, dtype=as_callable(DummyDtypeWithoutValue)(), device=as_callable(Device)("cpu"))
+            assert as_tensor(getattr(t4, "shape")) == (3,)
 
         # linspace non-eager mode
         config.eager_mode = False

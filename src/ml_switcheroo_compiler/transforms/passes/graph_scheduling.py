@@ -117,11 +117,11 @@ class DefaultCostModel:
         """
         dtype = node.attributes.get("dtype", "float32")
         sizes = self.config.memory_sizes
-        dtype_size = getattr(sizes, "get")(dtype, 4)
+        dtype_size: int = int(getattr(sizes, "get")(dtype, 4))
 
         shape = getattr(node, "shape_metadata", None)
         if shape is None:
-            return typing.cast("int | str", dtype_size)
+            return dtype_size
 
         is_dynamic = getattr(node, "is_dynamic_shape", False)
         has_symbolic_dim = any(isinstance(d, str) for d in shape)
@@ -130,13 +130,13 @@ class DefaultCostModel:
             size = 1
             for dim in shape:
                 size *= max(1, int(dim))
-            return typing.cast("int | str", size * dtype_size)
+            return size * dtype_size
 
         dims = [str(d) for d in shape]
         if dims:
             symbolic_math = " * ".join(dims) + f" * {dtype_size}"
             return symbolic_math
-        return typing.cast("int | str", dtype_size)
+        return dtype_size
 
     def get_compute_cost(self, node: IRNode) -> int:
         """Calculate compute cost.

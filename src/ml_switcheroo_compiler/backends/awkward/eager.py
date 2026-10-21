@@ -5,12 +5,10 @@ from __future__ import annotations
 import importlib
 import math
 import operator
-import typing
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_float_list, as_tensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
 def _unwrap_arg(arg: EagerValue) -> EagerValue:
@@ -23,7 +21,7 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
         EagerValue: Unwrapped raw data.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return typing.cast(EagerValue, getattr(arg, "data"))
+        return as_tensor(getattr(arg, "data"))
     return arg
 
 
@@ -191,9 +189,9 @@ def _eval_operator(fn_name: str, args: tuple[EagerValue, ...]) -> tuple[bool, Ea
         tuple[bool, EagerValue]: Handled flag and result.
     """
     if fn_name in _BINARY_OPS and len(args) >= 2:
-        return True, typing.cast(TypedVariadicCallable[EagerValue], _BINARY_OPS[fn_name])(args[0], args[1])
+        return True, as_callable(_BINARY_OPS[fn_name])(args[0], args[1])
     if fn_name in _UNARY_OPS and len(args) >= 1:
-        return True, typing.cast(TypedVariadicCallable[EagerValue], _UNARY_OPS[fn_name])(args[0])
+        return True, as_callable(_UNARY_OPS[fn_name])(args[0])
     return False, None
 
 
@@ -231,15 +229,15 @@ def _eval_ragged_axis1_reduction(
     if fn_name == "count":
         res: EagerValue = [len([x for x in sub if x is not None]) if isinstance(sub, (list, tuple)) else 1 for sub in data]
     elif fn_name == "sum":
-        res = [sum(typing.cast(list[float], sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [sum(as_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     elif fn_name == "mean":
-        res = [sum(typing.cast(list[float], sub)) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
+        res = [sum(as_float_list(sub)) / len(sub) if isinstance(sub, (list, tuple)) and sub else 0.0 for sub in data]
     elif fn_name == "min":
         res = [min([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
     elif fn_name == "max":
         res = [max([float(v) for v in sub if isinstance(v, (int, float))]) if isinstance(sub, (list, tuple)) and sub else sub for sub in data]
     else:
-        res = [math.prod(typing.cast(list[float], sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
+        res = [math.prod(as_float_list(sub)) if isinstance(sub, (list, tuple)) else sub for sub in data]
     return True, res
 
 
@@ -260,14 +258,14 @@ def _eval_ragged_global_reduction(
     if fn_name == "count":
         res: EagerValue = len([x for x in flat_items if x is not None])
     elif fn_name == "sum":
-        res = sum(typing.cast(list[float], flat_items))
+        res = sum(as_float_list(flat_items))
     elif fn_name == "mean":
-        res = sum(typing.cast(list[float], flat_items)) / len(flat_items) if flat_items else 0.0
+        res = sum(as_float_list(flat_items)) / len(flat_items) if flat_items else 0.0
     elif fn_name in ("min", "max"):
         flat_floats = [float(x) for x in flat_items if isinstance(x, (int, float))]
         res = (min(flat_floats) if fn_name == "min" else max(flat_floats)) if flat_floats else None
     else:
-        res = math.prod(typing.cast(list[float], flat_items)) if flat_items else 1
+        res = math.prod(as_float_list(flat_items)) if flat_items else 1
     return True, res
 
 
@@ -347,8 +345,8 @@ def _apply_math_recursive(fn: Callable[[float], float], val: EagerValue) -> Eage
     if isinstance(source, (list, tuple)):
         import awkward as ak
 
-        return typing.cast(EagerValue, ak.Array([_apply_math_recursive(fn, x) for x in source]))
-    return fn(float(typing.cast(float, source)))
+        return as_tensor(ak.Array([_apply_math_recursive(fn, x) for x in source]))
+    return fn(float(as_float(source)))
 
 
 def _try_math_ufunc(

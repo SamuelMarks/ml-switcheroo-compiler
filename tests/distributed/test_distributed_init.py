@@ -7,16 +7,18 @@ import typing
 
 import pytest
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_distributed_init() -> None:
     """Test function test_distributed_init."""
     import ml_switcheroo_compiler.distributed as dist
 
-    DeviceMesh = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.distributed"), "DeviceMesh"))
-    LayoutMap = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.distributed"), "LayoutMap"))
+    DeviceMesh = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.distributed"), "DeviceMesh"))
+    LayoutMap = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.distributed"), "LayoutMap"))
 
     mesh = DeviceMesh((1,), ("x",))
     d = dist.Distribution(device_mesh=mesh)
@@ -29,14 +31,14 @@ def test_distributed_init() -> None:
     assert dp.device_mesh == mesh
 
     lm = LayoutMap()
-    mp = typing.cast("EagerCallableProtocol", dist.ModelParallel)(layout_map=lm)
+    mp = as_callable(dist.ModelParallel)(layout_map=lm)
     assert mp.layout_map == lm
 
     tl = dist.TensorLayout(axes=("batch", "features"))
-    assert typing.cast("EagerTensorProtocol", getattr(tl, "axes")) == ("batch", "features")
+    assert as_tensor(getattr(tl, "axes")) == ("batch", "features")
 
     tl2 = dist.TensorLayout(axes=("batch",))
-    assert typing.cast("EagerTensorProtocol", getattr(tl2, "axes")) == ("batch",)
+    assert as_tensor(getattr(tl2, "axes")) == ("batch",)
 
     import unittest.mock
 
@@ -61,13 +63,13 @@ def test_distributed_init_eager(monkeypatch: EagerTensorProtocol) -> None:
     import ml_switcheroo_compiler.distributed as dist
     from ml_switcheroo_compiler.core import config
 
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(config, "eager_mode", True)
+    as_callable(monkeypatch.setattr)(config, "eager_mode", True)
     dist.set_distribution(dist.Distribution())
     assert dist.distribute_tensor(1) == 1
     import ml_switcheroo_compiler.distributed as dist
     from ml_switcheroo_compiler.core import config
 
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(config, "eager_mode", False)
+    as_callable(monkeypatch.setattr)(config, "eager_mode", False)
 
     # mock shard_tensor
     def mock_shard_tensor(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -89,7 +91,7 @@ def test_distributed_init_no_dist() -> None:
     """Test function test_distributed_init_no_dist."""
     import ml_switcheroo_compiler.distributed as dist
 
-    typing.cast("EagerCallableProtocol", dist.set_distribution)(None)
+    as_callable(dist.set_distribution)(None)
     assert dist.distribute_tensor(2) == 2
 
 
@@ -110,7 +112,7 @@ def test_distributed_initialize(monkeypatch: EagerTensorProtocol) -> None:
             self.called = True
 
     mock_backend = MockBackendWithInit()
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)("ml_switcheroo_compiler.backends.registry.get_active_backend", lambda: mock_backend)
+    as_callable(monkeypatch.setattr)("ml_switcheroo_compiler.backends.registry.get_active_backend", lambda: mock_backend)
 
     dist.initialize()
     assert mock_backend.called
@@ -121,6 +123,6 @@ def test_distributed_initialize(monkeypatch: EagerTensorProtocol) -> None:
         pass
 
     mock_backend2 = MockBackendNoInit()
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)("ml_switcheroo_compiler.backends.registry.get_active_backend", lambda: mock_backend2)
+    as_callable(monkeypatch.setattr)("ml_switcheroo_compiler.backends.registry.get_active_backend", lambda: mock_backend2)
     with pytest.raises(BackendNotSupportedError):
         dist.initialize()

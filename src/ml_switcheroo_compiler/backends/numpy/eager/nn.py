@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import math
-import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import as_float, as_int, as_shape, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
@@ -30,7 +30,7 @@ def _gelu(
     """
     erf_vec = np.vectorize(math.erf)
     x_f = np.asarray(x, dtype=float)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], 0.5 * x_f * (1.0 + erf_vec(x_f / np.sqrt(2.0))))
+    return as_ndarray(0.5 * x_f * (1.0 + erf_vec(x_f / np.sqrt(2.0))))
 
 
 @numpy_eager_registry.register("Relu")
@@ -51,7 +51,7 @@ def _np_relu(
     Returns:
         np.ndarray: ReLU activated tensor.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.maximum(x, 0.0))
+    return as_ndarray(backend_module.maximum(x, 0.0))
 
 
 @numpy_eager_registry.register("AlphaDropout")
@@ -72,7 +72,7 @@ def _np_alpha_dropout(
         np.ndarray: Output tensor with alpha dropout applied.
     """
     rate_val = kwargs.get("rate", 0.5)
-    rate = float(typing.cast(float, rate_val)) if rate_val is not None else 0.5
+    rate = float(as_float(rate_val)) if rate_val is not None else 0.5
     training = bool(kwargs.get("training", False))
     if not training or rate == 0.0:
         return x
@@ -80,13 +80,13 @@ def _np_alpha_dropout(
     scale = 1.0507009873554805
     alpha_p = -alpha * scale
     seed_val = kwargs.get("seed", None)
-    rng = np.random.default_rng(int(typing.cast(int, seed_val)) if seed_val is not None else None)
+    rng = np.random.default_rng(int(as_int(seed_val)) if seed_val is not None else None)
     noise_shape_val = kwargs.get("noise_shape", None)
     noise_shape = noise_shape_val if isinstance(noise_shape_val, tuple) else x.shape
     mask = rng.binomial(1, 1.0 - rate, size=noise_shape)
     a = 1.0 / np.sqrt(1.0 - rate + rate * rate * alpha_p * alpha_p)
     b = -a * alpha_p * rate
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], a * (np.multiply(x, mask) + alpha_p * (1.0 - mask)) + b)
+    return as_ndarray(a * (np.multiply(x, mask) + alpha_p * (1.0 - mask)) + b)
 
 
 @numpy_eager_registry.register("ActivityRegularization")
@@ -128,12 +128,12 @@ def _np_dropout(
         np.ndarray: Dropout applied tensor.
     """
     rate_val = kwargs.get("rate", rate)
-    rate_f = float(typing.cast(float, rate_val)) if rate_val is not None else rate
+    rate_f = float(as_float(rate_val)) if rate_val is not None else rate
     training = bool(kwargs.get("training", False))
     if not training or rate_f == 0.0:
         return x
     seed_val = kwargs.get("seed", None)
-    rng = np.random.default_rng(int(typing.cast(int, seed_val)) if seed_val is not None else None)
+    rng = np.random.default_rng(int(as_int(seed_val)) if seed_val is not None else None)
     noise_shape_val = kwargs.get("noise_shape", None)
     noise_shape = noise_shape_val if isinstance(noise_shape_val, tuple) else x.shape
     mask = rng.binomial(1, 1.0 - rate_f, size=noise_shape)
@@ -162,8 +162,8 @@ def _np_time_distributed(
         return np.asarray(get_active_backend().execute_op(wrapped_op_name, x, **kwargs))
     flat_x = np.reshape(x, (shape[0] * shape[1], *shape[2:]))
     out = get_active_backend().execute_op(wrapped_op_name, flat_x, **kwargs)
-    out_shape = (shape[0], shape[1], *typing.cast(tuple[int, ...], getattr(out, "shape"))[1:])
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "reshape")(out, out_shape))
+    out_shape = (shape[0], shape[1], *as_shape(getattr(out, "shape"))[1:])
+    return as_ndarray(getattr(np, "reshape")(out, out_shape))
 
 
 @numpy_eager_registry.register("Rope")
@@ -195,15 +195,14 @@ def _np_rope(
     freqs = backend_module.exp(-backend_module.arange(0, half_dim, dtype=x_np.dtype) * (backend_module.log(base) / half_dim))
     angles = position[:, None] * freqs[None, :]
 
-    return typing.cast(
-        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    return as_ndarray(
         backend_module.concatenate(
             [
                 x_np[..., :half_dim] * backend_module.cos(angles) - x_np[..., half_dim:] * backend_module.sin(angles),
                 x_np[..., :half_dim] * backend_module.sin(angles) + x_np[..., half_dim:] * backend_module.cos(angles),
             ],
             axis=-1,
-        ),
+        )
     )
 
 
@@ -234,7 +233,7 @@ def _np_rrelu(
     x_data = backend_module.asarray(getattr(x, "data", x))
     if not training:
         alpha = (lower + upper) / 2.0
-        return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.where(x_data >= 0, x_data, x_data * alpha))
+        return as_ndarray(backend_module.where(x_data >= 0, x_data, x_data * alpha))
 
     alpha_arr = backend_module.random.uniform(lower, upper, size=x_data.shape)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.where(x_data >= 0, x_data, x_data * alpha_arr))
+    return as_ndarray(backend_module.where(x_data >= 0, x_data, x_data * alpha_arr))

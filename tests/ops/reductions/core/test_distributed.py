@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.reductions.distributed import Pmean, Psum
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MockTensor:
@@ -28,10 +29,10 @@ def test_psum_infer_shape() -> None:
     t = MockTensor((2, 3))
 
     # args
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(t) == (2, 3)
+    assert as_callable(op.infer_shape)(t) == (2, 3)
 
     # kwargs
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(x=t) == (2, 3)
+    assert as_callable(op.infer_shape)(x=t) == (2, 3)
 
     # empty
     assert op.infer_shape() == ()
@@ -43,10 +44,10 @@ def test_pmean_infer_shape() -> None:
     t = MockTensor((2, 3))
 
     # args
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(t) == (2, 3)
+    assert as_callable(op.infer_shape)(t) == (2, 3)
 
     # kwargs
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(x=t) == (2, 3)
+    assert as_callable(op.infer_shape)(x=t) == (2, 3)
 
     # empty
     assert op.infer_shape() == ()

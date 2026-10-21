@@ -6,9 +6,10 @@ import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.variable import VariableASTVisitor
 from ml_switcheroo_compiler.ir.core import IRNode
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class _MockDimWithId:
@@ -61,7 +62,7 @@ class _MockGenerator:
 
 def test_variable_ast_visitor_exhaustive() -> None:
     """Verify VariableASTVisitor code generation methods."""
-    visitor = typing.cast("EagerCallableProtocol", VariableASTVisitor)(generator=typing.cast("EagerCallableProtocol", _MockGenerator)())
+    visitor = as_callable(VariableASTVisitor)(generator=as_callable(_MockGenerator)())
 
     node = IRNode("node_assign", "Assign")
     assign_str = visitor.visit_Assign(node, ["dest_var", "src_var"])

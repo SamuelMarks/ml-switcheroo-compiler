@@ -13,15 +13,16 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     _discover_fusion_patterns,
     match_pattern,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_operator_fusion_memory_aware() -> None:
     """Verify memory-aware cost model validation with thresholds and symbolic shapes."""
     config: dict[str, EagerValue] = {"max_fusion_memory_bytes": 1024, "memory_sizes": {"float32": 4}}
-    cost = typing.cast("EagerCallableProtocol", MemoryAwareCostModel)(config)
+    cost = as_callable(MemoryAwareCostModel)(config)
 
     node = IRNode("mul1", "Multiply", inputs=["a", "b"], attributes={}, shape_metadata=(1024,))
     node.attributes["dtype"] = "float32"
@@ -35,7 +36,7 @@ def test_operator_fusion_memory_aware() -> None:
     assert bool(cost.is_fusion_valid({"mul3": node3})) is True
 
     cost2 = MemoryAwareCostModel(None)
-    assert bool(typing.cast("EagerCallableProtocol", cost2.is_fusion_valid)({"mul1": node})) is True
+    assert bool(as_callable(cost2.is_fusion_valid)({"mul1": node})) is True
 
 
 def test_commutative_pattern_matching() -> None:

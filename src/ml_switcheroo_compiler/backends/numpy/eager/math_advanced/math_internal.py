@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Callable, Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 from .math_string_io import _parse_scanop_args
 
@@ -42,7 +40,7 @@ def _np_get_printoptions_(backend_module: BackendModuleProtocol, *args: EagerVal
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.get_printoptions(*args, **kwargs))
+    return backend_module.get_printoptions(*args, **kwargs)
 
 
 @numpy_eager_registry.register("AffineConfig")
@@ -74,7 +72,7 @@ def _np_blurconfig(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     from ml_switcheroo_compiler.ops.configs import BlurConfig
 
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", BlurConfig)(*args, **kwargs))
+    return BlurConfig(*args, **kwargs)
 
 
 @numpy_eager_registry.register("CustomRoot")
@@ -93,7 +91,7 @@ def _np_customroot(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     initial_guess = args[1]
     solve = kwargs.get("solve", args[2] if len(args) > 2 else None)
     if solve:
-        return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", solve)(f, initial_guess))
+        return as_tensor(as_callable(solve)(f, initial_guess))
     return initial_guess
 
 
@@ -111,7 +109,7 @@ def _np_elasticconfig(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """
     from ml_switcheroo_compiler.ops.configs import ElasticConfig
 
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", ElasticConfig)(*args, **kwargs))
+    return ElasticConfig(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperator")
@@ -298,7 +296,7 @@ def _np_perspectiveconfig(backend_module: BackendModuleProtocol, *args: EagerVal
     """
     from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", PerspectiveConfig)(*args, **kwargs))
+    return PerspectiveConfig(*args, **kwargs)
 
 
 @numpy_eager_registry.register("RawMatMul")
@@ -314,8 +312,8 @@ def _np_rawmatmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
         tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "rawmatmul"):
-        return typing.cast(EagerValue, backend_module.rawmatmul(*args, **kwargs))
-    return typing.cast(EagerValue, getattr(np, "matmul")(args[0], args[1]))
+        return as_tensor(backend_module.rawmatmul(*args, **kwargs))
+    return as_tensor(getattr(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("RawMerge")
@@ -392,7 +390,7 @@ def _np_scanop(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
         out[0] = acc
     start_idx = 0 if has_acc else 1
     for i in range(start_idx, elems_arr.shape[0]):
-        acc = typing.cast("TypedVariadicCallable[EagerValue]", fn)(acc, elems_arr[i])
+        acc = as_callable(fn)(acc, elems_arr[i])
         out[i] = acc
     return out
 
@@ -430,7 +428,7 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
     """
     handle = args[0]
     index = args[1]
-    return typing.cast(EagerValue, getattr(handle, "__getitem__")(index))
+    return as_tensor(getattr(handle, "__getitem__")(index))
 
 
 @numpy_eager_registry.register("TensorArrayWrite")
@@ -449,9 +447,9 @@ def _np_tensorarraywrite(backend_module: BackendModuleProtocol, *args: EagerValu
     index = args[1]
     value = args[2]
     new_handle = list(getattr(handle, "__iter__")())
-    if int(typing.cast(int, index)) >= len(new_handle):
-        new_handle.extend([None] * int(typing.cast(EagerTensorProtocol, index) - typing.cast(EagerTensorProtocol, len(new_handle)) + 1))
-    typing.cast(EagerTensorProtocol, new_handle)[index] = value
+    if int(as_int(index)) >= len(new_handle):
+        new_handle.extend([None] * int(as_tensor(index) - as_tensor(len(new_handle)) + 1))
+    as_tensor(new_handle)[index] = value
     return new_handle
 
 
@@ -469,4 +467,4 @@ def _np_tensorconfig(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", TensorConfig)(*args, **kwargs))
+    return as_tensor(as_callable(TensorConfig)(*args, **kwargs))

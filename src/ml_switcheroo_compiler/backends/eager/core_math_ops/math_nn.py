@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
-from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerTensorProtocol,
     EagerValue,
+    as_shape,
+    as_tensor,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
@@ -43,9 +42,9 @@ def _layer_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     del kwargs
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
-    gamma = typing.cast(EagerTensorProtocol, args[1]) if len(args) > 1 else 1.0
-    beta = typing.cast(EagerTensorProtocol, args[2]) if len(args) > 2 else 0.0
+    x = as_tensor(args[0])
+    gamma = as_tensor(args[1]) if len(args) > 1 else 1.0
+    beta = as_tensor(args[2]) if len(args) > 2 else 0.0
     mean = mod.mean(x, axis=-1, keepdims=True)
     var = mod.var(x, axis=-1, keepdims=True)
     norm = (x - mean) / mod.sqrt(var + 1e-5)
@@ -65,13 +64,13 @@ def _batch_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         EagerValue: Normalized output.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
-    gamma = typing.cast(EagerTensorProtocol, args[1] if len(args) > 1 else kwargs.get("gamma", 1.0))
-    beta = typing.cast(EagerTensorProtocol, args[2] if len(args) > 2 else kwargs.get("beta", 0.0))
-    eps = typing.cast(EagerTensorProtocol, kwargs.get("eps", 1e-5))
+    x = as_tensor(args[0])
+    gamma = as_tensor(args[1] if len(args) > 1 else kwargs.get("gamma", 1.0))
+    beta = as_tensor(args[2] if len(args) > 2 else kwargs.get("beta", 0.0))
+    eps = as_tensor(kwargs.get("eps", 1e-5))
     if len(args) > 4:
-        mean = typing.cast(EagerTensorProtocol, args[3])
-        var = typing.cast(EagerTensorProtocol, args[4])
+        mean = as_tensor(args[3])
+        var = as_tensor(args[4])
     else:
         axes = tuple(i for i in range(x.ndim) if i != 1) if getattr(x, "ndim", 0) > 1 else (0,)
         mean = mod.mean(x, axis=axes, keepdims=True)
@@ -94,8 +93,8 @@ def _rms_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     del kwargs
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
-    gamma = typing.cast(EagerTensorProtocol, args[1]) if len(args) > 1 else 1.0
+    x = as_tensor(args[0])
+    gamma = as_tensor(args[1]) if len(args) > 1 else 1.0
     rms = mod.sqrt(mod.mean(x**2, axis=-1, keepdims=True) + 1e-5)
     return (x / rms) * gamma
 
@@ -114,8 +113,8 @@ def _mse_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     del kwargs
     mod = backend_module
-    pred = typing.cast(EagerTensorProtocol, args[0])
-    tgt = typing.cast(EagerTensorProtocol, args[1])
+    pred = as_tensor(args[0])
+    tgt = as_tensor(args[1])
     return mod.mean((pred - tgt) ** 2)
 
 
@@ -133,8 +132,8 @@ def _bce_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     del kwargs
     mod = backend_module
-    pred = typing.cast(EagerTensorProtocol, args[0])
-    tgt = typing.cast(EagerTensorProtocol, args[1])
+    pred = as_tensor(args[0])
+    tgt = as_tensor(args[1])
     eps = 1e-7
     pred_c = mod.clip(pred, eps, 1.0 - eps) if hasattr(mod, "clip") else pred
     return -mod.mean(tgt * mod.log(pred_c) + (1.0 - tgt) * mod.log(1.0 - pred_c))
@@ -154,8 +153,8 @@ def _huber_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     del kwargs
     mod = backend_module
-    pred = typing.cast(EagerTensorProtocol, args[0])
-    tgt = typing.cast(EagerTensorProtocol, args[1])
+    pred = as_tensor(args[0])
+    tgt = as_tensor(args[1])
     diff = mod.abs(pred - tgt)
     cond = diff < 1.0
     loss = mod.where(cond, 0.5 * (diff**2), diff - 0.5)
@@ -176,8 +175,8 @@ def _kl_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     del kwargs
     mod = backend_module
-    pred = typing.cast(EagerTensorProtocol, args[0])
-    tgt = typing.cast(EagerTensorProtocol, args[1])
+    pred = as_tensor(args[0])
+    tgt = as_tensor(args[1])
     eps = 1e-7
     return mod.mean(tgt * (mod.log(tgt + eps) - mod.log(pred + eps)))
 
@@ -199,7 +198,7 @@ def _gelu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     import math
 
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
+    x = as_tensor(args[0])
     return 0.5 * x * (1.0 + mod.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x**3))))
 
 
@@ -218,7 +217,7 @@ def _silu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """
     del kwargs
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
+    x = as_tensor(args[0])
     sig = 1.0 / (1.0 + mod.exp(-x))
     return x * sig
 
@@ -237,8 +236,8 @@ def _elu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
         EagerValue: ELU activation output.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
-    alpha = typing.cast(EagerTensorProtocol, kwargs.get("alpha", 1.0))
+    x = as_tensor(args[0])
+    alpha = as_tensor(kwargs.get("alpha", 1.0))
     cond = x > 0
     return mod.where(cond, x, alpha * (mod.exp(x) - 1.0))
 
@@ -257,8 +256,8 @@ def _leaky_relu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         EagerValue: LeakyReLU activation output.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
-    alpha = typing.cast(EagerTensorProtocol, kwargs.get("negative_slope", 0.01))
+    x = as_tensor(args[0])
+    alpha = as_tensor(kwargs.get("negative_slope", 0.01))
     cond = x > 0
     return mod.where(cond, x, alpha * x)
 
@@ -282,7 +281,7 @@ def _adaptive_pool_1d(backend_module: BackendModuleProtocol, operand: EagerValue
     for j in range(out_w):
         start = math.floor(j * in_w / out_w)
         end = math.ceil((j + 1) * in_w / out_w)
-        bins.append(mod.mean(typing.cast(EagerTensorProtocol, operand)[..., start:end], axis=-1))
+        bins.append(mod.mean(as_tensor(operand)[..., start:end], axis=-1))
     return mod.stack(bins, axis=-1)
 
 
@@ -316,7 +315,7 @@ def _adaptive_pool_2d(
         for j in range(o_w):
             w_start = math.floor(j * i_w / o_w)
             w_end = math.ceil((j + 1) * i_w / o_w)
-            cols.append(mod.mean(typing.cast(EagerTensorProtocol, operand)[..., h_start:h_end, w_start:w_end], axis=(-2, -1)))
+            cols.append(mod.mean(as_tensor(operand)[..., h_start:h_end, w_start:w_end], axis=(-2, -1)))
         rows.append(mod.stack(cols, axis=-1))
     return mod.stack(rows, axis=-2)
 
@@ -355,7 +354,7 @@ def _adaptive_pool_3d(
             for j in range(o_w):
                 w_start = math.floor(j * i_w / o_w)
                 w_end = math.ceil((j + 1) * i_w / o_w)
-                cols.append(mod.mean(typing.cast(EagerTensorProtocol, operand)[..., d_start:d_end, h_start:h_end, w_start:w_end], axis=(-3, -2, -1)))
+                cols.append(mod.mean(as_tensor(operand)[..., d_start:d_end, h_start:h_end, w_start:w_end], axis=(-3, -2, -1)))
             rows.append(mod.stack(cols, axis=-1))
         depths.append(mod.stack(rows, axis=-2))
     return mod.stack(depths, axis=-3)
@@ -377,9 +376,9 @@ def _global_adaptive_pool(backend_module: BackendModuleProtocol, operand: EagerV
     if not hasattr(operand, "shape"):
         return operand
 
-    out_spatial = [output_size] if isinstance(output_size, int) else list(typing.cast(Sequence[int], output_size))
+    out_spatial = [output_size] if isinstance(output_size, int) else list(as_shape(output_size))
     spatial_dims = len(out_spatial)
-    in_shape = typing.cast(EagerTensorProtocol, operand).shape
+    in_shape = as_tensor(operand).shape
     if len(in_shape) < spatial_dims:
         return operand
     in_spatial = in_shape[-spatial_dims:]
@@ -454,5 +453,5 @@ def _np_fractionalavgpool(backend_module: BackendModuleProtocol, *args: EagerVal
     """
     func = getattr(backend_module, "fractionalavgpool", getattr(backend_module, "fractionalavgpool", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]

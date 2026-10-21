@@ -32,12 +32,12 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_logical import (
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_string_io import _np_writefile
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import _assert
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_tensorarray_read_and_write() -> None:
@@ -58,19 +58,19 @@ def test_tensorarray_read_and_write() -> None:
 
     # In-bounds list write
     w1 = _np_tensorarraywrite(np, handle_list, 1, 99)
-    assert typing.cast("EagerTensorProtocol", getattr(w1, "__getitem__")(1)) == 99
+    assert as_tensor(getattr(w1, "__getitem__")(1)) == 99
     assert handle_list[1] == 20  # non-mutating copy
 
     # Expanding list write
     w_expand = _np_tensorarraywrite(np, handle_list, 5, 555)
-    assert typing.cast("EagerCallableProtocol", len)(w_expand) == 6
-    assert typing.cast("EagerTensorProtocol", getattr(w_expand, "__getitem__")(5)) == 555
-    assert typing.cast("EagerTensorProtocol", getattr(w_expand, "__getitem__")(3)) is None
+    assert as_callable(len)(w_expand) == 6
+    assert as_tensor(getattr(w_expand, "__getitem__")(5)) == 555
+    assert as_tensor(getattr(w_expand, "__getitem__")(3)) is None
 
     # Write on None creates new list
     w_none = _np_tensorarraywrite(np, None, 2, "hello")
-    assert typing.cast("EagerCallableProtocol", len)(w_none) == 3
-    assert typing.cast("EagerTensorProtocol", getattr(w_none, "__getitem__")(2)) == "hello"
+    assert as_callable(len)(w_none) == 3
+    assert as_tensor(getattr(w_none, "__getitem__")(2)) == "hello"
 
     # Negative index rejection
     with pytest.raises(IndexError, match="Negative TensorArray index"):
@@ -79,30 +79,30 @@ def test_tensorarray_read_and_write() -> None:
     # 2. NumPy ndarray read / write
     arr_np = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     elem0 = _np_tensorarrayread(np, arr_np, 0)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(elem0, [1.0, 2.0])
+    assert as_callable(np.allclose)(elem0, [1.0, 2.0])
 
     with pytest.raises(IndexError, match="out of bounds"):
         _np_tensorarrayread(np, arr_np, 4)
 
     # NumPy in-bounds write
     arr_w = _np_tensorarraywrite(np, arr_np, 1, np.array([9.0, 9.0], dtype=np.float32))
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(arr_w, "__getitem__")(1)), [9.0, 9.0])
+    assert as_callable(np.allclose)(as_tensor(getattr(arr_w, "__getitem__")(1)), [9.0, 9.0])
     assert np.allclose(arr_np[1], [3.0, 4.0])  # non-mutating
 
     # NumPy expanding write
     arr_exp = _np_tensorarraywrite(np, arr_np, 3, np.array([8.0, 8.0], dtype=np.float32))
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(arr_exp, "shape")), "__getitem__")(0)) == 4
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(arr_exp, "__getitem__")(3)), [8.0, 8.0])
+    assert as_tensor(getattr(as_tensor(getattr(arr_exp, "shape")), "__getitem__")(0)) == 4
+    assert as_callable(np.allclose)(as_tensor(getattr(arr_exp, "__getitem__")(3)), [8.0, 8.0])
 
     # 3. Dict handle read / write
     d_handle: dict[int, str] = {0: "zero", 1: "one"}
-    assert _np_tensorarrayread(np, typing.cast("EagerValue", d_handle), 1) == "one"
+    assert _np_tensorarrayread(np, as_tensor(d_handle), 1) == "one"
 
     with pytest.raises(IndexError, match="not found in sparse handle"):
-        _np_tensorarrayread(np, typing.cast("EagerValue", d_handle), 99)
+        _np_tensorarrayread(np, as_tensor(d_handle), 99)
 
-    d_w = _np_tensorarraywrite(np, typing.cast("EagerValue", d_handle), 2, "two")
-    assert typing.cast("EagerTensorProtocol", getattr(d_w, "__getitem__")(2)) == "two"
+    d_w = _np_tensorarraywrite(np, as_tensor(d_handle), 2, "two")
+    assert as_tensor(getattr(d_w, "__getitem__")(2)) == "two"
 
     # 4. Unknown type fallback
     assert _np_tensorarrayread(np, 12345) == 0
@@ -134,9 +134,9 @@ def test_axis_index_and_infeed() -> None:
     register_infeed_queue("train_queue", list(batch_data))
 
     item1 = _infeed(np, "train_queue")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(item1, [1, 2])
+    assert as_callable(np.allclose)(item1, [1, 2])
     item2 = _infeed(np, queue_name="train_queue")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(item2, [3, 4])
+    assert as_callable(np.allclose)(item2, [3, 4])
 
     # Exhausted queue returns 0
     assert _infeed(np, "train_queue") == 0
@@ -147,7 +147,7 @@ def test_axis_index_and_infeed() -> None:
         yield 100
         yield 200
 
-    typing.cast("EagerCallableProtocol", register_infeed_queue)("gen_queue", typing.cast("EagerCallableProtocol", dummy_gen)())
+    as_callable(register_infeed_queue)("gen_queue", as_callable(dummy_gen)())
     assert _infeed(np, "gen_queue") == 100
     assert _infeed(np, "gen_queue") == 200
     assert _infeed(np, "gen_queue") == 0
@@ -194,7 +194,7 @@ def test_writefile_operation() -> None:
         ret_bin = _np_writefile(np, bin_path, payload)
         assert ret_bin == 1
         with open(bin_path, "rb") as fb:
-            assert typing.cast("EagerTensorProtocol", fb.read()) == typing.cast("EagerTensorProtocol", payload)
+            assert as_tensor(fb.read()) == as_tensor(payload)
 
         # 3. Array tobytes write
         arr_path = os.path.join(tmpdir, "arr.bin")
@@ -202,8 +202,8 @@ def test_writefile_operation() -> None:
         ret_arr = _np_writefile(np, arr_path, arr)
         assert ret_arr == 1
         with open(arr_path, "rb") as fb:
-            read_arr = typing.cast("EagerCallableProtocol", np.frombuffer)(typing.cast("EagerCallableProtocol", fb.read)(), dtype=np.float64)
-            assert typing.cast("EagerCallableProtocol", np.allclose)(read_arr, arr)
+            read_arr = as_callable(np.frombuffer)(as_callable(fb.read)(), dtype=np.float64)
+            assert as_callable(np.allclose)(read_arr, arr)
 
         # 4. Integer / generic content write
         int_path = os.path.join(tmpdir, "int.txt")
@@ -225,7 +225,7 @@ def test_writefile_operation() -> None:
                 """
                 return 42
 
-        assert _np_writefile(typing.cast("BackendModuleProtocol", MockWritefileBackend()), "dummy.txt", "abc") == 42
+        assert _np_writefile(as_mod(MockWritefileBackend()), "dummy.txt", "abc") == 42
 
         # 6. OSError trigger on write failure
         with pytest.raises(OSError):
@@ -243,37 +243,37 @@ def test_fftconvolve_fallback() -> None:
 
     # Full convolution: length 4 + 2 - 1 = 5
     out_full = _fftconvolve(np, x, h, mode="full")
-    assert typing.cast("EagerTensorProtocol", getattr(out_full, "shape")) == (5,)
+    assert as_tensor(getattr(out_full, "shape")) == (5,)
     expected_full = np.convolve(x, h, mode="full")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out_full, expected_full, atol=1e-5)
+    assert as_callable(np.allclose)(out_full, expected_full, atol=1e-5)
 
     # Same convolution: length 4
     out_same = _fftconvolve(np, x, h, mode="same")
-    assert typing.cast("EagerTensorProtocol", getattr(out_same, "shape")) == (4,)
+    assert as_tensor(getattr(out_same, "shape")) == (4,)
     expected_same = np.convolve(x, h, mode="same")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out_same, expected_same, atol=1e-5)
+    assert as_callable(np.allclose)(out_same, expected_same, atol=1e-5)
 
     # Valid convolution: length 4 - 2 + 1 = 3
     out_valid = _fftconvolve(np, x, h, mode="valid")
-    assert typing.cast("EagerTensorProtocol", getattr(out_valid, "shape")) == (3,)
+    assert as_tensor(getattr(out_valid, "shape")) == (3,)
     expected_valid = np.convolve(x, h, mode="valid")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out_valid, expected_valid, atol=1e-5)
+    assert as_callable(np.allclose)(out_valid, expected_valid, atol=1e-5)
 
     # Valid mode with h larger than x returns empty
     out_empty = _fftconvolve(np, np.array([1.0]), np.array([1.0, 2.0, 3.0]), mode="valid")
-    assert typing.cast("EagerTensorProtocol", getattr(out_empty, "size")) == 0
+    assert as_tensor(getattr(out_empty, "size")) == 0
 
     # 2D real signals
     img2d = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     k2d = np.array([[1.0, 0.5], [0.5, 0.25]], dtype=np.float32)
     out_2d = _fftconvolve(np, img2d, k2d, mode="full")
-    assert typing.cast("EagerTensorProtocol", getattr(out_2d, "shape")) == (3, 3)
+    assert as_tensor(getattr(out_2d, "shape")) == (3, 3)
 
     # Complex signal convolution
     c1 = np.array([1.0 + 2.0j, 2.0 - 1.0j], dtype=np.complex64)
     c2 = np.array([0.5 + 0.5j, 1.0 + 0.0j], dtype=np.complex64)
     out_complex = _fftconvolve(np, c1, c2, mode="full")
-    assert typing.cast("EagerTensorProtocol", getattr(out_complex, "shape")) == (3,)
+    assert as_tensor(getattr(out_complex, "shape")) == (3,)
 
     # Backend with fft.fftconvolve
     class MockFFTModule:
@@ -294,7 +294,7 @@ def test_fftconvolve_fallback() -> None:
 
         fft = MockFFTModule()
 
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", _fftconvolve)(typing.cast("EagerCallableProtocol", MockFFTBackend)(), x, h), [77.0])
+    assert as_callable(np.allclose)(as_callable(_fftconvolve)(as_callable(MockFFTBackend)(), x, h), [77.0])
 
     # Backend with signal.fftconvolve
     class MockSignalModule:
@@ -315,7 +315,7 @@ def test_fftconvolve_fallback() -> None:
 
         signal = MockSignalModule()
 
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", _fftconvolve)(typing.cast("EagerCallableProtocol", MockSignalBackend)(), x, h), [88.0])
+    assert as_callable(np.allclose)(as_callable(_fftconvolve)(as_callable(MockSignalBackend)(), x, h), [88.0])
 
 
 def test_math_fft_edge_cases() -> None:
@@ -325,7 +325,7 @@ def test_math_fft_edge_cases() -> None:
 
     # 1. Unknown convolution mode falls through to 'return out'
     out_custom = _fftconvolve(np, x, h, mode="custom_unhandled")
-    assert typing.cast("EagerTensorProtocol", getattr(out_custom, "shape")) == (2,)
+    assert as_tensor(getattr(out_custom, "shape")) == (2,)
 
     # 2. _fft and _rfft with backend missing fft
     class EmptyBackend:
@@ -333,8 +333,8 @@ def test_math_fft_edge_cases() -> None:
 
         pass
 
-    assert _fft(typing.cast("BackendModuleProtocol", EmptyBackend()), x) is None
-    assert _rfft(typing.cast("BackendModuleProtocol", EmptyBackend()), x) is None
+    assert _fft(as_mod(EmptyBackend()), x) is None
+    assert _rfft(as_mod(EmptyBackend()), x) is None
 
     # 3. _fftnd with fftnd attribute
     class MockFFTNDModule:
@@ -355,7 +355,7 @@ def test_math_fft_edge_cases() -> None:
 
         fft = MockFFTNDModule()
 
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", _fftnd)(typing.cast("EagerCallableProtocol", MockFFTNDBackend)(), x), [123.0])
+    assert as_callable(np.allclose)(as_callable(_fftnd)(as_callable(MockFFTNDBackend)(), x), [123.0])
 
     # 4. _np_hfft with hfft attribute on backend.fft
     class MockHFFTModule:
@@ -376,10 +376,10 @@ def test_math_fft_edge_cases() -> None:
 
         fft = MockHFFTModule()
 
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", _np_hfft)(typing.cast("EagerCallableProtocol", MockHFFTBackend)(), x), [456.0])
+    assert as_callable(np.allclose)(as_callable(_np_hfft)(as_callable(MockHFFTBackend)(), x), [456.0])
 
     # 5. _np_hfft fallback to np.fft.hfft
-    res_hfft_fallback = _np_hfft(typing.cast("BackendModuleProtocol", EmptyBackend()), x)
+    res_hfft_fallback = _np_hfft(as_mod(EmptyBackend()), x)
     assert res_hfft_fallback is not None
 
 
@@ -395,8 +395,8 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
     target_file = tmp_path / "test_out.txt"
 
     # 1. Normal write success with str, bytes, and tobytes
-    assert _np_writefile(typing.cast("BackendModuleProtocol", object()), str(target_file), "hello world") == 1
-    assert _np_writefile(typing.cast("BackendModuleProtocol", object()), str(target_file), b"hello bytes") == 1
+    assert _np_writefile(as_mod(object()), str(target_file), "hello world") == 1
+    assert _np_writefile(as_mod(object()), str(target_file), b"hello bytes") == 1
 
     class DummyWithToBytes:
         """Test class DummyWithToBytes."""
@@ -405,7 +405,7 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
             """Test function tobytes."""
             return b"dummy_bytes"
 
-    assert _np_writefile(typing.cast("BackendModuleProtocol", object()), str(target_file), typing.cast("EagerValue", DummyWithToBytes())) == 1
+    assert _np_writefile(as_mod(object()), str(target_file), as_tensor(DummyWithToBytes())) == 1
 
     # 2. OSError where tmp file exists and gets cleaned up
     def mock_replace_error(src: str, dst: str) -> None:
@@ -419,7 +419,7 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
 
     monkeypatch.setattr("os.replace", mock_replace_error)
     with pytest.raises(OSError, match="Disk full error"):
-        _np_writefile(typing.cast("BackendModuleProtocol", object()), str(target_file), "content")
+        _np_writefile(as_mod(object()), str(target_file), "content")
 
     # 3. OSError where tmp file does not exist
     def mock_open_error(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -433,10 +433,10 @@ def test_math_string_io_write_file_error(tmp_path: pathlib.Path, monkeypatch: py
 
     monkeypatch.setattr("builtins.open", mock_open_error)
     with pytest.raises(OSError, match="Cannot open error"):
-        _np_writefile(typing.cast("BackendModuleProtocol", object()), str(target_file), "content")
+        _np_writefile(as_mod(object()), str(target_file), "content")
 
     # 4. Bare filename (no directory) covering dir_name == "" branch and other object types
     monkeypatch.undo()
     monkeypatch.chdir(tmp_path)
-    assert _np_writefile(typing.cast("BackendModuleProtocol", object()), "bare_filename.txt", 12345) == 1
+    assert _np_writefile(as_mod(object()), "bare_filename.txt", 12345) == 1
     assert (tmp_path / "bare_filename.txt").read_text(encoding="utf-8") == "12345"

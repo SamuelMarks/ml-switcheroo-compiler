@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.nn.gru import _compute_gru_gates, _sigmoid
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_gru_extras() -> None:
@@ -25,7 +26,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return typing.cast("EagerTensorProtocol", self)
+            return as_tensor(self)
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -33,7 +34,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return typing.cast("EagerTensorProtocol", self)
+            return as_tensor(self)
 
         def __sub__(self, other: EagerValue) -> EagerValue:
             """Test function __sub__.
@@ -41,7 +42,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return typing.cast("EagerTensorProtocol", self)
+            return as_tensor(self)
 
         def __rsub__(self, other: EagerValue) -> EagerValue:
             """Test function __rsub__.
@@ -49,7 +50,7 @@ def test_gru_extras() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return typing.cast("EagerTensorProtocol", self)
+            return as_tensor(self)
 
     from ml_switcheroo_compiler.core.config import config
 
@@ -62,12 +63,12 @@ def test_gru_extras() -> None:
     orig_add_node = state.global_tracing_state.add_node
     setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        typing.cast("EagerCallableProtocol", _compute_gru_gates)(
-            [typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", DummyTensor)()],
-            [typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", DummyTensor)()],
-            typing.cast("EagerCallableProtocol", DummyTensor)(),
+        as_callable(_compute_gru_gates)(
+            [as_callable(DummyTensor)(), as_callable(DummyTensor)(), as_callable(DummyTensor)()],
+            [as_callable(DummyTensor)(), as_callable(DummyTensor)(), as_callable(DummyTensor)()],
+            as_callable(DummyTensor)(),
         )
-        typing.cast("EagerCallableProtocol", _sigmoid)(typing.cast("EagerCallableProtocol", DummyTensor)())
+        as_callable(_sigmoid)(as_callable(DummyTensor)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing

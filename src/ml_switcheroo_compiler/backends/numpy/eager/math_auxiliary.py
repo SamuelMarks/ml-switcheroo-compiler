@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.dtype import DType
@@ -39,7 +37,7 @@ def _np_reduce_window(backend_module: BackendModuleProtocol, *args: EagerValue, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", _reduce_window)(*args, **kwargs)
+    return as_callable(_reduce_window)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TestEagerOp")
@@ -181,7 +179,7 @@ def _clamp(np: BackendModuleProtocol, min_val: EagerValue, x: EagerValue, max_va
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", np.clip(x, min_val, max_val))
+    return np.clip(x, min_val, max_val)
 
 
 @numpy_eager_registry.register("Logspace")
@@ -200,8 +198,8 @@ def _logspace(np: BackendModuleProtocol, start: EagerValue, stop: EagerValue, *a
     """
     if args and type(args[0]).__name__ == "SpaceConfig":
         c = args[0]
-        return typing.cast("EagerValue", np.logspace(start, stop, num=getattr(c, "num"), endpoint=getattr(c, "endpoint"), base=getattr(c, "base"), dtype=getattr(c, "dtype"), axis=getattr(c, "axis")))
-    return typing.cast("EagerValue", np.logspace(start, stop, *args, **kwargs))
+        return np.logspace(start, stop, num=getattr(c, "num"), endpoint=getattr(c, "endpoint"), base=getattr(c, "base"), dtype=getattr(c, "dtype"), axis=getattr(c, "axis"))
+    return np.logspace(start, stop, *args, **kwargs)
 
 
 @numpy_eager_registry.register("FromBuffer")
@@ -254,7 +252,7 @@ def _eager_Gradient(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "gradient", lambda *a, **k: a[0])(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "gradient", lambda *a, **k: a[0])(*args, **kwargs))
 
 
 @numpy_eager_registry.register("I0")
@@ -269,7 +267,7 @@ def _eager_I0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "i0", lambda *a, **k: a[0])(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "i0", lambda *a, **k: a[0])(*args, **kwargs))
 
 
 @numpy_eager_registry.register("BroadcastedIota")
@@ -284,4 +282,4 @@ def _eager_BroadcastedIota(backend_module: BackendModuleProtocol, *args: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "broadcast_to", lambda *a, **k: a[0])(backend_module.arange(args[0]), args[1]))
+    return as_tensor(getattr(backend_module, "broadcast_to", lambda *a, **k: a[0])(backend_module.arange(args[0]), args[1]))

@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_str
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # Base logic implementation
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import get_op, register_op
 from ml_switcheroo_compiler.ops.shape.joining import concatenate
@@ -29,7 +27,7 @@ def crelu(features: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrSca
 
     from ml_switcheroo_compiler.ops.binary import maximum
 
-    return maximum(concatenate([typing.cast(Tensor, features), negative(features)], axis=typing.cast("int", axis)), 0.0)
+    return maximum(concatenate([as_tensor_obj(features), negative(features)], axis=as_int(axis)), 0.0)
 
 
 def isotonic_regression(y: TensorOrScalar, sample_weights: TensorOrScalar = None, increasing: TensorOrScalar = True, name: TensorOrScalar = None) -> TensorOrScalar:
@@ -123,7 +121,7 @@ def softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwargs: 
         return get_active_backend().execute_op("Softmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Softmax", [typing.cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "Softmax", [as_str(x)], getattr(x, "shape_metadata", None), {"axis": axis})
 
 
 @register_op("LogSoftmax")
@@ -173,7 +171,7 @@ def log_softmax(x: TensorOrScalar, axis: int = -1, *args: TensorOrScalar, **kwar
         return get_active_backend().execute_op("LogSoftmax", x, axis=axis)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "LogSoftmax", [typing.cast(str, x)], getattr(x, "shape_metadata", None), {"axis": axis})
+    return emit_ir_node(None, "LogSoftmax", [as_str(x)], getattr(x, "shape_metadata", None), {"axis": axis})
 
 
 @register_op("Sigmoid")
@@ -219,10 +217,10 @@ def sigmoid(x: Tensor | str, *args: int | float | str | None, **kwargs: int | fl
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast(Tensor, get_active_backend().execute_op("Sigmoid", x))
+        return as_tensor_obj(get_active_backend().execute_op("Sigmoid", x))
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return typing.cast(Tensor, emit_ir_node(None, "Sigmoid", [str(x)], getattr(x, "shape_metadata", None), {}))
+    return as_tensor_obj(emit_ir_node(None, "Sigmoid", [str(x)], getattr(x, "shape_metadata", None), {}))
 
 
 @register_op("OneHot")
@@ -250,7 +248,7 @@ class OneHot(OpDef):
         if axis == -1:
             return indices_shape + (depth,)
         else:
-            return indices_shape[: int(typing.cast(int, axis))] + (depth,) + indices_shape[int(typing.cast(int, axis)) :]
+            return indices_shape[: int(as_int(axis))] + (depth,) + indices_shape[int(as_int(axis)) :]
 
 
 def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -280,7 +278,7 @@ def one_hot(indices: TensorOrScalar, depth: int, *args: TensorOrScalar, **kwargs
     meta = copy.copy(getattr(indices, "shape_metadata", None))
     if meta is not None:
         meta.shape = shape
-    return emit_ir_node(None, "OneHot", [typing.cast(str, indices)], meta, kwargs)
+    return emit_ir_node(None, "OneHot", [as_str(indices)], meta, kwargs)
 
 
 @register_op("Rrelu")
@@ -329,7 +327,7 @@ def rrelu(x: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) ->
         return get_active_backend().execute_op("Rrelu", x, *args, **kwargs)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    return emit_ir_node(None, "Rrelu", [typing.cast(str, x)], getattr(x, "shape_metadata", None), kwargs)
+    return emit_ir_node(None, "Rrelu", [as_str(x)], getattr(x, "shape_metadata", None), kwargs)
 
 
 @register_op("HardSilu")

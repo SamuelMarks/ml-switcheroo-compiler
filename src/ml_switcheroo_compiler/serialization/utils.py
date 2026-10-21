@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.backends.eager_registry import as_bytes, as_str, as_tensor
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -29,7 +30,7 @@ def _extract_numpy_weights(weights: dict[str, TensorLike]) -> dict[str, TensorLi
             continue
 
         try:
-            weights_np[k] = w.tolist() if hasattr(w, "tolist") else w
+            weights_np[k] = as_tensor(w.tolist()) if hasattr(w, "tolist") else w
         except (ValueError, TypeError):
             weights_np[k] = w
     return weights_np
@@ -45,12 +46,12 @@ def to_numpy(tensor: TensorLike) -> TensorLike:
         TensorLike: Converted array.
     """
     if hasattr(tensor, "numpy"):
-        return typing.cast(TensorLike, tensor.numpy())
+        return tensor.numpy()
     if hasattr(tensor, "data") and hasattr(tensor.data, "numpy"):
-        return typing.cast(TensorLike, tensor.data.numpy())
+        return tensor.data.numpy()
 
     try:
-        return tensor.tolist() if hasattr(tensor, "tolist") else tensor
+        return as_tensor(tensor.tolist()) if hasattr(tensor, "tolist") else tensor
     except (ValueError, TypeError):
         return tensor
 
@@ -66,7 +67,7 @@ def concatenate_arrays(arrays: list[TensorLike]) -> TensorLike:
     """
     from ml_switcheroo_compiler import ops
 
-    return typing.cast(TensorLike, getattr(ops, "concatenate")(arrays, axis=0))
+    return as_tensor(getattr(ops, "concatenate")(arrays, axis=0))
 
 
 def is_numpy_array(array: TensorOrScalar) -> bool:
@@ -111,7 +112,7 @@ def _dtype_to_descr(dtype: TensorOrScalar) -> str:
             if k.value == dtype:
                 return v
     elif hasattr(dtype, "value"):
-        return typing.cast(str, getattr(mapping, "get")(dtype, "<f4"))
+        return as_str(getattr(mapping, "get")(dtype, "<f4"))
     return "<f4"
 
 
@@ -156,9 +157,9 @@ def _extract_arr_bytes(arr: TensorOrScalar) -> bytes:
         bytes: The raw data bytes.
     """
     if hasattr(arr, "tobytes"):
-        return typing.cast(bytes, getattr(arr, "tobytes")())
+        return as_bytes(getattr(arr, "tobytes")())
     if hasattr(arr, "data") and hasattr(getattr(arr, "data"), "tobytes"):
-        return typing.cast(bytes, getattr(arr, "data").tobytes())
+        return as_bytes(getattr(arr, "data").tobytes())
     return b""
 
 
@@ -174,9 +175,9 @@ def _get_data_bytes(tensor: TensorOrScalar) -> bytes:
     if hasattr(tensor, "eval"):
         return _extract_arr_bytes(getattr(tensor, "eval")())
     if hasattr(tensor, "numpy"):
-        return typing.cast(bytes, getattr(tensor, "numpy")().tobytes())
+        return as_bytes(getattr(tensor, "numpy")().tobytes())
     if hasattr(tensor, "data") and hasattr(getattr(tensor, "data"), "numpy"):
-        return typing.cast(bytes, getattr(tensor, "data").numpy().tobytes())
+        return as_bytes(getattr(tensor, "data").numpy().tobytes())
     return b""
 
 
@@ -222,7 +223,7 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
 
     backend = get_active_backend()
     if hasattr(backend, "get_npz_bytes"):
-        return typing.cast(bytes, backend.get_npz_bytes(weights))
+        return as_bytes(backend.get_npz_bytes(weights))
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_STORED) as zf:

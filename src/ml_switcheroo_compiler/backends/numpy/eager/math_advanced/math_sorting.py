@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -26,7 +25,7 @@ def _np_argpartition(
     Returns:
         np.ndarray: The computed partition indices.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.argpartition(*args, **kwargs))
+    return as_ndarray(backend_module.argpartition(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Lexsort")
@@ -45,7 +44,7 @@ def _np_lexsort_(
     Returns:
         np.ndarray: The computed lexicographical sort order.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.lexsort(*args, **kwargs))
+    return as_ndarray(backend_module.lexsort(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Median")
@@ -64,4 +63,4 @@ def _np_median_(
     Returns:
         np.ndarray: The computed median value.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.median(*args, **kwargs))
+    return as_ndarray(backend_module.median(*args, **kwargs))

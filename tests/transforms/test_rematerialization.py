@@ -8,9 +8,10 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, _load_rules, rematerialization_pass
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_rematerialization_pass() -> None:
@@ -111,7 +112,7 @@ def test_rematerialization_max_dist() -> None:
 
     rules = {"target_ops": ["A"], "thresholds": {"min_memory_bytes": 0, "max_compute_to_memory_ratio": 100.0}}
 
-    res = typing.cast("EagerCallableProtocol", _find_target_nodes)([node], consumers, node_indices, rules)
+    res = as_callable(_find_target_nodes)([node], consumers, node_indices, rules)
     assert not res
 
 

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_tensor, as_tensor_obj
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_random_state() -> None:
@@ -33,29 +35,29 @@ def test_random_state() -> None:
             res = _emit_random_node("SomeRandom", [Tensor(ProxyTensor(id="id", shape=(2,), dtype="float32"), TensorConfig((2,), "float32", "cpu"))], (2,), "float32")
             assert getattr(res, "data", res) == "mock_val"
 
-            res = typing.cast("Tensor", _dispatch_random_eager("some_func", "SomeRandom", t))
-            assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "mock_val")
+            res = as_tensor_obj(_dispatch_random_eager("some_func", "SomeRandom", t))
+            assert as_tensor(res) == as_tensor("mock_val")
 
             res = _dispatch_random("some_func", t)
-            assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "mock_val")
+            assert as_tensor(res) == as_tensor("mock_val")
 
             res = rng_uniform(0, 1, (2,), "float32")
-            assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "mock_val")
+            assert as_tensor(res) == as_tensor("mock_val")
 
         with patch("ml_switcheroo_compiler.backends.registry.BackendRegistry.get", return_value=mock_backend):
-            assert typing.cast("EagerTensorProtocol", _get_numpy_rng()) == typing.cast("EagerTensorProtocol", "rng")
+            assert as_tensor(_get_numpy_rng()) == as_tensor("rng")
 
         config.eager_mode = False
         with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emitted"):
             with patch("ml_switcheroo_compiler.random.state.get_op", return_value=None):
                 res = _dispatch_random("missing_op", t)
-                assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "emitted")
+                assert as_tensor(res) == as_tensor("emitted")
 
             mock_op_cls = MagicMock()
             mock_op_inst = MagicMock(return_value="called_op")
             mock_op_cls.return_value = mock_op_inst
             with patch("ml_switcheroo_compiler.random.state.get_op", return_value=mock_op_cls):
-                assert typing.cast("EagerTensorProtocol", _dispatch_random("some_op", t)) == typing.cast("EagerTensorProtocol", "called_op")
+                assert as_tensor(_dispatch_random("some_op", t)) == as_tensor("called_op")
 
         # test _emit_random_node in eager=False
         from ml_switcheroo_compiler.tracing.tracer import global_tracing_state

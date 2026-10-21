@@ -6,9 +6,10 @@ import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.creation.frontend_sequence import arange, linspace
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_frontend_sequence() -> None:
@@ -38,12 +39,12 @@ def test_frontend_sequence() -> None:
 
     import ml_switcheroo_compiler.ops.creation.frontend_sequence
 
-    orig_backend = typing.cast("EagerTensorProtocol", getattr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend"))
+    orig_backend = as_tensor(getattr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend"))
     setattr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend", lambda: DummyBackend())
 
-    assert typing.cast("EagerTensorProtocol", getattr(arange(10), "shape")) == (10,)
-    assert typing.cast("EagerTensorProtocol", getattr(arange(0, 10), "shape")) == (10,)
-    assert typing.cast("EagerTensorProtocol", getattr(linspace(1, 10, 50), "shape")) == (50,)
+    assert as_tensor(getattr(arange(10), "shape")) == (10,)
+    assert as_tensor(getattr(arange(0, 10), "shape")) == (10,)
+    assert as_tensor(getattr(linspace(1, 10, 50), "shape")) == (50,)
 
     config.eager_mode = False
 

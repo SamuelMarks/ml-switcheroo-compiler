@@ -8,7 +8,7 @@ from collections.abc import Sequence
 import pydantic
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
 from ml_switcheroo_compiler.ops.registry import get_op
@@ -101,9 +101,9 @@ def separable_conv2d(
     Returns:
         Tensor: Result.
     """
-    config = typing.cast(TensorOrScalar, config or ConvHyperparams())
+    config = config or ConvHyperparams()
     strides, padding = getattr(config, "strides"), getattr(config, "padding")
     kwargs["strides"] = strides
     kwargs["padding"] = padding
     depthwise_out = depthwise_conv2d(lhs, depthwise_filter, None, **kwargs)
-    return conv2d(typing.cast("Tensor", depthwise_out), pointwise_filter, None, strides=1, padding="VALID")
+    return conv2d(as_tensor_obj(depthwise_out), pointwise_filter, None, strides=1, padding="VALID")

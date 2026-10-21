@@ -6,9 +6,10 @@ import typing
 from unittest.mock import patch
 
 import ml_switcheroo_compiler.ops.info_and_histograms.histograms as hist_mod
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class DummyWithShape:
@@ -42,7 +43,7 @@ def test_histograms_coverage() -> None:
     # Histogram2d infer_shape
     hist2d_op = hist_mod.Histogram2d()
     assert hist2d_op.infer_shape(bins=(10, 20)) == (10, 20)
-    assert typing.cast("EagerCallableProtocol", hist2d_op.infer_shape)(bins=[typing.cast("EagerCallableProtocol", DummyWithShape)((6,)), typing.cast("EagerCallableProtocol", DummyWithoutShape)()]) == (5, 10)
+    assert as_callable(hist2d_op.infer_shape)(bins=[as_callable(DummyWithShape)((6,)), as_callable(DummyWithoutShape)()]) == (5, 10)
     assert hist2d_op.infer_shape(bins=[10]) == (10, 10)
     assert hist2d_op.infer_shape(bins=10) == (10, 10)
 
@@ -55,8 +56,8 @@ def test_histograms_coverage() -> None:
     # Histogramdd infer_shape
     dd_op = hist_mod.Histogramdd()
     assert dd_op.infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", dd_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)((100, 3))) == (10, 10, 10)
-    assert typing.cast("EagerCallableProtocol", dd_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)()) == (10,)
+    assert as_callable(dd_op.infer_shape)(as_callable(DummyWithShape)((100, 3))) == (10, 10, 10)
+    assert as_callable(dd_op.infer_shape)(as_callable(DummyWithoutShape)()) == (10,)
 
     # Module wrappers dispatch
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", side_effect=lambda op, *args, **kwargs: f"dispatched_{op}"):

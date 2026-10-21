@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.errors import CompilerError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+from tests.testing_utils import as_callable, as_tensor_obj
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tensor:
@@ -73,11 +74,11 @@ def test_autodiff_unary_math_ops() -> None:
                 inp: Test parameter `inp`.
                 op_bound: Test parameter `op_bound`.
             """
-            return typing.cast("Tensor", dispatch_op(op_bound, inp))
+            return as_tensor_obj(dispatch_op(op_bound, inp))
 
         try:
-            primal, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x)
-            grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
+            primal, vjp_fn = as_callable(vjp)(f, x)
+            grads = as_callable(vjp_fn)(cot)
             assert primal is not None
             assert grads is not None
             evaluated_unary += 1
@@ -122,11 +123,11 @@ def test_autodiff_binary_math_ops() -> None:
                 in_b: Test parameter `in_b`.
                 op_bound: Test parameter `op_bound`.
             """
-            return typing.cast("Tensor", dispatch_op(op_bound, in_a, in_b))
+            return as_tensor_obj(dispatch_op(op_bound, in_a, in_b))
 
         try:
-            primal, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x, y)
-            grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
+            primal, vjp_fn = as_callable(vjp)(f, x, y)
+            grads = as_callable(vjp_fn)(cot)
             assert primal is not None
             assert grads is not None
             evaluated_binary += 1

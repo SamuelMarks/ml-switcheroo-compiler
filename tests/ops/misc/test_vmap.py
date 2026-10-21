@@ -11,9 +11,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
@@ -52,7 +53,7 @@ def test_vmap_eager(mocker: EagerTensorProtocol) -> None:
         return x
 
     vmapped = vmap(my_func, in_axes=0, out_axes=0)
-    typing.cast("EagerCallableProtocol", vmapped)(t)
+    as_callable(vmapped)(t)
     assert callable(test_vmap_eager)
 
 
@@ -79,7 +80,7 @@ def test_vmap_tracing(mocker: EagerTensorProtocol) -> None:
 
     vmapped = vmap(my_func, in_axes=(0, 1), out_axes=0)
     with pytest.raises(AttributeError):
-        typing.cast("EagerCallableProtocol", vmapped)(t, t)
+        as_callable(vmapped)(t, t)
 
 
 def test_vmap_not_tracing() -> None:
@@ -98,7 +99,7 @@ def test_vmap_not_tracing() -> None:
         return x
 
     with pytest.raises(RuntimeError):
-        typing.cast("EagerCallableProtocol", vmap)(my_func)(typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockTensor)().data, typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, "cpu")))
+        as_callable(vmap)(my_func)(as_callable(Tensor)(as_callable(MockTensor)().data, as_callable(TensorConfig)((), DType.Float32, "cpu")))
 
 
 def test_vmap_eager_impl(mocker: EagerTensorProtocol) -> None:
@@ -182,7 +183,7 @@ def test_vmap_eager_execute() -> None:
         return x
 
     res = _eager_vmap(my_func, 0, 0, (t,))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 3)
+    assert as_tensor(getattr(res, "shape")) == (2, 3)
     reg.get_active_backend = old
 
 
@@ -197,7 +198,7 @@ def test_vmap_resolve() -> None:
         dtype = DType.Float32
         device = "cpu"
 
-    assert typing.cast("EagerCallableProtocol", _compute_vmap_shape)(typing.cast("EagerCallableProtocol", FakeT)(), None) == ()
+    assert as_callable(_compute_vmap_shape)(as_callable(FakeT)(), None) == ()
 
 
 def test_vmap_trace() -> None:
@@ -218,7 +219,7 @@ def test_vmap_trace() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
 
     def my_func(x: EagerValue) -> EagerValue:
         """Test function my_func.
@@ -241,7 +242,7 @@ def test_vmap_trace() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value="graph"):
         res = _trace_vmap(my_func, 0, 0, (t,))
-        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+        assert as_tensor(getattr(res, "shape")) == (2,)
 
 
 def test_vmap_non_tensor_arg() -> None:

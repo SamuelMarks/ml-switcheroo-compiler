@@ -9,8 +9,10 @@ from unittest.mock import patch
 
 import pytest
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 backends_to_test = {
     "mlx": "The 'mlx' backend requires the 'mlx' library to be installed.",
@@ -43,7 +45,7 @@ def test_backend_import_error(backend: EagerTensorProtocol, error_msg: EagerTens
             if "sphinx" in sys.modules:
                 del sys.modules["sphinx"]
 
-            with typing.cast("EagerCallableProtocol", pytest.raises)(ImportError, match=error_msg):
+            with as_callable(pytest.raises)(ImportError, match=error_msg):
                 importlib.reload(mod)
 
 

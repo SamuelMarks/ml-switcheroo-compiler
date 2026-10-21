@@ -7,7 +7,7 @@ import os
 import shutil
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_opt_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -52,11 +52,9 @@ def write_file(filename: str | Tensor, contents: Tensor, name: str | None = None
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
-        import typing
-
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast("Tensor | None", get_active_backend().execute_op("WriteFile", filename, contents, name=name))
+        return as_opt_tensor_obj(get_active_backend().execute_op("WriteFile", filename, contents, name=name))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("WriteFile", [filename, contents], {"name": name}, (), "float32")

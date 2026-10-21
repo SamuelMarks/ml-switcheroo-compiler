@@ -9,9 +9,10 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, _np_reduce_scatter, set_np_distributed_context
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _worker_process(rank: EagerValue, world_size: EagerValue, port_queue: EagerValue, queue: EagerValue) -> None:
@@ -31,29 +32,29 @@ def _worker_process(rank: EagerValue, world_size: EagerValue, port_queue: EagerV
             s.bind(("", 0))
             port = s.getsockname()[1]
             s.close()
-            typing.cast("EagerTensorProtocol", getattr(port_queue, "put"))(port)
+            as_tensor(getattr(port_queue, "put"))(port)
         else:
-            port = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(port_queue, "get")))()
-            typing.cast("EagerTensorProtocol", getattr(port_queue, "put"))(port)
-        typing.cast("EagerCallableProtocol", set_np_distributed_context)(world_size, rank, "127.0.0.1", port)
+            port = as_callable(as_tensor(getattr(port_queue, "get")))()
+            as_tensor(getattr(port_queue, "put"))(port)
+        as_callable(set_np_distributed_context)(world_size, rank, "127.0.0.1", port)
         import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
 
         tensor = np.array([rank], dtype=np.float32)
         gathered = _np_all_gather(np, tensor, axis=0)
         reduced_sum = _np_all_reduce(np, tensor, op_type="sum")
         reduced_max = _np_all_reduce(np, tensor, op_type="max")
-        tensor_rs = typing.cast("EagerCallableProtocol", np.arange)(world_size, dtype=np.float32) * (typing.cast("EagerTensorProtocol", rank) + typing.cast("EagerTensorProtocol", 1))
+        tensor_rs = as_callable(np.arange)(world_size, dtype=np.float32) * (as_tensor(rank) + as_tensor(1))
         scattered = _np_reduce_scatter(np, tensor_rs, op_type="sum", axis=0)
         a2a = _np_all_to_all(np, tensor)
         dmod._tcp_dist_ctx.shutdown()
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(queue, "put")))({"rank": rank, "gathered": gathered, "reduced_sum": reduced_sum, "reduced_max": reduced_max, "scattered": scattered, "a2a_len": typing.cast("EagerCallableProtocol", len)(a2a)})
+        as_callable(as_tensor(getattr(queue, "put")))({"rank": rank, "gathered": gathered, "reduced_sum": reduced_sum, "reduced_max": reduced_max, "scattered": scattered, "a2a_len": as_callable(len)(a2a)})
     except Exception as e:
-        typing.cast("EagerTensorProtocol", getattr(queue, "put"))({"rank": rank, "error": str(e)})
+        as_tensor(getattr(queue, "put"))({"rank": rank, "error": str(e)})
 
 
 def test_tcp_distributed_collectives() -> None:
     """Test function test_tcp_distributed_collectives."""
-    if bool(typing.cast("EagerValue", True)):
+    if bool(as_tensor(True)):
         assert callable(_worker_process)
         return
     world_size = 3
@@ -92,9 +93,9 @@ def test_tcp_distributed_single_node() -> None:
     """Test function test_tcp_distributed_single_node."""
     set_np_distributed_context(1, 0, "127.0.0.1", 29506)
     tensor = np.array([5.0])
-    assert typing.cast("EagerTensorProtocol", getattr(_np_all_reduce(np, tensor), "item"))() == 5.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_all_gather(np, tensor), "item"))() == 5.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce_scatter(np, tensor), "item"))() == 5.0
+    assert as_tensor(getattr(_np_all_reduce(np, tensor), "item"))() == 5.0
+    assert as_tensor(getattr(_np_all_gather(np, tensor), "item"))() == 5.0
+    assert as_tensor(getattr(_np_reduce_scatter(np, tensor), "item"))() == 5.0
 
 
 def test_tcp_distributed_missing_funcs() -> None:
@@ -120,23 +121,23 @@ def test_tcp_distributed_missing_funcs() -> None:
         return [t, np.array([3.0])]
 
     setattr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
-    setattr(_tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: typing.cast("EagerCallableProtocol", np.array)([6.0]) if op == "prod" else typing.cast("EagerCallableProtocol", np.array)([5.0]) if op == "unknown" else t)
+    setattr(_tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: as_callable(np.array)([6.0]) if op == "prod" else as_callable(np.array)([5.0]) if op == "unknown" else t)
     _tcp_dist_ctx.world_size = 2
     _tcp_dist_ctx.world_size = 2
-    assert typing.cast("EagerTensorProtocol", getattr(_np_all_reduce(np, tensor, op_type="prod"), "item"))() == 6.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_all_reduce(np, tensor, op_type="min"), "item"))() == 2.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_all_reduce(np, tensor, op_type="unknown"), "item"))() == 5.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce_scatter(np, tensor, op_type="prod", axis=0), "item"))() == 6.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce_scatter(np, tensor, op_type="max", axis=0), "item"))() == 3.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce_scatter(np, tensor, op_type="min", axis=0), "item"))() == 2.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce_scatter(np, tensor, op_type="unknown", axis=0), "item"))() == 5.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce(np, tensor, root_rank=0, op_type="prod"), "item"))() == 6.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce(np, tensor, root_rank=0, op_type="max"), "item"))() == 3.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce(np, tensor, root_rank=0, op_type="min"), "item"))() == 2.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce(np, tensor, root_rank=0, op_type="unknown"), "item"))() == 5.0
+    assert as_tensor(getattr(_np_all_reduce(np, tensor, op_type="prod"), "item"))() == 6.0
+    assert as_tensor(getattr(_np_all_reduce(np, tensor, op_type="min"), "item"))() == 2.0
+    assert as_tensor(getattr(_np_all_reduce(np, tensor, op_type="unknown"), "item"))() == 5.0
+    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="prod", axis=0), "item"))() == 6.0
+    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="max", axis=0), "item"))() == 3.0
+    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="min", axis=0), "item"))() == 2.0
+    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="unknown", axis=0), "item"))() == 5.0
+    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="prod"), "item"))() == 6.0
+    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="max"), "item"))() == 3.0
+    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="min"), "item"))() == 2.0
+    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="unknown"), "item"))() == 5.0
     _tcp_dist_ctx.rank = 1
     assert _np_reduce(np, tensor, root_rank=0, op_type="prod") is None
-    assert typing.cast("EagerTensorProtocol", getattr(_np_broadcast(np, tensor, root_rank=0), "item"))() == 2.0
+    assert as_tensor(getattr(_np_broadcast(np, tensor, root_rank=0), "item"))() == 2.0
 
 
 def test_tcp_distributed_context_none_connections() -> None:
@@ -184,8 +185,8 @@ def test_tcp_distributed_context_none_connections_all_reduce() -> None:
 
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.listener = None
-    setattr(ctx, "send_conns", [typing.cast("EagerCallableProtocol", DummyConn)()])
-    setattr(ctx, "recv_conns", [typing.cast("EagerCallableProtocol", DummyConn)()])
+    setattr(ctx, "send_conns", [as_callable(DummyConn)()])
+    setattr(ctx, "recv_conns", [as_callable(DummyConn)()])
     tensor = np.array([1, 2])
     ctx.all_reduce_ring(tensor)
     assert tensor is not None
@@ -237,7 +238,7 @@ def test_tcp_distributed_context_sync_thread() -> None:
 
         def start(self) -> None:
             """Test function start."""
-            typing.cast("EagerCallableProtocol", self.target)()
+            as_callable(self.target)()
 
         def join(self) -> None:
             """Test function join."""
@@ -271,7 +272,7 @@ def test_tcp_distributed_context_initialize_none_listener() -> None:
 
         def start(self) -> None:
             """Test function start."""
-            typing.cast("EagerCallableProtocol", self.target)()
+            as_callable(self.target)()
 
         def join(self) -> None:
             """Test function join."""

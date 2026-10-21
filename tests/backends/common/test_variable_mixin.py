@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.variable import VariableASTVisitor
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class DummyGenerator:
@@ -37,6 +38,6 @@ def test_variable_mixin() -> None:
     vis = DummyVisitor()
     node = DummyNode()
 
-    assert typing.cast("EagerCallableProtocol", vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
-    assert typing.cast("EagerCallableProtocol", vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
-    assert typing.cast("EagerCallableProtocol", vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"
+    assert as_callable(vis.visit_Assign)(node, ["a", "b"]) == "bk_assign(a, b)"
+    assert as_callable(vis.visit_AssignAdd)(node, ["a", "b"]) == "bk_assign_add(a, b)"
+    assert as_callable(vis.visit_AssignSub)(node, ["a", "b"]) == "bk_assign_sub(a, b)"

@@ -14,9 +14,10 @@ from ml_switcheroo_compiler.backends.metal.metal import (
     _synthesize_metal_kernel,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_no_synthetic_copy_add_fallback_loops_metal() -> None:
@@ -108,23 +109,23 @@ def test_expanded_metal_templates_yaml_coverage() -> None:
     for op in new_ops:
         assert op in templates, f"Template for '{op}' missing in msl_templates.yaml"
         tpl = templates[op]
-        body = typing.cast("EagerTensorProtocol", getattr(tpl, "get"))("body", "")
+        body = as_tensor(getattr(tpl, "get"))("body", "")
         assert "kernel void" in body, f"Kernel body for '{op}' must contain 'kernel void'"
         assert f"{op}" in body, f"Kernel body for '{op}' should contain function name"
 
     # Specific check for argmax / argmin reduction in Metal
-    argmax_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmax")), "get"))("body", "")
+    argmax_body = as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")("argmax")), "get"))("body", "")
     assert "threadgroup float s_val" in argmax_body
     assert "threadgroup int s_idx" in argmax_body
     assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in argmax_body
 
-    argmin_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmin")), "get"))("body", "")
+    argmin_body = as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")("argmin")), "get"))("body", "")
     assert "threadgroup float s_val" in argmin_body
     assert "threadgroup int s_idx" in argmin_body
     assert "threadgroup_barrier(mem_flags::mem_threadgroup)" in argmin_body
 
     # Check SIMD-group matrix primitives
-    simd_mat_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("matmul_simdgroup_matrix")), "get"))("body", "")
+    simd_mat_body = as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")("matmul_simdgroup_matrix")), "get"))("body", "")
     assert "using namespace metal::simdgroup_matrix;" in simd_mat_body
     assert "simdgroup_matrix<half, 8, 8>" in simd_mat_body
     assert "simdgroup_multiply_accumulate" in simd_mat_body

@@ -22,10 +22,11 @@ from ml_switcheroo_compiler.ops.reductions.frontend import sum as fe_sum
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import UnpoolOptions, adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fold, fractional_max_pool2d, fractional_max_pool3d, max_unpool1d, max_unpool2d, max_unpool3d, unfold
 from ml_switcheroo_compiler.ops.reductions.frontend_utils import _emit_reduction_node, reduce_window
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, _tracer
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
-WindowConfig = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils"), "WindowConfig"))
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+WindowConfig = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils"), "WindowConfig"))
 
 
 def test_reductions_frontend_coverage_brute() -> None:
@@ -125,22 +126,22 @@ def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol
         dummy_backend = DummyBackend()
         mock_backend.return_value = dummy_backend
         mock_backend_utils.return_value = dummy_backend
-        typing.cast("EagerCallableProtocol", adaptive_avg_pool2d)(t_2d, (4, 4))
-        typing.cast("EagerCallableProtocol", adaptive_max_pool2d)(t_2d, (4, 4))
-        typing.cast("EagerCallableProtocol", fractional_max_pool3d)(t_3d, (4, 4, 4))
-        typing.cast("EagerCallableProtocol", adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-        typing.cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4))
-        typing.cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
+        as_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
+        as_callable(adaptive_max_pool2d)(t_2d, (4, 4))
+        as_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
+        as_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
+        as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
+        as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
         opt1 = UnpoolOptions(kernel_size=2, output_size=(16,))
         opt2 = UnpoolOptions(kernel_size=(2, 2), output_size=(16, 16))
         opt3 = UnpoolOptions(kernel_size=(2, 2, 2), output_size=(16, 16, 16))
-        typing.cast("EagerCallableProtocol", max_unpool1d)(t_1d, indices, opt1)
-        typing.cast("EagerCallableProtocol", max_unpool2d)(t_2d, indices2d, opt2)
-        typing.cast("EagerCallableProtocol", max_unpool3d)(t_3d, indices3d, opt3)
+        as_callable(max_unpool1d)(t_1d, indices, opt1)
+        as_callable(max_unpool2d)(t_2d, indices2d, opt2)
+        as_callable(max_unpool3d)(t_3d, indices3d, opt3)
         w_conf = WindowConfig(window_dimensions=(1, 1, 2), window_strides=(1, 1, 2), padding=((0, 0), (0, 0), (0, 0)), base_dilation=(1, 1, 1), window_dilation=(1, 1, 1))
-        typing.cast("EagerCallableProtocol", reduce_window)(t_1d, 0.0, "max", w_conf)
+        as_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
         t_scalar = Tensor(np.array(0.0).astype(np.float32), TensorConfig((), "float32", "cpu"))
-        typing.cast("EagerCallableProtocol", reduce_window)(t_1d, t_scalar, "max", w_conf)
+        as_callable(reduce_window)(t_1d, t_scalar, "max", w_conf)
     getattr(_state, "update")({"DummyBackend": DummyBackend, "dummy_backend": dummy_backend, "mock_backend": mock_backend, "mock_backend_utils": mock_backend_utils})
     getattr(_state, "update")({"opt1": opt1, "opt2": opt2, "opt3": opt3, "t_scalar": t_scalar})
     getattr(_state, "update")({"w_conf": w_conf})
@@ -164,20 +165,20 @@ def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool._emit_reduction_node") as mock_emit, patch("ml_switcheroo_compiler.ops.reductions.frontend_utils._emit_reduction_node") as mock_emit_u:
             mock_emit.return_value = t_2d
             mock_emit_u.return_value = t_1d
-            typing.cast("EagerCallableProtocol", fractional_max_pool2d)(t_2d, (4, 4))
-            typing.cast("EagerCallableProtocol", adaptive_avg_pool2d)(t_2d, (4, 4))
-            typing.cast("EagerCallableProtocol", adaptive_max_pool2d)(t_2d, (4, 4))
-            typing.cast("EagerCallableProtocol", unfold)(t_2d, (2, 2))
-            typing.cast("EagerCallableProtocol", fold)(t_2d, (8, 8), (2, 2))
-            typing.cast("EagerCallableProtocol", fractional_max_pool3d)(t_3d, (4, 4, 4))
-            typing.cast("EagerCallableProtocol", adaptive_avg_pool3d)(t_3d, (4, 4, 4))
-            typing.cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4))
-            typing.cast("EagerCallableProtocol", adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
-            typing.cast("EagerCallableProtocol", max_unpool1d)(t_1d, indices, opt1)
-            typing.cast("EagerCallableProtocol", max_unpool2d)(t_2d, indices2d, opt2)
-            typing.cast("EagerCallableProtocol", max_unpool3d)(t_3d, indices3d, opt3)
-            typing.cast("EagerCallableProtocol", reduce_window)(t_1d, 0.0, "max", w_conf)
-            typing.cast("EagerCallableProtocol", reduce_window)(t_1d, t_1d, "max", w_conf)
+            as_callable(fractional_max_pool2d)(t_2d, (4, 4))
+            as_callable(adaptive_avg_pool2d)(t_2d, (4, 4))
+            as_callable(adaptive_max_pool2d)(t_2d, (4, 4))
+            as_callable(unfold)(t_2d, (2, 2))
+            as_callable(fold)(t_2d, (8, 8), (2, 2))
+            as_callable(fractional_max_pool3d)(t_3d, (4, 4, 4))
+            as_callable(adaptive_avg_pool3d)(t_3d, (4, 4, 4))
+            as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4))
+            as_callable(adaptive_max_pool3d)(t_3d, (4, 4, 4), return_indices=True)
+            as_callable(max_unpool1d)(t_1d, indices, opt1)
+            as_callable(max_unpool2d)(t_2d, indices2d, opt2)
+            as_callable(max_unpool3d)(t_3d, indices3d, opt3)
+            as_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
+            as_callable(reduce_window)(t_1d, t_1d, "max", w_conf)
     finally:
         global_tracing_state.is_tracing = False
     getattr(_state, "update")({"global_tracing_state": global_tracing_state})
@@ -199,9 +200,9 @@ def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol
 
             id = "dummy"
 
-        t_dummy = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", DummyData)(), typing.cast("EagerCallableProtocol", TensorConfig)((2,), "float32", "cpu"))
+        t_dummy = as_callable(Tensor)(as_callable(DummyData)(), as_callable(TensorConfig)((2,), "float32", "cpu"))
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils.global_tracing_state.add_node"):
-            typing.cast("EagerCallableProtocol", _emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
+            as_callable(_emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
     finally:
         setattr(global_tracing_state, "is_tracing", False)
     assert getattr(global_tracing_state, "is_tracing") is False
@@ -281,14 +282,14 @@ def test_reductions_frontend_stats_ops() -> None:
     t = Tensor(np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
     t2 = Tensor(np.array([2.0, 3.0, 4.0, 5.0], dtype=np.float32), TensorConfig((4,), "float32", "cpu"))
     with patch.object(global_tracing_state, "add_node"):
-        assert isinstance(typing.cast("EagerValue", psum(t, "devices")), Tensor)
-        assert isinstance(typing.cast("EagerValue", pmean(t, "devices")), Tensor)
-        (v1, i1) = typing.cast("EagerCallableProtocol", approx_max_k)(t, k=2)
-        assert isinstance(typing.cast("EagerValue", v1), Tensor)
-        assert isinstance(typing.cast("EagerValue", i1), Tensor)
-        (v2, i2) = typing.cast("EagerCallableProtocol", approx_min_k)(t, k=2)
-        assert isinstance(typing.cast("EagerValue", v2), Tensor)
-        assert isinstance(typing.cast("EagerValue", i2), Tensor)
+        assert isinstance(as_tensor(psum(t, "devices")), Tensor)
+        assert isinstance(as_tensor(pmean(t, "devices")), Tensor)
+        (v1, i1) = as_callable(approx_max_k)(t, k=2)
+        assert isinstance(as_tensor(v1), Tensor)
+        assert isinstance(as_tensor(i1), Tensor)
+        (v2, i2) = as_callable(approx_min_k)(t, k=2)
+        assert isinstance(as_tensor(v2), Tensor)
+        assert isinstance(as_tensor(i2), Tensor)
         targets = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
         inp_len = Tensor(np.array([4], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))
         tgt_len = Tensor(np.array([2], dtype=np.int32), TensorConfig((1,), "int32", "cpu"))

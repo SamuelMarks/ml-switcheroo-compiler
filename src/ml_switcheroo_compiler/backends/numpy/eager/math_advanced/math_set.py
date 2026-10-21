@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -45,7 +44,7 @@ def _np_intersect1d_(
     Returns:
         np.ndarray: The computed intersection of two arrays.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.intersect1d(*args, **kwargs))
+    return as_ndarray(backend_module.intersect1d(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Isin")
@@ -64,4 +63,4 @@ def _np_isin_(
     Returns:
         np.ndarray: Boolean array of element containment.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.isin(*args, **kwargs))
+    return as_ndarray(backend_module.isin(*args, **kwargs))

@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import typing
 from types import ModuleType
 
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.backends.mapping_loader import load_backend_mappings
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
@@ -187,7 +186,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return typing.cast("TensorLike", getattr(np.random, "default_rng")(*args, **kwargs))
+        return as_tensor(getattr(np.random, "default_rng")(*args, **kwargs))
 
     @classmethod
     def load(cls, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -201,7 +200,7 @@ class NumpyGenerator(
         """
         import numpy as np
 
-        return typing.cast(EagerValue, getattr(np, "load")(*args, **kwargs))
+        return as_tensor(getattr(np, "load")(*args, **kwargs))
 
     @classmethod
     def save(cls, *args: EagerValue, **kwargs: EagerValue) -> None:

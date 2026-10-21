@@ -7,8 +7,10 @@ import typing
 import numpy as np
 import pytest
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_gradient_integration_across_backends() -> None:
@@ -23,7 +25,7 @@ def test_gradient_integration_across_backends() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", x)
+        return as_tensor(x) * as_tensor(x) + as_tensor(x) + as_tensor(x)
 
     grad_f = grad(f)
     x_val = np.array([3.0], dtype=np.float32)
@@ -32,9 +34,9 @@ def test_gradient_integration_across_backends() -> None:
     results = {}
     for be in backends_to_test:
         with pytest.raises(AttributeError):
-            typing.cast("EagerTensorProtocol", getattr(config, "set_backend"))(be)
-            x_t = typing.cast("EagerCallableProtocol", Tensor)(x_val)
+            as_tensor(getattr(config, "set_backend"))(be)
+            x_t = as_callable(Tensor)(x_val)
             res = grad_f(x_t)
-            results[be] = typing.cast("EagerTensorProtocol", getattr(res, "numpy"))()
+            results[be] = as_tensor(getattr(res, "numpy"))()
     for _be, res in results.items():
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected_grad, rtol=1e-05)
+        as_callable(np.testing.assert_allclose)(res, expected_grad, rtol=1e-05)

@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
-from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerTensorProtocol,
     EagerValue,
+    as_eager_list,
+    as_tensor,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
@@ -59,12 +58,12 @@ def _accumulate_n(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    inputs = typing.cast(Sequence[EagerValue], args[0] if len(args) > 0 else kwargs.get("inputs", []))
+    inputs = as_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
         return _resolve_eager_mod(backend_module).zeros(())
-    res = typing.cast(EagerTensorProtocol, inputs[0])
+    res = as_tensor(inputs[0])
     for i in range(1, len(inputs)):
-        res = res + typing.cast(EagerTensorProtocol, inputs[i])
+        res = res + as_tensor(inputs[i])
     return res
 
 
@@ -81,7 +80,7 @@ def _assign_add(backend_module: BackendModuleProtocol, ref: EagerValue, value: E
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerTensorProtocol, ref) + typing.cast(EagerTensorProtocol, value)
+    return as_tensor(ref) + as_tensor(value)
 
 
 @global_eager_registry.register("AssignSub")
@@ -97,7 +96,7 @@ def _assign_sub(backend_module: BackendModuleProtocol, ref: EagerValue, value: E
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerTensorProtocol, ref) - typing.cast(EagerTensorProtocol, value)
+    return as_tensor(ref) - as_tensor(value)
 
 
 @global_eager_registry.register("AddN")
@@ -112,12 +111,12 @@ def _add_n(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    inputs = typing.cast(Sequence[EagerValue], args[0] if len(args) > 0 else kwargs.get("inputs", []))
+    inputs = as_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
         return _resolve_eager_mod(backend_module).zeros(())
-    res = typing.cast(EagerTensorProtocol, inputs[0])
+    res = as_tensor(inputs[0])
     for i in range(1, len(inputs)):
-        res = res + typing.cast(EagerTensorProtocol, inputs[i])
+        res = res + as_tensor(inputs[i])
     return res
 
 
@@ -167,7 +166,7 @@ def _np_scattermul(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "scattermul", getattr(backend_module, "scattermul", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -185,7 +184,7 @@ def _np_stringsubstr(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     func = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).asarray(args[0], dtype=str)
 
 
@@ -203,7 +202,7 @@ def _np_tensorscattersub(backend_module: BackendModuleProtocol, *args: EagerValu
     """
     func = getattr(backend_module, "tensorscattersub", getattr(backend_module, "tensorscattersub", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -221,7 +220,7 @@ def _np_truncatediv(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.trunc(mod.divide(args[0], args[1]))
 
@@ -240,7 +239,7 @@ def _np_truncatemod(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).mod(args[0], args[1])
 
 
@@ -258,6 +257,6 @@ def _np_xdivy(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     func = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.where(args[0] == 0, 0, mod.divide(args[0], args[1]))

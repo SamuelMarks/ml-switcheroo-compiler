@@ -6,8 +6,10 @@ import typing
 
 import pytest
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_frontend_utils_missing() -> None:
@@ -21,6 +23,6 @@ def test_frontend_utils_missing() -> None:
 
         shape = (10,)
 
-    assert typing.cast("EagerCallableProtocol", _multinomial_shape)(typing.cast("EagerCallableProtocol", MockTensor)(), size=5) == (5,)
+    assert as_callable(_multinomial_shape)(as_callable(MockTensor)(), size=5) == (5,)
     with pytest.raises(RuntimeError):
         frompyfunc(lambda x: x, 1, 1)

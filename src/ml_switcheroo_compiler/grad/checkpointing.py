@@ -7,7 +7,6 @@ and wrappers for checkpointing and recomputing graph activations during backprop
 from __future__ import annotations
 
 import os
-import typing
 import uuid
 
 import yaml
@@ -16,15 +15,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.utils import GradValue
 from ml_switcheroo_compiler.ir.core import AttrValue, LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.ops import control_flow_utils
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
 
 AttributeValue = AttrValue
 
@@ -140,8 +137,7 @@ def checkpoint(
             GradValue: Computed result or proxy tensor.
         """
         if config.eager_mode or not global_tracing_state.is_tracing:
-            call_fn: VariadicCallableProtocol = fun  # type: ignore[assignment]
-            return call_fn(*args, **kwargs)
+            return invoke_callable(fun, *args, **kwargs)
 
         tensor_args = [a for a in args if isinstance(a, Tensor)]
         fwd_block = getattr(control_flow_utils, "_trace_function")(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
@@ -165,7 +161,6 @@ def checkpoint(
         out_id = str(uuid.uuid4())
         ckpt_attrs: dict[str, IRAttrValue] = {
             "subgraph": fwd_block,
-            "fun": fun,  # type: ignore[dict-item]
             "evicted": active_policy.evict_activations,
             "policy": active_policy.model_dump(),
         }
@@ -176,6 +171,7 @@ def checkpoint(
             attributes=ckpt_attrs,
             shape_metadata=shape,
         )
+        object.__setattr__(node, "attributes", {**node.attributes, "fun": fun})
         global_tracing_state.add_node(node)
 
         proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype)

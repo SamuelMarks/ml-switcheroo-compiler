@@ -102,7 +102,7 @@ class NonblockingLoad(OpDef):
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
         if shape is not None and isinstance(shape, (list, tuple)):
-            return tuple(int(typing.cast(int, d)) for d in shape)
+            return tuple(int(d) for d in shape)
         return ()
 
 

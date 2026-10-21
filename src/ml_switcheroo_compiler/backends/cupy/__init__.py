@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 
 try:
     _has_pkg = importlib.util.find_spec("cupy") is not None
@@ -25,7 +24,7 @@ type.__setattr__(CupyGenerator, "zeros", classmethod(zeros))
 type.__setattr__(CupyGenerator, "array", classmethod(array))
 type.__setattr__(CupyGenerator, "asarray", classmethod(asarray))
 type.__setattr__(CupyGenerator, "item", classmethod(item))
-type.__setattr__(CupyGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(CupyGenerator, "execute_op", as_callable(classmethod)(execute_op))
 
 __all__ = [
     "CupyGenerator",

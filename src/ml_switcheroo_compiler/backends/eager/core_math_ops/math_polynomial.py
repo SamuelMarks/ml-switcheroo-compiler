@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -40,5 +39,5 @@ def _np_polyint(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     func = getattr(backend_module, "polyint", getattr(backend_module, "polyint", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).polyint(*args, **kwargs)

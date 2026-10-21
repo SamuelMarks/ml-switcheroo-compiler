@@ -20,9 +20,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_logical import (
     _np_not_equal,
     _np_where,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_not_equal() -> None:
@@ -113,7 +114,7 @@ def test_where() -> None:
         None
     """
     res = _np_where(np, np.array([True, False]), 1, 0)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, [1, 0])
+    assert as_callable(np.array_equal)(res, [1, 0])
 
 
 def test_assert() -> None:

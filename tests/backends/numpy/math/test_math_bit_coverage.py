@@ -9,9 +9,10 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_bit as bit_module
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_math_bit_ops() -> None:
@@ -27,45 +28,45 @@ def test_math_bit_ops() -> None:
     # Clz - positive and negative integers
     pos_ints = np.array([1, 16, 0], dtype=np.int32)
     clz_pos = bit_module._np_clz(np, pos_ints)
-    assert typing.cast("EagerTensorProtocol", getattr(clz_pos, "__getitem__")(0)) == 31
-    assert typing.cast("EagerTensorProtocol", getattr(clz_pos, "__getitem__")(1)) == 27
-    assert typing.cast("EagerTensorProtocol", getattr(clz_pos, "__getitem__")(2)) == 32
+    assert as_tensor(getattr(clz_pos, "__getitem__")(0)) == 31
+    assert as_tensor(getattr(clz_pos, "__getitem__")(1)) == 27
+    assert as_tensor(getattr(clz_pos, "__getitem__")(2)) == 32
 
     neg_ints = np.array([-1, -16], dtype=np.int32)
     clz_neg = bit_module._np_clz(np, neg_ints)
-    assert typing.cast("EagerTensorProtocol", getattr(clz_neg, "__getitem__")(0)) == 0
-    assert typing.cast("EagerTensorProtocol", getattr(clz_neg, "__getitem__")(1)) == 0
+    assert as_tensor(getattr(clz_neg, "__getitem__")(0)) == 0
+    assert as_tensor(getattr(clz_neg, "__getitem__")(1)) == 0
 
     reg_clz = numpy_eager_registry.get("Clz")
-    reg_pos = typing.cast("EagerCallableProtocol", reg_clz)(np, pos_ints)
-    assert typing.cast("EagerTensorProtocol", getattr(reg_pos, "__getitem__")(0)) == 31
+    reg_pos = as_callable(reg_clz)(np, pos_ints)
+    assert as_tensor(getattr(reg_pos, "__getitem__")(0)) == 31
 
     # BitcastConvertType
     arr = np.array([1.0], dtype=np.float32)
     bitcast_i32 = bit_module._np_bitcast_convert_type(np, arr, "int32")
-    assert typing.cast("EagerTensorProtocol", getattr(bitcast_i32, "dtype")) == np.int32
+    assert as_tensor(getattr(bitcast_i32, "dtype")) == np.int32
 
     bitcast_fallback = bit_module._np_bitcast_convert_type(np, arr, "unknown_custom_dtype")
-    assert typing.cast("EagerTensorProtocol", getattr(bitcast_fallback, "dtype")) == np.float32
+    assert as_tensor(getattr(bitcast_fallback, "dtype")) == np.float32
 
     reg_bitcast = numpy_eager_registry.get("BitcastConvertType")
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", reg_bitcast)(np, arr, "int32"), "dtype")) == np.int32
+    assert as_tensor(getattr(as_callable(reg_bitcast)(np, arr, "int32"), "dtype")) == np.int32
 
     # Packbits and Unpackbits
     binary_arr = np.array([[[1, 0, 1, 0, 0, 0, 0, 0]]], dtype=np.uint8)
     packed = bit_module._np_packbits(np, binary_arr)
-    assert typing.cast("EagerTensorProtocol", getattr(packed, "dtype")) == np.uint8
+    assert as_tensor(getattr(packed, "dtype")) == np.uint8
     unpacked = bit_module._np_unpackbits(np, packed)
-    assert typing.cast("EagerTensorProtocol", getattr(unpacked, "dtype")) == np.uint8
+    assert as_tensor(getattr(unpacked, "dtype")) == np.uint8
 
     reg_pack = numpy_eager_registry.get("Packbits")
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", reg_pack)(np, binary_arr), "dtype")) == np.uint8
+    assert as_tensor(getattr(as_callable(reg_pack)(np, binary_arr), "dtype")) == np.uint8
     reg_unpack = numpy_eager_registry.get("Unpackbits")
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", reg_unpack)(np, packed), "dtype")) == np.uint8
+    assert as_tensor(getattr(as_callable(reg_unpack)(np, packed), "dtype")) == np.uint8
 
     # BitwiseCount
     count_input = np.array([0, 1, 3, 7], dtype=np.int32)
     counts = bit_module._np_bitwise_count(np, count_input)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(counts, [0, 1, 2, 3])
+    assert as_callable(np.array_equal)(counts, [0, 1, 2, 3])
     reg_bw_count = numpy_eager_registry.get("BitwiseCount")
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", reg_bw_count)(np, count_input), [0, 1, 2, 3])
+    assert as_callable(np.array_equal)(as_callable(reg_bw_count)(np, count_input), [0, 1, 2, 3])

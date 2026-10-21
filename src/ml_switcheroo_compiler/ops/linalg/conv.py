@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
@@ -64,7 +64,7 @@ def conv_general_dilated(
     )
     out_shape = op.infer_shape(lhs, rhs, cfg)
 
-    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
+    return as_tensor(as_callable(_emit_linalg_node)("ConvGeneralDilated", inputs, attributes, [out_shape], [lhs.dtype]))
 
 
 @dispatch_eager("ConvGeneralDilatedLocal")

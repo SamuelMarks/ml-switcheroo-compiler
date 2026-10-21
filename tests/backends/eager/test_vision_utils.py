@@ -30,10 +30,10 @@ from ml_switcheroo_compiler.backends.eager.vision_utils import (
     _np_map_coordinates,
     _prepare_eager_transform,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_prepare_eager_transform() -> None:
@@ -41,7 +41,7 @@ def test_prepare_eager_transform() -> None:
     # None images returns safe zero-dimension context
     ctx_none = _prepare_eager_transform(None, None, seed=42, data_format=None)
     assert ctx_none.B == 0
-    assert typing.cast("EagerTensorProtocol", getattr(ctx_none.imgs, "shape")) == (0, 0, 0, 0)
+    assert as_tensor(getattr(ctx_none.imgs, "shape")) == (0, 0, 0, 0)
     assert ctx_none.rng is not None
 
     # 2D image (H, W)
@@ -84,14 +84,14 @@ def test_prepare_eager_transform() -> None:
 def test_collinear_check_and_perspective_matrix() -> None:
     """Test homography estimation, DLT solver, collinearity detection, and projective invariance."""
     # None inputs
-    assert _compute_perspective_matrix(typing.cast("BackendModuleProtocol", None), None, None) == 0
+    assert _compute_perspective_matrix(as_mod(None), None, None) == 0
 
     # Unit square mapping to 2x scaled square
     src_pts = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], dtype=np.float32)
     dst_pts = np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]], dtype=np.float32)
 
     h_mat = _compute_perspective_matrix(np, src_pts, dst_pts)
-    assert typing.cast("EagerTensorProtocol", getattr(h_mat, "shape")) == (3, 3)
+    assert as_tensor(getattr(h_mat, "shape")) == (3, 3)
 
     # Validate projective mapping: p_dst ~ H @ p_src
     for s_pt, d_pt in zip(src_pts, dst_pts):
@@ -104,7 +104,7 @@ def test_collinear_check_and_perspective_matrix() -> None:
     src_batch = np.stack([src_pts, src_pts], axis=0)
     dst_batch = np.stack([dst_pts, dst_pts], axis=0)
     h_batch = _compute_perspective_matrix(np, src_batch, dst_batch)
-    assert typing.cast("EagerTensorProtocol", getattr(h_batch, "shape")) == (2, 3, 3)
+    assert as_tensor(getattr(h_batch, "shape")) == (2, 3, 3)
 
     # Collinear points rejection
     collinear_src = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [0.0, 1.0]], dtype=np.float32)
@@ -141,132 +141,125 @@ def test_collinear_check_and_perspective_matrix() -> None:
         linalg = MockSingularLinalg
 
     with pytest.raises(ValueError, match="Singular matrix encountered"):
-        _compute_perspective_matrix(typing.cast("BackendModuleProtocol", MockNP), src_pts, dst_pts)
+        _compute_perspective_matrix(as_mod(MockNP), src_pts, dst_pts)
 
 
 def test_perspective_grid_and_coords() -> None:
     """Test perspective grid creation and backward coordinate mapping."""
     # Degenerate grid sizes
-    assert _generate_perspective_grid(typing.cast("BackendModuleProtocol", None), 0, 0) == 0
+    assert _generate_perspective_grid(as_mod(None), 0, 0) == 0
     assert _generate_perspective_grid(np, -2, 5) == 0
 
     grid = _generate_perspective_grid(np, 4, 6)
-    assert typing.cast("EagerTensorProtocol", getattr(grid, "shape")) == (4, 6, 3)
-    assert typing.cast("EagerCallableProtocol", np.all)(
-        typing.cast(
-            "EagerTensorProtocol",
+    assert as_tensor(getattr(grid, "shape")) == (4, 6, 3)
+    assert as_callable(np.all)(
+        as_tensor(
             getattr(grid, "__getitem__")(
                 (
                     ...,
                     2,
                 )
-            ),
+            )
         )
         == 1.0
     )
     assert (
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(grid, "__getitem__")(
                 (
                     0,
                     0,
                     0,
                 )
-            ),
+            )
         )
         == 0.0
-        and typing.cast(
-            "EagerTensorProtocol",
+        and as_tensor(
             getattr(grid, "__getitem__")(
                 (
                     0,
                     0,
                     1,
                 )
-            ),
+            )
         )
         == 0.0
     )
     assert (
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(grid, "__getitem__")(
                 (
                     3,
                     5,
                     0,
                 )
-            ),
+            )
         )
         == 5.0
-        and typing.cast(
-            "EagerTensorProtocol",
+        and as_tensor(
             getattr(grid, "__getitem__")(
                 (
                     3,
                     5,
                     1,
                 )
-            ),
+            )
         )
         == 3.0
     )
 
     # Coordinate mapping with None inputs
-    assert _generate_perspective_coords(typing.cast("BackendModuleProtocol", None), None, None) == 0
+    assert _generate_perspective_coords(as_mod(None), None, None) == 0
 
     # Identity 2D homography
     h_eye = np.eye(3, dtype=np.float32)
-    ys, xs = typing.cast("EagerCallableProtocol", _generate_perspective_coords)(np, h_eye, grid)
-    assert typing.cast("EagerTensorProtocol", getattr(ys, "shape")) == (4, 6)
-    assert typing.cast("EagerTensorProtocol", getattr(xs, "shape")) == (4, 6)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(
+    ys, xs = as_callable(_generate_perspective_coords)(np, h_eye, grid)
+    assert as_tensor(getattr(ys, "shape")) == (4, 6)
+    assert as_tensor(getattr(xs, "shape")) == (4, 6)
+    assert as_callable(np.allclose)(
         ys,
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(grid, "__getitem__")(
                 (
                     ...,
                     1,
                 )
-            ),
+            )
         ),
     )
-    assert typing.cast("EagerCallableProtocol", np.allclose)(
+    assert as_callable(np.allclose)(
         xs,
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(grid, "__getitem__")(
                 (
                     ...,
                     0,
                 )
-            ),
+            )
         ),
     )
 
     # Batched homography
     h_batch = np.stack([h_eye, h_eye], axis=0)
-    ys_b, xs_b = typing.cast("EagerCallableProtocol", _generate_perspective_coords)(np, h_batch, grid)
-    assert typing.cast("EagerTensorProtocol", getattr(ys_b, "shape")) == (2, 4, 6)
-    assert typing.cast("EagerTensorProtocol", getattr(xs_b, "shape")) == (2, 4, 6)
+    ys_b, xs_b = as_callable(_generate_perspective_coords)(np, h_batch, grid)
+    assert as_tensor(getattr(ys_b, "shape")) == (2, 4, 6)
+    assert as_tensor(getattr(xs_b, "shape")) == (2, 4, 6)
 
 
 def test_map_coordinates_and_cubic_kernel() -> None:
     """Test nearest, bilinear, and bicubic coordinate mapping and cubic interpolation kernel."""
     # None inputs
-    assert typing.cast("EagerCallableProtocol", _map_coords_nearest)(None) == 0
-    assert typing.cast("EagerCallableProtocol", _map_coords_bilinear)(None) == 0
-    assert typing.cast("EagerCallableProtocol", _map_coords_bicubic)(None) == 0
-    assert _np_map_coordinates(typing.cast("BackendModuleProtocol", None), None, None) == 0
+    assert as_callable(_map_coords_nearest)(None) == 0
+    assert as_callable(_map_coords_bilinear)(None) == 0
+    assert as_callable(_map_coords_bicubic)(None) == 0
+    assert _np_map_coordinates(as_mod(None), None, None) == 0
 
     # Cubic kernel evaluation
     t_vals = np.array([0.0, 0.5, 1.0, 1.5, 2.5])
     w = _cubic_kernel(t_vals, a=-0.5)
-    assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerTensorProtocol", getattr(w, "__getitem__")(0)), 1.0)
-    assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerTensorProtocol", getattr(w, "__getitem__")(2)), 0.0)
-    assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerTensorProtocol", getattr(w, "__getitem__")(4)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(getattr(w, "__getitem__")(0)), 1.0)
+    assert as_callable(np.isclose)(as_tensor(getattr(w, "__getitem__")(2)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(getattr(w, "__getitem__")(4)), 0.0)
 
     # 4x4 image
     img = np.arange(16, dtype=np.float32).reshape(4, 4)
@@ -277,33 +270,33 @@ def test_map_coordinates_and_cubic_kernel() -> None:
 
     # Nearest neighbor (order=0)
     res_nearest = _np_map_coordinates(np, img, (y_coords, x_coords), order=0, fill_value=-1.0)
-    assert typing.cast("EagerTensorProtocol", getattr(res_nearest, "__getitem__")(0)) == img[0, 0]
-    assert typing.cast("EagerTensorProtocol", getattr(res_nearest, "__getitem__")(2)) == -1.0
+    assert as_tensor(getattr(res_nearest, "__getitem__")(0)) == img[0, 0]
+    assert as_tensor(getattr(res_nearest, "__getitem__")(2)) == -1.0
 
     # Bilinear (order=1)
     res_bilinear = _np_map_coordinates(np, img, (y_coords, x_coords), order=1, fill_value=99.0)
     expected_mid = (img[1, 1] + img[1, 2] + img[2, 1] + img[2, 2]) / 4.0
-    assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerTensorProtocol", getattr(res_bilinear, "__getitem__")(1)), expected_mid)
-    assert typing.cast("EagerTensorProtocol", getattr(res_bilinear, "__getitem__")(2)) == 99.0
+    assert as_callable(np.isclose)(as_tensor(getattr(res_bilinear, "__getitem__")(1)), expected_mid)
+    assert as_tensor(getattr(res_bilinear, "__getitem__")(2)) == 99.0
 
     # Bicubic (order=3)
     res_bicubic = _np_map_coordinates(np, img, (y_coords, x_coords), order=3, fill_value=0.0)
-    assert typing.cast("EagerTensorProtocol", getattr(res_bicubic, "shape")) == (3,)
-    assert typing.cast("EagerCallableProtocol", np.isclose)(typing.cast("EagerTensorProtocol", getattr(res_bicubic, "__getitem__")(0)), img[0, 0], atol=1e-4)
+    assert as_tensor(getattr(res_bicubic, "shape")) == (3,)
+    assert as_callable(np.isclose)(as_tensor(getattr(res_bicubic, "__getitem__")(0)), img[0, 0], atol=1e-4)
 
 
 def test_perspective_apply_batch() -> None:
     """Test applying perspective transformation over channels and batches."""
-    assert typing.cast("EagerCallableProtocol", _apply_perspective_channel)(None) == 0
-    assert typing.cast("EagerCallableProtocol", _apply_perspective_batch)(None, None, None, None) == 0
+    assert as_callable(_apply_perspective_channel)(None) == 0
+    assert as_callable(_apply_perspective_batch)(None, None, None, None) == 0
 
     imgs = np.ones((2, 8, 8, 3), dtype=np.float32)
     h_eye = np.eye(3, dtype=np.float32)
     cfg = PerspectiveConfig(interpolation="bilinear", fill_value=0.0)
 
     out = _apply_perspective_batch(np, imgs, h_eye, cfg)
-    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 8, 8, 3)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out, imgs)
+    assert as_tensor(getattr(out, "shape")) == (2, 8, 8, 3)
+    assert as_callable(np.allclose)(out, imgs)
 
 
 def test_dataclasses_repr() -> None:
@@ -354,13 +347,13 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     ctx_no_valid = MapCoordsContext(np_mod=np, image=img_2d, y=y_coords, x=x_coords, valid=None)
 
     out_nearest = _map_coords_nearest(ctx_no_valid)
-    assert typing.cast("EagerTensorProtocol", getattr(out_nearest, "shape")) == (2,)
+    assert as_tensor(getattr(out_nearest, "shape")) == (2,)
 
     out_bilinear = _map_coords_bilinear(ctx_no_valid)
-    assert typing.cast("EagerTensorProtocol", getattr(out_bilinear, "shape")) == (2,)
+    assert as_tensor(getattr(out_bilinear, "shape")) == (2,)
 
     out_bicubic = _map_coords_bicubic(ctx_no_valid)
-    assert typing.cast("EagerTensorProtocol", getattr(out_bicubic, "shape")) == (2,)
+    assert as_tensor(getattr(out_bicubic, "shape")) == (2,)
 
     # 3. Homography estimation when abs(h[-1]) <= 1e-12
     orig_svd = np.linalg.svd
@@ -371,7 +364,7 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
         Args:
             a: Test parameter `a`.
         """
-        u, s, vh = typing.cast("EagerCallableProtocol", orig_svd)(a)
+        u, s, vh = as_callable(orig_svd)(a)
         vh_mod = vh.copy()
         vh_mod[-1, -1] = 0.0
         return typing.cast("tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", (u, s, vh_mod))
@@ -380,4 +373,4 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     src_pts = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], dtype=np.float32)
     dst_pts = np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]], dtype=np.float32)
     h_out = _compute_perspective_matrix(np, src_pts, dst_pts)
-    assert typing.cast("EagerTensorProtocol", getattr(h_out, "shape")) == (3, 3)
+    assert as_tensor(getattr(h_out, "shape")) == (3, 3)

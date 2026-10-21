@@ -84,7 +84,7 @@ class Isscalar(OpDef):
 
 @register_op("Iterable")
 class Iterable(OpDef):
-    """Check whether or not an Any can be iterated over."""
+    """Check whether or not an object can be iterated over."""
 
     op_name = "Iterable"
 
@@ -170,7 +170,7 @@ def isscalar(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
 
 
 def iterable(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Check whether or not an Any can be iterated over.
+    """Check whether or not an object can be iterated over.
 
     Args:
         *args (TensorOrScalar): Positional args.

@@ -30,9 +30,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_fft import (
     _np_rfftn,
     _np_rfftnd,
 )
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_math_fft() -> None:
@@ -42,30 +43,30 @@ def test_math_fft() -> None:
     a1d_complex = np.ones((4,), dtype=np.complex128)
     a2d_complex = np.ones((2, 2), dtype=np.complex128)
 
-    assert typing.cast("EagerTensorProtocol", getattr(_np_fft(np, a1d), "shape")) == (4,)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_rfft(np, a1d), "shape")) == (3,)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_ifft(np, a1d_complex), "shape")) == (4,)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_irfft(np, a1d_complex), "shape")) == (6,)  # default n is 2*(m-1) => 2*(4-1) = 6
+    assert as_tensor(getattr(_np_fft(np, a1d), "shape")) == (4,)
+    assert as_tensor(getattr(_np_rfft(np, a1d), "shape")) == (3,)
+    assert as_tensor(getattr(_np_ifft(np, a1d_complex), "shape")) == (4,)
+    assert as_tensor(getattr(_np_irfft(np, a1d_complex), "shape")) == (6,)  # default n is 2*(m-1) => 2*(4-1) = 6
 
-    assert typing.cast("EagerTensorProtocol", getattr(_np_fftn(np, a2d), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_ifftn(np, a2d_complex), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_rfftn(np, a2d), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_irfftn(np, a2d_complex), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_fftn(np, a2d), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_ifftn(np, a2d_complex), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_rfftn(np, a2d), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_irfftn(np, a2d_complex), "shape")) == (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(_np_fft2(np, a2d), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_ifft2(np, a2d_complex), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_rfft2(np, a2d), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_irfft2(np, a2d_complex), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_fft2(np, a2d), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_ifft2(np, a2d_complex), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_rfft2(np, a2d), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_irfft2(np, a2d_complex), "shape")) == (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(_np_fftnd(np, a2d), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_ifftnd(np, a2d_complex), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_rfftnd(np, a2d), "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_irfftnd(np, a2d_complex), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_fftnd(np, a2d), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_ifftnd(np, a2d_complex), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_rfftnd(np, a2d), "shape")) == (2, 2)
+    assert as_tensor(getattr(_np_irfftnd(np, a2d_complex), "shape")) == (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(_np_fftshift(np, a1d), "shape")) == (4,)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_ifftshift(np, a1d), "shape")) == (4,)
+    assert as_tensor(getattr(_np_fftshift(np, a1d), "shape")) == (4,)
+    assert as_tensor(getattr(_np_ifftshift(np, a1d), "shape")) == (4,)
 
-    assert typing.cast("EagerTensorProtocol", getattr(_np_fftfreq(np, 4), "shape")) == (4,)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_hfft(np, a1d), "shape")) == (6,)  # default n = 2*(m-1) = 6
-    assert typing.cast("EagerTensorProtocol", getattr(_np_ihfft(np, a1d), "shape")) == (3,)  # n=4 => m = n//2 + 1 = 3
-    assert typing.cast("EagerTensorProtocol", getattr(_np_rfftfreq(np, 4), "shape")) == (3,)
+    assert as_tensor(getattr(_np_fftfreq(np, 4), "shape")) == (4,)
+    assert as_tensor(getattr(_np_hfft(np, a1d), "shape")) == (6,)  # default n = 2*(m-1) = 6
+    assert as_tensor(getattr(_np_ihfft(np, a1d), "shape")) == (3,)  # n=4 => m = n//2 + 1 = 3
+    assert as_tensor(getattr(_np_rfftfreq(np, 4), "shape")) == (3,)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 @register_op("Eig")
@@ -94,7 +94,7 @@ def eigh(input: Tensor, UPLO: str = "L") -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        w, v = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("Eigh", (input.data if type(input).__name__ == "Tensor" else input), UPLO=UPLO))
+        w, v = as_tensor_pair(backend.execute_op("Eigh", (input.data if type(input).__name__ == "Tensor" else input), UPLO=UPLO))
         return (
             Tensor(w, TensorConfig(w.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
             Tensor(v, TensorConfig(v.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
@@ -117,10 +117,10 @@ def eigvalsh(input: Tensor, UPLO: str = "L") -> TensorOrScalar:
 
         backend = get_active_backend()
         data = backend.execute_op("Eigvalsh", (input.data if type(input).__name__ == "Tensor" else input), UPLO=UPLO)
-        arr = typing.cast("TensorLike", backend.array(data))
+        arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(arr.shape, getattr(input, "dtype", None), getattr(input, "device", None)),
+            TensorConfig(tuple(getattr(arr, "shape")), getattr(input, "dtype", None), getattr(input, "device", None)),
         )
     return _emit_linalg_node("Eigvalsh", [input], {"UPLO": UPLO}, [input.shape[:-1]], [getattr(input, "dtype", None)])
 
@@ -160,10 +160,10 @@ def eigvals(input: Tensor) -> TensorOrScalar:
 
         backend = get_active_backend()
         data = backend.execute_op("Eigvals", (input.data if type(input).__name__ == "Tensor" else input))
-        arr = typing.cast("TensorLike", backend.array(data))
+        arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(arr.shape, getattr(input, "dtype", None), getattr(input, "device", None)),
+            TensorConfig(tuple(getattr(arr, "shape")), getattr(input, "dtype", None), getattr(input, "device", None)),
         )
     return _emit_linalg_node("Eigvals", [input], {}, [input.shape[:-1]], [getattr(input, "dtype", None)])
 
@@ -181,7 +181,7 @@ def eig(input: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        w, v = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("Eig", (input.data if type(input).__name__ == "Tensor" else input)))
+        w, v = as_tensor_pair(backend.execute_op("Eig", (input.data if type(input).__name__ == "Tensor" else input)))
         return (
             Tensor(w, TensorConfig(w.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
             Tensor(v, TensorConfig(v.shape, getattr(input, "dtype", None), getattr(input, "device", None))),

@@ -44,9 +44,10 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
     send,
     shard_tensor,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockArray:
@@ -58,7 +59,7 @@ class MockArray:
         Args:
             shape: Test parameter `shape`.
         """
-        self.shape = typing.cast("EagerCallableProtocol", tuple)(shape)
+        self.shape = as_callable(tuple)(shape)
 
 
 def _test_distributed_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -68,33 +69,33 @@ def _test_distributed_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op1 = ShardTensor()
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(None) == ()
+    assert as_callable(op1.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op1.infer_shape)(None) == ()
 
     op2 = NcclAllReduce()
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(None) == ()
+    assert as_callable(op2.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op2.infer_shape)(None) == ()
 
     op3 = HierarchicalCopyAllReduce()
-    assert typing.cast("EagerCallableProtocol", op3.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op3.infer_shape)(None) == ()
+    assert as_callable(op3.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op3.infer_shape)(None) == ()
 
     op4 = Broadcast()
-    assert typing.cast("EagerCallableProtocol", op4.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op4.infer_shape)(None) == ()
+    assert as_callable(op4.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op4.infer_shape)(None) == ()
 
     op5 = AllGather()
-    assert typing.cast("EagerCallableProtocol", op5.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op5.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), world_size=2, axis=0) == (4, 2)
-    assert typing.cast("EagerCallableProtocol", op5.infer_shape)(None) == ()
+    assert as_callable(op5.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op5.infer_shape)(as_callable(MockArray)((2, 2)), world_size=2, axis=0) == (4, 2)
+    assert as_callable(op5.infer_shape)(None) == ()
 
     op6 = Reduce()
-    assert typing.cast("EagerCallableProtocol", op6.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op6.infer_shape)(None) == ()
+    assert as_callable(op6.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op6.infer_shape)(None) == ()
 
     op7 = AllReduce()
-    assert typing.cast("EagerCallableProtocol", op7.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op7.infer_shape)(None) == ()
+    assert as_callable(op7.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op7.infer_shape)(None) == ()
     getattr(_state, "update")({"op1": op1, "op2": op2, "op3": op3, "op4": op4})
     getattr(_state, "update")({"op5": op5, "op6": op6, "op7": op7})
     _state.update(locals())
@@ -107,32 +108,32 @@ def _test_distributed_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op8 = ReduceScatter()
-    assert typing.cast("EagerCallableProtocol", op8.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2))) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op8.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((4, 2)), world_size=2, axis=0) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op8.infer_shape)(None) == ()
+    assert as_callable(op8.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
+    assert as_callable(op8.infer_shape)(as_callable(MockArray)((4, 2)), world_size=2, axis=0) == (2, 2)
+    assert as_callable(op8.infer_shape)(None) == ()
 
     op9 = AllToAll()
-    assert typing.cast("EagerCallableProtocol", op9.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op9.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op9.infer_shape() == ()
 
     op10 = BroadcastArrays()
-    assert typing.cast("EagerCallableProtocol", op10.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op10.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op10.infer_shape() == ()
 
     op11 = BroadcastTo()
-    assert typing.cast("EagerCallableProtocol", op11.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op11.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op11.infer_shape() == ()
 
     op12 = BroadcastToRank()
-    assert typing.cast("EagerCallableProtocol", op12.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op12.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op12.infer_shape() == ()
 
     op13 = BroadcastedIota()
-    assert typing.cast("EagerCallableProtocol", op13.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op13.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op13.infer_shape() == ()
 
     op14 = Pbroadcast()
-    assert typing.cast("EagerCallableProtocol", op14.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op14.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op14.infer_shape() == ()
     getattr(_state, "update")({"op10": op10, "op11": op11, "op12": op12, "op13": op13})
     getattr(_state, "update")({"op14": op14, "op8": op8, "op9": op9})
@@ -146,29 +147,29 @@ def _test_distributed_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     op15 = Pmax()
-    assert typing.cast("EagerCallableProtocol", op15.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op15.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op15.infer_shape() == ()
 
     op16 = Pmin()
-    assert typing.cast("EagerCallableProtocol", op16.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op16.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op16.infer_shape() == ()
     op17 = Outfeed()
-    assert typing.cast("EagerCallableProtocol", op17.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == ()
+    assert as_callable(op17.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == ()
     assert op17.infer_shape() == ()
 
     op18 = Pshuffle()
-    assert typing.cast("EagerCallableProtocol", op18.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op18.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op18.infer_shape() == ()
 
     op19 = Pswapaxes()
-    assert typing.cast("EagerCallableProtocol", op19.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 3)), axis1=0, axis2=1) == (3, 2)
+    assert as_callable(op19.infer_shape)(as_callable(MockArray)((2, 3)), axis1=0, axis2=1) == (3, 2)
 
     op20 = Ppermute()
-    assert typing.cast("EagerCallableProtocol", op20.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (2, 2)
+    assert as_callable(op20.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op20.infer_shape() == ()
 
     op21 = PsumScatter()
-    assert typing.cast("EagerCallableProtocol", op21.infer_shape)(typing.cast("EagerCallableProtocol", MockArray)((2, 2)), typing.cast("EagerCallableProtocol", MockArray)((2, 1))) == (None, 2)
+    assert as_callable(op21.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (None, 2)
     getattr(_state, "update")({"op15": op15, "op16": op16, "op17": op17, "op18": op18})
     getattr(_state, "update")({"op19": op19, "op20": op20, "op21": op21})
 

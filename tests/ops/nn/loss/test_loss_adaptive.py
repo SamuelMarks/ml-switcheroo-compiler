@@ -7,14 +7,14 @@ import typing
 import numpy as np
 import pytest
 
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.loss import AdaptiveLogSoftmaxWithLoss, adaptive_log_softmax_with_loss, binary_crossentropy, categorical_crossentropy, sparse_categorical_crossentropy
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_loss_extras() -> None:
@@ -43,7 +43,7 @@ def test_loss_extras() -> None:
 
             shape = (1, 2)
 
-        assert typing.cast("EagerCallableProtocol", AdaptiveLogSoftmaxWithLoss)().infer_shape(None, typing.cast("EagerCallableProtocol", DummyShape)()) == ((1, 2), ())
+        assert as_callable(AdaptiveLogSoftmaxWithLoss)().infer_shape(None, as_callable(DummyShape)()) == ((1, 2), ())
 
         class MockData:
             """Test class MockData."""
@@ -58,7 +58,7 @@ def test_loss_extras() -> None:
             dtype = DType("float32")
             device = Device("cpu")
 
-        typing.cast("EagerCallableProtocol", adaptive_log_softmax_with_loss)(typing.cast("EagerCallableProtocol", MockTensor)(), typing.cast("EagerCallableProtocol", MockTensor)(), [1])
+        as_callable(adaptive_log_softmax_with_loss)(as_callable(MockTensor)(), as_callable(MockTensor)(), [1])
 
         class LogPoissonLoss:
             """Test class LogPoissonLoss."""
@@ -171,16 +171,16 @@ def test_loss_extra_functions_2() -> None:
 
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
             mock_backend.return_value.execute_op.return_value = (np.array([1.0]), np.array([0.5]))
-            typing.cast("EagerCallableProtocol", loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+            as_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
 
         # Test adaptive_log_softmax_with_loss tracing exception
         config.eager_mode = False
         state.global_tracing_state.is_tracing = False
         with pytest.raises(RuntimeError, match="Must be tracing"):
-            typing.cast("EagerCallableProtocol", loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+            as_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
 
         state.global_tracing_state.is_tracing = True
-        typing.cast("EagerCallableProtocol", loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
+        as_callable(loss.adaptive_log_softmax_with_loss)(mt, mt, [1])
 
         # Test mathematically complete CTC loss numpy eager solver
         from ml_switcheroo_compiler.backends.numpy.eager.loss_ops import _np_ctc_loss
@@ -193,8 +193,8 @@ def test_loss_extra_functions_2() -> None:
         label_len = np.array([2], dtype=np.int32)
         logit_len = np.array([2], dtype=np.int32)
 
-        loss_val = _np_ctc_loss(typing.cast("BackendModuleProtocol", None), labels_test, logits_test, label_len, logit_len, logits_time_major=True)
-        assert typing.cast("EagerCallableProtocol", len)(loss_val) == 1
+        loss_val = _np_ctc_loss(as_mod(None), labels_test, logits_test, label_len, logit_len, logits_time_major=True)
+        assert as_callable(len)(loss_val) == 1
         assert getattr(loss_val, "__getitem__")(0) > 0.0
 
         # Test CTC decode shape and log-probabilities
@@ -246,8 +246,8 @@ def test_loss_eager_adaptive() -> None:
             from ml_switcheroo_compiler.core.dtype import DType
 
             real_t = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
-            out, loss_val = typing.cast("EagerCallableProtocol", loss.adaptive_log_softmax_with_loss)(real_t, real_t, [1])
-            assert typing.cast("EagerTensorProtocol", getattr(out, "data")) == "out"
-            assert typing.cast("EagerTensorProtocol", getattr(loss_val, "data")) == "loss"
+            out, loss_val = as_callable(loss.adaptive_log_softmax_with_loss)(real_t, real_t, [1])
+            assert as_tensor(getattr(out, "data")) == "out"
+            assert as_tensor(getattr(loss_val, "data")) == "loss"
     finally:
         config.eager_mode = orig

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import AttributeValue, NodeDict
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.dce import _find_side_effect_nodes, dce_pass
+from tests.testing_utils import as_attrs, as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_dce_basic() -> None:
@@ -91,7 +92,7 @@ def test_dce_pass_no_outputs_attribute() -> None:
             self.nodes: dict[str, LogicalNode] = {}
 
     mock_graph = MockGraphWithoutOutputs()
-    res = typing.cast("EagerCallableProtocol", dce_pass)(mock_graph)
+    res = as_callable(dce_pass)(mock_graph)
     assert bool(res) is False
 
 
@@ -104,7 +105,7 @@ def test_dce_nested_subgraphs() -> None:
     sub_unused = LogicalNode(id="unused_in_sub", op_type="Constant", attributes={"value": 2.0})
     subgraph.nodes = NodeDict({"used_in_sub": sub_used, "unused_in_sub": sub_unused})
     parent = LogicalGraph(name="parent", outputs=["cond_node"])
-    cond_node = LogicalNode(id="cond_node", op_type="Cond", attributes=typing.cast("dict[str, AttributeValue]", {"subgraph": subgraph}))
+    cond_node = LogicalNode(id="cond_node", op_type="Cond", attributes=as_attrs({"subgraph": subgraph}))
     parent.nodes = NodeDict({"cond_node": cond_node})
     res = dce_pass(parent)
     assert res is True
@@ -163,14 +164,14 @@ def test_dce_subgraphs_with_side_effects() -> None:
     # 2. Side effect inside node.attributes["body"]
     sub_se2 = IRGraph(name="sub2", outputs=["s2"])
     sub_se2.nodes["s2"] = IRNode(id="s2", op_type="Seed", inputs=[])
-    node_with_attrs = IRNode(id="n_attr", op_type="CustomOp", attributes=typing.cast("dict[str, AttributeValue]", {"body": sub_se2}))
+    node_with_attrs = IRNode(id="n_attr", op_type="CustomOp", attributes=as_attrs({"body": sub_se2}))
     g2 = IRGraph(name="g2", nodes={"n_attr": node_with_attrs}, outputs=[])
     assert _find_side_effect_nodes(g2) == {"n_attr"}
 
     # 3. Subgraph without side effects inside attributes
     sub_clean = IRGraph(name="sub_clean", outputs=["c1"])
     sub_clean.nodes["c1"] = IRNode(id="c1", op_type="Constant", inputs=[])
-    node_clean = IRNode(id="n_clean", op_type="CustomOp", attributes=typing.cast("dict[str, AttributeValue]", {"body": sub_clean}))
+    node_clean = IRNode(id="n_clean", op_type="CustomOp", attributes=as_attrs({"body": sub_clean}))
     g3 = IRGraph(name="g3", nodes={"n_clean": node_clean}, outputs=[])
     assert _find_side_effect_nodes(g3) == set()
 
@@ -188,7 +189,7 @@ def test_dce_prune_unmodified_subgraphs() -> None:
         op_type="If",
         inputs=[],
         subgraphs={"sub1": sub1},
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": sub2}),
+        attributes=as_attrs({"body": sub2}),
     )
 
     # Neither sub1 nor sub2 has dead code, parent node is the output

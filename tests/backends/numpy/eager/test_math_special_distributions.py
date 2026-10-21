@@ -13,9 +13,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_rem,
     _np_tensorarraywrite,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_np_rawmatmul() -> None:
@@ -23,15 +24,15 @@ def test_np_rawmatmul() -> None:
     a = np.ones((2, 2))
     b = np.ones((2, 2))
     res = _np_rawmatmul(np, a, b)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, typing.cast("EagerCallableProtocol", np.matmul)(a, b))
+    assert as_callable(np.array_equal)(res, as_callable(np.matmul)(a, b))
 
 
 def test_np_rawmerge() -> None:
     """Test function test_np_rawmerge."""
     a = np.ones((2, 2))
-    res, status = typing.cast("EagerCallableProtocol", _np_rawmerge)(np, [a, a])
+    res, status = as_callable(_np_rawmerge)(np, [a, a])
     assert res is not None
-    res_empty, status_empty = typing.cast("EagerCallableProtocol", _np_rawmerge)(np, [])
+    res_empty, status_empty = as_callable(_np_rawmerge)(np, [])
     assert res_empty is None
 
 
@@ -48,7 +49,7 @@ def test_np_rem() -> None:
     a = np.array([5])
     b = np.array([3])
     res = _np_rem(np, a, b)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 2
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 2
 
 
 def test_np_confusion_matrix_fallback() -> None:
@@ -56,24 +57,24 @@ def test_np_confusion_matrix_fallback() -> None:
     a = np.array([0, 1])
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("confusion_matrix")
-    res = typing.cast("EagerCallableProtocol", fn)(np, a, b)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    res = as_callable(fn)(np, a, b)
+    assert as_tensor(getattr(res, "shape")) == (2, 2)
 
 
 def test_np_descriptive() -> None:
     """Test function test_np_descriptive."""
     a = np.array([1.0, 2.0, 3.0])
     fn = numpy_eager_registry.get("descriptive")
-    res = typing.cast("EagerCallableProtocol", fn)(np, a)
-    assert typing.cast("EagerCallableProtocol", len)(res) == 3
+    res = as_callable(fn)(np, a)
+    assert as_callable(len)(res) == 3
 
 
 def test_np_distributions() -> None:
     """Test function test_np_distributions."""
     a = np.array([1.0, 2.0, 3.0])
     fn = numpy_eager_registry.get("distributions")
-    res = typing.cast("EagerCallableProtocol", fn)(np, a)
-    assert typing.cast("EagerCallableProtocol", len)(res) == 2
+    res = as_callable(fn)(np, a)
+    assert as_callable(len)(res) == 2
 
 
 def test_np_confusion_matrix_camel() -> None:
@@ -81,16 +82,16 @@ def test_np_confusion_matrix_camel() -> None:
     a = np.array([0, 1])
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("ConfusionMatrix")
-    res = typing.cast("EagerCallableProtocol", fn)(np, a, b, num_classes=3)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 3)
+    res = as_callable(fn)(np, a, b, num_classes=3)
+    assert as_tensor(getattr(res, "shape")) == (3, 3)
 
 
 def test_np_decode_csv_empty() -> None:
     """Test function test_np_decode_csv_empty."""
     fn = numpy_eager_registry.get("DecodeCsv")
-    res = typing.cast("EagerCallableProtocol", fn)(np, "", record_defaults=[1.0, 2.0])
-    assert typing.cast("EagerCallableProtocol", len)(res) == 2
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 1.0
+    res = as_callable(fn)(np, "", record_defaults=[1.0, 2.0])
+    assert as_callable(len)(res) == 2
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 1.0
 
 
 def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
@@ -114,7 +115,7 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
             """
             obj = super().__new__(cls)
             setattr(obj, "hit", True)
-            return typing.cast("FakeOp", typing.cast("EagerTensorProtocol", obj))
+            return typing.cast("FakeOp", as_tensor(obj))
 
     # Mocking standard snippet ops to hit the cls_or_func() path
     monkeypatch.setattr(ops, "RawMatMul", FakeOp, raising=False)
@@ -124,28 +125,28 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
     monkeypatch.setattr(ops, "descriptive", FakeOp, raising=False)
     monkeypatch.setattr(ops, "distributions", FakeOp, raising=False)
 
-    res1 = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("RawMatMul")(np, typing.cast("EagerCallableProtocol", np.ones)((2, 2)), typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
-    if isinstance(typing.cast("EagerValue", res1), FakeOp):
+    res1 = as_callable(numpy_eager_registry.get)("RawMatMul")(np, as_callable(np.ones)((2, 2)), as_callable(np.ones)((2, 2)))
+    if isinstance(as_tensor(res1), FakeOp):
         assert res1.hit
 
-    res2 = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("SparseDenseMatMul")(np, typing.cast("EagerCallableProtocol", np.ones)((2, 2)), typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
-    if isinstance(typing.cast("EagerValue", res2), FakeOp):
+    res2 = as_callable(numpy_eager_registry.get)("SparseDenseMatMul")(np, as_callable(np.ones)((2, 2)), as_callable(np.ones)((2, 2)))
+    if isinstance(as_tensor(res2), FakeOp):
         assert res2.hit
 
-    res3 = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("rem")(np, typing.cast("EagerCallableProtocol", np.ones)((2, 2)), typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
-    if isinstance(typing.cast("EagerValue", res3), FakeOp):
+    res3 = as_callable(numpy_eager_registry.get)("rem")(np, as_callable(np.ones)((2, 2)), as_callable(np.ones)((2, 2)))
+    if isinstance(as_tensor(res3), FakeOp):
         assert res3.hit
 
-    res4 = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("confusion_matrix")(np, typing.cast("EagerCallableProtocol", np.array)([1], dtype=np.int32), typing.cast("EagerCallableProtocol", np.array)([1], dtype=np.int32))
-    if isinstance(typing.cast("EagerValue", res4), FakeOp):
+    res4 = as_callable(numpy_eager_registry.get)("confusion_matrix")(np, as_callable(np.array)([1], dtype=np.int32), as_callable(np.array)([1], dtype=np.int32))
+    if isinstance(as_tensor(res4), FakeOp):
         assert res4.hit
 
-    res5 = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("descriptive")(np, typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
-    if isinstance(typing.cast("EagerValue", res5), FakeOp):
+    res5 = as_callable(numpy_eager_registry.get)("descriptive")(np, as_callable(np.ones)((2, 2)))
+    if isinstance(as_tensor(res5), FakeOp):
         assert res5.hit
 
-    res6 = typing.cast("EagerCallableProtocol", numpy_eager_registry.get)("distributions")(np, typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
-    if isinstance(typing.cast("EagerValue", res6), FakeOp):
+    res6 = as_callable(numpy_eager_registry.get)("distributions")(np, as_callable(np.ones)((2, 2)))
+    if isinstance(as_tensor(res6), FakeOp):
         assert res6.hit
 
 

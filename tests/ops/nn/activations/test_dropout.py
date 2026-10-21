@@ -12,9 +12,10 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.dropout as do
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
 
@@ -24,19 +25,19 @@ def test_dropout_coverage() -> None:
     config.eager_mode = True
     t = Tensor(np.ones((2, 2)), TensorConfig(shape=(2, 2), dtype=DType("float32"), device=Device("cpu")))
 
-    assert typing.cast("EagerCallableProtocol", do.Dropout)().infer_shape(t) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", do.AlphaDropout)().infer_shape(t) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", do.ActivityRegularization)().infer_shape(t) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", do.ActivityRegularization)().infer_shape([t]) == [t]
+    assert as_callable(do.Dropout)().infer_shape(t) == (2, 2)
+    assert as_callable(do.AlphaDropout)().infer_shape(t) == (2, 2)
+    assert as_callable(do.ActivityRegularization)().infer_shape(t) == (2, 2)
+    assert as_callable(do.ActivityRegularization)().infer_shape([t]) == [t]
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = (2, 2)
 
-    assert typing.cast("EagerCallableProtocol", do.Dropout1d)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", do.Dropout2d)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", do.Dropout3d)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)()) == (2, 2)
+    assert as_callable(do.Dropout1d)().infer_shape(as_callable(DummyShape)()) == (2, 2)
+    assert as_callable(do.Dropout2d)().infer_shape(as_callable(DummyShape)()) == (2, 2)
+    assert as_callable(do.Dropout3d)().infer_shape(as_callable(DummyShape)()) == (2, 2)
 
     with patch("ml_switcheroo_compiler.ops.nn.dropout.get_op") as mock_get_op:
         config.eager_mode = False

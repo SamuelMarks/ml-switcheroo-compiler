@@ -9,9 +9,10 @@ from pathlib import Path
 import numpy as np
 
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class _DummyGenerator:
@@ -190,6 +191,6 @@ def test_pickle_format(tmp_path: Path) -> None:
     fmt = PickleWeightFormat()
     filepath = str(tmp_path / "model.pkl")
     data = {"w": [1.0, 2.0, 3.0], "b": 0.5}
-    typing.cast("EagerCallableProtocol", fmt.save)(data, filepath)
+    as_callable(fmt.save)(data, filepath)
     loaded = fmt.load(filepath)
     assert loaded == data

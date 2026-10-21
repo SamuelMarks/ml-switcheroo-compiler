@@ -163,11 +163,11 @@ def _normalize_backend_variant_rule(
         if op_name in CPP_SCALAR_EXPR:
             rule_dict["scalar_expr"] = CPP_SCALAR_EXPR[op_name]
             rule_dict["supported"] = True
-            return typing.cast("dict[str, str | int | float | bool | None]", rule_dict)
+            return rule_dict
         return {"supported": False}
 
     rule_dict.setdefault("supported", True)
-    return typing.cast("dict[str, str | int | float | bool | None]", rule_dict)
+    return rule_dict
 
 
 def _normalize_and_validate_op(

@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
+    as_callable,
+    as_tensor,
     global_eager_registry,
     numpy_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
 def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -31,10 +31,10 @@ def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModul
     special_mod = getattr(backend_module, "special", backend_module)
     func = getattr(special_mod, attr_name, getattr(backend_module, attr_name, None))
     if callable(func):
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
-    np_handler = typing.cast("TypedVariadicCallable[EagerValue]", numpy_eager_registry.get(op_name))
+    np_handler = as_callable(numpy_eager_registry.get(op_name))
     return np_handler(_resolve_eager_mod(backend_module), *args, **kwargs)
 
 
@@ -51,7 +51,7 @@ def _erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
             EagerValue: Result.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
+    x = as_tensor(args[0])
     if hasattr(mod, "erf"):
         return mod.erf(x)
     p = 0.3275911
@@ -81,10 +81,10 @@ def _erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
             EagerValue: Result.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
+    x = as_tensor(args[0])
     if hasattr(mod, "erfc"):
         return mod.erfc(x)
-    return 1.0 - typing.cast(EagerTensorProtocol, _erf(backend_module, x))
+    return 1.0 - as_tensor(_erf(backend_module, x))
 
 
 @global_eager_registry.register("Erfinv")
@@ -100,7 +100,7 @@ def _erfinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
             EagerValue: Result.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
+    x = as_tensor(args[0])
     if hasattr(mod, "erfinv"):
         return mod.erfinv(x)
     a = 0.147

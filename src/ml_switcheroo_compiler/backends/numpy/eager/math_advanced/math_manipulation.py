@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence  # noqa: F401
 
 import numpy as np  # noqa: F401
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -23,7 +22,7 @@ def _np_append(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.append(*args, **kwargs))
+    return backend_module.append(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ArgWhere")
@@ -37,7 +36,7 @@ def _np_argwhere(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.argwhere(*args, **kwargs))
+    return backend_module.argwhere(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Choose")
@@ -51,7 +50,7 @@ def _np_choose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.choose(*args, **kwargs))
+    return backend_module.choose(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ColumnStack")
@@ -65,7 +64,7 @@ def _np_column_stack(backend_module: BackendModuleProtocol, *args: EagerValue, *
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.column_stack(*args, **kwargs))
+    return backend_module.column_stack(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Compress")
@@ -79,7 +78,7 @@ def _np_compress(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.compress(*args, **kwargs))
+    return backend_module.compress(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Delete")
@@ -93,7 +92,7 @@ def _np_delete_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.delete(*args, **kwargs))
+    return backend_module.delete(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Extract")
@@ -107,7 +106,7 @@ def _np_extract_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.extract(*args, **kwargs))
+    return backend_module.extract(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Flatnonzero")
@@ -121,7 +120,7 @@ def _np_flatnonzero_(backend_module: BackendModuleProtocol, *args: EagerValue, *
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.flatnonzero(*args, **kwargs))
+    return backend_module.flatnonzero(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Flip")
@@ -135,7 +134,7 @@ def _np_flip_op_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.flip(*args, **kwargs))
+    return backend_module.flip(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Fliplr")
@@ -149,7 +148,7 @@ def _np_fliplr_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.fliplr(*args, **kwargs))
+    return backend_module.fliplr(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Flipud")
@@ -163,7 +162,7 @@ def _np_flipud_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.flipud(*args, **kwargs))
+    return backend_module.flipud(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Reverse")
@@ -177,7 +176,7 @@ def _np_flip_reverse_(backend_module: BackendModuleProtocol, *args: EagerValue, 
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.flip(*args, **kwargs))
+    return backend_module.flip(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Insert")
@@ -191,7 +190,7 @@ def _np_insert_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.insert(*args, **kwargs))
+    return backend_module.insert(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Nonzero")
@@ -205,7 +204,7 @@ def _np_nonzero_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.nonzero(*args, **kwargs))
+    return backend_module.nonzero(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Resize")
@@ -219,7 +218,7 @@ def _np_resize_(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, backend_module.resize(*args, **kwargs))
+    return backend_module.resize(*args, **kwargs)
 
 
 @numpy_eager_registry.register("ExtractPatchesOptions")
@@ -236,7 +235,7 @@ def _np_extractpatchesoptions(backend_module: BackendModuleProtocol, *args: Eage
     """
     from ml_switcheroo_compiler.ops.vision.bbox import ExtractPatchesOptions
 
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", ExtractPatchesOptions)(*args, **kwargs))
+    return ExtractPatchesOptions(*args, **kwargs)
 
 
 @numpy_eager_registry.register("TensorArrayStack")
@@ -252,4 +251,4 @@ def _np_tensorarraystack(backend_module: BackendModuleProtocol, *args: EagerValu
             tuple[int, ...]: Result.
     """
     handle = args[0]
-    return typing.cast(EagerValue, backend_module.stack(handle))
+    return backend_module.stack(handle)

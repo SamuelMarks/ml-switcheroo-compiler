@@ -23,9 +23,10 @@ from ml_switcheroo_compiler.ops.creation.frontend_basic import (
     zeros_like,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _side_effect_type_error(obj: EagerValue, dtype: EagerValue = None) -> list[EagerValue]:
@@ -80,7 +81,7 @@ def test_frontend_basic_dtype_object_and_unknown() -> None:
 
         dtype = "int32"
 
-    assert typing.cast("EagerCallableProtocol", _infer_dtype)(typing.cast("EagerCallableProtocol", DummyObj)()) == DType.Int32
+    assert as_callable(_infer_dtype)(as_callable(DummyObj)()) == DType.Int32
 
 
 def test_frontend_basic_get_dtype_val() -> None:

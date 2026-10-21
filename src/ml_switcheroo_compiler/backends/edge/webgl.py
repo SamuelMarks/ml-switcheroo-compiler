@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import typing
 
 import yaml
 
@@ -388,7 +387,7 @@ class WebGLCodeGenerator(BaseGenerator):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
-                return typing.cast(EagerValue, res_dict)
+                return res_dict
             if len(graph.outputs) == 1:
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)

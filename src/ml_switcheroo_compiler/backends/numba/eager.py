@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
-import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.numba import kernels
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -21,7 +20,7 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
         EagerValue: Unwrapped buffer or original value.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return typing.cast(EagerValue, getattr(arg, "data"))
+        return as_tensor(getattr(arg, "data"))
     return arg
 
 
@@ -48,16 +47,16 @@ def _eval_numba_control_flow(
 
     if op_type in ("WhileLoop", "while_loop") and len(actual_args) >= 1:
         curr = actual_args[0]
-        max_iters = int(typing.cast(int, kwargs.get("max_iters", 10)))
+        max_iters = int(as_int(kwargs.get("max_iters", 10)))
         for _ in range(max_iters):
-            curr = typing.cast(EagerTensorProtocol, curr) + 1
+            curr = as_tensor(curr) + 1
         return True, curr
 
     if op_type in ("Scan", "scan") and len(actual_args) >= 2:
         carry, xs = actual_args[0], actual_args[1]
         res = []
         for x in getattr(kernels.asarray(xs), "tolist")():
-            carry = typing.cast(EagerTensorProtocol, carry) + x
+            carry = as_tensor(carry) + x
             res.append(carry)
         return True, kernels.asarray(res)
 
@@ -143,7 +142,7 @@ def execute_op(
     if hasattr(kernels, fn_name):
         fn = getattr(kernels, fn_name)
         if callable(fn):
-            return typing.cast(EagerValue, fn(*actual_args, **kwargs))
+            return as_tensor(fn(*actual_args, **kwargs))
 
     msg = f"Operation '{op_type}' is not implemented for Numba backend."
     raise BackendNotSupportedError(msg)

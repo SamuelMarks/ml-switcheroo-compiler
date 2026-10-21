@@ -11,9 +11,10 @@ from ml_switcheroo_compiler.backends.cst_transpiler import (
     type_infer_dry_run,
     validate_diff,
 )
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_build_attribute_chain() -> None:
@@ -85,8 +86,8 @@ def test_transpile_source_import() -> None:
 
     transformer = CSTTransformer("jax")
     dummy_names = [cst.ImportAlias(name=cst.Name("foo"))]
-    node = typing.cast("EagerCallableProtocol", cst.ImportFrom)(module=typing.cast("EagerCallableProtocol", cst.Integer)("1"), names=dummy_names)
-    assert id(typing.cast("EagerCallableProtocol", transformer.leave_ImportFrom)(node, node)) == id(node)
+    node = as_callable(cst.ImportFrom)(module=as_callable(cst.Integer)("1"), names=dummy_names)
+    assert id(as_callable(transformer.leave_ImportFrom)(node, node)) == id(node)
 
     # Test _get_base_name fallback (Line 79)
     # create a mock Attribute with a non-Name/non-Attribute value
@@ -333,11 +334,11 @@ def test_cst_transpiler_missing_branches() -> None:
     class FakeConfig:
         """Test class FakeConfig."""
 
-        kwarg_map = typing.cast("dict[str, EagerTensorProtocol]", {})
+        kwarg_map = as_tensor_dict({})
         module_path = ["fake"]
         broadcast_method = "broadcast_fake"
-        method_map = typing.cast("dict[str, EagerTensorProtocol]", {})
-        class_bases = typing.cast("EagerTensorProtocol", {"fake_base": []})
+        method_map = as_tensor_dict({})
+        class_bases = as_tensor({"fake_base": []})
 
     visitor = CSTTransformer("pytorch")
     setattr(visitor, "target_config", FakeConfig())

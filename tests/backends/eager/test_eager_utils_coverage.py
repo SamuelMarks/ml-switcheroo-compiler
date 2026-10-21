@@ -7,8 +7,8 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.utils as utils_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
@@ -138,7 +138,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
+        return as_ndarray(as_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -153,7 +153,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return as_ndarray(as_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -183,7 +183,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -203,7 +203,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -275,16 +275,16 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def __getattr__(self, name: str) -> EagerCallableProtocol:
         """Delegate to numpy module.
 
         Args:
             name (str): Attribute name.
 
         Returns:
-            TypedVariadicCallable[np.ndarray]: Resolved callable attribute.
+            EagerCallableProtocol: Resolved callable attribute.
         """
-        return typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
+        return as_callable(getattr(np, name))
 
     def pad(
         self,
@@ -501,21 +501,21 @@ def test_utils_to_numpy_array() -> None:
 
     # 1. Hasattr numpy
     obj_numpy = MockHasNumpyOnly(arr)
-    res1 = typing.cast("EagerCallableProtocol", utils_mod._to_numpy_array)(np, obj_numpy, "other")
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res1, arr)
+    res1 = as_callable(utils_mod._to_numpy_array)(np, obj_numpy, "other")
+    as_callable(np.testing.assert_array_equal)(res1, arr)
 
     # 2. name == "torch" and hasattr detach
     obj_torch = MockTorchDetachOnly(arr)
-    res2 = typing.cast("EagerCallableProtocol", utils_mod._to_numpy_array)(np, obj_torch, "torch")
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, arr)
+    res2 = as_callable(utils_mod._to_numpy_array)(np, obj_torch, "torch")
+    as_callable(np.testing.assert_array_equal)(res2, arr)
 
     # 3. name == "torch" but not hasattr detach
     res3 = utils_mod._to_numpy_array(np, [4.0, 5.0], "torch")
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res3, typing.cast("EagerCallableProtocol", np.array)([4.0, 5.0]))
+    as_callable(np.testing.assert_array_equal)(res3, as_callable(np.array)([4.0, 5.0]))
 
     # 4. Standard fallback to np_mod.asarray
     res4 = utils_mod._to_numpy_array(np, [7.0, 8.0], "numpy")
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res4, typing.cast("EagerCallableProtocol", np.array)([7.0, 8.0]))
+    as_callable(np.testing.assert_array_equal)(res4, as_callable(np.array)([7.0, 8.0]))
 
 
 def test_utils_from_numpy_array() -> None:
@@ -525,22 +525,22 @@ def test_utils_from_numpy_array() -> None:
     backend = MockBackendModule()
 
     # 1. name == "torch"
-    assert typing.cast("EagerValue", id(typing.cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "torch", orig))) == id(arr)
+    assert as_tensor(id(as_callable(utils_mod._from_numpy_array)(backend, arr, "torch", orig))) == id(arr)
 
     # 2. name == "mlx.core"
-    assert typing.cast("EagerValue", id(typing.cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "mlx.core", orig))) == id(arr)
+    assert as_tensor(id(as_callable(utils_mod._from_numpy_array)(backend, arr, "mlx.core", orig))) == id(arr)
 
     # 3. name == "jax.numpy"
-    assert typing.cast("EagerValue", id(typing.cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "jax.numpy", orig))) == id(arr)
+    assert as_tensor(id(as_callable(utils_mod._from_numpy_array)(backend, arr, "jax.numpy", orig))) == id(arr)
 
     # 4. original_tensor is not None
-    res_with_orig = typing.cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "other", orig)
-    assert isinstance(typing.cast("EagerValue", res_with_orig), np.ndarray)
-    assert typing.cast("EagerValue", res_with_orig.dtype) == np.float32
+    res_with_orig = as_callable(utils_mod._from_numpy_array)(backend, arr, "other", orig)
+    assert isinstance(as_tensor(res_with_orig), np.ndarray)
+    assert as_tensor(res_with_orig.dtype) == np.float32
 
     # 5. original_tensor is None
-    res_no_orig = typing.cast("EagerCallableProtocol", utils_mod._from_numpy_array)(backend, arr, "other", None)
-    assert isinstance(typing.cast("EagerValue", res_no_orig), np.ndarray)
+    res_no_orig = as_callable(utils_mod._from_numpy_array)(backend, arr, "other", None)
+    assert isinstance(as_tensor(res_no_orig), np.ndarray)
     assert res_no_orig.dtype == np.int64
 
     # 6. backend_module without 'array' attribute

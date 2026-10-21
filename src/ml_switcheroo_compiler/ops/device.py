@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
+from ml_switcheroo_compiler.backends.registry import as_int
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
@@ -47,7 +46,7 @@ def get_peak_memory() -> int:
 
     backend = get_active_backend()
     if hasattr(backend, "get_peak_memory"):
-        return typing.cast(int, backend.get_peak_memory())
+        return as_int(backend.get_peak_memory())
     return 0
 
 

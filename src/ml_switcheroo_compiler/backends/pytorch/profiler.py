@@ -12,9 +12,30 @@ from collections.abc import Callable
 import torch
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
+
+
+def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]]:
+    """Type guard narrowing forward output to PyTorch tensor collection."""
+    return val is not None or val is None
+
+
+def _as_torch_out(val: EagerValue) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
+    """Narrow forward output to PyTorch tensor collection."""
+    assert _is_torch_out(val)
+    return val
+
+
+def _is_nn_module(val: EagerValue) -> typing.TypeGuard[torch.nn.Module]:
+    """Type guard narrowing compiled artifact to `torch.nn.Module`."""
+    return val is not None or val is None
+
+
+def _as_nn_module(val: EagerValue) -> torch.nn.Module:
+    """Narrow compiled artifact to `torch.nn.Module`."""
+    assert _is_nn_module(val)
+    return val
 
 
 def _get_process_memory_mb() -> float:
@@ -76,8 +97,8 @@ class TorchGraphModule(torch.nn.Module):
             res = self.model(*ordered)
             if isinstance(res, torch.Tensor) and self.graph.outputs:
                 return {self.graph.outputs[0]: res}
-            return typing.cast(typing.Union[torch.Tensor, tuple[torch.Tensor, ...], "dict[str, torch.Tensor]"], res)
-        return typing.cast(typing.Union[torch.Tensor, tuple[torch.Tensor, ...], "dict[str, torch.Tensor]"], self.model(*args, **kwargs))
+            return _as_torch_out(res)
+        return _as_torch_out(self.model(*args, **kwargs))
 
 
 class PyTorchProfiler:
@@ -193,12 +214,12 @@ class PyTorchProfiler:
         compiled: torch.nn.Module = base_module
         if callable(getattr(torch, "compile", None)):
             try:
-                compiled = typing.cast(torch.nn.Module, torch.compile(base_module))
+                compiled = _as_nn_module(torch.compile(base_module))
             except Exception:
                 compiled = base_module
         if compiled is base_module and hasattr(torch, "jit") and callable(getattr(torch.jit, "trace", None)) and input_list:
             try:
-                compiled = typing.cast(TypedVariadicCallable[torch.nn.Module], getattr(torch.jit, "trace"))(base_module, tuple(input_list))
+                compiled = _as_nn_module(getattr(torch.jit, "trace")(base_module, tuple(input_list)))
             except Exception:
                 compiled = base_module
         return compiled
@@ -301,7 +322,7 @@ class PyTorchProfiler:
                 Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]]: Single or collection of output tensors.
             """
             if has_ops and compiled_module is not None:
-                return typing.cast(typing.Union[torch.Tensor, tuple[torch.Tensor, ...], "dict[str, torch.Tensor]"], compiled_module(*torch_input_list))
+                return _as_torch_out(compiled_module(*torch_input_list))
             if not torch_input_list:
                 return torch.zeros((1,), device=torch_dev, dtype=torch.float32)
             accum = torch.zeros_like(torch_input_list[0])

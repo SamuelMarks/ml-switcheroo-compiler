@@ -16,16 +16,17 @@ from ml_switcheroo_compiler.backends.dask.eager import (
     execute_op,
     propagate_chunk_shapes,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 pytest.importorskip("dask")
 
 
 def test_dask_chunk_propagation() -> None:
     """Test chunk-aware shape propagation across multidimensional distributed arrays."""
-    arr = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "zeros")))((10, 20, 30), chunks=(5, 10, 15))
+    arr = as_callable(as_tensor(getattr(da, "zeros")))((10, 20, 30), chunks=(5, 10, 15))
     chunks = propagate_chunk_shapes(arr)
     assert chunks == ((5, 5), (10, 10), (15, 15))
 
@@ -39,111 +40,111 @@ def test_dask_chunk_propagation() -> None:
 
 def test_dask_lazy_reductions_parity() -> None:
     """Test reduction operations creating lazy Dask task graphs without eager compute."""
-    arr = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((4, 4), chunks=(2, 2))
+    arr = as_callable(as_tensor(getattr(da, "ones")))((4, 4), chunks=(2, 2))
 
     # ArgMax
-    res_argmax = typing.cast("EagerCallableProtocol", execute_op)(None, "ArgMax", arr, dim=0)
+    res_argmax = as_callable(execute_op)(None, "ArgMax", arr, dim=0)
     assert hasattr(res_argmax, "dask")
     _verify_dask_task_graph(res_argmax)
 
     # ArgMin
-    res_argmin = typing.cast("EagerCallableProtocol", execute_op)(None, "ArgMin", arr, dim=1)
+    res_argmin = as_callable(execute_op)(None, "ArgMin", arr, dim=1)
     assert hasattr(res_argmin, "dask")
     _verify_dask_task_graph(res_argmin)
 
     # ReduceL2
-    res_l2 = typing.cast("EagerCallableProtocol", execute_op)(None, "ReduceL2", arr, axis=0)
+    res_l2 = as_callable(execute_op)(None, "ReduceL2", arr, axis=0)
     assert hasattr(res_l2, "dask")
     _verify_dask_task_graph(res_l2)
 
     # CumSum
-    res_cumsum = typing.cast("EagerCallableProtocol", execute_op)(None, "CumSum", arr, dim=0)
+    res_cumsum = as_callable(execute_op)(None, "CumSum", arr, dim=0)
     assert hasattr(res_cumsum, "dask")
     _verify_dask_task_graph(res_cumsum)
 
     # CumProd
-    res_cumprod = typing.cast("EagerCallableProtocol", execute_op)(None, "CumProd", arr, dim=1)
+    res_cumprod = as_callable(execute_op)(None, "CumProd", arr, dim=1)
     assert hasattr(res_cumprod, "dask")
     _verify_dask_task_graph(res_cumprod)
 
 
 def test_dask_linalg_parity() -> None:
     """Test linear algebra operations on Dask constructing lazy task graphs."""
-    mat_a = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "eye")))(4, chunks=4)
-    mat_b = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((4, 2), chunks=(2, 2))
+    mat_a = as_callable(as_tensor(getattr(da, "eye")))(4, chunks=4)
+    mat_b = as_callable(as_tensor(getattr(da, "ones")))((4, 2), chunks=(2, 2))
 
     # Cholesky
-    res_chol = typing.cast("EagerCallableProtocol", execute_op)(None, "Cholesky", mat_a)
+    res_chol = as_callable(execute_op)(None, "Cholesky", mat_a)
     assert hasattr(res_chol, "dask")
 
     # QR
-    q, r = typing.cast("EagerCallableProtocol", execute_op)(None, "QR", mat_a)
+    q, r = as_callable(execute_op)(None, "QR", mat_a)
     assert hasattr(q, "dask")
     assert hasattr(r, "dask")
 
     # SVD
-    u, s, vh = typing.cast("EagerCallableProtocol", execute_op)(None, "SVD", mat_a)
+    u, s, vh = as_callable(execute_op)(None, "SVD", mat_a)
     assert hasattr(u, "dask")
     assert hasattr(s, "dask")
     assert hasattr(vh, "dask")
 
     # Solve
-    res_solve = typing.cast("EagerCallableProtocol", execute_op)(None, "Solve", mat_a, mat_b)
+    res_solve = as_callable(execute_op)(None, "Solve", mat_a, mat_b)
     assert hasattr(res_solve, "dask")
 
 
 def test_dask_vision_nn_parity() -> None:
     """Test vision and neural network ops on Dask executing as lazy task graphs."""
-    x = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((2, 3, 8, 8), chunks=(1, 3, 4, 4))
-    w = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((4, 3, 3, 3), chunks=(4, 3, 3, 3))
+    x = as_callable(as_tensor(getattr(da, "ones")))((2, 3, 8, 8), chunks=(1, 3, 4, 4))
+    w = as_callable(as_tensor(getattr(da, "ones")))((4, 3, 3, 3), chunks=(4, 3, 3, 3))
 
     # Conv2D
-    res_conv = typing.cast("EagerCallableProtocol", execute_op)(None, "Conv2D", x, w, stride=1, padding="SAME")
+    res_conv = as_callable(execute_op)(None, "Conv2D", x, w, stride=1, padding="SAME")
     assert hasattr(res_conv, "dask")
     _verify_dask_task_graph(res_conv)
 
     # MaxPool2D
-    res_mp = typing.cast("EagerCallableProtocol", execute_op)(None, "MaxPool2D", x, kernel_size=2, stride=2)
+    res_mp = as_callable(execute_op)(None, "MaxPool2D", x, kernel_size=2, stride=2)
     assert hasattr(res_mp, "dask")
     _verify_dask_task_graph(res_mp)
 
     # AvgPool2D
-    res_ap = typing.cast("EagerCallableProtocol", execute_op)(None, "AvgPool2D", x, kernel_size=2, stride=2)
+    res_ap = as_callable(execute_op)(None, "AvgPool2D", x, kernel_size=2, stride=2)
     assert hasattr(res_ap, "dask")
     _verify_dask_task_graph(res_ap)
 
     # ResizeBilinear
-    res_resize = typing.cast("EagerCallableProtocol", execute_op)(None, "ResizeBilinear", x, size=(16, 16))
+    res_resize = as_callable(execute_op)(None, "ResizeBilinear", x, size=(16, 16))
     assert hasattr(res_resize, "dask")
     _verify_dask_task_graph(res_resize)
 
 
 def test_dask_direct_vision_kernels_and_fallbacks() -> None:
     """Directly test native Dask lazy vision functions."""
-    x = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((2, 3, 8, 8), chunks=(1, 3, 4, 4))
-    w = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((4, 3, 3, 3), chunks=(4, 3, 3, 3))
+    x = as_callable(as_tensor(getattr(da, "ones")))((2, 3, 8, 8), chunks=(1, 3, 4, 4))
+    w = as_callable(as_tensor(getattr(da, "ones")))((4, 3, 3, 3), chunks=(4, 3, 3, 3))
 
     conv = dask_conv2d(x, w, stride=1, padding="SAME")
     assert hasattr(conv, "dask")
 
     # Valid padding and non-4D fallback
-    conv_invalid = typing.cast("EagerCallableProtocol", dask_conv2d)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((4, 4)), typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((2, 2)))
-    assert typing.cast("EagerTensorProtocol", getattr(conv_invalid, "ndim")) == 2
+    conv_invalid = as_callable(dask_conv2d)(as_callable(as_tensor(getattr(da, "ones")))((4, 4)), as_callable(as_tensor(getattr(da, "ones")))((2, 2)))
+    assert as_tensor(getattr(conv_invalid, "ndim")) == 2
 
     # MaxPool2D
     mp = dask_maxpool2d(x, kernel_size=2, stride=2)
     assert hasattr(mp, "dask")
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", dask_maxpool2d)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((2, 2))), "ndim")) == 2
+    assert as_tensor(getattr(as_callable(dask_maxpool2d)(as_callable(as_tensor(getattr(da, "ones")))((2, 2))), "ndim")) == 2
 
     # AvgPool2D
     ap = dask_avgpool2d(x, kernel_size=2, stride=2)
     assert hasattr(ap, "dask")
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", dask_avgpool2d)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "ones")))((2, 2))), "ndim")) == 2
+    assert as_tensor(getattr(as_callable(dask_avgpool2d)(as_callable(as_tensor(getattr(da, "ones")))((2, 2))), "ndim")) == 2
 
     # ResizeBilinear
     rb = dask_resize_bilinear(x, size=(8, 8))
-    assert typing.cast("EagerTensorProtocol", getattr(rb, "shape")) == typing.cast("EagerTensorProtocol", getattr(x, "shape"))
-    assert typing.cast("EagerTensorProtocol", getattr(dask_resize_bilinear(x, size=None), "shape")) == typing.cast("EagerTensorProtocol", getattr(x, "shape"))
+    assert as_tensor(getattr(rb, "shape")) == as_tensor(getattr(x, "shape"))
+    assert as_tensor(getattr(dask_resize_bilinear(x, size=None), "shape")) == as_tensor(getattr(x, "shape"))
 
 
 def test_dask_task_graph_verification_failure() -> None:
@@ -158,4 +159,4 @@ def test_dask_task_graph_verification_failure() -> None:
     fake = FakeDaskArray()
     with patch("dask.array.Array", FakeDaskArray):
         with pytest.raises(RuntimeError, match="Dask array is missing underlying task graph"):
-            typing.cast("EagerCallableProtocol", _verify_dask_task_graph)(fake)
+            as_callable(_verify_dask_task_graph)(fake)

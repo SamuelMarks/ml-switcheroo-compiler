@@ -9,9 +9,10 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_h5_load_save(mocker: EagerTensorProtocol) -> None:
@@ -48,12 +49,12 @@ def test_h5_load_save(mocker: EagerTensorProtocol) -> None:
                 return [3, 4]
 
         weights = {"a": np.array([1, 2]), "b": MockNumpy(), "c": MockData(), "d": MockList()}
-        typing.cast("EagerCallableProtocol", fmt.save)(weights, f.name)
+        as_callable(fmt.save)(weights, f.name)
         loaded = fmt.load(f.name)
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["a"], [1, 2])
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["b"], [1, 2])
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["c"], [1, 2])
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["d"], [3, 4])
+        assert as_callable(np.array_equal)(loaded["a"], [1, 2])
+        assert as_callable(np.array_equal)(loaded["b"], [1, 2])
+        assert as_callable(np.array_equal)(loaded["c"], [1, 2])
+        assert as_callable(np.array_equal)(loaded["d"], [3, 4])
 
 
 def test_h5_load_save_backend(mocker: EagerTensorProtocol) -> None:
@@ -65,6 +66,6 @@ def test_h5_load_save_backend(mocker: EagerTensorProtocol) -> None:
     fmt = H5WeightFormat()
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.load_h5, "return_value", {"a": 1})
-    assert typing.cast("EagerTensorProtocol", fmt.load("test.h5")) == typing.cast("EagerTensorProtocol", {"a": 1})
-    typing.cast("EagerCallableProtocol", fmt.save)({"a": 1}, "test.h5")
+    assert as_tensor(fmt.load("test.h5")) == as_tensor({"a": 1})
+    as_callable(fmt.save)({"a": 1}, "test.h5")
     mock_backend.save_h5.assert_called_with({"a": 1}, "test.h5")

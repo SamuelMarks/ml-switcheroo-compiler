@@ -5,7 +5,6 @@ from __future__ import annotations
 import gzip
 import os
 import struct
-import typing
 import zlib
 from types import TracebackType
 
@@ -23,7 +22,7 @@ def decode_csv(
     na_value: str = "",
     select_cols: TensorOrScalar = None,
     name: TensorOrScalar = None,
-) -> Tensor | list[Tensor]:
+) -> TensorOrScalar:
     """Decode delimited CSV records into a list of column tensors.
 
     Args:
@@ -36,25 +35,22 @@ def decode_csv(
         name (TensorOrScalar): Optional operation name.
 
     Returns:
-        Tensor | list[Tensor]: Decoded column tensor(s).
+        TensorOrScalar: Decoded column tensor(s).
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast(
-            "Tensor | list[Tensor]",
-            get_active_backend().execute_op(
-                "DecodeCsv",
-                records,
-                record_defaults=record_defaults,
-                field_delim=field_delim,
-                use_quote_delim=use_quote_delim,
-                na_value=na_value,
-                select_cols=select_cols,
-                name=name,
-            ),
+        return get_active_backend().execute_op(
+            "DecodeCsv",
+            records,
+            record_defaults=record_defaults,
+            field_delim=field_delim,
+            use_quote_delim=use_quote_delim,
+            na_value=na_value,
+            select_cols=select_cols,
+            name=name,
         )
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -79,7 +75,7 @@ def parse_example(
     features: TensorOrScalar,
     example_names: TensorOrScalar = None,
     name: TensorOrScalar = None,
-) -> Tensor | dict[str, Tensor]:
+) -> TensorOrScalar:
     """Parse serialized structured example records into a dictionary of feature tensors.
 
     Args:
@@ -89,22 +85,19 @@ def parse_example(
         name (TensorOrScalar): Optional operation name.
 
     Returns:
-        Tensor | dict[str, Tensor]: Parsed feature dictionary or symbolic tensor node.
+        TensorOrScalar: Parsed feature dictionary or symbolic tensor node.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast(
-            "Tensor | dict[str, Tensor]",
-            get_active_backend().execute_op(
-                "ParseExample",
-                serialized,
-                features=features,
-                example_names=example_names,
-                name=name,
-            ),
+        return get_active_backend().execute_op(
+            "ParseExample",
+            serialized,
+            features=features,
+            example_names=example_names,
+            name=name,
         )
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -178,7 +171,7 @@ def parse_single_sequence_example(
     sequence_features: TensorOrScalar = None,
     example_names: TensorOrScalar = None,
     name: TensorOrScalar = None,
-) -> Tensor | tuple[dict[str, Tensor], dict[str, Tensor]]:
+) -> TensorOrScalar:
     """Parse a single serialized sequence record into context and sequence feature maps.
 
     Args:
@@ -189,23 +182,20 @@ def parse_single_sequence_example(
         name (TensorOrScalar): Optional operation name.
 
     Returns:
-        Tensor | tuple[dict[str, Tensor], dict[str, Tensor]]: Context and sequence feature maps or symbolic node.
+        TensorOrScalar: Context and sequence feature maps or symbolic node.
     """
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast(
-            "Tensor | tuple[dict[str, Tensor], dict[str, Tensor]]",
-            get_active_backend().execute_op(
-                "ParseSequenceExample",
-                serialized,
-                context_features=context_features,
-                sequence_features=sequence_features,
-                example_names=example_names,
-                name=name,
-            ),
+        return get_active_backend().execute_op(
+            "ParseSequenceExample",
+            serialized,
+            context_features=context_features,
+            sequence_features=sequence_features,
+            example_names=example_names,
+            name=name,
         )
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -252,9 +242,7 @@ class BinaryRecordWriter:
         self.options = options or BinaryRecordOptions()
         self._closed = False
 
-        dir_name = os.path.dirname(path)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
 
         actual_path = os.path.join(path, "records.tfrecord") if os.path.isdir(path) else path
 

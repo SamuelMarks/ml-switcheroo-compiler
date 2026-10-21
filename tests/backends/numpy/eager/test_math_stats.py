@@ -9,12 +9,11 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_stats as ms
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numpy.eager.math_stats import _np_randomcategorical, _np_randomshuffle
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_math_stats_coverage() -> None:
@@ -28,9 +27,9 @@ def test_math_stats_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("a", "b", "x", "y", "tensor"):
-                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                as_callable(args_to_pass.append)(arg)
             else:
-                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                as_callable(args_to_pass.append)(arg)
         try:
             op(*args_to_pass)
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -63,7 +62,7 @@ def test_missing_math_stats2() -> None:
 
         data = 5
 
-    ms._np_randompermutation(np, np.array([1.0]), x=typing.cast("EagerValue", MockData()))
+    ms._np_randompermutation(np, np.array([1.0]), x=as_tensor(MockData()))
 
     class MockDataP:
         """Test class MockDataP."""
@@ -75,21 +74,21 @@ def test_missing_math_stats2() -> None:
 
         data = [1.0]
 
-    ms._np_randomchoice(np, np.array([1.0]), a=typing.cast("EagerValue", MockDataList()), p=typing.cast("EagerValue", MockDataP()))
+    ms._np_randomchoice(np, np.array([1.0]), a=as_tensor(MockDataList()), p=as_tensor(MockDataP()))
     assert callable(test_missing_math_stats2)
 
 
 def test_np_random_shuffle_list() -> None:
     """Test function test_np_random_shuffle_list."""
     x = [1, 2, 3]
-    res = _np_randomshuffle(typing.cast("BackendModuleProtocol", None), x)
+    res = _np_randomshuffle(as_mod(None), x)
     assert isinstance(res, np.ndarray)
     assert set(res) == {1, 2, 3}
 
 
 def test_randomcategorical_shape() -> None:
     """Test function test_randomcategorical_shape."""
-    res = _np_randomcategorical(typing.cast("BackendModuleProtocol", None), None, logits=np.array([1.0, 2.0]), shape=(1, 2))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 2)
-    res = _np_randomcategorical(typing.cast("BackendModuleProtocol", None), None, logits=np.array([[1.0, 2.0]]))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1,)
+    res = _np_randomcategorical(as_mod(None), None, logits=np.array([1.0, 2.0]), shape=(1, 2))
+    assert as_tensor(getattr(res, "shape")) == (1, 2)
+    res = _np_randomcategorical(as_mod(None), None, logits=np.array([[1.0, 2.0]]))
+    assert as_tensor(getattr(res, "shape")) == (1,)

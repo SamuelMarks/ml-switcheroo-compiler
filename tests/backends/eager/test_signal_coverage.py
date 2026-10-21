@@ -8,12 +8,12 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.eager.signal as signal_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ops.configs import BlurConfig
+from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class MockCpuResult:
@@ -140,7 +140,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
+        return as_ndarray(as_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -155,7 +155,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return as_ndarray(as_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -185,7 +185,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -205,7 +205,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -277,16 +277,16 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def __getattr__(self, name: str) -> EagerCallableProtocol:
         """Delegate to numpy module.
 
         Args:
             name (str): Attribute name.
 
         Returns:
-            TypedVariadicCallable[np.ndarray]: Resolved callable attribute.
+            EagerCallableProtocol: Resolved callable attribute.
         """
-        return typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
+        return as_callable(getattr(np, name))
 
     def pad(
         self,
@@ -502,13 +502,13 @@ def test_signal_coverage() -> None:
     backend = SignalBackendWrapper()
 
     # 1. Gaussian kernel calculation
-    k = typing.cast("EagerCallableProtocol", signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
-    assert typing.cast("EagerTensorProtocol", getattr(k, "shape")) == (3, 3)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", float)(typing.cast("EagerCallableProtocol", np.sum)(k)), 1.0, atol=1e-5)
+    k = as_callable(signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
+    assert as_tensor(getattr(k, "shape")) == (3, 3)
+    as_callable(np.testing.assert_allclose)(as_callable(float)(as_callable(np.sum)(k)), 1.0, atol=1e-5)
 
     # 2. _apply_conv2d_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        typing.cast("EagerCallableProtocol", signal_mod._apply_conv2d_batch)(backend, typing.cast("EagerCallableProtocol", np.ones)((3, 3)), k, "reflect")
+        as_callable(signal_mod._apply_conv2d_batch)(backend, as_callable(np.ones)((3, 3)), k, "reflect")
 
     # 3. _get_blur_config with config_obj None and with dict
     cfg1 = signal_mod._get_blur_config({"kernel_size": (5, 5), "sigma": (2.0, 2.0), "data_format": "NCHW"}, None)
@@ -523,9 +523,9 @@ def test_signal_coverage() -> None:
     assert cfg2.data_format == "None"
 
     # Fallback when kwargs does not have get attribute
-    cfg_no_get = typing.cast("EagerCallableProtocol", signal_mod._get_blur_config)(None, None)
-    assert typing.cast("EagerValue", cfg_no_get.kernel_size) == (3, 3)
-    assert typing.cast("EagerValue", cfg_no_get.data_format) is None
+    cfg_no_get = as_callable(signal_mod._get_blur_config)(None, None)
+    assert as_tensor(cfg_no_get.kernel_size) == (3, 3)
+    assert as_tensor(cfg_no_get.data_format) is None
 
     # When config_obj is provided
     custom_cfg = BlurConfig(kernel_size=(3, 3), sigma=(0.5, 0.5))
@@ -533,15 +533,15 @@ def test_signal_coverage() -> None:
 
     # 4. gaussian_blur_eager full execution
     imgs = np.ones((1, 2, 8, 8), dtype=np.float32)
-    blurred = typing.cast("EagerCallableProtocol", signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
-    assert typing.cast("EagerTensorProtocol", getattr(blurred, "shape")) == (1, 2, 8, 8)
+    blurred = as_callable(signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
+    assert as_tensor(getattr(blurred, "shape")) == (1, 2, 8, 8)
 
     # 5. _apply_median_filter_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
-        typing.cast("EagerCallableProtocol", signal_mod._apply_median_filter_batch)(backend, typing.cast("EagerCallableProtocol", np.ones)((2, 2)), (3, 3), "same")
+        as_callable(signal_mod._apply_median_filter_batch)(backend, as_callable(np.ones)((2, 2)), (3, 3), "same")
 
     # 6. median_filter_eager with same padding and reflect padding
-    med_same = typing.cast("EagerCallableProtocol", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
-    assert typing.cast("EagerTensorProtocol", getattr(med_same, "shape")) == (1, 2, 8, 8)
-    med_reflect = typing.cast("EagerCallableProtocol", signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
-    assert typing.cast("EagerTensorProtocol", getattr(med_reflect, "shape")) == (1, 2, 8, 8)
+    med_same = as_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
+    assert as_tensor(getattr(med_same, "shape")) == (1, 2, 8, 8)
+    med_reflect = as_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
+    assert as_tensor(getattr(med_reflect, "shape")) == (1, 2, 8, 8)

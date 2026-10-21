@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair, as_tensor_triple
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -131,9 +131,9 @@ def qr(input: Tensor, mode: str = "reduced") -> TensorOrScalar:
         backend = get_active_backend()
         res = backend.execute_op("Qr", input.data, mode=mode)
         if mode == "r":
-            res_t = typing.cast("TensorLike", res)
+            res_t = as_tensor(res)
             return Tensor(res_t, TensorConfig(res_t.shape, input.dtype, input.device))
-        q, r = typing.cast("tuple[TensorLike, TensorLike]", res)
+        q, r = as_tensor_pair(res)
         return (
             Tensor(q, TensorConfig(q.shape, input.dtype, input.device)),
             Tensor(r, TensorConfig(r.shape, input.dtype, input.device)),
@@ -163,7 +163,7 @@ def hessenberg(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        h, q = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("Hessenberg", a.data))
+        h, q = as_tensor_pair(backend.execute_op("Hessenberg", a.data))
         return (
             Tensor(h, TensorConfig(h.shape, a.dtype, a.device)),
             Tensor(q, TensorConfig(q.shape, a.dtype, a.device)),
@@ -185,7 +185,7 @@ def householder_product(a: Tensor, tau: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = typing.cast("TensorLike", backend.execute_op("HouseholderProduct", a.data, tau.data))
+        data = as_tensor(backend.execute_op("HouseholderProduct", a.data, tau.data))
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("HouseholderProduct", [a, tau], {}, [a.shape], [a.dtype])
 
@@ -203,7 +203,7 @@ def schur(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        t, z = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("Schur", a.data))
+        t, z = as_tensor_pair(backend.execute_op("Schur", a.data))
         return (
             Tensor(t, TensorConfig(t.shape, a.dtype, a.device)),
             Tensor(z, TensorConfig(z.shape, a.dtype, a.device)),
@@ -224,7 +224,7 @@ def tridiagonal(a: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        diag, off_diag, q = typing.cast("tuple[TensorLike, TensorLike, TensorLike]", backend.execute_op("Tridiagonal", a.data))
+        diag, off_diag, q = as_tensor_triple(backend.execute_op("Tridiagonal", a.data))
         return (
             Tensor(diag, TensorConfig(diag.shape, a.dtype, a.device)),
             Tensor(off_diag, TensorConfig(off_diag.shape, a.dtype, a.device)),

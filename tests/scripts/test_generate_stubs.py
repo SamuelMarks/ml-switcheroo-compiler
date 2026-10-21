@@ -15,9 +15,10 @@ from pytest import CaptureFixture
 
 import scripts.generate_stubs as gs
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import as_callable, as_module_type
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_clean_type_annotation() -> None:
@@ -102,7 +103,7 @@ def test_generate_stubs_from_snapshot_exhaustive(tmp_path: Path) -> None:
             "invalid_category": "not_a_list",
         }
     }
-    count = typing.cast("EagerCallableProtocol", gs._generate_stubs_from_snapshot)(snap_data, "numpy", typing.cast("EagerCallableProtocol", str)(out_file))
+    count = as_callable(gs._generate_stubs_from_snapshot)(snap_data, "numpy", as_callable(str)(out_file))
     assert count >= 3
     content = out_file.read_text(encoding="utf-8")
     assert "def f_full(x: Tensor, y: Tensor = ..., *args: Tensor, kw1: Tensor, **kwargs: Tensor) -> int: ..." in content
@@ -208,7 +209,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         """
         if name == "fake_fw":
             return fake_mod
-        return typing.cast("types.ModuleType", typing.cast("EagerCallableProtocol", real_import)(name, *args, **kwargs))
+        return as_module_type(as_callable(real_import)(name, *args, **kwargs))
 
     with patch("inspect.signature", side_effect=smart_sig):
         with patch("scripts.generate_stubs.importlib.import_module", side_effect=mock_import):
@@ -397,7 +398,7 @@ def test_format_params_via_ecosystem() -> None:
         "invalid",
         {"name": ""},
     ]
-    res = typing.cast("EagerCallableProtocol", gs.format_params_via_ecosystem)(params, has_varargs=True)
+    res = as_callable(gs.format_params_via_ecosystem)(params, has_varargs=True)
     assert "x: Tensor" in res
     assert "dim: int = 0" in res
 

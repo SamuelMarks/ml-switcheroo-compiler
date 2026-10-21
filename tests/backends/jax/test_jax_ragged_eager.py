@@ -6,8 +6,10 @@ import typing
 
 import numpy as np
 
+from tests.testing_utils import as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_jax_ragged_eager() -> None:
@@ -18,5 +20,5 @@ def test_jax_ragged_eager() -> None:
 
     a = [jnp.array([1, 2]), jnp.array([1])]
     res = _execute_ragged_tensor_to_dense(a)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert as_tensor(getattr(res, "shape")) == (2, 2)
     assert _execute_ragged_tensor_to_dense(np.array([1, 2])) is not None

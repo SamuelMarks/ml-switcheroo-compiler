@@ -8,14 +8,14 @@ import unittest
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import AttributeValue, NodeDict
+from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+from tests.testing_utils import as_attrs, as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class TestStableHLOCodeGenerator(unittest.TestCase):
@@ -57,7 +57,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         """Test fallback when edge_stablehlo exists but lacks opcode/generator."""
         from unittest.mock import patch
 
-        mock_registry = typing.cast("EagerTensorProtocol", {"EmptyVariantOp": {"variants": {"edge_stablehlo": {}}}})
+        mock_registry = as_tensor({"EmptyVariantOp": {"variants": {"edge_stablehlo": {}}}})
 
         n = LogicalNode(id="n_empty", op_type="EmptyVariantOp", inputs=["in1"])
         self.gen.sorted_nodes.append(n)
@@ -178,7 +178,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         """Test dynamic dimension formatting with wildcard ? symbol."""
         gen = StableHLOCodeGenerator(IRGraph())
         self.assertEqual(gen._map_type(("batch", 16), "float32"), "tensor<?x16xf32>")
-        typing.cast("EagerCallableProtocol", self.assertEqual)(typing.cast("EagerCallableProtocol", gen._map_type)((None, "?", 3), "int32"), "tensor<?x?x3xi32>")
+        as_callable(self.assertEqual)(as_callable(gen._map_type)((None, "?", 3), "int32"), "tensor<?x?x3xi32>")
         self.assertEqual(gen._map_type((-1, 32), "float64"), "tensor<?x32xf64>")
 
     def test_stablehlo_control_flow_if(self) -> None:
@@ -206,7 +206,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
             op_type="If",
             inputs=["cond"],
             shape_metadata=(2, 2),
-            attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": then_g, "else_branch": else_g}),
+            attributes=as_attrs({"then_branch": then_g, "else_branch": else_g}),
         )
 
         g.nodes = NodeDict({"cond": in_cond, "x": in_x, "if_res": if_node})
@@ -243,7 +243,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
             op_type="While",
             inputs=["x"],
             shape_metadata=(1,),
-            attributes=typing.cast("dict[str, AttributeValue]", {"cond": cond_g, "body": body_g}),
+            attributes=as_attrs({"cond": cond_g, "body": body_g}),
         )
 
         g.nodes = NodeDict({"x": in_x, "while_res": while_node})
@@ -317,13 +317,13 @@ def test_verify_stablehlo_mlir_with_opt_binary(monkeypatch: EagerTensorProtocol)
 
     # Success case
     mock_res_success = subprocess.CompletedProcess(args=["mlir-opt"], returncode=0, stdout=b"", stderr=b"")
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_success)
+    as_callable(monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_success)
     monkeypatch.setattr("os.path.exists", lambda path: True)
     assert verify_stablehlo_mlir("some mlir", mlir_opt_path="/usr/bin/mlir-opt") is True
 
     # Failure case
     mock_res_fail = subprocess.CompletedProcess(args=["mlir-opt"], returncode=1, stdout=b"", stderr=b"parse error")
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_fail)
+    as_callable(monkeypatch.setattr)(subprocess, "run", lambda *args, **kwargs: mock_res_fail)
     with pytest.raises(ValueError, match="mlir-opt verification failed"):
         verify_stablehlo_mlir("bad mlir", mlir_opt_path="/usr/bin/mlir-opt")
 
@@ -640,7 +640,7 @@ def test_stablehlo_while_extra_block_inputs() -> None:
         op_type="While",
         inputs=["x"],
         shape_metadata=(1,),
-        attributes=typing.cast("dict[str, AttributeValue]", {"cond": cond_g, "body": body_g}),
+        attributes=as_attrs({"cond": cond_g, "body": body_g}),
     )
 
     g.nodes = NodeDict({"x": in_x, "while_res": while_node})
@@ -673,7 +673,7 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     # Test 1: Normal schema existence and single output return
     gen1 = StableHLOCodeGenerator(g)
     artifact1 = gen1._compile_aot_impl(g)
-    res_single = typing.cast("EagerCallableProtocol", artifact1)(typing.cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), typing.cast("EagerCallableProtocol", np.array)([2.0], dtype=np.float32))
+    res_single = as_callable(artifact1)(as_callable(np.array)([1.0], dtype=np.float32), as_callable(np.array)([2.0], dtype=np.float32))
     assert res_single is not None
 
     # Test 2: Schema fallback when schema yaml does not exist, and multi-output
@@ -694,14 +694,14 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     gen2 = StableHLOCodeGenerator(g)
     artifact2 = gen2._compile_aot_impl(g)
 
-    res = typing.cast("EagerCallableProtocol", artifact2)(typing.cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), in2=typing.cast("EagerCallableProtocol", np.array)([2.0], dtype=np.float32))
-    assert isinstance(typing.cast("EagerValue", res), tuple)
+    res = as_callable(artifact2)(as_callable(np.array)([1.0], dtype=np.float32), in2=as_callable(np.array)([2.0], dtype=np.float32))
+    assert isinstance(as_tensor(res), tuple)
     assert len(res) == 2
 
     # Test 3: Graph has no outputs
     g.outputs = []
-    res_dict = typing.cast("EagerCallableProtocol", artifact2)(typing.cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), typing.cast("EagerCallableProtocol", np.array)([2.0], dtype=np.float32))
-    assert isinstance(typing.cast("EagerValue", res_dict), dict)
+    res_dict = as_callable(artifact2)(as_callable(np.array)([1.0], dtype=np.float32), as_callable(np.array)([2.0], dtype=np.float32))
+    assert isinstance(as_tensor(res_dict), dict)
 
 
 def test_stablehlo_mlir_text_compliance() -> None:

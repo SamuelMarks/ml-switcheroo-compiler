@@ -8,7 +8,7 @@ from collections.abc import (
     Sequence,
 )
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops import image
@@ -118,7 +118,7 @@ def _upsample_dispatch(
             "bicubic": image.resize_bicubic,
         }
         fn = dispatch_map.get(mode, image.resize_nearest)
-        return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", fn)(input, size=target_size, align_corners=align_corners))
+        return as_tensor(as_callable(fn)(input, size=target_size, align_corners=align_corners))
 
     # 1D or 3D fallback
     dispatch_map_fallback = {

@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -16,9 +15,10 @@ from ml_switcheroo_compiler.ops.control_flow_utils import (
     _get_tensor_ids,
     _wrap_proxy_inputs,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class _PayloadWithId:
@@ -44,10 +44,10 @@ def test_control_flow_utils_wrap_proxy_inputs_tuple() -> None:
     t2 = Tensor(np.array([3.0, 4.0], dtype=np.float32), cfg)
 
     nested_args = ((t1, t2), "non_tensor")
-    input_ids, proxy_args = typing.cast("EagerCallableProtocol", _wrap_proxy_inputs)(nested_args, graph)
+    input_ids, proxy_args = as_callable(_wrap_proxy_inputs)(nested_args, graph)
 
     assert len(input_ids) == 2
-    assert isinstance(typing.cast("EagerValue", proxy_args[0]), tuple)
+    assert isinstance(as_tensor(proxy_args[0]), tuple)
     assert proxy_args[1] == "non_tensor"
 
 
@@ -72,7 +72,7 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
 
     # Nested tensor unwrapping (cur.data is a Tensor)
     inner_payload = _PayloadWithId("inner_id_42")
-    inner_t = typing.cast("EagerCallableProtocol", Tensor)(inner_payload, cfg)
+    inner_t = as_callable(Tensor)(inner_payload, cfg)
     outer_t = Tensor(inner_t, cfg)
     ids_nested = _get_tensor_ids(outer_t)
     assert ids_nested == ["inner_id_42"]
@@ -89,8 +89,8 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
     assert isinstance(ids_uuid[0], str)
 
     # list/tuple of tensors
-    t_a = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", _PayloadWithId)("a"), cfg)
-    t_b = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", _PayloadWithId)("b"), cfg)
+    t_a = as_callable(Tensor)(as_callable(_PayloadWithId)("a"), cfg)
+    t_b = as_callable(Tensor)(as_callable(_PayloadWithId)("b"), cfg)
     ids_list = _get_tensor_ids([t_a, (t_b,)])
     assert ids_list == ["a", "b"]
 

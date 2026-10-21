@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_adamw_no_weight_decay() -> None:
@@ -40,5 +41,5 @@ def test_missing_optimizers_coverage() -> None:
         shape = (1,)
 
     with pytest.raises(TypeError):
-        typing.cast("EagerCallableProtocol", ApplyRMSProp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)())
-    typing.cast("EagerCallableProtocol", AdamaxHyperparamsOp)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)())
+        as_callable(ApplyRMSProp)().infer_shape(as_callable(DummyShape)())
+    as_callable(AdamaxHyperparamsOp)().infer_shape(as_callable(DummyShape)())

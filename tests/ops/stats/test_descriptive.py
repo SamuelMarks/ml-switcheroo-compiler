@@ -27,9 +27,10 @@ from ml_switcheroo_compiler.ops.stats.descriptive import (
     moments,
     trapezoidal_integral,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
@@ -70,14 +71,14 @@ def test_classes_infer_shape() -> None:
     # ApplyOverAxes
     aoa = ApplyOverAxes()
     assert aoa.infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", aoa.infer_shape)(func=lambda x: x, a=typing.cast("EagerCallableProtocol", MockTensor)((2, 3, 4)), axes=1) == (2, 1, 4)
-    assert typing.cast("EagerCallableProtocol", aoa.infer_shape)(func=typing.cast("EagerCallableProtocol", MockTensor)((2, 3, 4)), axes=-1) == (2, 3, 1)
-    assert typing.cast("EagerCallableProtocol", aoa.infer_shape)(x=typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), axes=0) == (1, 3)
+    assert as_callable(aoa.infer_shape)(func=lambda x: x, a=as_callable(MockTensor)((2, 3, 4)), axes=1) == (2, 1, 4)
+    assert as_callable(aoa.infer_shape)(func=as_callable(MockTensor)((2, 3, 4)), axes=-1) == (2, 3, 1)
+    assert as_callable(aoa.infer_shape)(x=as_callable(MockTensor)((2, 3)), axes=0) == (1, 3)
     assert aoa.infer_shape(a=(2, 3, 4), axes=[0, 2]) == (1, 3, 1)
     assert aoa.infer_shape(a=[2, 3, 4], axes=(1,)) == (2, 1, 4)
-    assert typing.cast("EagerCallableProtocol", aoa.infer_shape)(a=typing.cast("EagerCallableProtocol", MockShapeMeta)((5, 6)), axes=0) == (1, 6)
-    assert typing.cast("EagerCallableProtocol", aoa.infer_shape)(a=typing.cast("EagerCallableProtocol", MockShapeMeta)(()), axes=0) == ()
-    assert typing.cast("EagerCallableProtocol", aoa.infer_shape)(a=typing.cast("EagerCallableProtocol", PlainObj)(), axes=0) == ()
+    assert as_callable(aoa.infer_shape)(a=as_callable(MockShapeMeta)((5, 6)), axes=0) == (1, 6)
+    assert as_callable(aoa.infer_shape)(a=as_callable(MockShapeMeta)(()), axes=0) == ()
+    assert as_callable(aoa.infer_shape)(a=as_callable(PlainObj)(), axes=0) == ()
     assert aoa.infer_shape(a=(2, 3), axes=99) == (2, 3)
     assert aoa.infer_shape(a=(2, 3), axes=None) == (2, 3)
     assert aoa.infer_shape(a=(), axes=0) == ()
@@ -124,7 +125,7 @@ def test_funcs(mocker: EagerTensorProtocol) -> None:
 
         assert trapezoidal_integral(t, x=t, dx=2.0, axis=1) == mock_op()
         assert confusion_matrix(t, t, 5, weights=t) == mock_op()
-        (m1, v1) = typing.cast("EagerCallableProtocol", moments)(t, axes=[0], keepdims=True)
+        (m1, v1) = as_callable(moments)(t, axes=[0], keepdims=True)
         assert m1 == mock_op()
         assert v1 == mock_op()
         assert descriptive(t) == mock_op()

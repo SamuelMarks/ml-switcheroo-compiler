@@ -13,12 +13,12 @@ import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as _mod_raw
 import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-mod = typing.cast("EagerTensorProtocol", _mod_raw)
+mod = as_tensor(_mod_raw)
 
 
 def test_math_matrix_utils_coverage() -> None:
@@ -27,7 +27,7 @@ def test_math_matrix_utils_coverage() -> None:
 
     assert mat_utils._np_confusion_matrix_cap(np) is None
     res = mat_utils._np_confusion_matrix_cap(np, np.array([1]), np.array([1]))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert as_tensor(getattr(res, "shape")) == (2, 2)
 
     class MockBkDist:
         """Test class MockBkDist."""
@@ -41,7 +41,7 @@ def test_math_matrix_utils_coverage() -> None:
             """
             return "hit"
 
-    assert mat_utils._np_distributions(typing.cast("EagerValue", MockBkDist()), [1]) == "hit"
+    assert mat_utils._np_distributions(as_tensor(MockBkDist()), [1]) == "hit"
     import sys
 
     class MockOps:
@@ -75,7 +75,7 @@ def test_math_matrix_utils_coverage() -> None:
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOps()}):
         res2 = mat_utils._np_distributions(np, [1])
-        typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, typing.cast("EagerCallableProtocol", np.array)([1.0, 0.0]))
+        as_callable(np.testing.assert_array_equal)(res2, as_callable(np.array)([1.0, 0.0]))
 
 
 def test_math_general_coverage() -> None:
@@ -94,7 +94,7 @@ def test_math_general_coverage() -> None:
             """
             return "hit"
 
-    assert misc_ext._np_descriptive_2(typing.cast("EagerValue", MockBkDesc()), [1]) == "hit"
+    assert misc_ext._np_descriptive_2(as_tensor(MockBkDesc()), [1]) == "hit"
     import sys
 
     class MockOpsDesc:
@@ -124,9 +124,9 @@ def test_math_general_coverage() -> None:
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops": MockOpsDesc()}):
         res2 = misc_ext._np_descriptive_2(np, [1])
-        typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res2, typing.cast("EagerCallableProtocol", np.array)([1.0, 0.0, 0.0]))
+        as_callable(np.testing.assert_array_equal)(res2, as_callable(np.array)([1.0, 0.0, 0.0]))
     res = misc_ext._np_descriptive_2(np, [1, 2, 3])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [2.0, 0.66666667, 0.81649658], rtol=1e-05)
+    as_callable(np.testing.assert_allclose)(res, [2.0, 0.66666667, 0.81649658], rtol=1e-05)
 
 
 def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -146,7 +146,7 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
             Args:
                 x: Test parameter `x`.
             """
-            return typing.cast("EagerCallableProtocol", np.any)(x)
+            return as_callable(np.any)(x)
 
         @staticmethod
         def isinf(x: EagerValue) -> EagerValue:
@@ -155,7 +155,7 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
             Args:
                 x: Test parameter `x`.
             """
-            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.isinf)(x))
+            return as_tensor(as_callable(np.isinf)(x))
 
         @staticmethod
         def isnan(x: EagerValue) -> EagerValue:
@@ -164,7 +164,7 @@ def _test_math_misc_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> N
             Args:
                 x: Test parameter `x`.
             """
-            return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.isnan)(x))
+            return as_tensor(as_callable(np.isnan)(x))
 
     dummy_bk = DummyBk()
     bk = np
@@ -626,9 +626,9 @@ def _test_math_misc_coverage_part_25(_state: dict[str, EagerTensorProtocol]) -> 
     with pytest.raises(TypeError):
         mod._np_reduce_precision(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_gather"))(bk, arg1)
+        as_tensor(getattr(mod, "_np_all_gather"))(bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_gather"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_gather"))(bk, arg1, arg2)
     _state.update(locals())
 
 
@@ -641,15 +641,15 @@ def _test_math_misc_coverage_part_26(_state: dict[str, EagerTensorProtocol]) -> 
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     (bk, dummy_bk) = (_state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_gather"))(bk, arg1, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_gather"))(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_gather"))(bk, arg_bool)
+        as_tensor(getattr(mod, "_np_all_gather"))(bk, arg_bool)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_gather"))(bk, arg_int)
+        as_tensor(getattr(mod, "_np_all_gather"))(bk, arg_int)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_gather"))(dummy_bk, arg1)
+        as_tensor(getattr(mod, "_np_all_gather"))(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_gather"))(dummy_bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_gather"))(dummy_bk, arg1, arg2)
     _state.update(locals())
 
 
@@ -662,15 +662,15 @@ def _test_math_misc_coverage_part_27(_state: dict[str, EagerTensorProtocol]) -> 
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     bk = _state["bk"]
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_reduce"))(bk, arg1)
+        as_tensor(getattr(mod, "_np_all_reduce"))(bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_reduce"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_reduce"))(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_reduce"))(bk, arg1, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_reduce"))(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_reduce"))(bk, arg_bool)
+        as_tensor(getattr(mod, "_np_all_reduce"))(bk, arg_bool)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_reduce"))(bk, arg_int)
+        as_tensor(getattr(mod, "_np_all_reduce"))(bk, arg_int)
     _state.update(locals())
 
 
@@ -682,15 +682,15 @@ def _test_math_misc_coverage_part_28(_state: dict[str, EagerTensorProtocol]) -> 
     """
     (arg1, arg2, bk, dummy_bk) = (_state["arg1"], _state["arg2"], _state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_reduce"))(dummy_bk, arg1)
+        as_tensor(getattr(mod, "_np_all_reduce"))(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_reduce"))(dummy_bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_reduce"))(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_to_all"))(bk, arg1)
+        as_tensor(getattr(mod, "_np_all_to_all"))(bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_to_all"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_to_all"))(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_to_all"))(bk, arg1, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_to_all"))(bk, arg1, arg1, arg2)
     _state.update(locals())
 
 
@@ -703,13 +703,13 @@ def _test_math_misc_coverage_part_29(_state: dict[str, EagerTensorProtocol]) -> 
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     (bk, dummy_bk) = (_state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_to_all"))(bk, arg_bool)
+        as_tensor(getattr(mod, "_np_all_to_all"))(bk, arg_bool)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_to_all"))(bk, arg_int)
+        as_tensor(getattr(mod, "_np_all_to_all"))(bk, arg_int)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_to_all"))(dummy_bk, arg1)
+        as_tensor(getattr(mod, "_np_all_to_all"))(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_all_to_all"))(dummy_bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_all_to_all"))(dummy_bk, arg1, arg2)
     with pytest.raises(TypeError):
         mod._np_packbits(bk, arg1)
     _state.update(locals())
@@ -5500,13 +5500,13 @@ def _test_math_misc_coverage_part_276(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_read_file(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg_bool)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg_bool)
     _state.update(locals())
 
 
@@ -5519,11 +5519,11 @@ def _test_math_misc_coverage_part_277(_state: dict[str, EagerTensorProtocol]) ->
     (arg1, arg2, arg_int, bk) = (_state["arg1"], _state["arg2"], _state["arg_int"], _state["bk"])
     dummy_bk = _state["dummy_bk"]
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg_int)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg_int)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(dummy_bk, arg1)
+        as_tensor(getattr(mod, "_np_rem_2"))(dummy_bk, arg1)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(dummy_bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(dummy_bk, arg1, arg2)
     mod._np_serialize_tensor(bk, arg1)
     mod._np_serialize_tensor(bk, arg1, arg2)
     _state.update(locals())
@@ -6937,7 +6937,7 @@ def _test_math_misc_coverage_part_358(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_read_file_camel(dummy_bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1)
     _state.update(locals())
 
 
@@ -6950,15 +6950,15 @@ def _test_math_misc_coverage_part_359(_state: dict[str, EagerTensorProtocol]) ->
     (arg1, arg2, arg_bool, arg_int) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["arg_int"])
     (bk, dummy_bk) = (_state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1, arg1, arg2)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg_bool)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg_bool)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg_int)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg_int)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(dummy_bk, arg1)
+        as_tensor(getattr(mod, "_np_rem_2"))(dummy_bk, arg1)
     _state.update(locals())
 
 
@@ -6971,7 +6971,7 @@ def _test_math_misc_coverage_part_360(_state: dict[str, EagerTensorProtocol]) ->
     (arg1, arg2, arg_bool, bk) = (_state["arg1"], _state["arg2"], _state["arg_bool"], _state["bk"])
     dummy_bk = _state["dummy_bk"]
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(dummy_bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(dummy_bk, arg1, arg2)
     mod._np_serialize_tensor_camel(bk, arg1)
     mod._np_serialize_tensor_camel(bk, arg1, arg2)
     mod._np_serialize_tensor_camel(bk, arg1, arg1, arg2)
@@ -7059,7 +7059,7 @@ def _test_math_misc_coverage_part_365(_state: dict[str, EagerTensorProtocol]) ->
     dist._tcp_dist_ctx.world_size = 1
     dist._tcp_dist_ctx.world_size = 2
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_pmax"))(bk, arg1)
+        as_tensor(getattr(mod, "_np_pmax"))(bk, arg1)
     dist._tcp_dist_ctx.world_size = 1
     dist._tcp_dist_ctx.world_size = 2
     getattr(_state, "update")({"dist": dist})
@@ -7074,7 +7074,7 @@ def _test_math_misc_coverage_part_366(_state: dict[str, EagerTensorProtocol]) ->
     """
     (arg1, bk, dist) = (_state["arg1"], _state["bk"], _state["dist"])
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_pmin"))(bk, arg1)
+        as_tensor(getattr(mod, "_np_pmin"))(bk, arg1)
     setattr(dist._tcp_dist_ctx, "world_size", 1)
     mod._np_scanop(bk, lambda a, b: a + b, arg1, 0, True)
     with pytest.raises(TypeError):
@@ -7158,7 +7158,7 @@ def _test_math_misc_coverage_part_368(_state: dict[str, EagerTensorProtocol]) ->
     setattr(_ops, "descriptive", my_desc)
     setattr(_ops, "distributions", my_dist)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
     mod._np_confusion_matrix(bk, arg_int, arg_int)
     getattr(_state, "update")({"my_cm": my_cm, "my_desc": my_desc, "my_dist": my_dist, "my_rem": my_rem})
     _state.update(locals())
@@ -7202,11 +7202,11 @@ def _test_math_misc_coverage_part_370(_state: dict[str, EagerTensorProtocol]) ->
         del _ops.distributions
     mod._np_vecdot(bk, np.array([1j]), np.array([1j]))
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_qr"))(dummy_bk, np.eye(2), mode="complete")
+        as_tensor(getattr(mod, "_np_qr"))(dummy_bk, np.eye(2), mode="complete")
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_svd"))(dummy_bk, np.eye(2), full_matrices=True, compute_uv=False)
+        as_tensor(getattr(mod, "_np_svd"))(dummy_bk, np.eye(2), full_matrices=True, compute_uv=False)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_logdet"))(dummy_bk, np.eye(2))
+        as_tensor(getattr(mod, "_np_logdet"))(dummy_bk, np.eye(2))
     _state.update(locals())
 
 
@@ -7218,7 +7218,7 @@ def _test_math_misc_coverage_part_371(_state: dict[str, EagerTensorProtocol]) ->
     """
     (arg1, bk, dummy_bk) = (_state["arg1"], _state["bk"], _state["dummy_bk"])
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_slogdet"))(dummy_bk, np.eye(2))
+        as_tensor(getattr(mod, "_np_slogdet"))(dummy_bk, np.eye(2))
     mod._np_tensorarraywrite(bk, [1, 2], 5, arg1)
     mod._np_tensorconfig(bk, (), "float32", None)
     funcs2 = ["BitwiseCount", "BitwiseLeftShift", "BitwiseRightShift", "Bincount", "Clip", "Clz", "Erf", "Erfc", "Erfinv", "Igamma", "Igammac", "PopulationCount", "ScatterApply", "ScatterMax", "ScatterMin", "ScatterMul", "ScatterNd", "Select", "BitwiseNot", "BitwiseOr", "BitwiseXor"]
@@ -7283,7 +7283,7 @@ def _test_math_misc_coverage_part_373(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_distributions(typing.cast("BackendModuleProtocol", DummyDist()), np.array([1.0]))
+    mod._np_distributions(as_mod(DummyDist()), np.array([1.0]))
     getattr(_state, "update")({"DummyDesc": DummyDesc, "DummyDist": DummyDist})
     _state.update(locals())
 
@@ -7411,7 +7411,7 @@ def _test_math_misc_coverage_part_378(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_modified_bessel_k1(bk)
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_matrix_utils, math_poly
 
-    math_general = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager.math_advanced"), "math_general"))
+    math_general = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager.math_advanced"), "math_general"))
     assert math_matrix_utils._np_diag_indices_(np, 2) is not None
     assert math_matrix_utils._np_diag_indices_from_(np, np.eye(2)) is not None
     assert math_matrix_utils._np_diagflat_(np, np.array([1, 2])) is not None
@@ -7537,7 +7537,7 @@ def _test_math_misc_coverage_part_382(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_vecdot(typing.cast("BackendModuleProtocol", DummyBkVecdot()), np.array([1.0]), np.array([1.0]))
+    mod._np_vecdot(as_mod(DummyBkVecdot()), np.array([1.0]), np.array([1.0]))
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor_camel(bk, np.array([1.0]))
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
@@ -7641,7 +7641,7 @@ def _test_math_misc_coverage_part_385(_state: dict[str, EagerTensorProtocol]) ->
             return "dist_bk"
 
     mod._np_descriptive(FakeDescBackend(), np.array([1.0]))
-    mod._np_distributions(typing.cast("BackendModuleProtocol", FakeDescBackend()), np.array([1.0]))
+    mod._np_distributions(as_mod(FakeDescBackend()), np.array([1.0]))
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
     setattr(_ops, "descriptive", None)
     setattr(_ops, "distributions", None)
@@ -7756,7 +7756,7 @@ def _test_math_misc_coverage_part_389(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(dummy_bk)
     if _orig_desc:
         setattr(_ops, "descriptive", _orig_desc)
-    _orig_dist = typing.cast("EagerTensorProtocol", getattr(_ops, "distributions", None))
+    _orig_dist = as_tensor(getattr(_ops, "distributions", None))
     if _orig_dist:
         delattr(_ops, "distributions")
     getattr(_state, "update")({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
@@ -7786,7 +7786,7 @@ def _test_math_misc_coverage_part_390(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(FakeDescBackend(), np.array([1.0]))
     if _orig_desc:
         setattr(_ops, "descriptive", _orig_desc)
-    _orig_dist = typing.cast("EagerTensorProtocol", getattr(_ops, "distributions", None))
+    _orig_dist = as_tensor(getattr(_ops, "distributions", None))
     getattr(_state, "update")({"FakeDescBackend": FakeDescBackend, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
     _state.update(locals())
 
@@ -7867,7 +7867,7 @@ def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) ->
             """
             raise ValueError("exploding")
 
-    _orig_desc = typing.cast("EagerTensorProtocol", getattr(_ops, "descriptive", None))
+    _orig_desc = as_tensor(getattr(_ops, "descriptive", None))
     setattr(_ops, "descriptive", ExplodingFunc)
     getattr(_state, "update")({"ExplodingFunc": ExplodingFunc, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
     _state.update(locals())
@@ -7903,7 +7903,7 @@ def _test_math_misc_coverage_part_393(_state: dict[str, EagerTensorProtocol]) ->
         """
         raise ValueError("error")
 
-    _orig_desc = typing.cast("EagerTensorProtocol", getattr(_ops, "descriptive", None))
+    _orig_desc = as_tensor(getattr(_ops, "descriptive", None))
     setattr(_ops, "descriptive", raise_err)
     getattr(_state, "update")({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "raise_err": raise_err})
     _state.update(locals())
@@ -8019,7 +8019,7 @@ def _test_math_misc_coverage_part_396(_state: dict[str, EagerTensorProtocol]) ->
             return "dist_bk"
 
     mod._np_descriptive(FakeDescBackendHas(), np.array([1.0]))
-    mod._np_distributions(typing.cast("BackendModuleProtocol", FakeDescBackendHas()), np.array([1.0]))
+    mod._np_distributions(as_mod(FakeDescBackendHas()), np.array([1.0]))
 
     class FakeDescBackendNoHas:
         """Test class FakeDescBackendNoHas."""
@@ -8151,7 +8151,7 @@ def _test_math_misc_coverage_part_399(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_vecdot(typing.cast("BackendModuleProtocol", DummyBkVecdot3()), np.array([1.0]), np.array([1.0]))
+    mod._np_vecdot(as_mod(DummyBkVecdot3()), np.array([1.0]), np.array([1.0]))
     getattr(_state, "update")({"DummyBkVecdot3": DummyBkVecdot3})
     _state.update(locals())
 
@@ -8194,7 +8194,7 @@ def _test_math_misc_coverage_part_400(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_randompermutation(typing.cast("BackendModuleProtocol", DummyBkPermutation()), ScalarArray())
+    mod._np_randompermutation(as_mod(DummyBkPermutation()), ScalarArray())
     mod._np_chebyshev_polynomial_t(bk, np.array(-1), np.array([1.0]))
     getattr(_state, "update")({"DummyBkPermutation": DummyBkPermutation, "ScalarArray": ScalarArray})
     _state.update(locals())
@@ -8222,7 +8222,7 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
             """
             return x
 
-    mod._np_vecdot(typing.cast("BackendModuleProtocol", DummyBkVecdotHas()), np.array([1.0]), np.array([1.0]))
+    mod._np_vecdot(as_mod(DummyBkVecdotHas()), np.array([1.0]), np.array([1.0]))
 
     class DummyBkLinalgVecdotHas:
         """Test class DummyBkLinalgVecdotHas."""
@@ -8241,7 +8241,7 @@ def _test_math_misc_coverage_part_401(_state: dict[str, EagerTensorProtocol]) ->
                 """
                 return x
 
-    mod._np_vecdot(typing.cast("BackendModuleProtocol", DummyBkLinalgVecdotHas()), np.array([1.0]), np.array([1.0]))
+    mod._np_vecdot(as_mod(DummyBkLinalgVecdotHas()), np.array([1.0]), np.array([1.0]))
     mod._np_chebyshev_polynomial_t(bk, np.array(0), np.array([1.0]))
     getattr(_state, "update")({"DummyBkLinalgVecdotHas": DummyBkLinalgVecdotHas, "DummyBkVecdotHas": DummyBkVecdotHas})
     _state.update(locals())
@@ -8324,7 +8324,7 @@ def _test_math_misc_coverage_part_405(_state: dict[str, EagerTensorProtocol]) ->
     _orig_rem = getattr(_ops, "rem", None)
     setattr(_ops, "rem", val_err)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
     if _orig_rem:
         setattr(_ops, "rem", _orig_rem)
     _orig_cm = getattr(_ops, "confusion_matrix", None)
@@ -8384,7 +8384,7 @@ def _test_math_misc_coverage_part_407(_state: dict[str, EagerTensorProtocol]) ->
     (ValErrClass, _ops, _orig_rem, arg1) = (_state["ValErrClass"], _state["_ops"], _state["_orig_rem"], _state["arg1"])
     (arg2, bk) = (_state["arg2"], _state["bk"])
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
+        as_tensor(getattr(mod, "_np_rem_2"))(bk, arg1, arg2)
     if _orig_rem:
         setattr(_ops, "rem", _orig_rem)
     _orig_cm = getattr(_ops, "confusion_matrix", None)
@@ -8428,7 +8428,7 @@ def _test_math_misc_coverage_part_408(_state: dict[str, EagerTensorProtocol]) ->
             """
             raise ValueError("boom")
 
-    _orig_desc = typing.cast("EagerTensorProtocol", getattr(_ops, "descriptive", None))
+    _orig_desc = as_tensor(getattr(_ops, "descriptive", None))
     setattr(_ops, "descriptive", Explosive())
     getattr(_state, "update")({"Explosive": Explosive, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
     _state.update(locals())
@@ -8460,7 +8460,7 @@ def _test_math_misc_coverage_part_409(_state: dict[str, EagerTensorProtocol]) ->
         pass
 
     _ops = importlib.import_module("ml_switcheroo_compiler.ops")
-    _orig_desc = typing.cast("EagerTensorProtocol", getattr(_ops, "descriptive", None))
+    _orig_desc = as_tensor(getattr(_ops, "descriptive", None))
     setattr(_ops, "descriptive", FakeOpDef)
     setattr(_ops, "OpDef", FakeOpDef)
     getattr(_state, "update")({"FakeOpDef": FakeOpDef, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist})
@@ -8535,7 +8535,7 @@ def _test_math_misc_coverage_part_412(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(TypeError):
         mod._np_rrelu(bk, None)
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_rem_2"))(dummy_bk, np.array([1.0]), np.array([1.0]))
+        as_tensor(getattr(mod, "_np_rem_2"))(dummy_bk, np.array([1.0]), np.array([1.0]))
     mod._np_confusion_matrix(dummy_bk, np.array([0, 1]), np.array([0, 1]))
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     _state.update(locals())
@@ -8570,7 +8570,7 @@ def _test_math_misc_coverage_part_414(_state: dict[str, EagerTensorProtocol]) ->
     with pytest.raises(RuntimeError):
         mod._np_parse_tensor_camel(dummy_bk, np.array(b"invalid"))
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mod, "_np_encode_base64"))(dummy_bk, None)
+        as_tensor(getattr(mod, "_np_encode_base64"))(dummy_bk, None)
     mod._np_frombuffer(dummy_bk, np.array([1.0]))
     mod._np_chebyshev_polynomial_t(bk, np.array([1.0]), np.array([-1]))
     _state.update(locals())
@@ -9063,17 +9063,17 @@ def test_math_misc_missing_branches_mocked() -> None:
             delattr(ops, attr)
     try:
         res = numpy_eager_registry._registry["RawMatMul"](None, np.array([[1]]), np.array([[2]]))
-        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1)
+        assert as_tensor(getattr(res, "shape")) == (1, 1)
         res = numpy_eager_registry._registry["SparseDenseMatMul"](None, np.array([[1]]), np.array([[2]]))
-        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1)
+        assert as_tensor(getattr(res, "shape")) == (1, 1)
         res = numpy_eager_registry._registry["rem"](None, np.array([5]), np.array([2]))
-        assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 1
+        assert as_tensor(getattr(res, "__getitem__")(0)) == 1
         res = numpy_eager_registry._registry["confusion_matrix"](None, np.array([0]), np.array([0]), num_classes=2)
-        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+        assert as_tensor(getattr(res, "shape")) == (2, 2)
         res = numpy_eager_registry._registry["descriptive"](None, np.array([1, 2]))
-        assert typing.cast("EagerCallableProtocol", len)(res) == 3
+        assert as_callable(len)(res) == 3
         res = numpy_eager_registry._registry["distributions"](None, np.array([1, 2]))
-        assert typing.cast("EagerCallableProtocol", len)(res) == 2
+        assert as_callable(len)(res) == 2
     finally:
         for attr, val in originals.items():
             setattr(ops, attr, val)
@@ -9090,7 +9090,7 @@ def test_math_advanced_oserror() -> None:
     with patch("builtins.open", mock_open()) as mocked_file:
         mocked_file.side_effect = Exception("test")
         with pytest.raises(OSError):
-            _np_save_img(typing.cast("BackendModuleProtocol", "dummy"), "dummy.png", b"dummy")
+            _np_save_img(as_mod("dummy"), "dummy.png", b"dummy")
 
 
 def test_math_advanced_mocked_fallbacks_2() -> None:
@@ -9162,7 +9162,7 @@ def _test_math_matrix_utils_distributions_success_part_2(_state: dict[str, Eager
     with patch.object(_ops, "OpDef", FakeOpDef, create=True):
         with patch.object(_ops, "descriptive", FakeInst(), create=True):
             _np_descriptive_2(np)
-        with typing.cast("EagerCallableProtocol", patch.object)(_ops, "descriptive", typing.cast("EagerCallableProtocol", property)(lambda _: typing.cast("EagerCallableProtocol", int)("invalid")), create=True):
+        with as_callable(patch.object)(_ops, "descriptive", as_callable(property)(lambda _: as_callable(int)("invalid")), create=True):
             _np_descriptive_2(np)
     _state.update(locals())
 
@@ -9231,7 +9231,7 @@ def test_math_matrix_utils_distributions_success_2() -> None:
         Args:
             name: Test parameter `name`.
         """
-        return typing.cast("EagerCallableProtocol", type)(name, (), {"__call__": lambda self, *args, **kwargs: 42})
+        return as_callable(type)(name, (), {"__call__": lambda self, *args, **kwargs: 42})
 
     with patch.object(_ops, "OpDef", type, create=True):
         with patch.object(_ops, "rem", _make_class("rem"), create=True):
@@ -9318,10 +9318,10 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
 
         pass
 
-    assert _np_distributions(typing.cast("EagerValue", DummyBackend()), 1) == "dist2"
-    assert _np_confusion_matrix(typing.cast("EagerValue", DummyBackend()), 1) == "cm2"
-    assert _np_descriptive_2(typing.cast("EagerValue", DummyBackend()), 1) == "desc2"
-    assert _np_rem_2(typing.cast("EagerValue", DummyBackend()), 1) == "rem2"
+    assert _np_distributions(as_tensor(DummyBackend()), 1) == "dist2"
+    assert _np_confusion_matrix(as_tensor(DummyBackend()), 1) == "cm2"
+    assert _np_descriptive_2(as_tensor(DummyBackend()), 1) == "desc2"
+    assert _np_rem_2(as_tensor(DummyBackend()), 1) == "rem2"
 
 
 def test_np_distributions_empty_args() -> None:
@@ -9333,8 +9333,8 @@ def test_np_distributions_empty_args() -> None:
 
         pass
 
-    res = _np_distributions(typing.cast("EagerValue", DummyBackend()))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+    res = _np_distributions(as_tensor(DummyBackend()))
+    assert as_tensor(getattr(res, "shape")) == (2,)
 
 
 def test_np_confusion_matrix_cap_none() -> None:
@@ -9346,7 +9346,7 @@ def test_np_confusion_matrix_cap_none() -> None:
 
         pass
 
-    assert _np_confusion_matrix_cap(typing.cast("EagerValue", DummyBackend())) is None
+    assert _np_confusion_matrix_cap(as_tensor(DummyBackend())) is None
 
 
 def test_math_general_rem_3() -> None:
@@ -9358,8 +9358,8 @@ def test_math_general_rem_3() -> None:
 
         pass
 
-    assert _np_rem_2(typing.cast("EagerValue", DummyBackend()), 5, 2) == 1
-    assert _np_rem_2(typing.cast("EagerValue", DummyBackend())) is None
+    assert _np_rem_2(as_tensor(DummyBackend()), 5, 2) == 1
+    assert _np_rem_2(as_tensor(DummyBackend())) is None
 
 
 def test_math_general_scipy_import_error() -> None:
@@ -9377,7 +9377,7 @@ def test_math_general_scipy_import_error() -> None:
     getattr(sys.modules, "__setitem__")("scipy.special", None)
     try:
         with pytest.raises(ImportError):
-            _np_betainc(typing.cast("EagerValue", DummyBackend()), 1)
+            _np_betainc(as_tensor(DummyBackend()), 1)
     finally:
         if orig_scipy:
             sys.modules["scipy.special"] = orig_scipy
@@ -9394,8 +9394,8 @@ def test_np_descriptive_2_empty_args() -> None:
 
         pass
 
-    res = _np_descriptive_2(typing.cast("EagerValue", DummyBackend()))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3,)
+    res = _np_descriptive_2(as_tensor(DummyBackend()))
+    assert as_tensor(getattr(res, "shape")) == (3,)
 
 
 def test_fallback_exception() -> None:
@@ -9456,13 +9456,13 @@ def test_fallback_exception() -> None:
         """
         if name == "ml_switcheroo_compiler.ops":
             raise Exception("boom")
-        return typing.cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
+        return as_callable(orig_import)(name, *args, **kwargs)
 
     with patch("builtins.__import__", side_effect=mock_import):
-        assert _np_distributions(typing.cast("EagerValue", DummyBackend()), 1) == "dist_exc"
-        assert _np_confusion_matrix(typing.cast("EagerValue", DummyBackend()), 1) == "cm_exc"
-        assert _np_descriptive_2(typing.cast("EagerValue", DummyBackend()), 1) == "desc_exc"
-        assert _np_rem_2(typing.cast("EagerValue", DummyBackend()), 1) == "rem_exc"
+        assert _np_distributions(as_tensor(DummyBackend()), 1) == "dist_exc"
+        assert _np_confusion_matrix(as_tensor(DummyBackend()), 1) == "cm_exc"
+        assert _np_descriptive_2(as_tensor(DummyBackend()), 1) == "desc_exc"
+        assert _np_rem_2(as_tensor(DummyBackend()), 1) == "rem_exc"
 
 
 def test_np_confusion_matrix_actual_logic() -> None:
@@ -9476,11 +9476,11 @@ def test_np_confusion_matrix_actual_logic() -> None:
 
         pass
 
-    res = _np_confusion_matrix(typing.cast("EagerValue", DummyBackend()), [0, 1], [1, 1], num_classes=2)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, [[0, 1], [0, 1]])
-    res2 = _np_confusion_matrix(typing.cast("EagerValue", DummyBackend()), [0, 1], [1, 1])
-    assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (2, 2)
-    assert _np_confusion_matrix_cap(typing.cast("EagerValue", DummyBackend()), [0], [0]) is not None
+    res = _np_confusion_matrix(as_tensor(DummyBackend()), [0, 1], [1, 1], num_classes=2)
+    assert as_callable(np.array_equal)(res, [[0, 1], [0, 1]])
+    res2 = _np_confusion_matrix(as_tensor(DummyBackend()), [0, 1], [1, 1])
+    assert as_tensor(getattr(res2, "shape")) == (2, 2)
+    assert _np_confusion_matrix_cap(as_tensor(DummyBackend()), [0], [0]) is not None
 
 
 def test_math_matrix_utils_simple_forwards() -> None:
@@ -9523,14 +9523,14 @@ def test_math_matrix_utils_simple_forwards() -> None:
             return 8
 
     db = DummyBackend()
-    assert _np_diag_indices_(typing.cast("EagerValue", db)) == 1
-    assert _np_diag_indices_from_(typing.cast("EagerValue", db)) == 2
-    assert _np_diagflat_(typing.cast("EagerValue", db)) == 3
-    assert _np_diagonal_(typing.cast("EagerValue", db)) == 4
-    assert _np_indices_(typing.cast("EagerValue", db)) == 5
-    assert _np_mask_indices_(typing.cast("EagerValue", db)) == 6
-    assert _np_linearoperatorblockdiag(typing.cast("EagerValue", db)).__class__.__name__ == "LinearOperatorBlockDiag"
-    assert _np_linearoperatordiag(typing.cast("EagerValue", db)).__class__.__name__ == "LinearOperatorDiag"
+    assert _np_diag_indices_(as_tensor(db)) == 1
+    assert _np_diag_indices_from_(as_tensor(db)) == 2
+    assert _np_diagflat_(as_tensor(db)) == 3
+    assert _np_diagonal_(as_tensor(db)) == 4
+    assert _np_indices_(as_tensor(db)) == 5
+    assert _np_mask_indices_(as_tensor(db)) == 6
+    assert _np_linearoperatorblockdiag(as_tensor(db)).__class__.__name__ == "LinearOperatorBlockDiag"
+    assert _np_linearoperatordiag(as_tensor(db)).__class__.__name__ == "LinearOperatorDiag"
 
 
 def _test_math_general_simple_forwards_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -10286,16 +10286,16 @@ def test_math_general_missing_forwards() -> None:
             return 1
 
     db = DummyBackend()
-    assert _np_truncate_div(typing.cast("EagerValue", db), 5.0, 2.0) == 2.0
-    assert _np_truncate_mod(typing.cast("EagerValue", db), 5.0, 2.0) == 1.0
-    assert _np_dotgeneral(typing.cast("EagerValue", db), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (0,)), ((), ()))) is not None
-    assert _np_raggeddot(typing.cast("EagerValue", db), np.ones((2, 2)), np.ones((2, 2))) is not None
-    assert _np_serialize_tensor(typing.cast("EagerValue", db), 1) is not None
-    assert _np_serialize_tensor_camel(typing.cast("EagerValue", db), 1) is not None
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_key)(db, 1), [1, 0])
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_clip)(db, typing.cast("EagerCallableProtocol", np.array)([5.0]), 1.0, 3.0), [3.0])
-    res = _np_one_hot(typing.cast("EagerValue", db), np.array([0]), 2)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 2)
+    assert _np_truncate_div(as_tensor(db), 5.0, 2.0) == 2.0
+    assert _np_truncate_mod(as_tensor(db), 5.0, 2.0) == 1.0
+    assert _np_dotgeneral(as_tensor(db), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (0,)), ((), ()))) is not None
+    assert _np_raggeddot(as_tensor(db), np.ones((2, 2)), np.ones((2, 2))) is not None
+    assert _np_serialize_tensor(as_tensor(db), 1) is not None
+    assert _np_serialize_tensor_camel(as_tensor(db), 1) is not None
+    assert as_callable(np.array_equal)(as_callable(_np_key)(db, 1), [1, 0])
+    assert as_callable(np.array_equal)(as_callable(_np_clip)(db, as_callable(np.array)([5.0]), 1.0, 3.0), [3.0])
+    res = _np_one_hot(as_tensor(db), np.array([0]), 2)
+    assert as_tensor(getattr(res, "shape")) == (1, 2)
 
 
 def test_math_general_debuginfs_callable() -> None:
@@ -10310,16 +10310,16 @@ def test_math_general_debuginfs_callable() -> None:
 
     with pytest.raises(ValueError):
         _np_debuginfs(np, np.array([np.inf]))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_debuginfs)(np, typing.cast("EagerCallableProtocol", np.array)([1.0])), [1.0])
+    assert as_callable(np.array_equal)(as_callable(_np_debuginfs)(np, as_callable(np.array)([1.0])), [1.0])
     with pytest.raises(ValueError):
         _np_debugnans(np, np.array([np.nan]))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_debugnans)(np, typing.cast("EagerCallableProtocol", np.array)([1.0])), [1.0])
-    assert typing.cast("EagerTensorProtocol", getattr(_np_tensor(np), "shape")) == (0,)
-    assert typing.cast("EagerTensorProtocol", getattr(_np_tensor(np, [1, 2]), "shape")) == (2,)
+    assert as_callable(np.array_equal)(as_callable(_np_debugnans)(np, as_callable(np.array)([1.0])), [1.0])
+    assert as_tensor(getattr(_np_tensor(np), "shape")) == (0,)
+    assert as_tensor(getattr(_np_tensor(np, [1, 2]), "shape")) == (2,)
     res = _np_descriptive_2(np, [1.0, 2.0])
-    assert typing.cast("EagerCallableProtocol", len)(res) == 3
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", _np_descriptive_2)(np)) == 3
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_key)(np), [0, 0])
+    assert as_callable(len)(res) == 3
+    assert as_callable(len)(as_callable(_np_descriptive_2)(np)) == 3
+    assert as_callable(np.array_equal)(as_callable(_np_key)(np), [0, 0])
     assert _np_rem_2(np) is None
 
 
@@ -10334,7 +10334,7 @@ def test_dotgeneral_batches() -> None:
 
         pass
 
-    assert _np_dotgeneral(typing.cast("EagerValue", DummyBackend()), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (1,)), ((0,), (0,)))) is not None
+    assert _np_dotgeneral(as_tensor(DummyBackend()), np.ones((2, 2)), np.ones((2, 2)), dimension_numbers=(((1,), (1,)), ((0,), (0,)))) is not None
 
 
 def test_math_general_remaining() -> None:
@@ -10359,7 +10359,7 @@ def test_math_general_remaining() -> None:
 
         pass
 
-    assert _np_rem_2(typing.cast("EagerValue", DummyBackendRem()), 5, 2) == 1
+    assert _np_rem_2(as_tensor(DummyBackendRem()), 5, 2) == 1
 
 
 def test_math_general_final() -> None:
@@ -10373,7 +10373,7 @@ def test_math_general_final() -> None:
     with patch("builtins.__import__", side_effect=ImportError("boom")):
         assert _get_sc() is None
     res = _np_one_hot(np, np.array([0]), 2, axis=0)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 1)
+    assert as_tensor(getattr(res, "shape")) == (2, 1)
     with patch("pickle.dumps", side_effect=Exception("boom")):
         res2 = _np_serialize_tensor_camel(np, np.array([1]))
         assert res2 is not None

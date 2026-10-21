@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import importlib
 import logging
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 
 
 def _get_dpnp_module() -> EagerValue:
@@ -67,9 +66,9 @@ def zeros(
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
     kwargs["dtype"] = getattr(dpnp_mod, str(dtype)) if dtype and hasattr(dpnp_mod, str(dtype)) else getattr(dpnp_mod, "float32", float)
     try:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "zeros")(shape, **kwargs))
+        return as_tensor(getattr(dpnp_mod, "zeros")(shape, **kwargs))
     except TypeError:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "zeros")(shape, dtype=kwargs.get("dtype", float)))
+        return as_tensor(getattr(dpnp_mod, "zeros")(shape, dtype=kwargs.get("dtype", float)))
 
 
 def ones(
@@ -95,9 +94,9 @@ def ones(
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
     kwargs["dtype"] = getattr(dpnp_mod, str(dtype)) if dtype and hasattr(dpnp_mod, str(dtype)) else getattr(dpnp_mod, "float32", float)
     try:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "ones")(shape, **kwargs))
+        return as_tensor(getattr(dpnp_mod, "ones")(shape, **kwargs))
     except TypeError:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "ones")(shape, dtype=kwargs.get("dtype", float)))
+        return as_tensor(getattr(dpnp_mod, "ones")(shape, dtype=kwargs.get("dtype", float)))
 
 
 def empty(
@@ -123,9 +122,9 @@ def empty(
     kwargs = _resolve_allocation_kwargs(device=device, usm_type=usm_type, sycl_queue=sycl_queue)
     kwargs["dtype"] = getattr(dpnp_mod, str(dtype)) if dtype and hasattr(dpnp_mod, str(dtype)) else getattr(dpnp_mod, "float32", float)
     try:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "empty")(shape, **kwargs))
+        return as_tensor(getattr(dpnp_mod, "empty")(shape, **kwargs))
     except TypeError:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "empty")(shape, dtype=kwargs.get("dtype", float)))
+        return as_tensor(getattr(dpnp_mod, "empty")(shape, dtype=kwargs.get("dtype", float)))
 
 
 def full(
@@ -154,9 +153,9 @@ def full(
     if dtype is not None and hasattr(dpnp_mod, str(dtype)):
         kwargs["dtype"] = getattr(dpnp_mod, str(dtype))
     try:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "full")(shape, fill_value, **kwargs))
+        return as_tensor(getattr(dpnp_mod, "full")(shape, fill_value, **kwargs))
     except TypeError:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "full")(shape, fill_value, dtype=kwargs.get("dtype", None)))
+        return as_tensor(getattr(dpnp_mod, "full")(shape, fill_value, dtype=kwargs.get("dtype", None)))
 
 
 def array(
@@ -183,9 +182,9 @@ def array(
     if dtype is not None and hasattr(dpnp_mod, str(dtype)):
         kwargs["dtype"] = getattr(dpnp_mod, str(dtype))
     try:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "array")(data, **kwargs))
+        return as_tensor(getattr(dpnp_mod, "array")(data, **kwargs))
     except TypeError:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "array")(data, dtype=kwargs.get("dtype", None)))
+        return as_tensor(getattr(dpnp_mod, "array")(data, dtype=kwargs.get("dtype", None)))
 
 
 def asarray(
@@ -212,9 +211,9 @@ def asarray(
     if dtype is not None and hasattr(dpnp_mod, str(dtype)):
         kwargs["dtype"] = getattr(dpnp_mod, str(dtype))
     try:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "asarray")(data, **kwargs))
+        return as_tensor(getattr(dpnp_mod, "asarray")(data, **kwargs))
     except TypeError:
-        return typing.cast(EagerValue, getattr(dpnp_mod, "asarray")(data, dtype=kwargs.get("dtype", None)))
+        return as_tensor(getattr(dpnp_mod, "asarray")(data, dtype=kwargs.get("dtype", None)))
 
 
 def asnumpy(data: EagerValue) -> EagerValue:
@@ -229,13 +228,13 @@ def asnumpy(data: EagerValue) -> EagerValue:
     dpnp_mod = _get_dpnp_module()
     if hasattr(dpnp_mod, "asnumpy"):
         try:
-            return typing.cast(EagerValue, getattr(dpnp_mod, "asnumpy")(data))
+            return as_tensor(getattr(dpnp_mod, "asnumpy")(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if hasattr(data, "asnumpy"):
-        return typing.cast(EagerValue, getattr(data, "asnumpy")())
+        return as_tensor(getattr(data, "asnumpy")())
 
-    return typing.cast(EagerValue, getattr(dpnp_mod, "asarray")(data))
+    return as_tensor(getattr(dpnp_mod, "asarray")(data))
 
 
 def to_numpy(data: EagerValue) -> EagerValue:

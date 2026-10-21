@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -53,4 +52,4 @@ def _np_sparsesegmentsum(
         np.ndarray: Summed tensor result.
     """
     data = backend_module.asarray(args[0])
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.sum(data, axis=0, keepdims=True))
+    return as_ndarray(backend_module.sum(data, axis=0, keepdims=True))

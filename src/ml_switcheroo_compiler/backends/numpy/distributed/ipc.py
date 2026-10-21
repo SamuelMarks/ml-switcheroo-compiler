@@ -155,7 +155,7 @@ def _ipc_all_gather(tensor: IpcPayload, axis: int | None, mesh: DeviceMesh | Non
 
         # Execute real IPC data exchange
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
-        return typing.cast(IpcPayload, getattr(np, "concatenate")(exchanged, axis=axis if axis is not None else 0))
+        return np.asarray(np.concatenate([np.asarray(x) for x in exchanged], axis=axis if axis is not None else 0))
 
     return np.expand_dims(t, axis=axis) if axis is not None else t
 
@@ -221,15 +221,16 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
 
         # Gather all tensors via IPC
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
+        arrs = [np.asarray(x) for x in exchanged]
 
         # Perform reduction and return same result on all workers
         if op == "sum":
-            return typing.cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
+            return np.asarray(np.add.reduce(arrs))
         elif op == "max":
-            return typing.cast(IpcPayload, getattr(np.maximum, "reduce")(exchanged))
+            return np.asarray(np.maximum.reduce(arrs))
         elif op == "min":
-            return typing.cast(IpcPayload, getattr(np.minimum, "reduce")(exchanged))
+            return np.asarray(np.minimum.reduce(arrs))
         else:
-            return typing.cast(IpcPayload, sum(getattr(exchanged, "__iter__")()))
+            return np.asarray(np.add.reduce(arrs))
 
     return t

@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Iterable
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_bool, as_opt_str, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
@@ -32,7 +31,7 @@ def _np_load(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     from ml_switcheroo_compiler.ops.io import _fallback_load
 
     filepath = args[0] if args else kwargs.get("file", "")
-    res = _fallback_load(typing.cast("str | None", filepath))
+    res = _fallback_load(as_opt_str(filepath))
     if res is not None:
         return res
     raise ValueError(f"Format not supported or file not found for load: {filepath}")
@@ -169,7 +168,7 @@ def _np_decode_image(backend_module: BackendModuleProtocol, contents: EagerValue
     dtype = kwargs.get("dtype", "uint8")
     return Tensor(
         np.zeros((), dtype=str(dtype)),
-        TensorConfig((), typing.cast("str | None", dtype), Device(DeviceType.CPU)),
+        TensorConfig((), dtype, Device(DeviceType.CPU)),
     )
 
 
@@ -249,7 +248,7 @@ def _np_parse_tensor(backend_module: BackendModuleProtocol, serialized: EagerVal
     out_type = kwargs.get("out_type", "float32")
     return Tensor(
         np.zeros((), dtype=np.float32),
-        TensorConfig((), typing.cast("str | None", out_type), Device(DeviceType.CPU)),
+        TensorConfig((), out_type, Device(DeviceType.CPU)),
     )
 
 
@@ -273,7 +272,7 @@ def _np_encode_base64(backend_module: BackendModuleProtocol, input: EagerValue, 
         return None
     data = getattr(input, "data", input)
     pad = kwargs.get("pad", False)
-    res = _eager_base64("encode", data, typing.cast("bool", pad))
+    res = _eager_base64("encode", data, as_bool(pad))
     return Tensor(res, TensorConfig(getattr(input, "shape", ()), DType.Float32, Device(DeviceType.CPU)))
 
 

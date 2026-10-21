@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import typing
-
 import ml_switcheroo_compiler.ops.binary as _math
 import ml_switcheroo_compiler.ops.shape.joining as _joining
 import ml_switcheroo_compiler.ops.shape.slicing as _slicing
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.registry import as_callable
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.creation.frontend_basic import array
 from ml_switcheroo_compiler.ops.shape.frontend import reshape
 
@@ -38,10 +36,10 @@ def hadamard_transform(x: Tensor, scale: float = 1.0) -> TensorOrScalar:
 
         stacked = _joining.concatenate([res_plus, res_minus], axis=-2)
 
-        res = reshape(typing.cast("Tensor", stacked), list(res.shape[:-3]) + [-1])
+        res = reshape(as_tensor_obj(stacked), list(res.shape[:-3]) + [-1])
         h *= 2
     if scale != 1.0:
-        res = _math.multiply(res, typing.cast("EagerCallableProtocol", array)([scale], dtype="float32"))
+        res = _math.multiply(res, as_callable(array)([scale], dtype="float32"))
     return res
 
 

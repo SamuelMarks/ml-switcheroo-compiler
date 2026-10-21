@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import typing
+from pathlib import Path
 
 import pytest
 
 from ml_switcheroo_compiler.ops.io import TFRecordOptions, TFRecordWriter, decode_base64, encode_base64, gfile_copy, gfile_glob, gfile_makedirs, gfile_stat
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_gfile() -> None:
@@ -46,9 +48,9 @@ def test_base64_ops() -> None:
     config.eager_mode = False
     global_tracing_state.start_tracing()
     if True:
-        typing.cast("EagerCallableProtocol", encode_base64)(None)
+        as_callable(encode_base64)(None)
     if True:
-        typing.cast("EagerCallableProtocol", decode_base64)(None)
+        as_callable(decode_base64)(None)
     assert callable(global_tracing_state.start_tracing)
 
 
@@ -62,12 +64,16 @@ def test_parse_sequence_example() -> None:
     assert callable(global_tracing_state.start_tracing)
 
 
-def test_tfrecord_writer() -> None:
-    """Test tfrecord writer."""
+def test_tfrecord_writer(tmp_path: Path) -> None:
+    """Test tfrecord writer.
+
+    Args:
+        tmp_path (Path): Temporary path fixture.
+    """
     opts = TFRecordOptions("ZLIB")
     assert opts.compression_type == "ZLIB"
-    with TFRecordWriter("path", opts) as writer:
-        typing.cast("EagerCallableProtocol", writer.write)(None)
+    with TFRecordWriter(str(tmp_path / "path"), opts) as writer:
+        as_callable(writer.write)(None)
 
 
 def test_base64_ops_success() -> None:

@@ -22,9 +22,10 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
 )
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import get_jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import get_vjp
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_webrtc_collectives_config_validation() -> None:
@@ -64,27 +65,27 @@ def test_collective_shape_inference() -> None:
 
     # 1. AllReduce preserves shape
     ar_op = AllReduce()
-    assert typing.cast("EagerCallableProtocol", ar_op.infer_shape)(t) == (8, 16)
+    assert as_callable(ar_op.infer_shape)(t) == (8, 16)
 
     # 2. Broadcast preserves shape
     bc_op = Broadcast()
-    assert typing.cast("EagerCallableProtocol", bc_op.infer_shape)(t) == (8, 16)
+    assert as_callable(bc_op.infer_shape)(t) == (8, 16)
 
     # 3. AllGather concatenates along axis
     ag_op = AllGather()
-    assert typing.cast("EagerCallableProtocol", ag_op.infer_shape)(t, axis=0, world_size=4) == (32, 16)
-    assert typing.cast("EagerCallableProtocol", ag_op.infer_shape)(t, axis=1, world_size=2) == (8, 32)
-    assert typing.cast("EagerCallableProtocol", ag_op.infer_shape)(t) == (8, 16)
+    assert as_callable(ag_op.infer_shape)(t, axis=0, world_size=4) == (32, 16)
+    assert as_callable(ag_op.infer_shape)(t, axis=1, world_size=2) == (8, 32)
+    assert as_callable(ag_op.infer_shape)(t) == (8, 16)
 
     # 4. ReduceScatter splits along axis
     rs_op = ReduceScatter()
-    assert typing.cast("EagerCallableProtocol", rs_op.infer_shape)(t, axis=0, world_size=4) == (2, 16)
-    assert typing.cast("EagerCallableProtocol", rs_op.infer_shape)(t, axis=1, world_size=2) == (8, 8)
-    assert typing.cast("EagerCallableProtocol", rs_op.infer_shape)(t) == (8, 16)
+    assert as_callable(rs_op.infer_shape)(t, axis=0, world_size=4) == (2, 16)
+    assert as_callable(rs_op.infer_shape)(t, axis=1, world_size=2) == (8, 8)
+    assert as_callable(rs_op.infer_shape)(t) == (8, 16)
 
     # 5. AllToAll preserves element count
     a2a_op = AllToAll()
-    assert typing.cast("EagerCallableProtocol", a2a_op.infer_shape)(t) == (8, 16)
+    assert as_callable(a2a_op.infer_shape)(t) == (8, 16)
 
 
 def test_collective_gradient_propagation() -> None:
@@ -130,18 +131,18 @@ def test_collective_communication_semantics_eager() -> None:
 
     # AllReduce SUM
     ar_res = dispatch_collective("AllReduce", rank0_data, backend="numpy", op_type="SUM", all_ranks_data=ranks)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(ar_res, typing.cast("EagerCallableProtocol", np.array)([40.0, 60.0]))
+    as_callable(np.testing.assert_allclose)(ar_res, as_callable(np.array)([40.0, 60.0]))
 
     # AllGather
     ag_res = dispatch_collective("AllGather", rank0_data, backend="numpy", axis=0, all_ranks_data=ranks)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(ag_res, typing.cast("EagerCallableProtocol", np.array)([10.0, 20.0, 30.0, 40.0]))
+    as_callable(np.testing.assert_allclose)(ag_res, as_callable(np.array)([10.0, 20.0, 30.0, 40.0]))
 
     # ReduceScatter
     rs_rank0 = dispatch_collective("ReduceScatter", rank0_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=0, all_ranks_data=ranks)
     rs_rank1 = dispatch_collective("ReduceScatter", rank1_data, backend="numpy", op_type="SUM", scatter_dim=0, rank=1, all_ranks_data=ranks)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(rs_rank0, typing.cast("EagerCallableProtocol", np.array)([40.0]))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(rs_rank1, typing.cast("EagerCallableProtocol", np.array)([60.0]))
+    as_callable(np.testing.assert_allclose)(rs_rank0, as_callable(np.array)([40.0]))
+    as_callable(np.testing.assert_allclose)(rs_rank1, as_callable(np.array)([60.0]))
 
     # Broadcast from rank 1 to all
     bc_res = dispatch_collective("Broadcast", rank0_data, backend="numpy", root=1, all_ranks_data=ranks)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(bc_res, rank1_data)
+    as_callable(np.testing.assert_allclose)(bc_res, rank1_data)

@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 import ml_switcheroo_compiler.ops.unary.base as unary_base
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class _MockDimWithId:
@@ -70,10 +71,10 @@ def test_unary_base_exhaustive() -> None:
     assert op.infer_shape([4, 5]) == (4, 5)
 
     # 3. Object with shape attribute
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", _MockShapeContainer)((6, 7))) == (6, 7)
+    assert as_callable(op.infer_shape)(as_callable(_MockShapeContainer)((6, 7))) == (6, 7)
 
     # 4. Object with shape_metadata attribute
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", _MockShapeMetaContainer)((8, 9))) == (8, 9)
+    assert as_callable(op.infer_shape)(as_callable(_MockShapeMetaContainer)((8, 9))) == (8, 9)
 
     # 5. Scalar input without shape attributes
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(123) == ()
+    assert as_callable(op.infer_shape)(123) == ()

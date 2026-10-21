@@ -6,11 +6,11 @@ import typing
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import BackendRegistry, EagerCallableProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import BackendRegistry, as_callable, get_active_backend
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
 
@@ -107,11 +107,9 @@ def _try_fold_single_node(
         return False
 
     try:
-        from ml_switcheroo_ir import AttributeValue
-
-        val = typing.cast("EagerCallableProtocol", _evaluate_constant_node)(node, canonical_inputs, graph, backend)
+        val = as_callable(_evaluate_constant_node)(node, canonical_inputs, graph, backend)
         graph.nodes[node.id].op_type = "Constant"
-        graph.nodes[node.id].attributes = typing.cast("dict[str, AttributeValue]", {"value": val})
+        graph.nodes[node.id].attributes = as_attrs({"value": val})
         graph.nodes[node.id].inputs = []
         return True
     except (ValueError, TypeError, RuntimeError) as e:

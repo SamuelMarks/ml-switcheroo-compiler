@@ -8,10 +8,11 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import as_tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops import get_op
 from ml_switcheroo_compiler.tracing import global_tracing_state
@@ -79,7 +80,7 @@ def _dispatch_random_eager(func_name: str, op_name: str, *args: RandomArg, **kwa
         TensorLike: Evaluated backend array.
     """
     del func_name
-    return typing.cast(TensorLike, get_active_backend().execute_op(op_name, *args, **kwargs))
+    return as_tensor(get_active_backend().execute_op(op_name, *args, **kwargs))
 
 
 def _dispatch_random(func_name: str, *args: RandomArg, **kwargs: RandomArg) -> Tensor:
@@ -95,10 +96,10 @@ def _dispatch_random(func_name: str, *args: RandomArg, **kwargs: RandomArg) -> T
     """
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:
-        return typing.cast(Tensor, _dispatch_random_eager(func_name, op_name, *args, **kwargs))
+        return as_tensor_obj(_dispatch_random_eager(func_name, op_name, *args, **kwargs))
     op_cls: type | None = get_op(op_name)
     if op_cls is not None:
-        return typing.cast(Tensor, op_cls()(*args, **kwargs))
+        return as_tensor_obj(op_cls()(*args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node(op_name, list(args), dict(kwargs), (), "float32")

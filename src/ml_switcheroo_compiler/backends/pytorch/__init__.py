@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
 
 try:
     _has_pkg = importlib.util.find_spec("torch") is not None
@@ -53,7 +52,7 @@ def _all_reduce(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return typing.cast("EagerCallableProtocol", getattr(dc, "pytorch_all_reduce"))(*args, **kwargs)
+    return as_callable(getattr(dc, "pytorch_all_reduce"))(*args, **kwargs)
 
 
 def _all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -69,7 +68,7 @@ def _all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return typing.cast("EagerCallableProtocol", getattr(dc, "pytorch_all_gather"))(*args, **kwargs)
+    return as_callable(getattr(dc, "pytorch_all_gather"))(*args, **kwargs)
 
 
 def _reduce_scatter(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -85,7 +84,7 @@ def _reduce_scatter(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return typing.cast("EagerCallableProtocol", getattr(dc, "pytorch_reduce_scatter"))(*args, **kwargs)
+    return as_callable(getattr(dc, "pytorch_reduce_scatter"))(*args, **kwargs)
 
 
 def _broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -101,14 +100,14 @@ def _broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.pytorch.distributed_collectives")
-    return typing.cast("EagerCallableProtocol", getattr(dc, "pytorch_broadcast"))(*args, **kwargs)
+    return as_callable(getattr(dc, "pytorch_broadcast"))(*args, **kwargs)
 
 
 type.__setattr__(PyTorchCodeGenerator, "zeros", classmethod(zeros))
 type.__setattr__(PyTorchCodeGenerator, "array", classmethod(array))
 type.__setattr__(PyTorchCodeGenerator, "asarray", classmethod(asarray))
 type.__setattr__(PyTorchCodeGenerator, "item", classmethod(item))
-type.__setattr__(PyTorchCodeGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(PyTorchCodeGenerator, "execute_op", as_callable(classmethod)(execute_op))
 type.__setattr__(PyTorchCodeGenerator, "all_reduce", staticmethod(_all_reduce))
 type.__setattr__(PyTorchCodeGenerator, "all_gather", staticmethod(_all_gather))
 type.__setattr__(PyTorchCodeGenerator, "reduce_scatter", staticmethod(_reduce_scatter))

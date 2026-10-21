@@ -12,9 +12,10 @@ import ml_switcheroo_compiler.ops.creation.frontend_random as random_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
 
@@ -51,21 +52,21 @@ def test_frontend_random_coverage() -> None:
         with patch("ml_switcheroo_compiler.ops.creation.frontend_random.get_active_backend", return_value=mock_backend):
             # rand with default dtype/device and custom dtype/device
             r1 = random_mod.rand(2, 3)
-            assert typing.cast("EagerTensorProtocol", getattr(r1, "shape")) == (2, 3)
+            assert as_tensor(getattr(r1, "shape")) == (2, 3)
             r2 = random_mod.rand(2, 3, dtype=DType.Float64, device=Device("cpu"))
-            assert typing.cast("EagerTensorProtocol", getattr(r2, "dtype")) == DType.Float64
+            assert as_tensor(getattr(r2, "dtype")) == DType.Float64
 
             # randn
             rn1 = random_mod.randn(2, 3)
-            assert typing.cast("EagerTensorProtocol", getattr(rn1, "shape")) == (2, 3)
+            assert as_tensor(getattr(rn1, "shape")) == (2, 3)
             rn2 = random_mod.randn(2, 3, dtype=DType.Float64, device=Device("cpu"))
-            assert typing.cast("EagerTensorProtocol", getattr(rn2, "dtype")) == DType.Float64
+            assert as_tensor(getattr(rn2, "dtype")) == DType.Float64
 
             # randint
             ri1 = random_mod.randint(0, 10, (2, 3))
-            assert typing.cast("EagerTensorProtocol", getattr(ri1, "shape")) == (2, 3)
+            assert as_tensor(getattr(ri1, "shape")) == (2, 3)
             ri2 = random_mod.randint(0, 10, [2, 3], dtype=DType.Int32, device=Device("cpu"))
-            assert typing.cast("EagerTensorProtocol", getattr(ri2, "dtype")) == DType.Int32
+            assert as_tensor(getattr(ri2, "dtype")) == DType.Int32
 
             # manual_seed
             seed_val = random_mod.manual_seed(1234)

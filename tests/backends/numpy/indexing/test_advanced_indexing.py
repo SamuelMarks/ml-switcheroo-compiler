@@ -31,9 +31,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing import (
     _tensor_scatter_update,
 )
 from ml_switcheroo_compiler.backends.numpy.eager.indexing import IndexingContext
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_gather_nd_helper() -> None:
@@ -41,7 +42,7 @@ def test_gather_nd_helper() -> None:
     x = np.array([[1, 2], [3, 4]])
     indices = np.array([[0, 0], [1, 1]])
     res = _gather_nd(x, indices)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 4])
+    as_callable(np.testing.assert_allclose)(res, [1, 4])
 
 
 def test_scatter_nd_helper() -> None:
@@ -50,7 +51,7 @@ def test_scatter_nd_helper() -> None:
     updates = np.array([1, 4])
     res = _scatter_nd(indices, updates, (2, 2))
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_scatter_helper() -> None:
@@ -61,7 +62,7 @@ def test_scatter_helper() -> None:
     res = _scatter(x, index, src, dim=1)
     # put_along_axis replaces
     expected = np.array([[2, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_scatter_add_helper() -> None:
@@ -71,7 +72,7 @@ def test_scatter_add_helper() -> None:
     src = np.array([[1, 2], [3, 4]])
     res = _scatter_add(x, index, src, dim=1)
     expected = np.array([[3, 0], [0, 7]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_tensor_scatter_update_helper() -> None:
@@ -81,11 +82,11 @@ def test_tensor_scatter_update_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_update(tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res1, expected)
+    as_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_update(tensor, [[0, 0], [1, 1]], updates)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res2, expected)
+    as_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_tensor_scatter_add_helper() -> None:
@@ -95,11 +96,11 @@ def test_tensor_scatter_add_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_add(tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res1, expected)
+    as_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_add(tensor, [[0, 0], [1, 1]], updates)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res2, expected)
+    as_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_tensor_scatter_max_helper() -> None:
@@ -109,11 +110,11 @@ def test_tensor_scatter_max_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_max(tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res1, expected)
+    as_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_max(tensor, [[0, 0], [1, 1]], updates)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res2, expected)
+    as_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_tensor_scatter_min_helper() -> None:
@@ -123,11 +124,11 @@ def test_tensor_scatter_min_helper() -> None:
     updates = np.array([1, 4])
     res1 = _tensor_scatter_min(tensor, indices, updates)
     expected = np.array([[1, 5], [5, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res1, expected)
+    as_callable(np.testing.assert_allclose)(res1, expected)
 
     # test list indices
     res2 = _tensor_scatter_min(tensor, [[0, 0], [1, 1]], updates)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res2, expected)
+    as_callable(np.testing.assert_allclose)(res2, expected)
 
 
 def test_np_take_along_axis() -> None:
@@ -136,7 +137,7 @@ def test_np_take_along_axis() -> None:
     indices = np.array([[1, 0], [0, 1]])
     res = _np_take_along_axis(np, x, indices, axis=1)
     expected = np.take_along_axis(x, indices, axis=1)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_update() -> None:
@@ -160,7 +161,7 @@ def test_np_tensor_scatter_update() -> None:
 
     res = _np_tensor_scatter_update(np, tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_add() -> None:
@@ -170,7 +171,7 @@ def test_np_tensor_scatter_add() -> None:
     updates = np.array([1, 4])
     res = _np_tensor_scatter_add(np, tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_max() -> None:
@@ -180,7 +181,7 @@ def test_np_tensor_scatter_max() -> None:
     updates = np.array([1, 4])
     res = _np_tensor_scatter_max(np, tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_tensor_scatter_min() -> None:
@@ -190,7 +191,7 @@ def test_np_tensor_scatter_min() -> None:
     updates = np.array([1, 4])
     res = _np_tensor_scatter_min(np, tensor, indices, updates)
     expected = np.array([[1, 5], [5, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_gather_nd() -> None:
@@ -198,7 +199,7 @@ def test_np_gather_nd() -> None:
     x = np.array([[1, 2], [3, 4]])
     indices = np.array([[0, 0], [1, 1]])
     res = _np_gather_nd(np, x, indices)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 4])
+    as_callable(np.testing.assert_allclose)(res, [1, 4])
 
 
 def test_np_scatter_nd() -> None:
@@ -207,7 +208,7 @@ def test_np_scatter_nd() -> None:
     updates = np.array([1, 4])
     res = _np_scatter_nd(np, indices, updates, (2, 2))
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter() -> None:
@@ -217,7 +218,7 @@ def test_np_scatter() -> None:
     src = np.array([[1, 2], [3, 4]])
     res = _np_scatter(np, x, index, src, dim=1)
     expected = np.array([[2, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_add() -> None:
@@ -227,14 +228,14 @@ def test_np_scatter_add() -> None:
     src = np.array([[1, 2], [3, 4]])
     res = _np_scatter_add(np, x, index, src, dim=1)
     expected = np.array([[2, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_apply() -> None:
     """Test _np_scatter_apply."""
     x = np.zeros((2, 2))
     res = _np_scatter_apply(np, typing.cast("IndexingContext", None), x)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, x)
+    as_callable(np.testing.assert_allclose)(res, x)
 
 
 def test_np_scatter_max() -> None:
@@ -244,7 +245,7 @@ def test_np_scatter_max() -> None:
     updates = np.array([1, 4])
     res = _np_scatter_max(np, tensor, indices, updates)
     expected = np.array([[1, 0], [0, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_min() -> None:
@@ -254,7 +255,7 @@ def test_np_scatter_min() -> None:
     updates = np.array([1, 4])
     res = _np_scatter_min(np, tensor, indices, updates)
     expected = np.array([[1, 5], [5, 4]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_scatter_mul() -> None:
@@ -264,7 +265,7 @@ def test_np_scatter_mul() -> None:
     updates = np.array([2, 4])
     res = _np_scatter_mul(np, tensor, indices, updates)
     expected = np.array([[4, 2], [2, 8]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_tuple_instances() -> None:
@@ -281,14 +282,14 @@ def test_tuple_instances() -> None:
     updates = np.array([1, 4])
     t = np.zeros((2, 2))
 
-    res = typing.cast("EagerCallableProtocol", _tensor_scatter_update)(t, idx, updates)
+    res = as_callable(_tensor_scatter_update)(t, idx, updates)
     assert res[0, 0] == 1
 
-    res = typing.cast("EagerCallableProtocol", _tensor_scatter_add)(t, idx, updates)
+    res = as_callable(_tensor_scatter_add)(t, idx, updates)
     assert res[0, 0] == 1
 
-    res = typing.cast("EagerCallableProtocol", _tensor_scatter_max)(t, idx, updates)
+    res = as_callable(_tensor_scatter_max)(t, idx, updates)
     assert res[0, 0] == 1
 
-    res = typing.cast("EagerCallableProtocol", _tensor_scatter_min)(t, idx, updates)
+    res = as_callable(_tensor_scatter_min)(t, idx, updates)
     assert res[0, 0] == 0

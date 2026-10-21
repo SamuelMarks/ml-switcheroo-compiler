@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_triple
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 @register_op("Svd")
@@ -73,9 +73,9 @@ def svd(
             compute_uv=compute_uv,
         )
         if not compute_uv:
-            res_t = typing.cast("TensorLike", res)
+            res_t = as_tensor(res)
             return Tensor(res_t, TensorConfig(res_t.shape, input.dtype, input.device))
-        u, s, vh = typing.cast("tuple[TensorLike, TensorLike, TensorLike]", res)
+        u, s, vh = as_tensor_triple(res)
         return (
             Tensor(u, TensorConfig(u.shape, input.dtype, input.device)),
             Tensor(s, TensorConfig(s.shape, input.dtype, input.device)),

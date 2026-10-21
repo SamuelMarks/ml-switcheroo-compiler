@@ -8,7 +8,7 @@ from collections.abc import Mapping
 
 import pydantic
 import yaml
-from ml_switcheroo_ir import AttributeValue, InitializerValue
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -230,7 +230,7 @@ def _parse_serialization_dict(data: Mapping[str, AttributeValue]) -> IRGraph:
     raw_inits = data.get("initializers", {})
     if isinstance(raw_inits, dict) and hasattr(graph, "initializers"):
         for k, v in raw_inits.items():
-            graph.initializers[str(k)] = typing.cast(InitializerValue, v)
+            graph.initializers[str(k)] = v
 
     raw_nodes = data.get("nodes", {})
     if isinstance(raw_nodes, dict):

@@ -21,6 +21,7 @@ def test_build_signature_section() -> None:
             "std_args": [
                 {"name": "tensors", "type": "list[tensor]", "is_variadic": True},
                 {"name": "axis", "type": "int", "is_variadic": False},
+                "non_dict_item",
             ]
         },
     )
@@ -170,7 +171,7 @@ def test_run_standardization_and_main(tmp_path: Path) -> None:
             mock_print.assert_called_with("Successfully standardized 2 operation YAML definition files.")
 
         script_path = os.path.abspath(sod.__file__)
-        with patch("scripts.standardize_op_definitions.run_standardization", return_value=0):
+        with patch.dict(os.environ, {"ML_SWITCHEROO_DEFS_DIR": str(tmp_path)}), patch("builtins.print"):
             runpy.run_path(script_path, run_name="__main__")
     finally:
         sod.DEFS_DIR = orig_defs

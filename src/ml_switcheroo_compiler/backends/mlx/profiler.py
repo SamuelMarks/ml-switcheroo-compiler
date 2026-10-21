@@ -10,7 +10,7 @@ import typing
 from collections.abc import Callable
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_opt_callable, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -181,10 +181,10 @@ class MLXProfiler:
             model_inst = model_cls()
             if mx is not None and hasattr(mx, "compile") and callable(mx.compile):
                 try:
-                    return typing.cast("TypedVariadicCallable[EagerValue] | None", getattr(mx, "compile")(model_inst))
+                    return as_opt_callable(getattr(mx, "compile")(model_inst))
                 except Exception:
-                    return typing.cast("TypedVariadicCallable[EagerValue] | None", model_inst)
-            return typing.cast("TypedVariadicCallable[EagerValue] | None", model_inst)
+                    return as_opt_callable(model_inst)
+            return as_opt_callable(model_inst)
         raise TypeError("Failed to generate valid CompiledModel from MLXCodeGenerator")
 
     def _measure_latencies(
@@ -265,7 +265,7 @@ class MLXProfiler:
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             if not mlx_input_list:
-                return typing.cast(EagerValue, getattr(mx, "zeros")((1,), dtype=getattr(mx, "float32")))
+                return as_tensor(getattr(mx, "zeros")((1,), dtype=getattr(mx, "float32")))
             accum = getattr(mx, "zeros_like")(mlx_input_list[0])
             for t in mlx_input_list:
                 accum = getattr(mx, "add")(accum, t)

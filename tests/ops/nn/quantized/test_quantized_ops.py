@@ -36,9 +36,10 @@ from ml_switcheroo_compiler.ops.nn.quantized_ops import (
     quantized_matmul,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_quantized_ops_trace() -> None:
@@ -120,7 +121,7 @@ def test_quantized_ops_missing() -> None:
     with ConfigContext(eager_mode=True):
         res = quantized_conv(inp, q_cfg)
         assert isinstance(res, Tensor)
-        typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", res.numpy)(), typing.cast("EagerCallableProtocol", np.array)([[[[4.0]]]]))
+        as_callable(np.testing.assert_array_equal)(as_callable(res.numpy)(), as_callable(np.array)([[[[4.0]]]]))
 
 
 def test_quantized_ops_brute() -> None:

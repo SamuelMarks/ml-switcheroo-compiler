@@ -7,7 +7,6 @@ import typing
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import LLVMCPPGenerator
 from ml_switcheroo_compiler.core.dtype import DType
@@ -16,23 +15,24 @@ from ml_switcheroo_compiler.ops.control_flow.tracing import while_loop_tracing
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, set_loop_options
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_loop_options_init_and_context_manager() -> None:
     """Test LoopOptions initialization and context manager state restoration."""
-    opts1 = typing.cast("EagerCallableProtocol", LoopOptions)(
+    opts1 = as_callable(LoopOptions)(
         parallel_iterations=8,
         swap_memory=True,
         maximum_iterations=64,
         shape_invariants=[(10, 20)],
     )
-    assert typing.cast("EagerValue", opts1.parallel_iterations) == 8
-    assert typing.cast("EagerValue", bool(opts1.swap_memory)) is True
-    assert typing.cast("EagerValue", opts1.maximum_iterations) == 64
-    assert typing.cast("EagerValue", opts1.shape_invariants) == [(10, 20)]
+    assert as_tensor(opts1.parallel_iterations) == 8
+    assert bool(opts1.swap_memory) is True
+    assert as_tensor(opts1.maximum_iterations) == 64
+    assert as_tensor(opts1.shape_invariants) == [(10, 20)]
 
     opts2 = LoopOptions(
         parallel_iterations=4,
@@ -41,13 +41,13 @@ def test_loop_options_init_and_context_manager() -> None:
         shape_invariants=None,
     )
 
-    assert typing.cast("EagerValue", global_tracing_state.current_loop_options) is None
+    assert as_tensor(global_tracing_state.current_loop_options) is None
 
     with opts1:
-        assert typing.cast("EagerValue", global_tracing_state.current_loop_options) is opts1
+        assert as_tensor(global_tracing_state.current_loop_options) is opts1
         with opts2:
             assert global_tracing_state.current_loop_options is opts2
-        assert typing.cast("EagerValue", global_tracing_state.current_loop_options) is opts1
+        assert as_tensor(global_tracing_state.current_loop_options) is opts1
 
     assert global_tracing_state.current_loop_options is None
 
@@ -57,7 +57,7 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     graph = global_tracing_state.start_tracing("test_loop_options_graph")
     try:
         object.__setattr__(graph, "metadata", {})
-        opts = typing.cast("EagerCallableProtocol", set_loop_options)(
+        opts = as_callable(set_loop_options)(
             parallel_iterations=16,
             swap_memory=True,
             maximum_iterations=128,
@@ -65,7 +65,7 @@ def test_set_loop_options_injection_on_active_graph() -> None:
         )
         assert id(global_tracing_state.current_loop_options) == id(opts)
         assert getattr(graph, "loop_options", None) is opts
-        assert typing.cast("EagerTensorProtocol", getattr(graph, "metadata"))["loop_options"] is opts
+        assert as_tensor(getattr(graph, "metadata"))["loop_options"] is opts
 
         loop_node = LogicalNode(
             id="while_loop_1",
@@ -79,14 +79,14 @@ def test_set_loop_options_injection_on_active_graph() -> None:
         assert loop_node.attributes["swap_memory"] is True
         assert loop_node.attributes["maximum_iterations"] == 128
         assert loop_node.attributes["shape_invariants"] == [(32, 64)]
-        assert typing.cast("EagerValue", loop_node.attributes["loop_options"]) is opts
+        assert as_tensor(loop_node.attributes["loop_options"]) is opts
 
         with LoopOptions(parallel_iterations=32, maximum_iterations=256) as inner_opts:
             assert getattr(graph, "loop_options", None) is inner_opts
-            assert id(typing.cast("EagerTensorProtocol", getattr(graph, "metadata"))["loop_options"]) == id(inner_opts)
+            assert id(as_tensor(getattr(graph, "metadata"))["loop_options"]) == id(inner_opts)
 
         assert getattr(graph, "loop_options", None) is opts
-        assert typing.cast("EagerTensorProtocol", getattr(graph, "metadata"))["loop_options"] is opts
+        assert as_tensor(getattr(graph, "metadata"))["loop_options"] is opts
     finally:
         global_tracing_state.stop_tracing()
 
@@ -96,7 +96,7 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     graph_no_meta = global_tracing_state.start_tracing("test_no_meta")
     try:
         with LoopOptions(parallel_iterations=2):
-            assert typing.cast("EagerTensorProtocol", getattr(getattr(graph_no_meta, "loop_options", None), "parallel_iterations")) == 2
+            assert as_tensor(getattr(getattr(graph_no_meta, "loop_options", None), "parallel_iterations")) == 2
     finally:
         global_tracing_state.stop_tracing()
 
@@ -105,7 +105,7 @@ def test_while_loop_tracing_with_loop_options() -> None:
     """Test that while_loop_tracing attaches active loop options to the resulting Loop node."""
     global_tracing_state.start_tracing("test_while_loop_trace")
     try:
-        typing.cast("EagerCallableProtocol", set_loop_options)(
+        as_callable(set_loop_options)(
             parallel_iterations=4,
             swap_memory=True,
             maximum_iterations=50,

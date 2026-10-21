@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import logging
-import typing
 import uuid
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
-from ml_switcheroo_ir import AttributeValue, LogicalNode
+from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_eager_list, as_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.core import as_attrs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
@@ -47,12 +47,12 @@ def _emit_creation_node(
         id=out_id,
         op_type=op_type,
         inputs=[],
-        attributes={**typing.cast("dict[str, AttributeValue]", attributes or {}), "dtype": dtype.value},
+        attributes={**as_attrs(attributes or {}), "dtype": dtype.value},
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
 
-    proxy = typing.cast("EagerCallableProtocol", ProxyTensor)(
+    proxy = ProxyTensor(
         id=out_id,
         shape=shape,
         dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
@@ -174,13 +174,13 @@ class Geomspace(OpDef):
         raw_num = kwargs.get("num", args[2] if len(args) > 2 else 50)
         num: int = 50
         try:
-            num = int(typing.cast(int, raw_num))
+            num = int(as_int(raw_num))
         except (TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         raw_axis = kwargs.get("axis", 0)
         axis: int = 0
         try:
-            axis = int(typing.cast(int, raw_axis))
+            axis = int(as_int(raw_axis))
         except (TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         shape1 = getattr(start, "shape", getattr(start, "shape_metadata", ()))
@@ -217,7 +217,7 @@ class Geometric(OpDef):
             return tuple(getattr(p, "shape", getattr(p, "shape_metadata", ())))
         if isinstance(size, int):
             return (size,)
-        return tuple(int(typing.cast(int, d)) for d in typing.cast("Iterable[TensorOrScalar]", size))
+        return tuple(int(as_int(d)) for d in as_eager_list(size))
 
 
 def from_dlpack(obj: TensorOrScalar) -> TensorOrScalar:

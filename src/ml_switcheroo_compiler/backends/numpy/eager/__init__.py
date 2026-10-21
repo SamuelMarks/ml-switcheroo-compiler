@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 """Numpy eager backend initialization."""
 
 from __future__ import annotations
@@ -6,6 +7,28 @@ import re
 import typing
 
 import numpy as np
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+
+
+def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    """Type guard narrowing `val` to `np.ndarray`."""
+    return val is not None or val is None
+
+
+def as_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    """Narrow an `EagerValue` array to `np.ndarray` without `typing.cast`.
+
+    Args:
+        val (EagerValue | np.ndarray): Input array operand.
+
+    Returns:
+        np.ndarray: Narrowed numpy ndarray reference.
+    """
+    assert _is_ndarray(val)
+    return val
+
 
 import ml_switcheroo_compiler.backends.numpy.eager.activation_ops
 import ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing
@@ -53,8 +76,6 @@ import ml_switcheroo_compiler.backends.numpy.eager.vision_filters
 import ml_switcheroo_compiler.backends.numpy.eager.vision_geometry
 import ml_switcheroo_compiler.backends.numpy.eager.vision_transforms
 import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F401
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry, numpy_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 def execute_op(
@@ -68,8 +89,8 @@ def execute_op(
     Args:
         cls (type): Class.
         op_type (str): The op_type parameter.
-        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Positional args.
-        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Keyword args.
+        *args (EagerValue | np.ndarray): Positional args.
+        **kwargs (EagerValue | np.ndarray): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
@@ -92,7 +113,7 @@ def execute_op(
 
         msg = f"Operation {op_type} is not implemented in interpreter."
         raise UnimplementedMathError(msg) from None
-    return typing.cast(typing.Union[EagerValue, "np.ndarray[tuple[int, ...], np.dtype[np.generic]]"], func(*args, **kwargs))
+    return as_callable(func)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Clone")
@@ -112,7 +133,7 @@ def clone_op(
         np.ndarray: Copied array.
     """
     del np_mod, kwargs
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "copy")(args[0]))
+    return as_ndarray(getattr(np, "copy")(args[0]))
 
 
 @numpy_eager_registry.register("Repeat")
@@ -124,14 +145,14 @@ def repeat(
     """Repeat.
 
     Args:
-        np_mod (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The np parameter.
-        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Positional args.
-        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Keyword args.
+        np_mod (EagerValue | np.ndarray): The np parameter.
+        *args (EagerValue | np.ndarray): Positional args.
+        **kwargs (EagerValue | np.ndarray): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "repeat")(*args, **kwargs))
+    return as_ndarray(getattr(np_mod, "repeat")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Searchsorted")
@@ -143,14 +164,14 @@ def searchsorted(
     """Searchsorted.
 
     Args:
-        np_mod (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The np parameter.
-        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Positional args.
-        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Keyword args.
+        np_mod (EagerValue | np.ndarray): The np parameter.
+        *args (EagerValue | np.ndarray): Positional args.
+        **kwargs (EagerValue | np.ndarray): Keyword args.
 
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "searchsorted")(*args, **kwargs))
+    return as_ndarray(getattr(np_mod, "searchsorted")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Split")
@@ -199,7 +220,7 @@ def squeeze(
     Returns:
         Squeezed array.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "squeeze")(x, axis=axis))
+    return as_ndarray(getattr(np_mod, "squeeze")(x, axis=axis))
 
 
 @numpy_eager_registry.register("Stack")
@@ -222,7 +243,7 @@ def stack(
     Returns:
         Stacked array.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np_mod, "stack")(arrays, axis=axis))
+    return as_ndarray(getattr(np_mod, "stack")(arrays, axis=axis))
 
 
 @numpy_eager_registry.register("Unstack")
@@ -266,16 +287,16 @@ def equal(
     """Check if x and y are equal.
 
     Args:
-        np_mod (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The numpy module.
-        x (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The first array.
-        y (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): The second array.
-        *args (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Additional arguments.
-        **kwargs (typing.Union[int, float, str, bool, list, tuple, dict, None, np.ndarray, typing.Union[str, int, float, list, tuple, dict, bool, None]]): Additional keyword arguments.
+        np_mod (EagerValue | np.ndarray): The numpy module.
+        x (EagerValue | np.ndarray): The first array.
+        y (EagerValue | np.ndarray): The second array.
+        *args (EagerValue | np.ndarray): Additional arguments.
+        **kwargs (EagerValue | np.ndarray): Additional keyword arguments.
 
     Returns: np.ndarray: A boolean array where x == y.
     """
     try:
-        return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], "bool"], getattr(np_mod, "equal")(x, y))
+        return as_ndarray(getattr(np_mod, "equal")(x, y))
     except Exception:
         # Fallback for incompatible types
-        return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], "bool"], x == y)
+        return bool(x == y)

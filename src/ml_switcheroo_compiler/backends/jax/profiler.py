@@ -6,12 +6,11 @@ import logging
 import resource
 import sys
 import time
-import typing
 
 import jax
 import jax.numpy as jnp
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -133,9 +132,9 @@ class JAXProfiler:
             return native_apply_model({}, *args)
 
         try:
-            return typing.cast("TypedVariadicCallable[EagerValue]", jax.jit(_raw_forward_step))
+            return as_callable(jax.jit(_raw_forward_step))
         except Exception:
-            return typing.cast("TypedVariadicCallable[EagerValue]", _raw_forward_step)
+            return as_callable(_raw_forward_step)
 
     def _order_inputs(
         self,

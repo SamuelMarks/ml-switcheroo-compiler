@@ -8,6 +8,7 @@ import typing
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from ml_switcheroo_compiler.backends.eager_registry import as_int_list
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -467,7 +468,7 @@ def _resolve_pool_args(
         d_out = out_shape[2] if len(out_shape) > 2 else 1
         h_out = out_shape[3] if len(out_shape) > 3 else 1
         w_out = out_shape[4] if len(out_shape) > 4 else 1
-        k_3d = typing.cast(list[int], node.attributes.get("kernel_size", [2, 2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2, 2]
+        k_3d = as_int_list(node.attributes.get("kernel_size", [2, 2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2, 2]
         kd = k_3d[0]
         kh = k_3d[1]
         kw = k_3d[2]
@@ -495,7 +496,7 @@ def _resolve_pool_args(
     w_in = in0_shape[3] if len(in0_shape) > 3 else 1
     h_out = out_shape[2] if len(out_shape) > 2 else 1
     w_out = out_shape[3] if len(out_shape) > 3 else 1
-    k_2d = typing.cast(list[int], node.attributes.get("kernel_size", [2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2]
+    k_2d = as_int_list(node.attributes.get("kernel_size", [2, 2])) if hasattr(node, "attributes") and isinstance(node.attributes.get("kernel_size"), (list, tuple)) else [2, 2]
     kh = k_2d[0]
     kw = k_2d[1]
     grid_x = f"({h_out} * {w_out} + block_{node_idx}.x - 1) / block_{node_idx}.x"
@@ -556,7 +557,7 @@ def _resolve_row_wise_args(
 
 def resolve_hardware_launch_grid_and_args(
     node: IRNode,
-    tpl: HardwareTemplateConfig,
+    tpl: TemplateEntryType,
     node_buffers: dict[str, str],
     out_name: str,
     num_elements: int,

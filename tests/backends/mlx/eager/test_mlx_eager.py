@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, patch
 import mlx.core as mx
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.mlx.eager import execute_op
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 pytest.importorskip("mlx.core")
 
 
@@ -33,18 +33,18 @@ def test_mlx_eager_coverage_part1() -> None:
         pass
 
     cls = DummyBackend()
-    res = typing.cast("EagerCallableProtocol", execute_op)(cls, "TakeAlongAxis", typing.cast("EagerCallableProtocol", mx.array)([1, 2]), typing.cast("EagerCallableProtocol", mx.array)([0]), axis=0)
+    res = as_callable(execute_op)(cls, "TakeAlongAxis", as_callable(mx.array)([1, 2]), as_callable(mx.array)([0]), axis=0)
     assert res is not None
-    res = typing.cast("EagerCallableProtocol", execute_op)(cls, "Take", typing.cast("EagerCallableProtocol", mx.array)([1, 2]), typing.cast("EagerCallableProtocol", mx.array)([0]), axis=0)
+    res = as_callable(execute_op)(cls, "Take", as_callable(mx.array)([1, 2]), as_callable(mx.array)([0]), axis=0)
     assert res is not None
     with patch("ml_switcheroo_compiler.backends.numpy.eager.execute_op", return_value="scatter_res"):
-        typing.cast("EagerCallableProtocol", execute_op)(cls, "ScatterNd", typing.cast("EagerCallableProtocol", mx.array)([0]), typing.cast("EagerCallableProtocol", mx.array)([0]), typing.cast("EagerCallableProtocol", mx.array)([1]))
+        as_callable(execute_op)(cls, "ScatterNd", as_callable(mx.array)([0]), as_callable(mx.array)([0]), as_callable(mx.array)([1]))
     shape_mock = MagicMock()
     shape_mock.data = [2]
     shape_mock.tolist.return_value = [2]
-    res = typing.cast("EagerCallableProtocol", execute_op)(cls, "Reshape", typing.cast("EagerCallableProtocol", mx.array)([1, 2]), shape=shape_mock)
+    res = as_callable(execute_op)(cls, "Reshape", as_callable(mx.array)([1, 2]), shape=shape_mock)
     assert res is not None
-    res = typing.cast("EagerCallableProtocol", execute_op)(cls, "Reshape", typing.cast("EagerCallableProtocol", mx.array)([1, 2]), newshape=(2,))
+    res = as_callable(execute_op)(cls, "Reshape", as_callable(mx.array)([1, 2]), newshape=(2,))
     assert res is not None
 
 
@@ -63,31 +63,31 @@ def test_mlx_eager_coverage_part2() -> None:
         shape_mock = MagicMock()
         shape_mock.data = [2]
         shape_mock.tolist.return_value = [2]
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Zeros", 2) is not None
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Zeros", shape=shape_mock, dtype="float32") is not None
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Ones", 2) is not None
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Ones", shape=shape_mock, dtype="float32") is not None
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Full", 2, 5) is not None
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Full", shape=shape_mock, fill_value=5, dtype="float32") is not None
-        typing.cast("EagerCallableProtocol", execute_op)(cls, "Zeros", shape=shape_mock, dtype=None)
-        typing.cast("EagerCallableProtocol", execute_op)(cls, "Ones", shape=shape_mock, dtype=None)
-        typing.cast("EagerCallableProtocol", execute_op)(cls, "Full", shape=shape_mock, fill_value=5, dtype=None)
+        assert as_callable(execute_op)(cls, "Zeros", 2) is not None
+        assert as_callable(execute_op)(cls, "Zeros", shape=shape_mock, dtype="float32") is not None
+        assert as_callable(execute_op)(cls, "Ones", 2) is not None
+        assert as_callable(execute_op)(cls, "Ones", shape=shape_mock, dtype="float32") is not None
+        assert as_callable(execute_op)(cls, "Full", 2, 5) is not None
+        assert as_callable(execute_op)(cls, "Full", shape=shape_mock, fill_value=5, dtype="float32") is not None
+        as_callable(execute_op)(cls, "Zeros", shape=shape_mock, dtype=None)
+        as_callable(execute_op)(cls, "Ones", shape=shape_mock, dtype=None)
+        as_callable(execute_op)(cls, "Full", shape=shape_mock, fill_value=5, dtype=None)
         with patch("mlx.core.zeros", side_effect=[TypeError, "mock_res"]):
-            assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Zeros", shape=(2,), dtype="float32") == "mock_res"
+            assert as_callable(execute_op)(cls, "Zeros", shape=(2,), dtype="float32") == "mock_res"
         with patch("mlx.core.ones", side_effect=[TypeError, "mock_res"]):
-            assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Ones", shape=(2,), dtype="float32") == "mock_res"
+            assert as_callable(execute_op)(cls, "Ones", shape=(2,), dtype="float32") == "mock_res"
         with patch("mlx.core.full", side_effect=[TypeError, "mock_res"]):
-            assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Full", shape=(2,), fill_value=5, dtype="float32") == "mock_res"
+            assert as_callable(execute_op)(cls, "Full", shape=(2,), fill_value=5, dtype="float32") == "mock_res"
         n_mock = MagicMock()
         n_mock.data = 2
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Eye", n_mock, dtype="float32") is not None
-        assert typing.cast("EagerCallableProtocol", execute_op)(cls, "Eye", n_mock, n_mock, k=1, dtype="float32") is not None
+        assert as_callable(execute_op)(cls, "Eye", n_mock, dtype="float32") is not None
+        assert as_callable(execute_op)(cls, "Eye", n_mock, n_mock, k=1, dtype="float32") is not None
         with patch("mlx.core.take", side_effect=ValueError):
-            res = typing.cast("EagerCallableProtocol", execute_op)(cls, "Take", typing.cast("EagerCallableProtocol", mx.array)([1, 2]), typing.cast("EagerCallableProtocol", mx.array)([0]), axis=0)
-            assert typing.cast("EagerTensorProtocol", getattr(getattr(res, "__class__", None), "__name__")) == "array"
+            res = as_callable(execute_op)(cls, "Take", as_callable(mx.array)([1, 2]), as_callable(mx.array)([0]), axis=0)
+            assert as_tensor(getattr(getattr(res, "__class__", None), "__name__")) == "array"
         with patch("mlx.core.take", side_effect=ValueError), patch("ml_switcheroo_compiler.backends.numpy.eager.execute_op", return_value=(1, 2)):
-            res = typing.cast("EagerCallableProtocol", execute_op)(cls, "Take", typing.cast("EagerCallableProtocol", mx.array)([1, 2]), typing.cast("EagerCallableProtocol", mx.array)([0]), axis=0)
-            assert isinstance(typing.cast("EagerValue", res), tuple)
+            res = as_callable(execute_op)(cls, "Take", as_callable(mx.array)([1, 2]), as_callable(mx.array)([0]), axis=0)
+            assert isinstance(as_tensor(res), tuple)
 
 
 def test_mlx_ragged_tensor_to_dense() -> None:
@@ -124,11 +124,11 @@ def test_mlx_ragged_tensor_to_dense() -> None:
             self.row_splits = row_splits
 
     r_obj = RaggedContainer(values=mx.array([10.0, 20.0, 30.0, 40.0]), row_splits=mx.array([0, 1, 4]))
-    dense_obj = _mlx_ragged_tensor_to_dense(mx, typing.cast("EagerValue", r_obj), default_value=-1.0)
-    assert typing.cast("EagerTensorProtocol", getattr(dense_obj, "shape")) == (2, 3)
+    dense_obj = _mlx_ragged_tensor_to_dense(mx, as_tensor(r_obj), default_value=-1.0)
+    assert as_tensor(getattr(dense_obj, "shape")) == (2, 3)
     r_empty: dict[str, mx.array] = {"values": mx.array([], dtype=mx.float32), "row_splits": mx.array([0])}
     dense_empty = _mlx_ragged_tensor_to_dense(mx, r_empty)
-    assert typing.cast("EagerTensorProtocol", getattr(dense_empty, "shape")) == (0, 0)
+    assert as_tensor(getattr(dense_empty, "shape")) == (0, 0)
 
 
 def test_mlx_eager_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,6 +145,6 @@ def test_mlx_eager_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "mlx.core", None)
         importlib.reload(mx_eager)
-        assert typing.cast("EagerTensorProtocol", getattr(mx_eager, "mx")) is None
+        assert as_tensor(getattr(mx_eager, "mx")) is None
     importlib.reload(mx_eager)
-    assert typing.cast("EagerTensorProtocol", getattr(mx_eager, "mx")) is not None
+    assert as_tensor(getattr(mx_eager, "mx")) is not None

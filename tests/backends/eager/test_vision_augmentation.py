@@ -39,11 +39,12 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_zoom_eager,
 )
 from ml_switcheroo_compiler.backends.eager.vision_utils import GeometricGridConfig
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 @pytest.fixture
@@ -70,21 +71,21 @@ def test_flips(mock_prepare: EagerTensorProtocol) -> None:
     img = np.array([[[1, 2], [3, 4]]])
     rng_high = random.Random()
     setattr(rng_high, "random", lambda: 0.6)
-    res = typing.cast("EagerCallableProtocol", _flip_horizontal)(img, rng_high)
+    res = as_callable(_flip_horizontal)(img, rng_high)
     assert id(res) != id(img)
 
     rng_low = random.Random()
     setattr(rng_low, "random", lambda: 0.4)
-    res = typing.cast("EagerCallableProtocol", _flip_horizontal)(img, rng_low)
+    res = as_callable(_flip_horizontal)(img, rng_low)
     assert id(res) == id(img)
 
-    res = typing.cast("EagerCallableProtocol", _flip_vertical)(img, rng_high)
+    res = as_callable(_flip_vertical)(img, rng_high)
     assert id(res) != id(img)
-    res = typing.cast("EagerCallableProtocol", _flip_vertical)(img, rng_low)
+    res = as_callable(_flip_vertical)(img, rng_low)
     assert id(res) == id(img)
 
-    typing.cast("EagerCallableProtocol", _flip_both)(img, rng_high)
-    typing.cast("EagerCallableProtocol", _flip_both)(img, rng_low)
+    as_callable(_flip_both)(img, rng_high)
+    as_callable(_flip_both)(img, rng_low)
 
     imgs = np.ones((1, 4, 4, 3))
     random_flip_eager(np, imgs, mode="horizontal", seed=42)
@@ -100,18 +101,18 @@ def test_rotation_utils() -> None:
     params = AffineTransformParams(cos_a=1.0, sin_a=0.0, cx=2.0, cy=2.0)
     _apply_affine_transform(np.array([[1]]), np.array([[1]]), params)
 
-    cfg = typing.cast("EagerCallableProtocol", RotationConfig)(factor=0.1, fill_mode="reflect", interpolation="bilinear", seed=42, fill_value=0.0, data_format=None)
-    typing.cast("EagerCallableProtocol", _interpolate_pixels)(np, typing.cast("EagerCallableProtocol", np.ones)((1, 4, 4, 3)), typing.cast("EagerCallableProtocol", np.array)([[1]]), typing.cast("EagerCallableProtocol", np.array)([[1]]), cfg)
+    cfg = as_callable(RotationConfig)(factor=0.1, fill_mode="reflect", interpolation="bilinear", seed=42, fill_value=0.0, data_format=None)
+    as_callable(_interpolate_pixels)(np, as_callable(np.ones)((1, 4, 4, 3)), as_callable(np.array)([[1]]), as_callable(np.array)([[1]]), cfg)
 
-    typing.cast("EagerCallableProtocol", _compute_rotation_grid)(np, 4, 4, typing.cast("EagerCallableProtocol", random.Random)(), 0.1)
+    as_callable(_compute_rotation_grid)(np, 4, 4, as_callable(random.Random)(), 0.1)
 
-    typing.cast("EagerCallableProtocol", random_rotation_eager)(np, typing.cast("EagerCallableProtocol", np.ones)((1, 4, 4, 3)), cfg)
+    as_callable(random_rotation_eager)(np, as_callable(np.ones)((1, 4, 4, 3)), cfg)
     assert cfg is not None
 
 
 def test_crop_utils() -> None:
     """Test function test_crop_utils."""
-    typing.cast("EagerCallableProtocol", _crop_and_pad_single)(np, typing.cast("EagerCallableProtocol", np.ones)((4, 4, 3)), typing.cast("EagerCallableProtocol", random.Random)(), (2, 2, 1, 1))
+    as_callable(_crop_and_pad_single)(np, as_callable(np.ones)((4, 4, 3)), as_callable(random.Random)(), (2, 2, 1, 1))
     _compute_random_crop(np, np.ones((1, 4, 4, 3)))
     random_crop_eager(np, np.ones((1, 4, 4, 3)), (2, 2))
     assert callable(random_crop_eager)
@@ -130,10 +131,10 @@ def test_elastic(mock_prepare: EagerTensorProtocol) -> None:
         mock_prepare: Test parameter `mock_prepare`.
     """
     _blur_displacement(np, np.ones((1, 4, 4)), 0.1)
-    typing.cast("EagerCallableProtocol", _generate_random_elastic_grid)(np, (1, 4, 4), typing.cast("EagerCallableProtocol", random.Random)(), 0.1, 0.1)
+    as_callable(_generate_random_elastic_grid)(np, (1, 4, 4), as_callable(random.Random)(), 0.1, 0.1)
 
-    assert isinstance(typing.cast("EagerCallableProtocol", _get_elastic_factor)(typing.cast("EagerCallableProtocol", random.Random)(), 0.1), float)
-    assert isinstance(typing.cast("EagerCallableProtocol", _get_elastic_factor)(typing.cast("EagerCallableProtocol", random.Random)(), (0.1, 0.2)), float)
+    assert isinstance(as_callable(_get_elastic_factor)(as_callable(random.Random)(), 0.1), float)
+    assert isinstance(as_callable(_get_elastic_factor)(as_callable(random.Random)(), (0.1, 0.2)), float)
 
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._apply_elastic_batch", return_value=np.ones((1, 4, 4, 3))):
         random_elastic_transform_eager(np, np.ones((1, 4, 4, 3)), 0.1, 0.1)
@@ -147,14 +148,14 @@ def test_geometric(mock_prepare: EagerTensorProtocol) -> None:
         mock_prepare: Test parameter `mock_prepare`.
     """
     rng = random.Random()
-    cfg = typing.cast("EagerCallableProtocol", GeometricGridConfig)(H=4, W=4, rng=rng, factor1=0.1, factor2=0.1)
-    typing.cast("EagerCallableProtocol", _compute_zoom_grid)(np, cfg)
-    typing.cast("EagerCallableProtocol", _compute_translation_grid)(np, cfg)
+    cfg = as_callable(GeometricGridConfig)(H=4, W=4, rng=rng, factor1=0.1, factor2=0.1)
+    as_callable(_compute_zoom_grid)(np, cfg)
+    as_callable(_compute_translation_grid)(np, cfg)
 
-    assert isinstance(typing.cast("EagerCallableProtocol", _get_shear_factor)(rng, 0.1), float)
-    assert isinstance(typing.cast("EagerCallableProtocol", _get_shear_factor)(rng, (0.1, 0.2)), float)
+    assert isinstance(as_callable(_get_shear_factor)(rng, 0.1), float)
+    assert isinstance(as_callable(_get_shear_factor)(rng, (0.1, 0.2)), float)
 
-    typing.cast("EagerCallableProtocol", _compute_shear_grid)(np, cfg)
+    as_callable(_compute_shear_grid)(np, cfg)
 
     imgs = np.ones((1, 4, 4, 3))
     with patch("ml_switcheroo_compiler.backends.eager.vision_augmentation._compute_zoom_grid", return_value=(0, 0)):

@@ -8,9 +8,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.utils.operation_utils import _normalize_axes, _validate_squeeze_dims, compute_shape_propagation, get_source_inputs
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MockNode:
@@ -66,7 +67,7 @@ def test_get_source_inputs() -> None:
     """Test function test_get_source_inputs."""
     t1 = MockTensor()
     t2 = MockTensor()
-    t3 = typing.cast("EagerCallableProtocol", MockTensor)([t1, t2])
+    t3 = as_callable(MockTensor)([t1, t2])
     t4 = MockTensor([])
     assert get_source_inputs(t4) == [t4]
     assert get_source_inputs(t1) == [t1]

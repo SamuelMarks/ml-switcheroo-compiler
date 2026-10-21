@@ -23,9 +23,10 @@ from ml_switcheroo_compiler.ops.ragged import (
     RaggedStackDynamicPartitions,
     RaggedTensorToDense,
 )
+from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _make_tensor(shape: tuple[EagerValue, ...]) -> Tensor:
@@ -37,7 +38,7 @@ def _make_tensor(shape: tuple[EagerValue, ...]) -> Tensor:
     Returns:
         Tensor: Dummy tensor instance.
     """
-    return typing.cast("Tensor", typing.cast("EagerCallableProtocol", Tensor)(None, typing.cast("EagerCallableProtocol", TensorConfig)(shape, "float32", "cpu")))
+    return as_tensor_obj(as_callable(Tensor)(None, as_callable(TensorConfig)(shape, "float32", "cpu")))
 
 
 def test_ragged_dot_and_matmul_shape_inference() -> None:
@@ -55,9 +56,9 @@ def test_ragged_dot_and_matmul_shape_inference() -> None:
     # RaggedDot fallback when inner dim is unknown
     rt_a_no_inner = _make_tensor((4,))
     out_dot_fallback = op_dot.infer_shape(rt_a_no_inner, weights)
-    assert typing.cast("EagerTensorProtocol", getattr(out_dot_fallback, "__getitem__")(0)) == 4
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_dot_fallback, "__getitem__")(1)), SymVar)
-    assert typing.cast("EagerTensorProtocol", getattr(out_dot_fallback, "__getitem__")(2)) == 16
+    assert as_tensor(getattr(out_dot_fallback, "__getitem__")(0)) == 4
+    assert isinstance(as_tensor(getattr(out_dot_fallback, "__getitem__")(1)), SymVar)
+    assert as_tensor(getattr(out_dot_fallback, "__getitem__")(2)) == 16
 
     # RaggedMatMul: (B=2, M=var, K=10) x (B=2, K=10, N=5) -> (2, var, 5)
     rt_mat_a = _make_tensor((2, var_len, 10))
@@ -81,9 +82,9 @@ def test_ragged_tensor_to_dense_and_gather() -> None:
 
     # Inferred dense shape with SymVar max_seq_len
     out_inferred = op_dense.infer_shape(rt)
-    assert typing.cast("EagerTensorProtocol", getattr(out_inferred, "__getitem__")(0)) == 4
-    assert typing.cast("EagerTensorProtocol", getattr(out_inferred, "__getitem__")(2)) == 16
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_inferred, "__getitem__")(1)), SymVar)
+    assert as_tensor(getattr(out_inferred, "__getitem__")(0)) == 4
+    assert as_tensor(getattr(out_inferred, "__getitem__")(2)) == 16
+    assert isinstance(as_tensor(getattr(out_inferred, "__getitem__")(1)), SymVar)
 
     # RaggedGather: params (100, 32), indices (8, 4) -> (8, 4, 32)
     params = _make_tensor((100, 32))
@@ -120,21 +121,21 @@ def test_ragged_constant_cross_and_range() -> None:
 
     # RaggedConstant with list of 3 rows
     out_c = op_const.infer_shape([[1, 2], [3], [4, 5, 6]])
-    assert typing.cast("EagerTensorProtocol", getattr(out_c, "__getitem__")(0)) == 3
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_c, "__getitem__")(1)), SymVar)
+    assert as_tensor(getattr(out_c, "__getitem__")(0)) == 3
+    assert isinstance(as_tensor(getattr(out_c, "__getitem__")(1)), SymVar)
 
     # RaggedCrossHashed with 2 inputs of batch 5
     in_1 = _make_tensor((5, SymVar("len1")))
     in_2 = _make_tensor((5, SymVar("len2")))
     out_cross = op_cross.infer_shape(in_1, in_2)
-    assert typing.cast("EagerTensorProtocol", getattr(out_cross, "__getitem__")(0)) == 5
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_cross, "__getitem__")(1)), SymVar)
+    assert as_tensor(getattr(out_cross, "__getitem__")(0)) == 5
+    assert isinstance(as_tensor(getattr(out_cross, "__getitem__")(1)), SymVar)
 
     # RaggedRange with 4 start values
     starts = _make_tensor((4,))
     out_range = op_range.infer_shape(starts, None, None)
-    assert typing.cast("EagerTensorProtocol", getattr(out_range, "__getitem__")(0)) == 4
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_range, "__getitem__")(1)), SymVar)
+    assert as_tensor(getattr(out_range, "__getitem__")(0)) == 4
+    assert isinstance(as_tensor(getattr(out_range, "__getitem__")(1)), SymVar)
 
     # Fallbacks
     assert op_const.infer_shape() == ()
@@ -148,8 +149,8 @@ def test_ragged_splits_and_segments_conversion() -> None:
 
     splits = _make_tensor((5,))  # 4 rows
     out_seg = op_splits2seg.infer_shape(splits)
-    assert typing.cast("EagerCallableProtocol", len)(out_seg) == 1
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_seg, "__getitem__")(0)), SymVar)
+    assert as_callable(len)(out_seg) == 1
+    assert isinstance(as_tensor(getattr(out_seg, "__getitem__")(0)), SymVar)
 
     # SegmentIdsToRowSplits with known num_segments=4
     seg_ids = _make_tensor((20,))
@@ -158,8 +159,8 @@ def test_ragged_splits_and_segments_conversion() -> None:
 
     # SegmentIdsToRowSplits with symbolic num_segments
     out_splits_sym = op_seg2splits.infer_shape(seg_ids)
-    assert typing.cast("EagerCallableProtocol", len)(out_splits_sym) == 1
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_splits_sym, "__getitem__")(0)), SymVar)
+    assert as_callable(len)(out_splits_sym) == 1
+    assert isinstance(as_tensor(getattr(out_splits_sym, "__getitem__")(0)), SymVar)
 
 
 def test_ragged_stack_and_dynamic_partitions() -> None:
@@ -177,9 +178,9 @@ def test_ragged_stack_and_dynamic_partitions() -> None:
     # Dynamic partitions into 5 partitions
     data = _make_tensor((100, 16))
     out_part = op_part.infer_shape(data, num_partitions=5)
-    assert typing.cast("EagerTensorProtocol", getattr(out_part, "__getitem__")(0)) == 5
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_part, "__getitem__")(1)), SymVar)
-    assert typing.cast("EagerTensorProtocol", getattr(out_part, "__getitem__")(2)) == 16
+    assert as_tensor(getattr(out_part, "__getitem__")(0)) == 5
+    assert isinstance(as_tensor(getattr(out_part, "__getitem__")(1)), SymVar)
+    assert as_tensor(getattr(out_part, "__getitem__")(2)) == 16
 
     # Fallbacks
     assert op_stack.infer_shape() == ()
@@ -193,15 +194,15 @@ def test_boolean_mask_and_map_flat_values() -> None:
     data = _make_tensor((10, 20, 30))
     mask = _make_tensor((10, 20))  # 2D mask reduces first 2 dims
     out_mask = op_mask.infer_shape(data, mask)
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(out_mask, "__getitem__")(0)), SymVar)
-    assert typing.cast("EagerTensorProtocol", getattr(out_mask, "__getitem__")(1)) == 30
+    assert isinstance(as_tensor(getattr(out_mask, "__getitem__")(0)), SymVar)
+    assert as_tensor(getattr(out_mask, "__getitem__")(1)) == 30
 
     # MapFlatValues preserves shape of primary input
     rt = _make_tensor((4, SymVar("seq"), 8))
-    assert typing.cast("EagerCallableProtocol", op_map.infer_shape)(None, rt) == (4, typing.cast("EagerCallableProtocol", SymVar)("seq"), 8)
+    assert as_callable(op_map.infer_shape)(None, rt) == (4, as_callable(SymVar)("seq"), 8)
 
     # Fallbacks
-    assert isinstance(typing.cast("EagerTensorProtocol", getattr(op_mask.infer_shape(), "__getitem__")(0)), SymVar)
+    assert isinstance(as_tensor(getattr(op_mask.infer_shape(), "__getitem__")(0)), SymVar)
     assert op_map.infer_shape(None) == ()
 
 
@@ -241,5 +242,5 @@ def test_ragged_additional_edge_cases() -> None:
     class DummyMaskNoShape:
         """Dummy mask without shape attributes."""
 
-    res_dummy_mask = typing.cast("EagerCallableProtocol", op_mask.infer_shape)(data_3d, typing.cast("EagerCallableProtocol", DummyMaskNoShape)())
+    res_dummy_mask = as_callable(op_mask.infer_shape)(data_3d, as_callable(DummyMaskNoShape)())
     assert res_dummy_mask == (SymVar("masked_count"), 20, 30)

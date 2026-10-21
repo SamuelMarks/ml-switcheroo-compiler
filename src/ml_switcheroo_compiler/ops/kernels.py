@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_str, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -216,7 +214,7 @@ def precompiled_cuda_kernel(
     """
     conf = launch_config if launch_config is not None else KernelLaunchConfig(grid=(1,), block=(1,), name="custom_kernel")
     if config.eager_mode:
-        return _eager_custom_kernel(inputs, KernelContext(op_type="PrecompiledCudaKernel", code_or_binary=typing.cast("str", binary), output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
+        return _eager_custom_kernel(inputs, KernelContext(op_type="PrecompiledCudaKernel", code_or_binary=as_str(binary), output_shapes=output_shapes, output_dtypes=output_dtypes, launch_config=conf))
 
     outputs = []
     for i, (shape, dtype) in enumerate(zip(output_shapes, output_dtypes)):

@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.errors import CompilerError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import jvp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
@@ -27,7 +28,7 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return typing.cast("EagerCallableProtocol", Tensor)(val, typing.cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    return as_callable(Tensor)(val, as_callable(TensorConfig)(shape, DType.Float32, as_callable(Device)("cpu")))
 
 
 def test_jvp_binary() -> None:
@@ -86,10 +87,10 @@ def test_jvp_binary() -> None:
                 y: Test parameter `y`.
                 op_bound: Test parameter `op_bound`.
             """
-            return typing.cast("EagerCallableProtocol", dispatch_op)(op_bound, x, y)
+            return as_callable(dispatch_op)(op_bound, x, y)
 
         try:
-            res, out_tangent = typing.cast("EagerCallableProtocol", jvp)(f, (x, y), (tx, ty))
+            res, out_tangent = as_callable(jvp)(f, (x, y), (tx, ty))
             assert res is not None
             assert out_tangent is not None
             evaluated_bin += 1
@@ -154,10 +155,10 @@ def test_jvp_unary() -> None:
                 x: Test parameter `x`.
                 op_bound: Test parameter `op_bound`.
             """
-            return typing.cast("EagerCallableProtocol", dispatch_op)(op_bound, x)
+            return as_callable(dispatch_op)(op_bound, x)
 
         try:
-            res, out_tangent = typing.cast("EagerCallableProtocol", jvp)(f, (x,), (tx,))
+            res, out_tangent = as_callable(jvp)(f, (x,), (tx,))
             assert res is not None
             assert out_tangent is not None
             evaluated_un += 1

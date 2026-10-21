@@ -8,9 +8,10 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.numpy import numpy_mixins as np_mixins
 from ml_switcheroo_compiler.backends.numpy import types as np_types
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class _MockBackendModule:
@@ -110,16 +111,16 @@ def test_backends_numpy_types_and_mixins() -> None:
         pass
 
     z = np_types.zeros(_DummyNumpyBackend, (2, 2))
-    assert typing.cast("EagerTensorProtocol", getattr(z, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(z, "tolist"))() == [[0.0, 0.0], [0.0, 0.0]]
+    assert as_tensor(getattr(z, "shape")) == (2, 2)
+    assert as_tensor(getattr(z, "tolist"))() == [[0.0, 0.0], [0.0, 0.0]]
 
     arr = np_types.array(_DummyNumpyBackend, [1, 2], dtype=None)
-    assert typing.cast("EagerTensorProtocol", getattr(arr, "tolist"))() == [1, 2]
+    assert as_tensor(getattr(arr, "tolist"))() == [1, 2]
 
     as_arr = np_types.asarray(_DummyNumpyBackend, [3.5, 4.5])
-    assert typing.cast("EagerTensorProtocol", getattr(as_arr, "tolist"))() == [3.5, 4.5]
+    assert as_tensor(getattr(as_arr, "tolist"))() == [3.5, 4.5]
 
-    val = np_types.item(_DummyNumpyBackend, typing.cast("EagerTensorProtocol", getattr(as_arr, "__getitem__")(0)))
+    val = np_types.item(_DummyNumpyBackend, as_tensor(getattr(as_arr, "__getitem__")(0)))
     assert val == 3.5
 
     # Test numpy_mixins visitors

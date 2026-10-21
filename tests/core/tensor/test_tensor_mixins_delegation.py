@@ -10,9 +10,10 @@ import pytest
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def make_tensor(data: EagerValue) -> EagerValue:
@@ -31,7 +32,7 @@ def test_numpy_conversion_fallback() -> None:
     original_numpy = sys.modules.get("numpy")
     getattr(sys.modules, "__setitem__")("numpy", None)
     try:
-        typing.cast("EagerTensorProtocol", getattr(t, "numpy"))()
+        as_tensor(getattr(t, "numpy"))()
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
@@ -58,8 +59,8 @@ def test_exception_in_asarray() -> None:
             """
             raise RuntimeError("boom")
 
-    t = typing.cast("EagerCallableProtocol", make_tensor)(typing.cast("EagerCallableProtocol", BadData)())
-    res = typing.cast("EagerTensorProtocol", getattr(t, "__array__"))()
+    t = as_callable(make_tensor)(as_callable(BadData)())
+    res = as_tensor(getattr(t, "__array__"))()
     assert res.shape == (1,)
 
 
@@ -79,19 +80,19 @@ def test_item_eval_fallback(monkeypatch: EagerTensorProtocol) -> None:
             Args:
                 x: Test parameter `x`.
             """
-            return typing.cast("EagerCallableProtocol", int)(x)
+            return as_callable(int)(x)
 
     class FakeTensor(Tensor):
         """Test class FakeTensor."""
 
         def eval(self) -> Tensor:
             """Test function eval."""
-            return typing.cast("Tensor", 5)
+            return as_tensor_obj(5)
 
     t = FakeTensor(1.0, TensorConfig(device=Device("cpu"), dtype=DType("float32"), shape=()))
     import ml_switcheroo_compiler.backends.registry as reg
 
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(reg, "get_active_backend", lambda: typing.cast("EagerCallableProtocol", FakeBackend)())
+    as_callable(monkeypatch.setattr)(reg, "get_active_backend", lambda: as_callable(FakeBackend)())
     assert t.item() == 5
 
 
@@ -99,7 +100,7 @@ def test_getitem_indexerror() -> None:
     """Test function test_getitem_indexerror."""
     t = make_tensor([1, 2])
     with pytest.raises(IndexError):
-        typing.cast("EagerTensorProtocol", getattr(t, "__getitem__")((1, 2)))
+        as_tensor(getattr(t, "__getitem__")((1, 2)))
     from ml_switcheroo_compiler.core import config
 
     orig = config.eager_mode
@@ -119,7 +120,7 @@ def test_getitem_indexerror() -> None:
     orig_add_node = state.global_tracing_state.add_node
     setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        res = typing.cast("EagerTensorProtocol", getattr(t, "__getitem__")(typing.cast("EagerCallableProtocol", FakeProxy)()))
+        res = as_tensor(getattr(t, "__getitem__")(as_callable(FakeProxy)()))
         assert res is not None
     finally:
         config.eager_mode = orig

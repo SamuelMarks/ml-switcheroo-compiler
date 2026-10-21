@@ -1,10 +1,8 @@
-"""Shape operations for advanced indexing and sorting Tensor Anys."""
+"""Shape operations for advanced indexing and sorting Tensor objects."""
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_int, as_shape
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # pylint: disable=duplicate-code
@@ -22,12 +20,12 @@ def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tup
             tuple[int, ...]: Result.
     """
     if hasattr(k, "__array__") and not isinstance(k, tuple):
-        k = typing.cast(Tensor, getattr(k, "__array__")())
+        k = getattr(k, "__array__")()
     if hasattr(k, "item"):
         k = int(getattr(k, "item")())
     else:
         try:
-            k = int(typing.cast(int, k))
+            k = int(as_int(k))
         except (ValueError, TypeError):
             return k
     return k
@@ -52,12 +50,12 @@ class TopK(OpDef):
         """
         if k is None:
             k = kwargs.get("k", 1)
-        k = typing.cast("EagerCallableProtocol", _normalize_k)(k)
+        k = as_callable(_normalize_k)(k)
 
         if not hasattr(x, "shape") or not x.shape:
             return (None,)
         out_shape = list(x.shape)
-        out_shape[-1] = typing.cast(int, k)
+        out_shape[-1] = as_int(k)
         return tuple(out_shape)
 
 
@@ -86,8 +84,8 @@ class Argsort(OpDef):
             tuple[int, ...]: Result.
         """
         if isinstance(x, tuple) and hasattr(x, "shape"):
-            return typing.cast("tuple[int, ...]", getattr(x, "shape"))
-        return typing.cast("tuple[int, ...]", getattr(x, "shape", ()))
+            return as_shape(getattr(x, "shape"))
+        return as_shape(getattr(x, "shape", ()))
 
 
 @register_op("Sort")

@@ -26,9 +26,10 @@ from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_hardware_compiler_protocol_conformance() -> None:
@@ -228,11 +229,11 @@ def _test_all_registered_operations_hardware_codegen_parity_part_2(_state: dict[
         if op_name in binary_ops:
             in1 = IRNode(id="in1", op_type="Input", shape_metadata=(4, 4))
             g.nodes["in1"] = in1
-            node = typing.cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
+            node = as_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0", "in1"], shape_metadata=(4, 4))
             g.inputs = ["in0", "in1"]
             object.__setattr__(g, "sorted_nodes", [in0, in1, node])
         else:
-            node = typing.cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+            node = as_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
             g.inputs = ["in0"]
             object.__setattr__(g, "sorted_nodes", [in0, node])
         getattr(g.nodes, "__setitem__")(node.id, node)
@@ -276,7 +277,7 @@ def _test_all_registered_operations_hardware_codegen_parity_part_4(_state: dict[
     for op_name in sample_ops:
         g = IRGraph(name=f"test_{op_name}")
         in0 = IRNode(id="in0", op_type="Input", shape_metadata=(4, 4))
-        node = typing.cast("EagerCallableProtocol", IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
+        node = as_callable(IRNode)(id=f"{op_name}_node", op_type=op_name, inputs=["in0"], shape_metadata=(4, 4))
         g.nodes["in0"] = in0
         getattr(g.nodes, "__setitem__")(node.id, node)
         g.inputs = ["in0"]

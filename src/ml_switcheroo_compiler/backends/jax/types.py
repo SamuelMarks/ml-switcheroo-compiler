@@ -13,7 +13,7 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_zeros,
 )
 from ml_switcheroo_compiler.backends.eager.types_utils import ZerosModule
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -40,7 +40,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(jnp, data, dtype))
+    return as_tensor(as_callable(generic_array)(jnp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -53,7 +53,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_asarray)(jnp, data))
+    return as_tensor(as_callable(generic_asarray)(jnp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -66,4 +66,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: Result.
     """
-    return typing.cast(float, typing.cast("EagerCallableProtocol", generic_item)(jnp, data))
+    return as_float(as_callable(generic_item)(jnp, data))

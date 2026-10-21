@@ -2,25 +2,21 @@
 
 from __future__ import annotations
 
-import typing
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, VariadicCallableProtocol, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ops.registry import register_util
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
-from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import register_vjp
+from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import VJPRuleCallable, register_vjp
 
 from .custom_vjp_ops import custom_vjp
 from .options import GradOptions
 from .utils import GradValue, _check_scalar, _compute_grad_and_value, _find_wrt_tensors, _get_inputs_dict
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, VariadicCallableProtocol
 
 
 @register_util("backward")
@@ -79,16 +75,16 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
             setattr(t, "grad", grad_val)
 
 
-def RegisterGradient(op_type: str) -> VariadicCallableProtocol:
+def RegisterGradient(op_type: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
     """Return a decorator registering a custom VJP gradient rule for `op_type`.
 
     Args:
         op_type (str): Canonical IR operation name.
 
     Returns:
-        VariadicCallableProtocol: Decorator registering the VJP rule function.
+        Callable[[VJPRuleCallable], VJPRuleCallable]: Decorator registering the VJP rule function.
     """
-    dec: VariadicCallableProtocol = register_vjp(op_type)  # type: ignore[assignment]
+    dec = register_vjp(op_type)
     if callable(dec):
         object.__setattr__(dec, "op_type", op_type)
     return dec
@@ -171,7 +167,7 @@ def ir_grad(fun: GradValue, options: GradOptions | GradValue = None) -> Variadic
             GradValue: Evaluated gradient tensor(s).
         """
         _ = kwargs
-        _, grads = _compute_grad_and_value(typing.cast("TypedVariadicCallable[GradValue]", fun), opts, args)
+        _, grads = _compute_grad_and_value(fun, opts, args)
         return grads
 
     return wrapped
@@ -203,7 +199,7 @@ def grad(
             GradValue: Gradient tensor(s), or `(grads, aux)` when `options.has_aux` is True.
         """
         _ = kwargs
-        val, grads = _compute_grad_and_value(typing.cast("TypedVariadicCallable[GradValue]", fun), options, args)
+        val, grads = _compute_grad_and_value(fun, options, args)
         if options.has_aux and isinstance(val, (tuple, list)) and len(val) >= 2:
             return grads, val[1]
         return grads
@@ -237,7 +233,7 @@ def value_and_grad(
             tuple[GradValue, GradValue]: Tuple of `(value, grads)`.
         """
         _ = kwargs
-        val, grads = _compute_grad_and_value(typing.cast("TypedVariadicCallable[GradValue]", fun), opts, args)
+        val, grads = _compute_grad_and_value(fun, opts, args)
         if getattr(opts, "has_aux"):
             return val, grads
         return val, grads
@@ -290,8 +286,7 @@ def hook_gradient(tensor: GradValue, hook: GradValue) -> GradValue:
             GradValue: 1-tuple containing the hooked gradient.
         """
         _ = res
-        hook_fn: VariadicCallableProtocol = hook  # type: ignore[assignment]
-        out_g = hook_fn(g_in)
+        out_g = invoke_callable(hook, g_in)
         if out_g is None:
             out_g = g_in
         return (out_g,)
@@ -315,29 +310,24 @@ def jvp(
     Returns:
         tuple[GradValue, GradValue]: Tuple of `(primal_out, tangent_out)`.
     """
-    call_fn: VariadicCallableProtocol = fun  # type: ignore[assignment]
     primals_tuple = tuple(primals)
     tangents_tuple = tuple(tangents)
-    primal_out = call_fn(*primals_tuple)
+    primal_out = invoke_callable(fun, *primals_tuple)
 
     eps = 1e-5
     perturbed: list[GradValue] = []
     for p, t in zip(primals_tuple, tangents_tuple):
         if hasattr(p, "__add__"):
             try:
-                p_t: EagerTensorProtocol = p  # type: ignore[assignment]
-                t_t: EagerTensorProtocol = t  # type: ignore[assignment]
-                perturbed.append(p_t + t_t * eps)
+                perturbed.append(getattr(p, "__add__")(getattr(t, "__mul__")(eps)))
             except Exception:
                 perturbed.append(p)
         else:
             perturbed.append(p)
 
-    out_eps = call_fn(*perturbed)
+    out_eps = invoke_callable(fun, *perturbed)
     try:
-        out_eps_t: EagerTensorProtocol = out_eps  # type: ignore[assignment]
-        primal_out_t: EagerTensorProtocol = primal_out  # type: ignore[assignment]
-        tangent_out: GradValue = (out_eps_t - primal_out_t) / eps
+        tangent_out: GradValue = getattr(getattr(out_eps, "__sub__")(primal_out), "__truediv__")(eps)
     except Exception:
         tangent_out = primal_out
     return primal_out, tangent_out
@@ -400,7 +390,7 @@ def hvp(
     """
     from .jvp_vjp import hvp as _jvp_vjp_hvp
 
-    res: tuple[GradValue, GradValue] = _jvp_vjp_hvp(  # type: ignore[assignment]
+    raw_res = _jvp_vjp_hvp(
         fun,
         primals,
         tangents,
@@ -408,7 +398,7 @@ def hvp(
         projected_tangents=projected_tangents,
         mode=mode,
     )
-    return res
+    return (raw_res[0], raw_res[1])
 
 
 def nth_order_grad_graph(
@@ -447,7 +437,7 @@ def nth_order_grad(
     fun: GradValue,
     n: int = 1,
     options: GradOptions | None = None,
-) -> VariadicCallableProtocol:
+) -> TypedVariadicCallable[GradValue]:
     """Return an N-th order gradient function via repeated symbolic differentiation.
 
     Args:
@@ -456,7 +446,7 @@ def nth_order_grad(
         options (GradOptions | None): Optional differentiation options.
 
     Returns:
-        VariadicCallableProtocol: The N-th order derivative function.
+        TypedVariadicCallable[GradValue]: The N-th order derivative function.
 
     Raises:
         ValueError: If `n < 1`.
@@ -464,7 +454,7 @@ def nth_order_grad(
     if n < 1:
         raise ValueError(f"Derivative order n must be >= 1, got {n}")
     curr_fn: GradValue = fun
-    for _ in range(n):
-        curr_fn = grad(curr_fn, options=options)
-    res_fn: VariadicCallableProtocol = curr_fn  # type: ignore[assignment]
+    res_fn: TypedVariadicCallable[GradValue] = grad(curr_fn, options=options)
+    for _ in range(n - 1):
+        res_fn = grad(res_fn, options=options)
     return res_fn

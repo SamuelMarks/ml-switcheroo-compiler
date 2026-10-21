@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import UnpoolOptions, adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fractional_max_pool3d, max_unpool1d, max_unpool2d, max_unpool3d
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_frontend_pool_eager() -> None:
@@ -53,12 +54,12 @@ def test_frontend_pool_eager() -> None:
             t4 = Tensor(np.array([[[[1.0]]]]), TensorConfig(shape=(1, 1, 1, 1), dtype=DType("float32"), device=Device("cpu")))
             t5 = Tensor(np.array([[[[[1.0]]]]]), TensorConfig(shape=(1, 1, 1, 1, 1), dtype=DType("float32"), device=Device("cpu")))
 
-            typing.cast("EagerCallableProtocol", adaptive_avg_pool2d)(t4, output_size=[1, 1])
-            typing.cast("EagerCallableProtocol", adaptive_max_pool2d)(t4, output_size=[1, 1])
-            typing.cast("EagerCallableProtocol", fractional_max_pool3d)(t5, output_size=[1, 1, 1])
-            typing.cast("EagerCallableProtocol", adaptive_avg_pool3d)(t5, output_size=[1, 1, 1])
-            typing.cast("EagerCallableProtocol", adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=True)
-            typing.cast("EagerCallableProtocol", adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=False)
+            as_callable(adaptive_avg_pool2d)(t4, output_size=[1, 1])
+            as_callable(adaptive_max_pool2d)(t4, output_size=[1, 1])
+            as_callable(fractional_max_pool3d)(t5, output_size=[1, 1, 1])
+            as_callable(adaptive_avg_pool3d)(t5, output_size=[1, 1, 1])
+            as_callable(adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=True)
+            as_callable(adaptive_max_pool3d)(t5, output_size=[1, 1, 1], return_indices=False)
             max_unpool1d(t3, t3, UnpoolOptions(kernel_size=(1,), output_size=(1,)))
             max_unpool2d(t4, t4, UnpoolOptions(kernel_size=(1, 1), output_size=(1, 1)))
             max_unpool3d(t5, t5, UnpoolOptions(kernel_size=(1, 1, 1), output_size=(1, 1, 1)))

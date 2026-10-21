@@ -11,9 +11,10 @@ import pytest
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 pytest.importorskip("keras")
 
@@ -30,9 +31,9 @@ def _load_prefix_functions() -> dict[str, TypedVariadicCallable[EagerValue]]:
     namespace: dict[str, EagerValue] = {}
     exec(code_str, namespace)
     return {
-        "keras_median_filter": typing.cast("TypedVariadicCallable[EagerValue]", namespace["keras_median_filter"]),
-        "keras_gaussian_blur": typing.cast("TypedVariadicCallable[EagerValue]", namespace["keras_gaussian_blur"]),
-        "keras_elastic_transform": typing.cast("TypedVariadicCallable[EagerValue]", namespace["keras_elastic_transform"]),
+        "keras_median_filter": as_callable(namespace["keras_median_filter"]),
+        "keras_gaussian_blur": as_callable(namespace["keras_gaussian_blur"]),
+        "keras_elastic_transform": as_callable(namespace["keras_elastic_transform"]),
     }
 
 
@@ -44,7 +45,7 @@ def test_keras_median_filter_channels_last() -> None:
     # inject impulse noise
     img_np[0, 4, 4, :] = 100.0
     img_tensor = kops.convert_to_tensor(img_np)
-    filtered = typing.cast("EagerCallableProtocol", med_fn)(img_tensor, kernel_size=3, padding="same", data_format="channels_last")
+    filtered = as_callable(med_fn)(img_tensor, kernel_size=3, padding="same", data_format="channels_last")
     out_np = kops.convert_to_numpy(filtered)
     assert out_np.shape == (1, 8, 8, 2)
     # Median of 3x3 neighborhood around impulse should be 1.0
@@ -58,7 +59,7 @@ def test_keras_median_filter_channels_first() -> None:
     img_np = np.ones((1, 2, 8, 8), dtype=np.float32)
     img_np[0, :, 4, 4] = 50.0
     img_tensor = kops.convert_to_tensor(img_np)
-    filtered = typing.cast("EagerCallableProtocol", med_fn)(img_tensor, kernel_size=(3, 3), padding="same", data_format="channels_first")
+    filtered = as_callable(med_fn)(img_tensor, kernel_size=(3, 3), padding="same", data_format="channels_first")
     out_np = kops.convert_to_numpy(filtered)
     assert out_np.shape == (1, 2, 8, 8)
     assert float(out_np[0, 0, 4, 4]) == 1.0
@@ -71,7 +72,7 @@ def test_keras_gaussian_blur_filtering() -> None:
     img_np = np.zeros((1, 9, 9, 1), dtype=np.float32)
     img_np[0, 4, 4, 0] = 1.0
     img_tensor = kops.convert_to_tensor(img_np)
-    blurred = typing.cast("EagerCallableProtocol", blur_fn)(img_tensor, kernel_size=3, sigma=1.0, padding="same", data_format="channels_last")
+    blurred = as_callable(blur_fn)(img_tensor, kernel_size=3, sigma=1.0, padding="same", data_format="channels_last")
     out_np = kops.convert_to_numpy(blurred)
     assert out_np.shape == (1, 9, 9, 1)
     # Center should be positive and neighbors should also be positive due to smoothing
@@ -87,7 +88,7 @@ def test_keras_elastic_transform_identity() -> None:
     disp_np = np.zeros((4, 4, 2), dtype=np.float32)
     img_tensor = kops.convert_to_tensor(img_np)
     disp_tensor = kops.convert_to_tensor(disp_np)
-    res = typing.cast("EagerCallableProtocol", elastic_fn)(img_tensor, disp_tensor, interpolation="bilinear", fill_value=0.0, data_format="channels_last")
+    res = as_callable(elastic_fn)(img_tensor, disp_tensor, interpolation="bilinear", fill_value=0.0, data_format="channels_last")
     out_np = kops.convert_to_numpy(res)
     assert out_np.shape == (1, 4, 4, 1)
     np.testing.assert_allclose(out_np, img_np, atol=1e-5)
@@ -99,5 +100,5 @@ def test_keras_elastic_transform_none_displacement() -> None:
     elastic_fn = funcs["keras_elastic_transform"]
     img_np = np.ones((1, 4, 4, 1), dtype=np.float32)
     img_tensor = kops.convert_to_tensor(img_np)
-    res = typing.cast("EagerCallableProtocol", elastic_fn)(img_tensor, None, data_format="channels_last")
+    res = as_callable(elastic_fn)(img_tensor, None, data_format="channels_last")
     assert res is img_tensor

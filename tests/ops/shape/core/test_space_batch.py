@@ -8,9 +8,10 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.space_batch import space_to_batch, space_to_batch_nd
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
@@ -38,8 +39,8 @@ def test_space_to_batch_eager(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(space_to_batch(t, 2, [[0, 0]]), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(space_to_batch_nd(t, [2], [[0, 0]]), "config")).shape == (2, 3)
+    assert as_tensor(getattr(space_to_batch(t, 2, [[0, 0]]), "config")).shape == (2, 3)
+    assert as_tensor(getattr(space_to_batch_nd(t, [2], [[0, 0]]), "config")).shape == (2, 3)
 
 
 def test_space_to_batch_tracing(mocker: EagerTensorProtocol) -> None:
@@ -61,5 +62,5 @@ def test_space_to_batch_infer_shape() -> None:
     """Test function test_space_to_batch_infer_shape."""
     from ml_switcheroo_compiler.ops.shape.space_batch import SpaceToBatch, SpaceToBatchND
 
-    assert typing.cast("EagerCallableProtocol", SpaceToBatch)().infer_shape(None, None, None) == ()
-    assert typing.cast("EagerCallableProtocol", SpaceToBatchND)().infer_shape(None, None, None) == ()
+    assert as_callable(SpaceToBatch)().infer_shape(None, None, None) == ()
+    assert as_callable(SpaceToBatchND)().infer_shape(None, None, None) == ()

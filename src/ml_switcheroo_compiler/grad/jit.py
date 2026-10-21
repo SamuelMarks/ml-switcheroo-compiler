@@ -7,12 +7,9 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import AttrValue
+from ml_switcheroo_compiler.core.shape import AttrValue, VariadicCallableProtocol, invoke_callable
 
 from .utils import GradValue
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
 
 
 class JitOptions(pydantic.BaseModel):
@@ -53,8 +50,7 @@ def jit(fun: GradValue, options: JitOptions | GradValue = None) -> VariadicCalla
         Returns:
             GradValue: Result of evaluating `fun(*args, **kwargs)`.
         """
-        call_fn: VariadicCallableProtocol = fun  # type: ignore[assignment]
-        return call_fn(*args, **kwargs)
+        return invoke_callable(fun, *args, **kwargs)
 
     return wrapped
 
@@ -80,5 +76,4 @@ def eval_shape(fun: GradValue, *args: GradValue, **kwargs: GradValue) -> GradVal
     Returns:
         GradValue: Evaluated output of `fun(*args, **kwargs)`.
     """
-    call_fn: VariadicCallableProtocol = fun  # type: ignore[assignment]
-    return call_fn(*args, **kwargs)
+    return invoke_callable(fun, *args, **kwargs)

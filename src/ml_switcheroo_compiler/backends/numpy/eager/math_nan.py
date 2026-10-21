@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -141,7 +140,7 @@ def _xlogy(x: EagerValue, y: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype
             tuple[int, ...]: Result.
     """
     res = getattr(np, "where")(x == 0.0, 0.0, x * getattr(np, "log")(y))
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("Nanmean")

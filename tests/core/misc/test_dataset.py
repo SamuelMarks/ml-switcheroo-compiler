@@ -13,9 +13,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_dataset_basic() -> None:
@@ -64,7 +65,7 @@ def test_dataset_methods() -> None:
     assert ds.map_and_batch(lambda x: x, 2)._batch_size == 2
     assert ds.group_by_window(lambda x: x, lambda k, ds: ds, 1) == ds
     assert ds.rejection_resample(lambda x: 0, [0.5], [0.5]) == ds
-    assert typing.cast("EagerCallableProtocol", ds.parallel_interleave)(lambda x: ds, 1) == ds
+    assert as_callable(ds.parallel_interleave)(lambda x: ds, 1) == ds
     assert ds.prefetch_to_device("cpu") == ds
     assert ds.snapshot("path") == ds
     assert ds.save("path") == ds
@@ -78,9 +79,9 @@ def test_dataset_iterators() -> None:
     data = Tensor(backend.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, device))
     ds = Dataset(data).batch(1)
     np_iter = NumpyIterator(ds)
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", next)(typing.cast("EagerCallableProtocol", iter)(np_iter))) == 1
+    assert as_callable(len)(as_callable(next)(as_callable(iter)(np_iter))) == 1
     arr_iter = ArrayIterator(ds)
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", next)(typing.cast("EagerCallableProtocol", iter)(arr_iter))) == 1
+    assert as_callable(len)(as_callable(next)(as_callable(iter)(arr_iter))) == 1
 
 
 def test_dataset_exceptions() -> None:
@@ -124,7 +125,7 @@ def test_split_dataset() -> None:
     """Test split dataset."""
     from ml_switcheroo_compiler.utils.dataset_utils import split_dataset
 
-    (a, b) = typing.cast("EagerCallableProtocol", split_dataset)("test", 0.5, False)
+    (a, b) = as_callable(split_dataset)("test", 0.5, False)
     assert a == "test"
     assert b == "test"
 
@@ -147,7 +148,7 @@ def test_dataset_coverage() -> None:
     ds = Dataset()
     assert list(iter(ds)) == [()]
     t = DummyTensor()
-    typing.cast("EagerCallableProtocol", Dataset.from_tensor_slices)(t)
+    as_callable(Dataset.from_tensor_slices)(t)
     Dataset.from_list([t])
     ds.batch(32)
     ds.unbatch()
@@ -168,9 +169,9 @@ def test_dataset_coverage() -> None:
     pass
     nds = NumpyDataset(t)
     assert iter(nds) is not None
-    typing.cast("EagerCallableProtocol", ImageDataset)(t)
-    typing.cast("EagerCallableProtocol", AudioDataset)(t)
-    typing.cast("EagerCallableProtocol", TextDataset)(t)
+    as_callable(ImageDataset)(t)
+    as_callable(AudioDataset)(t)
+    as_callable(TextDataset)(t)
     SqlDataset("drv", "src", "q", ())
 
 
@@ -181,7 +182,7 @@ def test_iterators() -> None:
     ni = iter(nds)
     pass
     next(ni)
-    ids = typing.cast("EagerCallableProtocol", ImageDataset)(t)
+    ids = as_callable(ImageDataset)(t)
     ai = iter(ids)
     pass
     assert next(ai) is not None
@@ -204,11 +205,11 @@ def test_dataset_coverage_more() -> None:
     n_i = NumpyIterator(ds1)
     n_i2 = iter(n_i)
     n_v = next(n_i2)
-    assert typing.cast("EagerCallableProtocol", len)(n_v) == 1
+    assert as_callable(len)(n_v) == 1
     a_i = ArrayIterator(ds1)
     a_i2 = iter(a_i)
     a_v = next(a_i2)
-    assert typing.cast("EagerCallableProtocol", len)(a_v) == 1
+    assert as_callable(len)(a_v) == 1
     Dataset(Tensor(np.array([]), TensorConfig((0,), DType.Int32, "cpu")))
     ImageDataset(t1, target_size=(10, 10), normalize=True)
     AudioDataset(t1, sample_rate=8000)
@@ -346,26 +347,26 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
     """
     backend = get_active_backend()
     data = backend.array(data)
-    return typing.cast("EagerCallableProtocol", Tensor)(data, typing.cast("EagerCallableProtocol", TensorConfig)(typing.cast("EagerTensorProtocol", getattr(data, "shape")), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    return as_callable(Tensor)(data, as_callable(TensorConfig)(as_tensor(getattr(data, "shape")), DType.Float32, as_callable(Device)("cpu")))
 
 
 def test_image_dataset_missing_branches() -> None:
     """Test function test_image_dataset_missing_branches."""
     empty_tensor = create_eager_tensor(np.zeros((0, 1, 1, 1)))
-    d = typing.cast("EagerCallableProtocol", ImageDataset)(empty_tensor, target_size=(2, 2), normalize=True).batch(2)
+    d = as_callable(ImageDataset)(empty_tensor, target_size=(2, 2), normalize=True).batch(2)
     res = list(d)
     assert len(res) == 0
     t_3d = create_eager_tensor(np.ones((2, 2, 1)))
-    d2 = typing.cast("EagerCallableProtocol", ImageDataset)(t_3d, target_size=(2, 2), normalize=False).batch(1)
+    d2 = as_callable(ImageDataset)(t_3d, target_size=(2, 2), normalize=False).batch(1)
     res2 = list(d2)
     assert len(res2) == 2
     assert res2[0][0].shape == (1, 2, 1)
     t_4d = create_eager_tensor(np.ones((1, 2, 2, 1)))
-    d3 = typing.cast("EagerCallableProtocol", ImageDataset)(t_4d, target_size=None, normalize=False).batch(1)
+    d3 = as_callable(ImageDataset)(t_4d, target_size=None, normalize=False).batch(1)
     res3 = list(d3)
     assert len(res3) == 1
     assert res3[0][0].shape == (1, 2, 2, 1)
     t_norm = create_eager_tensor(np.full((1, 2, 2, 1), 255.0))
-    d4 = typing.cast("EagerCallableProtocol", ImageDataset)(t_norm, target_size=None, normalize=True).batch(1)
+    d4 = as_callable(ImageDataset)(t_norm, target_size=None, normalize=True).batch(1)
     res4 = list(d4)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", res4[0][0].numpy)(), typing.cast("EagerCallableProtocol", np.ones)((1, 2, 2, 1)))
+    as_callable(np.testing.assert_array_equal)(as_callable(res4[0][0].numpy)(), as_callable(np.ones)((1, 2, 2, 1)))

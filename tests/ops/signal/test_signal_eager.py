@@ -14,33 +14,34 @@ from ml_switcheroo_compiler.backends.eager.signal import (
     gaussian_blur_eager,
     median_filter_eager,
 )
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_signal_eager() -> None:
     """Test signal ops eager mode."""
     kernel = _generate_gaussian_kernel(np, (3, 3), (1.0, 1.0))
-    assert typing.cast("EagerTensorProtocol", getattr(kernel, "shape")) == (3, 3)
+    assert as_tensor(getattr(kernel, "shape")) == (3, 3)
 
     imgs = np.ones((1, 1, 4, 4))
     res = _apply_conv2d_batch(np, imgs, kernel, "reflect")
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 4, 4)
+    assert as_tensor(getattr(res, "shape")) == (1, 1, 4, 4)
 
     # 3d error
     with pytest.raises(ValueError):
         _apply_conv2d_batch(np, np.ones((4, 4)), kernel, "reflect")
 
     res = gaussian_blur_eager(np, imgs, kernel_size=(3, 3), sigma=(1.0, 1.0))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 4, 4)
+    assert as_tensor(getattr(res, "shape")) == (1, 1, 4, 4)
 
     res = _apply_median_filter_batch(np, imgs, (3, 3), "same")
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 4, 4)
+    assert as_tensor(getattr(res, "shape")) == (1, 1, 4, 4)
 
     # 3d error
     with pytest.raises(ValueError):
         _apply_median_filter_batch(np, np.ones((4, 4)), (3, 3), "same")
 
     res = median_filter_eager(np, imgs, (3, 3), "same")
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 4, 4)
+    assert as_tensor(getattr(res, "shape")) == (1, 1, 4, 4)

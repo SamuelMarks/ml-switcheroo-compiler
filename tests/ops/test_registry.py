@@ -8,9 +8,10 @@ from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
 from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_registry_get_op() -> None:
@@ -18,7 +19,7 @@ def test_registry_get_op() -> None:
     # Transpose should definitely exist.
     op = registry.get_op("Transpose")
     assert op is not None
-    assert typing.cast("EagerTensorProtocol", op["description"]) == typing.cast("EagerTensorProtocol", "The Transpose operation.")
+    assert as_tensor(op["description"]) == as_tensor("The Transpose operation.")
 
     # Missing op
     assert registry.get_op("NonExistentOp123") is None
@@ -122,7 +123,7 @@ def test_registry_remaining() -> None:
 
     getattr(_YAML_REGISTRY, "__setitem__")("DynamicTestOp123", {"test": 1})
     op_cls = get_op("DynamicTestOp123")
-    assert typing.cast("EagerTensorProtocol", getattr(op_cls, "get_yaml_data"))() == {"test": 1}
+    assert as_tensor(getattr(op_cls, "get_yaml_data"))() == {"test": 1}
 
     # hit 170-175 inside _RegistryShim
     class DummyShim:
@@ -143,12 +144,12 @@ def test_registry_remaining() -> None:
                 prefix: Test parameter `prefix`.
                 op_name: Test parameter `op_name`.
             """
-            op = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(self.operations, "get")))(op_name, {})
+            op = as_callable(as_tensor(getattr(self.operations, "get")))(op_name, {})
             if not op:
                 return None
-            variants = typing.cast("EagerTensorProtocol", getattr(op, "get"))("variants", {})
-            backend = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(variants, "get")))(prefix, {})
-            return typing.cast("EagerTensorProtocol", getattr(backend, "get"))("generator")
+            variants = as_tensor(getattr(op, "get"))("variants", {})
+            backend = as_callable(as_tensor(getattr(variants, "get")))(prefix, {})
+            return as_tensor(getattr(backend, "get"))("generator")
 
     from ml_switcheroo_compiler.ops.registry import _RegistryShim
 

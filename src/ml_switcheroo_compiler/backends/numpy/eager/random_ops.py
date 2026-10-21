@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -54,7 +55,7 @@ def _np_normal(
     config = kwargs.get("config")
     mean = getattr(config, "mean", 0.0) if config else 0.0
     stddev = getattr(config, "stddev", 1.0) if config else 1.0
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
+    return as_ndarray(getattr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("Uniform")
@@ -81,7 +82,7 @@ def _np_uniform(
     maxval = getattr(config, "maxval", 1.0) if config else 1.0
     if maxval is None:
         maxval = 1.0
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
+    return as_ndarray(getattr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("StatelessSplit")
@@ -139,7 +140,7 @@ def _np_lookup(
     arr = np.asarray(keys)
     default_value = kwargs.get("default_value", 0)
     if isinstance(table, dict):
-        return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.vectorize(lambda k: table.get(k, default_value))(arr))
+        return as_ndarray(np.vectorize(lambda k: table.get(k, default_value))(arr))
     if hasattr(table, "lookup"):
         return table.lookup(arr)
     return np.full_like(arr, default_value, dtype=np.int32)

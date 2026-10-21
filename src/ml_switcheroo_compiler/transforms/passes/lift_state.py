@@ -28,7 +28,7 @@ def flatten_state_dict(
     """Flatten a nested state dictionary into a dot-delimited flat map.
 
     Args:
-        state_dict (dict[str, typing.Union[StateValue, dict[str, StateValue]]]): Nested state dictionary.
+        state_dict (dict[str, StateValue | dict[str, StateValue]]): Nested state dictionary.
         prefix (str): Key prefix for recursion.
 
     Returns:
@@ -53,7 +53,7 @@ def unflatten_state_dict(
         flat_state (dict[str, StateValue]): Flattened state map.
 
     Returns:
-        dict[str, typing.Union[StateValue, dict[str, StateValue]]]: Nested state dictionary.
+        dict[str, StateValue | dict[str, StateValue]]: Nested state dictionary.
     """
     nested: dict[str, StateValue | dict[str, StateValue]] = {}
     for k, v in flat_state.items():

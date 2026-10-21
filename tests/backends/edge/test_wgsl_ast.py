@@ -23,9 +23,10 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
     validate_identifier,
     validate_workgroup_size,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_wgsl_emitter_raw_and_var() -> None:
@@ -183,12 +184,12 @@ def test_wgsl_ast_string_statements_validation() -> None:
     emitter = WGSLEmitter()
     emitter.validate("plain_string_node")
 
-    if_node = typing.cast("EagerCallableProtocol", WGSLIf)("cond", ["return;"])
+    if_node = as_callable(WGSLIf)("cond", ["return;"])
     if_node.validate()
 
-    for_node = typing.cast("EagerCallableProtocol", WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
+    for_node = as_callable(WGSLFor)("var i = 0u;", "i < 10u", "i = i + 1u", ["break;"])
     for_node.validate()
 
-    func = typing.cast("EagerCallableProtocol", WGSLFunction)("my_func", [], ["return;"])
+    func = as_callable(WGSLFunction)("my_func", [], ["return;"])
     func.validate()
     assert getattr(func, "name") == "my_func"

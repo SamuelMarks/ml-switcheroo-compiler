@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -18,6 +15,7 @@ from ml_switcheroo_compiler.tracing.tracer import (
     increment_trace_count,
     reset_trace_count,
 )
+from tests.testing_utils import as_tensor
 
 
 def test_proxy_tensor_binary_op() -> None:
@@ -79,16 +77,16 @@ def test_tracer_tape_and_global_instance() -> None:
     """Verify TracerTape life cycle and global _tracer instance methods."""
     tape = TracerTape()
     g = tape.start_tracing("TapeModel")
-    assert typing.cast("EagerValue", g) is not None
-    assert typing.cast("EagerValue", global_tracing_state.is_tracing) is True
+    assert as_tensor(g) is not None
+    assert bool(global_tracing_state.is_tracing)
 
     node = IRNode(id="n1", op_type="Add", inputs=["a", "b"], outputs=["c"])
     tape.add_node(node)
-    assert typing.cast("EagerValue", "n1") in g.nodes
+    assert as_tensor("n1") in g.nodes
 
     final_g = tape.stop_tracing()
-    assert typing.cast("EagerValue", final_g) is not None
-    assert typing.cast("EagerValue", global_tracing_state.is_tracing) is False
+    assert as_tensor(final_g) is not None
+    assert not bool(global_tracing_state.is_tracing)
 
     # Also exercise global _tracer
     g2 = _tracer.start_tracing("GlobalTapeModel")

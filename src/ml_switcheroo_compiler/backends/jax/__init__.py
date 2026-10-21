@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
 
 try:
     _has_pkg = importlib.util.find_spec("jax") is not None
@@ -42,7 +41,7 @@ def _all_reduce(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-    return typing.cast("EagerCallableProtocol", getattr(dc, "jax_all_reduce"))(*args, **kwargs)
+    return as_callable(getattr(dc, "jax_all_reduce"))(*args, **kwargs)
 
 
 def _all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -58,7 +57,7 @@ def _all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-    return typing.cast("EagerCallableProtocol", getattr(dc, "jax_all_gather"))(*args, **kwargs)
+    return as_callable(getattr(dc, "jax_all_gather"))(*args, **kwargs)
 
 
 def _broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -74,10 +73,10 @@ def _broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import importlib
 
     dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-    return typing.cast("EagerCallableProtocol", getattr(dc, "jax_broadcast"))(*args, **kwargs)
+    return as_callable(getattr(dc, "jax_broadcast"))(*args, **kwargs)
 
 
-type.__setattr__(JAXCodeGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(JAXCodeGenerator, "execute_op", as_callable(classmethod)(execute_op))
 type.__setattr__(JAXCodeGenerator, "all_reduce", staticmethod(_all_reduce))
 type.__setattr__(JAXCodeGenerator, "all_gather", staticmethod(_all_gather))
 type.__setattr__(JAXCodeGenerator, "broadcast", staticmethod(_broadcast))

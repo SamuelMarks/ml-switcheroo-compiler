@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.audio.ops import Dct, Frame, HammingWindow, HannWindow, Idct, InverseMdct, Istft, KaiserWindow, Mdct, MelFilterbank, MelSpectrogram, Mfcc, MfccsFromLogMelSpectrograms, OverlapAndAdd, Stft
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class DummyNode:
@@ -35,18 +36,18 @@ def test_audio_ops() -> None:
     assert KaiserWindow().infer_shape() == (256,)
 
     t = DummyNode((10,))
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Dct)().infer_shape)(t) == (10,)
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Idct)().infer_shape)(t) == (10,)
+    assert as_callable(as_callable(Dct)().infer_shape)(t) == (10,)
+    assert as_callable(as_callable(Idct)().infer_shape)(t) == (10,)
 
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Mdct)().infer_shape)(t) == (5,)
-    assert typing.cast("EagerCallableProtocol", Mdct)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)(())) == ()
+    assert as_callable(as_callable(Mdct)().infer_shape)(t) == (5,)
+    assert as_callable(Mdct)().infer_shape(as_callable(DummyNode)(())) == ()
 
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", InverseMdct)().infer_shape)(t) == (20,)
-    assert typing.cast("EagerCallableProtocol", InverseMdct)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)(())) == ()
+    assert as_callable(as_callable(InverseMdct)().infer_shape)(t) == (20,)
+    assert as_callable(InverseMdct)().infer_shape(as_callable(DummyNode)(())) == ()
 
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Frame)().infer_shape)(t, frame_length=2, frame_step=2) == (5, 2)
-    assert typing.cast("EagerCallableProtocol", Frame)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)(())) == ()
+    assert as_callable(as_callable(Frame)().infer_shape)(t, frame_length=2, frame_step=2) == (5, 2)
+    assert as_callable(Frame)().infer_shape(as_callable(DummyNode)(())) == ()
 
     tf = DummyNode((5, 2))
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", OverlapAndAdd)().infer_shape)(tf, frame_step=2) == (10,)
-    assert typing.cast("EagerCallableProtocol", OverlapAndAdd)().infer_shape(typing.cast("EagerCallableProtocol", DummyNode)(())) == ()
+    assert as_callable(as_callable(OverlapAndAdd)().infer_shape)(tf, frame_step=2) == (10,)
+    assert as_callable(OverlapAndAdd)().infer_shape(as_callable(DummyNode)(())) == ()

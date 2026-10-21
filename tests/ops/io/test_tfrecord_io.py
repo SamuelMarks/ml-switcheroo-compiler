@@ -13,9 +13,10 @@ from ml_switcheroo_compiler.ops.io.tf_io import (
     TFRecordWriter,
     read_tfrecords,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_tfrecord_writer_uncompressed() -> None:
@@ -33,7 +34,7 @@ def test_tfrecord_writer_uncompressed() -> None:
 
         with TFRecordWriter(rec_path) as writer:
             for rec in records_to_write:
-                typing.cast("EagerCallableProtocol", writer.write)(rec)
+                as_callable(writer.write)(rec)
 
         # Read back and verify exact byte equality
         loaded = read_tfrecords(rec_path)
@@ -140,7 +141,7 @@ def test_tfrecord_writer_edge_cases() -> None:
         # Write None record
         none_path = os.path.join(tmpdir, "none.tfrecord")
         with TFRecordWriter(none_path) as writer:
-            typing.cast("EagerCallableProtocol", writer.write)(None)
+            as_callable(writer.write)(None)
         records = read_tfrecords(none_path)
         assert records == [b""]
 

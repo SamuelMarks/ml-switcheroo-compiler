@@ -14,9 +14,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 gru_mod = importlib.import_module("ml_switcheroo_compiler.ops.nn.gru")
 
@@ -52,9 +53,9 @@ def test_shape_dynamic_slicing_coverage() -> None:
         start_0 = Tensor(np.array(1), TensorConfig((), DType.Int32, Device("cpu")))
         start_1 = 2  # integer without .data
 
-        res = typing.cast("EagerCallableProtocol", dynamic_slicing_mod.dynamic_slice)(t_arr, [start_0, start_1], [2, 2])
-        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(res, "data")), typing.cast("EagerCallableProtocol", np.array)([[6, 7], [10, 11]]))
+        res = as_callable(dynamic_slicing_mod.dynamic_slice)(t_arr, [start_0, start_1], [2, 2])
+        assert as_tensor(getattr(res, "shape")) == (2, 2)
+        assert as_callable(np.array_equal)(as_tensor(getattr(res, "data")), as_callable(np.array)([[6, 7], [10, 11]]))
 
         # dynamic_slice non-eager mode
         config.eager_mode = False
@@ -76,7 +77,7 @@ def test_shape_dynamic_slicing_coverage() -> None:
 
         # update_slice and dynamic_update_slice
         with patch("ml_switcheroo_compiler.ops.shape.dynamic_slicing.dynamic_update_slice", return_value="updated_slice") as mock_update:
-            res_up = typing.cast("EagerCallableProtocol", dynamic_slicing_mod.update_slice)(t_arr, t_arr, [start_0, 0])
+            res_up = as_callable(dynamic_slicing_mod.update_slice)(t_arr, t_arr, [start_0, 0])
             assert res_up == "updated_slice"
             mock_update.assert_called_once()
 
@@ -91,7 +92,7 @@ def test_shape_dynamic_slicing_coverage() -> None:
 
         # DynamicUpdateSlice.infer_shape
         op_update = dynamic_slicing_mod.DynamicUpdateSlice()
-        assert typing.cast("EagerCallableProtocol", op_update.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)((4, 4)), None, None) == (4, 4)
-        assert typing.cast("EagerCallableProtocol", op_update.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)(), None, None) == ()
+        assert as_callable(op_update.infer_shape)(as_callable(DummyWithShape)((4, 4)), None, None) == (4, 4)
+        assert as_callable(op_update.infer_shape)(as_callable(DummyWithoutShape)(), None, None) == ()
     finally:
         config.eager_mode = orig_eager

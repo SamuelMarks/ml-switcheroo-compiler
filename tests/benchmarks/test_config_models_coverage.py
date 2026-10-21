@@ -13,9 +13,10 @@ import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 MetricsVal = typing.Union[list[float], "float"]
 
@@ -280,7 +281,7 @@ def _test_config_models_loaders_part_2(_state: dict[str, EagerTensorProtocol]) -
     """
     valid_plan_yaml = _state["valid_plan_yaml"]
     try:
-        plan_loaded = typing.cast("EagerCallableProtocol", cfg_models_mod.load_benchmark_plan)(valid_plan_yaml)
+        plan_loaded = as_callable(cfg_models_mod.load_benchmark_plan)(valid_plan_yaml)
         assert plan_loaded.name == "valid_plan"
     finally:
         os.unlink(valid_plan_yaml)

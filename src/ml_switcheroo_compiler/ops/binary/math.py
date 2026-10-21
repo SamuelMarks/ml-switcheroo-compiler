@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_str
 
 # Simple broadcasting
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
@@ -860,7 +860,7 @@ def clip(x: TensorOrScalar, min_val: TensorOrScalar = None, max_val: TensorOrSca
 
     kwargs["a_min"] = min_val
     kwargs["a_max"] = max_val
-    return emit_ir_node(None, "Clip", [typing.cast(str, x)], getattr(x, "shape_metadata", None), kwargs)
+    return emit_ir_node(None, "Clip", [as_str(x)], getattr(x, "shape_metadata", None), kwargs)
 
 
 def rem(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:

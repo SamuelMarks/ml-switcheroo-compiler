@@ -2,68 +2,68 @@
 
 from __future__ import annotations
 
-import types
 import typing
 from unittest.mock import MagicMock
 
 import ml_switcheroo_compiler.backends.registry as registry
+from tests.testing_utils import as_callable, as_module_type, as_tensor
 
 try:
     import ml_switcheroo_compiler.backends.common as mod_common
 except ImportError:
-    mod_common = typing.cast("types.ModuleType", None)
+    mod_common = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.cupy as mod_cupy
 except ImportError:
-    mod_cupy = typing.cast("types.ModuleType", None)
+    mod_cupy = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.dask as mod_dask
 except ImportError:
-    mod_dask = typing.cast("types.ModuleType", None)
+    mod_dask = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.eager as mod_eager
 except ImportError:
-    mod_eager = typing.cast("types.ModuleType", None)
+    mod_eager = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.edge as mod_edge
 except ImportError:
-    mod_edge = typing.cast("types.ModuleType", None)
+    mod_edge = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.jax as mod_jax
 except ImportError:
-    mod_jax = typing.cast("types.ModuleType", None)
+    mod_jax = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.keras as mod_keras
 except ImportError:
-    mod_keras = typing.cast("types.ModuleType", None)
+    mod_keras = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp as mod_llvm_cpp
 except ImportError:
-    mod_llvm_cpp = typing.cast("types.ModuleType", None)
+    mod_llvm_cpp = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.mlx as mod_mlx
 except ImportError:
-    mod_mlx = typing.cast("types.ModuleType", None)
+    mod_mlx = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.numpy as mod_numpy
 except ImportError:
-    mod_numpy = typing.cast("types.ModuleType", None)
+    mod_numpy = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.pytorch as mod_pytorch
 except ImportError:
-    mod_pytorch = typing.cast("types.ModuleType", None)
+    mod_pytorch = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow as mod_tensorflow
 except ImportError:
-    mod_tensorflow = typing.cast("types.ModuleType", None)
+    mod_tensorflow = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.cupy.generator as gen_cupy
 except ImportError:
-    gen_cupy = typing.cast("types.ModuleType", None)
+    gen_cupy = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.dask.generator as gen_dask
 except ImportError:
-    gen_dask = typing.cast("types.ModuleType", None)
+    gen_dask = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.eager.generator as gen_eager
 except ImportError:
@@ -75,31 +75,31 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.jax.generator as gen_jax
 except ImportError:
-    gen_jax = typing.cast("types.ModuleType", None)
+    gen_jax = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.keras.generator as gen_keras
 except ImportError:
-    gen_keras = typing.cast("types.ModuleType", None)
+    gen_keras = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp.generator as gen_llvm_cpp
 except ImportError:
-    gen_llvm_cpp = typing.cast("types.ModuleType", None)
+    gen_llvm_cpp = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.mlx.generator as gen_mlx
 except ImportError:
-    gen_mlx = typing.cast("types.ModuleType", None)
+    gen_mlx = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.numpy.generator as gen_numpy
 except ImportError:
-    gen_numpy = typing.cast("types.ModuleType", None)
+    gen_numpy = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.pytorch.generator as gen_pytorch
 except ImportError:
-    gen_pytorch = typing.cast("types.ModuleType", None)
+    gen_pytorch = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow.generator as gen_tensorflow
 except ImportError:
-    gen_tensorflow = typing.cast("types.ModuleType", None)
+    gen_tensorflow = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.common.generator as gen_common
 except ImportError:
@@ -107,11 +107,11 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.cupy.types as typ_cupy
 except ImportError:
-    typ_cupy = typing.cast("types.ModuleType", None)
+    typ_cupy = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.dask.types as typ_dask
 except ImportError:
-    typ_dask = typing.cast("types.ModuleType", None)
+    typ_dask = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.eager.types as typ_eager
 except ImportError:
@@ -123,11 +123,11 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.jax.types as typ_jax
 except ImportError:
-    typ_jax = typing.cast("types.ModuleType", None)
+    typ_jax = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.keras.types as typ_keras
 except ImportError:
-    typ_keras = typing.cast("types.ModuleType", None)
+    typ_keras = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.llvm_cpp.types as typ_llvm_cpp
 except ImportError:
@@ -135,25 +135,25 @@ except ImportError:
 try:
     import ml_switcheroo_compiler.backends.mlx.types as typ_mlx
 except ImportError:
-    typ_mlx = typing.cast("types.ModuleType", None)
+    typ_mlx = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.numpy.types as typ_numpy
 except ImportError:
-    typ_numpy = typing.cast("types.ModuleType", None)
+    typ_numpy = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.pytorch.types as typ_pytorch
 except ImportError:
-    typ_pytorch = typing.cast("types.ModuleType", None)
+    typ_pytorch = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.tensorflow.types as typ_tensorflow
 except ImportError:
-    typ_tensorflow = typing.cast("types.ModuleType", None)
+    typ_tensorflow = as_module_type(None)
 try:
     import ml_switcheroo_compiler.backends.common.types as typ_common
 except ImportError:
     typ_common = None
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: EagerValue) -> None:
@@ -165,7 +165,7 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
         mock_b: Test parameter `mock_b`.
     """
     if hasattr(mod, "eager_registry"):
-        for _op, func in typing.cast("EagerTensorProtocol", getattr(mod, "eager_registry"))._registry.items():
+        for _op, func in as_tensor(getattr(mod, "eager_registry"))._registry.items():
             if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
                 continue
             for call_args in ((mock_b, MagicMock()), (mock_b, MagicMock(), MagicMock())):
@@ -217,7 +217,7 @@ def test_backends_brute_force() -> None:
     for mod, generator_mod, types_mod in modules:
         _exercise_eager_and_gen(mod, generator_mod, mock_b)
         _exercise_types_mod(types_mod)
-    for fn_call in (lambda: typing.cast("EagerCallableProtocol", registry.register_backend)("dummy", typing.cast("EagerCallableProtocol", MagicMock)()), registry.get_active_backend, lambda: typing.cast("EagerTensorProtocol", getattr(registry, "set_active_backend"))("dummy")):
+    for fn_call in (lambda: as_callable(registry.register_backend)("dummy", as_callable(MagicMock)()), registry.get_active_backend, lambda: as_tensor(getattr(registry, "set_active_backend"))("dummy")):
         try:
             fn_call()
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):

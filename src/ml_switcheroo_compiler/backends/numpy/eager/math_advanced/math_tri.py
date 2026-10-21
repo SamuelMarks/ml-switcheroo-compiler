@@ -8,10 +8,10 @@ from collections.abc import Sequence
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerCallableProtocol,
     EagerValue,
     numpy_eager_registry,
 )
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import _get_np_arg
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -41,7 +41,7 @@ def _np_tri(
     Returns:
         np.ndarray: Triangular array with ones at and below diagonal.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "tri")(*args, **kwargs))
+    return as_ndarray(getattr(np, "tri")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TrilIndices")
@@ -60,7 +60,8 @@ def _np_trilindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    return typing.cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "tril_indices")(*args, **kwargs))
+    res = getattr(np, "tril_indices")(*args, **kwargs)
+    return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("TrilIndicesFrom")
@@ -79,7 +80,8 @@ def _np_trilindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for lower triangle of input array.
     """
-    return typing.cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "tril_indices_from")(np.asarray(args[0]), *args[1:], **kwargs))
+    res = getattr(np, "tril_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
+    return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("TrimZeros")
@@ -98,7 +100,7 @@ def _np_trimzeros(
     Returns:
         np.ndarray: Trimmed array without leading/trailing zeros.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(np, "trim_zeros")(np.asarray(args[0]), *args[1:], **kwargs))
+    return as_ndarray(getattr(np, "trim_zeros")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("TriuIndices")
@@ -117,7 +119,8 @@ def _np_triuindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    return typing.cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "triu_indices")(*args, **kwargs))
+    res = getattr(np, "triu_indices")(*args, **kwargs)
+    return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("TriuIndicesFrom")
@@ -136,7 +139,8 @@ def _np_triuindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for upper triangle of input array.
     """
-    return typing.cast(tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]], getattr(np, "triu_indices_from")(np.asarray(args[0]), *args[1:], **kwargs))
+    res = getattr(np, "triu_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
+    return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
 @numpy_eager_registry.register("Fromstring")
@@ -155,7 +159,7 @@ def _np_fromstring_(
     Returns:
         np.ndarray: 1-D array created from string.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.fromstring(*args, **kwargs))
+    return as_ndarray(backend_module.fromstring(*args, **kwargs))
 
 
 @numpy_eager_registry.register("MatrixPower")
@@ -174,7 +178,7 @@ def _np_linalg_matrix_power_(
     Returns:
         np.ndarray: Matrix raised to integer power n.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.linalg.matrix_power(*args, **kwargs))
+    return as_ndarray(backend_module.linalg.matrix_power(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AsStringConfig")
@@ -195,7 +199,7 @@ def _np_asstringconfig(
     """
     from ml_switcheroo_compiler.ops.text.frontend import AsStringConfig
 
-    return typing.cast(AsStringConfig, typing.cast("EagerCallableProtocol", AsStringConfig)(*args, **kwargs))
+    return AsStringConfig(*args, **kwargs)
 
 
 @numpy_eager_registry.register("LinearOperatorBlockLowerTriangular")

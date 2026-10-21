@@ -9,16 +9,17 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_degeneration, _np_gaussian_blur, _np_median_filter, _np_sharpen
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
-BlurConfig = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.ops.vision.filtering"), "BlurConfig"))
+    pass
+BlurConfig = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.ops.vision.filtering"), "BlurConfig"))
 
 
 def test_np_degeneration() -> None:
     """Test function test_np_degeneration."""
     res = _np_degeneration(np, np.ones((2, 2)))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
+    as_callable(np.testing.assert_allclose)(res, as_callable(np.ones)((2, 2)))
 
 
 def test_np_gaussian_blur() -> None:

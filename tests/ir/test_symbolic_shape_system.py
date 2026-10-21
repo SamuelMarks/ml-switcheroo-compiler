@@ -27,9 +27,10 @@ from ml_switcheroo_compiler.ir.shape_system import (
     matmul_shape,
     normalize_axis,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockLogicalNode:
@@ -301,7 +302,7 @@ def test_symbolic_constraint_tracker_graph_traversal() -> None:
     n_matmul = MockLogicalNode(op="matmul", inputs=[n1, n2], shape=(b, s1, s2))
     graph = MockLogicalGraph(nodes=[n1, n2, n_matmul])
 
-    typing.cast("EagerCallableProtocol", tracker.track_graph)(graph)
+    as_callable(tracker.track_graph)(graph)
     assert tracker.is_consistent()
 
     # Now test add op with broadcasting
@@ -309,7 +310,7 @@ def test_symbolic_constraint_tracker_graph_traversal() -> None:
     t2 = MockLogicalNode(op="input", inputs=[], shape=(1, s1, 64))
     t_add = MockLogicalNode(op="add", inputs=[t1, t2], shape=(b, s1, 64))
     graph2 = MockLogicalGraph(nodes=[t1, t2, t_add])
-    typing.cast("EagerCallableProtocol", tracker.track_graph)(graph2)
+    as_callable(tracker.track_graph)(graph2)
     assert tracker.is_consistent()
 
 
@@ -342,7 +343,7 @@ def test_symnode_eval_and_free_vars() -> None:
 def test_symnode_conversion_errors() -> None:
     """Test type error when converting an invalid object to SymNode."""
     with pytest.raises(TypeError):
-        typing.cast("EagerCallableProtocol", SymNode.to_node)([1, 2, 3])
+        as_callable(SymNode.to_node)([1, 2, 3])
 
 
 def test_polynomial_edge_cases() -> None:
@@ -504,12 +505,12 @@ def test_poly_to_symnode_conversions() -> None:
     # Zero polynomial
     p0 = Polynomial.from_const(0)
     assert isinstance(_poly_to_symnode(p0), SymConst)
-    assert typing.cast("EagerTensorProtocol", getattr(_poly_to_symnode(p0), "value")) == 0
+    assert as_tensor(getattr(_poly_to_symnode(p0), "value")) == 0
 
     # Const polynomial
     p7 = Polynomial.from_const(7)
     assert isinstance(_poly_to_symnode(p7), SymConst)
-    assert typing.cast("EagerTensorProtocol", getattr(_poly_to_symnode(p7), "value")) == 7
+    assert as_tensor(getattr(_poly_to_symnode(p7), "value")) == 7
 
     # Polynomial with negative leading coefficient
     p_neg_lead = Polynomial({((("x", 1),)): -3})
@@ -605,7 +606,7 @@ def test_track_graph_empty_node_shapes() -> None:
     tracker = SymbolicConstraintTracker()
     n_none = MockLogicalNode(op="custom", inputs=[], shape=())
     graph = MockLogicalGraph(nodes=[n_none])
-    typing.cast("EagerCallableProtocol", tracker.track_graph)(graph)
+    as_callable(tracker.track_graph)(graph)
     assert tracker.is_consistent()
 
 
@@ -667,10 +668,10 @@ def _test_polynomial_and_symnode_detailed_branches_part_2(_state: dict[str, Eage
         _state: Shared test state dictionary.
     """
     x, y = _state["x"], _state["y"]
-    sub_op = typing.cast("EagerCallableProtocol", SymBinaryOp)("-", x, y)
+    sub_op = as_callable(SymBinaryOp)("-", x, y)
     assert sub_op.to_polynomial() is not None
 
-    mul_op = typing.cast("EagerCallableProtocol", SymBinaryOp)("*", x, y)
+    mul_op = as_callable(SymBinaryOp)("*", x, y)
     assert mul_op.to_polynomial() is not None
 
     # Poly to symnode with constant term 0
@@ -719,7 +720,7 @@ def _test_polynomial_and_symnode_detailed_branches_part_3(_state: dict[str, Eage
 
     # Track graph with node with input without shape
     n_noshape = MockLogicalNode(op="matmul", inputs=[MockLogicalNode(op="in", inputs=[], shape=())], shape=())
-    typing.cast("EagerCallableProtocol", tracker2.track_graph)(typing.cast("EagerCallableProtocol", MockLogicalGraph)(nodes=[n_noshape]))
+    as_callable(tracker2.track_graph)(as_callable(MockLogicalGraph)(nodes=[n_noshape]))
 
     # _broadcast_dim where b is SymConst
     sc3 = SymConst(3)
@@ -889,7 +890,7 @@ def test_shape_and_axis_error_branches() -> None:
 
     # normalize_axis invalid type
     with pytest.raises(TypeError, match="Invalid type for axis"):
-        typing.cast("EagerCallableProtocol", normalize_axis)("0", 3)
+        as_callable(normalize_axis)("0", 3)
 
     # normalize_axis list input
     assert normalize_axis([0, -1], 3) == (0, 2)
@@ -1020,7 +1021,7 @@ def _test_shape_system_all_remaining_coverage_branches_part_3(_state: dict[str, 
     assert "a" in tokens
 
     # 6. _parse_sym_str lines 1060-1061: syntax error fallback
-    with typing.cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.ir.shape_system.SymBinaryOp.__init__", side_effect=typing.cast("EagerCallableProtocol", ValueError)("forced error")):
+    with as_callable(patch)("ml_switcheroo_compiler.ir.shape_system.SymBinaryOp.__init__", side_effect=as_callable(ValueError)("forced error")):
         assert _parse_sym_str("1 + 2") == SymVar("1 + 2")
 
     # 7. SymInt.simplify line 1096:
@@ -1066,9 +1067,9 @@ def _test_shape_system_all_remaining_coverage_branches_part_4(_state: dict[str, 
             self.nodes = nodes
 
     n_mat = MockLogicalNode("matmul", [MockLogicalNode("in1", [], ()), MockLogicalNode("in2", [], ())], (1,))
-    n_add = typing.cast("EagerCallableProtocol", MockLogicalNode)("add", [typing.cast("EagerCallableProtocol", MockLogicalNode)("in1", [], None), typing.cast("EagerCallableProtocol", MockLogicalNode)("in2", [], None)], (1,))
+    n_add = as_callable(MockLogicalNode)("add", [as_callable(MockLogicalNode)("in1", [], None), as_callable(MockLogicalNode)("in2", [], None)], (1,))
     tracker_graph = SymbolicConstraintTracker()
-    typing.cast("EagerCallableProtocol", tracker_graph.track_graph)(typing.cast("EagerCallableProtocol", MockGraph)([n_mat, n_add]))
+    as_callable(tracker_graph.track_graph)(as_callable(MockGraph)([n_mat, n_add]))
 
     # Line 1606: broadcast_dimension where SymbolicSolver.is_consistent is True
     from ml_switcheroo_compiler.ir.shape_system import _broadcast_dim

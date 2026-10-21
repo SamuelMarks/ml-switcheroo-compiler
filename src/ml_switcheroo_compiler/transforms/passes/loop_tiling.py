@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import typing
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
@@ -22,7 +21,7 @@ def _load_heuristics() -> dict[str, AttributeValue]:
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             res = yaml.safe_load(f)
-            return typing.cast(dict[str, AttributeValue], res) if res else {}
+            return res if res else {}
     return {}
 
 
@@ -40,10 +39,13 @@ def _get_tiling_config() -> dict[str, AttributeValue]:
     backend_name = getattr(backend, "__name__", type(backend).__name__).lower() if backend else ""
 
     profile_name = "default_wgsl" if ("wgsl" in backend_name or "webgpu" in backend_name) else "default_wasm"
-    profiles = typing.cast(dict[str, AttributeValue], heuristics.get("tiling_profiles", {}))
+    raw_profiles = heuristics.get("tiling_profiles", {})
+    profiles = raw_profiles if isinstance(raw_profiles, dict) else {}
 
-    prof = typing.cast(dict[str, AttributeValue], profiles.get(profile_name, profiles.get("default_wasm", {})))
-    return typing.cast(dict[str, AttributeValue], prof.get("tiling", {}))
+    raw_prof = profiles.get(profile_name, profiles.get("default_wasm", {}))
+    prof = raw_prof if isinstance(raw_prof, dict) else {}
+    raw_tiling = prof.get("tiling", {})
+    return raw_tiling if isinstance(raw_tiling, dict) else {}
 
 
 def _should_tile(op_type: str, shape: tuple[AttributeValue, ...] | list[AttributeValue] | dict[str, AttributeValue] | None, op_config: dict[str, AttributeValue]) -> bool:
@@ -64,13 +66,16 @@ def _should_tile(op_type: str, shape: tuple[AttributeValue, ...] | list[Attribut
     if "threshold_M" in op_config and "threshold_N" in op_config:
         m = shape[-2] if len(shape) >= 2 and isinstance(shape[-2], int) else 0
         n = shape[-1] if len(shape) >= 2 and isinstance(shape[-1], int) else 0
-        if m >= typing.cast(int, op_config["threshold_M"]) or n >= typing.cast(int, op_config["threshold_N"]):
+        tm = op_config["threshold_M"]
+        tn = op_config["threshold_N"]
+        if (isinstance(tm, int) and m >= tm) or (isinstance(tn, int) and n >= tn):
             return True
 
     if "threshold_HW" in op_config:
         h = shape[1] if len(shape) >= 4 and isinstance(shape[1], int) else 0
         w = shape[2] if len(shape) >= 4 and isinstance(shape[2], int) else 0
-        if (h * w) >= typing.cast(int, op_config["threshold_HW"]):
+        thw = op_config["threshold_HW"]
+        if isinstance(thw, int) and (h * w) >= thw:
             return True
 
     return False
@@ -88,24 +93,24 @@ def _split_shape(op_type: str, shape: tuple[AttributeValue, ...], op_config: dic
         tuple: The tiled shape.
     """
     if "TILE_M" in op_config and "TILE_N" in op_config and len(shape) >= 2:
-        tile_m = typing.cast(int, op_config["TILE_M"])
-        tile_n = typing.cast(int, op_config["TILE_N"])
+        tile_m = op_config["TILE_M"]
+        tile_n = op_config["TILE_N"]
         m = shape[-2]
         n = shape[-1]
         prefix = shape[:-2]
-        if isinstance(m, int) and isinstance(n, int):
+        if isinstance(m, int) and isinstance(n, int) and isinstance(tile_m, int) and isinstance(tile_n, int):
             m_outer = (m + tile_m - 1) // tile_m
             n_outer = (n + tile_n - 1) // tile_n
             return (*prefix, m_outer, tile_m, n_outer, tile_n)
 
     if "TILE_H" in op_config and "TILE_W" in op_config and len(shape) >= 4:
-        tile_h = typing.cast(int, op_config["TILE_H"])
-        tile_w = typing.cast(int, op_config["TILE_W"])
+        tile_h = op_config["TILE_H"]
+        tile_w = op_config["TILE_W"]
         n = shape[0]
         h = shape[1]
         w = shape[2]
         c = shape[3]
-        if isinstance(h, int) and isinstance(w, int):
+        if isinstance(h, int) and isinstance(w, int) and isinstance(tile_h, int) and isinstance(tile_w, int):
             h_outer = (h + tile_h - 1) // tile_h
             w_outer = (w + tile_w - 1) // tile_w
             return (n, h_outer, tile_h, w_outer, tile_w, c)
@@ -132,10 +137,10 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
         if op_type not in tiling_config:
             continue
 
-        op_config = typing.cast(dict[str, AttributeValue], tiling_config[op_type])
+        op_config = tiling_config[op_type]
         shape = getattr(node, "shape_metadata", None)
 
-        if not op_config or not shape:
+        if not isinstance(op_config, dict) or not op_config or not shape:
             continue
 
         if _should_tile(op_type, shape, op_config):
@@ -145,7 +150,7 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
             # Perform actual IR mutation (splitting the shape for tile chunks)
             new_shape = _split_shape(op_type, tuple(shape), op_config)
             if new_shape != shape:
-                node.shape_metadata = typing.cast("tuple[int | str, ...]", new_shape)
+                node.shape_metadata = tuple(d for d in new_shape if isinstance(d, (int, str)))
                 node.attributes["tiling"] = True
 
                 # Copy all TILE_* attributes dynamically

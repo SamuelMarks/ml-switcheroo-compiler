@@ -25,14 +25,15 @@ from ml_switcheroo_compiler.backends.numpy.eager.indexing import (
     gather_eager,
     stack_eager,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_index_target_and_context() -> None:
     """Test IndexTarget and IndexingContext."""
-    target = typing.cast("EagerCallableProtocol", IndexTarget)(operand=1, update=2, index=0)
+    target = as_callable(IndexTarget)(operand=1, update=2, index=0)
     assert target.operand == 1
     assert target.update == 2
     assert target.index == 0
@@ -66,7 +67,7 @@ def test_dynamic_update_slice() -> None:
             return self.data
 
     start_indices_mock = [MockItem(1), MockItem(1)]
-    res_mock = typing.cast("EagerCallableProtocol", _dynamic_update_slice)(x, update, start_indices_mock)
+    res_mock = as_callable(_dynamic_update_slice)(x, update, start_indices_mock)
     assert res_mock[1, 1] == 1.0
 
 
@@ -77,14 +78,13 @@ def test_np_dynamic_update_slice() -> None:
     start_indices = [1, 1]
     res = _np_dynamic_update_slice(np, x, update, start_indices)
     assert (
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(res, "__getitem__")(
                 (
                     1,
                     1,
                 )
-            ),
+            )
         )
         == 1.0
     )
@@ -94,9 +94,9 @@ def test_np_unstack() -> None:
     """Test _np_unstack."""
     x = np.array([[1, 2], [3, 4]])
     res = _np_unstack(np, x, axis=0)
-    assert typing.cast("EagerCallableProtocol", len)(res) == 2
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)), [1, 2])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)), [3, 4])
+    assert as_callable(len)(res) == 2
+    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(0)), [1, 2])
+    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(1)), [3, 4])
 
 
 def test_np_dynamic_slice() -> None:
@@ -106,7 +106,7 @@ def test_np_dynamic_slice() -> None:
     slice_sizes = [2, 2]
     res = _np_dynamic_slice(np, x, start_indices, slice_sizes)
     expected = np.array([[5, 6], [8, 9]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_dynamic_slice_in_dim() -> None:
@@ -115,7 +115,7 @@ def test_np_dynamic_slice_in_dim() -> None:
     ctx = IndexingContext(axis=1, start_index=1, slice_size=2)
     res = _np_dynamic_slice_in_dim(np, x, ctx)
     expected = np.array([[2, 3], [5, 6], [8, 9]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_dynamic_update_slice_in_dim() -> None:
@@ -125,26 +125,24 @@ def test_np_dynamic_update_slice_in_dim() -> None:
     ctx = IndexingContext(axis=1, start_index=1)
     res = _np_dynamic_update_slice_in_dim(np, x, update, ctx)
     assert (
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(res, "__getitem__")(
                 (
                     0,
                     1,
                 )
-            ),
+            )
         )
         == 1.0
     )
     assert (
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(res, "__getitem__")(
                 (
                     0,
                     0,
                 )
-            ),
+            )
         )
         == 0.0
     )
@@ -156,12 +154,12 @@ def test_np_dynamic_index_in_dim() -> None:
     # keepdims = True
     ctx_true = IndexingContext(axis=1, keepdims=True)
     res_true = _np_dynamic_index_in_dim(np, x, 1, ctx_true)
-    assert typing.cast("EagerTensorProtocol", getattr(res_true, "shape")) == (2, 1)
+    assert as_tensor(getattr(res_true, "shape")) == (2, 1)
 
     # keepdims = False
     ctx_false = IndexingContext(axis=1, keepdims=False)
     res_false = _np_dynamic_index_in_dim(np, x, 1, ctx_false)
-    assert typing.cast("EagerTensorProtocol", getattr(res_false, "shape")) == (2,)
+    assert as_tensor(getattr(res_false, "shape")) == (2,)
 
 
 def test_np_dynamic_update_index_in_dim() -> None:
@@ -172,26 +170,24 @@ def test_np_dynamic_update_index_in_dim() -> None:
     ctx = IndexingContext(axis=1)
     res = _np_dynamic_update_index_in_dim(np, target, ctx)
     assert (
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(res, "__getitem__")(
                 (
                     0,
                     1,
                 )
-            ),
+            )
         )
         == 1.0
     )
     assert (
-        typing.cast(
-            "EagerTensorProtocol",
+        as_tensor(
             getattr(res, "__getitem__")(
                 (
                     0,
                     0,
                 )
-            ),
+            )
         )
         == 0.0
     )
@@ -203,7 +199,7 @@ def test_np_slice_in_dim() -> None:
     ctx = IndexingContext(axis=1, start_index=1, limit_index=3, stride=1)
     res = _np_slice_in_dim(np, x, ctx)
     expected = np.array([[2, 3], [5, 6]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_slice() -> None:
@@ -212,7 +208,7 @@ def test_np_slice() -> None:
     ctx = IndexingContext(axis=1, start_index=1, limit_index=3, stride=1)
     res = _np_slice(np, x, ctx)
     expected = np.array([[2, 3], [5, 6]])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_np_getitem() -> None:
@@ -227,7 +223,7 @@ def test_eager_indexindim() -> None:
     """Test _eager_indexindim."""
     x = np.array([[1, 2], [3, 4]])
     res = _eager_indexindim(np, x, [0, 1], 1)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [[1, 2], [3, 4]])
+    as_callable(np.testing.assert_allclose)(res, [[1, 2], [3, 4]])
 
 
 def test_gather_eager() -> None:
@@ -238,11 +234,11 @@ def test_gather_eager() -> None:
     # Test args
     res = gather_eager(np, x, 1, idx)
     expected = np.take_along_axis(x, idx, axis=1)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
     # Test kwargs
     res_kwargs = gather_eager(np, x, dim=1, index=idx)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_kwargs, expected)
+    as_callable(np.testing.assert_allclose)(res_kwargs, expected)
 
     # test .numpy() unwrap
     class MockTensor:
@@ -262,8 +258,8 @@ def test_gather_eager() -> None:
 
     t_x = MockTensor(x)
     t_idx = MockTensor(idx)
-    res_mock = gather_eager(np, typing.cast("EagerValue", t_x), 1, typing.cast("EagerValue", t_idx))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mock, expected)
+    res_mock = gather_eager(np, as_tensor(t_x), 1, as_tensor(t_idx))
+    as_callable(np.testing.assert_allclose)(res_mock, expected)
 
 
 def test_stack_eager() -> None:
@@ -274,15 +270,15 @@ def test_stack_eager() -> None:
     # Test args
     res = stack_eager(np, [a, b], 0)
     expected = np.stack([a, b], axis=0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
     # Test kwargs
     res_kwargs = stack_eager(np, tensors=[a, b], dim=0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_kwargs, expected)
+    as_callable(np.testing.assert_allclose)(res_kwargs, expected)
 
     # Test axis kwarg
     res_axis = stack_eager(np, tensors=[a, b], axis=0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_axis, expected)
+    as_callable(np.testing.assert_allclose)(res_axis, expected)
 
     # Test .numpy() unwrap
     class MockTensor:
@@ -302,8 +298,8 @@ def test_stack_eager() -> None:
 
     t_a = MockTensor(a)
     t_b = MockTensor(b)
-    res_mock = stack_eager(np, [typing.cast("EagerValue", t_a), typing.cast("EagerValue", t_b)], 0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mock, expected)
+    res_mock = stack_eager(np, [as_tensor(t_a), as_tensor(t_b)], 0)
+    as_callable(np.testing.assert_allclose)(res_mock, expected)
 
 
 def test_dynamic_update_slice_with_item() -> None:
@@ -320,7 +316,7 @@ def test_dynamic_update_slice_with_item() -> None:
     x = np.zeros((3, 3))
     update = np.ones((2, 2))
     start_indices = [MockItem(), MockItem()]
-    res = typing.cast("EagerCallableProtocol", _dynamic_update_slice)(x, update, start_indices)
+    res = as_callable(_dynamic_update_slice)(x, update, start_indices)
     assert res[1, 1] == 1.0
 
 
@@ -332,5 +328,5 @@ def test_backends_numpy_indexing_setitem() -> None:
     assert func is not None
     x = np.array([10, 20, 30])
     res = func(np, x, 99, "1")
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 99
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 10
+    assert as_tensor(getattr(res, "__getitem__")(1)) == 99
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 10

@@ -8,9 +8,10 @@ import pytest
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.ops.io.image_io import _decode_image_with_pil, decode_bmp, decode_gif, decode_png
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
@@ -54,7 +55,7 @@ def test_decode_image_with_pil(tmp_path: EagerTensorProtocol, monkeypatch: Eager
                 data: Test parameter `data`.
                 channels: Test parameter `channels`.
             """
-            return typing.cast("EagerTensorProtocol", DummyImgArray((10, 10) if channels == 1 else (10, 10, channels or 3)))
+            return as_tensor(DummyImgArray((10, 10) if channels == 1 else (10, 10, channels or 3)))
 
     monkeypatch.setattr(registry, "get_active_backend", lambda: DummyDecodeBackend)
 
@@ -113,9 +114,9 @@ def test_decode_image_backend(monkeypatch: EagerTensorProtocol) -> None:
 
     monkeypatch.setattr(registry, "get_active_backend", lambda: DummyBackend)
 
-    assert typing.cast("EagerTensorProtocol", decode_png(b"", channels=3)) == typing.cast("EagerTensorProtocol", "png")
-    assert typing.cast("EagerTensorProtocol", decode_gif(b"")) == typing.cast("EagerTensorProtocol", "gif")
-    assert typing.cast("EagerTensorProtocol", decode_bmp(b"", channels=3)) == typing.cast("EagerTensorProtocol", "bmp")
+    assert as_tensor(decode_png(b"", channels=3)) == as_tensor("png")
+    assert as_tensor(decode_gif(b"")) == as_tensor("gif")
+    assert as_tensor(decode_bmp(b"", channels=3)) == as_tensor("bmp")
 
 
 def test_decode_image_fallback() -> None:
@@ -171,10 +172,10 @@ def test_decode_image_eager_mode(mocker: EagerTensorProtocol) -> None:
             """
             return "jpeg"
 
-    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=typing.cast("EagerCallableProtocol", DummyBackend)())
+    as_callable(mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=as_callable(DummyBackend)())
 
-    assert typing.cast("EagerTensorProtocol", decode_image("x")) == typing.cast("EagerTensorProtocol", "DecodeImage")
-    assert typing.cast("EagerTensorProtocol", decode_jpeg("x")) == typing.cast("EagerTensorProtocol", "jpeg")
+    assert as_tensor(decode_image("x")) == as_tensor("DecodeImage")
+    assert as_tensor(decode_jpeg("x")) == as_tensor("jpeg")
 
     config.eager_mode = False
 
@@ -201,7 +202,7 @@ def test_decode_image_infer_shape() -> None:
     t1 = DummyTensor((2, 3))
     t2 = DummyTensor((2, 1))
 
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(t1, t2) == (2, 3)
+    assert as_callable(op.infer_shape)(t1, t2) == (2, 3)
 
 
 def test_decode_image_non_eager() -> None:
@@ -217,5 +218,5 @@ def test_decode_image_non_eager() -> None:
         shape = ()
         dtype = "float32"
 
-    res = typing.cast("EagerCallableProtocol", decode_image)(typing.cast("EagerCallableProtocol", DummyNode)())
+    res = as_callable(decode_image)(as_callable(DummyNode)())
     assert res is not None

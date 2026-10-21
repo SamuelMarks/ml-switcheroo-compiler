@@ -53,7 +53,7 @@ def export_to_dot(file: str | typing.IO[str], *arrays: Tensor, **kwargs: TensorO
     """Export the computation graph of the given arrays to a DOT format file.
 
     Args:
-        file (typing.Union[str, typing.IO[str]]): The file parameter.
+        file (str | typing.IO[str]): The file parameter.
         *arrays (Tensor): Positional args.
         **kwargs (TensorOrScalar): Keyword args.
 

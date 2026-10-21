@@ -20,9 +20,10 @@ from ml_switcheroo_compiler.backends.mlx.profiler import (
     _sync_mlx_result,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_mlx_import_error() -> None:
@@ -32,7 +33,7 @@ def test_mlx_import_error() -> None:
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
     with patch.dict(sys.modules, {"mlx": None, "mlx.core": None}):
         importlib.reload(mlx_prof_module)
-        assert typing.cast("EagerTensorProtocol", getattr(mlx_prof_module, "mx")) is None
+        assert as_tensor(getattr(mlx_prof_module, "mx")) is None
 
     # Reload back to normal state
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = mlx_parent
@@ -185,7 +186,7 @@ def test_prepare_mlx_inputs_exhaustive() -> None:
     custom_inst = CustomMlxArray()
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = typing.cast("EagerCallableProtocol", _prepare_mlx_inputs)(
+        res = as_callable(_prepare_mlx_inputs)(
             {
                 "is_inst": dummy_inst,
                 "custom": custom_inst,
@@ -231,7 +232,7 @@ def test_prepare_ordered_inputs_branches() -> None:
     g.nodes["k2"] = IRNode(id="k2", op_type="Input")
 
     with patch("ml_switcheroo_compiler.backends.mlx.profiler.mx", mock_mx):
-        res = typing.cast("EagerCallableProtocol", profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst, "k3": [1.0]})
+        res = as_callable(profiler._prepare_ordered_inputs)(g, {"k1": dummy_inst, "k2": custom_inst, "k3": [1.0]})
         assert id(res[0]) == id(dummy_inst)
         assert id(res[1]) == id(custom_inst)
 

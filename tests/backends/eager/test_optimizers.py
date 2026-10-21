@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.backends.eager.optimizers import (
     apply_ftrl,
     apply_rmsprop,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MockBackend:
@@ -27,7 +28,7 @@ class MockBackend:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return typing.cast("EagerTensorProtocol", a) + typing.cast("EagerTensorProtocol", b)
+        return as_tensor(a) + as_tensor(b)
 
     def subtract(self, a: EagerValue, b: EagerValue) -> EagerValue:
         """Test function subtract.
@@ -36,7 +37,7 @@ class MockBackend:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return typing.cast("EagerTensorProtocol", a) - typing.cast("EagerTensorProtocol", b)
+        return as_tensor(a) - as_tensor(b)
 
     def multiply(self, a: EagerValue, b: EagerValue) -> EagerValue:
         """Test function multiply.
@@ -45,7 +46,7 @@ class MockBackend:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return typing.cast("EagerTensorProtocol", a) * typing.cast("EagerTensorProtocol", b)
+        return as_tensor(a) * as_tensor(b)
 
     def divide(self, a: EagerValue, b: EagerValue) -> EagerValue:
         """Test function divide.
@@ -54,7 +55,7 @@ class MockBackend:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return typing.cast("EagerTensorProtocol", a) / typing.cast("EagerTensorProtocol", b)
+        return as_tensor(a) / as_tensor(b)
 
     def sqrt(self, a: EagerValue) -> EagerValue:
         """Test function sqrt.
@@ -62,7 +63,7 @@ class MockBackend:
         Args:
             a: Test parameter `a`.
         """
-        return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", np.sqrt)(a))
+        return as_tensor(as_callable(np.sqrt)(a))
 
 
 def test_apply_adam() -> None:
@@ -74,10 +75,10 @@ def test_apply_adam() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, m_new, v_new = typing.cast("EagerCallableProtocol", apply_adam)(backend, param, m, v, grad, lr)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
-    assert typing.cast("EagerTensorProtocol", getattr(m_new, "shape")) == (2,)
-    assert typing.cast("EagerTensorProtocol", getattr(v_new, "shape")) == (2,)
+    p_new, m_new, v_new = as_callable(apply_adam)(backend, param, m, v, grad, lr)
+    assert as_tensor(getattr(p_new, "shape")) == (2,)
+    assert as_tensor(getattr(m_new, "shape")) == (2,)
+    assert as_tensor(getattr(v_new, "shape")) == (2,)
 
 
 def test_apply_adagrad() -> None:
@@ -88,9 +89,9 @@ def test_apply_adagrad() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, accum_new = typing.cast("EagerCallableProtocol", apply_adagrad)(backend, param, accum, grad, lr)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
-    assert typing.cast("EagerTensorProtocol", getattr(accum_new, "shape")) == (2,)
+    p_new, accum_new = as_callable(apply_adagrad)(backend, param, accum, grad, lr)
+    assert as_tensor(getattr(p_new, "shape")) == (2,)
+    assert as_tensor(getattr(accum_new, "shape")) == (2,)
 
 
 def test_apply_ftrl() -> None:
@@ -102,10 +103,10 @@ def test_apply_ftrl() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, accum_new, linear_new = typing.cast("EagerCallableProtocol", apply_ftrl)(backend, param, accum, linear, grad, lr)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
-    assert typing.cast("EagerTensorProtocol", getattr(accum_new, "shape")) == (2,)
-    assert typing.cast("EagerTensorProtocol", getattr(linear_new, "shape")) == (2,)
+    p_new, accum_new, linear_new = as_callable(apply_ftrl)(backend, param, accum, linear, grad, lr)
+    assert as_tensor(getattr(p_new, "shape")) == (2,)
+    assert as_tensor(getattr(accum_new, "shape")) == (2,)
+    assert as_tensor(getattr(linear_new, "shape")) == (2,)
 
 
 def test_apply_rmsprop() -> None:
@@ -117,7 +118,7 @@ def test_apply_rmsprop() -> None:
     grad = np.array([0.5, 0.5])
     lr = 0.01
 
-    p_new, ms_new, mom_new = typing.cast("EagerCallableProtocol", apply_rmsprop)(backend, param, ms, mom, grad, lr)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2,)
-    assert typing.cast("EagerTensorProtocol", getattr(ms_new, "shape")) == (2,)
-    assert typing.cast("EagerTensorProtocol", getattr(mom_new, "shape")) == (2,)
+    p_new, ms_new, mom_new = as_callable(apply_rmsprop)(backend, param, ms, mom, grad, lr)
+    assert as_tensor(getattr(p_new, "shape")) == (2,)
+    assert as_tensor(getattr(ms_new, "shape")) == (2,)
+    assert as_tensor(getattr(mom_new, "shape")) == (2,)

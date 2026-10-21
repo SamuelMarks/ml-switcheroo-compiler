@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
 def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
@@ -28,7 +26,7 @@ def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> n
         xs = x_safe[small_mask] + 1.0
         g_next = (xs - 0.5) * np.log(xs) - xs + c0 + (1.0 / (12.0 * xs)) - (1.0 / (360.0 * np.power(xs, 3)))
         res[small_mask] = g_next - np.log(x_safe[small_mask])
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("LogPoissonLoss")
@@ -61,7 +59,7 @@ def _np_log_poisson_loss(backend_module: BackendModuleProtocol, targets: EagerVa
             res = res + scipy.special.gammaln(t + 1.0)
         except ImportError:
             res = res + _stirling_gammaln(t + 1.0)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("AllCandidateSampler")
@@ -77,8 +75,8 @@ def _np_all_candidate_sampler(backend_module: BackendModuleProtocol, true_classe
         tuple[np.ndarray, np.ndarray, np.ndarray]: (sampled_candidates, true_expected_count, sampled_expected_count).
     """
     t = np.asarray(true_classes, dtype=np.int64)
-    num_sampled = int(typing.cast(int, kwargs.get("num_sampled", 1)))
-    num_classes = int(typing.cast(int, kwargs.get("num_classes", 10)))
+    num_sampled = int(as_int(kwargs.get("num_sampled", 1)))
+    num_classes = int(as_int(kwargs.get("num_classes", 10)))
     unique = bool(kwargs.get("unique", True))
     seed = kwargs.get("seed")
 
@@ -179,7 +177,7 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
             probs = arr[t, b]
             max_p = np.max(probs)
             log_p = probs - max_p - np.log(np.sum(np.exp(probs - max_p)))
-            beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, typing.cast("int", beam_width))
+            beam = _np_ctc_beam_step(beam, log_p, num_classes, blank, as_int(beam_width))
 
         best_paths = sorted(beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
         best_paths_by_batch.append(best_paths)
@@ -187,7 +185,7 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
     sparse_list: list[tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]] = []
     log_probs_matrix = getattr(np, "zeros")((batch_size, top_paths), dtype=np.float32)
 
-    for p in range(typing.cast("int", top_paths)):
+    for p in range(as_int(top_paths)):
         indices_p: list[list[int]] = []
         values_p: list[int] = []
         max_len = 0
@@ -398,19 +396,20 @@ def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue,
     rhs_spec = (spatial_dims + 1, spatial_dims) + tuple(range(0, spatial_dims))
     out_spec = lhs_spec
 
-    config_obj = typing.cast("TypedVariadicCallable[ConvConfig]", ConvConfig)(
+    pad_val: str | list[tuple[int, int]] = pad_arg if isinstance(pad_arg, str) else [(int(p[0]), int(p[1])) for p in getattr(pad_arg, "__iter__")()]
+    config_obj = ConvConfig(
         window_strides=strides_tuple,
-        padding=pad_arg,
+        padding=pad_val,
         lhs_dilation=(1,) * spatial_dims,
         rhs_dilation=dilation_tuple,
         dimension_numbers=(lhs_spec, rhs_spec, out_spec),
-        feature_group_count=typing.cast("int", groups),
+        feature_group_count=as_int(groups),
     )
 
     from ml_switcheroo_compiler.backends.numpy.eager.conv import _conv_general_dilated
 
     res = _conv_general_dilated(input_val, w_float, config_obj)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("DepthwiseConv2dNativeBackpropFilter")

@@ -11,10 +11,10 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_random_sampling im
     _pshuffle,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_math_random_sampling_coverage() -> None:
@@ -43,7 +43,7 @@ def test_math_random_sampling_coverage() -> None:
 
         lax = LaxObj()
 
-    assert _pshuffle(typing.cast("BackendModuleProtocol", BackendWithLax()), [1, 2, 3]) == "pshuffle_val"
+    assert _pshuffle(as_mod(BackendWithLax()), [1, 2, 3]) == "pshuffle_val"
 
     # Case B: backend lacks lax -> returns args[0] if args else None
     class EmptyBackend:
@@ -51,8 +51,8 @@ def test_math_random_sampling_coverage() -> None:
 
         pass
 
-    assert _pshuffle(typing.cast("BackendModuleProtocol", EmptyBackend()), [1, 2, 3]) == [1, 2, 3]
-    assert _pshuffle(typing.cast("BackendModuleProtocol", EmptyBackend())) is None
+    assert _pshuffle(as_mod(EmptyBackend()), [1, 2, 3]) == [1, 2, 3]
+    assert _pshuffle(as_mod(EmptyBackend())) is None
 
     # 2. _np_gumbel
     # Case A: backend has gumbel
@@ -68,11 +68,11 @@ def test_math_random_sampling_coverage() -> None:
             """
             return "gumbel_val"
 
-    assert _np_gumbel(typing.cast("BackendModuleProtocol", GumbelBackend()), 0.0, 1.0) == "gumbel_val"
+    assert _np_gumbel(as_mod(GumbelBackend()), 0.0, 1.0) == "gumbel_val"
 
     # Case B: backend lacks gumbel -> fallback to np.random.gumbel
-    g_res = _np_gumbel(typing.cast("BackendModuleProtocol", EmptyBackend()), 0.0, 1.0, size=(2, 2))
-    assert typing.cast("EagerTensorProtocol", getattr(g_res, "shape")) == (2, 2)
+    g_res = _np_gumbel(as_mod(EmptyBackend()), 0.0, 1.0, size=(2, 2))
+    assert as_tensor(getattr(g_res, "shape")) == (2, 2)
 
     # 3. _np_rnguniform
     # Case A: backend has rnguniform
@@ -88,11 +88,11 @@ def test_math_random_sampling_coverage() -> None:
             """
             return "rnguniform_val"
 
-    assert _np_rnguniform(typing.cast("BackendModuleProtocol", RngUniformBackend()), 0.0, 1.0) == "rnguniform_val"
+    assert _np_rnguniform(as_mod(RngUniformBackend()), 0.0, 1.0) == "rnguniform_val"
 
     # Case B: backend lacks rnguniform -> fallback to np.random.uniform
-    u_res = _np_rnguniform(typing.cast("BackendModuleProtocol", EmptyBackend()), 0.0, 1.0, size=(3,))
-    assert typing.cast("EagerTensorProtocol", getattr(u_res, "shape")) == (3,)
+    u_res = _np_rnguniform(as_mod(EmptyBackend()), 0.0, 1.0, size=(3,))
+    assert as_tensor(getattr(u_res, "shape")) == (3,)
 
     # 4. _np_wald
     # Case A: backend has wald
@@ -108,11 +108,11 @@ def test_math_random_sampling_coverage() -> None:
             """
             return "wald_val"
 
-    assert _np_wald(typing.cast("BackendModuleProtocol", WaldBackend()), 1.0, 1.0) == "wald_val"
+    assert _np_wald(as_mod(WaldBackend()), 1.0, 1.0) == "wald_val"
 
     # Case B: backend lacks wald -> fallback to np.random.wald
-    w_res = _np_wald(typing.cast("BackendModuleProtocol", EmptyBackend()), 1.0, 1.0, size=(2,))
-    assert typing.cast("EagerTensorProtocol", getattr(w_res, "shape")) == (2,)
+    w_res = _np_wald(as_mod(EmptyBackend()), 1.0, 1.0, size=(2,))
+    assert as_tensor(getattr(w_res, "shape")) == (2,)
 
     # Registry verification
     assert global_eager_registry.get("Pshuffle") is not None

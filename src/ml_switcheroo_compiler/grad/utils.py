@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import typing
 import uuid
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -94,7 +95,7 @@ def value_and_grad_wrt_vars(
         Returns:
             tuple[GradValue, dict[str, GradValue]]: Primal output value and variable gradient dictionary.
         """
-        val = typing.cast(TypedVariadicCallable[GradValue], fun)(*args, **kwargs)
+        val = as_callable(fun)(*args, **kwargs)
         grads: dict[str, GradValue] = {}
         return (val, grads)
 
@@ -240,7 +241,6 @@ def _get_fun_primal(fun: GradValue, has_aux: bool) -> TypedVariadicCallable[Grad
     Returns:
         TypedVariadicCallable[GradValue]: Primal-only callable.
     """
-    fn = typing.cast(TypedVariadicCallable[GradValue], fun)
     if has_aux:
 
         def fun_primal(*args: GradValue, **kwargs: GradValue) -> GradValue:
@@ -253,12 +253,24 @@ def _get_fun_primal(fun: GradValue, has_aux: bool) -> TypedVariadicCallable[Grad
             Returns:
                 GradValue: Primary output value.
             """
-            out_val: GradValue = fn(*args, **kwargs)
+            out_val: GradValue = invoke_callable(fun, *args, **kwargs)
             return out_val[0] if isinstance(out_val, tuple) else out_val
 
         return fun_primal
 
-    return fn
+    def fun_direct(*args: GradValue, **kwargs: GradValue) -> GradValue:
+        """Evaluate `fun` directly.
+
+        Args:
+            *args (GradValue): Positional arguments.
+            **kwargs (GradValue): Keyword arguments.
+
+        Returns:
+            GradValue: Evaluated result.
+        """
+        return invoke_callable(fun, *args, **kwargs)
+
+    return fun_direct
 
 
 def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
@@ -306,7 +318,7 @@ def _compute_grad_and_value(
     from .jvp_vjp import _unpack_pair, vjp
 
     val, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=getattr(options, "has_aux", False)))
-    vjp_fn = typing.cast("Callable[[GradValue], GradValue]", vjp_fn_raw)
+    vjp_fn = vjp_fn_raw
 
     if getattr(options, "has_aux", False):
         primal_val, _ = typing.cast(tuple[GradValue, GradValue], val)
@@ -330,17 +342,14 @@ def _compute_grad_and_value(
         primal_arr = get_active_backend().asarray(getattr(primal_val, "data", primal_val))
         cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
 
-    grads = vjp_fn(cotangent)
+    grads = invoke_callable(vjp_fn, cotangent)
     grads_seq = tuple(grads) if isinstance(grads, (list, tuple)) else (grads,)
 
     argnums = getattr(options, "argnums", 0)
     if isinstance(argnums, int):
         res_grad = _to_original_type(grads_seq[argnums], args[argnums])
     elif isinstance(argnums, (tuple, list)):
-        res_grad = typing.cast(
-            GradValue,
-            tuple(_to_original_type(grads_seq[idx], args[idx]) for idx in typing.cast(tuple[int, ...], argnums)),
-        )
+        res_grad = tuple(_to_original_type(grads_seq[idx], args[idx]) for idx in argnums)
     else:
         res_grad = _to_original_type(grads_seq[0], args[0])
 

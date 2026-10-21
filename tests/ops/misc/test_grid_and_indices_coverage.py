@@ -6,9 +6,10 @@ import typing
 from unittest.mock import patch
 
 import ml_switcheroo_compiler.ops.info_and_histograms.grid_and_indices as grid_mod
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class DummyWithShape:
@@ -36,14 +37,14 @@ def test_grid_and_indices_coverage() -> None:
     # Indices infer_shape
     indices_op = grid_mod.Indices()
     assert indices_op.infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", indices_op.infer_shape)((2, 3)) == (2, 2, 3)
-    assert typing.cast("EagerCallableProtocol", indices_op.infer_shape)(42) == ()
+    assert as_callable(indices_op.infer_shape)((2, 3)) == (2, 2, 3)
+    assert as_callable(indices_op.infer_shape)(42) == ()
 
     # Ix infer_shape
     ix_op = grid_mod.Ix()
     assert ix_op.infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", ix_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithShape)((5,)), typing.cast("EagerCallableProtocol", DummyWithShape)((3,))) == (5, 1)
-    assert typing.cast("EagerCallableProtocol", ix_op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithoutShape)(), typing.cast("EagerCallableProtocol", DummyWithShape)((3,))) == (1, 1)
+    assert as_callable(ix_op.infer_shape)(as_callable(DummyWithShape)((5,)), as_callable(DummyWithShape)((3,))) == (5, 1)
+    assert as_callable(ix_op.infer_shape)(as_callable(DummyWithoutShape)(), as_callable(DummyWithShape)((3,))) == (1, 1)
 
     # MaskIndices infer_shape
     assert grid_mod.MaskIndices().infer_shape() == (None,)

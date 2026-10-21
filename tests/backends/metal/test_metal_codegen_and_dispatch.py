@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.metal.metal import (
     MetalCodeGenerator,
     MetalRunner,
@@ -21,6 +20,7 @@ from ml_switcheroo_compiler.backends.metal.metal import (
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -545,12 +545,12 @@ def _test_metal_runner_execute_graph_part_3(_state: dict[str, EagerTensorProtoco
             # Also verify node dispatch early exits when func is None or pipeline_state is None
             setattr(mock_lib.newFunctionWithName_, "return_value", None)
             res2 = runner.execute_graph(graph, inputs)
-            assert isinstance(typing.cast("EagerValue", res2), dict)
+            assert isinstance(as_tensor(res2), dict)
 
             setattr(mock_lib.newFunctionWithName_, "return_value", mock_func)
             setattr(mock_dev.newComputePipelineStateWithFunction_error_, "return_value", (None, None))
             res3 = runner.execute_graph(graph, inputs)
-            assert isinstance(typing.cast("EagerValue", res3), dict)
+            assert isinstance(as_tensor(res3), dict)
     getattr(_state, "update")({"res": res, "res2": res2, "res3": res3})
 
 

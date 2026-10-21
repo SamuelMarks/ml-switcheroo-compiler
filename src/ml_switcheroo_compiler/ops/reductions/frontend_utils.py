@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import typing
-
 # ruff: noqa: E402
 import uuid
 from collections.abc import Mapping, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_callable, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.core import as_attrs
 from ml_switcheroo_compiler.ops.configs import WindowConfig
 
 
@@ -59,21 +58,19 @@ def _emit_reduction_node(
     Returns:
         Tensor: Result.
     """
-    from ml_switcheroo_ir import AttributeValue
-
     out_id = str(uuid.uuid4())
     clean_shape: tuple[int, ...] = tuple(d for d in out_shape if d is not None)
     node = LogicalNode(
         id=out_id,
         op_type=op_type,
         inputs=[getattr(getattr(inp, "data", inp), "id", "mock_id") for inp in inputs],
-        attributes=typing.cast("Mapping[str, AttributeValue]", attrs),
+        attributes=as_attrs(attrs),
         shape_metadata=clean_shape,
     )
     global_tracing_state.add_node(node)
 
     dtype_val = getattr(out_dtype, "value", out_dtype)
-    proxy = typing.cast("EagerCallableProtocol", ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
+    proxy = as_callable(ProxyTensor)(id=out_id, shape=out_shape, dtype=dtype_val)
     return Tensor(proxy, TensorConfig(out_shape, out_dtype, inputs[0].device))
 
 

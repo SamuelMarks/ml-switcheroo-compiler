@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.numpy.eager.indexing import _dynamic_update_slice
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -33,7 +33,7 @@ def _np_tensor_scatter_update(
     res = backend_module.copy(backend_module.array(tensor))
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     res[idx] = backend_module.array(updates)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
@@ -57,7 +57,7 @@ def _np_tensor_scatter_add(
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.add.at(res, idx, backend_module.array(updates))
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("TensorScatterMax")
@@ -81,7 +81,7 @@ def _np_tensor_scatter_max(
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.maximum.at(res, idx, backend_module.array(updates))
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("TensorScatterMin")
@@ -105,7 +105,7 @@ def _np_tensor_scatter_min(
     res = backend_module.array(tensor)
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
     backend_module.minimum.at(res, idx, backend_module.array(updates))
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("ScatterNd")
@@ -197,7 +197,7 @@ def _np_gather_nd(
         np.ndarray: Gathered tensor elements.
     """
     idx = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], params[idx])
+    return as_ndarray(params[idx])
 
 
 @numpy_eager_registry.register("TakeAlongAxis")
@@ -219,8 +219,8 @@ def _np_take_along_axis(
         np.ndarray: Selected slice values.
     """
     if x.ndim != indices.ndim:
-        return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.take(x, indices, axis=axis))
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.take_along_axis(x, indices, axis=axis))
+        return as_ndarray(backend_module.take(x, indices, axis=axis))
+    return as_ndarray(backend_module.take_along_axis(x, indices, axis=axis))
 
 
 @numpy_eager_registry.register("DynamicSlice")

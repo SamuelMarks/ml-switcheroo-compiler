@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -22,7 +21,7 @@ def _intersect1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "intersect1d")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "intersect1d")(*args, **kwargs))
 
 
 @global_eager_registry.register("Union1d")
@@ -39,7 +38,7 @@ def _np_union1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     func = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).union1d(*args, **kwargs)
 
 
@@ -57,7 +56,7 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unique(*args, **kwargs)
 
 
@@ -75,7 +74,7 @@ def _np_uniqueall(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """
     func = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     arr = mod.asarray(args[0]).flatten()
     values, indices = mod.unique(arr, return_index=True)
@@ -102,7 +101,7 @@ def _np_uniquecounts(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     func = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     arr = mod.asarray(args[0]).flatten()
     values = mod.unique(arr)
@@ -127,5 +126,5 @@ def _np_uniquevalues(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     func = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unique(args[0])

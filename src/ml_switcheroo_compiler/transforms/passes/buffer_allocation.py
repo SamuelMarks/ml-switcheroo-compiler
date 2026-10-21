@@ -278,7 +278,7 @@ class InterferenceGraphColoringAllocator:
 
         Args:
             graph (IRGraph): Target computation graph.
-            sorted_nodes (typing.Optional[list[IRNode]]): Pre-sorted nodes, if available.
+            sorted_nodes (list[IRNode] | None): Pre-sorted nodes, if available.
 
         Returns:
             dict[str, dict[str, int]]: Map of node ID to color, offset, and size.

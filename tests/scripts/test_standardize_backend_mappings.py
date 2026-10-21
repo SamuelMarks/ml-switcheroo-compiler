@@ -11,9 +11,10 @@ from unittest.mock import patch
 import yaml
 
 import scripts.standardize_backend_mappings as sbm
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_build_default_ast_template() -> None:
@@ -43,7 +44,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_translations": {"axis": "dim", "drop": None},
         "dtype_overrides": {"float64": "float32"},
     }
-    result = typing.cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
+    result = as_callable(sbm.standardize_mapping_data)("numpy", "Add", raw_spec)
     assert result["operation"] == "Add"
     assert result["backend"] == "numpy"
     assert result["target_api"] == "np.add"
@@ -57,7 +58,7 @@ def test_standardize_mapping_data() -> None:
         "kwarg_map": ["invalid_list"],
         "dtype_overrides": ["invalid_list"],
     }
-    result_non_dict = typing.cast("EagerCallableProtocol", sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
+    result_non_dict = as_callable(sbm.standardize_mapping_data)("numpy", "Abs", raw_non_dict)
     assert result_non_dict["kwarg_map"] == {}
     assert result_non_dict["dtype_overrides"] == {}
 

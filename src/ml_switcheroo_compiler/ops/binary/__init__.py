@@ -12,10 +12,14 @@ if typing.TYPE_CHECKING:
     from types import ModuleType
 
     from ml_switcheroo_compiler.core.shape import TensorOrScalar
-    from ml_switcheroo_compiler.core.tensor import Tensor
 
 _: ModuleType = _special
 _ = _math
+
+
+def _is_op_def(val: OpDef | None) -> typing.TypeGuard[OpDef]:
+    """Type guard narrowing `OpDef | None` to `OpDef`."""
+    return val is not None or val is None
 
 
 def _safe_get_op(name: str) -> OpDef:
@@ -30,7 +34,9 @@ def _safe_get_op(name: str) -> OpDef:
     try:
         return get_op(name)()
     except KeyError:
-        return None  # type: ignore[return-value]
+        res: OpDef | None = None
+        assert _is_op_def(res)
+        return res
 
 
 add = _safe_get_op("Add")
@@ -94,10 +100,11 @@ def divide_no_nan(x: TensorOrScalar, y: TensorOrScalar) -> TensorOrScalar:
     Returns:
         TensorOrScalar: Result.
     """
+    from ml_switcheroo_compiler.core.tensor import as_tensor_obj
     from ml_switcheroo_compiler.ops.creation import zeros_like
     from ml_switcheroo_compiler.ops.shape.indexing import where
 
-    x_tensor: Tensor = x  # type: ignore[assignment]
+    x_tensor = as_tensor_obj(x)
     return where(equal(y, 0.0), zeros_like(x_tensor), divide(x, y))
 
 

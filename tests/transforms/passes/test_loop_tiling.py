@@ -8,9 +8,10 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.loop_tiling import _load_heuristics, loop_tiling_pass
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_load_heuristics() -> None:
@@ -111,7 +112,7 @@ def test_loop_tiling_extra_coverage() -> None:
     assert getattr(graph.nodes["n2"], "attributes", {}).get("tiling") is None
 
     # Hit not op_config branch
-    mock_yaml2 = typing.cast("EagerTensorProtocol", {"profiles": {"default_wasm": {"tiling": {"matmul": {}}}}})
+    mock_yaml2 = as_tensor({"profiles": {"default_wasm": {"tiling": {"matmul": {}}}}})
     with patch("os.path.exists", return_value=True), patch("builtins.open", mock_open(read_data=yaml.dump(mock_yaml2))):
         loop_tiling_pass(graph)
 
@@ -126,7 +127,7 @@ def test_loop_tiling_missing_coverage_extra() -> None:
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {}) == (1, "sym", "sym", 3)
     assert _split_shape("conv2d", (1, "sym", "sym", 3), {"TILE_H": 8, "TILE_W": 8}) == (1, "sym", "sym", 3)
     assert _split_shape("other_op", (1, 2), {}) == (1, 2)
-    assert bool(typing.cast("EagerCallableProtocol", _should_tile)("matmul", "not_tuple", {})) is False
+    assert bool(as_callable(_should_tile)("matmul", "not_tuple", {})) is False
     from unittest.mock import patch
 
     from ml_switcheroo_compiler.transforms.passes.loop_tiling import loop_tiling_pass

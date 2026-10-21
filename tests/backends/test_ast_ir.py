@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.backends.ir_to_ast import (
     emit_ir_to_ast,
     emit_ir_to_class,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_ast_to_ir() -> None:
@@ -233,9 +234,9 @@ class MLP(nn.Module):
     expected_numerical = np.maximum(0.0, test_x + 1.0)
 
     input_node = next(n for n in ir_graph.nodes.values() if n.op_type == "Input")
-    eval_res = typing.cast("EagerCallableProtocol", evaluate_graph)(ir_graph, {input_node.id: test_x})
+    eval_res = as_callable(evaluate_graph)(ir_graph, {input_node.id: test_x})
     actual_output = list(eval_res.values())[0]
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
+    as_callable(np.testing.assert_allclose)(actual_output, expected_numerical, rtol=1e-5, atol=1e-5)
 
 
 def test_ir_to_ast_defaults() -> None:
@@ -243,7 +244,7 @@ def test_ir_to_ast_defaults() -> None:
     from ml_switcheroo_compiler.backends.ir_to_ast import _get_class_base_expr, _get_compute_method_name
 
     assert _get_compute_method_name("unknown_fw") == "forward"
-    assert typing.cast("EagerTensorProtocol", getattr(_get_class_base_expr("unknown_fw"), "value")) == "object"
+    assert as_tensor(getattr(_get_class_base_expr("unknown_fw"), "value")) == "object"
 
 
 def test_ir_to_ast_missing_branches() -> None:

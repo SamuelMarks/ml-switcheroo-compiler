@@ -7,8 +7,8 @@ import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerTensorProtocol,
     EagerValue,
+    as_tensor,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
@@ -85,16 +85,16 @@ def _slice_fftconvolve_output(
     """
     if mode == "same":
         slices = [slice((s2[i] - 1) // 2, (s2[i] - 1) // 2 + s1[i]) for i in range(ndim)]
-        return typing.cast(EagerTensorProtocol, out)[tuple(slices)]
+        return as_tensor(out)[tuple(slices)]
     if mode == "valid":
         slices = []
         for i in range(ndim):
             start = s2[i] - 1
             length = s1[i] - s2[i] + 1
             if length < 1:
-                return typing.cast("EagerValue", getattr(np_mod, "empty")((0,) * ndim, dtype=getattr(out, "dtype")))
+                return as_tensor(getattr(np_mod, "empty")((0,) * ndim, dtype=getattr(out, "dtype")))
             slices.append(slice(start, start + length))
-        return typing.cast(EagerTensorProtocol, out)[tuple(slices)]
+        return as_tensor(out)[tuple(slices)]
     return out
 
 
@@ -115,10 +115,10 @@ def _fftconvolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     fft_mod = getattr(backend_module, "fft", None)
     if hasattr(fft_mod, "fftconvolve"):
-        return typing.cast("EagerValue", getattr(fft_mod, "fftconvolve")(*args, **kwargs))
+        return as_tensor(getattr(fft_mod, "fftconvolve")(*args, **kwargs))
     signal_mod = getattr(backend_module, "signal", None)
     if hasattr(signal_mod, "fftconvolve"):
-        return typing.cast("EagerValue", getattr(signal_mod, "fftconvolve")(*args, **kwargs))
+        return as_tensor(getattr(signal_mod, "fftconvolve")(*args, **kwargs))
 
     in1, in2 = args[0], args[1]
     mode = kwargs.get("mode", "full")
@@ -194,7 +194,7 @@ def _fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """
     fft_mod = getattr(backend_module, "fft", None)
     if hasattr(fft_mod, "fftnd"):
-        return typing.cast("EagerValue", getattr(fft_mod, "fftnd")(*args, **kwargs))
+        return as_tensor(getattr(fft_mod, "fftnd")(*args, **kwargs))
     return fft_mod.fftn(*args, **kwargs) if fft_mod else None
 
 
@@ -292,5 +292,5 @@ def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     fft_mod = getattr(backend_module, "fft", None)
     if fft_mod and hasattr(fft_mod, "hfft"):
-        return typing.cast("EagerValue", fft_mod.hfft(*args, **kwargs))
+        return as_tensor(fft_mod.hfft(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fft.hfft(*args, **kwargs)

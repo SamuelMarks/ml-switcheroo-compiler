@@ -31,9 +31,10 @@ from ml_switcheroo_compiler.ops.ragged import (
 )
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot
 from ml_switcheroo_compiler.ops.ragged.frontend import ragged_dot, ragged_stack, ragged_stack_dynamic_partitions
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_ragged_ops() -> None:
@@ -45,11 +46,11 @@ def test_ragged_ops() -> None:
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._ragged_op") as mock_ragged:
         mock_ragged.return_value = "res"
         res1 = ragged_stack()
-        assert typing.cast("EagerTensorProtocol", res1) == typing.cast("EagerTensorProtocol", "res")
+        assert as_tensor(res1) == as_tensor("res")
         res2 = ragged_stack_dynamic_partitions()
-        assert typing.cast("EagerTensorProtocol", res2) == typing.cast("EagerTensorProtocol", "res")
+        assert as_tensor(res2) == as_tensor("res")
         res3 = ragged_dot()
-        assert typing.cast("EagerTensorProtocol", res3) == typing.cast("EagerTensorProtocol", "res")
+        assert as_tensor(res3) == as_tensor("res")
     op = RaggedDot()
     res4 = op.infer_shape()
     assert res4 == ()
@@ -70,12 +71,12 @@ def _test_ragged_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
     assert RaggedDynamicBroadcast().infer_shape() == ()
     assert RaggedConstant().infer_shape() == ()
     assert RaggedCrossHashed().infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", RaggedRange)().infer_shape()) == 2
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", RaggedRowSplitsToSegmentIds)().infer_shape()) == 1
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", RaggedSegmentIdsToRowSplits)().infer_shape()) == 1
+    assert as_callable(len)(as_callable(RaggedRange)().infer_shape()) == 2
+    assert as_callable(len)(as_callable(RaggedRowSplitsToSegmentIds)().infer_shape()) == 1
+    assert as_callable(len)(as_callable(RaggedSegmentIdsToRowSplits)().infer_shape()) == 1
     assert RaggedStack().infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", RaggedStackDynamicPartitions)().infer_shape()) == 2
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", BooleanMask)().infer_shape()) == 1
+    assert as_callable(len)(as_callable(RaggedStackDynamicPartitions)().infer_shape()) == 2
+    assert as_callable(len)(as_callable(BooleanMask)().infer_shape()) == 1
     assert MapFlatValues().infer_shape(t) == ()
     getattr(_state, "update")({"t": t})
     _state.update(locals())
@@ -90,7 +91,7 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     t = _state["t"]
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = np.zeros((2, 2))
-        assert typing.cast("EagerCallableProtocol", ragged_tensor_to_dense)(t) is not None
+        assert as_callable(ragged_tensor_to_dense)(t) is not None
         config.eager_mode = False
         from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -100,7 +101,7 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            nodes = as_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -111,7 +112,7 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
                 pass
 
         setattr(global_tracing_state, "active_graph", DummyGraph())
-        assert typing.cast("EagerCallableProtocol", ragged_tensor_to_dense)(t) is not None
+        assert as_callable(ragged_tensor_to_dense)(t) is not None
         config.eager_mode = True
         global_tracing_state.is_tracing = False
     getattr(_state, "update")({"DummyGraph": DummyGraph, "global_tracing_state": global_tracing_state, "mock_backend": mock_backend})
@@ -135,7 +136,7 @@ def _test_ragged_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None
             self.op_type = "dummy"
 
     orig_eager = config.eager_mode
-    orig_get_op = typing.cast("EagerTensorProtocol", getattr(ragged_frontend, "get_op"))
+    orig_get_op = as_tensor(getattr(ragged_frontend, "get_op"))
     getattr(_state, "update")({"DummyOp": DummyOp, "orig_eager": orig_eager, "orig_get_op": orig_get_op})
     _state.update(locals())
 
@@ -157,7 +158,7 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            nodes = as_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -196,8 +197,8 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
         orig_emit = linalg_utils._emit_linalg_node
         setattr(linalg_utils, "_emit_linalg_node", lambda *args, **kwargs: "masked")
         try:
-            assert typing.cast("EagerCallableProtocol", boolean_mask)(t, t) is not None
-            assert typing.cast("EagerCallableProtocol", map_flat_values)(typing.cast("EagerCallableProtocol", DummyOp)(), t) is not None
+            assert as_callable(boolean_mask)(t, t) is not None
+            assert as_callable(map_flat_values)(as_callable(DummyOp)(), t) is not None
         finally:
             linalg_utils._emit_linalg_node = orig_emit
     finally:

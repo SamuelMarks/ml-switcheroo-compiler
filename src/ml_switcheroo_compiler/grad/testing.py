@@ -5,17 +5,15 @@ from __future__ import annotations
 import typing
 from collections.abc import Iterable, Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_tensor, as_tensor_pair
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .jvp_vjp import jvp, vjp
 from .options import DEFAULT_GRAD_EPSILON, GradCheckOptions
 from .utils import GradValue
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, VariadicCallableProtocol
 
 __all__ = [
     "DEFAULT_GRAD_EPSILON",
@@ -44,14 +42,14 @@ def check_numerical_grads(
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.errors import SwitcherooError
 
-    call_f = typing.cast("VariadicCallableProtocol", f)
+    call_f = f
     args_seq: list[GradValue] = list(args) if isinstance(args, Iterable) else [args]
 
     with ConfigContext(eager_mode=True):
-        vjp_res = vjp(typing.cast("TypedVariadicCallable[GradValue]", f), *args_seq)
-        out: GradValue = typing.cast("tuple[GradValue, VariadicCallableProtocol]", vjp_res)[0]
-        vjp_fn: VariadicCallableProtocol = typing.cast("tuple[GradValue, VariadicCallableProtocol]", vjp_res)[1]
-        out_arr = typing.cast(EagerTensorProtocol, get_active_backend().asarray(getattr(out, "data", out)))
+        vjp_res = vjp(as_callable(f), *args_seq)
+        out: GradValue = as_tensor_pair(vjp_res)[0]
+        vjp_fn: VariadicCallableProtocol = as_tensor_pair(vjp_res)[1]
+        out_arr = as_tensor(get_active_backend().asarray(getattr(out, "data", out)))
         cotangent = get_active_backend().execute_op("Ones_like", out_arr)
         analytical_grads_raw = vjp_fn(cotangent)
         analytical_grads: list[GradValue] = list(analytical_grads_raw) if isinstance(analytical_grads_raw, (list, tuple)) else [analytical_grads_raw]
@@ -61,8 +59,8 @@ def check_numerical_grads(
         rtol = opts.rtol
 
         for arg_idx, arg in enumerate(args_seq):
-            arg_arr = typing.cast(EagerTensorProtocol, get_active_backend().array(getattr(arg, "data", arg), dtype="float64"))
-            numerical_grad = typing.cast(EagerTensorProtocol, get_active_backend().execute_op("Zeros_like", arg_arr))
+            arg_arr = as_tensor(get_active_backend().array(getattr(arg, "data", arg), dtype="float64"))
+            numerical_grad = as_tensor(get_active_backend().execute_op("Zeros_like", arg_arr))
 
             flat_arg = arg_arr.ravel()
             flat_num_grad = numerical_grad.ravel()
@@ -81,8 +79,8 @@ def check_numerical_grads(
                     )
                 else:
                     args_pos[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
-                out_pos = call_f(*args_pos)
-                out_pos_arr: EagerTensorProtocol = get_active_backend().asarray(getattr(out_pos, "data", out_pos))  # type: ignore[assignment]
+                out_pos = invoke_callable(call_f, *args_pos)
+                out_pos_arr = get_active_backend().asarray(getattr(out_pos, "data", out_pos))
 
                 flat_arg[i] = orig_val - step
                 args_neg = list(args_seq)
@@ -93,14 +91,14 @@ def check_numerical_grads(
                     )
                 else:
                     args_neg[arg_idx] = arg_arr.reshape(arg_arr.shape).copy()
-                out_neg = call_f(*args_neg)
-                out_neg_arr: EagerTensorProtocol = get_active_backend().asarray(getattr(out_neg, "data", out_neg))  # type: ignore[assignment]
+                out_neg = invoke_callable(call_f, *args_neg)
+                out_neg_arr = get_active_backend().asarray(getattr(out_neg, "data", out_neg))
 
                 flat_arg[i] = orig_val
 
-                diff = (out_pos_arr - out_neg_arr) / (2.0 * step)
-                sum_diff: EagerTensorProtocol = get_active_backend().execute_op("Sum", diff)  # type: ignore[assignment]
-                flat_num_grad[i] = float(sum_diff)
+                diff = (getattr(out_pos_arr, "__sub__")(out_neg_arr)) / (2.0 * step)
+                sum_diff = get_active_backend().execute_op("Sum", diff)
+                flat_num_grad[i] = float(getattr(sum_diff, "__float__")())
 
             anal_item = analytical_grads[arg_idx]
             anal_grad = get_active_backend().asarray(getattr(anal_item, "data", anal_item))
@@ -142,21 +140,20 @@ def check_jvp_vjp_duality(
     from ml_switcheroo_compiler.core.config import ConfigContext
     from ml_switcheroo_compiler.core.errors import SwitcherooError
 
-    call_f: VariadicCallableProtocol = f  # type: ignore[assignment]
     with ConfigContext(eager_mode=True):
         backend = get_active_backend()
         primals_seq: list[GradValue] = list(primals) if isinstance(primals, (list, tuple)) else [primals]
 
-        out = call_f(*primals_seq)
-        out_arr: EagerTensorProtocol = backend.asarray(getattr(out, "data", out))  # type: ignore[assignment]
+        out = invoke_callable(f, *primals_seq)
+        out_arr = backend.asarray(getattr(out, "data", out))
 
         tangents_seq: list[GradValue] = []
         if tangents is None:
             for p in primals_seq:
-                p_arr: EagerTensorProtocol = backend.asarray(getattr(p, "data", p))  # type: ignore[assignment]
+                p_arr = backend.asarray(getattr(p, "data", p))
                 tan_arr = backend.execute_op("Ones_like", p_arr)
                 if isinstance(p, Tensor):
-                    tangents_seq.append(Tensor(tan_arr, TensorConfig(p_arr.shape, p.dtype, p.device)))
+                    tangents_seq.append(Tensor(tan_arr, TensorConfig(getattr(p_arr, "shape"), p.dtype, p.device)))
                 else:
                     tangents_seq.append(tan_arr)
         else:
@@ -168,32 +165,32 @@ def check_jvp_vjp_duality(
             if isinstance(out, Tensor):
                 cotangents_val = Tensor(
                     cotangents_arr,
-                    TensorConfig(out_arr.shape, out.dtype, out.device),
+                    TensorConfig(getattr(out_arr, "shape"), out.dtype, out.device),
                 )
             else:
                 cotangents_val = cotangents_arr
         else:
             cotangents_val = cotangents
 
-        jvp_pair = jvp(typing.cast("TypedVariadicCallable[GradValue]", f), tuple(primals_seq), tuple(tangents_seq))
+        jvp_pair = jvp(as_callable(f), tuple(primals_seq), tuple(tangents_seq))
         jvp_out: GradValue = typing.cast(tuple[GradValue, GradValue], jvp_pair)[1]
-        jvp_arr = typing.cast(EagerTensorProtocol, backend.asarray(getattr(jvp_out, "data", jvp_out)))
-        cot_arr = typing.cast(EagerTensorProtocol, backend.asarray(getattr(cotangents_val, "data", cotangents_val)))
+        jvp_arr = as_tensor(backend.asarray(getattr(jvp_out, "data", jvp_out)))
+        cot_arr = as_tensor(backend.asarray(getattr(cotangents_val, "data", cotangents_val)))
 
-        lhs_sum = typing.cast(EagerTensorProtocol, backend.execute_op("Sum", jvp_arr * cot_arr))
+        lhs_sum = as_tensor(backend.execute_op("Sum", jvp_arr * cot_arr))
         lhs = float(lhs_sum)
 
-        vjp_pair = vjp(typing.cast("TypedVariadicCallable[GradValue]", f), *primals_seq)
-        vjp_fn: VariadicCallableProtocol = typing.cast("tuple[GradValue, VariadicCallableProtocol]", vjp_pair)[1]
+        vjp_pair = vjp(as_callable(f), *primals_seq)
+        vjp_fn: VariadicCallableProtocol = as_tensor_pair(vjp_pair)[1]
         vjp_out = vjp_fn(cotangents_val)
         vjp_list = list(vjp_out) if isinstance(vjp_out, (list, tuple)) else [vjp_out]
 
         rhs = 0.0
         for t, v_adj in zip(tangents_seq, vjp_list):
-            t_arr = typing.cast(EagerTensorProtocol, backend.asarray(getattr(t, "data", t)))
+            t_arr = backend.asarray(getattr(t, "data", t))
             v_adj_val = getattr(v_adj, "data", v_adj)
-            v_arr = typing.cast(EagerTensorProtocol, backend.asarray(v_adj_val))
-            rhs_sum = typing.cast(EagerTensorProtocol, backend.execute_op("Sum", t_arr * v_arr))
+            v_arr = as_tensor(backend.asarray(v_adj_val))
+            rhs_sum = as_tensor(backend.execute_op("Sum", t_arr * v_arr))
             rhs += float(rhs_sum)
 
         diff = abs(lhs - rhs)

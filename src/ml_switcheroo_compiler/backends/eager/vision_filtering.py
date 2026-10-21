@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-import typing
-
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
+    as_int_list,
+    as_shape,
+    as_tensor,
+    as_tensor_quad,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
@@ -43,11 +45,11 @@ def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerV
     """
     mod = _resolve_filter_mod(backend_module)
     if not args:
-        return typing.cast("EagerValue", getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else mod.array([]))
+        return as_tensor(getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else mod.array([]))
 
     input_tensor: EagerTensorProtocol = mod.asarray(args[0])
-    ksizes = typing.cast("list[int]", kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
-    strides = typing.cast("list[int]", kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
+    ksizes = as_int_list(kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
+    strides = as_int_list(kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
 
     if input_tensor.ndim != 5:
         return getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
@@ -99,7 +101,7 @@ def _get_box_coords(np_mod: BackendModuleProtocol, box_ctx: tuple[int, int, int,
         tuple[tuple[int, int], tuple[int, int]]: ((y1, x1), (y2, x2)).
     """
     h, w = box_ctx[0], box_ctx[1]
-    box_arr = typing.cast(EagerTensorProtocol, box)
+    box_arr = as_tensor(box)
     y1 = int(box_arr[0] * (h - 1))
     x1 = int(box_arr[1] * (w - 1))
     y2 = int(box_arr[2] * (h - 1))
@@ -127,14 +129,14 @@ def _extract_box_channels(np_mod: BackendModuleProtocol, img: EagerValue, out: E
     if y2_i <= y1_i or x2_i <= x1_i:
         return
 
-    cropped = typing.cast(EagerTensorProtocol, img)[y1_i : y2_i + 1, x1_i : x2_i + 1]
+    cropped = as_tensor(img)[y1_i : y2_i + 1, x1_i : x2_i + 1]
     if cropped.size == 0:
         return
 
     y_indices = getattr(np_mod, "linspace")(0, cropped.shape[0] - 1, crop_h).astype(int)
     x_indices = getattr(np_mod, "linspace")(0, cropped.shape[1] - 1, crop_w).astype(int)
     resized = cropped[y_indices][:, x_indices]
-    typing.cast(EagerTensorProtocol, out)[i] = resized
+    as_tensor(out)[i] = resized
 
 
 def _extract_single_box(np_mod: BackendModuleProtocol, batch_ctx: EagerValue, i: int, config: BBoxConfig) -> None:
@@ -149,7 +151,7 @@ def _extract_single_box(np_mod: BackendModuleProtocol, batch_ctx: EagerValue, i:
     Returns:
             None: Result.
     """
-    imgs, bxs, bxs_idx, out = typing.cast("tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]", batch_ctx)
+    imgs, bxs, bxs_idx, out = as_tensor_quad(batch_ctx)
     img_idx = int(bxs_idx[i])
     if img_idx >= len(imgs):
         return
@@ -173,12 +175,12 @@ def _extract_boxes_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, bxs: E
         bxs_idx: Box indices.
         config (BBoxConfig): Configuration.
 
-    Returns: Any: Extracted boxes.
+    Returns: EagerValue: Extracted boxes.
     """
-    imgs_arr = typing.cast(EagerTensorProtocol, imgs)
+    imgs_arr = as_tensor(imgs)
     num_boxes = getattr(bxs, "__len__")()
     if imgs_arr.ndim == 0:
-        return typing.cast("EagerValue", getattr(np_mod, "zeros")((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype))
+        return as_tensor(getattr(np_mod, "zeros")((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype))
 
     channels = imgs_arr.shape[-1] if imgs_arr.ndim > 2 else 1
     out_shape = (num_boxes, config.crop_size[0], config.crop_size[1], channels)
@@ -186,7 +188,7 @@ def _extract_boxes_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, bxs: E
     batch_ctx = (imgs, bxs, bxs_idx, out)
     for i in range(num_boxes):
         _extract_single_box(np_mod, batch_ctx, i, config)
-    return typing.cast("EagerValue", out)
+    return as_tensor(out)
 
 
 def _extract_boxes_tf(backend_module: BackendModuleProtocol, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
@@ -244,13 +246,13 @@ def _to_xyxy_format(np_mod: BackendModuleProtocol, boxes: EagerValue, format: st
     if format == "xyxy":
         return boxes
     elif format == "xyWH":
-        boxes_arr = typing.cast(EagerTensorProtocol, boxes)
+        boxes_arr = as_tensor(boxes)
         x, y, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return typing.cast("EagerValue", getattr(np_mod, "stack")([x, y, x + w, y + h], axis=-1))
+        return as_tensor(getattr(np_mod, "stack")([x, y, x + w, y + h], axis=-1))
     elif format == "cxcyWH":
-        boxes_arr = typing.cast(EagerTensorProtocol, boxes)
+        boxes_arr = as_tensor(boxes)
         cx, cy, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return typing.cast("EagerValue", getattr(np_mod, "stack")([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1))
+        return as_tensor(getattr(np_mod, "stack")([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1))
     else:
         msg = f"Unknown format {format}"
         raise ValueError(msg)
@@ -271,16 +273,10 @@ def _compute_iou(np_mod: BackendModuleProtocol, b1: EagerValue, b2: EagerValue) 
     b2 = getattr(np_mod, "asarray")(b2)
 
     if getattr(b1, "size") == 0 or getattr(b2, "size") == 0:
-        return typing.cast("EagerValue", getattr(np_mod, "zeros")(typing.cast(tuple[int, ...], getattr(b1, "shape"))[:-1], dtype=getattr(b1, "dtype")))
+        return as_tensor(getattr(np_mod, "zeros")(as_shape(getattr(b1, "shape"))[:-1], dtype=getattr(b1, "dtype")))
 
-    x11, y11, x12, y12 = typing.cast(
-        tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol],
-        getattr(np_mod, "split")(b1, 4, axis=-1),
-    )
-    x21, y21, x22, y22 = typing.cast(
-        tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol],
-        getattr(np_mod, "split")(b2, 4, axis=-1),
-    )
+    x11, y11, x12, y12 = as_tensor_quad(getattr(np_mod, "split")(b1, 4, axis=-1))
+    x21, y21, x22, y22 = as_tensor_quad(getattr(np_mod, "split")(b2, 4, axis=-1))
 
     xA = getattr(np_mod, "maximum")(x11, x21)
     yA = getattr(np_mod, "maximum")(y11, y21)
@@ -292,7 +288,7 @@ def _compute_iou(np_mod: BackendModuleProtocol, b1: EagerValue, b2: EagerValue) 
     box2Area = (x22 - x21) * (y22 - y21)
 
     iou = interArea / (box1Area + box2Area - interArea + 1e-9)
-    return typing.cast("EagerValue", iou.reshape(iou.shape[:-1]))
+    return as_tensor(iou.reshape(iou.shape[:-1]))
 
 
 def iou_eager(backend_module: BackendModuleProtocol, boxes1: EagerValue, boxes2: EagerValue, bounding_box_format: str = "xyxy") -> EagerValue:
@@ -353,8 +349,8 @@ def _compute_overlap(np_mod: BackendModuleProtocol, bxs: EagerValue, i: int, ord
     Returns:
             EagerValue: Result.
     """
-    bxs_arr = typing.cast(EagerTensorProtocol, bxs)
-    order_arr = typing.cast(EagerTensorProtocol, order)
+    bxs_arr = as_tensor(bxs)
+    order_arr = as_tensor(order)
     b1 = bxs_arr[order_arr[i]]
     b2 = bxs_arr[order_arr[1:]]
     return _compute_iou(np_mod, b1, b2)
@@ -373,7 +369,7 @@ def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue,
     Returns:
             EagerValue: Result.
     """
-    bxs_arr = typing.cast(EagerTensorProtocol, bxs)
+    bxs_arr = as_tensor(bxs)
     keep: list[int] = []
     order_list = list(getattr(order, "__iter__")())
     while len(order_list) > 0 and len(keep) < max_output_size:
@@ -384,13 +380,13 @@ def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue,
         # Compute IoU of the kept box with the remaining boxes
         b1 = bxs_arr[i]
         b2 = bxs_arr[order_list]
-        iou = typing.cast(EagerTensorProtocol, _compute_iou(np_mod, b1, b2))
+        iou = as_tensor(_compute_iou(np_mod, b1, b2))
 
         # Keep those with IoU <= threshold
         to_keep = iou <= iou_threshold
         order_list = [order_list[j] for j in range(len(order_list)) if to_keep[j]]
 
-    return typing.cast("EagerValue", getattr(np_mod, "array")(keep, dtype=getattr(np_mod, "int64")))
+    return as_tensor(getattr(np_mod, "array")(keep, dtype=getattr(np_mod, "int64")))
 
 
 def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
@@ -406,7 +402,7 @@ def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: Ea
             EagerValue: Result.
     """
     if config is None:
-        config = NMSConfig(max_output_size=typing.cast(EagerTensorProtocol, boxes).shape[0] if hasattr(boxes, "shape") else 100)
+        config = NMSConfig(max_output_size=as_tensor(boxes).shape[0] if hasattr(boxes, "shape") else 100)
     res = _nms_torch(boxes, scores, config, backend_module)
     return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
 
@@ -428,9 +424,9 @@ def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend
     scores = mod.asarray(scores)
     bxs, _, idxs, order = _sort_boxes_by_score(mod, boxes, scores, config.score_threshold)
     if getattr(bxs, "__len__")() == 0:
-        return typing.cast("EagerValue", mod.array([], dtype=mod.int64))
+        return as_tensor(mod.array([], dtype=mod.int64))
     kept_local = _apply_suppression_threshold(mod, bxs, order, config.max_output_size, config.iou_threshold)
-    return typing.cast(EagerTensorProtocol, idxs)[kept_local]
+    return as_tensor(idxs)[kept_local]
 
 
 def nms_eager(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:

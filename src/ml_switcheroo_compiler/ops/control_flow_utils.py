@@ -15,13 +15,13 @@ from collections.abc import Sequence
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import TensorSpec
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
+    pass
 
 
 def _wrap_proxy_inputs(
@@ -147,8 +147,7 @@ def _trace_function(func: TensorOrScalar, args: Sequence[TensorOrScalar], name: 
     subgraph.inputs = input_ids
 
     try:
-        call_fn: VariadicCallableProtocol = func  # type: ignore[assignment]
-        out = call_fn(*proxy_args)
+        out = invoke_callable(func, *proxy_args)
         out_node_id = _process_trace_outputs(out, subgraph)
     finally:
         global_tracing_state.stop_tracing()

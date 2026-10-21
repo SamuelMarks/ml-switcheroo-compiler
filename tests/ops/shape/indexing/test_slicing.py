@@ -10,9 +10,10 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.slicing import Choose, IndexInDim, Slice, StridedSlice, UpdateSlice, slice, strided_slice
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
@@ -27,7 +28,7 @@ class MockTensor:
         self.shape = shape
         self.dtype = "float32"
         self.device = "cpu"
-        self.data = typing.cast("EagerCallableProtocol", np.zeros)(shape)
+        self.data = as_callable(np.zeros)(shape)
 
 
 def test_slice(mocker: EagerTensorProtocol) -> None:
@@ -42,7 +43,7 @@ def test_slice(mocker: EagerTensorProtocol) -> None:
     assert slice(t, 0, 1, 3, 1) == "sliced"
     config.eager_mode = True
     res = slice(t, 0, 1, 3, 1)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "config")).shape == (2, 5)
+    assert as_tensor(getattr(res, "config")).shape == (2, 5)
 
 
 def test_strided_slice(mocker: EagerTensorProtocol) -> None:
@@ -57,7 +58,7 @@ def test_strided_slice(mocker: EagerTensorProtocol) -> None:
     assert strided_slice(t, [1, 1], [3, 3], [1, 1]) == "strided"
     config.eager_mode = True
     res = strided_slice(t, [1, 1], [3, 3], [1, 1])
-    assert typing.cast("EagerTensorProtocol", getattr(res, "config")).shape == (2, 2)
+    assert as_tensor(getattr(res, "config")).shape == (2, 2)
 
 
 def test_slice_class() -> None:
@@ -73,25 +74,25 @@ def test_strided_slice_class() -> None:
 def test_choose_class() -> None:
     """test_choose_class."""
     op = Choose()
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), None) == (2, 3)
+    assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), None) == (2, 3)
 
     class NoShape:
         """NoShape."""
 
         pass
 
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", NoShape)(), None) == ()
+    assert as_callable(op.infer_shape)(as_callable(NoShape)(), None) == ()
 
 
 def test_index_in_dim_update_slice_coverage() -> None:
     """test_index_in_dim_update_slice_coverage."""
-    assert typing.cast("EagerCallableProtocol", IndexInDim)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), typing.cast("EagerCallableProtocol", MockTensor)((2,))) == (2, 3)
-    assert typing.cast("EagerCallableProtocol", IndexInDim)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), typing.cast("EagerCallableProtocol", MockTensor)((2,)), axis=1, keepdims=False) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", IndexInDim)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), typing.cast("EagerCallableProtocol", MockTensor)(()), keepdims=False) == (3,)
-    assert typing.cast("EagerCallableProtocol", IndexInDim)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)(()), typing.cast("EagerCallableProtocol", MockTensor)(())) == ()
-    assert typing.cast("EagerCallableProtocol", UpdateSlice)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((2, 3))) == (2, 3)
-    assert typing.cast("EagerCallableProtocol", UpdateSlice)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), typing.cast("EagerCallableProtocol", MockTensor)((2, 3))) == (2, 3)
-    assert typing.cast("EagerCallableProtocol", UpdateSlice)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)(())) == ()
+    assert as_callable(IndexInDim)().infer_shape(as_callable(MockTensor)((2, 3)), as_callable(MockTensor)((2,))) == (2, 3)
+    assert as_callable(IndexInDim)().infer_shape(as_callable(MockTensor)((2, 3)), as_callable(MockTensor)((2,)), axis=1, keepdims=False) == (2, 2)
+    assert as_callable(IndexInDim)().infer_shape(as_callable(MockTensor)((2, 3)), as_callable(MockTensor)(()), keepdims=False) == (3,)
+    assert as_callable(IndexInDim)().infer_shape(as_callable(MockTensor)(()), as_callable(MockTensor)(())) == ()
+    assert as_callable(UpdateSlice)().infer_shape(as_callable(MockTensor)((2, 3))) == (2, 3)
+    assert as_callable(UpdateSlice)().infer_shape(as_callable(MockTensor)((2, 3)), as_callable(MockTensor)((2, 3))) == (2, 3)
+    assert as_callable(UpdateSlice)().infer_shape(as_callable(MockTensor)(())) == ()
 
 
 def test_slicing_dispatcher() -> None:
@@ -174,7 +175,7 @@ def test_slice_and_strided_slice_exact_shapes(mocker: EagerTensorProtocol) -> No
     assert captured_shapes["Slice"] == ()
 
     # 9. IndexInDim with negative axis
-    assert typing.cast("EagerCallableProtocol", IndexInDim)().infer_shape(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)), typing.cast("EagerCallableProtocol", MockTensor)((1,)), axis=-1) == (2, 1)
+    assert as_callable(IndexInDim)().infer_shape(as_callable(MockTensor)((2, 3)), as_callable(MockTensor)((1,)), axis=-1) == (2, 1)
 
     # 10. UpdateSlice with None operand
-    assert typing.cast("EagerCallableProtocol", UpdateSlice)().infer_shape(None) == ()
+    assert as_callable(UpdateSlice)().infer_shape(None) == ()

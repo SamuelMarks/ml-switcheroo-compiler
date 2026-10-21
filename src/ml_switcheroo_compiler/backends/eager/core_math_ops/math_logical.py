@@ -8,11 +8,11 @@ import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerTensorProtocol,
     EagerValue,
+    as_tensor,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
 
 
 @global_eager_registry.register("NanToNum")
@@ -103,8 +103,8 @@ def _divide_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "divide_no_nan", None)
     if func2:
-        return typing.cast("EagerValue", func2(*args, **kwargs))
-    (x, y) = (typing.cast(EagerTensorProtocol, args[0]), typing.cast(EagerTensorProtocol, args[1]))
+        return as_tensor(func2(*args, **kwargs))
+    (x, y) = (as_tensor(args[0]), as_tensor(args[1]))
     safe_y = mod.where(y.__eq__(0), 1.0, y)
     return mod.where(y.__eq__(0), 0, x / safe_y)
 
@@ -137,7 +137,7 @@ def _hardswish(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             EagerValue: Result.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
+    x = as_tensor(args[0])
     return x * mod.clip(x + 3, 0, 6) / 6
 
 
@@ -156,8 +156,8 @@ def _heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     mod = backend_module
     func = getattr(backend_module, "heaviside", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    x, y = typing.cast(EagerTensorProtocol, args[0]), args[1]
+        return as_tensor(func(*args, **kwargs))
+    x, y = as_tensor(args[0]), args[1]
     return mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y))
 
 
@@ -252,7 +252,7 @@ def _infeed(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     if queue_name in _INFEED_QUEUES:
         it = _INFEED_QUEUES[queue_name]
         try:
-            val = getattr(it, "__next__")() if hasattr(it, "__next__") else typing.cast(BackendModuleProtocol, it).pop(0)
+            val = getattr(it, "__next__")() if hasattr(it, "__next__") else as_mod(it).pop(0)
             return val
         except (StopIteration, IndexError):
             return 0
@@ -288,7 +288,7 @@ def _iscomplex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "iscomplex", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).iscomplex(*args, **kwargs)
 
 
@@ -306,7 +306,7 @@ def _iscomplexobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """
     func = getattr(backend_module, "iscomplexobj", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     x = args[0]
     return _resolve_eager_mod(backend_module).iscomplexobj(x)
 
@@ -341,8 +341,8 @@ def _isneginf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     mod = backend_module
     func = getattr(backend_module, "isneginf", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    x = typing.cast(EagerTensorProtocol, args[0])
+        return as_tensor(func(*args, **kwargs))
+    x = as_tensor(args[0])
     return mod.logical_and(mod.isinf(x), x < 0)
 
 
@@ -360,7 +360,7 @@ def _isreal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """
     func = getattr(backend_module, "isreal", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).isreal(*args, **kwargs)
 
 
@@ -378,7 +378,7 @@ def _isrealobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "isrealobj", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     x = args[0]
     return _resolve_eager_mod(backend_module).isrealobj(x)
 
@@ -397,7 +397,7 @@ def _isscalar(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     func = getattr(backend_module, "isscalar", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     x = args[0]
     return _resolve_eager_mod(backend_module).isscalar(x)
 
@@ -445,7 +445,7 @@ def _mish(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
             EagerValue: Result.
     """
     mod = backend_module
-    x = typing.cast(EagerTensorProtocol, args[0])
+    x = as_tensor(args[0])
     return x * mod.tanh(mod.log1p(mod.exp(x)))
 
 
@@ -465,8 +465,8 @@ def _multiply_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, *
     func = getattr(backend_module, "math", backend_module)
     func2 = getattr(func, "multiply_no_nan", None)
     if func2:
-        return typing.cast("EagerValue", func2(*args, **kwargs))
-    (x, y) = (typing.cast(EagerTensorProtocol, args[0]), typing.cast(EagerTensorProtocol, args[1]))
+        return as_tensor(func2(*args, **kwargs))
+    (x, y) = (as_tensor(args[0]), as_tensor(args[1]))
     return mod.where(y.__eq__(0), 0, x * y)
 
 
@@ -485,8 +485,8 @@ def _np_heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     mod = backend_module
     func = getattr(backend_module, "heaviside", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    x, y = typing.cast(EagerTensorProtocol, args[0]), args[1]
+        return as_tensor(func(*args, **kwargs))
+    x, y = as_tensor(args[0]), args[1]
     return mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y))
 
 

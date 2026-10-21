@@ -19,9 +19,10 @@ from ml_switcheroo_compiler.utils.operation_utils import (
     compute_shape_propagation,
     get_source_inputs,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_get_source_inputs() -> None:
@@ -65,7 +66,7 @@ def test_shape_inference_strategy_base() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", typing.cast("EagerCallableProtocol", super().__call__)(*args, **kwargs))
+            return typing.cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", as_callable(super().__call__)(*args, **kwargs))
 
     strategy = DummyStrategy()
     assert strategy((1,), (), {}) is None

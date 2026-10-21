@@ -9,9 +9,10 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager.core_math_ops import _pmean, _psum
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, set_np_distributed_context
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_psum
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_math_misc_distributed() -> None:
@@ -33,5 +34,5 @@ def test_math_misc_distributed() -> None:
 def test_core_math_ops_distributed() -> None:
     """Test function test_core_math_ops_distributed."""
     t = np.array([1, 2])
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _psum)(np, t), t)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _pmean)(np, t), t)
+    assert as_callable(np.array_equal)(as_callable(_psum)(np, t), t)
+    assert as_callable(np.array_equal)(as_callable(_pmean)(np, t), t)

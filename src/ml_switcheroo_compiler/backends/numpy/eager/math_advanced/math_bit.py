@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -44,13 +43,13 @@ def _np_clz(backend_module: BackendModuleProtocol, x: EagerValue, *args: EagerVa
         Returns:
             int: Result.
         """
-        val_i: int = int(typing.cast(int, val))
+        val_i: int = int(as_int(val))
         if val_i < 0:
             val_i = val_i & (1 << int(bit_width)) - 1
         return int(bit_width) - val_i.bit_length()
 
     res = np.vectorize(_clz_scalar)(x_arr)
-    return typing.cast(EagerValue, res.astype(x_arr.dtype))
+    return as_tensor(res.astype(x_arr.dtype))
 
 
 @numpy_eager_registry.register("BitcastConvertType")
@@ -81,7 +80,7 @@ def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, getattr(np, "packbits")(np.asarray(args[0]), **kwargs))
+    return as_tensor(getattr(np, "packbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("Unpackbits")
@@ -95,7 +94,7 @@ def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **k
 
     Returns: np.ndarray: The computed result.
     """
-    return typing.cast(EagerValue, getattr(np, "unpackbits")(np.asarray(args[0]), **kwargs))
+    return as_tensor(getattr(np, "unpackbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("BitwiseCount")

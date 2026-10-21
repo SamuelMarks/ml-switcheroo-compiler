@@ -11,9 +11,10 @@ import yaml
 from ml_switcheroo_ir import NodeDict
 
 import ml_switcheroo_compiler.backends.registry as registry
+from ml_switcheroo_compiler.backends.eager_registry import as_bool
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.distributed import Distribution
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
 
 AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
 
@@ -40,7 +41,7 @@ def _load_device_mesh_config() -> dict[str, AttrType]:
     yaml_path: str = os.path.join(os.path.dirname(__file__), "device_mesh.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return typing.cast(dict[str, AttrType], yaml.safe_load(f) or {})
+            return yaml.safe_load(f) or {}
     return {}
 
 
@@ -104,7 +105,7 @@ class ParameterServerStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("pull")
         if hook_name and hasattr(backend, hook_name):
-            return typing.cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
+            return as_bool(getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -153,7 +154,7 @@ class ParameterServerStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("push")
         if hook_name and hasattr(backend, hook_name):
-            return typing.cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
+            return as_bool(getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -231,7 +232,7 @@ class DataParallelStrategy(Distribution):
         backend = registry.get_active_backend()
         hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("sync")
         if hook_name and hasattr(backend, hook_name):
-            return typing.cast(bool, getattr(backend, hook_name)(graph, self.cluster_resolver))
+            return as_bool(getattr(backend, hook_name)(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -804,18 +805,11 @@ class PipelineParallelStrategy(Distribution):
         cond_graph.inputs = ["idx_cond"]
         cond_graph.outputs = ["cond_cmp"]
 
-        from collections.abc import Mapping
-
-        from ml_switcheroo_ir import AttributeValue
-
         loop_node = IRNode(
             id="microbatch_loop",
             op_type="WhileLoop",
             inputs=[i.id for i in inputs],
-            attributes=typing.cast(
-                "Mapping[str, AttributeValue]",
-                {"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph},
-            ),
+            attributes=as_attrs({"num_iterations": self.num_microbatches, "microbatch": True, "body": body_graph, "cond": cond_graph}),
         )
         graph.nodes[loop_node.id] = loop_node
 

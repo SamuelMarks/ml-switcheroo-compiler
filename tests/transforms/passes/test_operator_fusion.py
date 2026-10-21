@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ir.core import LogicalNode
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_operator_fusion_cost_fused() -> None:
@@ -32,20 +33,20 @@ def _test_operator_fusion_extra_coverage_part_1(_state: dict[str, EagerTensorPro
 
     # len(inputs) mismatch
     pat = NodePatternConfig(op_type="Op1", inputs=[NodePatternConfig(op_type="Input")])  # 1 input vs 2
-    assert bool(typing.cast("EagerCallableProtocol", match_pattern)(graph, "n1", pat, {})) is False
+    assert bool(as_callable(match_pattern)(graph, "n1", pat, {})) is False
 
     # not isinstance(node_id, str)
-    assert bool(typing.cast("EagerCallableProtocol", match_pattern)(graph, 123, typing.cast("EagerCallableProtocol", NodePatternConfig)(op_type="Input"), {})) is False
-    cmap = typing.cast("dict[str, EagerTensorProtocol]", {})
-    assert bool(typing.cast("EagerCallableProtocol", match_pattern)(graph, 123, typing.cast("EagerCallableProtocol", NodePatternConfig)(capture="test"), cmap)) is True
+    assert bool(as_callable(match_pattern)(graph, 123, as_callable(NodePatternConfig)(op_type="Input"), {})) is False
+    cmap = as_tensor_dict({})
+    assert bool(as_callable(match_pattern)(graph, 123, as_callable(NodePatternConfig)(capture="test"), cmap)) is True
     assert cmap["test"] == 123
 
     # not node or op_type mismatch
-    assert bool(typing.cast("EagerCallableProtocol", match_pattern)(graph, "n3", typing.cast("EagerCallableProtocol", NodePatternConfig)(op_type="Input"), {})) is False
-    assert bool(typing.cast("EagerCallableProtocol", match_pattern)(graph, "n1", typing.cast("EagerCallableProtocol", NodePatternConfig)(op_type="Input"), {})) is False
+    assert bool(as_callable(match_pattern)(graph, "n3", as_callable(NodePatternConfig)(op_type="Input"), {})) is False
+    assert bool(as_callable(match_pattern)(graph, "n1", as_callable(NodePatternConfig)(op_type="Input"), {})) is False
 
     # capture is not None, inputs is None
-    assert bool(typing.cast("EagerCallableProtocol", match_pattern)(graph, "n1", typing.cast("EagerCallableProtocol", NodePatternConfig)(capture="test_cap"), cmap)) is True
+    assert bool(as_callable(match_pattern)(graph, "n1", as_callable(NodePatternConfig)(capture="test_cap"), cmap)) is True
     assert cmap["test_cap"] == n1
 
     # apply_replacement base class coverage
@@ -94,7 +95,7 @@ def _test_operator_fusion_extra_coverage_part_2(_state: dict[str, EagerTensorPro
             self.name = "dummy"
 
     strat2 = DummyFusionRule()
-    assert typing.cast("EagerCallableProtocol", strat2.apply)(graph, {}) is None
+    assert as_callable(strat2.apply)(graph, {}) is None
 
     # PatternMatchingEngine coverage
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import PatternMatchingEngine
@@ -111,7 +112,7 @@ def _test_operator_fusion_extra_coverage_part_2(_state: dict[str, EagerTensorPro
             """
             return True
 
-    engine = typing.cast("EagerCallableProtocol", PatternMatchingEngine)([strat], cost_model=typing.cast("EagerCallableProtocol", FakeCostModel)())
+    engine = as_callable(PatternMatchingEngine)([strat], cost_model=as_callable(FakeCostModel)())
     getattr(_state, "update")({"DummyFusionRule": DummyFusionRule, "FakeCostModel": FakeCostModel, "FusionRule": FusionRule, "PatternMatchingEngine": PatternMatchingEngine})
     getattr(_state, "update")({"engine": engine, "pat_fail": pat_fail, "pat_pass": pat_pass, "strat2": strat2})
     _state.update(locals())
@@ -139,7 +140,7 @@ def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorPro
             """
             return False
 
-    engine2 = typing.cast("EagerCallableProtocol", PatternMatchingEngine)([strat], cost_model=typing.cast("EagerCallableProtocol", FakeCostModelFalse)())
+    engine2 = as_callable(PatternMatchingEngine)([strat], cost_model=as_callable(FakeCostModelFalse)())
     engine2.apply_passes(graph)
 
     # Add id map test
@@ -151,7 +152,7 @@ def _test_operator_fusion_extra_coverage_part_3(_state: dict[str, EagerTensorPro
 
         def __init__(self) -> None:
             """Test function __init__."""
-            typing.cast("EagerCallableProtocol", super().__init__)("custom", NodePatternConfig(op_type="A"))
+            as_callable(super().__init__)("custom", NodePatternConfig(op_type="A"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, IRNode] | None:
             """Test function apply.
@@ -201,7 +202,7 @@ def _test_operator_fusion_extra_coverage_part_4(_state: dict[str, EagerTensorPro
     strat3 = YamlFusionRule("test3", cfg)
 
     match_dict = {"target": IRNode(id="n_a", op_type="A", inputs=[]), "val1": IRNode(id="n_1", op_type="In", inputs=[]), "val2": "val2_id"}
-    res = typing.cast("EagerCallableProtocol", strat3.apply)(typing.cast("EagerCallableProtocol", IRGraph)(), match_dict)
+    res = as_callable(strat3.apply)(as_callable(IRGraph)(), match_dict)
     assert res is not None
     assert "n_a" in res
     assert res["n_a"].op_type == "B"
@@ -245,7 +246,7 @@ def _test_operator_fusion_extra_coverage_part_5(_state: dict[str, EagerTensorPro
             g3 = IRGraph()
             # To hit apply_passes(graph) returning True, we need a matching pattern
             g3.nodes["x"] = IRNode(id="x", op_type="Z", inputs=[])
-            typing.cast("EagerCallableProtocol", apply_operator_fusion)(g3)
+            as_callable(apply_operator_fusion)(g3)
             cfg = _load_pass_config()
             assert cfg.fusion_patterns is not None
     with patch("os.path.exists", return_value=False):
@@ -255,7 +256,7 @@ def _test_operator_fusion_extra_coverage_part_5(_state: dict[str, EagerTensorPro
         # Also hits 303->305 (engine.apply_passes returns False since no rules)
         g_empty = IRGraph()
         g_empty.nodes["x"] = IRNode(id="x", op_type="UnmatchedOp", inputs=[])
-        typing.cast("EagerCallableProtocol", apply_operator_fusion)(g_empty)
+        as_callable(apply_operator_fusion)(g_empty)
 
     # test _build_pattern with inputs
     strat4 = YamlFusionRule("test4", FusionPatternConfig(pattern=NodePatternConfig(op_type="A", inputs=[NodePatternConfig(op_type="B")]), replacement=ReplacementConfig(op_type="x", inputs=[], capture_to_replace="x")))
@@ -286,7 +287,7 @@ def test_operator_fusion_exhaustive_patch() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            typing.cast("EagerCallableProtocol", super().__init__)("replace_future", typing.cast("EagerCallableProtocol", NodePatternConfig)(op_type="OpA"))
+            as_callable(super().__init__)("replace_future", as_callable(NodePatternConfig)(op_type="OpA"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, LogicalNode] | None:
             """Test function apply.
@@ -310,7 +311,7 @@ def test_operator_fusion_exhaustive_patch() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            typing.cast("EagerCallableProtocol", super().__init__)("symbolic_shape", typing.cast("EagerCallableProtocol", NodePatternConfig)(op_type="OpC"))
+            as_callable(super().__init__)("symbolic_shape", as_callable(NodePatternConfig)(op_type="OpC"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, LogicalNode] | None:
             """Test function apply.
@@ -342,7 +343,7 @@ def test_operator_fusion_symbolic_shape_coverage() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            typing.cast("EagerCallableProtocol", super().__init__)("symbolic_shape", typing.cast("EagerCallableProtocol", NodePatternConfig)(op_type="OpC"))
+            as_callable(super().__init__)("symbolic_shape", as_callable(NodePatternConfig)(op_type="OpC"))
 
         def apply(self, g: EagerValue, match: EagerValue) -> dict[str, LogicalNode] | None:
             """Test function apply.
@@ -360,8 +361,8 @@ def test_operator_fusion_symbolic_shape_coverage() -> None:
                     self.id = "n4"
                     self.shape_metadata = ["batch", 128]
                     self.is_dynamic_shape = False
-                    self.attributes = typing.cast("dict[str, EagerTensorProtocol]", {})
-                    self.inputs = typing.cast("list[EagerTensorProtocol]", [])
+                    self.attributes = as_tensor_dict({})
+                    self.inputs = as_tensor_list([])
                     self.op_type = "OpC_Fused"
 
             new_node = FakeNode()
@@ -381,10 +382,10 @@ def test_operator_fusion_extra_coverage2() -> None:
     from ml_switcheroo_compiler.transforms.passes.operator_fusion import FusionRule, MemoryAwareCostModel, NodePattern, PatternMatchingEngine, YamlFusionRule, match_pattern
 
     # 1. match_pattern branch 81->83
-    assert typing.cast("EagerCallableProtocol", match_pattern)(None, None, typing.cast("EagerCallableProtocol", NodePattern)(op_type=None, inputs=None, capture=None), {})
+    assert as_callable(match_pattern)(None, None, as_callable(NodePattern)(op_type=None, inputs=None, capture=None), {})
 
     # 2. match_pattern where node_id is int or None but pattern.op_type is not None (branch 78->79->80)
-    assert not typing.cast("EagerCallableProtocol", match_pattern)(None, None, typing.cast("EagerCallableProtocol", NodePattern)(op_type="Add"), {})
+    assert not as_callable(match_pattern)(None, None, as_callable(NodePattern)(op_type="Add"), {})
 
     # 3. Explicit Edge Rewiring branches: 184->183, 189->188, 193->192
     class MockRule(FusionRule):
@@ -401,8 +402,8 @@ def test_operator_fusion_extra_coverage2() -> None:
                 graph: Test parameter `graph`.
                 match: Test parameter `match`.
             """
-            node = typing.cast("EagerTensorProtocol", getattr(match, "get"))("my_node")
-            if node and typing.cast("EagerTensorProtocol", getattr(node, "id")) == "a_id":
+            node = as_tensor(getattr(match, "get"))("my_node")
+            if node and as_tensor(getattr(node, "id")) == "a_id":
                 new_n = IRNode(id="a_fused", op_type="A_fused")
                 return {"a_id": new_n}
             return None
@@ -433,7 +434,7 @@ def test_operator_fusion_extra_coverage2() -> None:
 
     # 5. MemoryAwareCostModel shape calculations
     cfg = {"max_fusion_memory_bytes": 100, "memory_sizes": {"float32": 4}}
-    cost_model = typing.cast("EagerCallableProtocol", MemoryAwareCostModel)(cfg)
+    cost_model = as_callable(MemoryAwareCostModel)(cfg)
 
     node_static = IRNode(id="static", op_type="Add")
     node_static.shape_metadata = (2, 3)
@@ -471,8 +472,8 @@ def test_operator_fusion_extra_coverage_3() -> None:
                 graph: Test parameter `graph`.
                 match: Test parameter `match`.
             """
-            node = typing.cast("EagerTensorProtocol", getattr(match, "get"))("my_node")
-            if node and typing.cast("EagerTensorProtocol", getattr(node, "id")) == "a_id":
+            node = as_tensor(getattr(match, "get"))("my_node")
+            if node and as_tensor(getattr(node, "id")) == "a_id":
                 new_n = IRNode(id="a_fused", op_type="A_fused", inputs=["something_else"])
                 return {"a_id": new_n}
             return None

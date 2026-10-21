@@ -11,9 +11,10 @@ from ml_switcheroo_ir import NodeDict
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, TensorSpec
 from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicConstraintTracker, SymInt, SymVar, _broadcast_dim, _from_str_shape, _matmul_shape_1d, _matmul_shape_2d, _to_str_shape, matmul_shape
+from tests.testing_utils import as_callable, as_type_obj
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 ShapeMismatchError = typing.cast("type[Exception]", getattr(importlib.import_module("ml_switcheroo_compiler.ir.shape_system"), "ShapeMismatchError"))
 
 
@@ -76,11 +77,11 @@ def test_shape_tracker_update_from_feedback() -> None:
     tracker = SymbolicConstraintTracker()
 
     telemetry_dict = {"shapes": {"node_a": [2, 4], "node_b": (8,)}}
-    res = typing.cast("EagerCallableProtocol", ShapeTracker.update_from_feedback)(telemetry_dict, tracker=tracker)
+    res = as_callable(ShapeTracker.update_from_feedback)(telemetry_dict, tracker=tracker)
     assert res == {"node_a": (2, 4), "node_b": (8,)}
 
     flat_telemetry = {"node_c": [1, 3], "ignored_scalar": 42}
-    res_flat = typing.cast("EagerCallableProtocol", ShapeTracker.update_from_feedback)(flat_telemetry, tracker=None)
+    res_flat = as_callable(ShapeTracker.update_from_feedback)(flat_telemetry, tracker=None)
     assert res_flat == {"node_c": (1, 3)}
 
 
@@ -121,7 +122,7 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
         "n_invalid": [123],
     }
 
-    bounds = typing.cast("EagerCallableProtocol", ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker=tracker)
+    bounds = as_callable(ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker=tracker)
     assert bounds["B"] == 4
     assert bounds["H"] == 8
     assert bounds["W"] == 16
@@ -186,9 +187,9 @@ def test_shape_tracker_resolve_dynamic_bounds() -> None:
 
     n_only_shape = NodeOnlyShape("n_s", (SymInt("S"),))
     n_only_meta = NodeOnlyShapeMetadata("n_m", (SymInt("M"), SymInt("K")))
-    list_graph = typing.cast("EagerCallableProtocol", GraphWithListNodes)([n_only_shape, n_only_meta])
+    list_graph = as_callable(GraphWithListNodes)([n_only_shape, n_only_meta])
 
-    bounds_list = typing.cast("EagerCallableProtocol", ShapeTracker.resolve_dynamic_bounds)(list_graph, {"n_s": [12], "n_m": [7]}, tracker=tracker)
+    bounds_list = as_callable(ShapeTracker.resolve_dynamic_bounds)(list_graph, {"n_s": [12], "n_m": [7]}, tracker=tracker)
     assert bounds_list["S"] == 12
     assert bounds_list["M"] == 7
     assert bounds_list["K"] == 1
@@ -211,13 +212,13 @@ def test_broadcast_dim_unify_tracker_and_fallbacks() -> None:
     assert no_tracker == dim_a
 
     # Without tracker and one is incompatible int and other is str -> raises ShapeMismatchError
-    with typing.cast("EagerCallableProtocol", pytest.raises)(ShapeMismatchError, match="Incompatible dimensions for broadcasting"):
+    with as_callable(pytest.raises)(ShapeMismatchError, match="Incompatible dimensions for broadcasting"):
         _broadcast_dim(2, "X", tracker=None)
 
 
 def test_matmul_shapes_errors_and_branches() -> None:
     """Test error handling and edge branches in matmul_shape."""
-    with typing.cast("EagerCallableProtocol", pytest.raises)(ShapeMismatchError, match="Scalars cannot be matrix multiplied"):
+    with as_callable(pytest.raises)(ShapeMismatchError, match="Scalars cannot be matrix multiplied"):
         matmul_shape((), (2, 3))
 
     with pytest.raises(ValueError, match="Incompatible 1D dot product shapes"):
@@ -225,7 +226,7 @@ def test_matmul_shapes_errors_and_branches() -> None:
 
     assert _matmul_shape_1d((3,), (3,)) == ()
 
-    with typing.cast("EagerCallableProtocol", pytest.raises)(ShapeMismatchError, match="Incompatible 2D matmul shapes"):
+    with as_callable(pytest.raises)(ShapeMismatchError, match="Incompatible 2D matmul shapes"):
         _matmul_shape_2d((2, 3), (4, 5))
 
     assert _matmul_shape_2d((2, 3), (3, 4)) == (2, 4)
@@ -468,7 +469,7 @@ def _test_symbolic_simplification_and_dunder_branches_part_2(_state: dict[str, E
 
     # 5. SymUnaryOp.simplify returning SymUnaryOp (line 1120)
     u_simp = SymUnaryOp("abs", x).simplify()
-    assert isinstance(u_simp, typing.cast("type", SymUnaryOp))
+    assert isinstance(u_simp, as_type_obj(SymUnaryOp))
 
     # 6. SymPiecewise bool conditions, __eq__, __hash__ (lines 1214, 1242, 1252)
     pw_true = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
@@ -506,7 +507,7 @@ def _test_symbolic_simplification_and_dunder_branches_part_3(_state: dict[str, E
             """Test function simplify."""
             return self
 
-    raw_mul = typing.cast("EagerCallableProtocol", UnsimplifyingMul)("*", x, SymConst(6))
+    raw_mul = as_callable(UnsimplifyingMul)("*", x, SymConst(6))
     assert SymBinaryOp("//", raw_mul, SymConst(3)).simplify() == SymBinaryOp("*", SymConst(2), x)
 
     # Division remainder != 0 (line 914->965 false branch)

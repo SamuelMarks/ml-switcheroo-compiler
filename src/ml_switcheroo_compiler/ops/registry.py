@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from collections.abc import Callable
 
+from ml_switcheroo_compiler.backends.registry import as_callable
 from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.ops.base import OpDef
 
@@ -80,7 +81,7 @@ def register_util(name: str) -> Callable[[F], F]:
         Returns:
             F: The registered function.
         """
-        _UTIL_REGISTRY[name] = typing.cast(TypedVariadicCallable[TensorOrScalar], func)
+        _UTIL_REGISTRY[name] = as_callable(func)
         return func
 
     return decorator

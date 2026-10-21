@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_checkpointing() -> None:
@@ -24,7 +26,7 @@ def test_checkpointing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerTensorProtocol", x) + typing.cast("EagerTensorProtocol", 1)
+        return as_tensor(x) + as_tensor(1)
 
     cp = checkpoint(dummy)
     assert cp(1) == 2
@@ -72,7 +74,7 @@ def test_checkpointing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=FakeBlock()):
         res2 = cp(t1)
-        assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (2,)
+        assert as_tensor(getattr(res2, "shape")) == (2,)
 
     class FakeBlock2:
         """Test class FakeBlock2."""
@@ -82,7 +84,7 @@ def test_checkpointing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=FakeBlock2()):
         res3 = cp()
-        assert typing.cast("EagerTensorProtocol", getattr(res3, "shape")) == (2,)
+        assert as_tensor(getattr(res3, "shape")) == (2,)
 
     config.eager_mode = True
     global_tracing_state.stop_tracing()

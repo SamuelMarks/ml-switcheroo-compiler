@@ -21,9 +21,10 @@ from ml_switcheroo_compiler.ops.nn.upsample_ops import (
     upsample_bilinear,
     upsample_nearest,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_upsample_coverage() -> None:
@@ -97,16 +98,16 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
         mock_backend.return_value = DummyBackend()
 
         ps_out = pixel_shuffle(t_2d, 2)
-        assert typing.cast("EagerTensorProtocol", getattr(ps_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(getattr(ps_out, "shape")) == (1, 1, 4, 4)
 
         un_out = upsample_nearest(t_1d, size=(4,))
-        assert typing.cast("EagerTensorProtocol", getattr(un_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(getattr(un_out, "shape")) == (1, 1, 4, 4)
 
         ub_out = upsample_bilinear(t_1d, size=(4,))
-        assert typing.cast("EagerTensorProtocol", getattr(ub_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(getattr(ub_out, "shape")) == (1, 1, 4, 4)
 
         uc_out = upsample_bicubic(t_1d, size=(4,))
-        assert typing.cast("EagerTensorProtocol", getattr(uc_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(getattr(uc_out, "shape")) == (1, 1, 4, 4)
 
     # 2. Non-eager (tracing) mode with mocked _emit_shape_node
     config.eager_mode = False
@@ -145,7 +146,7 @@ def test_upsample_brute() -> None:
 
         shape = (1, 1, 1)
 
-    typing.cast("EagerCallableProtocol", _resolve_scale_factor)(typing.cast("EagerCallableProtocol", DummyTensorDynamic)(), 2.0, 2)
+    as_callable(_resolve_scale_factor)(as_callable(DummyTensorDynamic)(), 2.0, 2)
 
     _upsample_resolve_size(t_2d, 8, None)
     _upsample_resolve_size(t_2d, (8, 8), None)

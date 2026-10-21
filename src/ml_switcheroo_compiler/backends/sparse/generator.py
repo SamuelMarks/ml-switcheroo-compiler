@@ -7,7 +7,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
@@ -407,7 +407,7 @@ class SparseGenerator(PythonStringGenerator):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict, backend=BackendRegistry.get("numpy"))
             if not graph.outputs:
-                return typing.cast(EagerValue, res_dict)
+                return as_tensor(res_dict)
             if len(graph.outputs) == 1:
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)

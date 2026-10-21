@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,
     generic_asarray,
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
 
 try:
     import cupy as cp
@@ -42,7 +40,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
     Returns:
         EagerValue: The array tensor.
     """
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(cp, data, dtype))
+    return as_tensor(as_callable(generic_array)(cp, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -55,7 +53,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: The array tensor.
     """
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_asarray)(cp, data))
+    return as_tensor(as_callable(generic_asarray)(cp, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -68,4 +66,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return typing.cast(float, typing.cast("EagerCallableProtocol", generic_item)(cp, data))
+    return as_float(as_callable(generic_item)(cp, data))

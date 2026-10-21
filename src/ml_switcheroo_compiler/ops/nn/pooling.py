@@ -18,7 +18,7 @@ from ml_switcheroo_compiler.ops.creation import ones_like
 from ml_switcheroo_compiler.ops.reductions import reduce_window
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 def _prepare_pool_config(
@@ -49,8 +49,8 @@ def _prepare_pool_config(
     if isinstance(padding, str):
         full_padding = padding
     else:
-        raw_pad = ((0, 0),) * pad_dims + tuple(padding) + ((0, 0),) if rank > spatial_rank else padding
-        full_padding = raw_pad  # type: ignore[assignment]
+        norm_pad: tuple[tuple[int, int], ...] = tuple((p[0], p[1]) if isinstance(p, tuple) else (int(p), int(p)) for p in padding)
+        full_padding = ((0, 0),) * pad_dims + norm_pad + ((0, 0),) if rank > spatial_rank else norm_pad
 
     return WindowConfig(
         window_dimensions=full_window_shape,
@@ -78,10 +78,7 @@ def _compute_pool_out_shape(in_shape: tuple[int, ...], config: WindowConfig) -> 
                 out_shape.append((d - w) // s + 1)
     else:
         for d, w, s, p in zip(in_shape, config.window_dimensions, getattr(config.window_strides, "__iter__")(), getattr(config.padding, "__iter__")()):
-            if isinstance(p, tuple):
-                p_sum = p[0] + p[1]
-            else:
-                p_sum = p
+            p_sum = p[0] + p[1] if isinstance(p, tuple) else int(p)
             out_shape.append((d + p_sum - w) // s + 1)
     return out_shape
 
@@ -111,14 +108,15 @@ def _max_pool_with_indices(
 
     if _config.eager_mode:
         backend = get_active_backend()
-        raw_res: tuple[TensorOrScalar, TensorOrScalar] = backend.execute_op(  # type: ignore[assignment]
+        raw_res = backend.execute_op(
             "MaxPoolWithIndices",
             operand.data,
             window_shape=window_shape,
             strides=strides,
             padding=padding,
         )
-        data, indices = raw_res
+        data = getattr(raw_res, "__getitem__")(0)
+        indices = getattr(raw_res, "__getitem__")(1)
         return (
             Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)),
             Tensor(backend.array(indices), TensorConfig(tuple(out_shape), DType.Int64, operand.device)),
@@ -392,10 +390,23 @@ def _extract_window_args(
     Returns:
         tuple[tuple[int, ...], tuple[int, ...] | None, str | tuple[tuple[int, int], ...]]: Extracted parameters.
     """
-    ws: tuple[int, ...] = config.window.ksize  # type: ignore[assignment]
-    st: tuple[int, ...] | None = config.window.strides  # type: ignore[assignment]
-    pad: str | tuple[tuple[int, int], ...] = config.window.padding if config.window.padding is not None else "VALID"  # type: ignore[assignment]
-    return ws, st, pad
+    from ml_switcheroo_compiler.backends.registry import as_shape, as_str
+
+    return as_shape(config.window.ksize), as_shape(config.window.strides), as_str(config.window.padding)
+
+
+def _as_tensor(val: TensorOrScalar) -> Tensor:
+    """Coerce a TensorOrScalar value into a Tensor instance.
+
+    Args:
+        val (TensorOrScalar): Input tensor or array-like value.
+
+    Returns:
+        Tensor: Wrapped or existing Tensor.
+    """
+    from ml_switcheroo_compiler.core.tensor import as_tensor_obj
+
+    return as_tensor_obj(val)
 
 
 def avg_pool1d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
@@ -409,8 +420,7 @@ def avg_pool1d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
         TensorOrScalar: The resulting 1D average pooled data.
     """
     ws, st, pad = _extract_window_args(config)
-    t_val: Tensor = value  # type: ignore[assignment]
-    return avg_pool(t_val, window_shape=ws, strides=st, padding=pad)
+    return avg_pool(_as_tensor(value), window_shape=ws, strides=st, padding=pad)
 
 
 def avg_pool2d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
@@ -424,8 +434,7 @@ def avg_pool2d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
         TensorOrScalar: The resulting 2D average pooled data.
     """
     ws, st, pad = _extract_window_args(config)
-    t_val: Tensor = value  # type: ignore[assignment]
-    return avg_pool(t_val, window_shape=ws, strides=st, padding=pad)
+    return avg_pool(_as_tensor(value), window_shape=ws, strides=st, padding=pad)
 
 
 def avg_pool3d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
@@ -439,8 +448,7 @@ def avg_pool3d(value: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
         TensorOrScalar: The resulting 3D average pooled data.
     """
     ws, st, pad = _extract_window_args(config)
-    t_val: Tensor = value  # type: ignore[assignment]
-    return avg_pool(t_val, window_shape=ws, strides=st, padding=pad)
+    return avg_pool(_as_tensor(value), window_shape=ws, strides=st, padding=pad)
 
 
 def max_pool1d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
@@ -454,8 +462,7 @@ def max_pool1d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
         TensorOrScalar: The resulting 1D max pooled data.
     """
     ws, st, pad = _extract_window_args(config)
-    t_val: Tensor = inputs  # type: ignore[assignment]
-    return max_pool(t_val, window_shape=ws, strides=st, padding=pad)
+    return max_pool(_as_tensor(inputs), window_shape=ws, strides=st, padding=pad)
 
 
 def max_pool2d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
@@ -469,8 +476,7 @@ def max_pool2d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
         TensorOrScalar: The resulting 2D max pooled data.
     """
     ws, st, pad = _extract_window_args(config)
-    t_val: Tensor = inputs  # type: ignore[assignment]
-    return max_pool(t_val, window_shape=ws, strides=st, padding=pad)
+    return max_pool(_as_tensor(inputs), window_shape=ws, strides=st, padding=pad)
 
 
 def max_pool3d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
@@ -484,8 +490,7 @@ def max_pool3d(inputs: TensorOrScalar, config: PoolingConfig) -> TensorOrScalar:
         TensorOrScalar: The resulting 3D max pooled data.
     """
     ws, st, pad = _extract_window_args(config)
-    t_val: Tensor = inputs  # type: ignore[assignment]
-    return max_pool(t_val, window_shape=ws, strides=st, padding=pad)
+    return max_pool(_as_tensor(inputs), window_shape=ws, strides=st, padding=pad)
 
 
 def max_pool_with_argmax(
@@ -502,8 +507,7 @@ def max_pool_with_argmax(
         TensorOrScalar: A tuple containing the pooled output and a tensor representing the argmax indices.
     """
     ws, st, pad = _extract_window_args(config)
-    t_val: Tensor = input  # type: ignore[assignment]
-    return max_pool(t_val, window_shape=ws, strides=st, padding=pad, return_indices=True)
+    return max_pool(_as_tensor(input), window_shape=ws, strides=st, padding=pad, return_indices=True)
 
 
 def fractional_avg_pool(
@@ -522,9 +526,9 @@ def fractional_avg_pool(
     from ml_switcheroo_compiler.core.config import config as _config
 
     if _config.eager_mode:
-        data: TensorLike = get_active_backend().execute_op("FractionalAvgPool", value.data, pooling_ratio=config.behavior.pooling_ratio)  # type: ignore[assignment]
+        data = get_active_backend().execute_op("FractionalAvgPool", value.data, pooling_ratio=config.behavior.pooling_ratio)
         return (
-            Tensor(data, TensorConfig(data.shape, value.dtype, value.device)),
+            Tensor(data, TensorConfig(tuple(getattr(data, "shape")), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
         )
@@ -558,9 +562,9 @@ def fractional_max_pool(
     from ml_switcheroo_compiler.core.config import config as _config
 
     if _config.eager_mode:
-        data: TensorLike = get_active_backend().execute_op("FractionalMaxPool", value.data, pooling_ratio=config.behavior.pooling_ratio)  # type: ignore[assignment]
+        data = get_active_backend().execute_op("FractionalMaxPool", value.data, pooling_ratio=config.behavior.pooling_ratio)
         return (
-            Tensor(data, TensorConfig(data.shape, value.dtype, value.device)),
+            Tensor(data, TensorConfig(tuple(getattr(data, "shape")), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
             Tensor([0], TensorConfig((1,), value.dtype, value.device)),
         )

@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -23,7 +22,7 @@ def _pshuffle(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             EagerValue: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(getattr(backend_module, "lax"), "pshuffle"):
-        return typing.cast("EagerValue", getattr(backend_module, "lax").pshuffle(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "lax").pshuffle(*args, **kwargs))
     return args[0] if args else None
 
 
@@ -41,7 +40,7 @@ def _np_gumbel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "gumbel", getattr(backend_module, "gumbel", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.gumbel(*args, **kwargs)
 
 
@@ -59,7 +58,7 @@ def _np_rnguniform(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "rnguniform", getattr(backend_module, "rnguniform", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.uniform(*args, **kwargs)
 
 
@@ -77,5 +76,5 @@ def _np_wald(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     func = getattr(backend_module, "wald", getattr(backend_module, "wald", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.wald(*args, **kwargs)

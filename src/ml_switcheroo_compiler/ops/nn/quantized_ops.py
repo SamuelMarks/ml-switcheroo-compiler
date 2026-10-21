@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Callable  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor
 from ml_switcheroo_compiler.core.config import config as compiler_config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.nn.linear_ops import linear
 from ml_switcheroo_compiler.ops.shape.indexing import gather
@@ -240,8 +239,8 @@ def fake_quantize_per_channel_affine(
         zp = zero_point
         for i in range(ndims):
             if i != axis:
-                sc = typing.cast(Tensor, expand_dims(sc, axis=i))
-                zp = typing.cast(Tensor, expand_dims(zp, axis=i))
+                sc = as_tensor_obj(expand_dims(sc, axis=i))
+                zp = as_tensor_obj(expand_dims(zp, axis=i))
 
         zp = op_cast(zp, input.dtype)
 
@@ -472,7 +471,7 @@ def quantized_matmul(
 
     Args:
         x: The input tensor for the multiplication.
-        config: The configuration Any containing quantized weights, scales, and metadata.
+        config: The configuration object containing quantized weights, scales, and metadata.
 
     Returns:
         Tensor: The resulting tensor from the quantized matrix multiplication.
@@ -502,7 +501,7 @@ def gather_qmm(
 
     Args:
         x: The input tensor containing gathered data or indices.
-        config: The configuration Any containing quantized weights, scales, and metadata.
+        config: The configuration object containing quantized weights, scales, and metadata.
 
     Returns:
         Tensor: The resulting tensor after gathering and performing the quantized matmul.
@@ -537,7 +536,7 @@ def quantized_linear(
 
     Args:
         input: The incoming data tensor to be transformed.
-        config: The configuration Any containing quantized weights, biases, and metadata.
+        config: The configuration object containing quantized weights, biases, and metadata.
 
     Returns:
         Tensor: The transformed output tensor.
@@ -547,21 +546,21 @@ def quantized_linear(
 
         backend = get_active_backend()
 
-        w_val = typing.cast(EagerTensorProtocol, backend.asarray(config.weight.data))
-        scales_val = typing.cast(EagerTensorProtocol, backend.asarray(config.scales.data))
+        w_val = backend.asarray(config.weight.data)
+        scales_val = backend.asarray(config.scales.data)
         zeros_val: EagerTensorProtocol | float
         if config.zeros is not None:
-            zeros_val = typing.cast(EagerTensorProtocol, backend.asarray(config.zeros.data))
+            zeros_val = as_tensor(backend.asarray(config.zeros.data))
         elif config.biases is not None:
-            zeros_val = typing.cast(EagerTensorProtocol, backend.asarray(config.biases.data))
+            zeros_val = as_tensor(backend.asarray(config.biases.data))
         else:
             zeros_val = 0.0
 
-        w_float_val = (w_val - zeros_val) * scales_val
+        w_float_val = getattr(getattr(w_val, "__sub__")(zeros_val), "__mul__")(scales_val)
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        weight_float = Tensor(w_float_val, TensorConfig(w_float_val.shape, DType.Float32, config.weight.device))
+        weight_float = Tensor(w_float_val, TensorConfig(tuple(getattr(w_float_val, "shape")), DType.Float32, config.weight.device))
 
         return linear(input, weight_float, bias=config.biases)
     else:
@@ -576,7 +575,7 @@ def quantized_embedding(
 
     Args:
         input: The tensor containing the indices to look up.
-        config: The configuration Any containing the quantized embedding weights and scales.
+        config: The configuration object containing the quantized embedding weights and scales.
 
     Returns:
         Tensor: The dequantized embedding tensor corresponding to the input indices.
@@ -586,21 +585,21 @@ def quantized_embedding(
 
         backend = get_active_backend()
 
-        w_val = typing.cast(EagerTensorProtocol, backend.asarray(config.weight.data))
-        scales_val = typing.cast(EagerTensorProtocol, backend.asarray(config.scales.data))
+        w_val = backend.asarray(config.weight.data)
+        scales_val = backend.asarray(config.scales.data)
         zeros_val: EagerTensorProtocol | float
         if config.zeros is not None:
-            zeros_val = typing.cast(EagerTensorProtocol, backend.asarray(config.zeros.data))
+            zeros_val = as_tensor(backend.asarray(config.zeros.data))
         elif config.biases is not None:
-            zeros_val = typing.cast(EagerTensorProtocol, backend.asarray(config.biases.data))
+            zeros_val = as_tensor(backend.asarray(config.biases.data))
         else:
             zeros_val = 0.0
 
-        w_float_val = (w_val - zeros_val) * scales_val
+        w_float_val = getattr(getattr(w_val, "__sub__")(zeros_val), "__mul__")(scales_val)
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        weight_float = Tensor(w_float_val, TensorConfig(w_float_val.shape, DType.Float32, config.weight.device))
+        weight_float = Tensor(w_float_val, TensorConfig(tuple(getattr(w_float_val, "shape")), DType.Float32, config.weight.device))
 
         return gather(weight_float, axis=0, index=input)
     else:
@@ -633,15 +632,15 @@ def dequantize(
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        in_val = typing.cast(EagerTensorProtocol, backend.asarray(input.data))
-        scales_val = typing.cast(EagerTensorProtocol, backend.asarray(scales.data))
+        in_val = backend.asarray(input.data)
+        scales_val = backend.asarray(scales.data)
         if biases is not None:
-            biases_val = typing.cast(EagerTensorProtocol, backend.asarray(biases.data))
+            biases_val = backend.asarray(biases.data)
         else:
-            biases_val = typing.cast(EagerTensorProtocol, backend.execute_op("Zeros", 1, dtype="float32"))
+            biases_val = backend.execute_op("Zeros", 1, dtype="float32")
 
-        res_val = (in_val - biases_val) * scales_val
-        return Tensor(res_val, TensorConfig(res_val.shape, scales.dtype, input.device))
+        res_val = getattr(getattr(in_val, "__sub__")(biases_val), "__mul__")(scales_val)
+        return Tensor(res_val, TensorConfig(tuple(getattr(res_val, "shape")), scales.dtype, input.device))
 
     inputs = [input, scales]
     if biases is not None:
@@ -687,7 +686,7 @@ def quantized_conv(
             "dilation": dilation,
             "groups": groups,
         }
-        res_val = typing.cast(EagerTensorProtocol, backend.execute_op("QuantizedConv", *args, **kwargs))
+        res_val = as_tensor(backend.execute_op("QuantizedConv", *args, **kwargs))
         return Tensor(res_val, TensorConfig(res_val.shape, input.dtype, input.device))
 
     inputs = [input, config.weight, config.scales]

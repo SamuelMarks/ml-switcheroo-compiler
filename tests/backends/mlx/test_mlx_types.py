@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_mlx_types() -> None:
@@ -19,16 +21,16 @@ def test_mlx_types() -> None:
 
     from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
 
-    res = typing.cast("EagerCallableProtocol", zeros)(None, (2, 2))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    res = as_callable(zeros)(None, (2, 2))
+    assert as_tensor(getattr(res, "shape")) == (2, 2)
 
-    res = typing.cast("EagerCallableProtocol", array)(None, [1.0, 2.0])
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+    res = as_callable(array)(None, [1.0, 2.0])
+    assert as_tensor(getattr(res, "shape")) == (2,)
 
-    res = typing.cast("EagerCallableProtocol", asarray)(None, [1.0, 2.0])
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2,)
+    res = as_callable(asarray)(None, [1.0, 2.0])
+    assert as_tensor(getattr(res, "shape")) == (2,)
 
-    res = typing.cast("EagerCallableProtocol", item)(None, typing.cast("EagerCallableProtocol", array)(None, 42.0))
+    res = as_callable(item)(None, as_callable(array)(None, 42.0))
     assert res == 42.0
 
 
@@ -53,8 +55,8 @@ def test_mlx_types_asarray_fallback(monkeypatch: EagerTensorProtocol) -> None:
             """
             return "array_called"
 
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(types_mod, "mx", typing.cast("EagerCallableProtocol", MockMX)())
-    res = typing.cast("EagerCallableProtocol", asarray)(None, [1.0])
+    as_callable(monkeypatch.setattr)(types_mod, "mx", as_callable(MockMX)())
+    res = as_callable(asarray)(None, [1.0])
     assert res == "array_called"
 
 
@@ -79,6 +81,6 @@ def test_mlx_types_asarray_success(monkeypatch: EagerTensorProtocol) -> None:
             """
             return "asarray_called"
 
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(types_mod, "mx", typing.cast("EagerCallableProtocol", MockMXWithAsarray)())
-    res = typing.cast("EagerCallableProtocol", asarray)(None, [1.0])
+    as_callable(monkeypatch.setattr)(types_mod, "mx", as_callable(MockMXWithAsarray)())
+    res = as_callable(asarray)(None, [1.0])
     assert res == "asarray_called"

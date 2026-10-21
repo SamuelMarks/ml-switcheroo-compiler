@@ -52,4 +52,4 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
             backend.save_npz(weights_np, filepath)
             return
         np_mod = registry.BackendRegistry.get("numpy").get_module()
-        np_mod.savez(filepath, **typing.cast("dict[str, TensorOrScalar]", weights_np))
+        np_mod.savez(filepath, **weights_np)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
@@ -27,7 +25,7 @@ def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str
     indices = ops.arange(num_classes)
     x_expanded = ops.expand_dims(x_ops, -1)
     one_hot = ops.equal(x_expanded, indices)
-    return typing.cast(TensorOrScalar, ops.cast(one_hot, dtype))
+    return ops.cast(one_hot, dtype)
 
 
 def normalize(x: TensorOrScalar, axis: int = -1, order: int = 2) -> TensorOrScalar:

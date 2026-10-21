@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.backends.base_generator import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_compiled_artifact_edge_cases() -> None:
@@ -50,13 +51,13 @@ def test_compiled_artifact_edge_cases() -> None:
             self.cleaned = True
 
     mock_dir = MockTempDir()
-    art_with_dir = typing.cast("EagerCallableProtocol", CompiledArtifact)(
+    art_with_dir = as_callable(CompiledArtifact)(
         callable_fn=lambda: None,
         temp_dir=mock_dir,
     )
     art_with_dir.cleanup()
-    assert typing.cast("EagerValue", mock_dir.cleaned) is True
-    assert typing.cast("EagerValue", art_with_dir.temp_dir) is None
+    assert mock_dir.cleaned is True
+    assert as_tensor(art_with_dir.temp_dir) is None
 
     # 2. __getitem__ accessing attribute
     assert artifact["binary_bytes"] == b"123"
@@ -87,7 +88,7 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
 
     g = IRGraph()
     res = ConcreteAotGen.compile_aot(g)
-    assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "compiled_output")
+    assert as_tensor(res) == as_tensor("compiled_output")
 
     # 1b. compile_aot caching behavior on generator instance
     gen_inst = ConcreteAotGen(g)

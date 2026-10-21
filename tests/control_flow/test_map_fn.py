@@ -13,9 +13,10 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import map_fn
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 device = Device(DeviceType.CPU, 0)
 
 
@@ -41,7 +42,7 @@ def test_map_fn_eager() -> None:
             return Tensor(y, TensorConfig((), DType.Int32, device))
 
         ys = map_fn(f, xs)
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(ys, "data")), typing.cast("EagerCallableProtocol", np.array)([2, 4, 6]))
+        assert as_callable(np.array_equal)(as_tensor(getattr(ys, "data")), as_callable(np.array)([2, 4, 6]))
 
 
 def test_map_fn_trace() -> None:
@@ -66,5 +67,5 @@ def test_map_fn_trace() -> None:
 
         global_tracing_state.start_tracing()
         ys = map_fn(f, xs)
-        assert typing.cast("EagerTensorProtocol", getattr(ys, "dtype")) == DType.Int32
+        assert as_tensor(getattr(ys, "dtype")) == DType.Int32
         global_tracing_state.stop_tracing()

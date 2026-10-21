@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_linear_operator_shape_inference() -> None:
@@ -19,5 +21,5 @@ def test_linear_operator_shape_inference() -> None:
 
         shape = (1, 2)
 
-    assert typing.cast("EagerCallableProtocol", LinearOperator)().infer_shape(typing.cast("EagerCallableProtocol", MockOperand)()) == (1, 2)
-    assert typing.cast("EagerCallableProtocol", LinearOperator)().infer_shape(operand=typing.cast("EagerCallableProtocol", MockOperand)()) == (1, 2)
+    assert as_callable(LinearOperator)().infer_shape(as_callable(MockOperand)()) == (1, 2)
+    assert as_callable(LinearOperator)().infer_shape(operand=as_callable(MockOperand)()) == (1, 2)

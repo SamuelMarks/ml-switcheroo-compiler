@@ -4,102 +4,20 @@ from __future__ import annotations
 
 import ast
 import builtins
-import typing
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, as_tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.interpreter.environment import Environment
 
-
-@typing.runtime_checkable
-class TensorLike(typing.Protocol):
-    """Protocol defining the structural type contract for tensor/array instances in the interpreter."""
-
-    if not typing.TYPE_CHECKING:
-
-        @classmethod
-        def __get_pydantic_core_schema__(
-            cls,
-            source_type: TensorOrScalar,
-            handler: TensorOrScalar,
-        ) -> TensorOrScalar:
-            """Return core_schema.any_schema() for runtime TensorLike field preservation.
-
-            Args:
-                source_type (TensorOrScalar): Annotated source type.
-                handler (TensorOrScalar): Pydantic core schema handler.
-
-            Returns:
-                TensorOrScalar: Pydantic CoreSchema instance.
-            """
-            del source_type
-            return typing.cast("TensorOrScalar", getattr(handler, "generate_schema")(AttributeValue))
-
-    if typing.TYPE_CHECKING:
-        dtype: str | type | None
-        nbytes: int
-        size: int
-
-        def copy(self) -> TensorLike:
-            """Create a copy of the tensor.
-
-            Returns:
-                TensorLike: Copied tensor instance.
-            """
-            ...
-
-        def __setitem__(self, key: EvalValue, value: EvalValue) -> None:
-            """Set item or slice in tensor.
-
-            Args:
-                key (EvalValue): Indexing key or slice.
-                value (EvalValue): Value to assign.
-            """
-            ...
-
-    def __getitem__(self, key: EvalValue) -> TensorLike:
-        """Get item or slice from tensor.
-
-        Args:
-            key (EvalValue): Indexing key or slice.
-
-        Returns:
-            TensorLike: Indexed tensor slice or element.
-        """
-        ...
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Get multidimensional shape dimensions.
-
-        Returns:
-            tuple[int, ...]: Tensor shape tuple.
-        """
-        ...
-
-    def item(self) -> int | float | bool:
-        """Get item as scalar value.
-
-        Returns:
-            int | float | bool: Extracted Python scalar.
-        """
-        ...
-
-    def __len__(self) -> int:
-        """Get length of leading dimension.
-
-        Returns:
-            int: Size of the leading dimension.
-        """
-        ...
-
-
+TensorLike = EagerTensorProtocol
 IndexableArray = TensorLike
 EvalValue = TensorOrScalar
+as_tensor_like = as_tensor
 
 
 def evaluate_graph(
@@ -274,10 +192,10 @@ def _handle_slice(
         in_vals (list[EvalValue]): List containing the input tensor to be sliced.
         kwargs (dict[str, EvalValue]): Keyword arguments defining the slice parameters (e.g. 'slices', 'dim', 'start', 'end', 'step').
     """
-    arr: IndexableArray = backend.asarray(in_vals[0])  # type: ignore[assignment]
+    arr = backend.asarray(in_vals[0])
     if "slices" in kwargs:
         parsed_key = _parse_slice_string(str(kwargs["slices"]))
-        env.set(node.id, arr[parsed_key])
+        env.set(node.id, getattr(arr, "__getitem__")(parsed_key))
         return
 
     dim = int(getattr(kwargs.get("dim", 0), "__int__", lambda: 0)())
@@ -290,7 +208,7 @@ def _handle_slice(
 
     sl: list[EvalValue] = [builtins.slice(None)] * len(getattr(in_vals[0], "shape"))
     sl[dim] = builtins.slice(start, end, step)
-    env.set(node.id, arr[tuple(sl)])
+    env.set(node.id, getattr(arr, "__getitem__")(tuple(sl)))
 
 
 def _handle_getitem(
@@ -311,8 +229,8 @@ def _handle_getitem(
     """
     key = kwargs.get("key")
     parsed_key = _parse_slice_string(str(key))
-    arr: IndexableArray = backend.asarray(in_vals[0])  # type: ignore[assignment]
-    env.set(node.id, arr[parsed_key])
+    arr = backend.asarray(in_vals[0])
+    env.set(node.id, getattr(arr, "__getitem__")(parsed_key))
 
 
 def _handle_index_put(
@@ -333,9 +251,9 @@ def _handle_index_put(
     """
     key = kwargs.get("key", kwargs.get("index", 0))
     parsed_key = _parse_slice_string(str(key))
-    arr: IndexableArray = backend.execute_op("Clone", in_vals[0])  # type: ignore[assignment]
+    arr = backend.execute_op("Clone", in_vals[0])
     val = in_vals[1]
-    arr[parsed_key] = val
+    getattr(arr, "__setitem__")(parsed_key, val)
     env.set(node.id, arr)
 
 
@@ -393,8 +311,8 @@ def _handle_meshgrid(
     """
     raw_idx = kwargs.pop("output_index", 0)
     idx = int(raw_idx) if isinstance(raw_idx, (int, float, str)) else 0
-    result: IndexableArray = backend.execute_op("Meshgrid", *in_vals, **kwargs)  # type: ignore[assignment]
-    env.set(node.id, result[idx])
+    result = backend.execute_op("Meshgrid", *in_vals, **kwargs)
+    env.set(node.id, getattr(result, "__getitem__")(idx))
 
 
 def _dispatch_op(node: LogicalNode, env: Environment, backend: type[BaseGenerator], target_op: str, in_vals: list[EvalValue], kwargs: dict[str, EvalValue]) -> None:

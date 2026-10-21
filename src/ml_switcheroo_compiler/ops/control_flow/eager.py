@@ -5,11 +5,11 @@ from __future__ import annotations
 import typing
 from collections.abc import Callable  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor, get_active_backend
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
 
@@ -28,8 +28,8 @@ def cond_eager(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar) 
             tuple[int, ...]: Result.
     """
     if bool(pred.data):
-        return typing.cast(TypedVariadicCallable[TensorOrScalar], true_fn)()
-    return typing.cast(TypedVariadicCallable[TensorOrScalar], false_fn)()
+        return as_callable(true_fn)()
+    return as_callable(false_fn)()
 
 
 def while_loop_eager(
@@ -58,15 +58,15 @@ def while_loop_eager(
 
 def _stack_scan_outputs(
     ys: list[TensorOrScalar],
-    init: Tensor | tuple[Tensor, ...],
-    last_y: Tensor | tuple[Tensor, ...],
+    init: TensorOrScalar,
+    last_y: TensorOrScalar,
 ) -> Tensor:
     """Execute the eager stack scan outputs operation on the active backend array.
 
     Args:
         ys (list): The ys parameter.
-        init (Tensor | tuple[Tensor, ...]): The init parameter.
-        last_y (Tensor | tuple[Tensor, ...]): The last_y parameter.
+        init (TensorOrScalar): The init parameter.
+        last_y (TensorOrScalar): The last_y parameter.
 
     Returns:
         Tensor: Result.
@@ -101,16 +101,16 @@ def scan_eager(f: TensorOrScalar, init: TensorOrScalar, xs: TensorOrScalar, leng
     Returns:
         tuple: Result.
     """
-    fn_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], f)
+    fn_callable = f
     carry = init
     ys = []
     scan_length = length if length is not None else (getattr(xs, "shape")[0] if xs is not None else 0)
     for i in range(scan_length):
         x = Tensor(getattr(xs, "data")[i], TensorConfig(getattr(xs, "shape")[1:], getattr(xs, "dtype"), getattr(xs, "device"))) if xs is not None else None
-        carry, y = getattr(fn_callable(carry, x), "__iter__")()
+        carry, y = getattr(invoke_callable(fn_callable, carry, x), "__iter__")()
         ys.append(getattr(y, "data") if hasattr(y, "data") else y)
 
-    out_tensor = typing.cast("EagerCallableProtocol", _stack_scan_outputs)(ys, init, y if scan_length > 0 else init)
+    out_tensor = _stack_scan_outputs(ys, init, y if scan_length > 0 else init)
     return carry, out_tensor
 
 
@@ -137,11 +137,11 @@ def _map_fn_eager_execute(fn: TensorOrScalar, elems: Tensor, length: int) -> Ten
     Returns:
         list: Result.
     """
-    fn_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], fn)
+    fn_callable = fn
     ys = []
     for i in range(length):
-        x = Tensor(typing.cast(EagerTensorProtocol, elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
-        y = fn_callable(x)
+        x = Tensor(as_tensor(elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
+        y = invoke_callable(fn_callable, x)
         ys.append(getattr(y, "data") if hasattr(y, "data") else y)
     return ys
 
@@ -202,7 +202,7 @@ def pmap_eager(func: TensorOrScalar, axis_name: str | None = None) -> TensorOrSc
         Returns:
             tuple[int, ...]: Result.
         """
-        return typing.cast("TypedVariadicCallable[TensorOrScalar]", vmap(func))(*args)
+        return as_callable(vmap(func))(*args)
 
     return wrapped
 

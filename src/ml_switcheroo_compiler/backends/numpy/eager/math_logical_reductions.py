@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -26,7 +25,7 @@ def _np_all(
     Returns:
         np.ndarray: Evaluated boolean reduction.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.all(*args, **kwargs))
+    return as_ndarray(backend_module.all(*args, **kwargs))
 
 
 @numpy_eager_registry.register("CountNonzero")
@@ -45,4 +44,4 @@ def _np_count_nonzero(
     Returns:
         np.ndarray: Count of non-zero elements.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.count_nonzero(*args, **kwargs))
+    return as_ndarray(backend_module.count_nonzero(*args, **kwargs))

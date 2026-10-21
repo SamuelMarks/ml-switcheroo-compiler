@@ -6,7 +6,6 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import (
     config,
     disable_compile,
@@ -16,9 +15,10 @@ from ml_switcheroo_compiler.core.config import (
     tensor_float_32_execution_enabled,
 )
 from ml_switcheroo_compiler.core.device import Device, DeviceType, Stream, StreamContext, exporter, get_logical_devices, get_memory_info, get_physical_devices
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_config_flags() -> None:
@@ -90,32 +90,32 @@ def test_stream_context_extra() -> None:
 def test_config_methods_extra() -> None:
     """Test."""
     config.seed = 42
-    assert typing.cast("EagerValue", config.seed) == 42
+    assert as_tensor(config.seed) == 42
 
     config.backend = "numpy"
-    assert typing.cast("EagerValue", config.backend) == "numpy"
+    assert as_tensor(config.backend) == "numpy"
 
     config.current_stream = "main"
-    assert typing.cast("EagerValue", config.current_stream) == "main"
+    assert as_tensor(config.current_stream) == "main"
 
     config.layout_map = "layout"
-    assert typing.cast("EagerValue", config.layout_map) == "layout"
+    assert as_tensor(config.layout_map) == "layout"
 
     config.jax_enable_x64 = True
-    assert typing.cast("EagerValue", config.jax_enable_x64)
+    assert as_tensor(config.jax_enable_x64)
     config.jax_enable_x64 = False
 
     config.op_determinism = True
-    assert typing.cast("EagerValue", config.op_determinism)
+    assert as_tensor(config.op_determinism)
 
     config.tensor_float_32_execution = True
-    assert typing.cast("EagerValue", config.tensor_float_32_execution)
+    assert as_tensor(config.tensor_float_32_execution)
 
     disable_compile()
-    assert typing.cast("EagerValue", config.eager_mode)
+    assert as_tensor(config.eager_mode)
 
     enable_compile()
-    assert not typing.cast("EagerValue", config.eager_mode)
+    assert not as_tensor(config.eager_mode)
 
     enable_op_determinism()
     assert config.op_determinism
@@ -132,10 +132,10 @@ def test_eager_mode_with_tracing_state_extra() -> None:
 
     orig = global_tracing_state.is_tracing
     global_tracing_state.is_tracing = True
-    assert not typing.cast("EagerValue", config.eager_mode)
+    assert not as_tensor(config.eager_mode)
 
     global_tracing_state.is_tracing = False
-    assert typing.cast("EagerValue", config.eager_mode)
+    assert as_tensor(config.eager_mode)
     global_tracing_state.is_tracing = orig
 
 
@@ -147,9 +147,9 @@ def test_config_context_exceptions_extra() -> None:
     with pytest.raises(ValueError):
         with ConfigContext(unknown_key="val"):
             pass
-    with typing.cast("EagerTensorProtocol", EagerMode()):
+    with as_tensor(EagerMode()):
         pass
-    with typing.cast("EagerTensorProtocol", ConfigStreamContext("stream_name")):
+    with as_tensor(ConfigStreamContext("stream_name")):
         pass
 
 

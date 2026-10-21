@@ -26,9 +26,10 @@ from ml_switcheroo_compiler.ops.nn.conv_utils import (
     dilation2d,
     erosion2d,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_conv_utils_calc_pad() -> None:
@@ -42,15 +43,15 @@ def test_conv_utils_calc_pad() -> None:
 def test_build_conv_config() -> None:
     """Test function test_build_conv_config."""
     kwargs = {"strides": 1, "padding": "SAME", "lhs_dilation": 1, "rhs_dilation": 1, "feature_group_count": 1, "batch_group_count": 1}
-    c = typing.cast("EagerCallableProtocol", _build_conv_config)(kwargs, ((0, 1), (0, 1), (0, 1)))
+    c = as_callable(_build_conv_config)(kwargs, ((0, 1), (0, 1), (0, 1)))
     assert c is not None
-    c = typing.cast("EagerTensorProtocol", _build_conv_config({}, ((0, 1), (0, 1), (0, 1))))
+    c = as_tensor(_build_conv_config({}, ((0, 1), (0, 1), (0, 1))))
     assert c is not None
 
 
 def test_calculate_conv_transpose_padding() -> None:
     """Test function test_calculate_conv_transpose_padding."""
-    assert typing.cast("EagerCallableProtocol", _calculate_conv_transpose_padding)((5, 5), (3, 3), (2, 2)) is not None
+    assert as_callable(_calculate_conv_transpose_padding)((5, 5), (3, 3), (2, 2)) is not None
 
 
 def _test_conv_utils_frontend_funcs_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -79,7 +80,7 @@ def _test_conv_utils_frontend_funcs_sub_2(_state: dict[str, EagerTensorProtocol]
     with pytest.raises(RuntimeError):
         compute_average_loss(None)
     with pytest.raises(KeyError):
-        typing.cast("EagerCallableProtocol", depthwise_conv2d)(None, None, None, None)
+        as_callable(depthwise_conv2d)(None, None, None, None)
     depthwise_conv2d_backprop_filter(None, None, None, None, None)
     depthwise_conv2d_backprop_input(None, None, None, None, None)
     _state.update(locals())
@@ -92,13 +93,13 @@ def _test_conv_utils_frontend_funcs_sub_3(_state: dict[str, EagerTensorProtocol]
         _state: Shared test state dictionary.
     """
     with pytest.raises(TypeError):
-        typing.cast("EagerCallableProtocol", dilation2d)(None, None, None, None, None)
+        as_callable(dilation2d)(None, None, None, None, None)
     with pytest.raises(TypeError):
-        typing.cast("EagerCallableProtocol", erosion2d)(None, None, None, None, None)
+        as_callable(erosion2d)(None, None, None, None, None)
     with pytest.raises(KeyError):
         convolution(None, None)
     with pytest.raises(TypeError):
-        typing.cast("EagerCallableProtocol", conv_transpose)(None, None)
+        as_callable(conv_transpose)(None, None)
     _state.update(locals())
 
 
@@ -137,16 +138,12 @@ def test_prepare_depthwise_conv() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
-    t2 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t2 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
@@ -177,8 +174,8 @@ def test_prepare_depthwise_conv() -> None:
 
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_ops", MockBackendConv)
-        typing.cast("EagerCallableProtocol", _prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=1, lhs_dilation=1, rhs_dilation=1)
+        as_callable(BackendRegistry.register)("mock_ops", MockBackendConv)
+        as_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=1, lhs_dilation=1, rhs_dilation=1)
     finally:
         config.eager_mode = orig_eager
     assert config.eager_mode == orig_eager
@@ -210,16 +207,12 @@ def test_conv_utils_prepare_depthwise_conv_extra() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
-    t2 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    t2 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
@@ -250,8 +243,8 @@ def test_conv_utils_prepare_depthwise_conv_extra() -> None:
 
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_ops", MockBackendConv)
-        typing.cast("EagerCallableProtocol", _prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=(1,), lhs_dilation=(1,), rhs_dilation=(1,))
+        as_callable(BackendRegistry.register)("mock_ops", MockBackendConv)
+        as_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1), (0, 1), (0, 1)), config_obj=None, strides=(1,), lhs_dilation=(1,), rhs_dilation=(1,))
     finally:
         config.eager_mode = orig_eager
     assert config.eager_mode == orig_eager
@@ -339,13 +332,11 @@ def test_conv_utils_frontend_funcs_extra2() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         _state: dict[str, EagerTensorProtocol] = dict(locals())
@@ -378,13 +369,11 @@ def test_conv_utils_frontend_funcs_extra3() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -408,9 +397,9 @@ def test_conv_utils_frontend_funcs_extra3() -> None:
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            typing.cast("EagerCallableProtocol", depthwise_conv2d)(t1, t1, [1, 1], "VALID")
-            typing.cast("EagerCallableProtocol", depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
-            typing.cast("EagerCallableProtocol", depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
@@ -440,13 +429,11 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -476,9 +463,9 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            typing.cast("EagerCallableProtocol", depthwise_conv2d)(t1, t1, [1, 1], "VALID")
-            typing.cast("EagerCallableProtocol", depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
-            typing.cast("EagerCallableProtocol", depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
@@ -608,13 +595,11 @@ def test_conv_utils_frontend_funcs_extra5() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     import ml_switcheroo_compiler.ops.nn.conv2d as conv2d_mod
 
     orig_conv2d = getattr(conv2d_mod, "conv2d", None)
@@ -661,13 +646,11 @@ def test_conv_utils_frontend_funcs_extra6() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -704,7 +687,7 @@ def test_conv_utils_frontend_funcs_extra6() -> None:
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            typing.cast("EagerCallableProtocol", depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError) as e:
             assert e is not None
     finally:
@@ -731,13 +714,11 @@ def test_conv_utils_frontend_funcs_extra7() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -782,7 +763,7 @@ def test_conv_utils_frontend_funcs_extra7() -> None:
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            typing.cast("EagerCallableProtocol", depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
         except Exception as e:
             print(e)
     finally:
@@ -809,13 +790,11 @@ def test_conv_utils_frontend_funcs_extra8() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -864,7 +843,7 @@ def test_conv_utils_frontend_funcs_extra8() -> None:
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            typing.cast("EagerCallableProtocol", depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
         except Exception as e:
             print(e)
     finally:
@@ -891,13 +870,11 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False
@@ -913,9 +890,7 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
                     args: Test parameter `args`.
                     kwargs: Test parameter `kwargs`.
                 """
-                return typing.cast("EagerCallableProtocol", Tensor)(
-                    typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-                )
+                return as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
 
         class MockGetOp:
             """Test class MockGetOp."""
@@ -933,9 +908,9 @@ def test_conv_utils_frontend_funcs_extra9() -> None:
         try:
             atrous_conv2d(t1, t1, 1, "VALID", None)
             atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-            typing.cast("EagerCallableProtocol", depthwise_conv2d)(t1, t1, [1, 1], "VALID")
-            typing.cast("EagerCallableProtocol", depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
-            typing.cast("EagerCallableProtocol", depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d)(t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d_backprop_filter)(t1, t1, t1, [1, 1], "VALID")
+            as_callable(depthwise_conv2d_backprop_input)((2, 2, 2), t1, t1, [1, 1], "VALID")
             convolution(t1, t1)
             conv_transpose(t1, t1, (2, 2, 2))
         except Exception as e:
@@ -969,14 +944,12 @@ def test_conv_utils_frontend_funcs_extra10() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
-    typing.cast("EagerCallableProtocol", _prepare_depthwise_conv)(t1, t1, 1, ((0, 1), (0, 1), (0, 1)), config_obj=1)
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
+    as_callable(_prepare_depthwise_conv)(t1, t1, 1, ((0, 1), (0, 1), (0, 1)), config_obj=1)
     assert callable(test_conv_utils_frontend_funcs_extra10)
 
 
@@ -997,13 +970,11 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
                 shape: Test parameter `shape`.
             """
             self.shape = shape
-            self.data = typing.cast("EagerCallableProtocol", np.ones)(shape)
+            self.data = as_callable(np.ones)(shape)
             self.dtype = types.SimpleNamespace(value="float32")
             self.device = None
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(
-        typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", TensorConfig)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False)
-    )
+    t1 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2)), as_callable(TensorConfig)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
 
     orig_conv2d = getattr(conv_utils, "conv2d", None)
@@ -1077,7 +1048,7 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
             with patch("ml_switcheroo_compiler.ops.nn.conv_utils.get_op", lambda name: MockOp()):
                 conv_utils.atrous_conv2d(t1, t1, 1, "VALID", None)
                 conv_utils.atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-                typing.cast("EagerCallableProtocol", conv_utils.depthwise_conv2d)(t1, t1, typing.cast("EagerCallableProtocol", GenericConvConfig)(), "VALID")
+                as_callable(conv_utils.depthwise_conv2d)(t1, t1, as_callable(GenericConvConfig)(), "VALID")
                 conv_utils.convolution(t1, t1)
     finally:
         config.eager_mode = orig_eager
@@ -1089,6 +1060,6 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
             with patch("ml_switcheroo_compiler.ops.nn.conv_utils.get_op", lambda name: MockOp()):
                 conv_utils.atrous_conv2d(t1, t1, 1, "VALID", None)
                 conv_utils.atrous_conv2d_transpose(t1, t1, None, GenericConvConfig(), None)
-                typing.cast("EagerCallableProtocol", conv_utils.depthwise_conv2d)(t1, t1, typing.cast("EagerCallableProtocol", GenericConvConfig)(), "VALID")
+                as_callable(conv_utils.depthwise_conv2d)(t1, t1, as_callable(GenericConvConfig)(), "VALID")
                 conv_utils.convolution(t1, t1)
     assert config.eager_mode == orig_eager

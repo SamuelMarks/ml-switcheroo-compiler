@@ -8,9 +8,10 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_logical_reductions as logical_reductions
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_math_logical_reductions() -> None:
@@ -22,11 +23,11 @@ def test_math_logical_reductions() -> None:
     assert not logical_reductions._np_all(np, arr_some_false)
 
     reg_all = numpy_eager_registry.get("All")
-    assert typing.cast("EagerCallableProtocol", reg_all)(np, arr_all_true)
-    assert not typing.cast("EagerCallableProtocol", reg_all)(np, arr_some_false)
+    assert as_callable(reg_all)(np, arr_all_true)
+    assert not as_callable(reg_all)(np, arr_some_false)
 
     arr_counts = np.array([[0, 1, 2], [3, 0, 0]])
     assert logical_reductions._np_count_nonzero(np, arr_counts) == 3
 
     reg_count = numpy_eager_registry.get("CountNonzero")
-    assert typing.cast("EagerCallableProtocol", reg_count)(np, arr_counts) == 3
+    assert as_callable(reg_count)(np, arr_counts) == 3

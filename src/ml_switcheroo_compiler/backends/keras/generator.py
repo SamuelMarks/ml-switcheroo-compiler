@@ -9,10 +9,9 @@ from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
@@ -120,7 +119,7 @@ class KerasCodeGenerator(BaseGenerator):
         import pickle
 
         with open(filepath, "rb") as f:
-            return typing.cast(EagerValue, pickle.load(f))
+            return as_tensor(pickle.load(f))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -361,7 +360,7 @@ class KerasCodeGenerator(BaseGenerator):
                 EagerValue: Model execution output or evaluated graph output.
             """
             if model_obj is not None:
-                return typing.cast(TypedVariadicCallable[EagerValue], model_obj)(*args, **runner_kwargs)
+                return as_callable(model_obj)(*args, **runner_kwargs)
 
             from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
@@ -371,7 +370,7 @@ class KerasCodeGenerator(BaseGenerator):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
-                return typing.cast(EagerValue, res_dict)
+                return res_dict
             if len(graph.outputs) == 1:
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)

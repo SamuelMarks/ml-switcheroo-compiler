@@ -8,7 +8,7 @@ import math
 import typing
 from collections.abc import Iterable, Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -36,7 +36,7 @@ def _unwrap_tensor(val: EagerValue) -> EagerValue:
         EagerValue: Underlying buffer or original value.
     """
     if hasattr(val, "config") and hasattr(val, "data"):
-        return typing.cast(EagerValue, getattr(val, "data"))
+        return as_tensor(getattr(val, "data"))
     return val
 
 
@@ -52,12 +52,12 @@ def _pa_to_ndarray(raw_data: EagerValue, dtype: str | None = None) -> EagerValue
     """
     if hasattr(raw_data, "shape") and hasattr(raw_data, "dtype") and hasattr(raw_data, "ndim"):
         if dtype is not None and hasattr(raw_data, "astype"):
-            return typing.cast(EagerValue, getattr(raw_data, "astype")(dtype))
+            return as_tensor(getattr(raw_data, "astype")(dtype))
         return raw_data
 
     if hasattr(raw_data, "__array__"):
         arr = getattr(raw_data, "__array__")()
-        return typing.cast(EagerValue, arr)
+        return as_tensor(arr)
 
     import pyarrow as pa
 
@@ -65,11 +65,11 @@ def _pa_to_ndarray(raw_data: EagerValue, dtype: str | None = None) -> EagerValue
     if isinstance(raw_data, (list, tuple)):
         if not raw_data:
             fill_type = pa_type if pa_type is not None else pa.float32()
-            return typing.cast(EagerValue, pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
-        return typing.cast(EagerValue, pa.array(list(raw_data), type=pa_type).to_numpy(zero_copy_only=False))
+            return as_tensor(pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
+        return as_tensor(pa.array(list(raw_data), type=pa_type).to_numpy(zero_copy_only=False))
 
     fill_type = pa_type if pa_type is not None else pa.float32()
-    return typing.cast(EagerValue, pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
+    return as_tensor(pa.nulls(0, type=fill_type).to_numpy(zero_copy_only=False))
 
 
 def zeros(shape: tuple[int, ...]) -> EagerValue:
@@ -85,16 +85,16 @@ def zeros(shape: tuple[int, ...]) -> EagerValue:
     pa_mod = _get_pa_module()
     if hasattr(pa_mod, "array"):
         try:
-            return typing.cast(EagerValue, getattr(pa_mod, "array")([0.0] * total))
+            return as_tensor(getattr(pa_mod, "array")([0.0] * total))
         except Exception:
             import pyarrow as pa
 
             base = pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False)
-            return typing.cast(EagerValue, getattr(base, "reshape")(shape))
+            return as_tensor(getattr(base, "reshape")(shape))
     import pyarrow as pa
 
     base = pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False)
-    return typing.cast(EagerValue, getattr(base, "reshape")(shape))
+    return as_tensor(getattr(base, "reshape")(shape))
 
 
 def ones(shape: tuple[int, ...]) -> EagerValue:
@@ -109,7 +109,7 @@ def ones(shape: tuple[int, ...]) -> EagerValue:
     total = int(math.prod(shape)) if shape else 1
     pa_mod = _get_pa_module()
     if hasattr(pa_mod, "repeat"):
-        return typing.cast(EagerValue, getattr(pa_mod, "repeat")(1.0, total))
+        return as_tensor(getattr(pa_mod, "repeat")(1.0, total))
     return [1.0] * total
 
 
@@ -127,7 +127,7 @@ def empty(shape: tuple[int, ...]) -> EagerValue:
     if hasattr(pa_mod, "nulls"):
         import pyarrow as pa
 
-        return typing.cast(EagerValue, getattr(pa_mod, "nulls")(total, type=pa.float32()))
+        return as_tensor(getattr(pa_mod, "nulls")(total, type=pa.float32()))
     return [None] * total
 
 
@@ -145,7 +145,7 @@ def array(data: EagerValue, dtype: str | None = None) -> EagerValue:
     pa_mod = _get_pa_module()
     if hasattr(pa_mod, "array"):
         try:
-            return typing.cast(EagerValue, getattr(pa_mod, "array")(raw_data))
+            return as_tensor(getattr(pa_mod, "array")(raw_data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _pa_to_ndarray(raw_data, dtype=dtype)
@@ -164,7 +164,7 @@ def asarray(data: EagerValue) -> EagerValue:
     pa_mod = _get_pa_module()
     if hasattr(pa_mod, "array"):
         try:
-            return typing.cast(EagerValue, getattr(pa_mod, "array")(raw_data))
+            return as_tensor(getattr(pa_mod, "array")(raw_data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _pa_to_ndarray(raw_data)
@@ -188,7 +188,7 @@ def chunked_array(
         try:
             chunk_list = chunks if isinstance(chunks, (list, tuple)) else [chunks]
             conv_chunks = [array(c) if not hasattr(c, "type") else c for c in chunk_list]
-            return typing.cast(EagerValue, getattr(pa_mod, "chunked_array")(conv_chunks, type=dtype))
+            return as_tensor(getattr(pa_mod, "chunked_array")(conv_chunks, type=dtype))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return list(chunks) if isinstance(chunks, (list, tuple)) else [chunks]
@@ -214,7 +214,7 @@ def record_batch(
         try:
             data_list = list(data) if isinstance(data, Iterable) else [data]
             name_list = list(names) if names is not None else None
-            return typing.cast(EagerValue, getattr(pa_mod, "RecordBatch").from_arrays(data_list, names=name_list, schema=schema))
+            return as_tensor(getattr(pa_mod, "RecordBatch").from_arrays(data_list, names=name_list, schema=schema))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if names is not None and isinstance(data, (list, tuple)):
@@ -238,12 +238,12 @@ def slice_record_batch(
         EagerValue: Sliced RecordBatch.
     """
     if hasattr(batch, "slice"):
-        return typing.cast(EagerValue, getattr(batch, "slice")(offset=offset, length=length))
+        return as_tensor(getattr(batch, "slice")(offset=offset, length=length))
     if isinstance(batch, dict):
         end = offset + length if length is not None else None
-        return {k: typing.cast(EagerTensorProtocol, v)[offset:end] for k, v in batch.items()}
+        return {k: as_tensor(v)[offset:end] for k, v in batch.items()}
     end = offset + length if length is not None else None
-    return typing.cast(EagerTensorProtocol, batch)[offset:end]
+    return as_tensor(batch)[offset:end]
 
 
 def to_table(
@@ -266,15 +266,15 @@ def to_table(
         table_cls = getattr(pa_mod, "Table")
         if hasattr(table_cls, "from_batches"):
             if hasattr(data, "schema"):
-                return typing.cast(EagerValue, table_cls.from_batches([data], schema=schema))
+                return as_tensor(table_cls.from_batches([data], schema=schema))
             if isinstance(data, (list, tuple)) and data:
                 if hasattr(data[0], "schema"):
-                    return typing.cast(EagerValue, table_cls.from_batches(list(data), schema=schema))
+                    return as_tensor(table_cls.from_batches(list(data), schema=schema))
         if hasattr(table_cls, "from_pydict") and isinstance(data, dict):
-            return typing.cast(EagerValue, table_cls.from_pydict(data, schema=schema))
+            return as_tensor(table_cls.from_pydict(data, schema=schema))
         if hasattr(table_cls, "from_arrays") and isinstance(data, (list, tuple)):
             col_names = list(names) if names else [f"f{i}" for i in range(len(data))]
-            return typing.cast(EagerValue, table_cls.from_arrays(list(data), names=col_names, schema=schema))
+            return as_tensor(table_cls.from_arrays(list(data), names=col_names, schema=schema))
     return data
 
 
@@ -346,19 +346,19 @@ def tensor_to_record_batch(
         if hasattr(pa_mod, "RecordBatch") and hasattr(getattr(pa_mod, "RecordBatch"), "from_arrays") and hasattr(pa_mod, "array"):
             try:
                 pa_col = getattr(pa_mod, "array")(arr if ndim == 1 else [getattr(arr, "item")()])
-                return typing.cast(EagerValue, getattr(pa_mod, "RecordBatch").from_arrays([pa_col], names=col_names))
+                return as_tensor(getattr(pa_mod, "RecordBatch").from_arrays([pa_col], names=col_names))
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return {col_names[0]: arr}
 
-    shape = typing.cast(tuple[int, ...], getattr(arr, "shape"))
+    shape = as_shape(getattr(arr, "shape"))
     num_cols = shape[1]
     col_names = list(names) if names and len(names) == num_cols else [f"f{i}" for i in range(num_cols)]
-    arr_proto = typing.cast(EagerTensorProtocol, arr)
+    arr_proto = as_tensor(arr)
     if hasattr(pa_mod, "RecordBatch") and hasattr(getattr(pa_mod, "RecordBatch"), "from_arrays") and hasattr(pa_mod, "array"):
         try:
             col_arrays = [getattr(pa_mod, "array")(arr_proto[:, i]) for i in range(num_cols)]
-            return typing.cast(EagerValue, getattr(pa_mod, "RecordBatch").from_arrays(col_arrays, names=col_names))
+            return as_tensor(getattr(pa_mod, "RecordBatch").from_arrays(col_arrays, names=col_names))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return {col_names[i]: arr_proto[:, i] for i in range(num_cols)}
@@ -383,7 +383,7 @@ def _stack_columns_1d(columns: list[EagerValue], dtype: str | None = None) -> Ea
     num_cols = len(pa_cols)
     concat_buf = pa.concat_arrays(pa_cols).to_numpy(zero_copy_only=False)
     reshaped = getattr(getattr(concat_buf, "reshape")((num_cols, num_rows)), "T")
-    return typing.cast(EagerValue, getattr(reshaped, "copy")())
+    return as_tensor(getattr(reshaped, "copy")())
 
 
 def _dict_to_tensor(
@@ -492,7 +492,7 @@ def tensor_to_arrow_tensor(
     pa_mod = _get_pa_module()
     if hasattr(pa_mod, "Tensor") and hasattr(getattr(pa_mod, "Tensor"), "from_numpy"):
         try:
-            return typing.cast(EagerValue, getattr(pa_mod, "Tensor").from_numpy(arr))
+            return as_tensor(getattr(pa_mod, "Tensor").from_numpy(arr))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return arr
@@ -605,7 +605,7 @@ def from_arrow(
 
     # Scalar
     if hasattr(data, "as_py"):
-        return typing.cast(EagerValue, getattr(data, "as_py")())
+        return as_tensor(getattr(data, "as_py")())
 
     # Fallback
     arr = _pa_to_ndarray(data)

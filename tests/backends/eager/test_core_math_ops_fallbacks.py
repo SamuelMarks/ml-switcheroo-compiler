@@ -11,6 +11,7 @@ import numpy as np
 import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
@@ -83,7 +84,7 @@ class MissingPrimaryMockBackend:
             name: Test parameter `name`.
         """
         if name in ["random", "nn", "linalg", "fft", "signal", "special", "image"]:
-            return typing.cast("EagerTensorProtocol", MockNamespace())
+            return as_tensor(MockNamespace())
 
         def _missing(*args: EagerValue, **kwargs: EagerValue) -> None:
             """Test function _missing.
@@ -199,11 +200,11 @@ def _disabled_test_core_math_ops_branches_sub_5(_state: dict[str, EagerTensorPro
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     try:
-        typing.cast("EagerTensorProtocol", getattr(mod, "_global_adaptive_pool_mock"))(full_backend, dummy_input, 1)
+        as_tensor(getattr(mod, "_global_adaptive_pool_mock"))(full_backend, dummy_input, 1)
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     try:
-        typing.cast("EagerTensorProtocol", getattr(mod, "_global_adaptive_pool_mock"))(full_backend, dummy_input, (1, 1))
+        as_tensor(getattr(mod, "_global_adaptive_pool_mock"))(full_backend, dummy_input, (1, 1))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     _state.update(locals())
@@ -236,7 +237,7 @@ def _disabled_test_core_math_ops_branches_sub_6(_state: dict[str, EagerTensorPro
             return [1.0]
 
     try:
-        mod._allclose(full_backend, dummy_input, dummy_input, rtol=typing.cast("EagerValue", MockData()))
+        mod._allclose(full_backend, dummy_input, dummy_input, rtol=as_tensor(MockData()))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     getattr(_state, "update")({"MockData": MockData})
@@ -262,7 +263,7 @@ def _disabled_test_core_math_ops_branches_sub_7(_state: dict[str, EagerTensorPro
             return [1.0]
 
     try:
-        mod._allclose(full_backend, dummy_input, dummy_input, rtol=typing.cast("EagerValue", MockData2()))
+        mod._allclose(full_backend, dummy_input, dummy_input, rtol=as_tensor(MockData2()))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
 
@@ -298,11 +299,11 @@ def _disabled_test_core_math_ops_branches_sub_8(_state: dict[str, EagerTensorPro
         pass
 
     try:
-        typing.cast("EagerCallableProtocol", mod._apply_causal_mask)(typing.cast("EagerCallableProtocol", NoTriuBackend)(), typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
+        as_callable(mod._apply_causal_mask)(as_callable(NoTriuBackend)(), as_callable(np.ones)((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     try:
-        typing.cast("EagerCallableProtocol", mod._apply_softmax)(typing.cast("EagerCallableProtocol", NoTriuBackend)(), typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
+        as_callable(mod._apply_softmax)(as_callable(NoTriuBackend)(), as_callable(np.ones)((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     getattr(_state, "update")({"NoTriuBackend": NoTriuBackend})
@@ -433,7 +434,7 @@ def _disabled_test_core_math_ops_branches_sub_11(_state: dict[str, EagerTensorPr
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
-        if typing.cast("EagerValue", original_scipy) is not None:
+        if as_tensor(original_scipy) is not None:
             sys.modules["scipy.special"] = original_scipy
         else:
             del sys.modules["scipy.special"]
@@ -471,8 +472,8 @@ def _disabled_test_core_math_ops_branches_sub_12(_state: dict[str, EagerTensorPr
             """
             return x
 
-    mod._all_gather(typing.cast("BackendModuleProtocol", BackendWithStack()), np.ones((2, 2)))
-    mod._all_gather(typing.cast("BackendModuleProtocol", BackendWithArray()), np.ones((2, 2)))
+    mod._all_gather(as_mod(BackendWithStack()), np.ones((2, 2)))
+    mod._all_gather(as_mod(BackendWithArray()), np.ones((2, 2)))
     getattr(_state, "update")({"BackendWithArray": BackendWithArray, "BackendWithStack": BackendWithStack})
     _state.update(locals())
 
@@ -501,7 +502,7 @@ def _disabled_test_core_math_ops_branches_sub_13(_state: dict[str, EagerTensorPr
         data = MockData3()
 
     try:
-        mod._allclose(full_backend, dummy_input, dummy_input, rtol=typing.cast("EagerValue", MockData4()), atol=typing.cast("EagerValue", MockData4()), equal_nan=typing.cast("EagerValue", MockData4()))
+        mod._allclose(full_backend, dummy_input, dummy_input, rtol=as_tensor(MockData4()), atol=as_tensor(MockData4()), equal_nan=as_tensor(MockData4()))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     import sys
@@ -544,7 +545,7 @@ def _disabled_test_core_math_ops_branches_sub_14(_state: dict[str, EagerTensorPr
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
-            if typing.cast("EagerValue", original_scipy) is not None:
+            if as_tensor(original_scipy) is not None:
                 sys.modules["scipy.special"] = original_scipy
             else:
                 del sys.modules["scipy.special"]
@@ -668,11 +669,11 @@ def test_core_math_ops_missing_coverage_new() -> None:
 
     empty_backend = EmptyMockBackend()
     with pytest.raises((AttributeError, TypeError, ValueError)):
-        mod._householder_product(typing.cast("BackendModuleProtocol", empty_backend), np.array([[1.0]]), np.array([1.0]))
-    res_bp = mod._np_bandpart(typing.cast("BackendModuleProtocol", empty_backend), np.ones((2, 2)), num_lower=-1, num_upper=-1)
+        mod._householder_product(as_mod(empty_backend), np.array([[1.0]]), np.array([1.0]))
+    res_bp = mod._np_bandpart(as_mod(empty_backend), np.ones((2, 2)), num_lower=-1, num_upper=-1)
     assert res_bp is not None
     with pytest.raises((AttributeError, TypeError, ValueError)):
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(mod, "_np_gamma")))(empty_backend, x=None)
+        as_callable(as_tensor(getattr(mod, "_np_gamma")))(empty_backend, x=None)
     original_scipy = sys.modules.get("scipy.special")
     import types
 
@@ -684,9 +685,9 @@ def test_core_math_ops_missing_coverage_new() -> None:
     sys.modules["scipy.special"] = dummy_scipy_special
     try:
         try:
-            typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(mod, "_np_gamma")))(empty_backend, typing.cast("EagerCallableProtocol", np.array)([1.0]))
-            mod._np_xlog1py(typing.cast("BackendModuleProtocol", empty_backend), np.array([1.0]), np.array([1.0]))
-            mod._np_xlogy(typing.cast("BackendModuleProtocol", empty_backend), np.array([1.0]), np.array([1.0]))
+            as_callable(as_tensor(getattr(mod, "_np_gamma")))(empty_backend, as_callable(np.array)([1.0]))
+            mod._np_xlog1py(as_mod(empty_backend), np.array([1.0]), np.array([1.0]))
+            mod._np_xlogy(as_mod(empty_backend), np.array([1.0]), np.array([1.0]))
         except (AttributeError, TypeError, ValueError):
             _caught_err = True
     finally:
@@ -759,5 +760,5 @@ def test_core_math_ops_missing_coverage_new() -> None:
             """
             return a
 
-    mod._scaled_dot_product_attention_eager(typing.cast("BackendModuleProtocol", AttnBackend()), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), scale=1.0)
+    mod._scaled_dot_product_attention_eager(as_mod(AttnBackend()), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)), scale=1.0)
     assert callable(test_core_math_ops_missing_coverage_new)

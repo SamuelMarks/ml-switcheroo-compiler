@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import importlib
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 # Comprehensive mapping of standard IR operations to pyarrow.compute functions
@@ -216,7 +215,7 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
         EagerValue: Unwrapped raw data.
     """
     if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return typing.cast(EagerValue, getattr(arg, "data"))
+        return as_tensor(getattr(arg, "data"))
     return arg
 
 
@@ -332,7 +331,7 @@ def execute_op(
     if hasattr(pc_mod, fn_name):
         compute_fn = getattr(pc_mod, fn_name)
         try:
-            return typing.cast(EagerValue, compute_fn(*actual_args, **kwargs))
+            return as_tensor(compute_fn(*actual_args, **kwargs))
         except Exception as exc:
             msg = f"Failed executing pyarrow.compute.{fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
@@ -342,7 +341,7 @@ def execute_op(
     if target_name and hasattr(pc_mod, target_name):
         compute_fn = getattr(pc_mod, target_name)
         try:
-            return typing.cast(EagerValue, compute_fn(*actual_args, **kwargs))
+            return as_tensor(compute_fn(*actual_args, **kwargs))
         except Exception as exc:
             msg = f"Failed executing pyarrow.compute.{target_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc

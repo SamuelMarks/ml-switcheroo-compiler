@@ -6,7 +6,6 @@ import logging
 import resource
 import sys
 import time
-import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
@@ -114,7 +113,7 @@ class EdgeProfiler:
             """
             if has_ops:
                 try:
-                    return typing.cast(EagerValue, evaluate_graph(graph, eval_inputs))
+                    return evaluate_graph(graph, eval_inputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             return edge_inputs

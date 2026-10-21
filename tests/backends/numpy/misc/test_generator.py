@@ -13,9 +13,10 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.formatters import FormatterContext, OpFormatter
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_numpy_generator_visit_kwargs_only() -> None:
@@ -74,7 +75,7 @@ def test_numpy_generator_kwargs_only() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     op_type = "Zeros"
-    input_vars = typing.cast("list[EagerTensorProtocol]", [])
+    input_vars = as_tensor_list([])
     kwargs = {"shape": "(2, 2)"}
 
     class Gen(gen.NumpyGenerator):
@@ -89,7 +90,7 @@ def test_numpy_generator_kwargs_only() -> None:
             pass
 
     Gen()
-    res = typing.cast("EagerCallableProtocol", OpFormatter.format_generic_fallback)(typing.cast("EagerCallableProtocol", FormatterContext)(prefix="out", op_type=op_type, input_vars=input_vars, kwargs=kwargs))
+    res = as_callable(OpFormatter.format_generic_fallback)(as_callable(FormatterContext)(prefix="out", op_type=op_type, input_vars=input_vars, kwargs=kwargs))
     assert "zeros" in str(res)
 
 
@@ -181,27 +182,27 @@ def test_numpy_generator_coverage(tmp_path: EagerTensorProtocol) -> None:
             """
             self.op_type = op_type
             self.id = id
-            self.attributes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.attributes = as_tensor_dict({})
 
     class DummyGraph:
         """Test class DummyGraph."""
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("list[EagerTensorProtocol]", [])
+            self.nodes = as_tensor_list([])
 
-    assert typing.cast("EagerValue", NumpyTypeTranslator.get_fallback_prefix()) == "np"
-    assert typing.cast("EagerValue", NumpyASTVisitor._format_kwargs({"a": 1})) == "a=1"
-    assert typing.cast("EagerCallableProtocol", NumpyASTVisitor.generic_visit)(typing.cast("EagerCallableProtocol", DummyNode)("Unknown"), []) == "np.unknown()"
-    gen = typing.cast("EagerCallableProtocol", NumpyGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    assert as_tensor(NumpyTypeTranslator.get_fallback_prefix()) == "np"
+    assert as_tensor(NumpyASTVisitor._format_kwargs({"a": 1})) == "a=1"
+    assert as_callable(NumpyASTVisitor.generic_visit)(as_callable(DummyNode)("Unknown"), []) == "np.unknown()"
+    gen = as_callable(NumpyGenerator)(as_callable(DummyGraph)())
     DummyNode("Einsum")
     DummyNode("PowerIteration")
-    assert typing.cast("EagerValue", gen.get_fallback_prefix()) == "np"
+    assert as_tensor(gen.get_fallback_prefix()) == "np"
     ops = gen.get_ops_map({})
-    assert isinstance(typing.cast("EagerValue", ops), dict)
-    assert typing.cast("EagerValue", gen.get_fallback_prefix()) == "np"
+    assert isinstance(as_tensor(ops), dict)
+    assert as_tensor(gen.get_fallback_prefix()) == "np"
     helpers = gen.get_helper_functions()
-    assert isinstance(typing.cast("EagerValue", helpers), list)
+    assert isinstance(as_tensor(helpers), list)
     with pytest.raises(Exception, match=".*"):
         NumpyGenerator.load("")
     dummy_npy = str(tmp_path / "dummy.npy")

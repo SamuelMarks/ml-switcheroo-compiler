@@ -9,10 +9,10 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_signal import (
     _np_windowhann,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_math_signal_coverage() -> None:
@@ -36,7 +36,7 @@ def test_math_signal_coverage() -> None:
             """
             return "correlate_val"
 
-    assert _correlate(typing.cast("BackendModuleProtocol", CorrelateBackend()), [1, 2], [1]) == "correlate_val"
+    assert _correlate(as_mod(CorrelateBackend()), [1, 2], [1]) == "correlate_val"
 
     # Case B: backend lacks correlate -> falls back to np.correlate
     class EmptyBackend:
@@ -45,12 +45,12 @@ def test_math_signal_coverage() -> None:
         pass
 
     eb = EmptyBackend()
-    res1 = _correlate(typing.cast("BackendModuleProtocol", eb), [1, 2, 3], [0, 1])
-    assert typing.cast("EagerCallableProtocol", len)(res1) == 2
+    res1 = _correlate(as_mod(eb), [1, 2, 3], [0, 1])
+    assert as_callable(len)(res1) == 2
 
     # Case with kwargs dictionary containing mode
-    res2 = _correlate(typing.cast("BackendModuleProtocol", eb), [1, 2, 3], [0, 1], mode="full")
-    assert typing.cast("EagerCallableProtocol", len)(res2) == 4
+    res2 = _correlate(as_mod(eb), [1, 2, 3], [0, 1], mode="full")
+    assert as_callable(len)(res2) == 4
 
     # Case where kwargs does not have get
     class NoGetDict:
@@ -59,8 +59,8 @@ def test_math_signal_coverage() -> None:
         pass
 
     # Pass non-dict or kwargs without get by unpacking invalid type or passing kwargs
-    res3 = _correlate(typing.cast("BackendModuleProtocol", eb), [1, 2, 3], [0, 1], **{})
-    assert typing.cast("EagerCallableProtocol", len)(res3) == 2
+    res3 = _correlate(as_mod(eb), [1, 2, 3], [0, 1], **{})
+    assert as_callable(len)(res3) == 2
 
     # _np_windowhann
     # Case A: backend has windowhann
@@ -76,7 +76,7 @@ def test_math_signal_coverage() -> None:
             """
             return "windowhann_val"
 
-    assert _np_windowhann(typing.cast("BackendModuleProtocol", WindowhannBackend()), 5) == "windowhann_val"
+    assert _np_windowhann(as_mod(WindowhannBackend()), 5) == "windowhann_val"
 
     # Case B: backend lacks windowhann -> fallback to np.hanning
     class EmptyBackend2:
@@ -84,8 +84,8 @@ def test_math_signal_coverage() -> None:
 
         pass
 
-    hann_res = _np_windowhann(typing.cast("BackendModuleProtocol", EmptyBackend2()), 5)
-    assert typing.cast("EagerCallableProtocol", len)(hann_res) == 5
+    hann_res = _np_windowhann(as_mod(EmptyBackend2()), 5)
+    assert as_callable(len)(hann_res) == 5
 
     # Registry
     assert global_eager_registry.get("Correlate") is not None

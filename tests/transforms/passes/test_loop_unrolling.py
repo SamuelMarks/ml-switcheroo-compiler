@@ -8,9 +8,10 @@ from ml_switcheroo_ir import AttributeValue, NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.loop_unrolling import loop_unrolling_pass
+from tests.testing_utils import as_attr_val, as_attrs, as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_loop_unrolling_pass() -> None:
@@ -25,7 +26,7 @@ def test_loop_unrolling_pass() -> None:
 
     # Create main graph
     graph = IRGraph()
-    loop_node = IRNode(id="loop", op_type="WhileLoop", inputs=["init_val"], attributes=typing.cast("dict[str, AttributeValue]", {"max_iterations": 2, "body": body_graph}))
+    loop_node = IRNode(id="loop", op_type="WhileLoop", inputs=["init_val"], attributes=as_attrs({"max_iterations": 2, "body": body_graph}))
     graph.nodes["loop"] = loop_node
 
     # Run unrolling pass
@@ -95,7 +96,7 @@ def test_unroll_fori_loop_node() -> None:
         id="fori",
         op_type="ForiLoop",
         inputs=["init_x"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"lower": 0, "upper": 3, "body": body}),
+        attributes=as_attrs({"lower": 0, "upper": 3, "body": body}),
     )
     g.nodes = NodeDict({"init_x": IRNode(id="init_x", op_type="Input"), "fori": fori_node})
     res = loop_unrolling_pass(g)
@@ -120,7 +121,7 @@ def test_loop_unrolling_extra_coverage() -> None:
 
     node = IRNode(id="n1", op_type="WhileLoop")
     heuristics = [{"op_type": "Add"}, {"op_type": "WhileLoop", "other": 1}, {"op_type": "WhileLoop", "max_iterations": "string"}, {"op_type": "WhileLoop", "max_iterations": 5}]
-    assert typing.cast("EagerCallableProtocol", detect_static_bound)(node, heuristics) == 5
+    assert as_callable(detect_static_bound)(node, heuristics) == 5
 
     # graph loops unrolling branches
     g = IRGraph()
@@ -141,7 +142,7 @@ def test_loop_unrolling_extra_coverage() -> None:
     body.outputs = ["body_out"]
     bln = LogicalNode(id="body_node", op_type="Add", inputs=["body_in"])
     body.nodes["body_node"] = bln
-    n3.attributes["body"] = typing.cast("AttributeValue", body)
+    n3.attributes["body"] = as_attr_val(body)
 
     g.nodes["n3"] = n3
 
@@ -154,7 +155,7 @@ def test_loop_unrolling_extra_coverage() -> None:
     body2.outputs = ["body_out"]
     n4_inner = IRNode(id="n4_inner", op_type="Add", inputs=["body_in"], device="cpu", stream="s0")
     body2.nodes["n4_inner"] = n4_inner
-    n4.attributes["body"] = typing.cast("AttributeValue", body2)
+    n4.attributes["body"] = as_attr_val(body2)
     g.nodes["n4"] = n4
 
     loop_unrolling_pass(g)

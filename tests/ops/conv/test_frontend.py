@@ -13,9 +13,10 @@ import ml_switcheroo_compiler.ops.nn.conv3d as conv3d
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_conv_frontend_cov() -> None:
@@ -46,7 +47,7 @@ def test_conv_frontend_cov() -> None:
             """
             return data
 
-    typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_conv", MockBackendConv)
+    as_callable(BackendRegistry.register)("mock_conv", MockBackendConv)
 
     try:
         config.eager_mode = True
@@ -62,25 +63,23 @@ def test_conv_frontend_cov() -> None:
                 self.device = None
                 self.data = np.ones((2, 2, 2))
 
-        t = typing.cast("EagerCallableProtocol", Tensor)(
-            typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", types.SimpleNamespace)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)().dtype, device=None, requires_grad=False, trainable=False)
-        )
+        t = as_callable(Tensor)(as_callable(DummyTensor)(), as_callable(types.SimpleNamespace)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)().dtype, device=None, requires_grad=False, trainable=False))
 
         # conv1d
-        typing.cast("EagerCallableProtocol", conv1d.conv1d)(t, t, config_obj=None)
-        typing.cast("EagerCallableProtocol", conv1d.conv1d_transpose)(t, t)
-        typing.cast("EagerCallableProtocol", conv1d.depthwise_conv1d)(t, t, config_obj=None)
-        typing.cast("EagerCallableProtocol", conv1d.separable_conv1d)(t, t, t)
+        as_callable(conv1d.conv1d)(t, t, config_obj=None)
+        as_callable(conv1d.conv1d_transpose)(t, t)
+        as_callable(conv1d.depthwise_conv1d)(t, t, config_obj=None)
+        as_callable(conv1d.separable_conv1d)(t, t, t)
 
         # conv2d
-        typing.cast("EagerCallableProtocol", conv2d.conv2d)(t, t, config_obj=None)
-        typing.cast("EagerCallableProtocol", conv2d.conv2d_transpose)(t, t)
-        typing.cast("EagerCallableProtocol", conv2d.depthwise_conv2d)(t, t, config_obj=None)
-        typing.cast("EagerCallableProtocol", conv2d.separable_conv2d)(t, t, t)
+        as_callable(conv2d.conv2d)(t, t, config_obj=None)
+        as_callable(conv2d.conv2d_transpose)(t, t)
+        as_callable(conv2d.depthwise_conv2d)(t, t, config_obj=None)
+        as_callable(conv2d.separable_conv2d)(t, t, t)
 
         # conv3d
-        typing.cast("EagerCallableProtocol", conv3d.conv3d)(t, t, config_obj=None)
-        typing.cast("EagerCallableProtocol", conv3d.conv3d_transpose)(t, t)
+        as_callable(conv3d.conv3d)(t, t, config_obj=None)
+        as_callable(conv3d.conv3d_transpose)(t, t)
 
     finally:
         config.eager_mode = orig_eager
@@ -120,7 +119,7 @@ def test_conv_frontend_cov_config_obj_not_none() -> None:
                 """
                 return types.SimpleNamespace(shape=(1, 1))
 
-        typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_conv", MockBackendConv)
+        as_callable(BackendRegistry.register)("mock_conv", MockBackendConv)
 
         config.eager_mode = True
         config.backend = "mock_conv"
@@ -135,18 +134,16 @@ def test_conv_frontend_cov_config_obj_not_none() -> None:
                 self.device = None
                 self.data = np.ones((2, 2, 2))
 
-        t = typing.cast("EagerCallableProtocol", Tensor)(
-            typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", types.SimpleNamespace)(shape=(2, 2, 2), dtype=typing.cast("EagerCallableProtocol", DummyTensor)().dtype, device=None, requires_grad=False, trainable=False)
-        )
+        t = as_callable(Tensor)(as_callable(DummyTensor)(), as_callable(types.SimpleNamespace)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)().dtype, device=None, requires_grad=False, trainable=False))
 
         # conv1d
-        typing.cast("EagerCallableProtocol", conv1d.conv1d)(t, t, config_obj=typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(conv1d, "_build_conv_config")))({}, ((0, 2, 1), (2, 1, 0), (0, 2, 1))))
+        as_callable(conv1d.conv1d)(t, t, config_obj=as_callable(as_tensor(getattr(conv1d, "_build_conv_config")))({}, ((0, 2, 1), (2, 1, 0), (0, 2, 1))))
 
         # conv2d
-        typing.cast("EagerCallableProtocol", conv2d.conv2d)(t, t, config_obj=typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(conv2d, "_build_conv_config")))({}, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
+        as_callable(conv2d.conv2d)(t, t, config_obj=as_callable(as_tensor(getattr(conv2d, "_build_conv_config")))({}, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
 
         # conv3d
-        typing.cast("EagerCallableProtocol", conv3d.conv3d)(t, t, config_obj=typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(conv3d, "_build_conv_config")))({}, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
+        as_callable(conv3d.conv3d)(t, t, config_obj=as_callable(as_tensor(getattr(conv3d, "_build_conv_config")))({}, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
 
     finally:
         config.eager_mode = orig_eager

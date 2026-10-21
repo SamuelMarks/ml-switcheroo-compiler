@@ -6,7 +6,7 @@ import builtins  # noqa: F401
 import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -22,7 +22,7 @@ def _fromfunction(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "fromfunction")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "fromfunction")(*args, **kwargs))
 
 
 @global_eager_registry.register("FromDlpack")
@@ -37,7 +37,7 @@ def _from_dlpack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "from_dlpack")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "from_dlpack")(*args, **kwargs))
 
 
 @global_eager_registry.register("Fromiter")
@@ -52,7 +52,7 @@ def _fromiter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "fromiter")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "fromiter")(*args, **kwargs))
 
 
 @global_eager_registry.register("Frompyfunc")
@@ -67,7 +67,7 @@ def _frompyfunc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "frompyfunc")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "frompyfunc")(*args, **kwargs))
 
 
 @global_eager_registry.register("Geomspace")
@@ -82,7 +82,7 @@ def _geomspace(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "geomspace")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "geomspace")(*args, **kwargs))
 
 
 @global_eager_registry.register("Mgrid")
@@ -97,7 +97,7 @@ def _mgrid(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "mgrid")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "mgrid")(*args, **kwargs))
 
 
 @global_eager_registry.register("Ogrid")
@@ -112,7 +112,7 @@ def _ogrid(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "ogrid")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "ogrid")(*args, **kwargs))
 
 
 @global_eager_registry.register("NpFromfunction")
@@ -129,7 +129,7 @@ def _np_fromfunction(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     func = getattr(backend_module, "fromfunction", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fromfunction(*args, **kwargs)
 
 
@@ -147,7 +147,7 @@ def _np_fromiter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """
     func = getattr(backend_module, "fromiter", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fromiter(*args, **kwargs)
 
 
@@ -165,5 +165,5 @@ def _np_frompyfunc(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "frompyfunc", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).frompyfunc(*args, **kwargs)

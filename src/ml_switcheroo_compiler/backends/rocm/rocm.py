@@ -14,7 +14,7 @@ from types import ModuleType
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_bytes, as_int_list, as_str, as_tensor
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
@@ -26,7 +26,6 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 cupy: ModuleType | None = None
@@ -97,7 +96,7 @@ def _prepare_rocm_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) ->
         elif hasattr(arg, "data") and hasattr(getattr(arg, "data"), "tobytes"):
             input_buffers[input_name] = getattr(arg, "data").tobytes()
         else:
-            input_buffers[input_name] = typing.cast("TypedVariadicCallable[bytes]", bytes)(arg)
+            input_buffers[input_name] = as_bytes(arg)
     return input_buffers
 
 
@@ -117,7 +116,7 @@ def _evaluate_rocm_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Eag
     res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
         return res_dict.get(graph.outputs[0])
-    return typing.cast(EagerValue, tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
+    return as_tensor(tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
 
 
 ROCM_SYNTH_MATH_MAP: dict[str, str] = {
@@ -311,7 +310,7 @@ class RocmCodeGenerator(BaseGenerator):
             hip.append(f"    float* {out_name};")
             hip.append(f"    HIP_CHECK(hipMalloc(&{out_name}, {bytes_alloc}));")
             hip.append(f"    dim3 block_{node_idx}(256, 1, 1);")
-            (grid_x, grid_y, grid_z), launch_args = typing.cast("TypedVariadicCallable[tuple[tuple[str, str, str], list[str]]]", resolve_hardware_launch_grid_and_args)(node, {}, node_buffers, out_name, num_elements, node_idx, self.graph)
+            (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, {}, node_buffers, out_name, num_elements, node_idx, self.graph)
             hip.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
             kernel_fn = f"fused_elementwise_kernel_{node_idx}"
             hip.append(f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});")
@@ -324,10 +323,10 @@ class RocmCodeGenerator(BaseGenerator):
             return
         num_elements, bytes_alloc = _calculate_node_bytes(node)
         out_name = self._allocate_node_outputs(node, node_idx, node_buffers, bytes_alloc, hip)
-        wg = typing.cast(list[int], getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg = as_int_list(getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
         hip.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
-        (grid_x, grid_y, grid_z), launch_args = typing.cast("TypedVariadicCallable[tuple[tuple[str, str, str], list[str]]]", resolve_hardware_launch_grid_and_args)(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
+        (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
         hip.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
 
         kernel_fn = _extract_kernel_name(getattr(tpl, "get")("body", ""), op_type.lower())
@@ -443,7 +442,7 @@ class RocmCodeGenerator(BaseGenerator):
                     input_buffers = _prepare_rocm_input_buffers(graph, args)
                     out_dict = getattr(runner_inst, "execute_graph")(graph, input_buffers)
                     if len(graph.outputs) == 1:
-                        return typing.cast(EagerValue, out_dict.get(graph.outputs[0]))
+                        return as_tensor(out_dict.get(graph.outputs[0]))
                     return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -593,7 +592,7 @@ class ROCmRunner:
         if self.mode == "cupy" and cupy is not None:
             src = cupy.ndarray((size,), dtype=cupy.uint8, memptr=cupy.cuda.MemoryPointer(cupy.cuda.UnownedMemory(device_ptr.value, size, device_ptr), 0))
             arr = src.get()
-            return typing.cast(bytes, arr.tobytes())
+            return as_bytes(arr.tobytes())
 
         if self.rocm_lib:
             host_data = ctypes.create_string_buffer(size)
@@ -848,7 +847,7 @@ class ROCmRunner:
             if tpl_opt is None:
                 return
             tpl = tpl_opt
-            kernel_fn = _extract_kernel_name(typing.cast("str", tpl.get("body", "")), op_type)
+            kernel_fn = _extract_kernel_name(as_str(tpl.get("body", "")), op_type)
 
         block_cfg, grid_cfg = query_optimal_launch_geometry(
             getattr(node, "shape_metadata", None) or (num_elements,),

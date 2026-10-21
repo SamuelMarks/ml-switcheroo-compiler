@@ -8,6 +8,7 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.filtering import gaussian_blur, iou, median_filter, non_max_suppression, random_gaussian_blur, random_sharpness, sharpen
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -52,10 +53,10 @@ def test_vision_filtering_funcs(mocker: EagerTensorProtocol) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.filtering.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(gaussian_blur(t), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(median_filter(t, 3), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(iou(t, t), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(non_max_suppression(t, t, 1), "config")).shape == (2, 3)
+    assert as_tensor(getattr(gaussian_blur(t), "config")).shape == (2, 3)
+    assert as_tensor(getattr(median_filter(t, 3), "config")).shape == (2, 3)
+    assert as_tensor(getattr(iou(t, t), "config")).shape == (2, 3)
+    assert as_tensor(getattr(non_max_suppression(t, t, 1), "config")).shape == (2, 3)
 
 
 def test_vision_filtering_kwargs(mocker: EagerTensorProtocol) -> None:
@@ -84,9 +85,9 @@ def test_vision_filtering_eager_extra(mocker: EagerTensorProtocol) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.filtering.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(sharpen(t), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(random_gaussian_blur(t, 3, 1), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(random_sharpness(t, 1.0), "config")).shape == (2, 3)
+    assert as_tensor(getattr(sharpen(t), "config")).shape == (2, 3)
+    assert as_tensor(getattr(random_gaussian_blur(t, 3, 1), "config")).shape == (2, 3)
+    assert as_tensor(getattr(random_sharpness(t, 1.0), "config")).shape == (2, 3)
 
 
 def test_median_filter_tuple(mocker: EagerTensorProtocol) -> None:

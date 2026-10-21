@@ -29,9 +29,10 @@ from ml_switcheroo_compiler.distributed.strategy import (
     _load_webrtc_topology,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _make_graph() -> EagerValue:
@@ -53,17 +54,17 @@ def test_parameter_server_strategy() -> None:
     graph = _make_graph()
     getattr(getattr(graph, "nodes"), "__setitem__")("const_node", IRNode(id="const_node", op_type="Constant", inputs=[], attributes={}))
     getattr(getattr(graph, "nodes"), "__setitem__")("scalar_const", IRNode(id="scalar_const", op_type="Constant", inputs=[], attributes={"is_scalar": True}))
-    typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(graph, "nodes")), "__getitem__")("node_1")).inputs.extend(["const_node", "scalar_const"])
+    as_tensor(getattr(as_tensor(getattr(graph, "nodes")), "__getitem__")("node_1")).inputs.extend(["const_node", "scalar_const"])
     getattr(getattr(graph, "nodes"), "__setitem__")("add_after", IRNode(id="add_after", op_type="Add", inputs=["grad_node"], attributes={}))
-    typing.cast("EagerCallableProtocol", strategy.push_gradients)(graph)
-    typing.cast("EagerCallableProtocol", strategy.pull_weights)(graph)
+    as_callable(strategy.push_gradients)(graph)
+    as_callable(strategy.pull_weights)(graph)
 
     # Verify scalar constant was NOT replaced by Recv
-    assert "scalar_const" in typing.cast("EagerTensorProtocol", getattr(graph, "nodes"))
-    assert "scalar_const_recv" not in typing.cast("EagerTensorProtocol", getattr(graph, "nodes"))
+    assert "scalar_const" in as_tensor(getattr(graph, "nodes"))
+    assert "scalar_const_recv" not in as_tensor(getattr(graph, "nodes"))
     # Verify parameter constant was replaced by Recv with correct attributes
-    assert "const_node_recv" in typing.cast("EagerTensorProtocol", getattr(graph, "nodes"))
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(graph, "nodes")), "__getitem__")("const_node_recv")).attributes, "__getitem__")("src_rank")) == 0
+    assert "const_node_recv" in as_tensor(getattr(graph, "nodes"))
+    assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(graph, "nodes")), "__getitem__")("const_node_recv")).attributes, "__getitem__")("src_rank")) == 0
 
     assert not strategy.push_gradients(IRGraph())
     # Empty graph -> modified is False, covering branch 87->90
@@ -105,8 +106,8 @@ def test_data_parallel_strategy() -> None:
     """Test function test_data_parallel_strategy."""
     strategy = DataParallelStrategy(mesh_axis="dp")
     graph = _make_graph()
-    assert typing.cast("EagerCallableProtocol", strategy.sync_gradients)(graph)
-    assert any(n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp" for n in typing.cast("EagerTensorProtocol", getattr(graph, "nodes")).values())
+    assert as_callable(strategy.sync_gradients)(graph)
+    assert any(n.op_type == "AllReduce" and n.attributes.get("mesh_axis") == "dp" for n in as_tensor(getattr(graph, "nodes")).values())
 
     # Try with empty graph
     assert not strategy.sync_gradients(IRGraph())
@@ -134,8 +135,8 @@ def test_pipeline_parallel_strategy() -> None:
     strategy = PipelineParallelismStrategy(num_microbatches=4, topology_name="invalid_one")
     # Will use fallback config
     graph = _make_graph()
-    assert typing.cast("EagerCallableProtocol", strategy.lower)(graph)
-    assert "pipeline_schedule" in typing.cast("EagerTensorProtocol", getattr(graph, "attributes"))
+    assert as_callable(strategy.lower)(graph)
+    assert "pipeline_schedule" in as_tensor(getattr(graph, "attributes"))
     assert not strategy.lower(IRGraph())
 
     strategy_browser = PipelineParallelismStrategy(target_env="browser")
@@ -143,7 +144,7 @@ def test_pipeline_parallel_strategy() -> None:
 
     with patch("ml_switcheroo_compiler.distributed.strategy._load_strategy_config", return_value={}):
         strategy_noyaml = PipelineParallelismStrategy(num_microbatches=4)
-        typing.cast("EagerCallableProtocol", strategy_noyaml.lower)(typing.cast("EagerCallableProtocol", _make_graph)())
+        as_callable(strategy_noyaml.lower)(as_callable(_make_graph)())
 
     # Test yaml driven schedule by mocking _load_strategy_config
     config = TopologyConfig(
@@ -162,13 +163,13 @@ def test_pipeline_parallel_strategy() -> None:
         m.return_value = {"custom": config}
         strategy = PipelineParallelismStrategy(topology_name="custom")
         graph = _make_graph()
-        assert typing.cast("EagerCallableProtocol", strategy.lower)(graph)
+        assert as_callable(strategy.lower)(graph)
         assert isinstance(strategy.get_communication_protocol(), str)
     s2 = MultiWorkerMirroredStrategy(target_env="browser")
     assert s2.get_communication_protocol() == "webrtc"
 
     with pytest.raises(ValueError):
-        typing.cast("EagerCallableProtocol", strategy.split_into_stages)(graph, 0)
+        as_callable(strategy.split_into_stages)(graph, 0)
 
     with patch("ml_switcheroo_compiler.distributed.config_models.PipelineTopologiesConfig.get", return_value=None):
         with pytest.raises(ValueError):
@@ -180,10 +181,10 @@ def test_mesh_sharding_strategy() -> None:
     strategy = MeshShardingStrategy()
     graph = _make_graph()
     # propagate_layouts is pass
-    typing.cast("EagerCallableProtocol", strategy.propagate_layouts)(graph)
+    as_callable(strategy.propagate_layouts)(graph)
 
     object.__setattr__(getattr(getattr(graph, "nodes"), "__getitem__")("node_1"), "sharding", "shard1")
-    typing.cast("EagerCallableProtocol", strategy.lower_sharding)(graph)
+    as_callable(strategy.lower_sharding)(graph)
     strategy.lower_sharding(IRGraph())
     assert graph is not None
 
@@ -207,9 +208,9 @@ def test_declarative_cluster_topology_and_cost_matrices() -> None:
 def test_server_and_coordinator() -> None:
     """Test function test_server_and_coordinator."""
     coord = Coordinator()
-    assert not typing.cast("EagerValue", coord.joined)
+    assert not as_tensor(coord.joined)
     coord.join()
-    assert typing.cast("EagerValue", coord.joined)
+    assert as_tensor(coord.joined)
 
     server = Server(server_def={"hello": "world"})
     # Start and stop to cover thread
@@ -534,7 +535,7 @@ def test_pipeline_engine_missing_branches() -> None:
     engine.generate_microbatch_loop(g3)
 
     # 739->724: custom phase type in generate_schedule
-    typing.cast("EagerTensorProtocol", getattr(engine.config.schedule, "phases")).append(SchedulePhaseConfig(type="custom_unknown", count_expression="1", operations=["custom_op"]))
+    as_tensor(getattr(engine.config.schedule, "phases")).append(SchedulePhaseConfig(type="custom_unknown", count_expression="1", operations=["custom_op"]))
     sched = engine.generate_schedule(IRGraph())
     assert isinstance(sched, list)
 
@@ -545,5 +546,5 @@ def test_pipeline_engine_missing_branches() -> None:
         g4.nodes[f"node_{i}"] = IRNode(id=f"node_{i}", op_type="Identity", inputs=[])
     res = engine.lower(g4)
     assert res is True
-    assert typing.cast("EagerTensorProtocol", getattr(g4, "attributes"))["existing"] == 123
-    assert "pipeline_schedule" in typing.cast("EagerTensorProtocol", getattr(g4, "attributes"))
+    assert as_tensor(getattr(g4, "attributes"))["existing"] == 123
+    assert "pipeline_schedule" in as_tensor(getattr(g4, "attributes"))

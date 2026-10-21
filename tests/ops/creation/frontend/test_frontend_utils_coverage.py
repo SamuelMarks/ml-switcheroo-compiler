@@ -9,9 +9,10 @@ from ml_switcheroo_compiler.ops.creation.frontend_utils import (
     Geometric,
     Geomspace,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _side_effect_type_error(obj: EagerValue, dtype: EagerValue = None) -> list[EagerValue]:
@@ -64,10 +65,10 @@ def test_frontend_utils_frompyfunc_infer_shape() -> None:
     in1 = _DummyInput((2, 1))
     in2 = _DummyInput((1, 3))
     # Frompyfunc with args[3:] slicing or args <= 3
-    res1 = typing.cast("EagerCallableProtocol", fpf.infer_shape)("a", "b", "c", in1, in2)
+    res1 = as_callable(fpf.infer_shape)("a", "b", "c", in1, in2)
     assert res1 == (2, 3)
 
-    res2 = typing.cast("EagerCallableProtocol", fpf.infer_shape)(in1, in2)
+    res2 = as_callable(fpf.infer_shape)(in1, in2)
     assert res2 == (2, 3)
 
 
@@ -79,19 +80,19 @@ def test_frontend_utils_geomspace_infer_shape() -> None:
     stop = _DummyInput((4,))
 
     # axis < 0 branch
-    res_neg_axis = typing.cast("EagerCallableProtocol", gs.infer_shape)(start, stop, num=10, axis=-1)
+    res_neg_axis = as_callable(gs.infer_shape)(start, stop, num=10, axis=-1)
     assert res_neg_axis == (4, 10)
 
     # axis >= 0 branch
-    res_pos_axis = typing.cast("EagerCallableProtocol", gs.infer_shape)(start, stop, num=10, axis=0)
+    res_pos_axis = as_callable(gs.infer_shape)(start, stop, num=10, axis=0)
     assert res_pos_axis == (10, 4)
 
     # scalar start/stop
-    res_scalar = typing.cast("EagerCallableProtocol", gs.infer_shape)(1.0, 10.0, num=5)
+    res_scalar = as_callable(gs.infer_shape)(1.0, 10.0, num=5)
     assert res_scalar == (5,)
 
     # invalid num / axis exception handling
-    res_invalid = typing.cast("EagerCallableProtocol", gs.infer_shape)(start, stop, num="invalid", axis="invalid")
+    res_invalid = as_callable(gs.infer_shape)(start, stop, num="invalid", axis="invalid")
     assert res_invalid == (50, 4)
 
 
@@ -105,8 +106,8 @@ def test_frontend_utils_geometric_infer_shape() -> None:
         shape = (3, 4)
 
     # size as tuple
-    assert typing.cast("EagerCallableProtocol", geo.infer_shape)(typing.cast("EagerCallableProtocol", DummyP)(), size=(2, 5)) == (2, 5)
+    assert as_callable(geo.infer_shape)(as_callable(DummyP)(), size=(2, 5)) == (2, 5)
     # size as int
-    assert typing.cast("EagerCallableProtocol", geo.infer_shape)(typing.cast("EagerCallableProtocol", DummyP)(), size=7) == (7,)
+    assert as_callable(geo.infer_shape)(as_callable(DummyP)(), size=7) == (7,)
     # size None, defaults to p.shape
-    assert typing.cast("EagerCallableProtocol", geo.infer_shape)(typing.cast("EagerCallableProtocol", DummyP)()) == (3, 4)
+    assert as_callable(geo.infer_shape)(as_callable(DummyP)()) == (3, 4)

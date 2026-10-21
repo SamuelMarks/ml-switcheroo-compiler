@@ -3,19 +3,16 @@
 from __future__ import annotations
 
 import math
-import typing
 import uuid
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
-from ml_switcheroo_ir import AttributeValue
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode
+from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode, as_attrs, as_node_list
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -33,7 +30,7 @@ def _unpack_pair(val: GradValue) -> tuple[GradValue, GradValue]:
     Returns:
         tuple[GradValue, GradValue]: Unpacked pair of elements.
     """
-    seq = typing.cast("tuple[GradValue, GradValue]", val)
+    seq = list(getattr(val, "__iter__")())
     return seq[0], seq[1]
 
 
@@ -46,7 +43,7 @@ class CustomJVPFunction:
         Args:
             fun (GradValue): Base primal function being wrapped.
         """
-        self.fun: TypedVariadicCallable[GradValue] = typing.cast(TypedVariadicCallable[GradValue], fun)
+        self.fun: TypedVariadicCallable[GradValue] = as_callable(fun)
         self.jvp_rule: TypedVariadicCallable[GradValue] | None = None
         self.jvp_subgraph: LogicalGraph | None = None
 
@@ -64,7 +61,7 @@ class CustomJVPFunction:
         Returns:
             TypedVariadicCallable[GradValue]: The registered `jvp_rule`.
         """
-        rule_fn = typing.cast(TypedVariadicCallable[GradValue], jvp_rule)
+        rule_fn = as_callable(jvp_rule)
         self.jvp_rule = rule_fn
         if jvp_subgraph is not None:
             self.jvp_subgraph = jvp_subgraph
@@ -132,7 +129,7 @@ class CustomJVPFunction:
                     id=cid,
                     op_type="Constant",
                     inputs=[],
-                    attributes=typing.cast("Mapping[str, AttributeValue]", {"value": arr}),
+                    attributes=as_attrs({"value": arr}),
                     shape_metadata=getattr(arr, "shape", ()),
                 )
                 global_tracing_state.add_node(c_node)
@@ -153,7 +150,7 @@ class CustomJVPFunction:
             id=out_id,
             op_type="CustomJVP",
             inputs=in_ids,
-            attributes=typing.cast("Mapping[str, AttributeValue]", jvp_attrs),
+            attributes=as_attrs(jvp_attrs),
             subgraphs=subgraphs,
             shape_metadata=out_shape,
         )
@@ -219,9 +216,9 @@ def _build_traced_logical_graph(
     Returns:
         LogicalGraph: Populated forward logical graph.
     """
-    block = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(fun_primal, tuple(tensor_primals), f"{prefix}_{uuid.uuid4().hex[:6]}")
+    block = _trace_function(fun_primal, tuple(tensor_primals), f"{prefix}_{uuid.uuid4().hex[:6]}")
     forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", prefix)))
-    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if hasattr(block.nodes, "values") else typing.cast(Iterable[LogicalNode], block.nodes)
+    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if hasattr(block.nodes, "values") else as_node_list(block.nodes)
     for node in nodes_iter:
         forward_graph.nodes[node.id] = node
     forward_graph.inputs = block.inputs
@@ -243,10 +240,12 @@ def _execute_autodiff_graph(graph: LogicalGraph, inputs_dict: dict[str, GradValu
 
     backend = get_active_backend()
     if hasattr(backend, "execute_graph"):
-        return typing.cast(dict[str, GradValue], backend.execute_graph(graph, inputs_dict))
+        raw_out = backend.execute_graph(graph, inputs_dict)
+        return dict(raw_out) if isinstance(raw_out, Mapping) else {}
     if hasattr(backend, "compile_graph"):
         compiled_fn = backend.compile_graph(graph)
-        return typing.cast(dict[str, GradValue], compiled_fn(inputs_dict))
+        raw_comp = compiled_fn(inputs_dict)
+        return dict(raw_comp) if isinstance(raw_comp, Mapping) else {}
     return evaluate_graph(graph, inputs_dict)
 
 
@@ -269,7 +268,7 @@ def jvp(
     """
     from ml_switcheroo_compiler.transforms.autodiff import jvp as graph_jvp
 
-    fn_callable = typing.cast(TypedVariadicCallable[GradValue], fun)
+    fn_callable = fun
     primals_seq = primals if isinstance(primals, (tuple, list)) else (primals,)
     tangents_seq = tangents if isinstance(tangents, (tuple, list)) else (tangents,)
 
@@ -277,7 +276,7 @@ def jvp(
         return _run_custom_jvp_rule(fun, primals_seq, tangents_seq)
 
     with ConfigContext(eager_mode=True):
-        out_eager = fn_callable(*primals_seq)
+        out_eager = invoke_callable(fn_callable, *primals_seq)
         val, aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
 
     fun_primal = _get_fun_primal(fn_callable, has_aux)
@@ -292,7 +291,7 @@ def jvp(
         t_node = LogicalNode(
             id=t_id,
             op_type="Constant",
-            attributes={"value": typing.cast("AttributeValue", t_val)},
+            attributes={"value": t_val},
             shape_metadata=forward_graph.nodes[p_id].shape_metadata,
         )
         forward_graph.nodes[t_id] = t_node
@@ -410,7 +409,7 @@ def vjp(
     from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
     from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
-    fn_callable = typing.cast(TypedVariadicCallable[GradValue], fun)
+    fn_callable = fun
     flat_primals, tree_def = tree_flatten(primals)
 
     def fun_flat(*flat_args: GradValue, **kwargs: GradValue) -> GradValue:
@@ -426,10 +425,10 @@ def vjp(
         del kwargs
         unflat_args = tree_unflatten(tree_def, list(flat_args))
         seq_args = tuple(unflat_args) if isinstance(unflat_args, Iterable) else (unflat_args,)
-        return fn_callable(*seq_args)
+        return invoke_callable(fn_callable, *seq_args)
 
     with ConfigContext(eager_mode=True):
-        out_eager = fn_callable(*primals)
+        out_eager = invoke_callable(fn_callable, *primals)
         val, aux = _unpack_pair(out_eager) if has_aux else (out_eager, None)
 
     fun_primal = _get_fun_primal(fun_flat, has_aux)
@@ -486,7 +485,7 @@ def hvp(
     has_aux: bool = False,
     projected_tangents: Tensor | Sequence[Tensor] | None = None,
     mode: str = "forward-over-reverse",
-) -> GradValue:
+) -> tuple[GradValue, GradValue]:
     """Compute the Hessian-vector product of `fun` at `primals` along `tangents`.
 
     Args:
@@ -503,22 +502,22 @@ def hvp(
     from ml_switcheroo_compiler.interpreter import evaluate_graph
     from ml_switcheroo_compiler.transforms.autodiff import hvp as graph_hvp
 
-    fn_callable = typing.cast(TypedVariadicCallable[GradValue], fun)
+    fn_callable = fun
     primals_seq = primals if isinstance(primals, (tuple, list)) else (primals,)
     tangents_seq = tangents if isinstance(tangents, (tuple, list)) else (tangents,)
 
     with ConfigContext(eager_mode=True):
         if has_aux:
-            val, aux = _unpack_pair(fn_callable(*primals_seq))
+            val, aux = _unpack_pair(invoke_callable(fn_callable, *primals_seq))
         else:
-            val = fn_callable(*primals_seq)
+            val = invoke_callable(fn_callable, *primals_seq)
 
     fun_primal = _get_fun_primal(fn_callable, has_aux)
     tensor_primals = _convert_to_tensors(primals_seq)
 
-    block = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(fun_primal, tuple(tensor_primals), f"hvp_{uuid.uuid4().hex[:6]}")
+    block = _trace_function(fun_primal, tuple(tensor_primals), f"hvp_{uuid.uuid4().hex[:6]}")
     forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", "hvp")))
-    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if hasattr(block.nodes, "values") else typing.cast(Iterable[LogicalNode], block.nodes)
+    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if hasattr(block.nodes, "values") else as_node_list(block.nodes)
     for node in nodes_iter:
         forward_graph.nodes[node.id] = node
     forward_graph.inputs = block.inputs
@@ -532,7 +531,7 @@ def hvp(
         t_node = LogicalNode(
             id=t_id,
             op_type="Constant",
-            attributes={"value": typing.cast("AttributeValue", t_val)},
+            attributes={"value": t_val},
             shape_metadata=forward_graph.nodes[p_id].shape_metadata,
         )
         forward_graph.nodes[t_id] = t_node
@@ -549,7 +548,7 @@ def hvp(
             pt_node = LogicalNode(
                 id=pt_id,
                 op_type="Constant",
-                attributes={"value": typing.cast("AttributeValue", pt_val)},
+                attributes={"value": pt_val},
                 shape_metadata=forward_graph.nodes[o_id].shape_metadata,
             )
             forward_graph.nodes[pt_id] = pt_node
@@ -586,7 +585,7 @@ def jacfwd(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
         TypedVariadicCallable[GradValue]: Callable returning the forward-mode Jacobian tensor.
     """
     opts = options if isinstance(options, GradOptions) else GradOptions()
-    fn_callable = typing.cast(TypedVariadicCallable[GradValue], fun)
+    fn_callable = fun
 
     def wrapped(*args: GradValue, **kwargs: GradValue) -> GradValue:
         """Evaluate the forward-mode Jacobian of `fun` at `*args`.
@@ -599,7 +598,7 @@ def jacfwd(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
             GradValue: Evaluated Jacobian tensor.
         """
         with ConfigContext(eager_mode=True):
-            out = fn_callable(*args, **kwargs)
+            out = invoke_callable(fn_callable, *args, **kwargs)
             out_val = _unpack_pair(out)[0] if getattr(opts, "has_aux") else out
         out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
 
@@ -624,9 +623,10 @@ def jacfwd(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
 
         res = get_active_backend().execute_op("Stack", jacobian_rows, axis=-1)
         if getattr(out_arr, "ndim") > 0:
-            return typing.cast(
-                GradValue,
-                getattr(res, "reshape")(tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape"))),
+            return get_active_backend().execute_op(
+                "Reshape",
+                res,
+                tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape")),
             )
         return res
 
@@ -659,7 +659,7 @@ def jacrev(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
         from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
         out, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=getattr(opts, "has_aux")))
-        vjp_fn = typing.cast("Callable[[GradValue], GradValue]", vjp_fn_raw)
+        vjp_fn = vjp_fn_raw
         out_val = _unpack_pair(out)[0] if getattr(opts, "has_aux") else out
 
         flat_out, out_tree_def = tree_flatten(out_val)
@@ -671,8 +671,7 @@ def jacrev(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
         jacobian_rows = []
 
         for i in range(total_size):
-            cotangent_flat = typing.cast(
-                EagerTensorProtocol,
+            cotangent_flat = as_tensor(
                 get_active_backend().execute_op(
                     "OneHot",
                     get_active_backend().asarray(i),
@@ -681,7 +680,7 @@ def jacrev(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
                     off_value=0.0,
                     axis=-1,
                     dtype="float32",
-                ),
+                )
             )
 
             flat_cots = []
@@ -691,20 +690,21 @@ def jacrev(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
                 curr_idx += sz
 
             cotangent = tree_unflatten(out_tree_def, flat_cots)
-            grads = vjp_fn(cotangent)
+            grads = invoke_callable(vjp_fn, cotangent)
             first_grad = grads[0] if isinstance(grads, (list, tuple)) else grads
             jacobian_rows.append(getattr(get_active_backend().asarray(first_grad), "flatten")())
 
         res = get_active_backend().execute_op("Stack", jacobian_rows, axis=0)
         if len(flat_sizes) > 1:
-            return typing.cast(GradValue, getattr(res, "reshape")((total_size,) + tuple(getattr(arg0, "shape"))))
+            return get_active_backend().execute_op("Reshape", res, (total_size,) + tuple(getattr(arg0, "shape")))
         out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
         if getattr(out_arr, "ndim") > 0:
-            return typing.cast(
-                GradValue,
-                getattr(res, "reshape")(tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape"))),
+            return get_active_backend().execute_op(
+                "Reshape",
+                res,
+                tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape")),
             )
-        return typing.cast(GradValue, getattr(res, "reshape")(getattr(arg0, "shape")))
+        return get_active_backend().execute_op("Reshape", res, getattr(arg0, "shape"))
 
     return wrapped
 
@@ -752,6 +752,10 @@ def hessian(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVar
             hessian_rows.append(getattr(get_active_backend().asarray(out_tangent), "flatten")())
 
         res = get_active_backend().execute_op("Stack", hessian_rows, axis=0)
-        return typing.cast(GradValue, getattr(res, "reshape")(tuple(getattr(arg0, "shape")) + tuple(getattr(arg0, "shape"))))
+        return get_active_backend().execute_op(
+            "Reshape",
+            res,
+            tuple(getattr(arg0, "shape")) + tuple(getattr(arg0, "shape")),
+        )
 
     return wrapped

@@ -8,7 +8,28 @@ from collections.abc import Callable
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.shape import TensorOrScalar
     from ml_switcheroo_compiler.core.tensor import Tensor
+    from ml_switcheroo_compiler.core.tensor_mixins import TensorIndexingMixin
     from ml_switcheroo_compiler.ops.base import OpDef
+
+    _MixinSelf: typing.TypeAlias = "TensorArithmeticMixin | TensorBitwiseMixin | TensorLogicalMixin | TensorIndexingMixin | TensorOrScalar"
+
+
+def _is_tensor(val: _MixinSelf) -> typing.TypeGuard[Tensor]:
+    """Type guard narrowing `self` on Tensor mixins to `Tensor`."""
+    return val is not None
+
+
+def _as_tensor_self(val: _MixinSelf) -> Tensor:
+    """Narrow `self` on a Tensor mixin to `Tensor` without `typing.cast`.
+
+    Args:
+        val (_MixinSelf): Mixin `self` instance.
+
+    Returns:
+        Tensor: Narrowed Tensor instance.
+    """
+    assert _is_tensor(val)
+    return val
 
 
 class TensorArithmeticMixin:
@@ -36,7 +57,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the sum.
         """
-        return self._get_op("Add")(typing.cast("Tensor", self), other)
+        return self._get_op("Add")(_as_tensor_self(self), other)
 
     def __radd__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise addition `other + self`.
@@ -47,7 +68,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the sum.
         """
-        return self._get_op("Add")(other, typing.cast("Tensor", self))
+        return self._get_op("Add")(other, _as_tensor_self(self))
 
     def __sub__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise subtraction `self - other`.
@@ -58,7 +79,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the difference.
         """
-        return self._get_op("Subtract")(typing.cast("Tensor", self), other)
+        return self._get_op("Subtract")(_as_tensor_self(self), other)
 
     def __rsub__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise subtraction `other - self`.
@@ -69,7 +90,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the difference.
         """
-        return self._get_op("Subtract")(other, typing.cast("Tensor", self))
+        return self._get_op("Subtract")(other, _as_tensor_self(self))
 
     def __mul__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise multiplication `self * other`.
@@ -80,7 +101,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the product.
         """
-        return self._get_op("Multiply")(typing.cast("Tensor", self), other)
+        return self._get_op("Multiply")(_as_tensor_self(self), other)
 
     def __rmul__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise multiplication `other * self`.
@@ -91,7 +112,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the product.
         """
-        return self._get_op("Multiply")(other, typing.cast("Tensor", self))
+        return self._get_op("Multiply")(other, _as_tensor_self(self))
 
     def __truediv__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise true division `self / other`.
@@ -102,7 +123,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the quotient.
         """
-        return self._get_op("TrueDivide")(typing.cast("Tensor", self), other)
+        return self._get_op("TrueDivide")(_as_tensor_self(self), other)
 
     def __rtruediv__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise true division `other / self`.
@@ -113,7 +134,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the quotient.
         """
-        return self._get_op("TrueDivide")(other, typing.cast("Tensor", self))
+        return self._get_op("TrueDivide")(other, _as_tensor_self(self))
 
     def __pow__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise exponentiation `self ** other`.
@@ -124,7 +145,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the power result.
         """
-        return self._get_op("Power")(typing.cast("Tensor", self), other)
+        return self._get_op("Power")(_as_tensor_self(self), other)
 
     def __rpow__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise exponentiation `other ** self`.
@@ -135,7 +156,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the power result.
         """
-        return self._get_op("Power")(other, typing.cast("Tensor", self))
+        return self._get_op("Power")(other, _as_tensor_self(self))
 
     def __floordiv__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise floor division `self // other`.
@@ -146,7 +167,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the floor quotient.
         """
-        return self._get_op("FloorDivide")(typing.cast("Tensor", self), other)
+        return self._get_op("FloorDivide")(_as_tensor_self(self), other)
 
     def __rfloordiv__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise floor division `other // self`.
@@ -157,7 +178,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the floor quotient.
         """
-        return self._get_op("FloorDivide")(other, typing.cast("Tensor", self))
+        return self._get_op("FloorDivide")(other, _as_tensor_self(self))
 
     def __mod__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise modulo `self % other`.
@@ -168,7 +189,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the remainder.
         """
-        return self._get_op("Mod")(typing.cast("Tensor", self), other)
+        return self._get_op("Mod")(_as_tensor_self(self), other)
 
     def __rmod__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise modulo `other % self`.
@@ -179,7 +200,7 @@ class TensorArithmeticMixin:
         Returns:
             Tensor: A tensor containing the remainder.
         """
-        return self._get_op("Mod")(other, typing.cast("Tensor", self))
+        return self._get_op("Mod")(other, _as_tensor_self(self))
 
 
 class TensorBitwiseMixin:
@@ -196,7 +217,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the bitwise AND result.
         """
-        return self._get_op("BitwiseAnd")(typing.cast("Tensor", self), other)
+        return self._get_op("BitwiseAnd")(_as_tensor_self(self), other)
 
     def __rand__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise bitwise AND `other & self`.
@@ -207,7 +228,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the bitwise AND result.
         """
-        return self._get_op("BitwiseAnd")(other, typing.cast("Tensor", self))
+        return self._get_op("BitwiseAnd")(other, _as_tensor_self(self))
 
     def __or__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise bitwise OR `self | other`.
@@ -218,7 +239,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the bitwise OR result.
         """
-        return self._get_op("BitwiseOr")(typing.cast("Tensor", self), other)
+        return self._get_op("BitwiseOr")(_as_tensor_self(self), other)
 
     def __ror__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise bitwise OR `other | self`.
@@ -229,7 +250,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the bitwise OR result.
         """
-        return self._get_op("BitwiseOr")(other, typing.cast("Tensor", self))
+        return self._get_op("BitwiseOr")(other, _as_tensor_self(self))
 
     def __xor__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise bitwise XOR `self ^ other`.
@@ -240,7 +261,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the bitwise XOR result.
         """
-        return self._get_op("BitwiseXor")(typing.cast("Tensor", self), other)
+        return self._get_op("BitwiseXor")(_as_tensor_self(self), other)
 
     def __rxor__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise bitwise XOR `other ^ self`.
@@ -251,7 +272,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the bitwise XOR result.
         """
-        return self._get_op("BitwiseXor")(other, typing.cast("Tensor", self))
+        return self._get_op("BitwiseXor")(other, _as_tensor_self(self))
 
     def __lshift__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise left bit shift `self << other`.
@@ -262,7 +283,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the left-shifted result.
         """
-        return self._get_op("LeftShift")(typing.cast("Tensor", self), other)
+        return self._get_op("LeftShift")(_as_tensor_self(self), other)
 
     def __rlshift__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise left bit shift `other << self`.
@@ -273,7 +294,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the left-shifted result.
         """
-        return self._get_op("LeftShift")(other, typing.cast("Tensor", self))
+        return self._get_op("LeftShift")(other, _as_tensor_self(self))
 
     def __rshift__(self, other: TensorOrScalar) -> Tensor:
         """Compute elementwise right bit shift `self >> other`.
@@ -284,7 +305,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the right-shifted result.
         """
-        return self._get_op("RightShift")(typing.cast("Tensor", self), other)
+        return self._get_op("RightShift")(_as_tensor_self(self), other)
 
     def __rrshift__(self, other: TensorOrScalar) -> Tensor:
         """Compute reverse elementwise right bit shift `other >> self`.
@@ -295,7 +316,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the right-shifted result.
         """
-        return self._get_op("RightShift")(other, typing.cast("Tensor", self))
+        return self._get_op("RightShift")(other, _as_tensor_self(self))
 
     def __neg__(self) -> Tensor:
         """Compute elementwise negation `-self`.
@@ -303,7 +324,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the negated values.
         """
-        return self._get_op("Negative")(typing.cast("Tensor", self))
+        return self._get_op("Negative")(_as_tensor_self(self))
 
     def __pos__(self) -> Tensor:
         """Compute elementwise unary positive `+self`.
@@ -311,7 +332,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the positive values.
         """
-        return self._get_op("Positive")(typing.cast("Tensor", self))
+        return self._get_op("Positive")(_as_tensor_self(self))
 
     def __abs__(self) -> Tensor:
         """Compute elementwise absolute value `abs(self)`.
@@ -319,7 +340,7 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the absolute values.
         """
-        return self._get_op("Abs")(typing.cast("Tensor", self))
+        return self._get_op("Abs")(_as_tensor_self(self))
 
     def __invert__(self) -> Tensor:
         """Compute elementwise bitwise inversion `~self`.
@@ -327,7 +348,12 @@ class TensorBitwiseMixin:
         Returns:
             Tensor: A tensor containing the inverted values.
         """
-        return self._get_op("BitwiseNot")(typing.cast("Tensor", self))
+        return self._get_op("BitwiseNot")(_as_tensor_self(self))
+
+
+def _is_bool_like(val: Tensor) -> typing.TypeGuard[bool]:
+    """Type guard narrowing tensor comparison result to `bool` for `object.__eq__` signature compatibility."""
+    return val is not None
 
 
 class TensorLogicalMixin:
@@ -344,7 +370,7 @@ class TensorLogicalMixin:
         Returns:
             Tensor: A boolean tensor of comparison results.
         """
-        return self._get_op("Less")(typing.cast("Tensor", self), other)
+        return self._get_op("Less")(_as_tensor_self(self), other)
 
     def __gt__(self, other: TensorOrScalar) -> Tensor:
         """Compare elementwise strictly greater than `self > other`.
@@ -355,7 +381,7 @@ class TensorLogicalMixin:
         Returns:
             Tensor: A boolean tensor of comparison results.
         """
-        return self._get_op("Greater")(typing.cast("Tensor", self), other)
+        return self._get_op("Greater")(_as_tensor_self(self), other)
 
     def __le__(self, other: TensorOrScalar) -> Tensor:
         """Compare elementwise less than or equal `self <= other`.
@@ -366,7 +392,7 @@ class TensorLogicalMixin:
         Returns:
             Tensor: A boolean tensor of comparison results.
         """
-        return self._get_op("LessEqual")(typing.cast("Tensor", self), other)
+        return self._get_op("LessEqual")(_as_tensor_self(self), other)
 
     def __ge__(self, other: TensorOrScalar) -> Tensor:
         """Compare elementwise greater than or equal `self >= other`.
@@ -377,7 +403,7 @@ class TensorLogicalMixin:
         Returns:
             Tensor: A boolean tensor of comparison results.
         """
-        return self._get_op("GreaterEqual")(typing.cast("Tensor", self), other)
+        return self._get_op("GreaterEqual")(_as_tensor_self(self), other)
 
     def __hash__(self) -> int:
         """Compute identity-based hash of the tensor instance.
@@ -396,7 +422,7 @@ class TensorLogicalMixin:
         Returns:
             Tensor: A boolean tensor of equality results.
         """
-        return self._get_op("Equal")(typing.cast("Tensor", self), other)
+        return self._get_op("Equal")(_as_tensor_self(self), other)
 
     def _ne(self, other: TensorOrScalar) -> Tensor:
         """Compare elementwise inequality `self != other`.
@@ -407,7 +433,7 @@ class TensorLogicalMixin:
         Returns:
             Tensor: A boolean tensor of inequality results.
         """
-        return self._get_op("NotEqual")(typing.cast("Tensor", self), other)
+        return self._get_op("NotEqual")(_as_tensor_self(self), other)
 
     def __eq__(self, other: object) -> bool:
         """Compare elementwise equality `self == other`.
@@ -418,7 +444,9 @@ class TensorLogicalMixin:
         Returns:
             bool: A boolean tensor of equality results.
         """
-        return typing.cast(bool, self._eq(typing.cast("TensorOrScalar", other)))
+        res = self._eq(typing.cast("TensorOrScalar", other))
+        assert _is_bool_like(res)
+        return res
 
     def __ne__(self, other: object) -> bool:
         """Compare elementwise inequality `self != other`.
@@ -429,4 +457,6 @@ class TensorLogicalMixin:
         Returns:
             bool: A boolean tensor of inequality results.
         """
-        return typing.cast(bool, self._ne(typing.cast("TensorOrScalar", other)))
+        res = self._ne(typing.cast("TensorOrScalar", other))
+        assert _is_bool_like(res)
+        return res

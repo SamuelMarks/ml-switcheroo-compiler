@@ -6,10 +6,9 @@ import logging
 import resource
 import sys
 import time
-import typing
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 try:
@@ -205,7 +204,7 @@ class TensorFlowProfiler:
             for t in tf_inputs:
                 accum = tf.add(accum, t)
             _sync_tf_result(accum)
-            return typing.cast(EagerValue, accum)
+            return as_tensor(accum)
 
         return _execute_step
 

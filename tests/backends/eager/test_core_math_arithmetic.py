@@ -24,10 +24,10 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_arithmetic import 
     _true_divide,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class _EmptyBackend:
@@ -58,7 +58,7 @@ def _test_math_arithmetic_all_branches_part_1(_state: dict[str, EagerTensorProto
             """
             return a / b
 
-    assert _true_divide(typing.cast("BackendModuleProtocol", BackendDivide()), 6.0, 2.0) == 3.0
+    assert _true_divide(as_mod(BackendDivide()), 6.0, 2.0) == 3.0
 
     # Case B: backend has true_divide (no divide)
     class BackendTrueDivide:
@@ -73,10 +73,10 @@ def _test_math_arithmetic_all_branches_part_1(_state: dict[str, EagerTensorProto
             """
             return a / b
 
-    assert _true_divide(typing.cast("BackendModuleProtocol", BackendTrueDivide()), 8.0, 2.0) == 4.0
+    assert _true_divide(as_mod(BackendTrueDivide()), 8.0, 2.0) == 4.0
 
     # Case C: backend has neither
-    assert _true_divide(typing.cast("BackendModuleProtocol", empty_backend), 8.0, 2.0) is None
+    assert _true_divide(as_mod(empty_backend), 8.0, 2.0) is None
 
     # 2. _fmod
     # Case A: backend has fmod
@@ -92,7 +92,7 @@ def _test_math_arithmetic_all_branches_part_1(_state: dict[str, EagerTensorProto
             """
             return math.fmod(a, b)
 
-    assert _fmod(typing.cast("BackendModuleProtocol", BackendFmod()), 5.0, 3.0) == 2.0
+    assert _fmod(as_mod(BackendFmod()), 5.0, 3.0) == 2.0
     getattr(_state, "update")({"BackendDivide": BackendDivide, "BackendFmod": BackendFmod, "BackendTrueDivide": BackendTrueDivide, "empty_backend": empty_backend})
     _state.update(locals())
 
@@ -117,7 +117,7 @@ def _test_math_arithmetic_all_branches_part_2(_state: dict[str, EagerTensorProto
             """
             return a % b
 
-    assert _fmod(typing.cast("BackendModuleProtocol", BackendRemainder()), 5.0, 3.0) == 2.0
+    assert _fmod(as_mod(BackendRemainder()), 5.0, 3.0) == 2.0
 
     # Case C: backend has mod (no fmod, no remainder)
     class BackendMod:
@@ -132,7 +132,7 @@ def _test_math_arithmetic_all_branches_part_2(_state: dict[str, EagerTensorProto
             """
             return a % b
 
-    assert _fmod(typing.cast("BackendModuleProtocol", BackendMod()), 5.0, 3.0) == 2.0
+    assert _fmod(as_mod(BackendMod()), 5.0, 3.0) == 2.0
 
     # Case D: backend has none
     assert _fmod(empty_backend, 5.0, 3.0) is None
@@ -140,19 +140,19 @@ def _test_math_arithmetic_all_branches_part_2(_state: dict[str, EagerTensorProto
     # 3. _accumulate_n
     # Case A: args provided with non-empty list
     res_acc = _accumulate_n(empty_backend, [np.array([1, 2]), np.array([3, 4]), np.array([5, 6])])
-    assert typing.cast("EagerCallableProtocol", list)(res_acc) == [9, 12]
+    assert as_callable(list)(res_acc) == [9, 12]
 
     # Case B: kwargs provided with inputs
     res_acc_kw = _accumulate_n(empty_backend, inputs=[np.array([10]), np.array([20])])
-    assert typing.cast("EagerCallableProtocol", list)(res_acc_kw) == [30]
+    assert as_callable(list)(res_acc_kw) == [30]
 
     # Case C: empty list in args
     empty_acc = _accumulate_n(empty_backend, [])
-    assert typing.cast("EagerTensorProtocol", getattr(empty_acc, "shape")) == ()
+    assert as_tensor(getattr(empty_acc, "shape")) == ()
 
     # Case D: empty list in kwargs / no args
     empty_acc_kw = _accumulate_n(empty_backend)
-    assert typing.cast("EagerTensorProtocol", getattr(empty_acc_kw, "shape")) == ()
+    assert as_tensor(getattr(empty_acc_kw, "shape")) == ()
 
     # 4. _assign_add and _assign_sub
     assert _assign_add(empty_backend, 10, 5) == 15
@@ -173,19 +173,19 @@ def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProto
     # 5. _add_n
     # Case A: args provided
     res_add_n = _add_n(empty_backend, [np.array([1, 1]), np.array([2, 2]), np.array([3, 3])])
-    assert typing.cast("EagerCallableProtocol", list)(res_add_n) == [6, 6]
+    assert as_callable(list)(res_add_n) == [6, 6]
 
     # Case B: kwargs provided
     res_add_n_kw = _add_n(empty_backend, inputs=[np.array([5]), np.array([10])])
-    assert typing.cast("EagerCallableProtocol", list)(res_add_n_kw) == [15]
+    assert as_callable(list)(res_add_n_kw) == [15]
 
     # Case C: empty list in args
     empty_add_n = _add_n(empty_backend, [])
-    assert typing.cast("EagerTensorProtocol", getattr(empty_add_n, "shape")) == ()
+    assert as_tensor(getattr(empty_add_n, "shape")) == ()
 
     # Case D: empty list in kwargs / no args
     empty_add_n_kw = _add_n(empty_backend)
-    assert typing.cast("EagerTensorProtocol", getattr(empty_add_n_kw, "shape")) == ()
+    assert as_tensor(getattr(empty_add_n_kw, "shape")) == ()
 
     # 6. _modf
     class BackendModf:
@@ -199,9 +199,9 @@ def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProto
             """
             return math.modf(val)
 
-    fract, integral = typing.cast("EagerCallableProtocol", _modf)(typing.cast("EagerCallableProtocol", BackendModf)(), 2.5)
-    assert typing.cast("EagerCallableProtocol", math.isclose)(fract, 0.5)
-    assert typing.cast("EagerCallableProtocol", math.isclose)(integral, 2.0)
+    fract, integral = as_callable(_modf)(as_callable(BackendModf)(), 2.5)
+    assert as_callable(math.isclose)(fract, 0.5)
+    assert as_callable(math.isclose)(integral, 2.0)
 
     # 7. _ravelmultiindex
     class BackendRavel:
@@ -214,7 +214,7 @@ def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProto
                 multi_index: Test parameter `multi_index`.
                 dims: Test parameter `dims`.
             """
-            return typing.cast("EagerCallableProtocol", np.ravel_multi_index)(multi_index, dims)
+            return as_callable(np.ravel_multi_index)(multi_index, dims)
 
     getattr(_state, "update")({"BackendModf": BackendModf, "BackendRavel": BackendRavel, "empty_add_n": empty_add_n, "empty_add_n_kw": empty_add_n_kw})
     getattr(_state, "update")({"fract": fract, "integral": integral, "res_add_n": res_add_n, "res_add_n_kw": res_add_n_kw})
@@ -243,7 +243,7 @@ def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProto
             """
             return "scattermul_result"
 
-    assert _np_scattermul(typing.cast("BackendModuleProtocol", BackendScattermul()), "val") == "scattermul_result"
+    assert _np_scattermul(as_mod(BackendScattermul()), "val") == "scattermul_result"
     assert _np_scattermul(empty_backend, "fallback_val") == "fallback_val"
 
     class BackendStringSubstr:
@@ -258,9 +258,9 @@ def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProto
             """
             return "substr_result"
 
-    assert _np_stringsubstr(typing.cast("BackendModuleProtocol", BackendStringSubstr()), "test") == "substr_result"
+    assert _np_stringsubstr(as_mod(BackendStringSubstr()), "test") == "substr_result"
     substr_fb = _np_stringsubstr(empty_backend, ["hello", "world"])
-    assert typing.cast("EagerCallableProtocol", list)(substr_fb) == ["hello", "world"]
+    assert as_callable(list)(substr_fb) == ["hello", "world"]
 
     # 10. _np_tensorscattersub
     class BackendTensorScatterSub:
@@ -275,7 +275,7 @@ def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProto
             """
             return "scattersub_result"
 
-    assert _np_tensorscattersub(typing.cast("BackendModuleProtocol", BackendTensorScatterSub()), "target") == "scattersub_result"
+    assert _np_tensorscattersub(as_mod(BackendTensorScatterSub()), "target") == "scattersub_result"
     getattr(_state, "update")({"BackendScattermul": BackendScattermul, "BackendStringSubstr": BackendStringSubstr, "BackendTensorScatterSub": BackendTensorScatterSub, "substr_fb": substr_fb})
     _state.update(locals())
 
@@ -302,9 +302,9 @@ def _test_math_arithmetic_all_branches_part_5(_state: dict[str, EagerTensorProto
             """
             return "truncatediv_result"
 
-    assert _np_truncatediv(typing.cast("BackendModuleProtocol", BackendTruncatediv()), 7.0, 2.0) == "truncatediv_result"
+    assert _np_truncatediv(as_mod(BackendTruncatediv()), 7.0, 2.0) == "truncatediv_result"
     trunc_fb = _np_truncatediv(empty_backend, np.array([7.5, -7.5]), np.array([2.0, 2.0]))
-    assert typing.cast("EagerCallableProtocol", list)(trunc_fb) == [3.0, -3.0]
+    assert as_callable(list)(trunc_fb) == [3.0, -3.0]
 
     class BackendTruncatemod:
         """Backend with truncatemod."""
@@ -318,9 +318,9 @@ def _test_math_arithmetic_all_branches_part_5(_state: dict[str, EagerTensorProto
             """
             return "truncatemod_result"
 
-    assert _np_truncatemod(typing.cast("BackendModuleProtocol", BackendTruncatemod()), 7.0, 2.0) == "truncatemod_result"
+    assert _np_truncatemod(as_mod(BackendTruncatemod()), 7.0, 2.0) == "truncatemod_result"
     mod_fb = _np_truncatemod(empty_backend, np.array([7.0, 8.0]), np.array([3.0, 3.0]))
-    assert typing.cast("EagerCallableProtocol", list)(mod_fb) == [1.0, 2.0]
+    assert as_callable(list)(mod_fb) == [1.0, 2.0]
 
     # 13. _np_xdivy
     class BackendXdivy:
@@ -349,7 +349,7 @@ def _test_math_arithmetic_all_branches_part_6(_state: dict[str, EagerTensorProto
     BackendXdivy, empty_backend = _state["BackendXdivy"], _state["empty_backend"]
     assert _np_xdivy(BackendXdivy(), 0.0, 5.0) == "xdivy_result"
     xdivy_fb = _np_xdivy(empty_backend, np.array([0.0, 10.0]), np.array([5.0, 2.0]))
-    assert typing.cast("EagerCallableProtocol", list)(xdivy_fb) == [0.0, 5.0]
+    assert as_callable(list)(xdivy_fb) == [0.0, 5.0]
 
     # Verify registration in global_eager_registry
     for op_name in [

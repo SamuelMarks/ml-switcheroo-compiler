@@ -8,9 +8,10 @@ import pytest
 
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import get_frontend, get_op, get_util, register_frontend, register_op, register_util
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_registry_register_op() -> None:
@@ -64,7 +65,7 @@ def test_registry_util() -> None:
 def test_registry_frontend() -> None:
     """Test function test_registry_frontend."""
 
-    @typing.cast("EagerCallableProtocol", register_frontend)("my_frontend")
+    @as_callable(register_frontend)("my_frontend")
     def my_frontend_fn() -> EagerValue:
         """Test function my_frontend_fn."""
         return 42
@@ -91,7 +92,7 @@ def test_registry_files_load() -> None:
     ops = get_all_ops()
     assert len(ops) > 0
     op = get_op("Conv2D")
-    assert typing.cast("EagerTensorProtocol", getattr(op, "get_yaml_data"))() is not None
+    assert as_tensor(getattr(op, "get_yaml_data"))() is not None
     assert backend_mapping_registry.get_generator_mapping("numpy", "NonExistentOp") is None
     assert backend_mapping_registry.get_generator_mapping("numpy", "Add") is not None
     assert get_backend_mapping("NonExistentOp") == {}
@@ -111,7 +112,7 @@ def test_registry_files_load() -> None:
     getattr(_YAML_REGISTRY, "__setitem__")("FakeYamlOp", {"some": "data"})
     fake_op_cls = get_op("FakeYamlOp")
     assert fake_op_cls.__name__ == "FakeYamlOp"
-    assert typing.cast("EagerTensorProtocol", getattr(fake_op_cls, "get_yaml_data"))() == {"some": "data"}
+    assert as_tensor(getattr(fake_op_cls, "get_yaml_data"))() == {"some": "data"}
     _REGISTRY.pop("FakeYamlOp", None)
     _YAML_REGISTRY.pop("FakeYamlOp", None)
 

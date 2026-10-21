@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_ir import AttributeValue, NodeDict
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.constant_folding import constant_folding_pass
@@ -16,6 +14,7 @@ from ml_switcheroo_compiler.transforms.passes.dce import dce_pass
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     operator_fusion_pass,
 )
+from tests.testing_utils import as_attrs
 
 
 def test_dce_nested_subgraph_and_side_effect_free_loop() -> None:
@@ -33,7 +32,7 @@ def test_dce_nested_subgraph_and_side_effect_free_loop() -> None:
     body.outputs = ["b_add"]
 
     # Loop node whose output is never consumed and has no side effects
-    dead_loop = IRNode(id="dead_loop", op_type="WhileLoop", inputs=["x"], attributes=typing.cast("dict[str, AttributeValue]", {"body": body}))
+    dead_loop = IRNode(id="dead_loop", op_type="WhileLoop", inputs=["x"], attributes=as_attrs({"body": body}))
     used_add = IRNode(id="used_add", op_type="Add", inputs=["x", "y"])
 
     graph.nodes = NodeDict({"x": x, "y": y, "dead_loop": dead_loop, "used_add": used_add})
@@ -58,7 +57,7 @@ def test_dce_preserves_subgraph_with_side_effects() -> None:
     body.nodes = NodeDict({"b_in": b_in, "b_print": b_print})
     body.outputs = ["b_in"]
 
-    side_effect_loop = IRNode(id="se_loop", op_type="WhileLoop", inputs=["x"], attributes=typing.cast("dict[str, AttributeValue]", {"body": body}))
+    side_effect_loop = IRNode(id="se_loop", op_type="WhileLoop", inputs=["x"], attributes=as_attrs({"body": body}))
     graph.nodes = NodeDict({"x": x, "se_loop": side_effect_loop})
     graph.outputs = []  # No graph outputs, but loop has side effect
 
@@ -94,8 +93,8 @@ def test_cse_nested_subgraph_structural_hashing() -> None:
     g2.nodes = NodeDict({"in2": IRNode(id="in2", op_type="Input"), "c2": IRNode(id="c2", op_type="Constant", attributes={"value": 1})})
     g2.outputs = ["c2"]
 
-    n1 = IRNode(id="n1", op_type="CustomOp", inputs=["in_common"], attributes=typing.cast("dict[str, AttributeValue]", {"sub": g1}))
-    n2 = IRNode(id="n2", op_type="CustomOp", inputs=["in_common"], attributes=typing.cast("dict[str, AttributeValue]", {"sub": g2}))
+    n1 = IRNode(id="n1", op_type="CustomOp", inputs=["in_common"], attributes=as_attrs({"sub": g1}))
+    n2 = IRNode(id="n2", op_type="CustomOp", inputs=["in_common"], attributes=as_attrs({"sub": g2}))
 
     hash1 = compute_node_structural_hash(n1, ["in_common"])
     hash2 = compute_node_structural_hash(n2, ["in_common"])

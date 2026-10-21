@@ -8,12 +8,12 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 import ml_switcheroo_compiler.ops.nn.time_distributed as time_dist_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class DummyWithShape:
@@ -40,9 +40,9 @@ def test_time_distributed_full_coverage() -> None:
     """Test full coverage for time distributed wrapper operations."""
     td_op = time_dist_mod.TimeDistributed()
     assert td_op.infer_shape(x=None) == ()
-    assert typing.cast("EagerCallableProtocol", td_op.infer_shape)(x=typing.cast("EagerCallableProtocol", DummyWithShape)((5,))) == (5,)
-    assert typing.cast("EagerCallableProtocol", td_op.infer_shape)(x=typing.cast("EagerCallableProtocol", DummyWithShape)((2, 3, 4)), wrapped_op_name=None) == (2, 3, 4)
-    assert typing.cast("EagerCallableProtocol", td_op.infer_shape)(x=typing.cast("EagerCallableProtocol", DummyWithShape)((2, 3, 4)), wrapped_op_name=123) == (2, 3, 4)
+    assert as_callable(td_op.infer_shape)(x=as_callable(DummyWithShape)((5,))) == (5,)
+    assert as_callable(td_op.infer_shape)(x=as_callable(DummyWithShape)((2, 3, 4)), wrapped_op_name=None) == (2, 3, 4)
+    assert as_callable(td_op.infer_shape)(x=as_callable(DummyWithShape)((2, 3, 4)), wrapped_op_name=123) == (2, 3, 4)
 
     class MockInnerOpSuccess:
         """Mock inner operation returning a valid shape."""
@@ -76,13 +76,13 @@ def test_time_distributed_full_coverage() -> None:
 
     with patch("ml_switcheroo_compiler.ops.nn.time_distributed.get_op") as mock_get_op:
         mock_get_op.return_value = MockInnerOpSuccess
-        assert typing.cast("EagerCallableProtocol", td_op.infer_shape)(x=typing.cast("EagerCallableProtocol", DummyWithShape)((2, 3, 4)), wrapped_op_name="MockSuccess") == (2, 3, 8)
+        assert as_callable(td_op.infer_shape)(x=as_callable(DummyWithShape)((2, 3, 4)), wrapped_op_name="MockSuccess") == (2, 3, 8)
 
         mock_get_op.return_value = MockInnerOpEmptyShape
-        assert typing.cast("EagerCallableProtocol", td_op.infer_shape)(x=typing.cast("EagerCallableProtocol", DummyWithShape)((2, 3, 4)), wrapped_op_name="MockEmpty") == (2, 3, 4)
+        assert as_callable(td_op.infer_shape)(x=as_callable(DummyWithShape)((2, 3, 4)), wrapped_op_name="MockEmpty") == (2, 3, 4)
 
         mock_get_op.side_effect = RuntimeError("Operation not found")
-        assert typing.cast("EagerCallableProtocol", td_op.infer_shape)(x=typing.cast("EagerCallableProtocol", DummyWithShape)((2, 3, 4)), wrapped_op_name="FailingOp") == (2, 3, 4)
+        assert as_callable(td_op.infer_shape)(x=as_callable(DummyWithShape)((2, 3, 4)), wrapped_op_name="FailingOp") == (2, 3, 4)
 
     t_in = Tensor(np.ones((2, 3, 4), dtype=np.float32), TensorConfig((2, 3, 4), "float32", "cpu"))
 
@@ -103,7 +103,7 @@ def test_time_distributed_full_coverage() -> None:
                 np.ones((2, 3, 4), dtype=np.float32),
             )
             res_tuple = time_dist_mod.time_distributed(t_in, wrapped_op_name="Split")
-            assert isinstance(typing.cast("EagerValue", res_tuple), tuple)
+            assert isinstance(as_tensor(res_tuple), tuple)
             assert len(res_tuple) == 2
 
         config.eager_mode = False

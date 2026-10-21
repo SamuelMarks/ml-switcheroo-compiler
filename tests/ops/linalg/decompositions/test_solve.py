@@ -9,13 +9,13 @@ from unittest.mock import patch
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.solve import SolveEx, solve_ex
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_solve_ex_dummy() -> None:
@@ -33,14 +33,14 @@ def test_solve_ex() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.execute_op.return_value = (np.array([1.0, 2.0], dtype=np.float32), np.array(0, dtype=np.int32))
         mock_backend.return_value.array = lambda x: x
-        (res_sol, res_info) = typing.cast("EagerCallableProtocol", solve_ex)(a, b, check_errors=True)
-        assert isinstance(typing.cast("EagerValue", res_sol), Tensor)
-        assert isinstance(typing.cast("EagerValue", res_info), Tensor)
+        (res_sol, res_info) = as_callable(solve_ex)(a, b, check_errors=True)
+        assert isinstance(as_tensor(res_sol), Tensor)
+        assert isinstance(as_tensor(res_info), Tensor)
     config.eager_mode = False
     solve_mod = sys.modules["ml_switcheroo_compiler.ops.linalg.decompositions.solve"]
     with patch.object(solve_mod, "_emit_linalg_node") as mock_emit:
         mock_emit.return_value = ("mock_sol", "mock_info")
-        (res_sol, res_info) = typing.cast("EagerCallableProtocol", solve_ex)(a, b, check_errors=False)
+        (res_sol, res_info) = as_callable(solve_ex)(a, b, check_errors=False)
         assert res_sol == "mock_sol"
         mock_emit.assert_called_once()
 

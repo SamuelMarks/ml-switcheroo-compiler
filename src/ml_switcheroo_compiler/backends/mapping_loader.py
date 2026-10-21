@@ -10,6 +10,7 @@ from collections.abc import Sequence
 import yaml
 from pydantic import BaseModel, Field
 
+from ml_switcheroo_compiler.backends.eager_registry import as_tensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 
@@ -286,6 +287,6 @@ def dispatch_eager_op(
     if getattr(op_spec, "is_method", False) and len(args) > 0:
         method = getattr(args[0], op_spec.target_api, None)
         if method is not None and callable(method):
-            return typing.cast("EagerValue", method(*args[1:], **translated_kwargs))
+            return as_tensor(method(*args[1:], **translated_kwargs))
 
     return func(*args, **translated_kwargs)

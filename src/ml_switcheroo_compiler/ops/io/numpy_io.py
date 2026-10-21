@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_opt_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
@@ -74,14 +72,12 @@ def save(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
     Returns:
         Tensor | None: Symbolic node when tracing, or None in eager mode.
     """
-    import typing
-
     from ml_switcheroo_compiler.core.config import config
 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast("Tensor | None", get_active_backend().execute_op("Save", *args, **kwargs))
+        return as_opt_tensor_obj(get_active_backend().execute_op("Save", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Save", list(args), kwargs, (), "float32")
@@ -102,7 +98,7 @@ def save_gguf(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast("Tensor | None", get_active_backend().execute_op("SaveGguf", *args, **kwargs))
+        return as_opt_tensor_obj(get_active_backend().execute_op("SaveGguf", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SaveGguf", list(args), kwargs, (), "float32")
@@ -133,7 +129,7 @@ def savez(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor | None:
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast("Tensor | None", get_active_backend().execute_op("Savez", *args, **kwargs))
+        return as_opt_tensor_obj(get_active_backend().execute_op("Savez", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("Savez", list(args), kwargs, (), "float32")
@@ -154,7 +150,7 @@ def savez_compressed(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor 
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast("Tensor | None", get_active_backend().execute_op("SavezCompressed", *args, **kwargs))
+        return as_opt_tensor_obj(get_active_backend().execute_op("SavezCompressed", *args, **kwargs))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node("SavezCompressed", list(args), kwargs, (), "float32")

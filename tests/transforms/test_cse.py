@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import typing
+from ml_switcheroo_ir import NodeDict
 
-from ml_switcheroo_ir import AttributeValue, NodeDict
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.cse import cse_pass
+from tests.testing_utils import as_attrs, as_tensor
 
 
 def test_cse_basic() -> None:
@@ -161,39 +159,36 @@ def test_cse_attributes_subgraph_and_collections() -> None:
                 id="op1",
                 op_type="CustomOp",
                 inputs=["x"],
-                attributes=typing.cast(
-                    "dict[str, AttributeValue]",
+                attributes=as_attrs(
                     {
                         "subgraph": subgraph_a,
                         "config": {"gamma": 0.5, "tags": ["relu", "norm"]},
                         "params": [1, 2, 3],
-                    },
+                    }
                 ),
             ),
             "op2": IRNode(
                 id="op2",
                 op_type="CustomOp",
                 inputs=["x"],
-                attributes=typing.cast(
-                    "dict[str, AttributeValue]",
+                attributes=as_attrs(
                     {
                         "subgraph": subgraph_b,
                         "config": {"gamma": 0.5, "tags": ["relu", "norm"]},
                         "params": [1, 2, 3],
-                    },
+                    }
                 ),
             ),
             "op3": IRNode(
                 id="op3",
                 op_type="CustomOp",
                 inputs=["x"],
-                attributes=typing.cast(
-                    "dict[str, AttributeValue]",
+                attributes=as_attrs(
                     {
                         "subgraph": subgraph_c,
                         "config": {"gamma": 0.5, "tags": ["relu", "norm"]},
                         "params": [1, 2, 3],
-                    },
+                    }
                 ),
             ),
         }
@@ -213,7 +208,7 @@ def test_cse_structural_hash_and_input_rewrite() -> None:
 
     node = IRNode(id="sample", op_type="Add", inputs=["a", "b"], attributes={"dtype": "float32"})
     sig = compute_node_structural_hash(node, ["a", "b"])
-    assert bool(typing.cast("EagerValue", isinstance(sig, str))) and len(sig) == 64
+    assert bool(as_tensor(isinstance(sig, str))) and len(sig) == 64
 
     # Test case where a subsequent node has its inputs rewritten,
     # but the graph outputs are unchanged (already canonical).

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 ArrayInput = EagerValue
@@ -56,7 +55,7 @@ def _np_psum(
     if _tcp_dist_ctx.world_size > 1:
         tensor = np.asarray(backend_module.array(args[0]))
         return _tcp_dist_ctx.all_reduce_ring(tensor, op_type="sum", backend_module=backend_module)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.array(args[0]))
+    return as_ndarray(backend_module.array(args[0]))
 
 
 @numpy_eager_registry.register("ReducePrecision")
@@ -96,4 +95,4 @@ def _np_sparsereducemax(
     Returns:
         np.ndarray: Result array.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.max(args[0], axis=-1))
+    return as_ndarray(backend_module.max(args[0], axis=-1))

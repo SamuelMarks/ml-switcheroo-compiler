@@ -17,9 +17,10 @@ import ml_switcheroo_compiler.ops.nn.conv_lstm as conv_lstm_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.clip_grad import clip_grad_norm
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_clip_grad_coverage() -> None:
@@ -120,7 +121,7 @@ def test_conv_lstm_coverage() -> None:
         mock_gates.return_value = ("hidden", "cell")
 
         # 1D
-        assert typing.cast("EagerTensorProtocol", conv_lstm_mod.conv_lstm_cell(t_in_1d, state_1d, weights_1d)) == typing.cast("EagerTensorProtocol", ("hidden", "cell"))
+        assert as_tensor(conv_lstm_mod.conv_lstm_cell(t_in_1d, state_1d, weights_1d)) == as_tensor(("hidden", "cell"))
 
         # 2D
         weights_2d = RNNWeights(
@@ -130,13 +131,13 @@ def test_conv_lstm_coverage() -> None:
         )
         t_in_2d = Tensor(np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")))
         state_2d = (Tensor(np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))), Tensor(np.ones((1, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))))
-        assert typing.cast("EagerTensorProtocol", conv_lstm_mod.conv_lstm_cell(t_in_2d, state_2d, weights_2d)) == typing.cast("EagerTensorProtocol", ("hidden", "cell"))
+        assert as_tensor(conv_lstm_mod.conv_lstm_cell(t_in_2d, state_2d, weights_2d)) == as_tensor(("hidden", "cell"))
 
         # 3D
         weights_3d = RNNWeights(kernel=Tensor(np.ones((2, 2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))), recurrent_kernel=Tensor(np.ones((2, 2, 2, 2, 8)), TensorConfig(shape=(2, 2, 2, 2, 8), dtype=DType("float32"), device=Device("cpu"))), bias=None)
         t_in_3d = Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu")))
         state_3d = (Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))), Tensor(np.ones((1, 3, 3, 3, 2)), TensorConfig(shape=(1, 3, 3, 3, 2), dtype=DType("float32"), device=Device("cpu"))))
-        assert typing.cast("EagerTensorProtocol", conv_lstm_mod.conv_lstm_cell(t_in_3d, state_3d, weights_3d)) == typing.cast("EagerTensorProtocol", ("hidden", "cell"))
+        assert as_tensor(conv_lstm_mod.conv_lstm_cell(t_in_3d, state_3d, weights_3d)) == as_tensor(("hidden", "cell"))
 
         # Unsupported
         with pytest.raises(ValueError):

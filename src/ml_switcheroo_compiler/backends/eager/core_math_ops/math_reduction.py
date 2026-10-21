@@ -10,9 +10,10 @@ from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
+    as_tensor,
     global_eager_registry,
 )
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
 
 from .math_nn import _global_adaptive_pool
 
@@ -142,7 +143,7 @@ def _norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     mod = backend_module
     if hasattr(backend_module, "linalg") and hasattr(mod.linalg, "norm"):
         return mod.linalg.norm(*args, **kwargs)
-    return mod.sqrt(mod.sum(typing.cast(EagerTensorProtocol, args[0]) ** 2))
+    return mod.sqrt(mod.sum(as_tensor(args[0]) ** 2))
 
 
 @global_eager_registry.register("Numel")
@@ -160,9 +161,9 @@ def _numel(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     del kwargs
     x = args[0]
     if hasattr(x, "size"):
-        return float(typing.cast(EagerTensorProtocol, x).size)
+        return float(as_tensor(x).size)
     if hasattr(x, "numel"):
-        return float(typing.cast(BackendModuleProtocol, x).numel())
+        return float(as_mod(x).numel())
     return float(_resolve_eager_mod(backend_module).asarray(x).size)
 
 
@@ -281,7 +282,7 @@ def _apply_softmax(backend_module: BackendModuleProtocol, scores: EagerValue) ->
     if hasattr(backend_module, "nn") and hasattr(mod.nn, "softmax"):
         return mod.nn.softmax(scores, axis=-1)
     if hasattr(backend_module, "exp") and hasattr(backend_module, "sum") and hasattr(backend_module, "max"):
-        exps: EagerTensorProtocol = mod.exp(typing.cast(EagerTensorProtocol, scores) - mod.max(scores, axis=-1, keepdims=True))
+        exps: EagerTensorProtocol = mod.exp(as_tensor(scores) - mod.max(scores, axis=-1, keepdims=True))
         return exps / mod.sum(exps, axis=-1, keepdims=True)
     return scores
 
@@ -400,7 +401,7 @@ def _householder_product(backend_module: BackendModuleProtocol, *args: EagerValu
     mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "householder_product"):
-        return typing.cast("EagerValue", func.householder_product(*args, **kwargs))
+        return as_tensor(func.householder_product(*args, **kwargs))
     if hasattr(backend_module, "householder_product"):
         return mod.householder_product(*args, **kwargs)
 
@@ -443,7 +444,7 @@ def _cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     mod = backend_module
     func = getattr(backend_module, "maximum", None)
     if func and hasattr(func, "accumulate"):
-        return typing.cast("EagerValue", func.accumulate(*args, **kwargs))
+        return as_tensor(func.accumulate(*args, **kwargs))
 
     return mod.maximum.accumulate(mod.asarray(args[0]), **kwargs)
 
@@ -463,7 +464,7 @@ def _cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     mod = backend_module
     func = getattr(backend_module, "minimum", None)
     if func and hasattr(func, "accumulate"):
-        return typing.cast("EagerValue", func.accumulate(*args, **kwargs))
+        return as_tensor(func.accumulate(*args, **kwargs))
 
     return mod.minimum.accumulate(mod.asarray(args[0]), **kwargs)
 
@@ -483,7 +484,7 @@ def _cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     mod = backend_module
     func = getattr(backend_module, "cumlogsumexp", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
 
     x = mod.asarray(args[0])
     axis = kwargs.get("axis", 0) if hasattr(kwargs, "get") else 0
@@ -538,7 +539,7 @@ def _np_fmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     func = getattr(backend_module, "fmax", getattr(backend_module, "fmax", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fmax(args[0], args[1])
 
 
@@ -556,7 +557,7 @@ def _np_scattermax(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "scattermax", getattr(backend_module, "scattermax", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -574,7 +575,7 @@ def _np_scattermin(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "scattermin", getattr(backend_module, "scattermin", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -592,7 +593,7 @@ def _np_weibullmin(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "weibullmin", getattr(backend_module, "weibullmin", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.weibull(*args, **kwargs)
 
 
@@ -610,5 +611,5 @@ def _np_windowhamming(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """
     func = getattr(backend_module, "windowhamming", getattr(backend_module, "windowhamming", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).hamming(*args, **kwargs)

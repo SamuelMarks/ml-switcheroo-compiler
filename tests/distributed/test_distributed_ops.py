@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _check_distributed_infer_shape(classes: EagerValue, t: EagerValue) -> None:
@@ -17,8 +19,8 @@ def _check_distributed_infer_shape(classes: EagerValue, t: EagerValue) -> None:
     """
     from ml_switcheroo_compiler.ops.registry import get_op
 
-    for cls_name in typing.cast("EagerTensorProtocol", classes):
-        OpCls = typing.cast("EagerCallableProtocol", get_op)(cls_name)
+    for cls_name in as_tensor(classes):
+        OpCls = as_callable(get_op)(cls_name)
         inst = OpCls()
         if cls_name == "Recv":
             inst.infer_shape((1,), "float32", 0)
@@ -160,18 +162,18 @@ def test_distributed_ops_infer_shapes_extras() -> None:
     for cls in (AllToAll, BroadcastArrays, BroadcastTo, BroadcastToRank, BroadcastedIota, Pbroadcast):
         op = cls()
         assert op.infer_shape() == ()
-        assert typing.cast("EagerCallableProtocol", op.infer_shape)(1, 2) == ()  # no shape attr
+        assert as_callable(op.infer_shape)(1, 2) == ()  # no shape attr
 
         # one shape
-        res = typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyShape)((2,)))
+        res = as_callable(op.infer_shape)(as_callable(DummyShape)((2,)))
         assert res == (2,) or (cls == BroadcastToRank and res == (2,))
 
         if cls != BroadcastToRank:
             # two shapes
-            assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyShape)((2, 2)), typing.cast("EagerCallableProtocol", DummyShape)((1, 2))) == (2, 2)
+            assert as_callable(op.infer_shape)(as_callable(DummyShape)((2, 2)), as_callable(DummyShape)((1, 2))) == (2, 2)
 
     # BroadcastTo specific
     assert BroadcastTo().infer_shape(shape=(3, 3)) == (3, 3)
 
     # BroadcastToRank specific
-    assert typing.cast("EagerCallableProtocol", BroadcastToRank)().infer_shape(typing.cast("EagerCallableProtocol", DummyShape)((2,)), rank=3) == (1, 1, 2)
+    assert as_callable(BroadcastToRank)().infer_shape(as_callable(DummyShape)((2,)), rank=3) == (1, 1, 2)

@@ -6,9 +6,10 @@ import typing
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_basic import _infer_dtype
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_infer_dtype_from_array_object() -> None:
@@ -19,4 +20,4 @@ def test_infer_dtype_from_array_object() -> None:
 
         dtype = "O"
 
-    assert typing.cast("EagerCallableProtocol", _infer_dtype)(typing.cast("EagerCallableProtocol", ObjArr)()) == DType.Object
+    assert as_callable(_infer_dtype)(as_callable(ObjArr)()) == DType.Object

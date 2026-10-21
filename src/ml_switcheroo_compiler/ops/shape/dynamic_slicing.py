@@ -1,12 +1,11 @@
-"""Shape operations for Tensor Anys."""
+"""Shape operations for Tensor objects."""
 
 from __future__ import annotations
 
 import builtins
-import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
 from ml_switcheroo_compiler.core.config import config
 
 # pylint: disable=duplicate-code
@@ -37,12 +36,12 @@ def dynamic_slice(
         starts = []
         for s in start_indices:
             if hasattr(s, "data"):
-                starts.append(int(typing.cast(int, s.data)))
+                starts.append(int(as_int(s.data)))
             else:
                 starts.append(int(s))
         starts = [min(max(0, s), d - sz) for s, d, sz in zip(starts, input.shape, slice_sizes)]
         idx = tuple(builtins.slice(s, s + sz) for s, sz in zip(starts, slice_sizes))
-        data = typing.cast(EagerTensorProtocol, input.data)[idx]
+        data = as_tensor(input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input, *start_indices]
     if len(input.shape) > 0 and len(slice_sizes) != len(input.shape):

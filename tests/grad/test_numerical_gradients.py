@@ -11,15 +11,15 @@ from ml_switcheroo_ir import LogicalNode
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import hvp, jvp, vjp
 from ml_switcheroo_compiler.grad.symbolic_compiler import SymbolicExpressionCompiler
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+from tests.testing_utils import as_callable, as_ndarray, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _create_tensor(
@@ -44,7 +44,7 @@ def _create_tensor(
 
 
 def _compute_finite_difference_grad(
-    func: Callable[[Tensor], Tensor],
+    func: Callable[[Tensor], EagerTensorProtocol | Tensor],
     x: Tensor,
     eps: float = 1e-3,
 ) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
@@ -69,11 +69,11 @@ def _compute_finite_difference_grad(
 
             x_arr[idx] = orig + eps
             pos_t = _create_tensor(x_arr, x.shape)
-            f_pos = typing.cast("EagerCallableProtocol", float)(typing.cast("EagerCallableProtocol", np.sum)(typing.cast("EagerCallableProtocol", func)(pos_t).data))
+            f_pos = as_callable(float)(as_callable(np.sum)(as_callable(func)(pos_t).data))
 
             x_arr[idx] = orig - eps
             neg_t = _create_tensor(x_arr, x.shape)
-            f_neg = typing.cast("EagerCallableProtocol", float)(typing.cast("EagerCallableProtocol", np.sum)(typing.cast("EagerCallableProtocol", func)(neg_t).data))
+            f_neg = as_callable(float)(as_callable(np.sum)(as_callable(func)(neg_t).data))
 
             grad_arr[idx] = (f_pos - f_neg) / (2.0 * eps)
             x_arr[idx] = orig
@@ -108,7 +108,7 @@ def _compute_finite_difference_hvp(
     grad_pos = _compute_finite_difference_grad(func, pos_x, eps=eps)
     grad_neg = _compute_finite_difference_grad(func, neg_x, eps=eps)
 
-    return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", (typing.cast("EagerTensorProtocol", grad_pos) - typing.cast("EagerTensorProtocol", grad_neg)) / (typing.cast("EagerTensorProtocol", 2.0) * typing.cast("EagerTensorProtocol", eps)))
+    return as_ndarray((as_tensor(grad_pos) - as_tensor(grad_neg)) / (as_tensor(2.0) * as_tensor(eps)))
 
 
 def test_symbolic_compiler_higher_order_rules_manifest() -> None:
@@ -166,14 +166,14 @@ def test_symbolic_compiler_compile_hvp_emission() -> None:
 
 def test_numerical_gradient_unary_functions() -> None:
     """Validate unary math functions VJP against central finite differences."""
-    unary_cases: list[tuple[Callable[[Tensor], Tensor], list[float]]] = [
-        (lambda t: typing.cast("TypedVariadicCallable[Tensor]", dispatch_op)("Sin", t), [0.3, 0.7, 1.2, -0.5]),
-        (lambda t: typing.cast("TypedVariadicCallable[Tensor]", dispatch_op)("Cos", t), [0.1, -0.4, 0.9, 1.5]),
-        (lambda t: typing.cast("TypedVariadicCallable[Tensor]", dispatch_op)("Exp", t), [0.1, -0.2, 0.5, 0.0]),
-        (lambda t: typing.cast("TypedVariadicCallable[Tensor]", dispatch_op)("Sinh", t), [0.2, -0.3, 0.4, 0.1]),
-        (lambda t: typing.cast("TypedVariadicCallable[Tensor]", dispatch_op)("Cosh", t), [0.1, 0.5, -0.2, 0.3]),
-        (lambda t: typing.cast("TypedVariadicCallable[Tensor]", dispatch_op)("Tanh", t), [0.3, -0.6, 0.2, -0.1]),
-        (lambda t: typing.cast("TypedVariadicCallable[Tensor]", dispatch_op)("Abs", t), [0.5, -0.8, 1.2, -1.5]),
+    unary_cases: list[tuple[Callable[[Tensor], EagerTensorProtocol | Tensor], list[float]]] = [
+        (lambda t: as_callable(dispatch_op)("Sin", t), [0.3, 0.7, 1.2, -0.5]),
+        (lambda t: as_callable(dispatch_op)("Cos", t), [0.1, -0.4, 0.9, 1.5]),
+        (lambda t: as_callable(dispatch_op)("Exp", t), [0.1, -0.2, 0.5, 0.0]),
+        (lambda t: as_callable(dispatch_op)("Sinh", t), [0.2, -0.3, 0.4, 0.1]),
+        (lambda t: as_callable(dispatch_op)("Cosh", t), [0.1, 0.5, -0.2, 0.3]),
+        (lambda t: as_callable(dispatch_op)("Tanh", t), [0.3, -0.6, 0.2, -0.1]),
+        (lambda t: as_callable(dispatch_op)("Abs", t), [0.5, -0.8, 1.2, -1.5]),
     ]
 
     for func, vals in unary_cases:
@@ -181,12 +181,12 @@ def test_numerical_gradient_unary_functions() -> None:
         num_grad = _compute_finite_difference_grad(func, x, eps=1e-3)
 
         with ConfigContext(eager_mode=True):
-            out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(func, x)
+            out, vjp_fn = as_callable(vjp)(func, x)
             cot = _create_tensor([1.0] * len(vals), (len(vals),))
-            (sym_grad,) = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
+            (sym_grad,) = as_callable(vjp_fn)(cot)
 
-        sym_arr = np.array(typing.cast("EagerTensorProtocol", getattr(sym_grad, "data")), dtype=np.float32)
-        diff = typing.cast("EagerCallableProtocol", np.max)(typing.cast("EagerCallableProtocol", np.abs)(typing.cast("EagerTensorProtocol", sym_arr) - typing.cast("EagerTensorProtocol", num_grad)))
+        sym_arr = np.array(as_tensor(getattr(sym_grad, "data")), dtype=np.float32)
+        diff = as_callable(np.max)(as_callable(np.abs)(as_tensor(sym_arr) - as_tensor(num_grad)))
         assert diff < 5e-3, f"Gradient mismatch for {func}: max diff {diff}"
 
 
@@ -227,12 +227,12 @@ def test_numerical_gradient_binary_functions() -> None:
         num_grad = _compute_finite_difference_grad(func, x, eps=1e-3)
 
         with ConfigContext(eager_mode=True):
-            out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(func, x)
+            out, vjp_fn = as_callable(vjp)(func, x)
             cot = _create_tensor([1.0, 1.0, 1.0], (3,))
-            (sym_grad,) = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
+            (sym_grad,) = as_callable(vjp_fn)(cot)
 
-        sym_arr = np.array(typing.cast("EagerTensorProtocol", getattr(sym_grad, "data")), dtype=np.float32)
-        diff = typing.cast("EagerCallableProtocol", np.max)(typing.cast("EagerCallableProtocol", np.abs)(typing.cast("EagerTensorProtocol", sym_arr) - typing.cast("EagerTensorProtocol", num_grad)))
+        sym_arr = np.array(as_tensor(getattr(sym_grad, "data")), dtype=np.float32)
+        diff = as_callable(np.max)(as_callable(np.abs)(as_tensor(sym_arr) - as_tensor(num_grad)))
         assert diff < 1e-3
 
 
@@ -258,9 +258,9 @@ def test_numerical_jvp_verification() -> None:
         f_minus = func(x_minus)
         num_jvp = (np.array(f_plus.data) - np.array(f_minus.data)) / (2.0 * eps)
 
-        _, sym_jvp = typing.cast("EagerCallableProtocol", jvp)(func, (x,), (v,))
+        _, sym_jvp = as_callable(jvp)(func, (x,), (v,))
 
-    sym_arr = np.array(typing.cast("EagerTensorProtocol", getattr(sym_jvp, "data")), dtype=np.float32)
+    sym_arr = np.array(as_tensor(getattr(sym_jvp, "data")), dtype=np.float32)
     assert np.allclose(sym_arr, num_jvp, atol=1e-3, rtol=1e-3)
 
 
@@ -281,7 +281,7 @@ def test_numerical_hvp_verification() -> None:
     num_hvp = _compute_finite_difference_hvp(func, x, v, eps=1e-3)
 
     with ConfigContext(eager_mode=True):
-        val, sym_hvp = typing.cast("EagerCallableProtocol", hvp)(func, x, v)
+        val, sym_hvp = as_callable(hvp)(func, x, v)
 
-    sym_arr = np.array(typing.cast("EagerTensorProtocol", getattr(sym_hvp, "data")), dtype=np.float32)
+    sym_arr = np.array(as_tensor(getattr(sym_hvp, "data")), dtype=np.float32)
     assert np.allclose(sym_arr, num_hvp, atol=5e-2, rtol=5e-2)

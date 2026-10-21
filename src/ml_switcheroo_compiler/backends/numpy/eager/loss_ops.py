@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -29,7 +27,7 @@ def _np_ctc_loss_update_alpha(t: int, S: int, augmented: EagerValue, alpha: Eage
             sum_term += getattr(alpha, "__getitem__")((t - 1, s - 1))
         if s >= 2 and getattr(augmented, "__getitem__")(s) != blank and getattr(augmented, "__getitem__")(s) != getattr(augmented, "__getitem__")(s - 2):
             sum_term += getattr(alpha, "__getitem__")((t - 1, s - 2))
-        typing.cast(EagerTensorProtocol, alpha)[t, s] = sum_term * prob_term
+        as_tensor(alpha)[t, s] = sum_term * prob_term
 
 
 def _np_ctc_loss_single(probs: EagerValue, b_labels: EagerValue, T: int, L: int) -> float:
@@ -53,9 +51,9 @@ def _np_ctc_loss_single(probs: EagerValue, b_labels: EagerValue, T: int, L: int)
     num_classes = getattr(probs, "shape")[-1]
     alpha = np.zeros((T, S))
     if T > 0:
-        typing.cast(EagerTensorProtocol, alpha)[0, 0] = getattr(probs, "__getitem__")((0, blank % num_classes))
+        alpha[0, 0] = getattr(probs, "__getitem__")((0, blank % num_classes))
         if S > 1:
-            typing.cast(EagerTensorProtocol, alpha)[0, 1] = getattr(probs, "__getitem__")((0, getattr(augmented, "__getitem__")(1) % num_classes))
+            alpha[0, 1] = getattr(probs, "__getitem__")((0, getattr(augmented, "__getitem__")(1) % num_classes))
 
     for t in range(1, T):
         _np_ctc_loss_update_alpha(t, S, augmented, alpha, probs, num_classes, blank)
@@ -138,9 +136,9 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     margin = kwargs.get("margin", 0.25)
     gamma = kwargs.get("gamma", 256.0)
 
-    O_p = 1 + typing.cast(EagerTensorProtocol, margin)
-    O_n = -typing.cast(EagerTensorProtocol, margin)
-    Delta_p = 1 - typing.cast(EagerTensorProtocol, margin)
+    O_p = 1 + as_tensor(margin)
+    O_n = -as_tensor(margin)
+    Delta_p = 1 - as_tensor(margin)
     Delta_n = margin
 
     alpha_p = getattr(np, "maximum")(0, O_p - y_pred)
@@ -153,7 +151,7 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     pos_mask = y_true == 1
     neg_mask = y_true == 0
 
-    logit_p = -typing.cast(EagerTensorProtocol, gamma) * p_loss
+    logit_p = -as_tensor(gamma) * p_loss
     logit_n = gamma * n_loss
 
     # Use logaddexp for numerical stability
@@ -163,7 +161,7 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     sum_exp_p = np.sum(np.exp(logit_p * pos_mask) * pos_mask, axis=-1, keepdims=True)
 
     loss = np.log1p(sum_exp_n * sum_exp_p)
-    return typing.cast("EagerValue", np.mean(loss))
+    return as_tensor(np.mean(loss))
 
 
 @numpy_eager_registry.register("CategoricalGeneralizedCrossEntropy")
@@ -187,7 +185,7 @@ def _np_categorical_generalized_cross_entropy(backend_module: BackendModuleProto
 
     # GCE = (1 - sum(y_true * y_pred^q)) / q
     res = (1.0 - np.sum(y_true * getattr(np, "power")(y_pred, q), axis=-1)) / q
-    return typing.cast("EagerValue", np.mean(res))
+    return as_tensor(np.mean(res))
 
 
 @numpy_eager_registry.register("InTopK")
@@ -204,7 +202,7 @@ def _np_in_top_k(backend_module: BackendModuleProtocol, targets: EagerValue, pre
         EagerValue: Boolean array indicating if target is within top K predictions.
     """
     _ = backend_module
-    k = int(typing.cast(int, kwargs.get("k", 1)))
+    k = int(as_int(kwargs.get("k", 1)))
     t_arr = np.asarray(targets, dtype=np.int64).reshape(-1)
     p_arr = np.atleast_2d(np.asarray(predictions))
     sorted_indices = np.argsort(-p_arr, axis=-1)[:, : max(1, k)]

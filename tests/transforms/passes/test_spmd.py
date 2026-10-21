@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 import pytest
-from ml_switcheroo_ir import LogicalNode, NodeDict, PartitionSpec
+from ml_switcheroo_ir import NodeDict, PartitionSpec
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -23,11 +23,12 @@ from ml_switcheroo_compiler.transforms.passes.spmd import (
     _process_spmd_node,
     inject_spmd_communication_pass,
 )
+from tests.testing_utils import as_callable, as_node, as_node_dict, as_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 @pytest.fixture(autouse=True)
@@ -67,9 +68,9 @@ def test_get_spmd_rules_yaml_fallback() -> None:
 
     def mock_exists(self: EagerValue) -> EagerValue:
         """Test function mock_exists."""
-        if typing.cast("EagerTensorProtocol", getattr(self, "name")) == "spmd_mappings":
+        if as_tensor(getattr(self, "name")) == "spmd_mappings":
             return False
-        if typing.cast("EagerTensorProtocol", getattr(self, "name")) == "spmd_mappings.yaml":
+        if as_tensor(getattr(self, "name")) == "spmd_mappings.yaml":
             return True
         return False
 
@@ -83,31 +84,31 @@ def test_get_spmd_rules_yaml_fallback() -> None:
 
 def test_is_boundary_transition() -> None:
     """Test function test_is_boundary_transition."""
-    assert typing.cast("EagerCallableProtocol", _is_boundary_transition)(typing.cast("EagerCallableProtocol", DummySharding)([None]), typing.cast("EagerCallableProtocol", DummySharding)([None])) == (False, False)
-    assert typing.cast("EagerCallableProtocol", _is_boundary_transition)(typing.cast("EagerCallableProtocol", DummySharding)(["x"]), typing.cast("EagerCallableProtocol", DummySharding)([None])) == (True, False)
-    assert typing.cast("EagerCallableProtocol", _is_boundary_transition)(typing.cast("EagerCallableProtocol", DummySharding)([None]), typing.cast("EagerCallableProtocol", DummySharding)(["x"])) == (False, True)
+    assert as_callable(_is_boundary_transition)(as_callable(DummySharding)([None]), as_callable(DummySharding)([None])) == (False, False)
+    assert as_callable(_is_boundary_transition)(as_callable(DummySharding)(["x"]), as_callable(DummySharding)([None])) == (True, False)
+    assert as_callable(_is_boundary_transition)(as_callable(DummySharding)([None]), as_callable(DummySharding)(["x"])) == (False, True)
 
 
 def test_create_nodes() -> None:
     """Test function test_create_nodes."""
     sharding = DummySharding(["x"])
 
-    n1 = typing.cast("EagerCallableProtocol", _create_all_gather_node)("inp1", sharding)
+    n1 = as_callable(_create_all_gather_node)("inp1", sharding)
     assert n1.id == "inp1_all_gather"
     assert n1.op_type == "AllGather"
     assert bool(n1.attributes.get("dispatch_early")) is True
 
-    n2 = typing.cast("EagerCallableProtocol", _create_reduce_scatter_node)("inp2", sharding)
+    n2 = as_callable(_create_reduce_scatter_node)("inp2", sharding)
     assert n2.id == "inp2_reduce_scatter"
     assert n2.op_type == "ReduceScatter"
     assert bool(n2.attributes.get("dispatch_early")) is True
 
-    n3 = typing.cast("EagerCallableProtocol", _create_all_reduce_node)("inp3", sharding)
+    n3 = as_callable(_create_all_reduce_node)("inp3", sharding)
     assert n3.id == "inp3_all_reduce"
     assert n3.op_type == "AllReduce"
     assert bool(n3.attributes.get("dispatch_early")) is True
 
-    n4 = typing.cast("EagerCallableProtocol", _create_all_to_all_node)("inp4", sharding)
+    n4 = as_callable(_create_all_to_all_node)("inp4", sharding)
     assert n4.id == "inp4_all_to_all"
     assert n4.op_type == "AllToAll"
     assert bool(n4.attributes.get("dispatch_early")) is True
@@ -118,22 +119,22 @@ def test_inject_nodes() -> None:
     sharding = DummySharding(["x"])
 
     node1 = IRNode(id="n1", op_type="Add", inputs=["in1", "in2"])
-    res1 = typing.cast("EagerCallableProtocol", _inject_all_gather)(node1, 0, "in1", sharding)
+    res1 = as_callable(_inject_all_gather)(node1, 0, "in1", sharding)
     assert node1.inputs[0] == "in1_all_gather"
     assert res1.id == "in1_all_gather"
 
     node2 = IRNode(id="n2", op_type="Add", inputs=["in1", "in2"])
-    res2 = typing.cast("EagerCallableProtocol", _inject_reduce_scatter)(node2, 1, "in2", sharding)
+    res2 = as_callable(_inject_reduce_scatter)(node2, 1, "in2", sharding)
     assert node2.inputs[1] == "in2_reduce_scatter"
     assert res2.id == "in2_reduce_scatter"
 
     node3 = IRNode(id="n3", op_type="Add", inputs=["in3", "in2"])
-    res3 = typing.cast("EagerCallableProtocol", _inject_all_reduce)(node3, 0, "in3", sharding)
+    res3 = as_callable(_inject_all_reduce)(node3, 0, "in3", sharding)
     assert node3.inputs[0] == "in3_all_reduce"
     assert res3.id == "in3_all_reduce"
 
     node4 = IRNode(id="n4", op_type="Add", inputs=["in4", "in2"])
-    res4 = typing.cast("EagerCallableProtocol", _inject_all_to_all)(node4, 0, "in4", sharding)
+    res4 = as_callable(_inject_all_to_all)(node4, 0, "in4", sharding)
     assert node4.inputs[0] == "in4_all_to_all"
     assert res4.id == "in4_all_to_all"
 
@@ -145,40 +146,40 @@ def test_process_spmd_input() -> None:
     sharding_sharded_y = DummySharding(["y"])
 
     graph = IRGraph()
-    in_node1 = typing.cast("EagerCallableProtocol", IRNode)(id="in1", op_type="Input", inputs=[], sharding=sharding_sharded_x)
-    graph.nodes["in1"] = typing.cast("LogicalNode", in_node1)
+    in_node1 = as_callable(IRNode)(id="in1", op_type="Input", inputs=[], sharding=sharding_sharded_x)
+    graph.nodes["in1"] = as_node(in_node1)
 
     # 1. inp_sharded, not node_sharded, not grad/reduction => all_gather
-    node1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=sharding_unsharded)
-    res_ag = typing.cast("EagerCallableProtocol", _process_spmd_input)(node1, 0, "in1", graph, sharding_unsharded)
+    node1 = as_callable(IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=sharding_unsharded)
+    res_ag = as_callable(_process_spmd_input)(node1, 0, "in1", graph, sharding_unsharded)
     # The default yaml has Add -> inject: AllGather
-    assert typing.cast("EagerValue", res_ag) is not None and res_ag.op_type == "AllGather"
+    assert as_tensor(res_ag) is not None and res_ag.op_type == "AllGather"
 
     # 2. inp_sharded, not node_sharded, reduction => all_reduce
-    node2 = typing.cast("EagerCallableProtocol", IRNode)(id="n2", op_type="ReduceSum", inputs=["in1"], sharding=sharding_unsharded)
-    res_ar = typing.cast("EagerCallableProtocol", _process_spmd_input)(node2, 0, "in1", graph, sharding_unsharded)
-    assert typing.cast("EagerValue", res_ar) is not None and res_ar.op_type == "AllReduce"
+    node2 = as_callable(IRNode)(id="n2", op_type="ReduceSum", inputs=["in1"], sharding=sharding_unsharded)
+    res_ar = as_callable(_process_spmd_input)(node2, 0, "in1", graph, sharding_unsharded)
+    assert as_tensor(res_ar) is not None and res_ar.op_type == "AllReduce"
 
     # 3. not inp_sharded, node_sharded, grad => reduce_scatter
-    in_node_unsharded = typing.cast("EagerCallableProtocol", IRNode)(id="in_un", op_type="Input", inputs=[], sharding=sharding_unsharded)
-    graph.nodes["in_un"] = typing.cast("LogicalNode", in_node_unsharded)
-    node_grad = typing.cast("EagerCallableProtocol", IRNode)(id="grad_node", op_type="Grad", inputs=["in_un"], sharding=sharding_sharded_x)
-    res_rs = typing.cast("EagerCallableProtocol", _process_spmd_input)(node_grad, 0, "in_un", graph, sharding_sharded_x)
-    assert typing.cast("EagerValue", res_rs) is not None and res_rs.op_type == "ReduceScatter"
+    in_node_unsharded = as_callable(IRNode)(id="in_un", op_type="Input", inputs=[], sharding=sharding_unsharded)
+    graph.nodes["in_un"] = as_node(in_node_unsharded)
+    node_grad = as_callable(IRNode)(id="grad_node", op_type="Grad", inputs=["in_un"], sharding=sharding_sharded_x)
+    res_rs = as_callable(_process_spmd_input)(node_grad, 0, "in_un", graph, sharding_sharded_x)
+    assert as_tensor(res_rs) is not None and res_rs.op_type == "ReduceScatter"
 
     # 4. inp_sharded, node_sharded, different axes => all_to_all
-    node3 = typing.cast("EagerCallableProtocol", IRNode)(id="n3", op_type="Add", inputs=["in1"], sharding=sharding_sharded_y)
-    res_a2a = typing.cast("EagerCallableProtocol", _process_spmd_input)(node3, 0, "in1", graph, sharding_sharded_y)
-    assert typing.cast("EagerValue", res_a2a) is not None and res_a2a.op_type == "AllToAll"
+    node3 = as_callable(IRNode)(id="n3", op_type="Add", inputs=["in1"], sharding=sharding_sharded_y)
+    res_a2a = as_callable(_process_spmd_input)(node3, 0, "in1", graph, sharding_sharded_y)
+    assert as_tensor(res_a2a) is not None and res_a2a.op_type == "AllToAll"
 
     # Missing input node
-    node4 = typing.cast("EagerCallableProtocol", IRNode)(id="n4", op_type="Add", inputs=["missing"], sharding=sharding_sharded_y)
-    assert typing.cast("EagerCallableProtocol", _process_spmd_input)(node4, 0, "missing", graph, sharding_sharded_y) is None
+    node4 = as_callable(IRNode)(id="n4", op_type="Add", inputs=["missing"], sharding=sharding_sharded_y)
+    assert as_callable(_process_spmd_input)(node4, 0, "missing", graph, sharding_sharded_y) is None
 
     # Missing sharding on input node
     in_node_no_shard = IRNode(id="in_ns", op_type="Input", inputs=[])
     graph.nodes["in_ns"] = in_node_no_shard
-    assert typing.cast("EagerCallableProtocol", _process_spmd_input)(node3, 0, "in_ns", graph, sharding_sharded_y) is None
+    assert as_callable(_process_spmd_input)(node3, 0, "in_ns", graph, sharding_sharded_y) is None
 
 
 def test_process_spmd_node() -> None:
@@ -200,9 +201,9 @@ def test_process_spmd_node() -> None:
 
 def test_inject_spmd_communication_pass() -> None:
     """Test function test_inject_spmd_communication_pass."""
-    node1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=typing.cast("EagerCallableProtocol", DummySharding)([None]))
-    graph = typing.cast("EagerCallableProtocol", IRGraph)(nodes={"in1": typing.cast("EagerCallableProtocol", IRNode)(id="in1", op_type="Input", inputs=[], sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x"])), "n1": node1})
-    res = typing.cast("EagerCallableProtocol", inject_spmd_communication_pass)(graph)
+    node1 = as_callable(IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=as_callable(DummySharding)([None]))
+    graph = as_callable(IRGraph)(nodes={"in1": as_callable(IRNode)(id="in1", op_type="Input", inputs=[], sharding=as_callable(DummySharding)(["x"])), "n1": node1})
+    res = as_callable(inject_spmd_communication_pass)(graph)
     assert bool(res) is True
     assert "in1_all_gather" in graph.nodes
 
@@ -217,9 +218,9 @@ def test_get_sharding_axes_none() -> None:
 def test_spmd_insert_communications_not_is_grad() -> None:
     """Test function test_spmd_insert_communications_not_is_grad."""
     g = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=typing.cast("EagerCallableProtocol", DummySharding)([0]))
+    n1 = as_callable(IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=as_callable(DummySharding)([0]))
     n2 = IRNode(id="n2", op_type="Input", sharding=None)
-    g.nodes["n1"] = typing.cast("LogicalNode", n1)
+    g.nodes["n1"] = as_node(n1)
     g.nodes["n2"] = n2
 
     res = inject_spmd_communication_pass(g)
@@ -229,10 +230,10 @@ def test_spmd_insert_communications_not_is_grad() -> None:
 def test_spmd_insert_communications_axes_len_mismatch() -> None:
     """Test function test_spmd_insert_communications_axes_len_mismatch."""
     g = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=typing.cast("EagerCallableProtocol", DummySharding)([0]))
-    n2 = typing.cast("EagerCallableProtocol", IRNode)(id="n2", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([0, 1]))
-    g.nodes["n1"] = typing.cast("LogicalNode", n1)
-    g.nodes["n2"] = typing.cast("LogicalNode", n2)
+    n1 = as_callable(IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=as_callable(DummySharding)([0]))
+    n2 = as_callable(IRNode)(id="n2", op_type="Input", sharding=as_callable(DummySharding)([0, 1]))
+    g.nodes["n1"] = as_node(n1)
+    g.nodes["n2"] = as_node(n2)
 
     res = inject_spmd_communication_pass(g)
     assert res is False  # Length of axes mismatch, no all_to_all
@@ -241,10 +242,10 @@ def test_spmd_insert_communications_axes_len_mismatch() -> None:
 def test_spmd_insert_communications_not_inp_sharded_node_sharded_not_grad() -> None:
     """Test function test_spmd_insert_communications_not_inp_sharded_node_sharded_not_grad."""
     g = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=typing.cast("EagerCallableProtocol", DummySharding)([0]))
-    n2 = typing.cast("EagerCallableProtocol", IRNode)(id="n2", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([None]))
-    g.nodes["n1"] = typing.cast("LogicalNode", n1)
-    g.nodes["n2"] = typing.cast("LogicalNode", n2)
+    n1 = as_callable(IRNode)(id="n1", op_type="Add", inputs=["n2"], sharding=as_callable(DummySharding)([0]))
+    n2 = as_callable(IRNode)(id="n2", op_type="Input", sharding=as_callable(DummySharding)([None]))
+    g.nodes["n1"] = as_node(n1)
+    g.nodes["n2"] = as_node(n2)
     # Wait, n1 has node_sharded True, n2 has inp_sharded False.
     # But n1 is NOT grad.
     # Actually wait. _is_boundary_transition(inp, node) gives False, True.
@@ -269,11 +270,11 @@ def test_spmd_empty_conditions(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.transforms.passes.spmd._get_spmd_rules", return_value=mock_rules)
 
     graph = IRGraph()
-    in_node1 = typing.cast("EagerCallableProtocol", IRNode)(id="in1", op_type="Input", inputs=[], sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x"]))
-    graph.nodes["in1"] = typing.cast("LogicalNode", in_node1)
+    in_node1 = as_callable(IRNode)(id="in1", op_type="Input", inputs=[], sharding=as_callable(DummySharding)(["x"]))
+    graph.nodes["in1"] = as_node(in_node1)
 
-    node1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=typing.cast("EagerCallableProtocol", DummySharding)(["y"]))
-    res = typing.cast("EagerCallableProtocol", _process_spmd_input)(node1, 0, "in1", graph, typing.cast("EagerCallableProtocol", DummySharding)(["y"]))
+    node1 = as_callable(IRNode)(id="n1", op_type="Add", inputs=["in1"], sharding=as_callable(DummySharding)(["y"]))
+    res = as_callable(_process_spmd_input)(node1, 0, "in1", graph, as_callable(DummySharding)(["y"]))
     assert res is None
 
 
@@ -307,7 +308,7 @@ def test_spmd_load_rules_branches() -> None:
             Args:
                 other: Test parameter `other`.
             """
-            return typing.cast("EagerTensorProtocol", self.path) / typing.cast("EagerTensorProtocol", other)
+            return as_tensor(self.path) / as_tensor(other)
 
     with patch("pathlib.Path.exists", return_value=True), patch("os.listdir", return_value=["test.txt", "valid.yaml", "invalid.yaml"]), patch("builtins.open", mock_open()), patch("yaml.safe_load", side_effect=[{"Add": {}}, ["not a dict"]]):
         # Test branches 184->183 (test.txt) and 187->183 (invalid.yaml returning a list)
@@ -331,24 +332,24 @@ def test_propagate_sharding_matmul_row_and_col_parallel() -> None:
 
     # Row parallel: LHS row-sharded, RHS replicated
     g = IRGraph()
-    lhs = typing.cast("EagerCallableProtocol", IRNode)(id="lhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x", None]))
-    rhs = typing.cast("EagerCallableProtocol", IRNode)(id="rhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([None, None]))
+    lhs = as_callable(IRNode)(id="lhs", op_type="Input", sharding=as_callable(DummySharding)(["x", None]))
+    rhs = as_callable(IRNode)(id="rhs", op_type="Input", sharding=as_callable(DummySharding)([None, None]))
     mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
-    g.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"lhs": lhs, "rhs": rhs, "mm": mm}))
+    g.nodes = NodeDict(as_node_dict({"lhs": lhs, "rhs": rhs, "mm": mm}))
 
     modified = propagate_sharding(g)
     assert modified is True
-    assert typing.cast("EagerTensorProtocol", getattr(mm.sharding, "mesh_mapping")) == ("x", None)
+    assert as_tensor(getattr(mm.sharding, "mesh_mapping")) == ("x", None)
 
     # Col parallel: LHS replicated, RHS col-sharded
     g2 = IRGraph()
-    lhs2 = typing.cast("EagerCallableProtocol", IRNode)(id="lhs2", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([None, None]))
-    rhs2 = typing.cast("EagerCallableProtocol", IRNode)(id="rhs2", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([None, "y"]))
+    lhs2 = as_callable(IRNode)(id="lhs2", op_type="Input", sharding=as_callable(DummySharding)([None, None]))
+    rhs2 = as_callable(IRNode)(id="rhs2", op_type="Input", sharding=as_callable(DummySharding)([None, "y"]))
     mm2 = IRNode(id="mm2", op_type="MatMul", inputs=["lhs2", "rhs2"])
-    g2.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"lhs2": lhs2, "rhs2": rhs2, "mm2": mm2}))
+    g2.nodes = NodeDict(as_node_dict({"lhs2": lhs2, "rhs2": rhs2, "mm2": mm2}))
 
     assert propagate_sharding(g2) is True
-    assert typing.cast("EagerTensorProtocol", getattr(mm2.sharding, "mesh_mapping")) == (None, "y")
+    assert as_tensor(getattr(mm2.sharding, "mesh_mapping")) == (None, "y")
 
 
 def test_propagate_sharding_matmul_contracting_parallel() -> None:
@@ -359,15 +360,15 @@ def test_propagate_sharding_matmul_contracting_parallel() -> None:
 
     # Contracting parallel: LHS contracting dim sharded, RHS contracting dim sharded
     g = IRGraph()
-    lhs = typing.cast("EagerCallableProtocol", IRNode)(id="lhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([None, "x"]))
-    rhs = typing.cast("EagerCallableProtocol", IRNode)(id="rhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x", None]))
+    lhs = as_callable(IRNode)(id="lhs", op_type="Input", sharding=as_callable(DummySharding)([None, "x"]))
+    rhs = as_callable(IRNode)(id="rhs", op_type="Input", sharding=as_callable(DummySharding)(["x", None]))
     mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
     out = IRNode(id="out", op_type="Relu", inputs=["mm"])
-    g.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"lhs": lhs, "rhs": rhs, "mm": mm, "out": out}))
+    g.nodes = NodeDict(as_node_dict({"lhs": lhs, "rhs": rhs, "mm": mm, "out": out}))
     g.outputs = ["out"]
 
     assert spmd_partitioning_pass(g) is True
-    assert typing.cast("EagerTensorProtocol", getattr(mm.sharding, "mesh_mapping")) == (None, None)
+    assert as_tensor(getattr(mm.sharding, "mesh_mapping")) == (None, None)
     assert "mm_all_reduce" in g.nodes
     assert g.nodes["out"].inputs == ["mm_all_reduce"]
 
@@ -377,10 +378,10 @@ def test_propagate_sharding_matmul_fallback() -> None:
     from ml_switcheroo_compiler.transforms.passes.spmd import propagate_sharding
 
     g = IRGraph()
-    lhs = typing.cast("EagerCallableProtocol", IRNode)(id="lhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["z"]))
-    rhs = typing.cast("EagerCallableProtocol", IRNode)(id="rhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["w"]))
+    lhs = as_callable(IRNode)(id="lhs", op_type="Input", sharding=as_callable(DummySharding)(["z"]))
+    rhs = as_callable(IRNode)(id="rhs", op_type="Input", sharding=as_callable(DummySharding)(["w"]))
     mm = IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"])
-    g.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"lhs": lhs, "rhs": rhs, "mm": mm}))
+    g.nodes = NodeDict(as_node_dict({"lhs": lhs, "rhs": rhs, "mm": mm}))
 
     assert propagate_sharding(g) is True
     assert mm.sharding is not None
@@ -395,24 +396,24 @@ def test_propagate_sharding_reductions() -> None:
 
     # Case 1: Reduced dimension is sharded -> inject AllReduce
     g1 = IRGraph()
-    inp1 = typing.cast("EagerCallableProtocol", IRNode)(id="inp1", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x", None]))
+    inp1 = as_callable(IRNode)(id="inp1", op_type="Input", sharding=as_callable(DummySharding)(["x", None]))
     red1 = IRNode(id="red1", op_type="ReduceSum", inputs=["inp1"], attributes={"axis": 0})
-    g1.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"inp1": inp1, "red1": red1}))
+    g1.nodes = NodeDict(as_node_dict({"inp1": inp1, "red1": red1}))
     g1.outputs = ["red1"]
 
     assert spmd_partitioning_pass(g1) is True
-    assert typing.cast("EagerTensorProtocol", getattr(red1.sharding, "mesh_mapping")) == (None,)
+    assert as_tensor(getattr(red1.sharding, "mesh_mapping")) == (None,)
     assert "red1_all_reduce" in g1.nodes
     assert g1.outputs == ["red1_all_reduce"]
 
     # Case 2: Reduced dimension is replicated -> keep other sharded dimensions
     g2 = IRGraph()
-    inp2 = typing.cast("EagerCallableProtocol", IRNode)(id="inp2", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x", None]))
+    inp2 = as_callable(IRNode)(id="inp2", op_type="Input", sharding=as_callable(DummySharding)(["x", None]))
     red2 = IRNode(id="red2", op_type="ReduceSum", inputs=["inp2"], attributes={"axis": [1]})
-    g2.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"inp2": inp2, "red2": red2}))
+    g2.nodes = NodeDict(as_node_dict({"inp2": inp2, "red2": red2}))
 
     assert propagate_sharding(g2) is True
-    assert typing.cast("EagerTensorProtocol", getattr(red2.sharding, "mesh_mapping")) == ("x",)
+    assert as_tensor(getattr(red2.sharding, "mesh_mapping")) == ("x",)
     assert red2.attributes.get("inject_collective") is None
 
 
@@ -426,15 +427,15 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
 
     # Conv2D
     g = IRGraph()
-    inp = typing.cast("EagerCallableProtocol", IRNode)(id="inp", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x", None, None, None]))
+    inp = as_callable(IRNode)(id="inp", op_type="Input", sharding=as_callable(DummySharding)(["x", None, None, None]))
     conv = IRNode(id="conv", op_type="Conv2D", inputs=["inp"])
     # Elementwise Add
     add = IRNode(id="add", op_type="Add", inputs=["conv"])
-    g.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"inp": inp, "conv": conv, "add": add}))
+    g.nodes = NodeDict(as_node_dict({"inp": inp, "conv": conv, "add": add}))
 
     assert propagate_sharding(g) is True
-    assert typing.cast("EagerTensorProtocol", tuple(typing.cast("EagerTensorProtocol", getattr(conv.sharding, "mesh_mapping")))) == typing.cast("EagerTensorProtocol", ("x", None, None, None))
-    assert typing.cast("EagerTensorProtocol", tuple(typing.cast("EagerTensorProtocol", getattr(add.sharding, "mesh_mapping")))) == typing.cast("EagerTensorProtocol", ("x", None, None, None))
+    assert as_tensor(tuple(as_tensor(getattr(conv.sharding, "mesh_mapping")))) == as_tensor(("x", None, None, None))
+    assert as_tensor(tuple(as_tensor(getattr(add.sharding, "mesh_mapping")))) == as_tensor(("x", None, None, None))
 
     # SPMDShardingAnnotation repr
     annot = SPMDShardingAnnotation("mesh1", ["x", None])
@@ -457,13 +458,12 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
     # Matmul where inputs have sharding with empty mesh_mapping
     g_mm_no_map = IRGraph()
     g_mm_no_map.nodes = NodeDict(
-        typing.cast(
-            "dict[str, LogicalNode]",
+        as_node_dict(
             {
-                "in1": typing.cast("EagerCallableProtocol", IRNode)(id="in1", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([])),
-                "in2": typing.cast("EagerCallableProtocol", IRNode)(id="in2", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([])),
+                "in1": as_callable(IRNode)(id="in1", op_type="Input", sharding=as_callable(DummySharding)([])),
+                "in2": as_callable(IRNode)(id="in2", op_type="Input", sharding=as_callable(DummySharding)([])),
                 "mm": IRNode(id="mm", op_type="MatMul", inputs=["in1", "in2"]),
-            },
+            }
         )
     )
     assert propagate_sharding(g_mm_no_map) is False
@@ -477,11 +477,11 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
 
     # 4. Reduction reducing all dims resulting in out_map empty fallback to [None]
     g_red_all = IRGraph()
-    inp_all = typing.cast("EagerCallableProtocol", IRNode)(id="inp_all", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([None]))
+    inp_all = as_callable(IRNode)(id="inp_all", op_type="Input", sharding=as_callable(DummySharding)([None]))
     red_all = IRNode(id="red_all", op_type="ReduceSum", inputs=["inp_all"], attributes={"axis": 0})
-    g_red_all.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"inp_all": inp_all, "red_all": red_all}))
+    g_red_all.nodes = NodeDict(as_node_dict({"inp_all": inp_all, "red_all": red_all}))
     assert propagate_sharding(g_red_all) is True
-    assert typing.cast("EagerTensorProtocol", getattr(red_all.sharding, "mesh_mapping")) == (None,)
+    assert as_tensor(getattr(red_all.sharding, "mesh_mapping")) == (None,)
 
     # 5. Spatial conv with no inputs or unsharded input
     g_cv_empty = IRGraph()
@@ -493,14 +493,13 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
     # 6. spmd_partitioning_pass without outputs attribute and with ar_id already existing
     g_no_out = IRGraph()
     g_no_out.nodes = NodeDict(
-        typing.cast(
-            "dict[str, LogicalNode]",
+        as_node_dict(
             {
-                "lhs": typing.cast("EagerCallableProtocol", IRNode)(id="lhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)([None, "x"])),
-                "rhs": typing.cast("EagerCallableProtocol", IRNode)(id="rhs", op_type="Input", sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x", None])),
+                "lhs": as_callable(IRNode)(id="lhs", op_type="Input", sharding=as_callable(DummySharding)([None, "x"])),
+                "rhs": as_callable(IRNode)(id="rhs", op_type="Input", sharding=as_callable(DummySharding)(["x", None])),
                 "mm": IRNode(id="mm", op_type="MatMul", inputs=["lhs", "rhs"]),
                 "mm_all_reduce": IRNode(id="mm_all_reduce", op_type="AllReduce", inputs=["mm"]),
-            },
+            }
         )
     )
     if hasattr(g_no_out, "outputs"):
@@ -514,9 +513,9 @@ def test_spmd_pass_inject_collectives() -> None:
 
     for coll in ("AllReduce", "ReduceScatter", "AllGather", "AllToAll"):
         g = IRGraph()
-        n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Add", inputs=[], attributes={"inject_collective": coll}, sharding=typing.cast("EagerCallableProtocol", DummySharding)(["x"]))
+        n1 = as_callable(IRNode)(id="n1", op_type="Add", inputs=[], attributes={"inject_collective": coll}, sharding=as_callable(DummySharding)(["x"]))
         n2 = IRNode(id="n2", op_type="Relu", inputs=["n1"])
-        g.nodes = NodeDict(typing.cast("dict[str, LogicalNode]", {"n1": n1, "n2": n2}))
+        g.nodes = NodeDict(as_node_dict({"n1": n1, "n2": n2}))
         g.outputs = ["n1"]
         res = spmd_partitioning_pass(g)
         assert res is True

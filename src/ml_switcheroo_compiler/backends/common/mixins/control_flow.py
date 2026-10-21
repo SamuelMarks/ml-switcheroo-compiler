@@ -10,12 +10,30 @@ from ml_switcheroo_compiler.ir.core import IRNode
 from .common import CommonASTVisitor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+    pass
 
 
 class ControlFlowASTVisitor(CommonASTVisitor):
     # pylint: disable=abstract-method
     """Control flow AST generator mixin."""
+
+    def _emit_sub_graph(self, sub_graph: EagerValue, input_prefix: str = "") -> None:
+        """Emit body lines for a control-flow subgraph.
+
+        Args:
+            sub_graph (EagerValue): Subgraph to emit.
+            input_prefix (str): Optional input argument prefix.
+        """
+        from ml_switcheroo_compiler.backends.eager_registry import as_callable
+        from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+        from ml_switcheroo_compiler.ir.core import as_graph
+
+        sub_gen = as_callable(self.generator.__class__)(as_graph(sub_graph))
+        setattr(getattr(sub_gen, "formatter"), "indent_level", self.generator.indent_level)
+        visitor = as_callable(CodeGeneratorVisitor)(sub_gen)
+        visitor.generate_body(input_prefix)
+        for line in getattr(sub_gen, "code")[1:]:
+            self.generator.add_line(line)
 
     def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit target backend code or IR transformation for the Scan operation.
@@ -103,8 +121,6 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-
         cond_graph = node.attributes.get("cond")
         body_graph = node.attributes.get("body")
         state_var: str = input_vars[0]
@@ -112,23 +128,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Cond Fn
         self.generator.add_line(f"def cond_fn_{node.id}(state):")
         self.generator.indent_level += 1
-        cond_gen = self.generator.__class__(cond_graph)
-        cond_gen.formatter.indent_level = self.generator.indent_level
-        visitor_cond: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", cond_gen))
-        visitor_cond.generate_body("state")
-        for line in cond_gen.code[1:]:
-            self.generator.add_line(line)
+        self._emit_sub_graph(cond_graph, "state")
         self.generator.indent_level -= 1
 
         # Body Fn
         self.generator.add_line(f"def body_fn_{node.id}(state):")
         self.generator.indent_level += 1
-        body_gen = self.generator.__class__(body_graph)
-        body_gen.formatter.indent_level = self.generator.indent_level
-        visitor_body: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", body_gen))
-        visitor_body.generate_body("state")
-        for line in body_gen.code[1:]:
-            self.generator.add_line(line)
+        self._emit_sub_graph(body_graph, "state")
         self.generator.indent_level -= 1
 
         self.generator.add_line(f"loop_val_{node.id} = {state_var}")
@@ -150,8 +156,6 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-
         cond_val: str = input_vars[0]
         true_graph = node.attributes.get("true_branch") or node.attributes.get("then_branch")
         false_graph = node.attributes.get("false_branch") or node.attributes.get("else_branch")
@@ -159,23 +163,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # True Branch
         self.generator.add_line(f"def true_fn_{node.id}():")
         self.generator.indent_level += 1
-        true_gen = self.generator.__class__(true_graph)
-        true_gen.formatter.indent_level = self.generator.indent_level
-        visitor_true: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", true_gen))
-        visitor_true.generate_body()
-        for line in true_gen.code[1:]:
-            self.generator.add_line(line)
+        self._emit_sub_graph(true_graph)
         self.generator.indent_level -= 1
 
         # False Branch
         self.generator.add_line(f"def false_fn_{node.id}():")
         self.generator.indent_level += 1
-        false_gen = self.generator.__class__(false_graph)
-        false_gen.formatter.indent_level = self.generator.indent_level
-        visitor_false: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", false_gen))
-        visitor_false.generate_body()
-        for line in false_gen.code[1:]:
-            self.generator.add_line(line)
+        self._emit_sub_graph(false_graph)
         self.generator.indent_level -= 1
 
         return f"true_fn_{node.id}() if {cond_val} else false_fn_{node.id}()"
@@ -191,8 +185,6 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-
         lower_bound: str = input_vars[0]
         upper_bound: str = input_vars[1]
         init_val: str = input_vars[2]
@@ -201,13 +193,7 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         # Body Fn
         self.generator.add_line(f"def body_fn_{node.id}(i, state):")
         self.generator.indent_level += 1
-        body_gen = self.generator.__class__(body_graph)
-        body_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", body_gen))
-        # Assuming args passed as list [i, state]
-        visitor.generate_body("[i, state]")
-        for line in body_gen.code[1:]:
-            self.generator.add_line(line)
+        self._emit_sub_graph(body_graph, "[i, state]")
         self.generator.indent_level -= 1
 
         self.generator.add_line(f"loop_val_{node.id} = {init_val}")
@@ -229,19 +215,12 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-
         xs: str = input_vars[0]
         f_graph = node.attributes.get("f")
 
         self.generator.add_line(f"def map_fn_{node.id}(x):")
         self.generator.indent_level += 1
-        f_gen = self.generator.__class__(f_graph)
-        f_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", f_gen))
-        visitor.generate_body("[x]")
-        for line in f_gen.code[1:]:
-            self.generator.add_line(line)
+        self._emit_sub_graph(f_graph, "[x]")
         self.generator.indent_level -= 1
 
         pfx: str = self.generator.get_fallback_prefix()
@@ -259,20 +238,13 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-
         init: str = input_vars[0]
         xs: str = input_vars[1]
         f_graph = node.attributes.get("f")
 
         self.generator.add_line(f"def fold_fn_{node.id}(acc, x):")
         self.generator.indent_level += 1
-        f_gen = self.generator.__class__(f_graph)
-        f_gen.formatter.indent_level = self.generator.indent_level
-        visitor: CodeGeneratorVisitor = CodeGeneratorVisitor(typing.cast("BaseGenerator", f_gen))
-        visitor.generate_body("[acc, x]")
-        for line in f_gen.code[1:]:
-            self.generator.add_line(line)
+        self._emit_sub_graph(f_graph, "[acc, x]")
         self.generator.indent_level -= 1
 
         self.generator.add_line(f"fold_val_{node.id} = {init}")

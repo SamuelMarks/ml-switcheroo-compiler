@@ -7,12 +7,12 @@ from unittest.mock import patch
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, get_op
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_generated_registry_loaded() -> None:
@@ -47,18 +47,18 @@ def test_dynamic_infer_shape() -> None:
         d2 = Dummy()
         setattr(d2, "shape", (2, 2))
 
-        assert op.infer_shape(typing.cast("EagerValue", d1)) == (2, 2)
-        assert op.infer_shape(inputs=[typing.cast("EagerValue", d2)]) == (2, 2)
+        assert op.infer_shape(as_tensor(d1)) == (2, 2)
+        assert op.infer_shape(inputs=[as_tensor(d2)]) == (2, 2)
 
         # 2. list of ints
         assert op.infer_shape([[2, 3]]) == (2, 3)
-        assert typing.cast("EagerTensorProtocol", getattr(op, "get_yaml_data"))() == {"operation": "FakeShapeOp"}
+        assert as_tensor(getattr(op, "get_yaml_data"))() == {"operation": "FakeShapeOp"}
 
         # 3. broadcast
-        assert op.infer_shape(typing.cast("EagerValue", d1), inputs=[typing.cast("EagerValue", d2)]) == (2, 2)
+        assert op.infer_shape(as_tensor(d1), inputs=[as_tensor(d2)]) == (2, 2)
 
         # 4. no shapes
-        assert op.infer_shape(typing.cast("EagerValue", Dummy())) == ()
+        assert op.infer_shape(as_tensor(Dummy())) == ()
 
         # 5. Broadcast mismatch raises ValueError
         d3 = Dummy()
@@ -66,7 +66,7 @@ def test_dynamic_infer_shape() -> None:
         d4 = Dummy()
         setattr(d4, "shape", (2, 2))
         with pytest.raises(ValueError):
-            op.infer_shape(typing.cast("EagerValue", d3), typing.cast("EagerValue", d4))
+            op.infer_shape(as_tensor(d3), as_tensor(d4))
 
     finally:
         if original is None:

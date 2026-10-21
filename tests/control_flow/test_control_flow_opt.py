@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_ir import AttributeValue
-
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.control_flow.cond import cond
 from ml_switcheroo_compiler.ops.control_flow.scan import scan
@@ -22,6 +18,7 @@ from ml_switcheroo_compiler.transforms.passes.parallel_scan import (
     detect_associative_reduction,
     parallel_scan_pass,
 )
+from tests.testing_utils import as_attrs
 
 
 def test_evaluate_static_predicate() -> None:
@@ -76,7 +73,7 @@ def test_branch_pruning_true() -> None:
         id="cond_node",
         op_type="Cond",
         inputs=["pred"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": true_b, "else_branch": false_b}),
+        attributes=as_attrs({"then_branch": true_b, "else_branch": false_b}),
     )
 
     opt = control_flow_optimization_pass(g)
@@ -102,7 +99,7 @@ def test_branch_pruning_false() -> None:
         id="cond_node",
         op_type="If",
         inputs=["pred"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": true_b, "else_branch": false_b}),
+        attributes=as_attrs({"then_branch": true_b, "else_branch": false_b}),
     )
 
     opt = control_flow_optimization_pass(g)
@@ -132,7 +129,7 @@ def test_invariant_hoisting() -> None:
         id="cond1",
         op_type="Cond",
         inputs=["dyn_pred"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": true_b, "else_branch": false_b}),
+        attributes=as_attrs({"then_branch": true_b, "else_branch": false_b}),
     )
 
     opt = control_flow_optimization_pass(g)
@@ -155,7 +152,7 @@ def test_fori_loop_unrolling() -> None:
         id="fori",
         op_type="ForiLoop",
         inputs=["init_val"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"lower": 0, "upper": 3, "body": body}),
+        attributes=as_attrs({"lower": 0, "upper": 3, "body": body}),
     )
     g.outputs = ["fori"]
 
@@ -185,7 +182,7 @@ def test_parallel_scan_pass() -> None:
         id="scan1",
         op_type="Scan",
         inputs=["init_c", "xs"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body}),
+        attributes=as_attrs({"body": body}),
         shape_metadata=(10, 4),
     )
     g.outputs = ["scan1"]
@@ -230,7 +227,7 @@ def test_control_flow_opt_exhaustive_branches() -> None:
         id="cond_no_f",
         op_type="Cond",
         inputs=["pred_f"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": true_b, "else_branch": None}),
+        attributes=as_attrs({"then_branch": true_b, "else_branch": None}),
     )
     opt_f = control_flow_optimization_pass(g_false_none)
     assert "cond_no_f" in opt_f.nodes
@@ -244,7 +241,7 @@ def test_control_flow_opt_exhaustive_branches() -> None:
         id="cond_diff",
         op_type="Cond",
         inputs=["dyn_p"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": true_b, "else_branch": fb_diff}),
+        attributes=as_attrs({"then_branch": true_b, "else_branch": fb_diff}),
     )
     opt_no_hoist = control_flow_optimization_pass(g_no_hoist)
     assert "cond_diff" in opt_no_hoist.nodes
@@ -272,7 +269,7 @@ def test_parallel_scan_exhaustive_branches() -> None:
         id="scan0",
         op_type="Scan",
         inputs=["in0"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body_non_assoc}),
+        attributes=as_attrs({"body": body_non_assoc}),
     )
     opt_non_assoc = parallel_scan_pass(g_scan_non_assoc)
     assert opt_non_assoc.nodes["scan0"].op_type == "Scan"

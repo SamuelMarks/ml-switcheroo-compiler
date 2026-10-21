@@ -11,9 +11,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 # Helper to avoid repetitive tensor creation
@@ -27,7 +28,7 @@ def make_tensor(val: EagerValue, shape: EagerValue = None) -> EagerValue:
     val = np.array(val, dtype=np.float32)
     if shape is None:
         shape = val.shape
-    return typing.cast("EagerCallableProtocol", Tensor)(val, typing.cast("EagerCallableProtocol", TensorConfig)(shape, DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    return as_callable(Tensor)(val, as_callable(TensorConfig)(shape, DType.Float32, as_callable(Device)("cpu")))
 
 
 def test_unary_math_rules() -> None:
@@ -44,14 +45,14 @@ def test_unary_math_rules() -> None:
                 x: Test parameter `x`.
                 op_bound: Test parameter `op_bound`.
             """
-            return typing.cast("EagerCallableProtocol", dispatch_op)(op_bound, x)
+            return as_callable(dispatch_op)(op_bound, x)
 
         x = make_tensor([0.5, 0.5])
         cot = make_tensor([1.0, 1.0])
         try:
-            out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x)
-            grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
-            assert typing.cast("EagerCallableProtocol", len)(grads) == 1
+            out, vjp_fn = as_callable(vjp)(f, x)
+            grads = as_callable(vjp_fn)(cot)
+            assert as_callable(len)(grads) == 1
         except Exception as e:
             # Catching exceptions allows us to see which ones are actually missing vs which crash
             print(f"Failed {op}: {e}")
@@ -96,14 +97,14 @@ def test_binary_math_rules() -> None:
                 y: Test parameter `y`.
                 op_bound: Test parameter `op_bound`.
             """
-            return typing.cast("EagerCallableProtocol", dispatch_op)(op_bound, x, y)
+            return as_callable(dispatch_op)(op_bound, x, y)
 
         x = make_tensor([0.5, 0.5])
         y = make_tensor([0.2, 0.2])
         cot = make_tensor([1.0, 1.0])
         try:
-            out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x, y)
-            grads = typing.cast("EagerCallableProtocol", vjp_fn)(cot)
-            assert typing.cast("EagerCallableProtocol", len)(grads) == 2
+            out, vjp_fn = as_callable(vjp)(f, x, y)
+            grads = as_callable(vjp_fn)(cot)
+            assert as_callable(len)(grads) == 2
         except Exception as e:
             print(f"Failed {op}: {e}")

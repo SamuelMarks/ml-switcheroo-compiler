@@ -10,9 +10,10 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -27,12 +28,12 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "dask", None)
     monkeypatch.setitem(sys.modules, "dask.array", None)
     importlib.reload(dask_types)
-    assert typing.cast("EagerTensorProtocol", getattr(dask_types, "da")) is None
+    assert as_tensor(getattr(dask_types, "da")) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(dask_types)
-    assert typing.cast("EagerTensorProtocol", getattr(dask_types, "da")) is not None
+    assert as_tensor(getattr(dask_types, "da")) is not None
 
     z = dask_types.zeros(type, (2, 2))
     assert z is not None
@@ -58,12 +59,12 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "mlx", None)
     monkeypatch.setitem(sys.modules, "mlx.core", None)
     importlib.reload(mlx_types)
-    assert typing.cast("EagerValue", mlx_types.mx) is None
+    assert as_tensor(mlx_types.mx) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(mlx_types)
-    assert typing.cast("EagerValue", mlx_types.mx) is not None
+    assert as_tensor(mlx_types.mx) is not None
 
     z = mlx_types.zeros(type, (2, 2))
     assert z is not None
@@ -111,12 +112,12 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "keras", None)
     monkeypatch.setitem(sys.modules, "keras.ops", None)
     importlib.reload(keras_types)
-    assert typing.cast("EagerTensorProtocol", getattr(keras_types, "kops")) is None
+    assert as_tensor(getattr(keras_types, "kops")) is None
 
     # 2. Restore and normal execution
     monkeypatch.undo()
     importlib.reload(keras_types)
-    assert typing.cast("EagerTensorProtocol", getattr(keras_types, "kops")) is not None
+    assert as_tensor(getattr(keras_types, "kops")) is not None
 
     z = keras_types.zeros(type, (2, 2))
     assert z is not None

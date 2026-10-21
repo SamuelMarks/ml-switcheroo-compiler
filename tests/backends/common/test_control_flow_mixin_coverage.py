@@ -9,9 +9,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.ops.control_flow.cond import cond
 from ml_switcheroo_compiler.ops.control_flow.scan import scan
 from ml_switcheroo_compiler.ops.control_flow.while_loop import while_loop
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class _MockDimWithId:
@@ -68,31 +69,31 @@ def test_control_flow_cond_scan_while_exhaustive() -> None:
     with patch("ml_switcheroo_compiler.ops.control_flow.cond_eager", return_value="cond_eager_res") as mock_ce:
         with patch("ml_switcheroo_compiler.ops.control_flow.cond_tracing", return_value="cond_tracing_res") as mock_ct:
             config.eager_mode = True
-            assert typing.cast("EagerCallableProtocol", cond)(None, None, None) == "cond_eager_res"
+            assert as_callable(cond)(None, None, None) == "cond_eager_res"
             mock_ce.assert_called_once()
 
             config.eager_mode = False
-            assert typing.cast("EagerCallableProtocol", cond)(None, None, None) == "cond_tracing_res"
+            assert as_callable(cond)(None, None, None) == "cond_tracing_res"
             mock_ct.assert_called_once()
 
     # 2. scan
     with patch("ml_switcheroo_compiler.ops.control_flow.scan_eager", return_value="scan_eager_res") as mock_se:
         with patch("ml_switcheroo_compiler.ops.control_flow.scan_tracing", return_value="scan_tracing_res") as mock_st:
             config.eager_mode = True
-            assert typing.cast("EagerCallableProtocol", scan)(None, None, None) == "scan_eager_res"
+            assert as_callable(scan)(None, None, None) == "scan_eager_res"
             mock_se.assert_called_once()
 
             config.eager_mode = False
-            assert typing.cast("EagerCallableProtocol", scan)(None, None, None) == "scan_tracing_res"
+            assert as_callable(scan)(None, None, None) == "scan_tracing_res"
             mock_st.assert_called_once()
 
     # 3. while_loop
     with patch("ml_switcheroo_compiler.ops.control_flow.while_loop_eager", return_value="while_eager_res") as mock_we:
         with patch("ml_switcheroo_compiler.ops.control_flow.while_loop_tracing", return_value="while_tracing_res") as mock_wt:
             config.eager_mode = True
-            assert typing.cast("EagerCallableProtocol", while_loop)(None, None, None) == "while_eager_res"
+            assert as_callable(while_loop)(None, None, None) == "while_eager_res"
             mock_we.assert_called_once()
 
             config.eager_mode = False
-            assert typing.cast("EagerCallableProtocol", while_loop)(None, None, None) == "while_tracing_res"
+            assert as_callable(while_loop)(None, None, None) == "while_tracing_res"
             mock_wt.assert_called_once()

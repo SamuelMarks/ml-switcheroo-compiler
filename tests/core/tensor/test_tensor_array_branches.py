@@ -10,9 +10,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_tensor_array_read_existing_value_branch() -> None:
@@ -24,4 +25,4 @@ def test_tensor_array_read_existing_value_branch() -> None:
 
     res = ta.read(idx_tensor)
     assert res.shape == (2, 2)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res.data, typing.cast("EagerCallableProtocol", np.ones)((2, 2), dtype=np.float32))
+    as_callable(np.testing.assert_array_equal)(res.data, as_callable(np.ones)((2, 2), dtype=np.float32))

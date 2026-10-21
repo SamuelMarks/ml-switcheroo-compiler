@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.tracing.tracer import TracerTape, get_trace_count, increment_trace_count, reset_trace_count
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_tracer_coverage() -> None:
@@ -17,14 +18,14 @@ def test_tracer_coverage() -> None:
         """Test function mock_func."""
         pass
 
-    typing.cast("EagerCallableProtocol", reset_trace_count)(mock_func)
-    assert typing.cast("EagerCallableProtocol", get_trace_count)(mock_func) == 0
-    typing.cast("EagerCallableProtocol", increment_trace_count)(mock_func)
-    assert typing.cast("EagerCallableProtocol", get_trace_count)(mock_func) == 1
-    typing.cast("EagerCallableProtocol", reset_trace_count)(mock_func)
-    typing.cast("EagerCallableProtocol", reset_trace_count)(mock_func)
-    assert typing.cast("EagerCallableProtocol", get_trace_count)(mock_func) == 0
-    typing.cast("EagerCallableProtocol", reset_trace_count)(mock_func)
+    as_callable(reset_trace_count)(mock_func)
+    assert as_callable(get_trace_count)(mock_func) == 0
+    as_callable(increment_trace_count)(mock_func)
+    assert as_callable(get_trace_count)(mock_func) == 1
+    as_callable(reset_trace_count)(mock_func)
+    as_callable(reset_trace_count)(mock_func)
+    assert as_callable(get_trace_count)(mock_func) == 0
+    as_callable(reset_trace_count)(mock_func)
 
     tape = TracerTape()
     tape.start_tracing()

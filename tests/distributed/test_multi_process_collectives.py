@@ -16,9 +16,10 @@ from ml_switcheroo_compiler.distributed.collectives import (
     get_collective_backend,
     register_collective_backend,
 )
+from tests.testing_utils import as_callable, as_ndarray, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _worker_all_reduce(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
@@ -184,7 +185,7 @@ def test_backend_collective_dispatchers() -> None:
             kwargs: Test parameter `kwargs`.
         """
         called.append(op)
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerTensorProtocol", tensor) * typing.cast("EagerTensorProtocol", 2))
+        return as_ndarray(as_tensor(tensor) * as_tensor(2))
 
     register_collective_backend("custom_backend", custom_dispatcher)
     assert get_collective_backend("custom_backend") is custom_dispatcher
@@ -192,34 +193,34 @@ def test_backend_collective_dispatchers() -> None:
     inp = np.array([1.0, 2.0], dtype=np.float32)
     res = dispatch_collective("AllReduce", inp, backend="custom_backend")
     assert called == ["AllReduce"]
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, typing.cast("EagerCallableProtocol", np.array)([2.0, 4.0]))
+    as_callable(np.testing.assert_allclose)(res, as_callable(np.array)([2.0, 4.0]))
 
     # PyTorch and JAX dispatches without initialized cluster
     pt_res = dispatch_collective("AllReduce", inp, backend="pytorch")
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(pt_res, inp)
+    as_callable(np.testing.assert_allclose)(pt_res, inp)
     assert dispatch_collective("AllGather", inp, backend="pytorch") is not None
     assert dispatch_collective("ReduceScatter", inp, backend="pytorch") is not None
     assert dispatch_collective("Broadcast", inp, backend="pytorch") is not None
 
     jax_res = dispatch_collective("AllReduce", inp, backend="jax")
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(jax_res, inp)
+    as_callable(np.testing.assert_allclose)(jax_res, inp)
     assert dispatch_collective("AllGather", inp, backend="jax") is not None
     assert dispatch_collective("Broadcast", inp, backend="jax") is not None
 
     # Reduction ops: PROD, MAX, MIN
     all_data = [np.array([2.0, 5.0]), np.array([3.0, 1.0])]
     prod_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="PROD", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_res, typing.cast("EagerCallableProtocol", np.array)([6.0, 5.0]))
+    as_callable(np.testing.assert_allclose)(prod_res, as_callable(np.array)([6.0, 5.0]))
 
     max_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="MAX", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(max_res, typing.cast("EagerCallableProtocol", np.array)([3.0, 5.0]))
+    as_callable(np.testing.assert_allclose)(max_res, as_callable(np.array)([3.0, 5.0]))
 
     min_res = dispatch_collective("AllReduce", all_data[0], backend="numpy", op_type="MIN", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(min_res, typing.cast("EagerCallableProtocol", np.array)([2.0, 1.0]))
+    as_callable(np.testing.assert_allclose)(min_res, as_callable(np.array)([2.0, 1.0]))
 
     # Broadcast
     bc_res = dispatch_collective("Broadcast", all_data[0], backend="numpy", root=1, all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(bc_res, all_data[1])
+    as_callable(np.testing.assert_allclose)(bc_res, all_data[1])
 
 
 def test_nccl_driver_bindings() -> None:

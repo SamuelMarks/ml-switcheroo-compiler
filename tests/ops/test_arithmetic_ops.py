@@ -12,11 +12,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +32,7 @@ def test_add_op() -> None:
     b = Tensor(np.array([4, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Add", a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([5, 7, 9], dtype=np.float32))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([5, 7, 9], dtype=np.float32))
 
 
 def test_subtract_op() -> None:
@@ -42,7 +41,7 @@ def test_subtract_op() -> None:
     b = Tensor(np.array([4, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Subtract", a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([-3, -3, -3], dtype=np.float32))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([-3, -3, -3], dtype=np.float32))
 
 
 def test_multiply_op() -> None:
@@ -51,7 +50,7 @@ def test_multiply_op() -> None:
     b = Tensor(np.array([4, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Multiply", a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([4, 10, 18], dtype=np.float32))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([4, 10, 18], dtype=np.float32))
 
 
 def test_true_divide_op() -> None:
@@ -60,7 +59,7 @@ def test_true_divide_op() -> None:
     b = Tensor(np.array([2, 5, 6], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("TrueDivide", a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([2, 2, 3], dtype=np.float32))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([2, 2, 3], dtype=np.float32))
 
 
 def test_negative_op() -> None:
@@ -68,7 +67,7 @@ def test_negative_op() -> None:
     a = Tensor(np.array([1, -2, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Negative", a)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([-1, 2, -3], dtype=np.float32))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([-1, 2, -3], dtype=np.float32))
 
 
 def test_abs_op() -> None:
@@ -76,4 +75,4 @@ def test_abs_op() -> None:
     a = Tensor(np.array([1, -2, -3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = dispatch_op("Abs", a)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "numpy")))(), typing.cast("EagerCallableProtocol", np.array)([1, 2, 3], dtype=np.float32))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([1, 2, 3], dtype=np.float32))

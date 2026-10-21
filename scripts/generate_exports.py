@@ -149,7 +149,7 @@ def generate_init(
     if existing_all is not None and sorted(list(set(existing_all))) == all_exports:
         return
 
-    new_source: str = '# mypy: ignore-errors\n# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\n' + "\n".join(import_lines) + "\n\n"
+    new_source: str = '# mypy: ignore-errors\n# pylint: disable=too-many-lines\n"""Auto-generated module exports."""\n\nfrom __future__ import annotations\n\n' + "\n".join(import_lines) + "\n\n"
     new_source += "# pylint: disable=duplicate-code\n"
     new_source += "__all__ = [\n"
     for e in all_exports:

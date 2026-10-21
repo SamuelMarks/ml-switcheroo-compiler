@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.registry import as_int, as_shape
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.transforms.passes.config_models import ShapeInspectionPayload
@@ -120,7 +120,7 @@ def _normalize_shape_tuple(raw_shape: tuple[AttributeValue, ...] | list[Attribut
         if any(isinstance(x, str) for x in raw_shape):
             return None
         try:
-            return typing.cast("tuple[int, ...]", tuple(x if hasattr(x, "name") else int(typing.cast(int, x)) for x in raw_shape))
+            return as_shape(tuple(x if hasattr(x, "name") else int(as_int(x)) for x in raw_shape))
         except (ValueError, TypeError):
             return None
     return None
@@ -140,7 +140,7 @@ def _infer_input_shape(
         tuple[int, ...] | None: Normalized shape.
     """
     del shapes
-    return typing.cast("tuple[int, ...] | None", typing.cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
+    return _normalize_shape_tuple(node.shape_metadata)
 
 
 _SPECIAL_OP_HANDLERS: dict[
@@ -172,10 +172,10 @@ def _determine_node_shape(node: IRNode, shapes: dict[str, tuple[int, ...] | None
     try:
         return _infer_op_shape(node, shapes)
     except (KeyError, AttributeError):
-        return typing.cast("tuple[int, ...] | None", typing.cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
+        return _normalize_shape_tuple(node.shape_metadata)
     except ValueError as e:
         if "Operation" in str(e) and "not found" in str(e):
-            return typing.cast("tuple[int, ...] | None", typing.cast("EagerCallableProtocol", _normalize_shape_tuple)(node.shape_metadata))
+            return _normalize_shape_tuple(node.shape_metadata)
         msg = f"Shape inference failed at node {node.id} ({node.op_type}): {e!s}"
         raise CompilationError(msg) from e
     except (TypeError, Exception) as e:

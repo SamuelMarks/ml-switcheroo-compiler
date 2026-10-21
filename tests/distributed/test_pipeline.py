@@ -6,9 +6,10 @@ import typing
 
 from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_pipeline_split_into_stages() -> None:
@@ -92,5 +93,5 @@ def test_pipeline_lower() -> None:
     strategy = PipelineParallelismStrategy(num_microbatches=2, devices_per_stage=1)
     result = strategy.lower(graph)
     assert result is True
-    assert "pipeline_schedule" in typing.cast("EagerTensorProtocol", getattr(graph, "attributes"))
-    assert typing.cast("EagerTensorProtocol", getattr(graph, "attributes"))["num_pipeline_stages"] == 2
+    assert "pipeline_schedule" in as_tensor(getattr(graph, "attributes"))
+    assert as_tensor(getattr(graph, "attributes"))["num_pipeline_stages"] == 2

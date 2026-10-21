@@ -29,9 +29,10 @@ from ml_switcheroo_compiler.backends.edge.distributed_webrtc.collectives import 
     ring_all_reduce,
     ring_reduce_scatter,
 )
+from tests.testing_utils import as_callable, as_ndarray, as_tensor, as_tensor_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockChannel:
@@ -134,7 +135,7 @@ async def _test_stream_event_handlers_and_messages_part_1(_state: dict[str, Eage
         _state: Shared test state dictionary.
     """
     mock = MockChannel()
-    stream = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(mock, high_watermark=100, low_watermark=20)
+    stream = as_callable(WebRTCDataChannelStream)(mock, high_watermark=100, low_watermark=20)
     assert id(stream.channel) == id(mock)
 
     stream._on_message(b"bytes_msg")
@@ -150,14 +151,14 @@ async def _test_stream_event_handlers_and_messages_part_1(_state: dict[str, Eage
             """Test function tobytes."""
             return b"tobytes_msg"
 
-    typing.cast("EagerCallableProtocol", stream._on_message)(typing.cast("EagerCallableProtocol", ToBytesObj)())
+    as_callable(stream._on_message)(as_callable(ToBytesObj)())
     assert await stream.recv_bytes() == b"tobytes_msg"
 
     stream._on_message(bytearray(b"bytearray_msg"))
     assert await stream.recv_bytes() == b"bytearray_msg"
 
     mock_snake = MockSnakeChannel()
-    stream_snake = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(mock_snake)
+    stream_snake = as_callable(WebRTCDataChannelStream)(mock_snake)
     assert mock_snake.on_message is not None
 
     await stream_snake.send_bytes(b"hello")
@@ -181,7 +182,7 @@ async def _test_stream_event_handlers_and_messages_part_2(_state: dict[str, Eage
             """Test function bufferedAmount."""
             return 42
 
-    stream_cb = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(typing.cast("EagerCallableProtocol", CallableAmount)())
+    stream_cb = as_callable(WebRTCDataChannelStream)(as_callable(CallableAmount)())
     assert stream_cb.get_buffered_amount() == 42
 
     # Async sendMessage channel
@@ -190,7 +191,7 @@ async def _test_stream_event_handlers_and_messages_part_2(_state: dict[str, Eage
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.msgs = typing.cast("list[EagerTensorProtocol]", [])
+            self.msgs = as_tensor_list([])
 
         async def sendMessage(self, data: bytes) -> None:
             """Test function sendMessage.
@@ -198,10 +199,10 @@ async def _test_stream_event_handlers_and_messages_part_2(_state: dict[str, Eage
             Args:
                 data: Test parameter `data`.
             """
-            typing.cast("EagerCallableProtocol", self.msgs.append)(data)
+            as_callable(self.msgs.append)(data)
 
     ch_async_sendmsg = AsyncSendMessageChannel()
-    st_async_sendmsg = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_async_sendmsg)
+    st_async_sendmsg = as_callable(WebRTCDataChannelStream)(ch_async_sendmsg)
     await st_async_sendmsg.send_bytes(b"async_sendmsg")
     assert ch_async_sendmsg.msgs == [b"async_sendmsg"]
     getattr(_state, "update")({"AsyncSendMessageChannel": AsyncSendMessageChannel, "CallableAmount": CallableAmount, "ch_async_sendmsg": ch_async_sendmsg, "st_async_sendmsg": st_async_sendmsg})
@@ -221,7 +222,7 @@ async def _test_stream_event_handlers_and_messages_part_3(_state: dict[str, Eage
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.msgs = typing.cast("list[EagerTensorProtocol]", [])
+            self.msgs = as_tensor_list([])
 
         def send(self, data: bytes) -> EagerValue:
             """Test function send.
@@ -232,12 +233,12 @@ async def _test_stream_event_handlers_and_messages_part_3(_state: dict[str, Eage
 
             async def _coro() -> None:
                 """Test function _coro."""
-                typing.cast("EagerCallableProtocol", self.msgs.append)(data)
+                as_callable(self.msgs.append)(data)
 
-            return typing.cast("EagerTensorProtocol", _coro())
+            return as_tensor(_coro())
 
     ch_sync_coro = SyncSendCoroutineChannel()
-    st_sync_coro = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_sync_coro)
+    st_sync_coro = as_callable(WebRTCDataChannelStream)(ch_sync_coro)
     await st_sync_coro.send_bytes(b"coro_msg")
     assert ch_sync_coro.msgs == [b"coro_msg"]
     getattr(_state, "update")({"SyncSendCoroutineChannel": SyncSendCoroutineChannel, "ch_sync_coro": ch_sync_coro, "st_sync_coro": st_sync_coro})
@@ -256,7 +257,7 @@ async def _test_stream_event_handlers_and_messages_part_4(_state: dict[str, Eage
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.msgs = typing.cast("list[EagerTensorProtocol]", [])
+            self.msgs = as_tensor_list([])
 
         def send(self, data: bytes) -> None:
             """Test function send.
@@ -264,10 +265,10 @@ async def _test_stream_event_handlers_and_messages_part_4(_state: dict[str, Eage
             Args:
                 data: Test parameter `data`.
             """
-            typing.cast("EagerCallableProtocol", self.msgs.append)(data)
+            as_callable(self.msgs.append)(data)
 
     ch_sync_none = SyncSendNoneChannel()
-    st_sync_none = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(ch_sync_none)
+    st_sync_none = as_callable(WebRTCDataChannelStream)(ch_sync_none)
     await st_sync_none.send_bytes(b"none_msg")
     assert ch_sync_none.msgs == [b"none_msg"]
 
@@ -282,9 +283,9 @@ async def _test_stream_event_handlers_and_messages_part_4(_state: dict[str, Eage
                 """Test function _r."""
                 return b"from_recv"
 
-            return typing.cast("EagerTensorProtocol", _r())
+            return as_tensor(_r())
 
-    st_recv = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(typing.cast("EagerCallableProtocol", SyncRecvChannel)())
+    st_recv = as_callable(WebRTCDataChannelStream)(as_callable(SyncRecvChannel)())
     assert await st_recv.recv_bytes() == b"from_recv"
     getattr(_state, "update")({"SyncRecvChannel": SyncRecvChannel, "SyncSendNoneChannel": SyncSendNoneChannel, "ch_sync_none": ch_sync_none, "st_recv": st_recv})
     getattr(_state, "update")({"st_sync_none": st_sync_none})
@@ -305,7 +306,7 @@ async def _test_stream_event_handlers_and_messages_part_5(_state: dict[str, Eage
             """Test function recv."""
             return b"non_coro_bytes"
 
-    st_noncoro = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(typing.cast("EagerCallableProtocol", NonCoroRecvChannel)())
+    st_noncoro = as_callable(WebRTCDataChannelStream)(as_callable(NonCoroRecvChannel)())
     assert await st_noncoro.recv_bytes() == b"non_coro_bytes"
 
     # Non-coroutine recv returning bytearray
@@ -316,7 +317,7 @@ async def _test_stream_event_handlers_and_messages_part_5(_state: dict[str, Eage
             """Test function recv."""
             return bytearray(b"bytearray_res")
 
-    st_ba = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(typing.cast("EagerCallableProtocol", BytearrayRecvChannel)())
+    st_ba = as_callable(WebRTCDataChannelStream)(as_callable(BytearrayRecvChannel)())
     assert await st_ba.recv_bytes() == b"bytearray_res"
 
     # Property buffered_amount
@@ -325,7 +326,7 @@ async def _test_stream_event_handlers_and_messages_part_5(_state: dict[str, Eage
 
         buffered_amount = 99
 
-    st_prop = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(typing.cast("EagerCallableProtocol", PropAmount)())
+    st_prop = as_callable(WebRTCDataChannelStream)(as_callable(PropAmount)())
     assert st_prop.get_buffered_amount() == 99
     await st_prop.send_bytes(b"ignored")
     getattr(_state, "update")({"BytearrayRecvChannel": BytearrayRecvChannel, "NonCoroRecvChannel": NonCoroRecvChannel, "PropAmount": PropAmount, "st_ba": st_ba})
@@ -345,7 +346,7 @@ async def _test_stream_event_handlers_and_messages_part_6(_state: dict[str, Eage
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.msgs = typing.cast("list[EagerTensorProtocol]", [])
+            self.msgs = as_tensor_list([])
 
         def sendMessage(self, data: bytes) -> EagerValue:
             """Test function sendMessage.
@@ -356,13 +357,13 @@ async def _test_stream_event_handlers_and_messages_part_6(_state: dict[str, Eage
 
             async def _c() -> None:
                 """Test function _c."""
-                typing.cast("EagerCallableProtocol", self.msgs.append)(data)
+                as_callable(self.msgs.append)(data)
 
-            return typing.cast("EagerTensorProtocol", _c())
+            return as_tensor(_c())
 
-    st_sync_sendmsg = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(typing.cast("EagerCallableProtocol", SyncSendMessageCoroChannel)())
+    st_sync_sendmsg = as_callable(WebRTCDataChannelStream)(as_callable(SyncSendMessageCoroChannel)())
     await st_sync_sendmsg.send_bytes(b"sync_sendmsg_coro")
-    assert len(typing.cast("EagerTensorProtocol", getattr(st_sync_sendmsg.channel, "msgs"))) == 1
+    assert len(as_tensor(getattr(st_sync_sendmsg.channel, "msgs"))) == 1
     getattr(_state, "update")({"SyncSendMessageCoroChannel": SyncSendMessageCoroChannel, "st_sync_sendmsg": st_sync_sendmsg})
 
 
@@ -383,7 +384,7 @@ async def test_stream_event_handlers_and_messages() -> None:
 async def test_stream_backpressure() -> None:
     """Test wait_backpressure handling with drain callbacks and events."""
     mock = MockChannel()
-    stream = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(mock, high_watermark=50, low_watermark=10)
+    stream = as_callable(WebRTCDataChannelStream)(mock, high_watermark=50, low_watermark=10)
 
     mock.bufferedAmount = 20
     await stream.wait_backpressure()
@@ -429,10 +430,10 @@ async def test_send_recv_data_chunking_and_errors() -> None:
     ch_a, ch_b = make_bipipe_pair()
     data = np.arange(100, dtype=np.float32).reshape(10, 10)
 
-    send_task = typing.cast("EagerCallableProtocol", _send_data)(ch_a, data, chunk_size=64)
-    recv_task = typing.cast("EagerCallableProtocol", _recv_data)(ch_b)
+    send_task = as_callable(_send_data)(ch_a, data, chunk_size=64)
+    recv_task = as_callable(_recv_data)(ch_b)
     _, received = await asyncio.gather(send_task, recv_task)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(received, data)
+    as_callable(np.testing.assert_array_equal)(received, data)
 
     # Endianness conversion test
     foreign_order = ">" if sys.byteorder == "little" else "<"
@@ -452,7 +453,7 @@ async def test_send_recv_data_chunking_and_errors() -> None:
     await ch_end1.send(b"META:" + json.dumps(meta).encode("utf-8"))
     header = struct.pack("!6sIII", b"CHUNK:", 0, 1, zlib.crc32(raw))
     await ch_end1.send(header + raw)
-    res_endian = await typing.cast("EagerCallableProtocol", _recv_data)(ch_end2)
+    res_endian = await as_callable(_recv_data)(ch_end2)
     assert res_endian is not None
 
     # CRC error test
@@ -463,7 +464,7 @@ async def test_send_recv_data_chunking_and_errors() -> None:
     await ch_bad1.send(header + raw)
 
     with pytest.raises(ValueError, match="Checksum mismatch"):
-        await typing.cast("EagerCallableProtocol", _recv_data)(ch_bad2)
+        await as_callable(_recv_data)(ch_bad2)
 
     # Payload length mismatch test
     ch_len1, ch_len2 = make_bipipe_pair()
@@ -474,13 +475,13 @@ async def test_send_recv_data_chunking_and_errors() -> None:
     await ch_len1.send(header + raw)
 
     with pytest.raises(ValueError, match="Payload length mismatch"):
-        await typing.cast("EagerCallableProtocol", _recv_data)(ch_len2)
+        await as_callable(_recv_data)(ch_len2)
 
     # Non-META header rejection test
     ch_leg1, ch_leg2 = make_bipipe_pair()
     await ch_leg1.send(b"2,2|float32")
     with pytest.raises(ValueError, match="expected META: prefix"):
-        await typing.cast("EagerCallableProtocol", _recv_data)(ch_leg2)
+        await as_callable(_recv_data)(ch_leg2)
 
 
 @pytest.mark.asyncio
@@ -497,7 +498,7 @@ async def test_broadcast_collective() -> None:
             r: Test parameter `r`.
         """
         local_t = tensor if r == 0 else np.zeros_like(tensor)
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", broadcast)(local_t, root_rank=0, conns=mesh[r], rank=r))
+        return as_ndarray(await as_callable(broadcast)(local_t, root_rank=0, conns=mesh[r], rank=r))
 
     results = await asyncio.gather(*(run_rank(r) for r in range(world_size)))
     for res in results:
@@ -513,15 +514,15 @@ async def test_ring_all_reduce_collective() -> None:
     world_size = 3
 
     single = np.array([1.0, 2.0])
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(await typing.cast("EagerCallableProtocol", ring_all_reduce)(single, "SUM", [None], 0), single)
+    as_callable(np.testing.assert_array_equal)(await as_callable(ring_all_reduce)(single, "SUM", [None], 0), single)
 
     ch_a, ch_b = make_bipipe_pair()
     with pytest.raises(ValueError, match="Unsupported reduction operator"):
-        await typing.cast("EagerCallableProtocol", ring_all_reduce)(single, "INVALID", [ch_a, ch_b], 0)
+        await as_callable(ring_all_reduce)(single, "INVALID", [ch_a, ch_b], 0)
 
     # Missing neighbor connection: rank 0 expects rank 1 (next) and rank 2 (prev)
     with pytest.raises(ValueError, match="Ring topology requires connections"):
-        await typing.cast("EagerCallableProtocol", ring_all_reduce)(single, "SUM", [None, None, ch_b], 0)
+        await as_callable(ring_all_reduce)(single, "SUM", [None, None, ch_b], 0)
 
     for op in ("SUM", "PROD", "MAX", "MIN"):
         mesh_op = create_interconnected_mesh(world_size)
@@ -536,7 +537,7 @@ async def test_ring_all_reduce_collective() -> None:
                 m: Test parameter `m`.
                 inp: Test parameter `inp`.
             """
-            return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", ring_all_reduce)(typing.cast("EagerTensorProtocol", inp)[r], op_name, m[r], r))
+            return as_ndarray(await as_callable(ring_all_reduce)(as_tensor(inp)[r], op_name, m[r], r))
 
         outputs = await asyncio.gather(*(run_ring(r) for r in range(world_size)))
         if op == "SUM":
@@ -549,7 +550,7 @@ async def test_ring_all_reduce_collective() -> None:
             expected = np.minimum(inputs[0], np.minimum(inputs[1], inputs[2]))
 
         for out in outputs:
-            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(out, expected)
+            as_callable(np.testing.assert_allclose)(out, expected)
 
 
 @pytest.mark.asyncio
@@ -569,7 +570,7 @@ async def test_all_reduce_direct_and_ring() -> None:
                 m: Test parameter `m`.
                 inp: Test parameter `inp`.
             """
-            return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", all_reduce)(typing.cast("EagerTensorProtocol", inp)[r], op_name, m[r], r, algorithm="direct"))
+            return as_ndarray(await as_callable(all_reduce)(as_tensor(inp)[r], op_name, m[r], r, algorithm="direct"))
 
         outputs = await asyncio.gather(*(run_direct(r) for r in range(world_size)))
         if op == "SUM":
@@ -582,7 +583,7 @@ async def test_all_reduce_direct_and_ring() -> None:
             expected = np.minimum(inputs[0], np.minimum(inputs[1], inputs[2]))
 
         for out in outputs:
-            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(out, expected)
+            as_callable(np.testing.assert_allclose)(out, expected)
 
     # Test ring algorithm dispatch from all_reduce
     mesh_ring = create_interconnected_mesh(world_size)
@@ -594,19 +595,19 @@ async def test_all_reduce_direct_and_ring() -> None:
         Args:
             r: Test parameter `r`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", all_reduce)(inputs_ring[r], "SUM", mesh_ring[r], r, algorithm="ring"))
+        return as_ndarray(await as_callable(all_reduce)(inputs_ring[r], "SUM", mesh_ring[r], r, algorithm="ring"))
 
     outputs_ring = await asyncio.gather(*(run_ring_disp(r) for r in range(world_size)))
     for out in outputs_ring:
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(out, typing.cast("EagerCallableProtocol", sum)(inputs_ring))
+        as_callable(np.testing.assert_allclose)(out, as_callable(sum)(inputs_ring))
 
     # Unsupported op with peers
     mesh_bad = create_interconnected_mesh(2)
 
     async def run_bad_op() -> None:
         """Test function run_bad_op."""
-        task1 = typing.cast("EagerCallableProtocol", all_reduce)(typing.cast("EagerCallableProtocol", np.array)([1.0]), "BAD_OP", mesh_bad[0], 0, algorithm="direct")
-        task2 = typing.cast("EagerCallableProtocol", all_reduce)(typing.cast("EagerCallableProtocol", np.array)([1.0]), "BAD_OP", mesh_bad[1], 1, algorithm="direct")
+        task1 = as_callable(all_reduce)(as_callable(np.array)([1.0]), "BAD_OP", mesh_bad[0], 0, algorithm="direct")
+        task2 = as_callable(all_reduce)(as_callable(np.array)([1.0]), "BAD_OP", mesh_bad[1], 1, algorithm="direct")
         await asyncio.gather(task1, task2)
 
     with pytest.raises(ValueError, match="Unsupported reduction operator"):
@@ -627,7 +628,7 @@ async def test_all_gather_direct_and_recursive_doubling() -> None:
         Args:
             r: Test parameter `r`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", all_gather)(inputs_3[r], axis=0, conns=mesh_dir[r], rank=r, algorithm="direct"))
+        return as_ndarray(await as_callable(all_gather)(inputs_3[r], axis=0, conns=mesh_dir[r], rank=r, algorithm="direct"))
 
     outputs_dir = await asyncio.gather(*(run_direct(r) for r in range(world_size_3)))
     expected_gather_3 = np.concatenate(inputs_3, axis=0)
@@ -645,7 +646,7 @@ async def test_all_gather_direct_and_recursive_doubling() -> None:
         Args:
             r: Test parameter `r`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", all_gather)(inputs_2[r], axis=0, conns=mesh_rd[r], rank=r, algorithm="recursive_doubling"))
+        return as_ndarray(await as_callable(all_gather)(inputs_2[r], axis=0, conns=mesh_rd[r], rank=r, algorithm="recursive_doubling"))
 
     outputs_rd = await asyncio.gather(*(run_rd(r) for r in range(world_size_2)))
     expected_gather_2 = np.concatenate(inputs_2, axis=0)
@@ -653,7 +654,7 @@ async def test_all_gather_direct_and_recursive_doubling() -> None:
         np.testing.assert_array_equal(out, expected_gather_2)
 
     single = np.array([5.0])
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(await typing.cast("EagerCallableProtocol", recursive_halving_doubling_all_gather)(single, 0, [None], 0), single)
+    as_callable(np.testing.assert_array_equal)(await as_callable(recursive_halving_doubling_all_gather)(single, 0, [None], 0), single)
 
 
 @pytest.mark.asyncio
@@ -676,7 +677,7 @@ async def test_reduce_scatter_and_ring() -> None:
                 m: Test parameter `m`.
                 inp: Test parameter `inp`.
             """
-            return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", reduce_scatter)(typing.cast("EagerTensorProtocol", inp)[r], op_name, scatter_dim=0, conns=m[r], rank=r, algorithm="ring"))
+            return as_ndarray(await as_callable(reduce_scatter)(as_tensor(inp)[r], op_name, scatter_dim=0, conns=m[r], rank=r, algorithm="ring"))
 
         res_ring = await asyncio.gather(*(run_ring_op(r) for r in range(world_size)))
         if op == "SUM":
@@ -689,7 +690,7 @@ async def test_reduce_scatter_and_ring() -> None:
             tot = np.minimum(inputs[0], np.minimum(inputs[1], inputs[2]))
         exp_chunks = np.array_split(tot, world_size, axis=0)
         for r in range(world_size):
-            typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_ring[r], exp_chunks[r])
+            as_callable(np.testing.assert_allclose)(res_ring[r], exp_chunks[r])
 
     mesh_dir = create_interconnected_mesh(world_size)
 
@@ -699,7 +700,7 @@ async def test_reduce_scatter_and_ring() -> None:
         Args:
             r: Test parameter `r`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", reduce_scatter)(inputs[r], "SUM", scatter_dim=0, conns=mesh_dir[r], rank=r, algorithm="direct"))
+        return as_ndarray(await as_callable(reduce_scatter)(inputs[r], "SUM", scatter_dim=0, conns=mesh_dir[r], rank=r, algorithm="direct"))
 
     res_dir = await asyncio.gather(*(run_dir_rs(r) for r in range(world_size)))
     exp_dir_chunks = np.array_split(sum(inputs), world_size, axis=0)
@@ -707,15 +708,15 @@ async def test_reduce_scatter_and_ring() -> None:
         np.testing.assert_array_equal(res_dir[r], exp_dir_chunks[r])
 
     single = np.array([1.0, 2.0])
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(await typing.cast("EagerCallableProtocol", ring_reduce_scatter)(single, "SUM", 0, [None], 0), single)
+    as_callable(np.testing.assert_array_equal)(await as_callable(ring_reduce_scatter)(single, "SUM", 0, [None], 0), single)
 
     ch_a, ch_b = make_bipipe_pair()
     with pytest.raises(ValueError, match="Unsupported reduction operator"):
-        await typing.cast("EagerCallableProtocol", ring_reduce_scatter)(single, "BAD", 0, [ch_a, ch_b], 0)
+        await as_callable(ring_reduce_scatter)(single, "BAD", 0, [ch_a, ch_b], 0)
 
     # Missing neighbor connection: rank 0 expects rank 1 (next) and rank 2 (prev)
     with pytest.raises(ValueError, match="Ring topology requires connections"):
-        await typing.cast("EagerCallableProtocol", ring_reduce_scatter)(single, "SUM", 0, [None, None, ch_b], 0)
+        await as_callable(ring_reduce_scatter)(single, "SUM", 0, [None, None, ch_b], 0)
 
 
 @pytest.mark.asyncio
@@ -731,7 +732,7 @@ async def test_all_to_all_collective() -> None:
         Args:
             r: Test parameter `r`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", await typing.cast("EagerCallableProtocol", all_to_all)(inputs[r], scatter_dim=0, gather_dim=0, conns=mesh[r], rank=r))
+        return as_ndarray(await as_callable(all_to_all)(inputs[r], scatter_dim=0, gather_dim=0, conns=mesh[r], rank=r))
 
     outputs = await asyncio.gather(*(run_all_to_all(r) for r in range(world_size)))
     for r in range(world_size):
@@ -755,7 +756,7 @@ async def test_distributed_barrier() -> None:
             r: Test parameter `r`.
         """
         order.append(f"enter_{r}")
-        await typing.cast("EagerCallableProtocol", barriers[r].wait)(mesh[r])
+        await as_callable(barriers[r].wait)(mesh[r])
         order.append(f"exit_{r}")
 
     await asyncio.gather(*(run_barrier(r) for r in range(world_size)))
@@ -777,34 +778,34 @@ def _test_dispatch_collective_and_registry_part_1(_state: dict[str, EagerTensorP
             tensor: Test parameter `tensor`.
             kwargs: Test parameter `kwargs`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerTensorProtocol", tensor) * typing.cast("EagerTensorProtocol", 100.0))
+        return as_ndarray(as_tensor(tensor) * as_tensor(100.0))
 
     register_collective_backend("custom_be", custom_disp)
     assert get_collective_backend("custom_be") is custom_disp
 
     arr = np.array([1.0, 2.0])
     res_custom = dispatch_collective("AllReduce", arr, backend="custom_be")
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_custom, arr * 100.0)
+    as_callable(np.testing.assert_array_equal)(res_custom, arr * 100.0)
 
     t0 = np.array([1.0, 2.0])
     t1 = np.array([3.0, 4.0])
     all_data = [t0, t1]
 
     # AllReduce SUM, ADD, PROD, PRODUCT, MAX, MIN
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("AllReduce", t0, backend="numpy", op_type="SUM", all_ranks_data=all_data), t0 + t1)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("AllReduce", t0, backend="numpy", op_type="ADD", all_ranks_data=all_data), t0 + t1)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("AllReduce", t0, backend="numpy", op_type="PROD", all_ranks_data=all_data), t0 * t1)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("AllReduce", t0, backend="numpy", op_type="PRODUCT", all_ranks_data=all_data), t0 * t1)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("AllReduce", t0, backend="numpy", op_type="MAX", all_ranks_data=all_data), typing.cast("EagerCallableProtocol", np.maximum)(t0, t1))
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("AllReduce", t0, backend="numpy", op_type="MIN", all_ranks_data=all_data), typing.cast("EagerCallableProtocol", np.minimum)(t0, t1))
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t0, backend="numpy", op_type="SUM", all_ranks_data=all_data), t0 + t1)
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t0, backend="numpy", op_type="ADD", all_ranks_data=all_data), t0 + t1)
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t0, backend="numpy", op_type="PROD", all_ranks_data=all_data), t0 * t1)
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t0, backend="numpy", op_type="PRODUCT", all_ranks_data=all_data), t0 * t1)
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t0, backend="numpy", op_type="MAX", all_ranks_data=all_data), as_callable(np.maximum)(t0, t1))
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t0, backend="numpy", op_type="MIN", all_ranks_data=all_data), as_callable(np.minimum)(t0, t1))
 
     gathered = dispatch_collective("AllGather", t0, backend="numpy", axis=0, all_ranks_data=all_data)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(gathered, typing.cast("EagerCallableProtocol", np.concatenate)(all_data, axis=0))
+    assert as_callable(np.allclose)(gathered, as_callable(np.concatenate)(all_data, axis=0))
 
     # ReduceScatter ops: SUM, ADD, PROD, PRODUCT, MAX, MIN
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="SUM", scatter_dim=0, rank=0, all_ranks_data=all_data), typing.cast("EagerCallableProtocol", np.array_split)(t0 + t1, 2, axis=0)[0])
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="ADD", scatter_dim=0, rank=0, all_ranks_data=all_data), typing.cast("EagerCallableProtocol", np.array_split)(t0 + t1, 2, axis=0)[0])
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="PROD", scatter_dim=0, rank=0, all_ranks_data=all_data), typing.cast("EagerCallableProtocol", np.array_split)(t0 * t1, 2, axis=0)[0])
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="SUM", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t0 + t1, 2, axis=0)[0])
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="ADD", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t0 + t1, 2, axis=0)[0])
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="PROD", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t0 * t1, 2, axis=0)[0])
     getattr(_state, "update")({"all_data": all_data, "arr": arr, "custom_disp": custom_disp, "gathered": gathered})
     getattr(_state, "update")({"res_custom": res_custom, "t0": t0, "t1": t1})
     _state.update(locals())
@@ -817,36 +818,36 @@ def _test_dispatch_collective_and_registry_part_2(_state: dict[str, EagerTensorP
         _state: Shared test state dictionary.
     """
     all_data, t0, t1 = _state["all_data"], _state["t0"], _state["t1"]
-    assert typing.cast("EagerCallableProtocol", np.allclose)(
-        typing.cast("EagerCallableProtocol", dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="PRODUCT", scatter_dim=0, rank=0, all_ranks_data=all_data),
-        typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", np.array_split)(t0 * t1, 2, axis=0), "__getitem__")(0)),
+    assert as_callable(np.allclose)(
+        as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="PRODUCT", scatter_dim=0, rank=0, all_ranks_data=all_data),
+        as_tensor(getattr(as_callable(np.array_split)(t0 * t1, 2, axis=0), "__getitem__")(0)),
     )
-    assert typing.cast("EagerCallableProtocol", np.allclose)(
-        typing.cast("EagerCallableProtocol", dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="MAX", scatter_dim=0, rank=0, all_ranks_data=all_data),
-        typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", np.array_split)(typing.cast("EagerCallableProtocol", np.maximum)(t0, t1), 2, axis=0), "__getitem__")(0)),
+    assert as_callable(np.allclose)(
+        as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="MAX", scatter_dim=0, rank=0, all_ranks_data=all_data),
+        as_tensor(getattr(as_callable(np.array_split)(as_callable(np.maximum)(t0, t1), 2, axis=0), "__getitem__")(0)),
     )
-    assert typing.cast("EagerCallableProtocol", np.allclose)(
-        typing.cast("EagerCallableProtocol", dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="MIN", scatter_dim=0, rank=0, all_ranks_data=all_data),
-        typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", np.array_split)(typing.cast("EagerCallableProtocol", np.minimum)(t0, t1), 2, axis=0), "__getitem__")(0)),
+    assert as_callable(np.allclose)(
+        as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="MIN", scatter_dim=0, rank=0, all_ranks_data=all_data),
+        as_tensor(getattr(as_callable(np.array_split)(as_callable(np.minimum)(t0, t1), 2, axis=0), "__getitem__")(0)),
     )
     a2a = dispatch_collective("AllToAll", t0, backend="numpy", scatter_dim=0, gather_dim=0, rank=0, all_ranks_data=all_data)
     assert a2a is not None
 
     bcast = dispatch_collective("Broadcast", t1, backend="numpy", root=0, all_ranks_data=all_data)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(bcast, t0)
+    assert as_callable(np.allclose)(bcast, t0)
 
     fallback = dispatch_collective("AllReduce", t0, backend="numpy")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(fallback, t0)
+    assert as_callable(np.allclose)(fallback, t0)
 
     # PyTorch backend import failure fallback
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.pytorch.distributed_collectives": None}):
         fb_pt = dispatch_collective("AllReduce", t0, backend="pytorch", all_ranks_data=all_data)
-        assert typing.cast("EagerCallableProtocol", np.allclose)(fb_pt, t0 + t1)
+        assert as_callable(np.allclose)(fb_pt, t0 + t1)
 
     # JAX backend import failure fallback
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.jax.distributed_collectives": None}):
         fb_jax = dispatch_collective("AllReduce", t0, backend="jax", all_ranks_data=all_data)
-        assert typing.cast("EagerCallableProtocol", np.allclose)(fb_jax, t0 + t1)
+        assert as_callable(np.allclose)(fb_jax, t0 + t1)
 
     # PyTorch backend mock dispatch
     mock_pt = MagicMock()
@@ -869,16 +870,16 @@ def _test_dispatch_collective_and_registry_part_3(_state: dict[str, EagerTensorP
         setattr(mock_pt.pytorch_broadcast, "return_value", t0 + 4)
 
         res_ar = dispatch_collective("AllReduce", t0, backend="pytorch")
-        assert typing.cast("EagerCallableProtocol", np.allclose)(res_ar, t0 + 1)
+        assert as_callable(np.allclose)(res_ar, t0 + 1)
 
         res_ag = dispatch_collective("AllGather", t0, backend="pytorch")
-        assert typing.cast("EagerCallableProtocol", np.allclose)(res_ag, t0 + 2)
+        assert as_callable(np.allclose)(res_ag, t0 + 2)
 
         res_rs = dispatch_collective("ReduceScatter", t0, backend="pytorch")
-        assert typing.cast("EagerCallableProtocol", np.allclose)(res_rs, t0 + 3)
+        assert as_callable(np.allclose)(res_rs, t0 + 3)
 
         res_bc = dispatch_collective("Broadcast", t0, backend="pytorch")
-        assert typing.cast("EagerCallableProtocol", np.allclose)(res_bc, t0 + 4)
+        assert as_callable(np.allclose)(res_bc, t0 + 4)
 
     # JAX backend mock dispatch
     mock_jax = MagicMock()
@@ -900,13 +901,13 @@ def _test_dispatch_collective_and_registry_part_4(_state: dict[str, EagerTensorP
         setattr(mock_jax.jax_broadcast, "return_value", t0 + 30)
 
         res_jar = dispatch_collective("AllReduce", t0, backend="jax")
-        assert typing.cast("EagerCallableProtocol", np.allclose)(res_jar, t0 + 10)
+        assert as_callable(np.allclose)(res_jar, t0 + 10)
 
         res_jag = dispatch_collective("AllGather", t0, backend="jax")
-        assert typing.cast("EagerCallableProtocol", np.allclose)(res_jag, t0 + 20)
+        assert as_callable(np.allclose)(res_jag, t0 + 20)
 
         res_jbc = dispatch_collective("Broadcast", t0, backend="jax")
-        assert typing.cast("EagerCallableProtocol", np.allclose)(res_jbc, t0 + 30)
+        assert as_callable(np.allclose)(res_jbc, t0 + 30)
     getattr(_state, "update")({"res_jag": res_jag, "res_jar": res_jar, "res_jbc": res_jbc})
 
 
@@ -936,10 +937,10 @@ async def _test_webrtc_collectives_error_handling_part_1(_state: dict[str, Eager
     # Byteorder '=' in _send_data
     ch_eq1, ch_eq2 = make_bipipe_pair()
     arr_eq = np.array([1, 2], dtype="=i4")
-    send_task = typing.cast("EagerCallableProtocol", _send_data)(ch_eq1, arr_eq)
-    recv_task = typing.cast("EagerCallableProtocol", _recv_data)(ch_eq2)
+    send_task = as_callable(_send_data)(ch_eq1, arr_eq)
+    recv_task = as_callable(_recv_data)(ch_eq2)
     _, res_eq = await asyncio.gather(send_task, recv_task)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_eq, arr_eq)
+    as_callable(np.testing.assert_array_equal)(res_eq, arr_eq)
 
     # Endian swap in _recv_data
     ch_f1, ch_f2 = make_bipipe_pair()
@@ -959,7 +960,7 @@ async def _test_webrtc_collectives_error_handling_part_1(_state: dict[str, Eager
     await ch_f1.send(b"META:" + json.dumps(f_meta).encode("utf-8"))
     header_f = struct.pack("!6sIII", b"CHUNK:", 0, 1, zlib.crc32(raw_f))
     await ch_f1.send(header_f + raw_f)
-    res_f = await typing.cast("EagerCallableProtocol", _recv_data)(ch_f2)
+    res_f = await as_callable(_recv_data)(ch_f2)
     assert res_f is not None
 
     # Raw non-CHUNK frame in _recv_data (hits line 246)
@@ -998,7 +999,7 @@ async def _test_webrtc_collectives_error_handling_part_2(_state: dict[str, Eager
 
         pass
 
-    st_empty = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(typing.cast("EagerCallableProtocol", NoRecvChannel)())
+    st_empty = as_callable(WebRTCDataChannelStream)(as_callable(NoRecvChannel)())
 
     async def put_msg() -> None:
         """Test function put_msg."""
@@ -1010,7 +1011,7 @@ async def _test_webrtc_collectives_error_handling_part_2(_state: dict[str, Eager
 
     # Timeout loop in wait_backpressure (hits line 121 TimeoutError)
     mock_to = MockChannel()
-    st_to = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(mock_to, high_watermark=10, low_watermark=5)
+    st_to = as_callable(WebRTCDataChannelStream)(mock_to, high_watermark=10, low_watermark=5)
     mock_to.bufferedAmount = 20
 
     async def drain_later() -> None:
@@ -1019,7 +1020,7 @@ async def _test_webrtc_collectives_error_handling_part_2(_state: dict[str, Eager
         mock_to.bufferedAmount = 2
 
     mock_ev = MockChannel()
-    st_ev = typing.cast("EagerCallableProtocol", WebRTCDataChannelStream)(mock_ev, high_watermark=10, low_watermark=5)
+    st_ev = as_callable(WebRTCDataChannelStream)(mock_ev, high_watermark=10, low_watermark=5)
     mock_ev.bufferedAmount = 20
 
     async def event_later() -> None:
@@ -1042,7 +1043,7 @@ async def _test_webrtc_collectives_error_handling_part_3(_state: dict[str, Eager
         _state: Shared test state dictionary.
     """
     drain_later, st_to = _state["drain_later"], _state["st_to"]
-    typing.cast("EagerCallableProtocol", asyncio.create_task)(typing.cast("EagerCallableProtocol", drain_later)())
+    as_callable(asyncio.create_task)(as_callable(drain_later)())
     await st_to.wait_backpressure()
 
     # Fallthrough for unknown op in pytorch / jax
@@ -1050,19 +1051,19 @@ async def _test_webrtc_collectives_error_handling_part_3(_state: dict[str, Eager
     all_data = [t, t]
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.pytorch.distributed_collectives": MagicMock()}):
         res_pt_un = dispatch_collective("UnknownOp", t, backend="pytorch", all_ranks_data=all_data)
-        typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_pt_un, t)
+        as_callable(np.testing.assert_array_equal)(res_pt_un, t)
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.jax.distributed_collectives": MagicMock()}):
         res_jax_un = dispatch_collective("UnknownOp", t, backend="jax", all_ranks_data=all_data)
-        typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_jax_un, t)
+        as_callable(np.testing.assert_array_equal)(res_jax_un, t)
 
     # Fallthrough when all_ranks_data is None for Broadcast
     res_bcast_none = dispatch_collective("Broadcast", t, backend="numpy")
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(res_bcast_none, t)
+    as_callable(np.testing.assert_array_equal)(res_bcast_none, t)
 
     # Unknown op_type in AllReduce and ReduceScatter with all_ranks_data
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("AllReduce", t, backend="numpy", op_type="UNKNOWN", all_ranks_data=all_data), t)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", dispatch_collective)("ReduceScatter", t, backend="numpy", op_type="UNKNOWN", scatter_dim=0, rank=0, all_ranks_data=all_data), typing.cast("EagerCallableProtocol", np.array_split)(t, 2, axis=0)[0])
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t, backend="numpy", op_type="UNKNOWN", all_ranks_data=all_data), t)
+    assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t, backend="numpy", op_type="UNKNOWN", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t, 2, axis=0)[0])
     getattr(_state, "update")({"all_data": all_data, "res_bcast_none": res_bcast_none, "res_jax_un": res_jax_un, "res_pt_un": res_pt_un})
     getattr(_state, "update")({"t": t})
 

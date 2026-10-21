@@ -7,9 +7,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.ops.unary.logical import Ediff1d, Iscomplexobj, Isin, Isrealobj, Issubdtype, Packbits, Unpackbits, iscomplex, iscomplexobj, isin, isreal, isrealobj, issubdtype, population_count, reduce_precision
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_logical_infer_shape() -> None:
@@ -29,7 +30,7 @@ def test_logical_infer_shape() -> None:
     from ml_switcheroo_compiler.ops.unary.logical import Isin
 
     assert Isin().infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", Isin)().infer_shape(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()) == (2, 3)
+    assert as_callable(Isin)().infer_shape(as_callable(Dummy)(), as_callable(Dummy)()) == (2, 3)
 
 
 class Dummy:
@@ -47,26 +48,26 @@ class Dummy:
 
 def test_logical_infer_shape_additional() -> None:
     """Test function test_logical_infer_shape_additional."""
-    assert typing.cast("EagerCallableProtocol", Iscomplexobj)().infer_shape(typing.cast("EagerCallableProtocol", Dummy)()) == ()
-    assert typing.cast("EagerCallableProtocol", Isrealobj)().infer_shape(typing.cast("EagerCallableProtocol", Dummy)()) == ()
+    assert as_callable(Iscomplexobj)().infer_shape(as_callable(Dummy)()) == ()
+    assert as_callable(Isrealobj)().infer_shape(as_callable(Dummy)()) == ()
     assert Issubdtype().infer_shape() == ()
     op = Ediff1d()
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,))) == (4,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_begin=typing.cast("EagerCallableProtocol", Dummy)(())) == (5,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_begin=typing.cast("EagerCallableProtocol", Dummy)((2,))) == (6,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_end=typing.cast("EagerCallableProtocol", Dummy)(())) == (5,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_end=typing.cast("EagerCallableProtocol", Dummy)((2,))) == (6,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_begin=typing.cast("EagerCallableProtocol", Dummy)((2,)), to_end=typing.cast("EagerCallableProtocol", Dummy)((3,))) == (9,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,))) == (4,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_begin=as_callable(Dummy)(())) == (5,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_begin=as_callable(Dummy)((2,))) == (6,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_end=as_callable(Dummy)(())) == (5,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_end=as_callable(Dummy)((2,))) == (6,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_begin=as_callable(Dummy)((2,)), to_end=as_callable(Dummy)((3,))) == (9,)
     from ml_switcheroo_compiler.ir.shape_system import SymVar
 
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((None,))) == (typing.cast("EagerCallableProtocol", SymVar)("diff_len"),)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_begin=typing.cast("EagerCallableProtocol", Dummy)((None,))) == (typing.cast("EagerCallableProtocol", SymVar)("diff_len"),)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_end=typing.cast("EagerCallableProtocol", Dummy)((None,))) == (typing.cast("EagerCallableProtocol", SymVar)("diff_len"),)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((None,))) == (as_callable(SymVar)("diff_len"),)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_begin=as_callable(Dummy)((None,))) == (as_callable(SymVar)("diff_len"),)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_end=as_callable(Dummy)((None,))) == (as_callable(SymVar)("diff_len"),)
     assert op.infer_shape(None) == (0,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_begin=[1, 2]) == (6,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_end=(10,)) == (5,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5,)), to_begin=None) == (4,)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((5, "str_dim")), to_begin=typing.cast("EagerCallableProtocol", Dummy)(())) == (5,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_begin=[1, 2]) == (6,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_end=(10,)) == (5,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5,)), to_begin=None) == (4,)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)((5, "str_dim")), to_begin=as_callable(Dummy)(())) == (5,)
 
 
 def test_logical_dispatch() -> None:
@@ -81,16 +82,16 @@ def test_logical_dispatch() -> None:
             kwargs: Test parameter `kwargs`.
         """
         with pytest.raises(RuntimeError):
-            typing.cast("EagerCallableProtocol", func)(*args, **kwargs)
+            as_callable(func)(*args, **kwargs)
 
-    typing.cast("EagerCallableProtocol", safe_call)(population_count, typing.cast("EagerCallableProtocol", Dummy)((2,)))
-    typing.cast("EagerCallableProtocol", safe_call)(isin, typing.cast("EagerCallableProtocol", Dummy)((2,)), typing.cast("EagerCallableProtocol", Dummy)((2,)))
-    typing.cast("EagerCallableProtocol", safe_call)(iscomplex, typing.cast("EagerCallableProtocol", Dummy)((2,)))
-    typing.cast("EagerCallableProtocol", safe_call)(iscomplexobj, typing.cast("EagerCallableProtocol", Dummy)((2,)))
-    typing.cast("EagerCallableProtocol", safe_call)(isreal, typing.cast("EagerCallableProtocol", Dummy)((2,)))
-    typing.cast("EagerCallableProtocol", safe_call)(isrealobj, typing.cast("EagerCallableProtocol", Dummy)((2,)))
-    typing.cast("EagerCallableProtocol", safe_call)(issubdtype, typing.cast("EagerCallableProtocol", Dummy)((2,)), typing.cast("EagerCallableProtocol", Dummy)(()))
-    typing.cast("EagerCallableProtocol", safe_call)(reduce_precision, typing.cast("EagerCallableProtocol", Dummy)((2,)))
+    as_callable(safe_call)(population_count, as_callable(Dummy)((2,)))
+    as_callable(safe_call)(isin, as_callable(Dummy)((2,)), as_callable(Dummy)((2,)))
+    as_callable(safe_call)(iscomplex, as_callable(Dummy)((2,)))
+    as_callable(safe_call)(iscomplexobj, as_callable(Dummy)((2,)))
+    as_callable(safe_call)(isreal, as_callable(Dummy)((2,)))
+    as_callable(safe_call)(isrealobj, as_callable(Dummy)((2,)))
+    as_callable(safe_call)(issubdtype, as_callable(Dummy)((2,)), as_callable(Dummy)(()))
+    as_callable(safe_call)(reduce_precision, as_callable(Dummy)((2,)))
 
 
 def test_logical_infer_shape_packbits() -> None:
@@ -98,9 +99,9 @@ def test_logical_infer_shape_packbits() -> None:
     from ml_switcheroo_compiler.ops.unary.logical import Packbits, Unpackbits
 
     op1 = Packbits()
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((2,)), typing.cast("EagerCallableProtocol", Dummy)((3, 2))) == (3, 2)
+    assert as_callable(op1.infer_shape)(as_callable(Dummy)((2,)), as_callable(Dummy)((3, 2))) == (3, 2)
     op2 = Unpackbits()
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)((2,)), typing.cast("EagerCallableProtocol", Dummy)((3, 2))) == (3, 2)
+    assert as_callable(op2.infer_shape)(as_callable(Dummy)((2,)), as_callable(Dummy)((3, 2))) == (3, 2)
 
 
 def test_logical_infer_shape_isin() -> None:
@@ -117,5 +118,5 @@ def test_logical_infer_shape_packbits_no_shapes() -> None:
 
         pass
 
-    assert typing.cast("EagerCallableProtocol", Packbits)().infer_shape(typing.cast("EagerCallableProtocol", NoShape)()) == ()
-    assert typing.cast("EagerCallableProtocol", Unpackbits)().infer_shape(typing.cast("EagerCallableProtocol", NoShape)()) == ()
+    assert as_callable(Packbits)().infer_shape(as_callable(NoShape)()) == ()
+    assert as_callable(Unpackbits)().infer_shape(as_callable(NoShape)()) == ()

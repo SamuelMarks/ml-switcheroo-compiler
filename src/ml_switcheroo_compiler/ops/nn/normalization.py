@@ -13,7 +13,10 @@ from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import (
     Tensor,
     TensorConfig,
+    as_opt_tensor_obj,
+    as_tensor_obj,
 )
+from ml_switcheroo_compiler.ir.core import as_attrs
 from ml_switcheroo_compiler.ops import (
     maximum,
     multiply,
@@ -179,11 +182,11 @@ def batch_norm_with_global_normalization(
             tuple[int, ...]: Result.
     """
     config = kwargs.get("config", BatchNormGlobalConfig())
-    bn_config = BatchNormConfig(offset=typing.cast("Tensor | None", beta), scale=typing.cast("Tensor | None", gamma if getattr(config, "scale_after_normalization") else None), epsilon=getattr(config, "variance_epsilon"))
+    bn_config = BatchNormConfig(offset=as_opt_tensor_obj(beta), scale=as_opt_tensor_obj(gamma if getattr(config, "scale_after_normalization") else None), epsilon=getattr(config, "variance_epsilon"))
     return batch_normalization(
-        typing.cast("Tensor", t),
-        typing.cast("Tensor", m),
-        typing.cast("Tensor", v),
+        as_tensor_obj(t),
+        as_tensor_obj(m),
+        as_tensor_obj(v),
         axis=-1,  # Default to last axis if not provided
         config=bn_config,
     )
@@ -200,13 +203,13 @@ def lrn(input: TensorOrScalar, config: TensorOrScalar = None, name: TensorOrScal
     Returns:
             tuple[int, ...]: Result.
     """
-    config = typing.cast(TensorOrScalar, config or LRNConfig())
+    config = config or LRNConfig()
     depth_radius = getattr(config, "depth_radius")
     bias = getattr(config, "bias")
     alpha = getattr(config, "alpha")
     beta = getattr(config, "beta")
 
-    return local_response_normalization(typing.cast("Tensor", input), depth_radius, bias, alpha, beta)
+    return local_response_normalization(as_tensor_obj(input), depth_radius, bias, alpha, beta)
 
 
 def l2_normalize(
@@ -268,9 +271,8 @@ def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_
 
         return get_active_backend().execute_op("NormalizeMoments", counts, mean_ss, variance_ss, shift, name=name)
     import uuid
-    from collections.abc import Mapping
 
-    from ml_switcheroo_ir import AttributeValue, LogicalNode
+    from ml_switcheroo_ir import LogicalNode
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -283,7 +285,7 @@ def normalize_moments(counts: TensorOrScalar, mean_ss: TensorOrScalar, variance_
         id=out_id_mean,
         op_type="NormalizeMoments",
         inputs=[str(getattr(counts, "id", counts)), str(getattr(mean_ss, "id", mean_ss)), str(getattr(variance_ss, "id", variance_ss)), str(getattr(shift, "id", shift))],
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"name": name, "secondary_id": out_id_variance}),
+        attributes=as_attrs({"name": name, "secondary_id": out_id_variance}),
         shape_metadata=getattr(counts, "shape", ()),
     )
     global_tracing_state.add_node(node)
@@ -317,9 +319,8 @@ def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: Tensor
 
         return get_active_backend().execute_op("SufficientStatistics", x, axes, shift=shift, keepdims=keepdims, name=name)
     import uuid
-    from collections.abc import Mapping
 
-    from ml_switcheroo_ir import AttributeValue, LogicalNode
+    from ml_switcheroo_ir import LogicalNode
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -334,10 +335,7 @@ def sufficient_statistics(x: TensorOrScalar, axes: TensorOrScalar, shift: Tensor
         id=out_id_counts,
         op_type="SufficientStatistics",
         inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes))],
-        attributes=typing.cast(
-            "Mapping[str, AttributeValue]",
-            {"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]},
-        ),
+        attributes=as_attrs({"shift": shift, "keepdims": keepdims, "name": name, "secondary_ids": [out_id_mean_ss, out_id_variance_ss, out_id_shift]}),
         shape_metadata=getattr(x, "shape", ()),
     )
     global_tracing_state.add_node(node)
@@ -377,9 +375,8 @@ def weighted_moments(
 
         return get_active_backend().execute_op("WeightedMoments", x, axes, frequency_weights, name=name, keepdims=keepdims)
     import uuid
-    from collections.abc import Mapping
 
-    from ml_switcheroo_ir import AttributeValue, LogicalNode
+    from ml_switcheroo_ir import LogicalNode
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -392,7 +389,7 @@ def weighted_moments(
         id=out_id_mean,
         op_type="WeightedMoments",
         inputs=[str(getattr(x, "id", x)), str(getattr(axes, "id", axes)), str(getattr(frequency_weights, "id", frequency_weights))],
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"name": name, "keepdims": keepdims, "secondary_id": out_id_variance}),
+        attributes=as_attrs({"name": name, "keepdims": keepdims, "secondary_id": out_id_variance}),
         shape_metadata=getattr(x, "shape", ()),
     )
     global_tracing_state.add_node(node)

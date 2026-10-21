@@ -84,10 +84,11 @@ class H5WeightFormat(WeightLoader, WeightSaver):
 
         with h5py.File(filepath, "w") as f:
             for k, v in weights_np.items():
+                val_data: TensorLike | list[int] = v
                 if hasattr(v, "numpy"):
-                    v = v.numpy()
+                    val_data = v.numpy()
                 elif hasattr(v, "data") and hasattr(v.data, "numpy"):
-                    v = v.data.numpy()
+                    val_data = v.data.numpy()
                 elif hasattr(v, "tolist"):
-                    v = v.tolist()
-                f.create_dataset(k, data=v)
+                    val_data = v.tolist()
+                f.create_dataset(k, data=val_data)

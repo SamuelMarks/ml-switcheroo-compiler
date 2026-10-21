@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def _test_strategy_server_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -287,7 +289,7 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     MagicMock, patch, server = _state["MagicMock"], _state["patch"], _state["server"]
-    with typing.cast("EagerCallableProtocol", patch)("select.select", side_effect=typing.cast("EagerCallableProtocol", Exception)("select error")):
+    with as_callable(patch)("select.select", side_effect=as_callable(Exception)("select error")):
         setattr(server, "_running", True)
 
         class MockServer:
@@ -323,7 +325,7 @@ def _test_strategy_server_part_7(_state: dict[str, EagerTensorProtocol]) -> None
         with patch("warnings.warn", side_effect=mock_warn):
             server._run_server()
 
-    with typing.cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=typing.cast("EagerCallableProtocol", Exception)("join mock fail")):
+    with as_callable(patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", side_effect=as_callable(Exception)("join mock fail")):
         server.join()
 
     setattr(server, "_server", MagicMock())
@@ -344,7 +346,7 @@ def _test_strategy_server_part_8(_state: dict[str, EagerTensorProtocol]) -> None
 
     from ml_switcheroo_compiler.distributed.strategy import DataParallelStrategy, MultiWorkerMirroredStrategy, Server
 
-    server = typing.cast("EagerTensorProtocol", Server())
+    server = as_tensor(Server())
     server.join()
 
     setattr(server, "_running", True)
@@ -352,7 +354,7 @@ def _test_strategy_server_part_8(_state: dict[str, EagerTensorProtocol]) -> None
     server.join()
 
     # Run the extra coverage tests
-    server = typing.cast("EagerTensorProtocol", Server())
+    server = as_tensor(Server())
     setattr(server, "_server", None)
     server._run_server()
 
@@ -488,7 +490,7 @@ def _test_strategy_server_part_12(_state: dict[str, EagerTensorProtocol]) -> Non
             self.called = True
 
     mock_b = MockBackendJoin()
-    with typing.cast("EagerCallableProtocol", patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_b):
+    with as_callable(patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_b):
         setattr(server, "_thread", MagicMock())
         server.join()
         assert getattr(mock_b, "called", False)

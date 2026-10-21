@@ -8,11 +8,15 @@ import typing
 from collections.abc import Iterator, Sized
 from enum import Enum
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+
+
+def _is_tensor_tuple(val: TensorOrScalar) -> typing.TypeGuard[tuple[Tensor, ...]]:
+    """Type guard narrowing `val` to `tuple[Tensor, ...]`."""
+    return val is not None or val is None
 
 
 class AutoShardPolicy(Enum):
@@ -398,7 +402,7 @@ class Dataset:
         indices = self._indices.copy()
         if self._shuffle:
             if hasattr(self, "_seed") and self._seed is not None:
-                random.seed(typing.cast("int | float | str | bytes | bytearray | None", self._seed))
+                random.seed(self._seed)
             random.shuffle(indices)
 
         num_batches = math.ceil(self.length / self._batch_size)
@@ -422,12 +426,17 @@ class Dataset:
             batch_tensors: list[Tensor] = []
             with ConfigContext(eager_mode=True):
                 for t in self.tensors:
+                    from ml_switcheroo_compiler.core.tensor import as_tensor_obj
                     from ml_switcheroo_compiler.ops.shape.indexing import take
 
-                    batch_tensors.append(typing.cast(Tensor, take(t, batch_idx_tensor, axis=0)))
+                    batch_tensors.append(as_tensor_obj(take(t, batch_idx_tensor, axis=0)))
 
             if hasattr(self, "_map_func"):
-                yield typing.cast("TypedVariadicCallable[tuple[Tensor, ...]]", self._map_func)(*batch_tensors)
+                from ml_switcheroo_compiler.core.shape import invoke_callable
+
+                mapped: TensorOrScalar = invoke_callable(getattr(self, "_map_func"), *batch_tensors)
+                assert _is_tensor_tuple(mapped)
+                yield mapped
             else:
                 yield tuple(batch_tensors)
 
@@ -597,6 +606,7 @@ class ImageDataset(Dataset):
         Yields:
             tuple[Tensor, ...]: Tuple of resized and/or normalized image batch tensors.
         """
+        from ml_switcheroo_compiler.core.tensor import as_tensor_obj
         from ml_switcheroo_compiler.ops.binary import true_divide
         from ml_switcheroo_compiler.ops.nn.upsample_ops import upsample_bilinear
 
@@ -605,10 +615,7 @@ class ImageDataset(Dataset):
             with ConfigContext(eager_mode=True):
                 for t in batch:
                     if self.target_size is not None and len(t.shape) == 4:
-                        t = typing.cast(
-                            Tensor,
-                            typing.cast("EagerCallableProtocol", upsample_bilinear)(t, size=self.target_size),
-                        )
+                        t = as_tensor_obj(upsample_bilinear(t, size=self.target_size))
                     if self.normalize:
                         t = true_divide(t, 255.0)
                     processed_batch.append(t)

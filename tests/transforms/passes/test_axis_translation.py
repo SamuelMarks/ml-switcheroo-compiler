@@ -8,9 +8,10 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_axis_translation_no_op() -> None:
@@ -89,7 +90,7 @@ def test_axis_translation_conv2d_no_shape() -> None:
 
             hex = "dummyxxx"
 
-        return typing.cast("EagerTensorProtocol", MockUUID())
+        return as_tensor(MockUUID())
 
     setattr(uuid, "uuid4", mock_uuid4)
     try:

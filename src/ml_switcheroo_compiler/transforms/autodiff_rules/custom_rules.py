@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import typing
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs, as_graph, as_node_list
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import (
     UnconnectedGradients,
     make_zero_jvp,
@@ -72,12 +71,11 @@ def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: TensorOrScalar, id
         id_map (dict[str, str]): The id_map parameter.
     """
     _ = node
-    from ml_switcheroo_ir import LogicalGraph
 
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
     new_subgraph = LogicalGraph(name="cp_fwd_inline")
-    nodes_to_process: list[IRNode] = list(subgraph.nodes.values()) if hasattr(subgraph.nodes, "values") else list(typing.cast(Sequence[IRNode], subgraph.nodes))
+    nodes_to_process: list[IRNode] = list(subgraph.nodes.values()) if hasattr(subgraph.nodes, "values") else list(as_node_list(subgraph.nodes))
 
     for n in nodes_to_process:
         if n.op_type == "Input":
@@ -147,8 +145,6 @@ def checkpoint_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     """
     import uuid
 
-    from ml_switcheroo_ir import LogicalGraph
-
     from ml_switcheroo_compiler.ir.core import clone_logical_node
     from ml_switcheroo_compiler.transforms.autodiff import grad as graph_grad
 
@@ -167,11 +163,11 @@ def checkpoint_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
             )
             for inp in node.inputs
         ]
-        subgraph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(fun, tuple(input_proxies), f"cp_recompute_{uuid.uuid4().hex[:6]}")
+        subgraph = _trace_function(fun, tuple(input_proxies), f"cp_recompute_{uuid.uuid4().hex[:6]}")
     else:
-        subgraph = typing.cast(LogicalGraph, node.attributes["subgraph"])
+        subgraph = as_graph(node.attributes["subgraph"])
 
-    nodes_list: list[IRNode] = list(subgraph.nodes.values()) if hasattr(subgraph.nodes, "values") else list(typing.cast(Sequence[IRNode], subgraph.nodes))
+    nodes_list: list[IRNode] = list(subgraph.nodes.values()) if hasattr(subgraph.nodes, "values") else list(as_node_list(subgraph.nodes))
 
     id_map = {n.id: f"cp_fwd_{n.id}_{uuid.uuid4().hex[:6]}" for n in nodes_list}
     for in_id, orig_in_id in zip(subgraph.inputs, node.inputs):
@@ -247,22 +243,21 @@ def _cond_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
     eb = node.attributes.get("else_branch", node.attributes.get("false_branch"))
 
     if tb is not None and eb is not None and hasattr(tb, "inputs") and hasattr(eb, "inputs"):
-        tb_grad = grad(typing.cast("LogicalGraph", tb), tb.inputs, getattr(tb, "outputs")[0] if getattr(tb, "outputs") else "", cotangent_id=cotangent)
-        eb_grad = grad(typing.cast("LogicalGraph", eb), eb.inputs, getattr(eb, "outputs")[0] if getattr(eb, "outputs") else "", cotangent_id=cotangent)
+        tb_grad = grad(as_graph(tb), tb.inputs, getattr(tb, "outputs")[0] if getattr(tb, "outputs") else "", cotangent_id=cotangent)
+        eb_grad = grad(as_graph(eb), eb.inputs, getattr(eb, "outputs")[0] if getattr(eb, "outputs") else "", cotangent_id=cotangent)
 
         adj_id = f"{node.id}_adj_cond"
         adj_node = IRNode(
             id=adj_id,
             op_type="Cond",
             inputs=list(node.inputs),
-            attributes=typing.cast(
-                "Mapping[str, AttributeValue]",
+            attributes=as_attrs(
                 {
                     "then_branch": tb_grad,
                     "else_branch": eb_grad,
                     "true_branch": tb_grad,
                     "false_branch": eb_grad,
-                },
+                }
             ),
             shape_metadata=node.shape_metadata,
         )
@@ -290,19 +285,18 @@ def _scan_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
 
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
     if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
-        body_grad = grad(typing.cast("LogicalGraph", body), getattr(body, "inputs"), getattr(body, "outputs")[0] if getattr(body, "outputs") else "", cotangent_id=cotangent)
+        body_grad = grad(as_graph(body), getattr(body, "inputs"), getattr(body, "outputs")[0] if getattr(body, "outputs") else "", cotangent_id=cotangent)
         adj_id = f"{node.id}_adj_scan"
         adj_node = IRNode(
             id=adj_id,
             op_type="Scan",
             inputs=list(node.inputs),
-            attributes=typing.cast(
-                "Mapping[str, AttributeValue]",
+            attributes=as_attrs(
                 {
                     "body": body_grad,
                     "body_subgraph": body_grad,
                     "reverse": not node.attributes.get("reverse", False),
-                },
+                }
             ),
             shape_metadata=node.shape_metadata,
         )
@@ -331,20 +325,19 @@ def _while_loop_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str |
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
     cond = node.attributes.get("cond", node.attributes.get("cond_graph"))
     if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
-        body_grad = grad(typing.cast("LogicalGraph", body), getattr(body, "inputs"), getattr(body, "outputs")[0] if getattr(body, "outputs") else "", cotangent_id=cotangent)
+        body_grad = grad(as_graph(body), getattr(body, "inputs"), getattr(body, "outputs")[0] if getattr(body, "outputs") else "", cotangent_id=cotangent)
         adj_id = f"{node.id}_adj_while"
         adj_node = IRNode(
             id=adj_id,
             op_type="WhileLoop",
             inputs=list(node.inputs),
-            attributes=typing.cast(
-                "Mapping[str, AttributeValue]",
+            attributes=as_attrs(
                 {
                     "body": body_grad,
                     "body_subgraph": body_grad,
                     "cond": cond,
                     "adjoint": True,
-                },
+                }
             ),
             shape_metadata=node.shape_metadata,
         )
@@ -406,7 +399,7 @@ def _if_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> s
             id=new_id,
             op_type="If",
             inputs=getattr(node, "inputs"),
-            attributes=typing.cast("Mapping[str, AttributeValue]", {"then_branch": then_jvp, "else_branch": else_jvp}),
+            attributes=as_attrs({"then_branch": then_jvp, "else_branch": else_jvp}),
         )
         graph.nodes[new_id] = new_node
         return new_id
@@ -443,14 +436,13 @@ def _cond_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) ->
             id=new_id,
             op_type="Cond",
             inputs=getattr(node, "inputs"),
-            attributes=typing.cast(
-                "Mapping[str, AttributeValue]",
+            attributes=as_attrs(
                 {
                     "then_branch": then_jvp,
                     "else_branch": else_jvp,
                     "true_branch": then_jvp,
                     "false_branch": else_jvp,
-                },
+                }
             ),
             shape_metadata=getattr(node, "shape_metadata"),
         )
@@ -486,13 +478,12 @@ def _while_loop_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScal
             id=new_id,
             op_type="WhileLoop",
             inputs=getattr(node, "inputs"),
-            attributes=typing.cast(
-                "Mapping[str, AttributeValue]",
+            attributes=as_attrs(
                 {
                     "body": body_jvp,
                     "body_subgraph": body_jvp,
                     "cond": getattr(node, "attributes").get("cond"),
-                },
+                }
             ),
             shape_metadata=getattr(node, "shape_metadata"),
         )
@@ -547,13 +538,12 @@ def _scan_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) ->
             id=new_id,
             op_type="Scan",
             inputs=getattr(node, "inputs"),
-            attributes=typing.cast(
-                "Mapping[str, AttributeValue]",
+            attributes=as_attrs(
                 {
                     "body": body_jvp,
                     "body_subgraph": body_jvp,
                     "reverse": getattr(node, "attributes").get("reverse", False),
-                },
+                }
             ),
             shape_metadata=getattr(node, "shape_metadata"),
         )
@@ -602,7 +592,7 @@ def recompute_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> Sequence[str 
 
     dummy = clone_logical_node(node)
     dummy.op_type = orig_op
-    dummy.attributes = typing.cast("dict[str, AttributeValue]", node.attributes.get("original_attrs", {}))
+    dummy.attributes = as_attrs(node.attributes.get("original_attrs", {}))
 
     vjp_func = get_vjp(orig_op)
     res = vjp_func(graph, dummy, cotangent)
@@ -638,7 +628,7 @@ def custom_vjp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
             if n.id in id_map:
                 continue
             id_map[n.id] = f"cvjp_inlined_{uuid.uuid4().hex[:6]}"
-        _inline_subgraph(graph, typing.cast("LogicalGraph", bwd_subgraph), node, id_map)
+        _inline_subgraph(graph, as_graph(bwd_subgraph), node, id_map)
         return tuple(id_map.get(out_id, out_id) for out_id in getattr(bwd_subgraph, "outputs"))
 
     bwd_fn = node.attributes.get("bwd_fn")
@@ -699,7 +689,7 @@ def custom_jvp_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) 
             if n.id in id_map:
                 continue
             id_map[n.id] = f"cjvp_inlined_{uuid.uuid4().hex[:6]}"
-        _inline_subgraph(graph, typing.cast("LogicalGraph", jvp_subgraph), node, id_map)
+        _inline_subgraph(graph, as_graph(jvp_subgraph), node, id_map)
         return str(id_map.get(getattr(jvp_subgraph, "outputs")[0], getattr(jvp_subgraph, "outputs")[0])) if getattr(jvp_subgraph, "outputs") else str(tangents_list[0])
 
     jvp_rule = node.attributes.get("jvp_rule")
@@ -740,8 +730,6 @@ def custom_jvp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     """
     import uuid
 
-    from ml_switcheroo_ir import LogicalGraph
-
     from ml_switcheroo_compiler.core.device import Device
     from ml_switcheroo_compiler.core.dtype import DType
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -759,9 +747,9 @@ def custom_jvp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
             )
             for inp in node.inputs
         ]
-        primal_block = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(fun, tuple(input_proxies), f"cjvp_primal_{uuid.uuid4().hex[:6]}")
+        primal_block = _trace_function(fun, tuple(input_proxies), f"cjvp_primal_{uuid.uuid4().hex[:6]}")
         sg = LogicalGraph(name="cjvp_sg")
-        nodes_list: list[IRNode] = list(primal_block.nodes.values()) if hasattr(primal_block.nodes, "values") else list(typing.cast(Sequence[IRNode], primal_block.nodes))
+        nodes_list: list[IRNode] = list(primal_block.nodes.values()) if hasattr(primal_block.nodes, "values") else list(as_node_list(primal_block.nodes))
         for n in nodes_list:
             sg.nodes[n.id] = clone_logical_node(n)
         sg.inputs = primal_block.inputs

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_ir import AttributeValue
+from tests.testing_utils import as_attrs
 
 
 def test_wasm_cond_missing_inputs() -> None:
@@ -17,7 +15,7 @@ def test_wasm_cond_missing_inputs() -> None:
     branch_graph.inputs = ["missing_input"]  # Missing from parent inputs
 
     node = IRNode("cond_1", "Cond", inputs=[], shape_metadata=[2, 2])
-    node.attributes = typing.cast("dict[str, AttributeValue]", {"then_branch": branch_graph})
+    node.attributes = as_attrs({"then_branch": branch_graph})
 
     subnode = IRNode("add_1", "Add", inputs=["missing_input", "other_input"], shape_metadata=[2, 2])
     branch_graph.nodes["add_1"] = subnode

@@ -11,9 +11,10 @@ from ml_ecosystem_snapshots.compliance import validate_matmul_shapes
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.dot import Dot
 from ml_switcheroo_compiler.ops.stats.descriptive import ApplyOverAxes
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def _make_tensor(shape: tuple[int, ...]) -> Tensor:
@@ -83,8 +84,8 @@ def test_dot_infer_shape_nd_contractions() -> None:
 
         shape_metadata = ()
 
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithMetadata)(), typing.cast("EagerCallableProtocol", DummyWithMetadata)()) == (3, 4)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
+    assert as_callable(op.infer_shape)(as_callable(DummyWithMetadata)(), as_callable(DummyWithMetadata)()) == (3, 4)
+    assert as_callable(op.infer_shape)(as_callable(DummyWithEmptyMetadata)(), [2, 3]) == (2, 3)
     assert op.infer_shape("not_a_shape", "also_not") == ()
 
 

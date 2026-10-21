@@ -8,17 +8,16 @@ intermediate representation (IR) graph for compilation.
 
 from __future__ import annotations
 
-import typing
 import uuid
 from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_callable, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.ir.core import as_attrs, as_node_list
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
@@ -42,15 +41,13 @@ def _eager_vmap(
     """
     first_tensor = next((a for a in getattr(args, "__iter__")() if isinstance(a, Tensor)), None)
     if first_tensor is None:
-        return typing.cast(TypedVariadicCallable[TensorOrScalar], func)(*getattr(args, "__iter__")())
+        return as_callable(func)(*getattr(args, "__iter__")())
 
     in_axis = in_axes if isinstance(in_axes, int) else (in_axes[0] if in_axes else 0)
     batch_size = first_tensor.shape[in_axis] if first_tensor.shape and in_axis < len(first_tensor.shape) else 1
 
-    from ml_switcheroo_ir import LogicalGraph
-
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
-    body_block = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
+    body_block = _trace_function(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
 
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -59,7 +56,7 @@ def _eager_vmap(
     body_graph = IRGraph(name="vmap_body")
     body_graph.inputs = list(body_block.inputs)
     body_graph.outputs = list(body_block.outputs)
-    nodes_iter: Iterable[LogicalNode] = body_block.nodes.values() if hasattr(body_block.nodes, "values") else typing.cast(Iterable[LogicalNode], body_block.nodes)
+    nodes_iter: Iterable[LogicalNode] = body_block.nodes.values() if hasattr(body_block.nodes, "values") else as_node_list(body_block.nodes)
     for n in nodes_iter:
         body_graph.nodes[n.id] = IRNode(**n.__dict__) if type(n) is not IRNode else n
 
@@ -71,7 +68,7 @@ def _eager_vmap(
         val = conc_arg.data if isinstance(conc_arg, Tensor) else conc_arg
         input_map[inp_id] = val
 
-    out_map = evaluate_graph(vectorized_graph, typing.cast("dict[str, EvalValue]", input_map), backend=backend)
+    out_map = evaluate_graph(vectorized_graph, input_map, backend=backend)
     out_node_id = vectorized_graph.outputs[0]
     out_val = out_map[out_node_id]
 
@@ -126,7 +123,7 @@ def _create_vmap_symbolic_args(args: TensorOrScalar, in_axes: int | tuple[int, .
         if isinstance(a, Tensor):
             axis = _resolve_vmap_axis(in_axes, i)
             new_shape = _compute_vmap_shape(a, axis)
-            proxy = typing.cast("EagerCallableProtocol", ProxyTensor)(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
+            proxy = ProxyTensor(id=str(uuid.uuid4()), shape=new_shape, dtype=a.dtype.value)
             symbolic_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
         else:
             symbolic_args.append(a)
@@ -150,18 +147,14 @@ def _trace_vmap(
     Returns:
             tuple[int, ...]: Result.
     """
-    from collections.abc import Mapping
-
-    from ml_switcheroo_ir import AttributeValue, LogicalGraph
-
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
-    body_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
+    body_graph = _trace_function(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Vmap",
         inputs=[getattr(a.data, "id") for a in getattr(args, "__iter__")() if isinstance(a, Tensor)],
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"in_axes": in_axes, "out_axes": out_axes, "body": body_graph}),
+        attributes=as_attrs({"in_axes": in_axes, "out_axes": out_axes, "body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
     )

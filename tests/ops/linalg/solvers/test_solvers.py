@@ -9,9 +9,10 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.linalg.solvers as mod
 from ml_switcheroo_compiler.core.config import config
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyTensor:
@@ -24,7 +25,7 @@ class DummyTensor:
             shape: Test parameter `shape`.
         """
         self.shape = shape
-        self.data = typing.cast("EagerCallableProtocol", np.zeros)(shape)
+        self.data = as_callable(np.zeros)(shape)
         self.dtype = "float32"
         self.device = None
 
@@ -43,33 +44,33 @@ def test_solvers_tracing(mock_emit: EagerTensorProtocol) -> None:
     c = DummyTensor((2,))
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.CholeskySolve.infer_shape", return_value=(2, 2)):
-        typing.cast("EagerCallableProtocol", mod.cholesky_solve)(a, b)
+        as_callable(mod.cholesky_solve)(a, b)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.BandedTriangularSolve.infer_shape", return_value=(2, 2)):
-        typing.cast("EagerCallableProtocol", mod.banded_triangular_solve)(a, b)
+        as_callable(mod.banded_triangular_solve)(a, b)
 
-    typing.cast("EagerCallableProtocol", mod.conjugate_gradient)(a, b)
+    as_callable(mod.conjugate_gradient)(a, b)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.Lstsq.infer_shape", return_value=(2, 2)):
-        typing.cast("EagerCallableProtocol", mod.lstsq)(a, b)
+        as_callable(mod.lstsq)(a, b)
 
-    typing.cast("EagerCallableProtocol", mod.lu)(a)
+    as_callable(mod.lu)(a)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.LuMatrixInverse.infer_shape", return_value=(2, 2)):
-        typing.cast("EagerCallableProtocol", mod.lu_matrix_inverse)(a, b)
+        as_callable(mod.lu_matrix_inverse)(a, b)
 
     with patch("ml_switcheroo_compiler.ops.linalg.solvers.LuReconstruct.infer_shape", return_value=(2, 2)):
-        typing.cast("EagerCallableProtocol", mod.lu_reconstruct)(a, b)
+        as_callable(mod.lu_reconstruct)(a, b)
 
-    typing.cast("EagerCallableProtocol", mod.lu_solve)(a, b, c)
+    as_callable(mod.lu_solve)(a, b, c)
 
     with patch("ml_switcheroo_compiler.ops.linalg.decompositions.solvers.TriangularSolve.infer_shape", return_value=(2, 2)):
-        typing.cast("EagerCallableProtocol", mod.triangular_solve)(a, b)
+        as_callable(mod.triangular_solve)(a, b)
 
-    typing.cast("EagerCallableProtocol", mod.tridiagonal_solve)(a, b)
+    as_callable(mod.tridiagonal_solve)(a, b)
 
-    typing.cast("EagerCallableProtocol", mod.tensorinv)(a)
-    typing.cast("EagerCallableProtocol", mod.tensorsolve)(a, b)
+    as_callable(mod.tensorinv)(a)
+    as_callable(mod.tensorsolve)(a, b)
     assert c.shape == (2,)
 
 
@@ -92,19 +93,19 @@ def test_solvers_eager(mock_get_backend: EagerTensorProtocol) -> None:
     b = DummyTensor((2, 2))
     c = DummyTensor((2,))
 
-    typing.cast("EagerCallableProtocol", mod.cholesky_solve)(a, b)
-    typing.cast("EagerCallableProtocol", mod.banded_triangular_solve)(a, b)
+    as_callable(mod.cholesky_solve)(a, b)
+    as_callable(mod.banded_triangular_solve)(a, b)
 
-    typing.cast("EagerCallableProtocol", mod.lstsq)(a, b)
+    as_callable(mod.lstsq)(a, b)
     mock_backend.execute_op.return_value = (np.zeros((2, 2)), np.zeros((2, 2)))
-    typing.cast("EagerCallableProtocol", mod.lstsq)(a, b)
+    as_callable(mod.lstsq)(a, b)
     mock_backend.execute_op.return_value = np.zeros((2, 2))
 
-    typing.cast("EagerCallableProtocol", mod.lu_matrix_inverse)(a, b)
-    typing.cast("EagerCallableProtocol", mod.lu_reconstruct)(a, b)
-    typing.cast("EagerCallableProtocol", mod.triangular_solve)(a, b)
-    typing.cast("EagerCallableProtocol", mod.tensorinv)(a)
-    typing.cast("EagerCallableProtocol", mod.tensorsolve)(a, b)
+    as_callable(mod.lu_matrix_inverse)(a, b)
+    as_callable(mod.lu_reconstruct)(a, b)
+    as_callable(mod.triangular_solve)(a, b)
+    as_callable(mod.tensorinv)(a)
+    as_callable(mod.tensorsolve)(a, b)
 
     config.eager_mode = False
     assert c.shape == (2,)
@@ -114,56 +115,56 @@ def test_solvers_opdefs() -> None:
     # Lstsq
     """Test function test_solvers_opdefs."""
     op1 = mod.Lstsq()
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2)), typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == (2,)
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2)), typing.cast("EagerCallableProtocol", DummyTensor)((2, 2))) == (2, 2)
+    assert as_callable(op1.infer_shape)(as_callable(DummyTensor)((2, 2)), as_callable(DummyTensor)((2,))) == (2,)
+    assert as_callable(op1.infer_shape)(as_callable(DummyTensor)((2, 2)), as_callable(DummyTensor)((2, 2))) == (2, 2)
 
     # Pinv
     op2 = mod.Pinv()
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 3))) == (3, 2)
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == (2,)
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)("not_tensor") == ()
+    assert as_callable(op2.infer_shape)(as_callable(DummyTensor)((2, 3))) == (3, 2)
+    assert as_callable(op2.infer_shape)(as_callable(DummyTensor)((2,))) == (2,)
+    assert as_callable(op2.infer_shape)("not_tensor") == ()
 
     # Sqrtm
     op3 = mod.Sqrtm()
-    assert typing.cast("EagerCallableProtocol", op3.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2))) == (2, 2)
+    assert as_callable(op3.infer_shape)(as_callable(DummyTensor)((2, 2))) == (2, 2)
 
     # CholeskySolve
     op4 = mod.CholeskySolve()
-    assert typing.cast("EagerCallableProtocol", op4.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2)), typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == (2,)
+    assert as_callable(op4.infer_shape)(as_callable(DummyTensor)((2, 2)), as_callable(DummyTensor)((2,))) == (2,)
 
     # BandedTriangularSolve
     op5 = mod.BandedTriangularSolve()
-    assert typing.cast("EagerCallableProtocol", op5.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2)), typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == (2,)
+    assert as_callable(op5.infer_shape)(as_callable(DummyTensor)((2, 2)), as_callable(DummyTensor)((2,))) == (2,)
 
     # EighTridiagonal
     op6 = mod.EighTridiagonal()
-    assert typing.cast("EagerCallableProtocol", op6.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2,)), typing.cast("EagerCallableProtocol", DummyTensor)((1,))) == ((2,), [2, 2])
+    assert as_callable(op6.infer_shape)(as_callable(DummyTensor)((2,)), as_callable(DummyTensor)((1,))) == ((2,), [2, 2])
 
     # MatrixNorm
     op7 = mod.MatrixNorm()
-    assert typing.cast("EagerCallableProtocol", op7.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2))) == ()
+    assert as_callable(op7.infer_shape)(as_callable(DummyTensor)((2, 2))) == ()
 
     # VectorNorm
     op8 = mod.VectorNorm()
-    assert typing.cast("EagerCallableProtocol", op8.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == ()
+    assert as_callable(op8.infer_shape)(as_callable(DummyTensor)((2,))) == ()
 
     # Svdvals
     op9 = mod.Svdvals()
-    assert typing.cast("EagerCallableProtocol", op9.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2))) == (2,)
-    assert typing.cast("EagerCallableProtocol", op9.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == ()
+    assert as_callable(op9.infer_shape)(as_callable(DummyTensor)((2, 2))) == (2,)
+    assert as_callable(op9.infer_shape)(as_callable(DummyTensor)((2,))) == ()
 
     # Tensorinv
     op10 = mod.Tensorinv()
-    assert typing.cast("EagerCallableProtocol", op10.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2))) == (2, 2)
+    assert as_callable(op10.infer_shape)(as_callable(DummyTensor)((2, 2))) == (2, 2)
 
     # Tensorsolve
     op11 = mod.Tensorsolve()
-    assert typing.cast("EagerCallableProtocol", op11.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2, 2)), typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == (2, 2)
+    assert as_callable(op11.infer_shape)(as_callable(DummyTensor)((2, 2, 2)), as_callable(DummyTensor)((2,))) == (2, 2)
 
     # LuMatrixInverse
     op12 = mod.LuMatrixInverse()
-    assert typing.cast("EagerCallableProtocol", op12.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2)), typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == (2, 2)
+    assert as_callable(op12.infer_shape)(as_callable(DummyTensor)((2, 2)), as_callable(DummyTensor)((2,))) == (2, 2)
 
     # LuReconstruct
     op13 = mod.LuReconstruct()
-    assert typing.cast("EagerCallableProtocol", op13.infer_shape)(typing.cast("EagerCallableProtocol", DummyTensor)((2, 2)), typing.cast("EagerCallableProtocol", DummyTensor)((2,))) == (2, 2)
+    assert as_callable(op13.infer_shape)(as_callable(DummyTensor)((2, 2)), as_callable(DummyTensor)((2,))) == (2, 2)

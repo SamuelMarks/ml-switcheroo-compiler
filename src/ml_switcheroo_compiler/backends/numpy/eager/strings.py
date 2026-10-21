@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
 
@@ -44,7 +44,7 @@ def _np_string_to_hash(
         return int(hashlib.sha256(s_str.encode("utf-8")).hexdigest(), 16) % num_buckets
 
     vec_hash = np.vectorize(hash_str)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], vec_hash(input_tensor).astype(np.int32))
+    return as_ndarray(vec_hash(input_tensor).astype(np.int32))
 
 
 @numpy_eager_registry.register("TextVectorization")

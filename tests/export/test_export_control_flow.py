@@ -6,11 +6,11 @@ import os
 import typing
 
 import pytest
-from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_attr_val
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -31,11 +31,11 @@ def test_onnx_control_flow(tmp_path: EagerTensorProtocol) -> None:
     graph.nodes["in0"] = IRNode("in0", "Input", inputs=[])
 
     graph.nodes["if_node"] = IRNode("if_node", "If", inputs=["in0"])
-    graph.nodes["if_node"].attributes["then_branch"] = typing.cast("AttributeValue", cond_graph)
-    graph.nodes["if_node"].attributes["else_branch"] = typing.cast("AttributeValue", cond_graph)
+    graph.nodes["if_node"].attributes["then_branch"] = as_attr_val(cond_graph)
+    graph.nodes["if_node"].attributes["else_branch"] = as_attr_val(cond_graph)
 
     graph.nodes["while_node"] = IRNode("while_node", "WhileLoop", inputs=["in0"])
-    graph.nodes["while_node"].attributes["body"] = typing.cast("AttributeValue", cond_graph)
+    graph.nodes["while_node"].attributes["body"] = as_attr_val(cond_graph)
 
     graph.outputs = ["while_node"]
 

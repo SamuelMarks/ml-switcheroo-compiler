@@ -6,9 +6,8 @@ import logging
 import resource
 import sys
 import time
-import typing
 
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 
 try:
     import cupy as cp
@@ -140,7 +139,7 @@ class CupyProfiler:
                 start_event = cp.cuda.Event()
                 end_event = cp.cuda.Event()
                 start_event.record()
-                _ = typing.cast(TypedVariadicCallable[EagerValue], step_fn)()
+                _ = as_callable(step_fn)()
                 end_event.record()
                 end_event.synchronize()
                 return float(cp.cuda.get_elapsed_time(start_event, end_event))
@@ -148,7 +147,7 @@ class CupyProfiler:
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         self._sync()
         start = time.perf_counter()
-        _ = typing.cast(TypedVariadicCallable[EagerValue], step_fn)()
+        _ = as_callable(step_fn)()
         self._sync()
         end = time.perf_counter()
         return (end - start) * 1000.0

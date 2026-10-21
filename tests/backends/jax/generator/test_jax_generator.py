@@ -9,9 +9,10 @@ from unittest.mock import MagicMock, patch
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxControlFlowVisitor, JaxDistributedVisitor, JaxMathVisitor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyGraph:
@@ -19,8 +20,8 @@ class DummyGraph:
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
-        self.outputs = typing.cast("list[EagerTensorProtocol]", [])
+        self.nodes = as_tensor_dict({})
+        self.outputs = as_tensor_list([])
 
 
 def test_jax_generator_extra_coverage() -> None:
@@ -44,34 +45,34 @@ def test_jax_generator_extra_coverage() -> None:
         Returns:
             TensorOrScalar: The inferred shape or computed result.
         """
-        n = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type=op_type, inputs=inputs, attributes=attrs, shape_metadata=None)
-        res = typing.cast("EagerCallableProtocol", gen.visit)(n, inputs)
+        n = as_callable(IRNode)(id="n1", op_type=op_type, inputs=inputs, attributes=attrs, shape_metadata=None)
+        res = as_callable(gen.visit)(n, inputs)
         assert expected in res
 
-    typing.cast("EagerCallableProtocol", _test_node)("SegmentSum", ["x", "ids"], {"num_segments": 2}, "segment_sum")
-    typing.cast("EagerCallableProtocol", _test_node)("SegmentMax", ["x", "ids"], {}, "segment_max")
-    typing.cast("EagerCallableProtocol", _test_node)("SegmentMin", ["x", "ids"], {}, "segment_min")
-    typing.cast("EagerCallableProtocol", _test_node)("SegmentProd", ["x", "ids"], {}, "segment_prod")
-    typing.cast("EagerCallableProtocol", _test_node)("UnsortedSegmentSum", ["x", "ids"], {}, "segment_sum")
-    typing.cast("EagerCallableProtocol", _test_node)("UnsortedSegmentMax", ["x", "ids"], {}, "segment_max")
-    typing.cast("EagerCallableProtocol", _test_node)("UnsortedSegmentMin", ["x", "ids"], {}, "segment_min")
-    typing.cast("EagerCallableProtocol", _test_node)("UnsortedSegmentProd", ["x", "ids"], {}, "segment_prod")
-    typing.cast("EagerCallableProtocol", _test_node)("MatrixExponential", ["x"], {}, "expm")
-    typing.cast("EagerCallableProtocol", _test_node)("Polar", ["x"], {"side": "left"}, "polar")
-    typing.cast("EagerCallableProtocol", _test_node)("Polar", ["x"], {"side": "'right'"}, "polar")
-    typing.cast("EagerCallableProtocol", _test_node)("Schur", ["x"], {}, "schur")
-    typing.cast("EagerCallableProtocol", _test_node)("Cholesky", ["x"], {}, "cholesky")
-    typing.cast("EagerCallableProtocol", _test_node)("Svd", ["x"], {"full_matrices": False, "compute_uv": False}, "svd")
-    typing.cast("EagerCallableProtocol", _test_node)("If", ["cond"], {}, "cond")
-    typing.cast("EagerCallableProtocol", _test_node)("Loop", ["x"], {}, "while_loop")
-    typing.cast("EagerCallableProtocol", _test_node)("Scan", ["x", "y"], {}, "scan")
-    typing.cast("EagerCallableProtocol", _test_node)("PowerIteration", ["x", "u"], {"num_iters": 2}, "power_iteration")
-    typing.cast("EagerCallableProtocol", _test_node)("PowerIteration", ["x"], {}, "power_iteration")
-    typing.cast("EagerCallableProtocol", _test_node)("ConvTranspose", ["x", "w"], {"strides": 2, "padding": "SAME"}, "convtranspose")
-    typing.cast("EagerCallableProtocol", _test_node)("RaggedDot", ["x", "y"], {}, "ragged_dot")
-    typing.cast("EagerCallableProtocol", _test_node)("all_gather", ["x"], {"axis_name": "'y'"}, "all_gather")
-    typing.cast("EagerCallableProtocol", _test_node)("reduce_scatter", ["x"], {"axis_name": "'y'", "axis": 1, "op": "jax.lax.pmax"}, "reduce_scatter")
-    typing.cast("EagerCallableProtocol", _test_node)("all_reduce", ["x"], {"axis_name": "'y'", "op": "pmax"}, "all_reduce")
+    as_callable(_test_node)("SegmentSum", ["x", "ids"], {"num_segments": 2}, "segment_sum")
+    as_callable(_test_node)("SegmentMax", ["x", "ids"], {}, "segment_max")
+    as_callable(_test_node)("SegmentMin", ["x", "ids"], {}, "segment_min")
+    as_callable(_test_node)("SegmentProd", ["x", "ids"], {}, "segment_prod")
+    as_callable(_test_node)("UnsortedSegmentSum", ["x", "ids"], {}, "segment_sum")
+    as_callable(_test_node)("UnsortedSegmentMax", ["x", "ids"], {}, "segment_max")
+    as_callable(_test_node)("UnsortedSegmentMin", ["x", "ids"], {}, "segment_min")
+    as_callable(_test_node)("UnsortedSegmentProd", ["x", "ids"], {}, "segment_prod")
+    as_callable(_test_node)("MatrixExponential", ["x"], {}, "expm")
+    as_callable(_test_node)("Polar", ["x"], {"side": "left"}, "polar")
+    as_callable(_test_node)("Polar", ["x"], {"side": "'right'"}, "polar")
+    as_callable(_test_node)("Schur", ["x"], {}, "schur")
+    as_callable(_test_node)("Cholesky", ["x"], {}, "cholesky")
+    as_callable(_test_node)("Svd", ["x"], {"full_matrices": False, "compute_uv": False}, "svd")
+    as_callable(_test_node)("If", ["cond"], {}, "cond")
+    as_callable(_test_node)("Loop", ["x"], {}, "while_loop")
+    as_callable(_test_node)("Scan", ["x", "y"], {}, "scan")
+    as_callable(_test_node)("PowerIteration", ["x", "u"], {"num_iters": 2}, "power_iteration")
+    as_callable(_test_node)("PowerIteration", ["x"], {}, "power_iteration")
+    as_callable(_test_node)("ConvTranspose", ["x", "w"], {"strides": 2, "padding": "SAME"}, "convtranspose")
+    as_callable(_test_node)("RaggedDot", ["x", "y"], {}, "ragged_dot")
+    as_callable(_test_node)("all_gather", ["x"], {"axis_name": "'y'"}, "all_gather")
+    as_callable(_test_node)("reduce_scatter", ["x"], {"axis_name": "'y'", "axis": 1, "op": "jax.lax.pmax"}, "reduce_scatter")
+    as_callable(_test_node)("all_reduce", ["x"], {"axis_name": "'y'", "op": "pmax"}, "all_reduce")
 
 
 def test_jax_generator_generate_full() -> None:
@@ -117,16 +118,16 @@ class DummyNode:
 def test_jax_control_flow_visitor() -> None:
     """Test function test_jax_control_flow_visitor."""
     vis = JaxControlFlowVisitor()
-    assert typing.cast("EagerCallableProtocol", vis.visit_If)(typing.cast("EagerCallableProtocol", DummyNode)(), ["c"]) == "jax.lax.cond(c, lambda: None, lambda: None)"
-    assert typing.cast("EagerCallableProtocol", vis.visit_Loop)(typing.cast("EagerCallableProtocol", DummyNode)(), ["c"]) == "jax.lax.while_loop(lambda _: True, lambda _: c, c)"
-    assert typing.cast("EagerCallableProtocol", vis.visit_Scan)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a"]) == "jax.lax.scan(lambda c, x: (c, x), a, None)"
-    assert typing.cast("EagerCallableProtocol", vis.visit_Scan)(typing.cast("EagerCallableProtocol", DummyNode)(), ["a", "b"]) == "jax.lax.scan(lambda c, x: (c, x), a, b)"
+    assert as_callable(vis.visit_If)(as_callable(DummyNode)(), ["c"]) == "jax.lax.cond(c, lambda: None, lambda: None)"
+    assert as_callable(vis.visit_Loop)(as_callable(DummyNode)(), ["c"]) == "jax.lax.while_loop(lambda _: True, lambda _: c, c)"
+    assert as_callable(vis.visit_Scan)(as_callable(DummyNode)(), ["a"]) == "jax.lax.scan(lambda c, x: (c, x), a, None)"
+    assert as_callable(vis.visit_Scan)(as_callable(DummyNode)(), ["a", "b"]) == "jax.lax.scan(lambda c, x: (c, x), a, b)"
 
 
 def test_jax_generator() -> None:
     """Test function test_jax_generator."""
     g = DummyGraph()
-    gen = typing.cast("EagerCallableProtocol", JAXCodeGenerator)(g)
+    gen = as_callable(JAXCodeGenerator)(g)
     assert gen.get_fallback_prefix() == "jnp"
     assert gen.get_fallback_prefix() == "jnp"
     assert gen._format_zeros_like("zeros", {}) == "jnp.zeros({shape})"
@@ -152,7 +153,7 @@ def test_jax_generator() -> None:
 def test_jax_generator_imports() -> None:
     """Test function test_jax_generator_imports."""
     g = DummyGraph()
-    gen = typing.cast("EagerCallableProtocol", JAXCodeGenerator)(g)
+    gen = as_callable(JAXCodeGenerator)(g)
     import builtins
 
     original_open = builtins.open
@@ -168,8 +169,8 @@ def test_jax_generator_imports() -> None:
         if "jax_prefix.py.tmpl" in str(path):
             from io import StringIO
 
-            return typing.cast("EagerTensorProtocol", StringIO("import test_template"))
-        return typing.cast("EagerValue", typing.cast("EagerCallableProtocol", original_open)(path, *args, **kwargs))
+            return as_tensor(StringIO("import test_template"))
+        return as_tensor(as_callable(original_open)(path, *args, **kwargs))
 
     with patch("builtins.open", side_effect=mock_open):
         imports = gen._resolve_imports()
@@ -179,7 +180,7 @@ def test_jax_generator_imports() -> None:
 def test_jax_generator_save_funcs() -> None:
     """Test function test_jax_generator_save_funcs."""
     g = DummyGraph()
-    gen = typing.cast("EagerCallableProtocol", JAXCodeGenerator)(g)
+    gen = as_callable(JAXCodeGenerator)(g)
     assert gen is not None
 
 
@@ -191,7 +192,7 @@ def test_jax_generator_mixin_code_prop() -> None:
 
         pass
 
-    m = typing.cast("EagerCallableProtocol", JaxDistributedVisitor)(typing.cast("EagerCallableProtocol", DummyGen)())
+    m = as_callable(JaxDistributedVisitor)(as_callable(DummyGen)())
     assert m.code == []
     from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -212,7 +213,7 @@ def test_jax_ragged_dot_and_einsum() -> None:
 
         pass
 
-    mixin = typing.cast("EagerCallableProtocol", JaxMathVisitor)(generator=typing.cast("EagerCallableProtocol", DummyGenerator)())
+    mixin = as_callable(JaxMathVisitor)(generator=as_callable(DummyGenerator)())
     node1 = IRNode(id="rd", op_type="RaggedDot", inputs=["a", "b"])
     res1 = mixin.visit_RaggedDot(node1, ["x", "y"])
     assert "jax_ragged_dot(x, y)" in res1

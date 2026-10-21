@@ -15,7 +15,7 @@ from ml_switcheroo_compiler.ops.shape_inference import load_shape_signatures
 OpYamlValue = typing.Union[str, int, float, bool, list["OpYamlValue"], dict[str, "OpYamlValue"], "None"]
 OpYamlDict = dict[str, OpYamlValue]
 
-DEFS_DIR: str = "src/ml_switcheroo_compiler/ops/definitions"
+DEFS_DIR: str = os.environ.get("ML_SWITCHEROO_DEFS_DIR", "src/ml_switcheroo_compiler/ops/definitions")
 
 COMMUTATIVE_OPS: set[str] = {
     "Add",

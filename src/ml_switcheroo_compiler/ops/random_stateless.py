@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_int, as_shape, get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -279,7 +278,7 @@ def stateless_categorical(
 
     res = categorical(seed, logits, axis=-1, shape=shape)
     res = op_cast(res, dtype_enum)
-    return typing.cast(TensorOrScalar, res)
+    return res
 
 
 def stateless_gamma(
@@ -366,7 +365,7 @@ def stateless_parameterized_truncated_normal(
         TensorOrScalar: Sampled truncated normal tensor.
     """
     cfg = config or RandomGenerationConfig()
-    shape_tuple = (int(shape),) if isinstance(shape, int) else tuple(typing.cast("Sequence[int]", shape))
+    shape_tuple = (int(shape),) if isinstance(shape, int) else tuple(as_shape(shape))
     if core_config.eager_mode:
         k0, k1 = _extract_seed_pair(seed)
         num_elems = 1
@@ -488,7 +487,7 @@ def stateless_split(seed: TensorOrScalar, num: TensorOrScalar = 2) -> TensorOrSc
     """
     if core_config.eager_mode:
         return get_active_backend().execute_op("StatelessSplit", seed, num=num)
-    return _emit_shape_node("StatelessSplit", [seed], {"num": num}, (int(typing.cast(int, num)), 2), "int64")
+    return _emit_shape_node("StatelessSplit", [seed], {"num": num}, (int(as_int(num)), 2), "int64")
 
 
 def stateless_poisson(

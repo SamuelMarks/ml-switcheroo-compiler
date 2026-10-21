@@ -35,18 +35,19 @@ from ml_switcheroo_compiler.backends.mlx.eager import (
     _resolve_dtype,
     execute_op,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 pytest.importorskip("mlx.core")
 
 
 def test_numpy_conversion_fallback() -> None:
     """Test function test_numpy_conversion_fallback."""
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        typing.cast("EagerCallableProtocol", execute_op)(None, "UnknownFakeOp", [1.0])
-    typing.cast("EagerCallableProtocol", execute_op)(None, "Take", typing.cast("EagerCallableProtocol", mx.array)([1.0]), typing.cast("EagerCallableProtocol", mx.array)([0]), axis=0)
-    typing.cast("EagerCallableProtocol", execute_op)(None, "TakeAlongAxis", typing.cast("EagerCallableProtocol", mx.array)([1.0]), typing.cast("EagerCallableProtocol", mx.array)([0]), axis=0)
+        as_callable(execute_op)(None, "UnknownFakeOp", [1.0])
+    as_callable(execute_op)(None, "Take", as_callable(mx.array)([1.0]), as_callable(mx.array)([0]), axis=0)
+    as_callable(execute_op)(None, "TakeAlongAxis", as_callable(mx.array)([1.0]), as_callable(mx.array)([0]), axis=0)
 
 
 def _test_mlx_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -143,13 +144,13 @@ def _test_mlx_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
 
         data = ItemMock()
 
-    _parse_partition_k(typing.cast("EagerValue", ItemMock()))
-    _parse_partition_k(typing.cast("EagerValue", DataMock()))
+    _parse_partition_k(as_tensor(ItemMock()))
+    _parse_partition_k(as_tensor(DataMock()))
     a = mx.array([[1.0, 2.0, 3.0]])
     _mlx_partition(mx, a, k=1, return_indices=False)
     _mlx_partition(mx, a, k=1, return_indices=True)
     _mlx_partition(mx, a, k=1, return_indices=None)
-    _mlx_nan_to_num(mx, t, nan=typing.cast("EagerValue", ItemMock()), posinf=typing.cast("EagerValue", DataMock()), neginf=1.0)
+    _mlx_nan_to_num(mx, t, nan=as_tensor(ItemMock()), posinf=as_tensor(DataMock()), neginf=1.0)
     _mlx_cummax(mx, t, axis=0, dtype="int32")
     _mlx_cummax(mx, t, axis=0, dtype=None)
     _mlx_cummin(mx, t, axis=0, dtype="int32")

@@ -7,13 +7,12 @@ import typing
 from collections.abc import Sequence
 
 import yaml
-from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_int_list
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
 WasmAttrType = typing.Union[
     "IRNode",
@@ -184,7 +183,7 @@ class WasmCodeGenerator(BaseGenerator):
         elif isinstance(raw_shape, (int, float)):
             res = [1] * (target_ndim - 1) + [int(raw_shape)]
         else:
-            res = [int(x) for x in typing.cast("list[int]", raw_shape)]
+            res = [int(x) for x in as_int_list(raw_shape)]
         if len(res) < target_ndim:
             res = [1] * (target_ndim - len(res)) + res
         return res
@@ -202,10 +201,10 @@ class WasmCodeGenerator(BaseGenerator):
         """
         if isinstance(val, (tuple, list)):
             if len(val) == 3:
-                return int(typing.cast(int, val[0])), int(typing.cast(int, val[1])), int(typing.cast(int, val[2]))
+                return int(as_int(val[0])), int(as_int(val[1])), int(as_int(val[2]))
             if len(val) == 2:
-                return default_val, int(typing.cast(int, val[0])), int(typing.cast(int, val[1]))
-            s_val = int(typing.cast(int, val[0])) if val else default_val
+                return default_val, int(as_int(val[0])), int(as_int(val[1]))
+            s_val = int(as_int(val[0])) if val else default_val
             return s_val, s_val, s_val
         scalar = int(val) if isinstance(val, (int, float)) else default_val
         return scalar, scalar, scalar
@@ -270,10 +269,11 @@ class WasmCodeGenerator(BaseGenerator):
 
         attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {})
         if attrs.get("folded_batch_norm"):
-            bn_inputs = typing.cast("list[str]", attrs.get("bn_inputs", []))
+            raw_bn = attrs.get("bn_inputs", [])
+            bn_inputs: list[str] = [str(x) for x in raw_bn] if isinstance(raw_bn, (list, tuple)) else []
             if len(bn_inputs) == 4:
                 scale, _, _, var = [self.var_map.get(inp, inp) for inp in bn_inputs]
-                eps: float = float(typing.cast(float, attrs.get("epsilon", 1e-5)))
+                eps: float = float(as_float(attrs.get("epsilon", 1e-5)))
                 self.add_line(f"// Folded BatchNorm for {clean_id}")
                 self.add_line(f"float mult_{clean_id} = {scale} / std::sqrt({var} + {eps});")
 
@@ -282,8 +282,8 @@ class WasmCodeGenerator(BaseGenerator):
         norm_shape = getattr(self, "_normalize_ndim_shape")(shape, 4)
 
         stride: WasmAttrType = attrs.get("stride", 1)
-        stride_h: int = int(typing.cast(int, stride[0])) if isinstance(stride, (tuple, list)) else int(typing.cast("int", stride))
-        stride_w: int = int(typing.cast(int, stride[1])) if isinstance(stride, (tuple, list)) else int(typing.cast("int", stride))
+        stride_h: int = int(as_int(stride[0])) if isinstance(stride, (tuple, list)) else int(as_int(stride))
+        stride_w: int = int(as_int(stride[1])) if isinstance(stride, (tuple, list)) else int(as_int(stride))
 
         expr_args: dict[str, WasmAttrType] = {
             "B": norm_shape[0],
@@ -466,7 +466,7 @@ class WasmCodeGenerator(BaseGenerator):
         body_graph: WasmAttrType = attrs.get("body_graph") or attrs.get("body")
         loop_body: str = "// Empty loop body"
         if body_graph:
-            subgen = WasmCodeGenerator(typing.cast("LogicalGraph", body_graph))
+            subgen = WasmCodeGenerator(as_graph(body_graph))
             loop_body = subgen.generate()
 
         condition_expr: str = str(attrs.get("condition_expr") or (f"buf_{inputs[0]}[0] {attrs.get('comparator', '>')} {attrs.get('threshold', '0.0')}" if inputs else "1"))
@@ -541,7 +541,7 @@ class WasmCodeGenerator(BaseGenerator):
             if not branch_graph:
                 return f"for(int i=0; i<{nelem}; i++) buf_{clean_id}[i] = buf_{default_input}[i];"
 
-            subgen = WasmCodeGenerator(typing.cast("LogicalGraph", branch_graph))
+            subgen = WasmCodeGenerator(as_graph(branch_graph))
 
             # Map inputs for the subgraph generator to point to the parent's input buffers
             # Offset by 1 because inputs[0] is the conditional predicate
@@ -565,7 +565,8 @@ class WasmCodeGenerator(BaseGenerator):
             return out_code
 
         # Check for branch_graphs array first (standardized layout)
-        branch_graphs = typing.cast("list[WasmAttrType]", attrs.get("branch_graphs", []))
+        raw_bg = attrs.get("branch_graphs", [])
+        branch_graphs: list[WasmAttrType] = list(raw_bg) if isinstance(raw_bg, (list, tuple)) else []
         if branch_graphs:
             true_graph: WasmAttrType = branch_graphs[0] if len(branch_graphs) > 0 else None
             false_graph: WasmAttrType = branch_graphs[1] if len(branch_graphs) > 1 else None
@@ -613,7 +614,7 @@ class WasmCodeGenerator(BaseGenerator):
         body_graph: WasmAttrType = attrs.get("body_graph") or attrs.get("body")
         loop_body: str = "// Empty scan body"
         if body_graph:
-            subgen = WasmCodeGenerator(typing.cast("LogicalGraph", body_graph))
+            subgen = WasmCodeGenerator(as_graph(body_graph))
             loop_body = subgen.generate()
 
         init_val: str = str(attrs.get("init_val", "0.0"))
@@ -1343,7 +1344,7 @@ class WasmCodeGenerator(BaseGenerator):
         in0_node: WasmAttrType = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if inputs else None
         raw_in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else None
         in0_shape = self._normalize_ndim_shape(raw_in0_shape, 2)
-        shape_seq: list[int] = list(shape) if hasattr(shape, "__iter__") else [int(typing.cast(int, shape or 1))]
+        shape_seq: list[int] = list(shape) if hasattr(shape, "__iter__") else [int(as_int(shape or 1))]
 
         K = in0_shape[1] if len(in0_shape) > 1 else 1
         N = shape_seq[1] if len(shape_seq) > 1 else 1
@@ -1390,7 +1391,9 @@ class WasmCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
         op_def = OPS_REGISTRY.get(op_type, {})
-        mapping = typing.cast("dict[str, WasmAttrType]", typing.cast("dict[str, WasmAttrType]", op_def.get("variants", {})).get("edge_wasm_simd", {}))
+        raw_variants = op_def.get("variants", {})
+        raw_wasm = raw_variants.get("edge_wasm_simd", {}) if isinstance(raw_variants, dict) else {}
+        mapping: dict[str, WasmAttrType] = dict(raw_wasm) if isinstance(raw_wasm, dict) else {}
 
         if not mapping or "template" not in mapping:
             if self._is_wasm_intrinsic_op(op_type):
@@ -1647,9 +1650,9 @@ class WasmCodeGenerator(BaseGenerator):
         if meta and len(meta) == len(concrete):
             for m_dim, c_dim in zip(meta, concrete):
                 if hasattr(m_dim, "node"):
-                    solved_env[str(getattr(m_dim, "node"))] = int(typing.cast(int, c_dim))
+                    solved_env[str(getattr(m_dim, "node"))] = int(as_int(c_dim))
                 elif isinstance(m_dim, str):
-                    solved_env[m_dim] = int(typing.cast(int, c_dim))
+                    solved_env[m_dim] = int(as_int(c_dim))
 
     @staticmethod
     def _evaluate_refined_dim(dim: EagerValue, solved_env: dict[str, int]) -> int | None:
@@ -1728,7 +1731,7 @@ class WasmCodeGenerator(BaseGenerator):
             op_type = getattr(node, "op_type", "").lower()
             spec = op_map.get(op_type, {})
             simd_inst: str = str(spec.get("instruction", "f32x4.mul"))
-            arity: int = int(typing.cast(int, spec.get("arity", 1 if simd_inst in ("f32x4.neg", "f32x4.sqrt", "f32x4.abs", "f32x4.ceil", "f32x4.floor", "f32x4.trunc", "f32x4.nearest") else 2)))
+            arity: int = int(as_int(spec.get("arity", 1 if simd_inst in ("f32x4.neg", "f32x4.sqrt", "f32x4.abs", "f32x4.ceil", "f32x4.floor", "f32x4.trunc", "f32x4.nearest") else 2)))
 
             if arity == 1:
                 wat_lines.extend(

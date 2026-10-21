@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import threading
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_opt_int, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import _band_part
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -44,7 +41,7 @@ def _np_band_part(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", _band_part)(*args, **kwargs)
+    return as_callable(_band_part)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("Diag")
@@ -93,7 +90,7 @@ def _np_reshape(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    shape: list[EagerValue] | None = typing.cast("list[EagerValue] | None", args[0] if len(args) > 0 else kwargs.get("shape", kwargs.get("newshape")))
+    shape = args[0] if len(args) > 0 else kwargs.get("shape", kwargs.get("newshape"))
     return backend_module.reshape(x, shape)
 
 
@@ -110,7 +107,7 @@ def _np_squeeze(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    axis: int | None = typing.cast("int | None", kwargs.get("axis", args[0] if len(args) > 0 else None))
+    axis: int | None = as_opt_int(kwargs.get("axis", args[0] if len(args) > 0 else None))
     return backend_module.squeeze(x, axis=axis)
 
 
@@ -127,7 +124,7 @@ def _np_transpose(backend_module: BackendModuleProtocol, x: EagerValue, *args: E
     Returns:
             tuple[int, ...]: Result.
     """
-    axes: list[EagerValue] | None = typing.cast("list[EagerValue] | None", kwargs.get("axes", args[0] if len(args) > 0 else None))
+    axes = kwargs.get("axes", args[0] if len(args) > 0 else None)
     return backend_module.transpose(x, axes=axes)
 
 
@@ -158,11 +155,11 @@ def gather_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    t: threading.Thread = typing.cast(threading.Thread, args[0])
-    axis: int | None = typing.cast("int | None", args[1] if len(args) > 1 else kwargs.get("axis"))
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None", args[2] if len(args) > 2 else kwargs.get("index"))
+    t = args[0]
+    axis: int | None = as_opt_int(args[1] if len(args) > 1 else kwargs.get("axis"))
+    index = args[2] if len(args) > 2 else kwargs.get("index")
     if hasattr(t, "numpy"):
-        t = t.numpy()
+        t = getattr(t, "numpy")()
     if hasattr(index, "numpy"):
         index = getattr(index, "numpy")()
     return np_mod.take_along_axis(t, index, axis=axis)
@@ -180,8 +177,9 @@ def stack_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    tensors: list[EagerValue] = typing.cast(list[EagerValue], args[0] if len(args) > 0 else (kwargs.get("tensors") or []))
-    axis: int = typing.cast(int, args[1] if len(args) > 1 else kwargs.get("axis", 0))
+    raw_tensors = args[0] if len(args) > 0 else (kwargs.get("tensors") or [])
+    tensors = list(getattr(raw_tensors, "__iter__")()) if hasattr(raw_tensors, "__iter__") else []
+    axis: int = as_int(args[1] if len(args) > 1 else kwargs.get("axis", 0))
     arrays: list[EagerValue] = [getattr(t, "numpy")() if hasattr(t, "numpy") else t for t in tensors]
     return np_mod.stack(arrays, axis=axis)
 
@@ -265,7 +263,7 @@ def _np_expand_dims(backend_module: BackendModuleProtocol, x: EagerValue, *args:
     Returns:
             tuple[int, ...]: Result.
     """
-    axis: int | None = typing.cast("int | None", args[0] if len(args) > 0 else kwargs.get("axis"))
+    axis: int | None = as_opt_int(args[0] if len(args) > 0 else kwargs.get("axis"))
     return backend_module.expand_dims(x, axis=axis)
 
 
@@ -344,7 +342,7 @@ def _np_column_stack(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: tuple[EagerValue, ...] | None = typing.cast("tuple[EagerValue, ...] | None", args[0] if len(args) > 0 else kwargs.get("tup"))
+    tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.column_stack(tup)
 
 
@@ -375,7 +373,7 @@ def _np_dstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: tuple[EagerValue, ...] | None = typing.cast("tuple[EagerValue, ...] | None", args[0] if len(args) > 0 else kwargs.get("tup"))
+    tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.dstack(tup)
 
 
@@ -406,7 +404,7 @@ def _np_hstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: tuple[EagerValue, ...] | None = typing.cast("tuple[EagerValue, ...] | None", args[0] if len(args) > 0 else kwargs.get("tup"))
+    tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.hstack(tup)
 
 
@@ -437,7 +435,7 @@ def _np_vstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    tup: tuple[EagerValue, ...] | None = typing.cast("tuple[EagerValue, ...] | None", args[0] if len(args) > 0 else kwargs.get("tup"))
+    tup = args[0] if len(args) > 0 else kwargs.get("tup")
     return backend_module.vstack(tup)
 
 
@@ -573,9 +571,9 @@ def _np_fill_diagonal(backend_module: BackendModuleProtocol, *args: EagerValue, 
     Returns:
             tuple[int, ...]: Result.
     """
-    a: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None", args[0] if len(args) > 0 else kwargs.get("a"))
-    val: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None", args[1] if len(args) > 1 else kwargs.get("val"))
-    wrap: bool = typing.cast(bool, kwargs.get("wrap", False))
+    a = args[0] if len(args) > 0 else kwargs.get("a")
+    val = args[1] if len(args) > 1 else kwargs.get("val")
+    wrap: bool = bool(kwargs.get("wrap", False))
     backend_module.fill_diagonal(a, val, wrap=wrap)
     return a
 

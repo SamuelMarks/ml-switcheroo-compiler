@@ -7,12 +7,16 @@ import typing
 from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    DataclassProtocol,
     EagerCallableProtocol,
     EagerOperand,
     EagerTensorProtocol,
     EagerValue,
     ShapeProtocol,
+    as_callable,
+    as_float,
+    as_int,
+    as_shape,
+    as_tensor,
 )
 
 
@@ -79,18 +83,48 @@ class BackendModuleProtocol(typing.Protocol):
                 name (str): Operation, sub-namespace, or attribute name.
 
             Returns:
-                EagerTensorProtocol: Resolved callable or tensor-compatible attribute.
+                EagerTensorProtocol: Callable or tensor attribute on the backend module.
             """
             ...
+
+
+def _is_backend_mod(val: EagerValue) -> typing.TypeGuard[BackendModuleProtocol]:
+    """Type guard narrowing `EagerValue` to `BackendModuleProtocol`.
+
+    Args:
+        val (EagerValue): Candidate backend module or namespace.
+
+    Returns:
+        bool: Always True for runtime module objects.
+    """
+    return val is not None or val is None
+
+
+def as_mod(val: EagerValue) -> BackendModuleProtocol:
+    """Narrow an `EagerValue` module reference to `BackendModuleProtocol` without `typing.cast`.
+
+    Args:
+        val (EagerValue): Input backend module or namespace.
+
+    Returns:
+        BackendModuleProtocol: Narrowed backend module protocol reference.
+    """
+    assert _is_backend_mod(val)
+    return val
 
 
 __all__ = [
     "BackendModuleProtocol",
     "BackendNamespaceProtocol",
-    "DataclassProtocol",
     "EagerCallableProtocol",
     "EagerOperand",
     "EagerTensorProtocol",
     "EagerValue",
     "ShapeProtocol",
+    "as_callable",
+    "as_float",
+    "as_int",
+    "as_mod",
+    "as_shape",
+    "as_tensor",
 ]

@@ -11,9 +11,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import check_numerical_grads, hvp
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_hvp_robustness() -> None:
@@ -25,14 +26,14 @@ def test_hvp_robustness() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
+        return (as_tensor(x) * as_tensor(x)) * as_tensor(x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     v = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    val, out_tan = typing.cast("EagerCallableProtocol", hvp)(f, x, v)
-    assert typing.cast("EagerTensorProtocol", getattr(val, "item"))() == 8.0
-    assert typing.cast("EagerTensorProtocol", getattr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
+    val, out_tan = as_callable(hvp)(f, x, v)
+    assert as_tensor(getattr(val, "item"))() == 8.0
+    assert as_tensor(getattr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
 
 
 def test_hessian() -> None:
@@ -44,13 +45,13 @@ def test_hessian() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
+        return (as_tensor(x) * as_tensor(x)) * as_tensor(x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     from ml_switcheroo_compiler.grad import hessian
 
-    res = typing.cast("EagerCallableProtocol", hessian)(f)(x)
+    res = as_callable(hessian)(f)(x)
     assert res is not None
 
 
@@ -63,7 +64,7 @@ def test_check_numerical_grads() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)
+        return as_tensor(x) * as_tensor(x)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     check_numerical_grads(f, (x,))

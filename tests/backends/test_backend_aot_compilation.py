@@ -24,9 +24,10 @@ from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeG
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
+from tests.testing_utils import as_callable, as_shape, as_tensor, as_tensor_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _to_tensor(arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> Tensor:
@@ -120,7 +121,7 @@ def test_jax_compile_aot_impl() -> None:
     inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
 
     # 1. JIT compile fallback or execution
-    callable_jit: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+    callable_jit: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
     res_jit = callable_jit(inp)
     assert res_jit is not None
     np.testing.assert_allclose(np.asarray(res_jit), np.exp(inp), rtol=1e-4)
@@ -131,7 +132,7 @@ def test_jax_compile_aot_impl() -> None:
     np.testing.assert_allclose(np.asarray(res_jit_tensor), np.exp(inp), rtol=1e-4)
 
     # 2. AOT compilation with sample inputs (both raw and Tensor)
-    callable_aot: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, sample_inputs=[_to_tensor(inp)]))
+    callable_aot: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, sample_inputs=[_to_tensor(inp)]))
     res_aot = callable_aot(inp)
     assert res_aot is not None
     np.testing.assert_allclose(np.asarray(res_aot), np.exp(inp), rtol=1e-4)
@@ -161,7 +162,7 @@ def test_jax_compile_aot_fallback_and_missing_model() -> None:
 
     # Missing apply_model triggers ValueError, handled by except Exception fallback
     with patch.object(gen, "generate", return_value=""):
-        callable_fallback: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        callable_fallback: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res_tensor = callable_fallback(_to_tensor(inp))
         np.testing.assert_allclose(np.asarray(res_tensor), np.exp(inp), rtol=1e-4)
 
@@ -169,7 +170,7 @@ def test_jax_compile_aot_fallback_and_missing_model() -> None:
     multi_graph = _create_multi_output_graph()
     gen_multi = JAXCodeGenerator(multi_graph)
     with patch.object(gen_multi, "generate", return_value=""):
-        callable_multi: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_multi._compile_aot_impl(multi_graph))
+        callable_multi: TypedVariadicCallable[EagerValue] = as_callable(gen_multi._compile_aot_impl(multi_graph))
         res_multi = callable_multi(inp)
         assert isinstance(res_multi, tuple)
         assert len(res_multi) == 2
@@ -180,7 +181,7 @@ def test_jax_compile_aot_fallback_and_missing_model() -> None:
     no_out_graph = _create_no_output_graph()
     gen_no_out = JAXCodeGenerator(no_out_graph)
     with patch.object(gen_no_out, "generate", return_value=""):
-        callable_no_out: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_no_out._compile_aot_impl(no_out_graph))
+        callable_no_out: TypedVariadicCallable[EagerValue] = as_callable(gen_no_out._compile_aot_impl(no_out_graph))
         res_no_out = callable_no_out(inp)
         assert isinstance(res_no_out, dict)
 
@@ -191,7 +192,7 @@ def test_jax_compile_aot_fallback_and_missing_model() -> None:
         patch.object(gen_multi_in, "generate", return_value=""),
         patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"exp_out": np.exp(inp)}),
     ):
-        callable_few: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_multi_in._compile_aot_impl(multi_in_graph))
+        callable_few: TypedVariadicCallable[EagerValue] = as_callable(gen_multi_in._compile_aot_impl(multi_in_graph))
         res_few = callable_few(inp)
         assert res_few is not None
 
@@ -223,23 +224,23 @@ def test_jax_distributed_visitor_coverage() -> None:
         generator: FakeGen = FakeGen()
 
     # Test _extract_code_lines target traversal
-    assert typing.cast("EagerCallableProtocol", JaxDistributedVisitor._extract_code_lines)(typing.cast("EagerCallableProtocol", DummyVisitorWithGen)()) == ["# existing"]
-    assert typing.cast("EagerCallableProtocol", JaxDistributedVisitor._extract_code_lines)(typing.cast("EagerCallableProtocol", DummyTargetNonListCode)()) == []
-    assert typing.cast("EagerCallableProtocol", JaxDistributedVisitor._extract_code_lines)(typing.cast("EagerCallableProtocol", DummyEmpty)()) == []
+    assert as_callable(JaxDistributedVisitor._extract_code_lines)(as_callable(DummyVisitorWithGen)()) == ["# existing"]
+    assert as_callable(JaxDistributedVisitor._extract_code_lines)(as_callable(DummyTargetNonListCode)()) == []
+    assert as_callable(JaxDistributedVisitor._extract_code_lines)(as_callable(DummyEmpty)()) == []
 
     gen = JAXCodeGenerator(IRGraph())
 
     # Test visit_Send when token already exists
     gen.code.append("    token = jax.lax.create_token()")
     n_send = LogicalNode(id="send_node", op_type="Send", inputs=["x"], attributes={"dst_rank": 1})
-    typing.cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Send)(gen, n_send, ["x"])
+    as_callable(JaxDistributedVisitor.visit_Send)(gen, n_send, ["x"])
     token_creates = [line for line in gen.code if "jax.lax.create_token()" in line]
     assert len(token_creates) == 1
 
     # Test visit_Recv when token does NOT exist yet (fresh generator)
     gen_fresh = JAXCodeGenerator(IRGraph())
     n_recv0 = LogicalNode(id="recv_fresh", op_type="Recv", inputs=[], attributes={"src_rank": 1})
-    typing.cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Recv)(gen_fresh, n_recv0, [])
+    as_callable(JaxDistributedVisitor.visit_Recv)(gen_fresh, n_recv0, [])
     assert any("token = jax.lax.create_token()" in line for line in gen_fresh.code)
 
     # Test visit_Recv when token already exists
@@ -249,28 +250,28 @@ def test_jax_distributed_visitor_coverage() -> None:
         inputs=[],
         attributes={"src_rank": 0, "shape": (3, 3), "dtype": "jnp.bfloat16"},
     )
-    res_recv1 = typing.cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Recv)(gen, n_recv1, [])
+    res_recv1 = as_callable(JaxDistributedVisitor.visit_Recv)(gen, n_recv1, [])
     assert res_recv1 == "v_recv_shape_dict"
     assert any("shape=(3, 3), dtype=jnp.bfloat16" in line for line in gen.code)
 
     # Test visit_Recv with scalar integer shape metadata
     n_recv2 = LogicalNode(id="recv_scalar_shape", op_type="Recv", inputs=[], attributes={"src_rank": 2})
-    n_recv2.shape_metadata = typing.cast("tuple[int, ...]", 8)
-    res_recv2 = typing.cast("EagerCallableProtocol", JaxDistributedVisitor.visit_Recv)(gen, n_recv2, [])
+    n_recv2.shape_metadata = as_shape(8)
+    res_recv2 = as_callable(JaxDistributedVisitor.visit_Recv)(gen, n_recv2, [])
     assert res_recv2 == "v_recv_scalar_shape"
     assert any("shape=(8,)" in line for line in gen.code)
 
     # Test visit_AllGather
     n_ag = LogicalNode(id="ag", op_type="AllGather", inputs=["x"], attributes={"axis_name": "'data'"})
-    assert typing.cast("EagerCallableProtocol", JaxDistributedVisitor.visit_AllGather)(gen, n_ag, ["x"]) == "jax.lax.all_gather(x, axis_name='data')"
+    assert as_callable(JaxDistributedVisitor.visit_AllGather)(gen, n_ag, ["x"]) == "jax.lax.all_gather(x, axis_name='data')"
 
     # Test visit_ReduceScatter
     n_rs = LogicalNode(id="rs", op_type="ReduceScatter", inputs=["x"], attributes={"axis": 1, "axis_name": "'proc'", "op": "jax.lax.pmax"})
-    assert typing.cast("EagerCallableProtocol", JaxDistributedVisitor.visit_ReduceScatter)(gen, n_rs, ["x"]) == "jax.lax.reduce_scatter(x, jax.lax.pmax, scatter_dimension=1, axis_name='proc')"
+    assert as_callable(JaxDistributedVisitor.visit_ReduceScatter)(gen, n_rs, ["x"]) == "jax.lax.reduce_scatter(x, jax.lax.pmax, scatter_dimension=1, axis_name='proc')"
 
     # Test visit_AllReduce
     n_ar = LogicalNode(id="ar", op_type="AllReduce", inputs=["x"], attributes={"axis_name": "'mesh'", "op": "pmean"})
-    assert typing.cast("EagerCallableProtocol", JaxDistributedVisitor.visit_AllReduce)(gen, n_ar, ["x"]) == "jax.lax.pmean(x, axis_name='mesh')"
+    assert as_callable(JaxDistributedVisitor.visit_AllReduce)(gen, n_ar, ["x"]) == "jax.lax.pmean(x, axis_name='mesh')"
 
 
 def test_pytorch_compile_aot_impl() -> None:
@@ -287,7 +288,7 @@ def test_pytorch_compile_aot_impl() -> None:
     mock_torch.as_tensor.side_effect = lambda x: x
 
     with patch.dict("sys.modules", {"torch": mock_torch}):
-        runner: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res = runner(inp)
         assert res is not None
 
@@ -302,7 +303,7 @@ def test_pytorch_compile_aot_impl() -> None:
     mock_torch_no_compile.as_tensor.side_effect = lambda x: x
 
     with patch.dict("sys.modules", {"torch": mock_torch_no_compile}):
-        runner_traced: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, sample_inputs=[inp]))
+        runner_traced: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, sample_inputs=[inp]))
         res_traced = runner_traced(inp)
         assert res_traced is not None
 
@@ -325,7 +326,7 @@ def test_pytorch_compile_aot_fallbacks() -> None:
     mock_torch.as_tensor.side_effect = lambda x: x
 
     with patch.dict("sys.modules", {"torch": mock_torch}):
-        runner_traced: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, sample_inputs=[inp]))
+        runner_traced: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, sample_inputs=[inp]))
         res = runner_traced(inp)
         assert res is not None
         assert mock_torch.jit.trace.called
@@ -333,13 +334,13 @@ def test_pytorch_compile_aot_fallbacks() -> None:
     # When torch has no compile and sample_inputs is None, returns GraphModule directly
     mock_torch_bare = MagicMock(spec=["as_tensor"])
     with patch.dict("sys.modules", {"torch": mock_torch_bare}):
-        mod: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        mod: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res_mod = mod(_to_tensor(inp))
         np.testing.assert_allclose(np.asarray(res_mod), np.exp(inp), rtol=1e-4)
 
     # Outer exception fallback returns GraphModule
     with patch.dict("sys.modules", {"torch": None}):
-        mod_fallback: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        mod_fallback: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res_fb = mod_fallback(inp)
         np.testing.assert_allclose(np.asarray(res_fb), np.exp(inp), rtol=1e-4)
 
@@ -347,7 +348,7 @@ def test_pytorch_compile_aot_fallbacks() -> None:
     multi_graph = _create_multi_output_graph()
     gen_multi = PyTorchCodeGenerator(multi_graph)
     with patch.dict("sys.modules", {"torch": None}):
-        mod_multi: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_multi._compile_aot_impl(multi_graph))
+        mod_multi: TypedVariadicCallable[EagerValue] = as_callable(gen_multi._compile_aot_impl(multi_graph))
         res_multi = mod_multi(inp)
         assert isinstance(res_multi, tuple)
         assert len(res_multi) == 2
@@ -355,7 +356,7 @@ def test_pytorch_compile_aot_fallbacks() -> None:
     no_out_graph = _create_no_output_graph()
     gen_no_out = PyTorchCodeGenerator(no_out_graph)
     with patch.dict("sys.modules", {"torch": None}):
-        mod_no_out: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_no_out._compile_aot_impl(no_out_graph))
+        mod_no_out: TypedVariadicCallable[EagerValue] = as_callable(gen_no_out._compile_aot_impl(no_out_graph))
         res_no_out = mod_no_out(inp)
         assert isinstance(res_no_out, dict)
 
@@ -366,7 +367,7 @@ def test_pytorch_compile_aot_fallbacks() -> None:
         patch.dict("sys.modules", {"torch": None}),
         patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"exp_out": np.exp(inp)}),
     ):
-        mod_in: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_in._compile_aot_impl(multi_in_graph))
+        mod_in: TypedVariadicCallable[EagerValue] = as_callable(gen_in._compile_aot_impl(multi_in_graph))
         res_in = mod_in(inp)
         assert res_in is not None
 
@@ -378,12 +379,12 @@ def test_mlx_compile_aot_impl() -> None:
 
     inp = np.array([[1.0, 0.0], [0.0, 1.0]], dtype=np.float32)
 
-    runner_shapeless: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, shapeless=True))
+    runner_shapeless: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, shapeless=True))
     res_shapeless = runner_shapeless(inp)
     assert res_shapeless is not None
     np.testing.assert_allclose(np.asarray(res_shapeless), np.exp(inp), rtol=1e-4)
 
-    runner_static: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, shapeless=False))
+    runner_static: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, shapeless=False))
     res_static = runner_static(_to_tensor(inp))
     assert res_static is not None
     np.testing.assert_allclose(np.asarray(res_static), np.exp(inp), rtol=1e-4)
@@ -408,7 +409,7 @@ def test_mlx_compile_aot_fallbacks() -> None:
 
     # Missing CompiledModel raises ValueError, handled by except Exception fallback
     with patch.object(gen, "generate", return_value=""):
-        callable_fb: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        callable_fb: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res = callable_fb(_to_tensor(inp))
         np.testing.assert_allclose(np.asarray(res), np.exp(inp), rtol=1e-4)
 
@@ -416,7 +417,7 @@ def test_mlx_compile_aot_fallbacks() -> None:
     multi_graph = _create_multi_output_graph()
     gen_multi = MLXCodeGenerator(multi_graph)
     with patch.object(gen_multi, "generate", return_value=""):
-        callable_multi: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_multi._compile_aot_impl(multi_graph))
+        callable_multi: TypedVariadicCallable[EagerValue] = as_callable(gen_multi._compile_aot_impl(multi_graph))
         res_multi = callable_multi(inp)
         assert isinstance(res_multi, tuple)
         assert len(res_multi) == 2
@@ -425,7 +426,7 @@ def test_mlx_compile_aot_fallbacks() -> None:
     no_out_graph = _create_no_output_graph()
     gen_no_out = MLXCodeGenerator(no_out_graph)
     with patch.object(gen_no_out, "generate", return_value=""):
-        callable_no_out: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_no_out._compile_aot_impl(no_out_graph))
+        callable_no_out: TypedVariadicCallable[EagerValue] = as_callable(gen_no_out._compile_aot_impl(no_out_graph))
         res_no_out = callable_no_out(inp)
         assert isinstance(res_no_out, dict)
 
@@ -436,7 +437,7 @@ def test_mlx_compile_aot_fallbacks() -> None:
         patch.object(gen_in, "generate", return_value=""),
         patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"exp_out": np.exp(inp)}),
     ):
-        callable_in: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_in._compile_aot_impl(multi_in_graph))
+        callable_in: TypedVariadicCallable[EagerValue] = as_callable(gen_in._compile_aot_impl(multi_in_graph))
         res_in = callable_in(inp)
         assert res_in is not None
 
@@ -452,7 +453,7 @@ def test_cupy_compile_aot_impl() -> None:
     mock_cp = MagicMock(spec=["asarray"])
     mock_cp.asarray.side_effect = lambda x: x
     with patch.dict("sys.modules", {"cupy": mock_cp}):
-        runner: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res = runner(inp)
         assert res is not None
 
@@ -464,7 +465,7 @@ def test_cupy_compile_aot_impl() -> None:
     mock_instance = MagicMock()
     mock_cp_graph.cuda.Graph.return_value.instantiate.return_value = mock_instance
     with patch.dict("sys.modules", {"cupy": mock_cp_graph}):
-        runner_graph: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, sample_inputs=[inp]))
+        runner_graph: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, sample_inputs=[inp]))
         res_graph = runner_graph(inp)
         assert res_graph is not None
         assert mock_instance.launch.called
@@ -478,7 +479,7 @@ def test_cupy_compile_aot_fallbacks() -> None:
 
     # Exception in try block falls back to forward_fn
     with patch.dict("sys.modules", {"cupy": None}):
-        fallback_fn: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        fallback_fn: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res = fallback_fn(_to_tensor(inp))
         np.testing.assert_allclose(np.asarray(res), np.exp(inp), rtol=1e-4)
 
@@ -486,7 +487,7 @@ def test_cupy_compile_aot_fallbacks() -> None:
     multi_graph = _create_multi_output_graph()
     gen_multi = CupyGenerator(multi_graph)
     with patch.dict("sys.modules", {"cupy": None}):
-        fallback_multi: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_multi._compile_aot_impl(multi_graph))
+        fallback_multi: TypedVariadicCallable[EagerValue] = as_callable(gen_multi._compile_aot_impl(multi_graph))
         res_multi = fallback_multi(inp)
         assert isinstance(res_multi, tuple)
         assert len(res_multi) == 2
@@ -495,7 +496,7 @@ def test_cupy_compile_aot_fallbacks() -> None:
     no_out_graph = _create_no_output_graph()
     gen_no_out = CupyGenerator(no_out_graph)
     with patch.dict("sys.modules", {"cupy": None}):
-        fallback_no_out: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_no_out._compile_aot_impl(no_out_graph))
+        fallback_no_out: TypedVariadicCallable[EagerValue] = as_callable(gen_no_out._compile_aot_impl(no_out_graph))
         res_no_out = fallback_no_out(inp)
         assert isinstance(res_no_out, dict)
 
@@ -506,7 +507,7 @@ def test_cupy_compile_aot_fallbacks() -> None:
         patch.dict("sys.modules", {"cupy": None}),
         patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"exp_out": np.exp(inp)}),
     ):
-        fallback_in: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_in._compile_aot_impl(multi_in_graph))
+        fallback_in: TypedVariadicCallable[EagerValue] = as_callable(gen_in._compile_aot_impl(multi_in_graph))
         res_in = fallback_in(inp)
         assert res_in is not None
 
@@ -524,7 +525,7 @@ def test_tensorflow_compile_aot_impl() -> None:
     mock_tf.convert_to_tensor.side_effect = lambda x: x
 
     with patch.dict("sys.modules", {"tensorflow": mock_tf}):
-        runner: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, jit_compile=True))
+        runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, jit_compile=True))
         res = runner(inp)
         assert res is not None
         assert mock_tf.function.called
@@ -544,14 +545,14 @@ def test_onnx_compile_aot_impl() -> None:
     mock_ref.ReferenceEvaluator.return_value = mock_session
 
     with patch("onnx.reference.ReferenceEvaluator", mock_ref.ReferenceEvaluator):
-        runner: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph, opset_version=18))
+        runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, opset_version=18))
         res = runner(inp)
         assert res is not None
         assert mock_session.run.called
 
     # Fallback runner when ReferenceEvaluator fails
     with patch("onnx.reference.ReferenceEvaluator", side_effect=RuntimeError("ReferenceEvaluator unavailable")):
-        runner_fallback: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        runner_fallback: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res_fallback = runner_fallback(inp)
         assert res_fallback is not None
 
@@ -564,13 +565,13 @@ def test_stablehlo_compile_aot_impl() -> None:
     artifact: TypedVariadicCallable[EagerValue] | EagerValue = gen._compile_aot_impl(graph)
     assert hasattr(artifact, "bytecode")
     assert hasattr(artifact, "mlir")
-    assert len(typing.cast("EagerTensorProtocol", getattr(artifact, "bytecode"))) > 0
-    assert "module" in typing.cast("EagerTensorProtocol", getattr(artifact, "mlir"))
+    assert len(as_tensor(getattr(artifact, "bytecode"))) > 0
+    assert "module" in as_tensor(getattr(artifact, "mlir"))
 
     # Execute artifact
     inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     assert callable(artifact)
-    res = typing.cast("TypedVariadicCallable[EagerValue]", artifact)(inp)
+    res = as_callable(artifact)(inp)
     assert res is not None
 
 
@@ -588,7 +589,7 @@ def test_dask_compile_aot_impl() -> None:
     mock_dask.compute.return_value = [np.exp(inp)]
 
     with patch.dict("sys.modules", {"dask": mock_dask, "dask.array": mock_da}):
-        runner: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res = runner(inp)
         assert res is not None
         assert mock_dask.compute.called
@@ -605,7 +606,7 @@ def test_dask_compile_aot_fallbacks() -> None:
 
     # Exception in try block falls back to forward_fn
     with patch.dict("sys.modules", {"dask": None}):
-        fallback_fn: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen._compile_aot_impl(graph))
+        fallback_fn: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
         res = fallback_fn(_to_tensor(inp))
         np.testing.assert_allclose(np.asarray(res), np.exp(inp), rtol=1e-4)
 
@@ -613,7 +614,7 @@ def test_dask_compile_aot_fallbacks() -> None:
     multi_graph = _create_multi_output_graph()
     gen_multi = DaskGenerator(multi_graph)
     with patch.dict("sys.modules", {"dask": None}):
-        fallback_multi: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_multi._compile_aot_impl(multi_graph))
+        fallback_multi: TypedVariadicCallable[EagerValue] = as_callable(gen_multi._compile_aot_impl(multi_graph))
         res_multi = fallback_multi(inp)
         assert isinstance(res_multi, tuple)
         assert len(res_multi) == 2
@@ -622,7 +623,7 @@ def test_dask_compile_aot_fallbacks() -> None:
     no_out_graph = _create_no_output_graph()
     gen_no_out = DaskGenerator(no_out_graph)
     with patch.dict("sys.modules", {"dask": None}):
-        fallback_no_out: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_no_out._compile_aot_impl(no_out_graph))
+        fallback_no_out: TypedVariadicCallable[EagerValue] = as_callable(gen_no_out._compile_aot_impl(no_out_graph))
         res_no_out = fallback_no_out(inp)
         assert isinstance(res_no_out, dict)
 
@@ -633,7 +634,7 @@ def test_dask_compile_aot_fallbacks() -> None:
         patch.dict("sys.modules", {"dask": None}),
         patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"exp_out": np.exp(inp)}),
     ):
-        fallback_in: TypedVariadicCallable[EagerValue] = typing.cast("TypedVariadicCallable[EagerValue]", gen_in._compile_aot_impl(multi_in_graph))
+        fallback_in: TypedVariadicCallable[EagerValue] = as_callable(gen_in._compile_aot_impl(multi_in_graph))
         res_in = fallback_in(inp)
         assert res_in is not None
 
@@ -642,7 +643,7 @@ def test_dask_compile_aot_fallbacks() -> None:
         import ml_switcheroo_compiler.backends.dask.generator as dask_gen_mod
 
         importlib.reload(dask_gen_mod)
-        assert typing.cast("EagerTensorProtocol", getattr(dask_gen_mod, "da")) is None
+        assert as_tensor(getattr(dask_gen_mod, "da")) is None
 
     # Restore dask_gen_mod
     importlib.reload(dask_gen_mod)
@@ -653,7 +654,7 @@ def test_compiled_artifact_and_base_generator_caching() -> None:
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, CompiledArtifact
 
     # CompiledArtifact with callable
-    called = typing.cast("list[EagerTensorProtocol]", [])
+    called = as_tensor_list([])
 
     def dummy_fn(*a: EagerValue, **k: EagerValue) -> EagerValue:
         """Record call arguments and return 42.
@@ -662,18 +663,18 @@ def test_compiled_artifact_and_base_generator_caching() -> None:
             a: Test parameter `a`.
             k: Test parameter `k`.
         """
-        return (typing.cast("EagerCallableProtocol", called.append)((a, k)), 42)[1]
+        return (as_callable(called.append)((a, k)), 42)[1]
 
     artifact = CompiledArtifact(callable_fn=dummy_fn, binary_bytes=b"test", source_code="code")
     assert artifact(1, x=2) == 42
-    assert typing.cast("EagerValue", len(called)) == 1
+    assert as_tensor(len(called)) == 1
 
     # Cleanup with mock tempdir
     mock_tmp = MagicMock()
     artifact.temp_dir = mock_tmp
     artifact.cleanup()
     mock_tmp.cleanup.assert_called_once()
-    assert typing.cast("EagerValue", artifact.temp_dir) is None
+    assert as_tensor(artifact.temp_dir) is None
 
     # Error without callable
     empty_artifact = CompiledArtifact()

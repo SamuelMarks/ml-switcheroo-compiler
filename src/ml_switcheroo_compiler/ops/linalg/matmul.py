@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_opt_tensor_obj
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, multiply
@@ -186,7 +185,7 @@ def dot_general(
     out_shape = []
     if lhs.shape and rhs.shape:
         out_shape = list(_infer_dot_general_shape(lhs.shape, rhs.shape, dimension_numbers))
-    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [getattr(lhs, "dtype", None)]))
+    return as_tensor(as_callable(_emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [getattr(lhs, "dtype", None)]))
 
 
 def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> TensorOrScalar:
@@ -244,7 +243,7 @@ def multi_dot(arrays: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrSc
         backend = get_active_backend()
         data = backend.execute_op("MultiDot", [(getattr(a, "data") if type(a).__name__ == "Tensor" else a) for a in getattr(arrays, "__iter__")()])
         return Tensor(data, TensorConfig(getattr(data, "shape"), getattr(getattr(arrays, "__getitem__")(0), "dtype"), getattr(getattr(arrays, "__getitem__")(0), "device")))
-    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _emit_linalg_node)("MultiDot", arrays, {}, [()], [getattr(getattr(arrays, "__getitem__")(0), "dtype")]))
+    return as_tensor(as_callable(_emit_linalg_node)("MultiDot", arrays, {}, [()], [getattr(getattr(arrays, "__getitem__")(0), "dtype")]))
 
 
 def vecdot(x: TensorOrScalar, y: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrScalar = None) -> TensorOrScalar:
@@ -330,7 +329,7 @@ def _unwrap(x: Tensor | None) -> TensorOrScalar | None:
     """Unwrap a Tensor to its underlying data if it's a Tensor.
 
     Args:
-        x (Tensor | None): The Any to unwrap.
+        x (Tensor | None): The object to unwrap.
 
     Returns: Tensor: The unwrapped data.
     """
@@ -373,7 +372,7 @@ def block_masked_mm(
         if masks.get(k) is not None:
             kwargs[k] = len(inputs)
             getattr(inputs, "append")(masks[k])
-    return _emit_shape_node("BlockMaskedMm", inputs, kwargs, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", None))
+    return _emit_shape_node("BlockMaskedMm", inputs, kwargs, out_shape, getattr(a, "dtype", None))
 
 
 @register_op("GatherMm")
@@ -459,7 +458,7 @@ def gather_mm(
         backend = get_active_backend()
         for k, v in (("lhs_indices", lhs_indices), ("rhs_indices", rhs_indices)):
             if v is not None:
-                kwargs[k] = _unwrap(typing.cast("Tensor | None", v))
+                kwargs[k] = _unwrap(as_opt_tensor_obj(v))
         data = backend.execute_op("GatherMm", _unwrap(a), _unwrap(b), **kwargs)
         return Tensor(
             backend.array(data),
@@ -471,7 +470,7 @@ def gather_mm(
         if v is not None:
             kwargs[k] = len(inputs)
             getattr(inputs, "append")(v)
-    return _emit_shape_node("GatherMm", inputs, kwargs, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", None))
+    return _emit_shape_node("GatherMm", inputs, kwargs, out_shape, getattr(a, "dtype", None))
 
 
 @register_op("SegmentedMm")

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -27,7 +27,7 @@ def _np_sum(
     Returns:
         np.ndarray: Computed sum reduction.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.sum(*args, **kwargs))
+    return as_ndarray(backend_module.sum(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Mean")
@@ -46,7 +46,7 @@ def _np_mean(
     Returns:
         np.ndarray: Computed mean reduction.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.mean(*args, **kwargs))
+    return as_ndarray(backend_module.mean(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Max")
@@ -65,7 +65,7 @@ def _np_max(
     Returns:
         np.ndarray: Computed max reduction.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.max(*args, **kwargs))
+    return as_ndarray(backend_module.max(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Min")
@@ -84,7 +84,7 @@ def _np_min(
     Returns:
         np.ndarray: Computed min reduction.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.min(*args, **kwargs))
+    return as_ndarray(backend_module.min(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Variance")
@@ -104,7 +104,7 @@ def _np_variance(
         np.ndarray: Computed variance reduction.
     """
     kwargs.setdefault("ddof", 0)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.var(*args, **kwargs))
+    return as_ndarray(backend_module.var(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Std")
@@ -123,7 +123,7 @@ def _np_std(
     Returns:
         np.ndarray: Computed standard deviation reduction.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.std(*args, **kwargs))
+    return as_ndarray(backend_module.std(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Argmax")
@@ -142,7 +142,7 @@ def _np_argmax(
     Returns:
         np.ndarray: Indices of maximum values.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.argmax(*args, **kwargs))
+    return as_ndarray(backend_module.argmax(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Argmin")
@@ -161,7 +161,7 @@ def _np_argmin(
     Returns:
         np.ndarray: Indices of minimum values.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.argmin(*args, **kwargs))
+    return as_ndarray(backend_module.argmin(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Prod")
@@ -180,7 +180,7 @@ def _np_prod(
     Returns:
         np.ndarray: Computed product reduction.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.prod(*args, **kwargs))
+    return as_ndarray(backend_module.prod(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AnyOp")
@@ -199,7 +199,7 @@ def _np_any_op(
     Returns:
         np.ndarray: Boolean reduction result.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.any(*args, **kwargs))
+    return as_ndarray(backend_module.any(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Cumsum")
@@ -218,7 +218,7 @@ def _np_cumsum(
     Returns:
         np.ndarray: Cumulative sum array.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.cumsum(*args, **kwargs))
+    return as_ndarray(backend_module.cumsum(*args, **kwargs))
 
 
 @numpy_eager_registry.register("AddN")
@@ -245,7 +245,7 @@ def _np_add_n(
     res: EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] = inputs[0]
     for i in range(1, len(inputs)):
         res = backend_module.add(res, inputs[i])
-    return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("AccumulateN")
@@ -272,7 +272,7 @@ def _np_accumulate_n(
     res: EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] = inputs[0]
     for i in range(1, len(inputs)):
         res = backend_module.add(res, inputs[i])
-    return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", res)
+    return as_ndarray(res)
 
 
 @numpy_eager_registry.register("CumulativeLogsumexp")
@@ -295,4 +295,4 @@ def _np_cumulative_logsumexp(
     """
     exp_x = backend_module.exp(x)
     cumsum_exp = backend_module.cumsum(exp_x, axis=axis)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.log(cumsum_exp))
+    return as_ndarray(backend_module.log(cumsum_exp))

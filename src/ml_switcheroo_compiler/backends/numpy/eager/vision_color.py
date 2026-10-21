@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _to_channels_last
-from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import as_float, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -51,7 +50,7 @@ def _np_adjust_contrast(
         np.ndarray: Contrast adjusted images clipped to [0, 1].
     """
     mean = getattr(np, "mean")(images, axis=(-3, -2), keepdims=True)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.clip((images - mean) * contrast_factor + mean, 0.0, 1.0))
+    return as_ndarray(np.clip((images - mean) * contrast_factor + mean, 0.0, 1.0))
 
 
 @numpy_eager_registry.register("AdjustHue")
@@ -120,13 +119,12 @@ def _np_auto_contrast(
     diff = high - low
     diff = np.where(diff == 0.0, 1.0, diff)
     out = (images - low) / diff
-    return typing.cast(
-        np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    return as_ndarray(
         np.clip(
             out * (value_range[1] - value_range[0]) + value_range[0],
             value_range[0],
             value_range[1],
-        ).astype(images.dtype),
+        ).astype(images.dtype)
     )
 
 
@@ -249,7 +247,7 @@ def _np_solarize(
         np.ndarray: Solarized images array.
     """
     threshold_val = kwargs.get("threshold", 0.5)
-    threshold = float(typing.cast(float, threshold_val)) if threshold_val is not None else 0.5
+    threshold = float(as_float(threshold_val)) if threshold_val is not None else 0.5
     value_range_val = kwargs.get("value_range", (0, 255))
     value_range = value_range_val if isinstance(value_range_val, tuple) else (0, 255)
     return np.where(np.greater_equal(images, threshold), np.add(np.subtract(value_range[1], images), value_range[0]), images)

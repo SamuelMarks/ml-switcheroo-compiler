@@ -10,9 +10,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.nn.time_distributed import TimeDistributed, time_distributed
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 @register_op("MockEmptyShapeOp")
@@ -75,7 +76,7 @@ def test_time_distributed_dispatch_eager(mocker: pytest.MonkeyPatch) -> None:
 
     # Graph/tracing mode (config.eager_mode = False) executes the underlying decorated function
     config.eager_mode = False
-    mock_op = typing.cast("EagerTensorProtocol", getattr(mocker, "patch"))("ml_switcheroo_compiler.ops.nn.time_distributed.get_op")
+    mock_op = as_tensor(getattr(mocker, "patch"))("ml_switcheroo_compiler.ops.nn.time_distributed.get_op")
     mock_instance = mock_op.return_value.return_value
     setattr(mock_instance, "return_value", "traced_result")
 

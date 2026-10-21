@@ -1,8 +1,7 @@
-"""Shape operations for Tensor Anys."""
+"""Shape operations for Tensor objects."""
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -122,7 +121,7 @@ def vstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Vstack")().infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Vstack", inputs, {}, typing.cast("Sequence[int | str]", out_shape), inputs[0].dtype)
+    return _emit_shape_node("Vstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
 def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
@@ -140,7 +139,7 @@ def hstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Hstack")().infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Hstack", inputs, {}, typing.cast("Sequence[int | str]", out_shape), inputs[0].dtype)
+    return _emit_shape_node("Hstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
 def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
@@ -158,7 +157,7 @@ def dstack(tup: Sequence[Tensor]) -> TensorOrScalar:
         return Tensor(data, TensorConfig(getattr(data, "shape"), tup[0].dtype, tup[0].device))
     inputs = list(tup)
     out_shape = get_op("Dstack")().infer_shape([t.shape for t in inputs])
-    return _emit_shape_node("Dstack", inputs, {}, typing.cast("Sequence[int | str]", out_shape), inputs[0].dtype)
+    return _emit_shape_node("Dstack", inputs, {}, out_shape, inputs[0].dtype)
 
 
 def append(arr: TensorOrScalar, values: TensorOrScalar, axis: int | None = None) -> TensorOrScalar:
@@ -195,7 +194,7 @@ def column_stack(tup: TensorOrScalar) -> TensorOrScalar:
     """Stack 1-D arrays as columns into a 2-D array.
 
     Args:
-        tup (Sequence[Any]): Sequence of 1-D or 2-D arrays.
+        tup (Sequence[TensorOrScalar]): Sequence of 1-D or 2-D arrays.
 
     Returns:
         Tensor: The array formed by stacking the given arrays.

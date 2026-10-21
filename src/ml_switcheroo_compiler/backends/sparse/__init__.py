@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 
 try:
     _has_pkg = importlib.util.find_spec("sparse") is not None
@@ -50,7 +49,7 @@ type.__setattr__(SparseGenerator, "zeros", classmethod(zeros))
 type.__setattr__(SparseGenerator, "array", classmethod(array))
 type.__setattr__(SparseGenerator, "asarray", classmethod(asarray))
 type.__setattr__(SparseGenerator, "item", classmethod(item))
-type.__setattr__(SparseGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(SparseGenerator, "execute_op", as_callable(classmethod)(execute_op))
 
 __all__ = [
     "COOTensor",

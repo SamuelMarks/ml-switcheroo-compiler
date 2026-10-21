@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-import typing
 import uuid
 
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
+from ml_switcheroo_compiler.ir.core import as_attrs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import (
     add,
@@ -540,7 +540,7 @@ def binary_crossentropy(
     if label_smoothing > 0.0:
         y_true = add(multiply(y_true, 1.0 - label_smoothing), 0.5 * label_smoothing)
 
-    y_pred_prepared = typing.cast(Tensor, _clip_and_convert_logits(y_pred, from_logits))
+    y_pred_prepared = as_tensor_obj(_clip_and_convert_logits(y_pred, from_logits))
     bce = _compute_bce_loss(y_true, y_pred_prepared, from_logits)
     return op_mean(bce, axis=axis)
 
@@ -572,7 +572,7 @@ def categorical_crossentropy(
         y_true = add(multiply(y_true, 1.0 - label_smoothing), smooth_val)
 
     if from_logits:
-        y_pred_log = typing.cast(Tensor, log_softmax(y_pred, axis=axis))
+        y_pred_log = log_softmax(y_pred, axis=axis)
         return negative(op_sum(multiply(y_true, y_pred_log), axis=axis))
     y_pred_clipped = get_op("Clip")()(y_pred, epsilon, 1.0 - epsilon)
     return negative(op_sum(multiply(y_true, log(y_pred_clipped)), axis=axis))
@@ -599,13 +599,13 @@ def sparse_categorical_crossentropy(
     """
     num_classes = y_pred.shape[axis]
     y_true_one_hot = one_hot(y_true, num_classes, axis=axis)
-    loss = categorical_crossentropy(typing.cast("Tensor", y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
+    loss = categorical_crossentropy(as_tensor_obj(y_true_one_hot), y_pred, from_logits=from_logits, axis=axis)
 
     if ignore_class is not None:
         valid_mask = not_equal(y_true, ignore_class)
         loss_dtype = getattr(loss, "dtype", None) or DType("float32")
         zero_loss = zeros(getattr(loss, "shape", ()), dtype=loss_dtype)
-        loss = where(valid_mask, typing.cast("Tensor", loss), zero_loss)
+        loss = where(valid_mask, as_tensor_obj(loss), zero_loss)
 
     return loss
 
@@ -682,16 +682,12 @@ def _emit_adaptive_log_softmax_with_loss_node(
     out_id = str(uuid.uuid4())
     loss_id = f"{out_id}:loss"
 
-    from collections.abc import Mapping
-
-    from ml_switcheroo_ir import AttributeValue
-
     node = LogicalNode(
         id=out_id,
         op_type="AdaptiveLogSoftmaxWithLoss",
         inputs=[getattr(input_tensor.data, "id"), getattr(target.data, "id")],
         shape_metadata=target.shape,
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob}),
+        attributes=as_attrs({"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob}),
     )
     global_tracing_state.add_node(node)
 
@@ -725,15 +721,14 @@ def adaptive_log_softmax_with_loss(
         from ml_switcheroo_compiler.backends.registry import get_active_backend as _get_active_backend
 
         backend = _get_active_backend()
-        out, loss = typing.cast(
-            "tuple[TensorOrScalar, TensorOrScalar]",
+        out, loss = as_tensor_pair(
             backend.execute_op(
                 "AdaptiveLogSoftmaxWithLoss",
                 input.data,
                 target.data,
                 cutoffs=cutoffs,
                 add_cluster_prob=add_cluster_prob,
-            ),
+            )
         )
         return (
             Tensor(out, TensorConfig(target.shape, input.dtype, input.device)),

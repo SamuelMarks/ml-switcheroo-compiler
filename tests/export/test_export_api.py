@@ -11,9 +11,10 @@ import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.export.export_api import ExportArchive
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_export_archive_init() -> None:
@@ -36,7 +37,7 @@ def test_track() -> None:
     """Test function test_track."""
     archive = ExportArchive()
     resource = {"some": "data"}
-    typing.cast("EagerCallableProtocol", archive.track)(resource)
+    as_callable(archive.track)(resource)
     assert id(resource) in archive.trackables
 
 

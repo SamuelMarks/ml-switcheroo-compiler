@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.binary.special import Allclose, Atan2, Divmod, Isclose
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_binary_special() -> None:
@@ -49,11 +50,11 @@ def test_binary_special() -> None:
 
     import ml_switcheroo_compiler.ops.binary.special as sp
 
-    orig_evaluator = typing.cast("EagerTensorProtocol", getattr(sp, "EagerEvaluator"))
+    orig_evaluator = as_tensor(getattr(sp, "EagerEvaluator"))
 
     try:
         setattr(sp, "EagerEvaluator", DummyEval())
-        assert typing.cast("EagerTensorProtocol", d(1, 2)) == typing.cast("EagerTensorProtocol", "eager_eval")
+        assert as_tensor(d(1, 2)) == as_tensor("eager_eval")
     finally:
         setattr(sp, "EagerEvaluator", orig_evaluator)
 
@@ -84,17 +85,17 @@ def test_binary_special() -> None:
     from unittest.mock import patch
 
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.ops.binary": DummyBinary()}):
-        assert typing.cast("EagerTensorProtocol", d(1, 2)) == typing.cast("EagerTensorProtocol", ("fd", "r"))
+        assert as_tensor(d(1, 2)) == as_tensor(("fd", "r"))
     config.eager_mode = True
 
 
 def test_binary_special_coverage() -> None:
     """Test function test_binary_special_coverage."""
     a = Atan2()
-    assert typing.cast("EagerTensorProtocol", a.infer_shape(1)) == typing.cast("EagerTensorProtocol", 1)
+    assert as_tensor(a.infer_shape(1)) == as_tensor(1)
 
     d = Divmod()
-    assert typing.cast("EagerTensorProtocol", d.infer_shape(1)) == typing.cast("EagerTensorProtocol", 1)
+    assert as_tensor(d.infer_shape(1)) == as_tensor(1)
 
     i = Isclose()
-    assert typing.cast("EagerTensorProtocol", i.infer_shape(1)) == typing.cast("EagerTensorProtocol", 1)
+    assert as_tensor(i.infer_shape(1)) == as_tensor(1)

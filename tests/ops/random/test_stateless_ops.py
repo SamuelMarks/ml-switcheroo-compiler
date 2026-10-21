@@ -30,6 +30,7 @@ from ml_switcheroo_compiler.ops.random_stateless import (
     stateless_split,
     stateless_truncated_normal,
 )
+from tests.testing_utils import as_tensor, as_tensor_obj
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -187,12 +188,12 @@ def test_stateless_parameterized_truncated_normal() -> None:
     try:
         seed = Tensor([0, 1], TensorConfig((2,), "int64", "cpu"))
         cfg = RandomGenerationConfig(means=1.0, stddevs=0.5, minvals=-1.0, maxvals=1.0)
-        res = typing.cast(Tensor, stateless_parameterized_truncated_normal((2,), seed, cfg))
+        res = as_tensor_obj(stateless_parameterized_truncated_normal((2,), seed, cfg))
         assert res.config.shape == (2,)
         arr = np.asarray(res.data)
         assert np.all(arr >= 0.5)
         assert np.all(arr <= 1.5)
-        res_empty = typing.cast(Tensor, stateless_parameterized_truncated_normal((), seed, cfg))
+        res_empty = as_tensor_obj(stateless_parameterized_truncated_normal((), seed, cfg))
         assert res_empty.config.shape == ()
     finally:
         config.eager_mode = orig
@@ -230,13 +231,13 @@ def test_index_shuffle_and_fold_in() -> None:
         assert isinstance(res, int) and 0 <= res <= 10
 
         scalar_arr = Tensor(np.array(2, dtype=np.int32), TensorConfig((), "int32", "cpu"))
-        res_scalar = typing.cast(Tensor, index_shuffle(scalar_arr, 123, np.array(5)))
+        res_scalar = as_tensor_obj(index_shuffle(scalar_arr, 123, np.array(5)))
         assert res_scalar.shape == ()
 
         vec_arr = Tensor(np.array([1, 2], dtype=np.int32), TensorConfig((2,), "int32", "cpu"))
-        res_vec = typing.cast(Tensor, index_shuffle(vec_arr, 123, [5]))
+        res_vec = as_tensor_obj(index_shuffle(vec_arr, 123, [5]))
         assert res_vec.shape == (2,)
-        res_list = typing.cast(Tensor, index_shuffle([1, 2], 123, 5))
+        res_list = as_tensor_obj(index_shuffle([1, 2], 123, 5))
         assert res_list.shape == ()
         res_empty_max = index_shuffle(vec_arr, 123, [])
         assert res_empty_max is vec_arr
@@ -256,7 +257,7 @@ def test_stateless_split() -> None:
     config.eager_mode = True
     try:
         res = stateless_split("seed", 3)
-        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (3, 2)
+        assert as_tensor(getattr(res, "shape")) == (3, 2)
     finally:
         config.eager_mode = orig
 

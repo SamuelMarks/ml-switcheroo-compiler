@@ -6,9 +6,10 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.utils.np_utils import normalize, to_categorical
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_np_utils(mocker: EagerTensorProtocol) -> None:
@@ -46,7 +47,7 @@ def test_to_categorical_item(mocker: EagerTensorProtocol) -> None:
             """Test function item."""
             return 2
 
-    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.ops.max", return_value=typing.cast("EagerCallableProtocol", M)())
+    as_callable(mocker.patch)("ml_switcheroo_compiler.ops.max", return_value=as_callable(M)())
     mocker.patch("ml_switcheroo_compiler.ops.cast", return_value="typing.cast")
     mocker.patch("ml_switcheroo_compiler.ops.arange")
     mocker.patch("ml_switcheroo_compiler.ops.expand_dims")

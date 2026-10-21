@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Callable  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_float, as_opt_str, as_str, as_tensor
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -131,12 +130,7 @@ def extract_bounding_boxes(
         crop_size = kwargs.get("crop_size", (0, 0))
         if isinstance(crop_size, int):
             crop_size = (crop_size, crop_size)
-        config_obj = typing.cast(
-            TensorOrScalar,
-            typing.cast("EagerCallableProtocol", BBoxConfig)(
-                crop_size=crop_size, interpolation=typing.cast("str", kwargs.get("interpolation", "bilinear")), extrapolation_value=typing.cast("float", kwargs.get("extrapolation_value", 0.0)), data_format=typing.cast("str | None", kwargs.get("data_format", None))
-            ),
-        )
+        config_obj = as_tensor(as_callable(BBoxConfig)(crop_size=crop_size, interpolation=as_str(kwargs.get("interpolation", "bilinear")), extrapolation_value=as_float(kwargs.get("extrapolation_value", 0.0)), data_format=as_opt_str(kwargs.get("data_format", None))))
 
     if config.eager_mode:
         return _extract_bounding_boxes_eager(images, boxes, box_indices, config_obj)

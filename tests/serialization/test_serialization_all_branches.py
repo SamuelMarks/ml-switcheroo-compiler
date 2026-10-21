@@ -25,9 +25,10 @@ from ml_switcheroo_compiler.serialization import (
     run_restore_ops,
     serialize_object,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_load_model_edge_branches() -> None:
@@ -57,8 +58,8 @@ def test_load_model_edge_branches() -> None:
             Args:
                 p: Test parameter `p`.
             """
-            if typing.cast("EagerCallableProtocol", os.path.exists)(p):
-                typing.cast("EagerCallableProtocol", os.remove)(p)
+            if as_callable(os.path.exists)(p):
+                as_callable(os.remove)(p)
             return {"w": 2}
 
         with patch("ml_switcheroo_compiler.serialization._load_h5_weights", side_effect=remove_and_load):
@@ -116,12 +117,12 @@ def test_serialize_and_deserialize_nested_and_lists() -> None:
 
     # serialize_object with dict and list/tuple
     obj_dict = {"layer": NestedObject(), "list_items": [NestedObject(), 10]}
-    ser_dict = serialize_object(typing.cast("EagerValue", obj_dict))
+    ser_dict = serialize_object(as_tensor(obj_dict))
     assert isinstance(ser_dict, dict)
     assert ser_dict["layer"] == {"inner_val": 42}
     assert ser_dict["list_items"][0] == {"inner_val": 42}
 
-    ser_list = serialize_object([typing.cast("EagerValue", NestedObject()), typing.cast("EagerValue", (NestedObject(),))])
+    ser_list = serialize_object([as_tensor(NestedObject()), as_tensor((NestedObject(),))])
     assert isinstance(ser_list, list)
     assert ser_list[0] == {"inner_val": 42}
 
@@ -132,7 +133,7 @@ def test_serialize_and_deserialize_nested_and_lists() -> None:
         pass
 
     arbitrary_inst = CustomArbitrary()
-    assert _serialize_nested_config(typing.cast("EagerValue", arbitrary_inst)) == typing.cast("EagerValue", arbitrary_inst)
+    assert _serialize_nested_config(as_tensor(arbitrary_inst)) == as_tensor(arbitrary_inst)
 
     # Deserialization with custom_objects dict and non-callable class
     dummy_constant = "CONSTANT_OBJ"
@@ -140,12 +141,12 @@ def test_serialize_and_deserialize_nested_and_lists() -> None:
         "class_name": "MyConstant",
         "config": {},
     }
-    res = deserialize_object(typing.cast("EagerValue", config), custom_objects={"MyConstant": dummy_constant})
+    res = deserialize_object(as_tensor(config), custom_objects={"MyConstant": dummy_constant})
     assert res == dummy_constant
 
     # Deserialization of list / tuple
     list_config = [{"class_name": "MyConstant", "config": {}}, 123]
-    res_list = deserialize_object(typing.cast("EagerValue", list_config), custom_objects={"MyConstant": dummy_constant})
+    res_list = deserialize_object(as_tensor(list_config), custom_objects={"MyConstant": dummy_constant})
     assert res_list == [dummy_constant, 123]
 
 
@@ -160,7 +161,7 @@ def test_saved_model_topology_branches() -> None:
                 """Test function __init__."""
                 self.graph = IRGraph(name="test_graph")
 
-        sm1 = SavedModel(model=typing.cast("EagerValue", ModelWithGraph()))
+        sm1 = SavedModel(model=as_tensor(ModelWithGraph()))
         save_path1 = os.path.join(tmpdir, "model1")
         sm1.save(save_path1)
         loaded1 = SavedModel.load(save_path1)
@@ -174,7 +175,7 @@ def test_saved_model_topology_branches() -> None:
                 """Test function to_json."""
                 return json.dumps({"class_name": "DenseModel"})
 
-        sm2 = SavedModel(model=typing.cast("EagerValue", ModelWithToJson()))
+        sm2 = SavedModel(model=as_tensor(ModelWithToJson()))
         save_path2 = os.path.join(tmpdir, "model2")
         sm2.save(save_path2)
         loaded2 = SavedModel.load(save_path2)
@@ -188,7 +189,7 @@ def test_saved_model_topology_branches() -> None:
                 """Test function get_config."""
                 return {"class_name": "ConfigOnlyModel"}
 
-        sm3 = SavedModel(model=typing.cast("EagerValue", ModelWithGetConfig()))
+        sm3 = SavedModel(model=as_tensor(ModelWithGetConfig()))
         save_path3 = os.path.join(tmpdir, "model3")
         sm3.save(save_path3)
         loaded3 = SavedModel.load(save_path3)
@@ -200,7 +201,7 @@ def test_saved_model_topology_branches() -> None:
 
             pass
 
-        sm4 = SavedModel(model=typing.cast("EagerValue", EmptyModel()))
+        sm4 = SavedModel(model=as_tensor(EmptyModel()))
         save_path4 = os.path.join(tmpdir, "model4")
         sm4.save(save_path4)
         loaded4 = SavedModel.load(save_path4)
@@ -259,7 +260,7 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
         from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 
         SafetensorsWeightFormat().save({"st_w": np.ones((1,), dtype=np.float32)}, os.path.join(ckpt_dir, "model.safetensors"))
-        typing.cast("EagerCallableProtocol", H5WeightFormat)().save({"h5_w": typing.cast("EagerCallableProtocol", np.ones)((1,), dtype=np.float32)}, typing.cast("EagerCallableProtocol", os.path.join)(ckpt_dir, "model.h5"))
+        as_callable(H5WeightFormat)().save({"h5_w": as_callable(np.ones)((1,), dtype=np.float32)}, as_callable(os.path.join)(ckpt_dir, "model.h5"))
 
         restored = run_restore_ops(ckpt_dir)
         assert "w1" in restored
@@ -323,8 +324,8 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
                 ]
 
         model_ok = DummyModel()
-        run_restore_ops(ckpt_dir, target_model=typing.cast("EagerValue", model_ok))
-        assert typing.cast("EagerTensorProtocol", getattr(model_ok.weights[0], "assigned_val")) is not None
+        run_restore_ops(ckpt_dir, target_model=as_tensor(model_ok))
+        assert as_tensor(getattr(model_ok.weights[0], "assigned_val")) is not None
 
         # 3. Validate shape mismatch in target_model
         class DummyModelMismatch:
@@ -335,7 +336,7 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
                 self.weights = [DummyWeightWithAssign("w1", (5, 5))]
 
         with pytest.raises(ValueError, match="Shape mismatch restoring variable 'w1'"):
-            run_restore_ops(ckpt_dir, target_model=typing.cast("EagerValue", DummyModelMismatch()))
+            run_restore_ops(ckpt_dir, target_model=as_tensor(DummyModelMismatch()))
 
         # 4. Validate variables dict matching shape, mismatching shape, and missing key
         class DummyVar:

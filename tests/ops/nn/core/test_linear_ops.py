@@ -11,9 +11,10 @@ import numpy as np
 import ml_switcheroo_compiler.ops.nn.linear_ops as linear
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 gru_mod = sys.modules["ml_switcheroo_compiler.ops.nn.gru"]
 
@@ -41,8 +42,8 @@ def test_linear_ops_coverage() -> None:
         """
         return "add"
 
-    orig_matmul = typing.cast("EagerTensorProtocol", getattr(linear, "matmul"))
-    orig_add = typing.cast("EagerTensorProtocol", getattr(linear, "add"))
+    orig_matmul = as_tensor(getattr(linear, "matmul"))
+    orig_add = as_tensor(getattr(linear, "add"))
     setattr(linear, "matmul", mock_matmul)
     setattr(linear, "add", mock_add)
     try:
@@ -64,8 +65,8 @@ def test_linear_ops_coverage() -> None:
         """
         return "es"
 
-    orig_einsum = typing.cast("EagerTensorProtocol", getattr(linear, "einsum"))
-    orig_add2 = typing.cast("EagerTensorProtocol", getattr(linear, "add"))
+    orig_einsum = as_tensor(getattr(linear, "einsum"))
+    orig_add2 = as_tensor(getattr(linear, "add"))
     setattr(linear, "einsum", mock_einsum)
     setattr(linear, "add", mock_add)
     try:

@@ -8,7 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import median_filter_eager
 from ml_switcheroo_compiler.backends.eager.signal import gaussian_blur_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int_list, as_opt_str, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
@@ -36,8 +36,8 @@ def _np_extract_volume_patches(
     if not args:
         return np.asarray([])
     input_tensor = np.asarray(args[0])
-    ksizes = typing.cast("list[int]", kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
-    strides = typing.cast("list[int]", kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
+    ksizes = as_int_list(kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
+    strides = as_int_list(kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
 
     if input_tensor.ndim != 5:
         return input_tensor
@@ -97,8 +97,8 @@ def _np_gaussian_blur(
 
     config_obj = kwargs.get("config", kwargs)
     if isinstance(config_obj, dict):
-        config_obj = typing.cast("TypedVariadicCallable[BlurConfig]", BlurConfig)(kernel_size=config_obj.get("kernel_size", (3, 3)), sigma=config_obj.get("sigma", (1.0, 1.0)), data_format=typing.cast("str | None", config_obj.get("data_format", None)))
-    return np.asarray(typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", gaussian_blur_eager)(backend_module, images, config_obj))
+        config_obj = typing.cast("TypedVariadicCallable[BlurConfig]", BlurConfig)(kernel_size=config_obj.get("kernel_size", (3, 3)), sigma=config_obj.get("sigma", (1.0, 1.0)), data_format=as_opt_str(config_obj.get("data_format", None)))
+    return np.asarray(as_callable(gaussian_blur_eager)(backend_module, images, config_obj))
 
 
 @numpy_eager_registry.register("MedianFilter")
@@ -117,7 +117,7 @@ def _np_median_filter(
     Returns:
         np.ndarray: Result.
     """
-    return np.asarray(typing.cast("EagerCallableProtocol", median_filter_eager)(backend_module, images, **kwargs))
+    return np.asarray(as_callable(median_filter_eager)(backend_module, images, **kwargs))
 
 
 @numpy_eager_registry.register("Sharpen")

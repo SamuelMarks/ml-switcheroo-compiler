@@ -9,7 +9,8 @@ from multiprocessing.connection import Client, Connection, Listener
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -123,7 +124,7 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            recv_data = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None", self.recv_conns[0].recv()) if self.recv_conns else None
+            recv_data = self.recv_conns[0].recv() if self.recv_conns else None
 
             if op_type == "sum":
                 chunks[recv_chunk_idx] = chunks[recv_chunk_idx] + recv_data
@@ -143,7 +144,7 @@ class TCPDistributedContext:
                 self.send_conns[0].send(chunks[send_chunk_idx])
             chunks[recv_chunk_idx] = self.recv_conns[0].recv() if self.recv_conns else None
 
-        return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], getattr(backend_module, "concatenate")(chunks))
+        return as_ndarray(getattr(backend_module, "concatenate")(chunks))
 
     def all_gather_tensors(self, tensor: EagerValue) -> list[EagerValue]:
         """Perform AllGather over TCP Ring.
@@ -219,7 +220,7 @@ def _np_all_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, op
     if _tcp_dist_ctx.world_size <= 1:
         return tensor
 
-    return typing.cast("EagerValue", getattr(_tcp_dist_ctx, "all_reduce_ring")(tensor, op_type, backend_module))
+    return as_tensor(getattr(_tcp_dist_ctx, "all_reduce_ring")(tensor, op_type, backend_module))
 
 
 @numpy_eager_registry.register("AllGather")
@@ -301,7 +302,7 @@ def _np_reduce_scatter(backend_module: BackendModuleProtocol, tensor: EagerValue
         reduced = backend_module.sum(all_tensors, axis=0)
 
     chunks: EagerTensorProtocol = backend_module.array_split(reduced, _tcp_dist_ctx.world_size, axis=axis)
-    return typing.cast("EagerValue", chunks[_tcp_dist_ctx.rank])
+    return chunks[_tcp_dist_ctx.rank]
 
 
 @numpy_eager_registry.register("Reduce")

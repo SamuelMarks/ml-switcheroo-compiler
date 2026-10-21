@@ -7,10 +7,11 @@ import re
 import typing
 from collections.abc import Callable
 
-from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
+from ml_switcheroo_ir import AttributeValue, LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import as_str
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph, as_opt_graph
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
 if typing.TYPE_CHECKING:
@@ -233,27 +234,27 @@ def _fallback_finite_difference_jvp(graph: TensorOrScalar, node: TensorOrScalar,
     # JVP ~ (f(x + epsilon * t) - f(x - epsilon * t)) / (2 * epsilon)
     from ml_switcheroo_compiler.ops.base import emit_ir_node
 
-    epsilon = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Constant", [], None, attributes={"value": 0.0001})
-    two_eps = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Constant", [], None, attributes={"value": 0.0002})
+    epsilon = emit_ir_node(as_opt_graph(graph), "Constant", [], None, attributes={"value": 0.0001})
+    two_eps = emit_ir_node(as_opt_graph(graph), "Constant", [], None, attributes={"value": 0.0002})
 
     pos_inputs = []
     neg_inputs = []
 
     tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
     for _idx, (inp, tang) in enumerate(zip(getattr(node, "inputs"), tangents_list)):
-        eps_t = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Multiply", [epsilon, tang], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None))
-        pos_inputs.append(emit_ir_node(typing.cast("LogicalGraph | None", graph), "Add", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
-        neg_inputs.append(emit_ir_node(typing.cast("LogicalGraph | None", graph), "Subtract", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
+        eps_t = emit_ir_node(as_opt_graph(graph), "Multiply", [epsilon, tang], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None))
+        pos_inputs.append(emit_ir_node(as_opt_graph(graph), "Add", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
+        neg_inputs.append(emit_ir_node(as_opt_graph(graph), "Subtract", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
 
     for i in range(len(tangents_list), len(getattr(node, "inputs"))):
         pos_inputs.append(getattr(node, "inputs")[i])
         neg_inputs.append(getattr(node, "inputs")[i])
 
-    f_pos = emit_ir_node(typing.cast("LogicalGraph | None", graph), getattr(node, "op_type"), pos_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
-    f_neg = emit_ir_node(typing.cast("LogicalGraph | None", graph), getattr(node, "op_type"), neg_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
+    f_pos = emit_ir_node(as_opt_graph(graph), getattr(node, "op_type"), pos_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
+    f_neg = emit_ir_node(as_opt_graph(graph), getattr(node, "op_type"), neg_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
 
-    diff = emit_ir_node(typing.cast("LogicalGraph | None", graph), "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
-    return emit_ir_node(typing.cast("LogicalGraph | None", graph), "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
+    diff = emit_ir_node(as_opt_graph(graph), "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
+    return emit_ir_node(as_opt_graph(graph), "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
 
 
 _MANIFEST_MODEL_CACHE: AutodiffRulesManifestModel | None = None
@@ -261,7 +262,7 @@ _MODULAR_RULES_CACHE: dict[str, dict[str, AttributeValue]] | None = None
 
 
 def _get_autodiff_manifest() -> AutodiffRulesManifestModel | None:
-    """Retrieve cached AutodiffRulesManifestModel parsed from autodiff_rules.yaml.
+    """Retrieve cached AutodiffRulesManifestModel parsed from modular autodiff rules.
 
     Returns:
         Optional[AutodiffRulesManifestModel]: Validated AutodiffRulesManifestModel instance or None.
@@ -276,12 +277,16 @@ def _get_autodiff_manifest() -> AutodiffRulesManifestModel | None:
 
     from ml_switcheroo_compiler.grad.config_models import AutodiffRulesManifestModel
 
-    manifest_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "autodiff_rules.yaml"))
-    if os.path.exists(manifest_path):
+    rules_dir = os.path.dirname(__file__)
+    jvp_path = os.path.join(rules_dir, "jvp_rules.yaml")
+    vjp_path = os.path.join(rules_dir, "vjp_rules.yaml")
+    if os.path.exists(jvp_path) and os.path.exists(vjp_path):
         try:
-            with open(manifest_path, encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
-            _MANIFEST_MODEL_CACHE = AutodiffRulesManifestModel.model_validate(data)
+            with open(jvp_path, encoding="utf-8") as f:
+                jvp_data = yaml.safe_load(f) or {}
+            with open(vjp_path, encoding="utf-8") as f:
+                vjp_data = yaml.safe_load(f) or {}
+            _MANIFEST_MODEL_CACHE = AutodiffRulesManifestModel.model_validate({"jvp_rules": jvp_data, "vjp_rules": vjp_data})
             return _MANIFEST_MODEL_CACHE
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -401,7 +406,7 @@ def _lookup_primitive_registry_rule(op_type: str, rule_type: str) -> dict[str, A
     if isinstance(op_def, dict):
         ad_rules = op_def.get("autodiff", {})
         if isinstance(ad_rules, dict) and rule_type in ad_rules:
-            return typing.cast("dict[str, AttributeValue]", ad_rules)
+            return ad_rules
     return None
 
 
@@ -546,6 +551,6 @@ def get_jvp_from_data(op_type: str) -> Callable[[TensorOrScalar, TensorOrScalar,
             str: Emitted JVP tangent node ID.
         """
         tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
-        return _parse_expression(typing.cast("LogicalGraph", graph), typing.cast("str", jvp_expr), typing.cast("LogicalNode", node), tangents=tangents_list)
+        return _parse_expression(as_graph(graph), as_str(jvp_expr), typing.cast("LogicalNode", node), tangents=tangents_list)
 
     return data_jvp

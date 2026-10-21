@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import math
-import typing
 from types import ModuleType
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_float, as_tensor
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 
 MEL_SCALE_MULTIPLIER: float = 2595.0
@@ -61,7 +60,7 @@ def _resolve_module(module: BackendModuleProtocol | ModuleType | EagerValue | No
         from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
         return _resolve_eager_mod(None)
-    return typing.cast(BackendModuleProtocol, getattr(module, "numpy", module))
+    return as_mod(getattr(module, "numpy", module))
 
 
 def _get_window(np_mod: BackendModuleProtocol | None, window: str, frame_length: int) -> EagerValue:
@@ -77,9 +76,9 @@ def _get_window(np_mod: BackendModuleProtocol | None, window: str, frame_length:
     """
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if frame_length <= 0:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.float32))
+        return as_tensor(mod.zeros((0,), dtype=mod.float32))
     if frame_length == 1:
-        return typing.cast("EagerValue", mod.ones((1,), dtype=mod.float32))
+        return as_tensor(mod.ones((1,), dtype=mod.float32))
 
     n: EagerTensorProtocol = mod.arange(frame_length, dtype=mod.float32)
     w_norm: str = window.lower()
@@ -128,7 +127,7 @@ def _mel_to_hz(mel: float | EagerValue, np_mod: BackendModuleProtocol | None = N
     """
     if isinstance(mel, (int, float)):
         return float(MEL_SCALE_DIVISOR * (10.0 ** (float(mel) / MEL_SCALE_MULTIPLIER) - 1.0))
-    mel_arr: EagerTensorProtocol = _resolve_module(np_mod).asarray(mel, dtype=_resolve_module(np_mod).float32) if np_mod is not None else typing.cast(EagerTensorProtocol, mel)
+    mel_arr: EagerTensorProtocol = _resolve_module(np_mod).asarray(mel, dtype=_resolve_module(np_mod).float32) if np_mod is not None else as_tensor(mel)
     return MEL_SCALE_DIVISOR * (10.0 ** (mel_arr / MEL_SCALE_MULTIPLIER) - 1.0)
 
 
@@ -153,8 +152,8 @@ def _compute_filterbank_weights(
     """
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     weights: EagerValue = mod.zeros((num_spectrogram_bins, num_mel_bins), dtype=mod.float32)
-    hz_pts_arr = typing.cast(EagerTensorProtocol, hz_pts)
-    bin_freqs_arr = typing.cast(EagerTensorProtocol, bin_freqs)
+    hz_pts_arr = as_tensor(hz_pts)
+    bin_freqs_arr = as_tensor(bin_freqs)
 
     for m in range(num_mel_bins):
         lower: float = float(hz_pts_arr[m])
@@ -168,7 +167,7 @@ def _compute_filterbank_weights(
         down_slope: EagerValue = (upper - bin_freqs_arr) / down_denom
 
         triangular: EagerValue = mod.maximum(0.0, mod.minimum(up_slope, down_slope))
-        typing.cast(EagerTensorProtocol, weights)[:, m] = triangular
+        as_tensor(weights)[:, m] = triangular
 
     return weights
 
@@ -193,8 +192,8 @@ def _generate_mel_filterbank_matrix(np_mod: BackendModuleProtocol | None, config
 
     bin_freqs: EagerValue = mod.linspace(0.0, float(sample_rate) / 2.0, num_spectrogram_bins, dtype=mod.float32)
 
-    mel_min: float = float(typing.cast(float, _hz_to_mel(mod, lower_edge_hertz)))
-    mel_max: float = float(typing.cast(float, _hz_to_mel(mod, upper_edge_hertz)))
+    mel_min: float = float(as_float(_hz_to_mel(mod, lower_edge_hertz)))
+    mel_max: float = float(as_float(_hz_to_mel(mod, upper_edge_hertz)))
     mel_points: EagerValue = mod.linspace(mel_min, mel_max, num_mel_bins + 2, dtype=mod.float32)
     hz_pts: EagerValue = mod.asarray(_mel_to_hz(mel_points, mod), dtype=mod.float32)
 
@@ -221,7 +220,7 @@ def mel_filterbank_eager(
     if spectrogram is None:
         return matrix
     spec_arr: EagerValue = mod.asarray(spectrogram, dtype=mod.float32)
-    return typing.cast("EagerValue", mod.matmul(spec_arr, matrix))
+    return as_tensor(mod.matmul(spec_arr, matrix))
 
 
 def _power_to_db(
@@ -243,7 +242,7 @@ def _power_to_db(
     """
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if mel_spec is None:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.float32))
+        return as_tensor(mod.zeros((0,), dtype=mod.float32))
     spec_arr: EagerValue = mod.asarray(mel_spec, dtype=mod.float32)
     log_spec: EagerValue = 10.0 * mod.log10(mod.maximum(spec_arr, amin))
     if top_db > 0.0:
@@ -269,13 +268,13 @@ def _apply_dct(
     """
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if log_mel_spec is None:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.float32))
+        return as_tensor(mod.zeros((0,), dtype=mod.float32))
     spec: EagerTensorProtocol = mod.asarray(log_mel_spec, dtype=mod.float32)
     spec_shape = spec.shape
     n_bins: int = spec_shape[-1] if spec.ndim > 0 else 1
     if n_bins == 0 or num_mfccs <= 0:
         out_shape: tuple[int, ...] = (*spec_shape[:-1], 0) if spec.ndim > 0 else (0,)
-        return typing.cast("EagerValue", mod.zeros(out_shape, dtype=mod.float32))
+        return as_tensor(mod.zeros(out_shape, dtype=mod.float32))
 
     n_indices: EagerTensorProtocol = mod.arange(n_bins, dtype=mod.float32)
     k_indices: EagerTensorProtocol = mod.arange(num_mfccs, dtype=mod.float32)[:, None]
@@ -285,7 +284,7 @@ def _apply_dct(
     norm[0, 0] = math.sqrt(1.0 / float(n_bins))
     basis = basis * norm
 
-    return typing.cast("EagerValue", mod.matmul(spec, basis.T))
+    return as_tensor(mod.matmul(spec, basis.T))
 
 
 def _mfcc_eager_tf(
@@ -339,11 +338,11 @@ def _convert_to_np(
     del is_torch, is_mlx
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if x is None:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.float32))
+        return as_tensor(mod.zeros((0,), dtype=mod.float32))
     np_fn = getattr(x, "numpy", None)
     if callable(np_fn):
-        return typing.cast("EagerValue", mod.asarray(np_fn()))
-    return typing.cast("EagerValue", mod.asarray(x))
+        return as_tensor(mod.asarray(np_fn()))
+    return as_tensor(mod.asarray(x))
 
 
 def _to_backend_tensor(
@@ -366,8 +365,8 @@ def _to_backend_tensor(
     del name, spectrogram
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if mfccs is None:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.float32))
-    return typing.cast("EagerValue", mod.asarray(mfccs))
+        return as_tensor(mod.zeros((0,), dtype=mod.float32))
+    return as_tensor(mod.asarray(mfccs))
 
 
 def mfcc_eager(
@@ -407,7 +406,7 @@ def _apply_stft_batch(
     """
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if audio_np is None:
-        return typing.cast("EagerValue", mod.zeros((0, 0), dtype=mod.complex64))
+        return as_tensor(mod.zeros((0, 0), dtype=mod.complex64))
 
     audio: EagerTensorProtocol = mod.asarray(audio_np, dtype=mod.float32)
     orig_1d: bool = audio.ndim == 1
@@ -428,7 +427,7 @@ def _apply_stft_batch(
             total_samples = audio.shape[1]
         else:
             empty_shape: tuple[int, ...] = (0, fft_length // 2 + 1) if orig_1d else (batch_size, 0, fft_length // 2 + 1)
-            return typing.cast("EagerValue", mod.zeros(empty_shape, dtype=mod.complex64))
+            return as_tensor(mod.zeros(empty_shape, dtype=mod.complex64))
 
     if config.pad_end:
         remainder: int = int((total_samples - frame_length) % frame_step)
@@ -441,10 +440,10 @@ def _apply_stft_batch(
     num_frames: int = 1 + (total_samples - frame_length) // frame_step
 
     window_vec: EagerTensorProtocol
-    if win is not None and typing.cast(EagerTensorProtocol, win).size == frame_length:
+    if win is not None and as_tensor(win).size == frame_length:
         window_vec = mod.asarray(win, dtype=mod.float32)
     else:
-        window_vec = typing.cast(EagerTensorProtocol, _get_window(mod, config.window_fn or "hann", frame_length))
+        window_vec = as_tensor(_get_window(mod, config.window_fn or "hann", frame_length))
 
     stft_out: EagerTensorProtocol = mod.zeros((batch_size, num_frames, fft_length // 2 + 1), dtype=mod.complex64)
 
@@ -478,8 +477,8 @@ def _to_backend_tensor_complex(
     del name, backend_module
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if out is None:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.complex64))
-    return typing.cast("EagerValue", mod.asarray(out))
+        return as_tensor(mod.zeros((0,), dtype=mod.complex64))
+    return as_tensor(mod.asarray(out))
 
 
 def stft_eager(
@@ -522,18 +521,18 @@ def _run_scipy_istft(
         EagerValue: Reconstructed 1-D time-domain waveform.
     """
     mod: BackendModuleProtocol = _resolve_module(np_mod)
-    if stft_np_flat is None or typing.cast(EagerTensorProtocol, stft_np_flat).size == 0:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.float32))
+    if stft_np_flat is None or as_tensor(stft_np_flat).size == 0:
+        return as_tensor(mod.zeros((0,), dtype=mod.float32))
 
-    stft_flat = typing.cast(EagerTensorProtocol, stft_np_flat)
+    stft_flat = as_tensor(stft_np_flat)
     frame_length, frame_step, fft_length = frame_params
     num_frames: int = stft_flat.shape[0]
 
     window_vec: EagerTensorProtocol
-    if win is not None and typing.cast(EagerTensorProtocol, win).size == frame_length:
+    if win is not None and as_tensor(win).size == frame_length:
         window_vec = mod.asarray(win, dtype=mod.float32)
     else:
-        window_vec = typing.cast(EagerTensorProtocol, _get_window(mod, "hann", frame_length))
+        window_vec = as_tensor(_get_window(mod, "hann", frame_length))
 
     expected_samples: int = (num_frames - 1) * frame_step + frame_length
     time_signal: EagerTensorProtocol = mod.zeros((expected_samples,), dtype=mod.float32)
@@ -547,7 +546,7 @@ def _run_scipy_istft(
     for i in range(num_frames):
         start: int = i * frame_step
         time_signal[start : start + frame_length] += frames_time[i] * window_vec
-        window_sum[start : start + frame_length] += typing.cast(EagerTensorProtocol, win_sq)
+        window_sum[start : start + frame_length] += as_tensor(win_sq)
 
     non_zero: EagerValue = window_sum > 1e-10
     time_signal[non_zero] /= window_sum[non_zero]
@@ -578,8 +577,8 @@ def _apply_istft_batch(
         EagerValue: Reconstructed real-valued audio waveform array.
     """
     mod: BackendModuleProtocol = _resolve_module(np_mod)
-    if stft_np is None or typing.cast(EagerTensorProtocol, stft_np).size == 0:
-        return typing.cast("EagerValue", mod.zeros((0,), dtype=mod.float32))
+    if stft_np is None or as_tensor(stft_np).size == 0:
+        return as_tensor(mod.zeros((0,), dtype=mod.float32))
 
     stft_arr: EagerTensorProtocol = mod.asarray(stft_np, dtype=mod.complex64)
     orig_2d: bool = stft_arr.ndim == 2

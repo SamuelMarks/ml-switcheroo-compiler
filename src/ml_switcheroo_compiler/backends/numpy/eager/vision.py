@@ -7,7 +7,7 @@ import typing  # noqa: F401
 import numpy as np
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_callable, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
@@ -102,10 +102,10 @@ def _compute_bilinear_pixels(np: BackendModuleProtocol, images: EagerValue, coor
         tuple: Pixels Ia, Ib, Ic, Id.
     """
     y0, y1, x0, x1 = coords.y0, coords.y1, coords.x0, coords.x1
-    Ia = typing.cast(EagerTensorProtocol, images)[:, typing.cast(EagerTensorProtocol, y0)[:, None], typing.cast(EagerTensorProtocol, x0)[None, :], :]
-    Ib = typing.cast(EagerTensorProtocol, images)[:, typing.cast(EagerTensorProtocol, y1)[:, None], typing.cast(EagerTensorProtocol, x0)[None, :], :]
-    Ic = typing.cast(EagerTensorProtocol, images)[:, typing.cast(EagerTensorProtocol, y0)[:, None], typing.cast(EagerTensorProtocol, x1)[None, :], :]
-    Id = typing.cast(EagerTensorProtocol, images)[:, typing.cast(EagerTensorProtocol, y1)[:, None], typing.cast(EagerTensorProtocol, x1)[None, :], :]
+    Ia = as_tensor(images)[:, as_tensor(y0)[:, None], as_tensor(x0)[None, :], :]
+    Ib = as_tensor(images)[:, as_tensor(y1)[:, None], as_tensor(x0)[None, :], :]
+    Ic = as_tensor(images)[:, as_tensor(y0)[:, None], as_tensor(x1)[None, :], :]
+    Id = as_tensor(images)[:, as_tensor(y1)[:, None], as_tensor(x1)[None, :], :]
     return Ia, Ib, Ic, Id
 
 
@@ -154,7 +154,7 @@ def _apply_bilinear_interpolation(np: BackendModuleProtocol, cfg: InterpolationC
 
     p0, p1, p2, p3 = getattr(pixels, "__iter__")()
     w0, w1, w2, w3 = getattr(weights, "__iter__")()
-    return typing.cast("EagerValue", (p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3).astype(getattr(cfg.images, "dtype")))
+    return as_tensor((p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3).astype(getattr(cfg.images, "dtype")))
 
 
 @numpy_eager_registry.register("ResizeBilinear")
@@ -238,7 +238,7 @@ def resize_nearest(np_mod: BackendModuleProtocol, images: EagerValue, size: tupl
     resize_cfg = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
     src_y, src_x = getattr(_calculate_nearest_coords(np_mod, resize_cfg), "__iter__")()
 
-    out = typing.cast(EagerTensorProtocol, images)[:, typing.cast(EagerTensorProtocol, src_y)[:, None], typing.cast(EagerTensorProtocol, src_x)[None, :], :]
+    out = as_tensor(images)[:, as_tensor(src_y)[:, None], as_tensor(src_x)[None, :], :]
 
     return getattr(out, "__getitem__")(0) if rank == 3 else out
 
@@ -433,14 +433,14 @@ def _interpolate_rotation(np: BackendModuleProtocol, cfg: RotationInterpolationC
     dx = src_x_clip - getattr(coords, "__getitem__")(0)
     dy = src_y_clip - getattr(coords, "__getitem__")(2)
 
-    pixels = typing.cast("EagerCallableProtocol", _gather_rotation_pixels)(cfg.img, coords)
+    pixels = as_callable(_gather_rotation_pixels)(cfg.img, coords)
     weights = _compute_rotation_weights(dx, dy)
 
     interp = np.multiply(pixels[0], weights[0]) + np.multiply(pixels[1], weights[1]) + np.multiply(pixels[2], weights[2]) + np.multiply(pixels[3], weights[3])
     valid_mask = (np.asarray(cfg.src_x, dtype=float) >= 0) & (np.asarray(cfg.src_x, dtype=float) <= W - 1) & (np.asarray(cfg.src_y, dtype=float) >= 0) & (np.asarray(cfg.src_y, dtype=float) <= H - 1)
     if cfg.fill_mode == "constant":
         interp[~valid_mask] = cfg.fill_value
-    return typing.cast("EagerValue", interp.astype(getattr(cfg.img, "dtype")))
+    return interp.astype(getattr(cfg.img, "dtype"))
 
 
 def _apply_random_rotation_single(np: BackendModuleProtocol, img: EagerValue, angle: float, fill_mode: str, fill_value: float) -> EagerValue:
@@ -491,7 +491,7 @@ def _apply_rotation_to_batch(np: BackendModuleProtocol, x: EagerValue, rng: Eage
     for i in range(B):
         angle = getattr(rng, "uniform")(getattr(angles, "__getitem__")(0), getattr(angles, "__getitem__")(1)) * 2 * np.pi
         out[i] = _apply_random_rotation_single(np, getattr(x, "__getitem__")(i), angle, options.fill_mode, options.fill_value)
-    return typing.cast("EagerValue", out)
+    return out
 
 
 @numpy_eager_registry.register("RandomRotation")
@@ -533,5 +533,5 @@ def random_rotation_numpy(
     out = _apply_rotation_to_batch(np, x, rng, (lower, upper), options)
 
     if rank == 3:
-        return typing.cast("EagerValue", getattr(out, "__getitem__")(0))
+        return as_tensor(getattr(out, "__getitem__")(0))
     return out

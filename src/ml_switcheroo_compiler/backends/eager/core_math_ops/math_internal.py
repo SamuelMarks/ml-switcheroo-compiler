@@ -9,6 +9,8 @@ from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
+    as_int,
+    as_tensor,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
@@ -28,10 +30,10 @@ def _copysign(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     func = getattr(backend_module, "copysign", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     x = args[0]
     y = args[1]
-    return typing.cast("EagerValue", getattr(backend_module, "abs")(x) * getattr(backend_module, "sign")(y))
+    return as_tensor(getattr(backend_module, "abs")(x) * getattr(backend_module, "sign")(y))
 
 
 @global_eager_registry.register("GetPrintoptions")
@@ -46,7 +48,7 @@ def _getprintoptions(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "get_printoptions")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "get_printoptions")(*args, **kwargs))
 
 
 @global_eager_registry.register("NpTensorarrayread")
@@ -68,15 +70,15 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
         return 0
 
     arr = args[0]
-    index = int(typing.cast(int, args[1])) if len(args) > 1 else int(typing.cast(int, kwargs.get("index", 0)))
+    index = int(as_int(args[1])) if len(args) > 1 else int(as_int(kwargs.get("index", 0)))
 
     if isinstance(arr, list):
         if index < 0 or index >= len(arr):
             raise IndexError(f"TensorArray index {index} out of bounds for list of length {len(arr)}")
-        return typing.cast("EagerValue", arr[index])
+        return as_tensor(arr[index])
 
     if hasattr(arr, "shape") and hasattr(arr, "__getitem__"):
-        arr_t = typing.cast(EagerTensorProtocol, arr)
+        arr_t = as_tensor(arr)
         if index < 0 or index >= arr_t.shape[0]:
             raise IndexError(f"TensorArray index {index} out of bounds for axis 0 of size {arr_t.shape[0]}")
         return arr_t[index]
@@ -84,7 +86,7 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
     if isinstance(arr, dict):
         if index not in arr:
             raise IndexError(f"TensorArray index {index} not found in sparse handle")
-        return typing.cast("EagerValue", arr[index])
+        return as_tensor(arr[index])
 
     return 0
 
@@ -108,7 +110,7 @@ def _np_tensorarraywrite(backend_module: BackendModuleProtocol, *args: EagerValu
         return 0
 
     arr = args[0]
-    index = int(typing.cast(int, args[1])) if len(args) > 1 else int(typing.cast(int, kwargs.get("index", 0)))
+    index = int(as_int(args[1])) if len(args) > 1 else int(as_int(kwargs.get("index", 0)))
     value = args[2] if len(args) > 2 else kwargs.get("value", None)
 
     if index < 0:
@@ -156,7 +158,7 @@ def _np_topk(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
             EagerValue: Result.
     """
     arr = args[0]
-    k = int(typing.cast(int, args[1])) if len(args) > 1 else 1
+    k = int(as_int(args[1])) if len(args) > 1 else 1
     mod = _resolve_eager_mod(backend_module)
     ndarray_cls = typing.cast(type[EagerTensorProtocol], mod.ndarray)
     if isinstance(arr, (list, ndarray_cls)):

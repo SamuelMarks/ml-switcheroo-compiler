@@ -11,51 +11,52 @@ import pytest
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as _mm_raw
 import ml_switcheroo_compiler.ops as _ops
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_confusion_matrix, _np_decode_csv, _np_decode_image, _np_descriptive, _np_distributions, _np_parse_example, _np_parse_tensor, _np_rawmatmul, _np_read_file, _np_rem, _np_serialize_tensor, _np_sparsedensematmul, _np_write_file
+from tests.testing_utils import as_callable, as_int, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-mm = typing.cast("EagerTensorProtocol", _mm_raw)
+mm = as_tensor(_mm_raw)
 
 
 def test_pmean() -> None:
     """Test function test_pmean."""
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", mm._np_pmean)(np, typing.cast("EagerCallableProtocol", np.ones)((2, 2)), "x"), typing.cast("EagerCallableProtocol", np.ones)((2, 2)))
+    assert as_callable(np.array_equal)(as_callable(mm._np_pmean)(np, as_callable(np.ones)((2, 2)), "x"), as_callable(np.ones)((2, 2)))
 
 
 def test_segment_sum() -> None:
     """Test function test_segment_sum."""
     res = mm._np_segment_sum(np, np.array([1, 2, 3, 4]), np.array([0, 0, 1, 1]))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [3, 7])
+    as_callable(np.testing.assert_allclose)(res, [3, 7])
 
 
 def test_clz() -> None:
     """Test function test_clz."""
     res = mm._np_clz(np, np.array([1, 2, -1], dtype=np.int32))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 31
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 30
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)) == 0
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 31
+    assert as_tensor(getattr(res, "__getitem__")(1)) == 30
+    assert as_tensor(getattr(res, "__getitem__")(2)) == 0
 
 
 def test_population_count() -> None:
     """Test function test_population_count."""
     res = mm._np_population_count(np, np.array([1, 3, -1], dtype=np.int32))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 1
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(1)) == 2
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 1
+    assert as_tensor(getattr(res, "__getitem__")(1)) == 2
     res = mm._np_population_count(np, np.array([1, 3, 7], dtype=np.int32))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(2)) == 3
+    assert as_tensor(getattr(res, "__getitem__")(2)) == 3
 
 
 def test_bitcast_convert_type() -> None:
     """Test function test_bitcast_convert_type."""
     res = mm._np_bitcast_convert_type(np, np.array([1.0], dtype=np.float32), "int32")
-    assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == np.int32
+    assert as_tensor(getattr(res, "dtype")) == np.int32
 
 
 def test_reduce_precision() -> None:
     """Test function test_reduce_precision."""
     res = mm._np_reduce_precision(np, np.array([1.0]), 8, 23)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
+    as_callable(np.testing.assert_allclose)(res, [1.0])
 
 
 def test_custom_linear_solve() -> None:
@@ -67,37 +68,37 @@ def test_custom_linear_solve() -> None:
 def test_strided_slice() -> None:
     """Test function test_strided_slice."""
     res = mm._np_stridedslice(np, np.ones((5, 5)), [1, 1], [3, 3], [1, 1])
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert as_tensor(getattr(res, "shape")) == (2, 2)
 
 
 def test_sobol_sample() -> None:
     """Test function test_sobol_sample."""
     res = mm._np_sobolsample(np, 2, 4)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (4, 2)
+    assert as_tensor(getattr(res, "shape")) == (4, 2)
 
 
 def test_logsumexp() -> None:
     """Test function test_logsumexp."""
     res = mm._np_logsumexp(np, np.ones((2, 2)), keepdims=False)
-    assert typing.cast("EagerCallableProtocol", np.ndim)(res) == 0
+    assert as_callable(np.ndim)(res) == 0
 
 
 def test_truncate_div() -> None:
     """Test function test_truncate_div."""
     res = mm._np_truncate_div(np, np.array([3.5]), np.array([2.0]))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0])
+    as_callable(np.testing.assert_allclose)(res, [1.0])
 
 
 def test_truncate_mod() -> None:
     """Test function test_truncate_mod."""
     res = mm._np_truncate_mod(np, np.array([3.5]), np.array([2.0]))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.5])
+    as_callable(np.testing.assert_allclose)(res, [1.5])
 
 
 def test_math_misc_one_hot() -> None:
     """Test function test_math_misc_one_hot."""
     res = mm._np_one_hot(np, np.array([0, 1]), depth=2)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
+    assert as_tensor(getattr(res, "shape")) == (2, 2)
 
 
 def test_math_misc_scipy_and_polynomials() -> None:
@@ -251,10 +252,10 @@ def test_all_mocked_try_blocks() -> None:
 def test_math_misc_more_edges() -> None:
     """Test function test_math_misc_more_edges."""
     res_fb = mm._np_frombuffer(np, b"\x00\x00\x00\x00", dtype=np.int32)
-    assert typing.cast("EagerTensorProtocol", getattr(res_fb, "shape")) == (1,)
+    assert as_tensor(getattr(res_fb, "shape")) == (1,)
     assert mm._np_frombuffer(np) is None
     res_oh = mm._np_one_hot(np, np.array([0, 1]), depth=2, axis=0)
-    assert typing.cast("EagerTensorProtocol", getattr(res_oh, "shape")) == (2, 2)
+    assert as_tensor(getattr(res_oh, "shape")) == (2, 2)
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -2035,25 +2036,25 @@ def test__np_affineconfig() -> None:
 def test__np_all_gather() -> None:
     """Test function test__np_all_gather."""
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_gather"))(np, np.ones((2, 2)))
+        as_tensor(getattr(mm, "_np_all_gather"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_gather"))(np)
+        as_tensor(getattr(mm, "_np_all_gather"))(np)
 
 
 def test__np_all_reduce() -> None:
     """Test function test__np_all_reduce."""
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_reduce"))(np, np.ones((2, 2)))
+        as_tensor(getattr(mm, "_np_all_reduce"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_reduce"))(np)
+        as_tensor(getattr(mm, "_np_all_reduce"))(np)
 
 
 def test__np_all_to_all() -> None:
     """Test function test__np_all_to_all."""
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_to_all"))(np, np.ones((2, 2)))
+        as_tensor(getattr(mm, "_np_all_to_all"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        typing.cast("EagerTensorProtocol", getattr(mm, "_np_all_to_all"))(np)
+        as_tensor(getattr(mm, "_np_all_to_all"))(np)
 
 
 def test__np_append() -> None:
@@ -3560,7 +3561,7 @@ def test__np_sigmoid() -> None:
 def test__np_sobolsample() -> None:
     """Test function test__np_sobolsample."""
     with pytest.raises(TypeError):
-        mm._np_sobolsample(np, typing.cast("int", np.ones((2, 2))))
+        mm._np_sobolsample(np, as_int(np.ones((2, 2))))
     with pytest.raises(TypeError):
         mm._np_sobolsample(np)
 

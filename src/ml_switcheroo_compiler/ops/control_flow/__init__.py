@@ -5,10 +5,10 @@ from __future__ import annotations
 import typing
 from collections.abc import Callable  # noqa: F401
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_tensor
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 
@@ -131,7 +131,7 @@ def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrSc
     Returns:
             tuple[int, ...]: Result.
     """
-    body_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], body_fun)
+    body_callable = body_fun
 
     def cond_fn(val: TensorOrScalar) -> TensorOrScalar:
         """Compute the cond fn tensor operation.
@@ -155,10 +155,10 @@ def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrSc
             tuple[int, ...]: Result.
         """
         i, x = getattr(val, "__iter__")()
-        return add(i, 1), body_callable(i, x)
+        return add(i, 1), invoke_callable(body_callable, i, x)
 
-    _, res = typing.cast("EagerCallableProtocol", while_loop)(cond_fn, body_wrapper, (lower, init_val))
-    return typing.cast(TensorOrScalar, res)
+    _, res = as_callable(while_loop)(cond_fn, body_wrapper, (lower, init_val))
+    return as_tensor(res)
 
 
 def map(fn: TensorOrScalar, elems: Tensor) -> TensorOrScalar:
@@ -184,7 +184,7 @@ def vectorized_map(fn: TensorOrScalar, elems: Tensor) -> TensorOrScalar:
     Returns:
         Tensor: The vectorized result tensor.
     """
-    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", vmap)(fn)(elems))
+    return as_tensor(as_callable(vmap)(fn)(elems))
 
 
 def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -> TensorOrScalar:
@@ -215,7 +215,7 @@ def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -
             tuple[int, ...]: Result.
         """
         if end - start == 1:
-            return typing.cast(TensorOrScalar, getattr(branches, "__getitem__")(start)(*operands))
+            return as_tensor(getattr(branches, "__getitem__")(start)(*operands))
 
         mid = (start + end) // 2
 
@@ -249,7 +249,7 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
     Returns:
         Callable: A wrapped version of the function that can integrate with autograd.
     """
-    fn_callable = typing.cast(TypedVariadicCallable[TensorOrScalar], func)
+    fn_callable = func
 
     def wrapper(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         """Compute the wrapper tensor operation.
@@ -261,9 +261,11 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
         Returns:
             tuple[int, ...]: Result.
         """
-        val, grad_fn = getattr(fn_callable(*getattr(args, "__iter__")(), **kwargs), "__iter__")()
+        res_seq = list(getattr(invoke_callable(fn_callable, *getattr(args, "__iter__")(), **kwargs), "__iter__")())
+        val: TensorOrScalar = res_seq[0]
+        _ = res_seq[1]
         if config.eager_mode:
-            return typing.cast(TensorOrScalar, val)
+            return val
 
         import uuid
 
@@ -343,9 +345,9 @@ def case(
         if idx == len(pred_fn_pairs):
             return default if default is not None else lambda: None
         pred, fn = pred_fn_pairs[idx]
-        return lambda: typing.cast("EagerCallableProtocol", cond)(pred, fn, _build_case(idx + 1))
+        return lambda: as_callable(cond)(pred, fn, _build_case(idx + 1))
 
-    return typing.cast(typing.Union[Tensor, "None"], typing.cast("EagerCallableProtocol", _build_case)(0)())
+    return typing.cast(typing.Union[Tensor, "None"], as_callable(_build_case)(0)())
 
 
 def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: TensorOrScalar = None) -> TensorOrScalar:
@@ -364,7 +366,7 @@ def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: Tenso
     """
     if not branch_fns:
         if default is not None:
-            return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", default)())
+            return as_tensor(as_callable(default)())
         raise ValueError("switch_case requires at least one branch or a default")
 
     pred_fn_pairs = []
@@ -374,7 +376,7 @@ def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: Tenso
         pred = equal(branch_index, key_tensor)
         pred_fn_pairs.append((pred, getattr(branch_fns, "__getitem__")(key)))
 
-    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", case)(pred_fn_pairs, default))
+    return as_tensor(as_callable(case)(pred_fn_pairs, default))
 
 
 @register_op("DebugInfs")

@@ -8,9 +8,10 @@ import pytest
 
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph
+from tests.testing_utils import as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_pytorch_generator_no_numpy_crashes() -> None:
@@ -24,7 +25,7 @@ def test_pytorch_generator_no_numpy_crashes() -> None:
     prefix_str = "\n".join(prefix_lines)
 
     # We will execute the prefix in a dictionary
-    exec_globals = typing.cast("dict[str, EagerTensorProtocol]", {})
+    exec_globals = as_tensor_dict({})
     try:
         exec(prefix_str, exec_globals)
     except NameError as e:

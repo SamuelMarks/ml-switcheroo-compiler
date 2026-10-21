@@ -8,19 +8,18 @@ import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.tracing.state import TracingState
+from tests.testing_utils import as_callable, as_node, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_ir import LogicalNode
-
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_tracing_state() -> None:
     """Test function test_tracing_state."""
     state = TracingState()
-    assert not typing.cast("EagerValue", state.is_tracing)
+    assert not as_tensor(state.is_tracing)
     graph = state.start_tracing("MyGraph")
-    assert typing.cast("EagerValue", state.is_tracing)
+    assert as_tensor(state.is_tracing)
     assert state.active_graph is graph
 
     class MockNode:
@@ -34,7 +33,7 @@ def test_tracing_state() -> None:
             self.stream: EagerValue = None
 
     node = MockNode()
-    state.add_node(typing.cast("LogicalNode", node))
+    state.add_node(as_node(node))
     assert node.source_ast_ref is not None
     assert node.domain == "MyGraph"
     if "ml_switcheroo_compiler.core.config" in sys.modules:
@@ -43,13 +42,13 @@ def test_tracing_state() -> None:
         config.current_stream = "my_stream"
         node2 = MockNode()
         node2.id = "2"
-        state.add_node(typing.cast("LogicalNode", node2))
+        state.add_node(as_node(node2))
         assert node2.stream == "my_stream"
         config.current_stream = old_stream
     stopped_graph = state.stop_tracing()
     assert stopped_graph is graph
     assert not state.is_tracing
-    state.add_node(typing.cast("LogicalNode", MockNode()))
+    state.add_node(as_node(MockNode()))
 
 
 def test_enrich_ast_and_domain_extra() -> None:
@@ -66,7 +65,7 @@ def test_enrich_ast_and_domain_extra() -> None:
             self.domain = "existing_domain"
 
     node = MockNode()
-    typing.cast("EagerCallableProtocol", state._enrich_ast_and_domain)(node)
+    as_callable(state._enrich_ast_and_domain)(node)
     assert node.source_ast_ref == "existing"
     assert node.domain == "existing_domain"
     state.stop_tracing()
@@ -87,7 +86,7 @@ def test_enrich_stream_no_config(mocker: EagerTensorProtocol) -> None:
         stream = "existing"
 
     node = MockNode()
-    typing.cast("EagerCallableProtocol", state._enrich_stream)(node)
+    as_callable(state._enrich_stream)(node)
     assert node.stream == "existing"
 
     if old_config is not None:

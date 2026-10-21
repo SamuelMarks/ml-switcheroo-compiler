@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_h5_branches() -> None:
@@ -62,11 +64,11 @@ def test_h5_branches() -> None:
         pass
 
     setattr(reg, "get_active_backend", lambda: FakeBackend())
-    typing.cast("EagerCallableProtocol", ser.save)(weights, test_file)
+    as_callable(ser.save)(weights, test_file)
     loaded = ser.load(test_file)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["t1"], [1, 2])
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["t2"], [3, 4])
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(loaded["t3"], [5, 6])
+    assert as_callable(np.array_equal)(loaded["t1"], [1, 2])
+    assert as_callable(np.array_equal)(loaded["t2"], [3, 4])
+    assert as_callable(np.array_equal)(loaded["t3"], [5, 6])
     reg.get_active_backend = old
     if os.path.exists(test_file):
         os.remove(test_file)
@@ -102,8 +104,8 @@ def test_h5_backend_branches() -> None:
 
     old = reg.get_active_backend
     setattr(reg, "get_active_backend", lambda: FakeBackend())
-    assert typing.cast("EagerTensorProtocol", ser.load("dummy.h5")) == typing.cast("EagerTensorProtocol", {"a": 1})
-    typing.cast("EagerCallableProtocol", ser.save)({"a": 1}, "dummy.h5")
+    assert as_tensor(ser.load("dummy.h5")) == as_tensor({"a": 1})
+    as_callable(ser.save)({"a": 1}, "dummy.h5")
     reg.get_active_backend = old
 
 
@@ -139,7 +141,7 @@ def test_h5_save_plain() -> None:
     if os.path.exists(test_file):
         os.remove(test_file)
     ser = H5WeightFormat()
-    typing.cast("EagerCallableProtocol", ser.save)({"plain": typing.cast("EagerCallableProtocol", np.array)(5)}, test_file)
+    as_callable(ser.save)({"plain": as_callable(np.array)(5)}, test_file)
     loaded = ser.load(test_file)
     assert "plain" in loaded
     if os.path.exists(test_file):
@@ -162,9 +164,9 @@ def test_h5_save_no_branches_taken() -> None:
 
         pass
 
-    typing.cast("EagerCallableProtocol", ser.save)({"plain2": 42}, test_file)
+    as_callable(ser.save)({"plain2": 42}, test_file)
     loaded = ser.load(test_file)
-    assert typing.cast("EagerTensorProtocol", loaded["plain2"]) == typing.cast("EagerTensorProtocol", 42)
+    assert as_tensor(loaded["plain2"]) == as_tensor(42)
     if os.path.exists(test_file):
         os.remove(test_file)
 
@@ -186,4 +188,4 @@ def test_h5_missing_h5py(monkeypatch: EagerTensorProtocol) -> None:
         ser.load("dummy.h5")
 
     with pytest.raises(ImportError, match="h5py is required for H5 weight saving"):
-        typing.cast("EagerCallableProtocol", ser.save)({"a": typing.cast("EagerCallableProtocol", np.array)([1])}, "dummy.h5")
+        as_callable(ser.save)({"a": as_callable(np.array)([1])}, "dummy.h5")

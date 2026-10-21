@@ -5,10 +5,9 @@ from __future__ import annotations
 import resource
 import sys
 import time
-import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_shape, as_tensor
 from ml_switcheroo_compiler.backends.sparse.types import (
     _SP_BACKEND,
     COOTensor,
@@ -66,7 +65,7 @@ class SparseProfiler:
                 arr_dict[k] = COOTensor(
                     indices=_SP_BACKEND.asarray(getattr(val, "coords")),
                     values=_SP_BACKEND.asarray(getattr(val, "data")),
-                    shape=typing.cast(tuple[int, ...], getattr(val, "shape")),
+                    shape=as_shape(getattr(val, "shape")),
                 )
             elif hasattr(val, "shape") and not isinstance(val, (list, tuple)):
                 dense_val = getattr(val, "todense")() if hasattr(val, "todense") else val
@@ -143,12 +142,12 @@ class SparseProfiler:
                 return compiled_fn(sparse_inputs)
 
             if not sparse_inputs:
-                return typing.cast(EagerValue, _SP_BACKEND.zeros((1,), dtype=_SP_BACKEND.float32))
+                return as_tensor(_SP_BACKEND.zeros((1,), dtype=_SP_BACKEND.float32))
 
             accum = sparse_inputs[0]
             for t in sparse_inputs[1:]:
                 if hasattr(accum, "__add__"):
-                    accum = typing.cast(EagerTensorProtocol, accum) + typing.cast(EagerTensorProtocol, t)
+                    accum = as_tensor(accum) + as_tensor(t)
             return accum
 
         for _ in range(max(1, warmup_iters)):

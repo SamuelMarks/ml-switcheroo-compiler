@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_misc_infer_shapes_all() -> None:
@@ -119,47 +121,47 @@ def test_misc_ops_edge_cases() -> None:
 
     # Histogram edges
     h = Histogram()
-    assert typing.cast("EagerCallableProtocol", h.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=typing.cast("EagerCallableProtocol", DummyArray)((4,))) == (3,)
-    assert typing.cast("EagerCallableProtocol", h.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=5) == (5,)
-    assert typing.cast("EagerCallableProtocol", h.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=None) == (10,)
+    assert as_callable(h.infer_shape)(as_callable(DummyArray)((5,)), bins=as_callable(DummyArray)((4,))) == (3,)
+    assert as_callable(h.infer_shape)(as_callable(DummyArray)((5,)), bins=5) == (5,)
+    assert as_callable(h.infer_shape)(as_callable(DummyArray)((5,)), bins=None) == (10,)
 
     h2 = Histogram2d()
-    assert typing.cast("EagerCallableProtocol", h2.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=[typing.cast("EagerCallableProtocol", DummyArray)((4,)), typing.cast("EagerCallableProtocol", DummyArray)((6,))]) == (
+    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[as_callable(DummyArray)((4,)), as_callable(DummyArray)((6,))]) == (
         3,
         5,
     )
-    assert typing.cast("EagerCallableProtocol", h2.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=[5, 6]) == (5, 6)
-    assert typing.cast("EagerCallableProtocol", h2.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=[None, None]) == (10, 10)
-    assert typing.cast("EagerCallableProtocol", h2.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=None) == (10, 10)
-    assert typing.cast("EagerCallableProtocol", h2.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=[5, 6, 7]) == (10, 10)  # branch len(bins) != 2
+    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[5, 6]) == (5, 6)
+    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[None, None]) == (10, 10)
+    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=None) == (10, 10)
+    assert as_callable(h2.infer_shape)(as_callable(DummyArray)((5,)), as_callable(DummyArray)((5,)), bins=[5, 6, 7]) == (10, 10)  # branch len(bins) != 2
 
     hbe = HistogramBinEdges()
-    assert typing.cast("EagerCallableProtocol", hbe.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=typing.cast("EagerCallableProtocol", DummyArray)((4,))) == (4,)
-    assert typing.cast("EagerCallableProtocol", hbe.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=5) == (6,)
-    assert typing.cast("EagerCallableProtocol", hbe.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,)), bins=None) == (11,)
+    assert as_callable(hbe.infer_shape)(as_callable(DummyArray)((5,)), bins=as_callable(DummyArray)((4,))) == (4,)
+    assert as_callable(hbe.infer_shape)(as_callable(DummyArray)((5,)), bins=5) == (6,)
+    assert as_callable(hbe.infer_shape)(as_callable(DummyArray)((5,)), bins=None) == (11,)
 
     # Ix edges
     ix = Ix()
-    assert typing.cast("EagerCallableProtocol", ix.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((5,))) == (5,)
-    assert typing.cast("EagerCallableProtocol", ix.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)(())) == (1,)
+    assert as_callable(ix.infer_shape)(as_callable(DummyArray)((5,))) == (5,)
+    assert as_callable(ix.infer_shape)(as_callable(DummyArray)(())) == (1,)
 
     # Median edges
     med = Median()
-    assert typing.cast("EagerCallableProtocol", med.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=0) == (3,)
-    assert typing.cast("EagerCallableProtocol", med.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=0, keepdims=True) == (1, 3)
-    assert typing.cast("EagerCallableProtocol", med.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=[0, 1]) == ()
-    assert typing.cast("EagerCallableProtocol", med.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=[0, 1], keepdims=True) == (1, 1)
-    assert typing.cast("EagerCallableProtocol", med.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=[5]) == (2, 3)  # branch ax >= len(shape)
+    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=0) == (3,)
+    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=0, keepdims=True) == (1, 3)
+    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=[0, 1]) == ()
+    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=[0, 1], keepdims=True) == (1, 1)
+    assert as_callable(med.infer_shape)(as_callable(DummyArray)((2, 3)), axis=[5]) == (2, 3)  # branch ax >= len(shape)
 
     # Rot90 edges
     rot = Rot90()
-    assert typing.cast("EagerCallableProtocol", rot.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axes=(0, 1)) == (3, 2)
-    assert typing.cast("EagerCallableProtocol", rot.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axes=(1, 0)) == (3, 2)
-    assert typing.cast("EagerCallableProtocol", rot.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axes=(5, 6)) == (2, 3)  # branch axes > len(shape)
-    assert typing.cast("EagerCallableProtocol", rot.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axes=(0, 1, 2)) == (2, 3)  # len(axes) != 2
+    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(0, 1)) == (3, 2)
+    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(1, 0)) == (3, 2)
+    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(5, 6)) == (2, 3)  # branch axes > len(shape)
+    assert as_callable(rot.infer_shape)(as_callable(DummyArray)((2, 3)), axes=(0, 1, 2)) == (2, 3)  # len(axes) != 2
 
     # Trapezoid edges
     trap = Trapezoid()
-    assert typing.cast("EagerCallableProtocol", trap.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=0) == (3,)
-    assert typing.cast("EagerCallableProtocol", trap.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=1) == (2,)
-    assert typing.cast("EagerCallableProtocol", trap.infer_shape)(typing.cast("EagerCallableProtocol", DummyArray)((2, 3)), axis=5) == (2, 3)  # branch axis > len(shape)
+    assert as_callable(trap.infer_shape)(as_callable(DummyArray)((2, 3)), axis=0) == (3,)
+    assert as_callable(trap.infer_shape)(as_callable(DummyArray)((2, 3)), axis=1) == (2,)
+    assert as_callable(trap.infer_shape)(as_callable(DummyArray)((2, 3)), axis=5) == (2, 3)  # branch axis > len(shape)

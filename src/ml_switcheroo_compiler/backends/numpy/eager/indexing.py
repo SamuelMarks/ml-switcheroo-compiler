@@ -7,7 +7,8 @@ import typing  # noqa: F401
 import numpy as np
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_eager_list, as_int, as_opt_int, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 from ._indexing_parsing_utils import _safe_parse_key
@@ -66,7 +67,7 @@ def _dynamic_update_slice(
             v = getattr(v, "data")
         if hasattr(v, "item"):
             return int(getattr(v, "item")())
-        return int(typing.cast(int, v))
+        return int(as_int(v))
 
     slices: tuple[EagerValue, ...] = tuple(slice(_to_int(start), _to_int(start) + int(size)) for (start, size) in zip(getattr(start_indices, "__iter__")(), getattr(update, "shape")))
     out[slices] = update
@@ -118,8 +119,8 @@ def _np_dynamic_slice(backend_module: BackendModuleProtocol, x: EagerValue, star
     Returns:
             tuple[int, ...]: Result.
     """
-    slices: tuple[EagerValue, ...] = tuple(slice(start, int(typing.cast(EagerTensorProtocol, start) + typing.cast(EagerTensorProtocol, size))) for (start, size) in zip(getattr(start_indices, "__iter__")(), getattr(slice_sizes, "__iter__")()))
-    return typing.cast("EagerValue", getattr(x, "__getitem__")(slices))
+    slices: tuple[EagerValue, ...] = tuple(slice(start, int(as_tensor(start) + as_tensor(size))) for (start, size) in zip(getattr(start_indices, "__iter__")(), getattr(slice_sizes, "__iter__")()))
+    return as_tensor(getattr(x, "__getitem__")(slices))
 
 
 @numpy_eager_registry.register("DynamicSliceInDim")
@@ -136,11 +137,11 @@ def _np_dynamic_slice_in_dim(backend_module: BackendModuleProtocol, operand: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    operand_arr = typing.cast(EagerTensorProtocol, np.asarray(operand))
+    operand_arr = np.asarray(operand)
     start_index: int = int(np.asarray(context.start_index).item())
     sl: list[EagerValue] = [slice(None)] * operand_arr.ndim
     sl[context.axis] = slice(start_index, start_index + int(context.slice_size or 0))
-    return typing.cast(EagerTensorProtocol, getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
+    return as_tensor(getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
 
 
 @numpy_eager_registry.register("DynamicUpdateSliceInDim")
@@ -158,7 +159,7 @@ def _np_dynamic_update_slice_in_dim(backend_module: BackendModuleProtocol, opera
     Returns:
             tuple[int, ...]: Result.
     """
-    operand_arr = typing.cast(EagerTensorProtocol, np.copy(np.asarray(operand)))
+    operand_arr = np.copy(np.asarray(operand))
     start_index: int = int(np.asarray(context.start_index).item())
     slice_size: int = np.asarray(update).shape[context.axis]
     sl: list[EagerValue] = [slice(None)] * operand_arr.ndim
@@ -182,16 +183,16 @@ def _np_dynamic_index_in_dim(backend_module: BackendModuleProtocol, operand: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    operand_arr = typing.cast(EagerTensorProtocol, np.asarray(operand))
+    operand_arr = np.asarray(operand)
     idx: int = int(np.asarray(index).item())
     if context.keepdims:
         sl: list[EagerValue] = [slice(None)] * operand_arr.ndim
         sl[context.axis] = slice(idx, idx + 1)
-        return typing.cast(EagerTensorProtocol, getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
+        return as_tensor(getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
     else:
         sl = [slice(None)] * operand_arr.ndim
         sl[context.axis] = idx
-        return typing.cast(EagerTensorProtocol, getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
+        return as_tensor(getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
 
 
 @numpy_eager_registry.register("DynamicUpdateIndexInDim")
@@ -209,7 +210,7 @@ def _np_dynamic_update_index_in_dim(backend_module: BackendModuleProtocol, targe
             tuple[int, ...]: Result.
     """
     operand, update, index = target.operand, target.update, target.index
-    operand_arr = typing.cast(EagerTensorProtocol, np.copy(np.asarray(operand)))
+    operand_arr = np.copy(np.asarray(operand))
     idx: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(index).item()
     sl: list[EagerValue] = [slice(None)] * operand_arr.ndim
     sl[context.axis] = idx
@@ -231,10 +232,10 @@ def _np_slice_in_dim(backend_module: BackendModuleProtocol, operand: EagerValue,
     Returns:
             tuple[int, ...]: Result.
     """
-    operand_arr = typing.cast(EagerTensorProtocol, np.asarray(operand))
+    operand_arr = as_tensor(np.asarray(operand))
     sl: list[EagerValue] = [slice(None)] * operand_arr.ndim
-    sl[context.axis] = slice(typing.cast("int | None", context.start_index), typing.cast("int | None", context.limit_index), context.stride)
-    return typing.cast(EagerTensorProtocol, getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
+    sl[context.axis] = slice(as_opt_int(context.start_index), as_opt_int(context.limit_index), context.stride)
+    return as_tensor(getattr(operand_arr, "__getitem__")(tuple(getattr(sl, "__iter__")())))
 
 
 @numpy_eager_registry.register("Slice")
@@ -250,8 +251,8 @@ def _np_slice(backend_module: BackendModuleProtocol, x: EagerValue, context: Ind
             tuple[int, ...]: Result.
     """
     sl: list[EagerValue] = [slice(None)] * getattr(x, "ndim")
-    sl[context.axis] = slice(typing.cast("int | None", context.start_index), typing.cast("int | None", context.limit_index), context.stride)
-    return typing.cast("EagerValue", getattr(x, "__getitem__")(tuple(sl)))
+    sl[context.axis] = slice(as_opt_int(context.start_index), as_opt_int(context.limit_index), context.stride)
+    return as_tensor(getattr(x, "__getitem__")(tuple(sl)))
 
 
 @numpy_eager_registry.register("GetItem")
@@ -266,8 +267,8 @@ def _np_getitem(backend_module: BackendModuleProtocol, x: EagerValue, key: str) 
     Returns:
             tuple[int, ...]: Result.
     """
-    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], _safe_parse_key(key))
-    return typing.cast("EagerValue", getattr(x, "__getitem__")(parsed_key))
+    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(_safe_parse_key(key))
+    return as_tensor(getattr(x, "__getitem__")(parsed_key))
 
 
 @numpy_eager_registry.register("SetItem")
@@ -283,7 +284,7 @@ def _np_setitem(backend_module: BackendModuleProtocol, x: EagerValue, value: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], _safe_parse_key(key))
+    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(_safe_parse_key(key))
     out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.copy(np.asarray(x))
     out[parsed_key] = np.asarray(value)
     return out
@@ -304,7 +305,7 @@ def _eager_indexindim(backend_module: BackendModuleProtocol, *args: EagerValue, 
     import numpy as np
 
     x, idx, dim = args[0], args[1], args[2]
-    return typing.cast("EagerValue", getattr(np, "take")(x, idx, axis=dim))
+    return as_tensor(getattr(np, "take")(x, idx, axis=dim))
 
 
 @numpy_eager_registry.register("Gather")
@@ -320,7 +321,7 @@ def gather_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
             tuple[int, ...]: Result.
     """
     t = args[0] if len(args) > 0 else kwargs.get("tensor")
-    dim: int | None = typing.cast("int | None", args[1] if len(args) > 1 else kwargs.get("dim"))
+    dim: int | None = as_opt_int(args[1] if len(args) > 1 else kwargs.get("dim"))
     index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None", args[2] if len(args) > 2 else kwargs.get("index"))
     if hasattr(t, "numpy"):
         t = getattr(t, "numpy")()
@@ -341,9 +342,9 @@ def stack_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    tensors: list[EagerValue] = typing.cast(list[EagerValue], args[0] if len(args) > 0 else (kwargs.get("tensors") or []))
-    dim: int = typing.cast(int, args[1] if len(args) > 1 else kwargs.get("dim", 0))
+    tensors: list[EagerValue] = as_eager_list(args[0] if len(args) > 0 else (kwargs.get("tensors") or []))
+    dim: int = as_int(args[1] if len(args) > 1 else kwargs.get("dim", 0))
     if "axis" in kwargs:
-        dim = typing.cast(int, kwargs["axis"])
+        dim = as_int(kwargs["axis"])
     arrays: list[EagerValue] = [getattr(t, "numpy")() if hasattr(t, "numpy") else t for t in tensors]
     return np_mod.stack(arrays, axis=dim)

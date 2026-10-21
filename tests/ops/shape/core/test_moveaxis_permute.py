@@ -10,9 +10,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import moveaxis, permute
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
@@ -22,7 +23,7 @@ def _t(data: EagerValue, shape: tuple[EagerValue, ...]) -> Tensor:
         data: Test parameter `data`.
         shape: Test parameter `shape`.
     """
-    return typing.cast("Tensor", typing.cast("EagerCallableProtocol", Tensor)(data, typing.cast("EagerCallableProtocol", TensorConfig)(shape, "float32", "cpu")))
+    return as_tensor_obj(as_callable(Tensor)(data, as_callable(TensorConfig)(shape, "float32", "cpu")))
 
 
 def test_permute_eager() -> None:
@@ -52,7 +53,7 @@ def test_moveaxis_eager() -> None:
     config.eager_mode = True
     x = _t(np.array([[1, 2, 3]]), (1, 3))
     out = moveaxis(x, 1, 0)
-    assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (3, 1)
+    assert as_tensor(getattr(out, "shape")) == (3, 1)
 
 
 def test_moveaxis_tracing() -> None:
@@ -62,10 +63,10 @@ def test_moveaxis_tracing() -> None:
     try:
         x = _t(np.array([[1, 2, 3]]), (1, 3))
         out = moveaxis(x, 1, 0)
-        assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (3, 1)
+        assert as_tensor(getattr(out, "shape")) == (3, 1)
         out2 = moveaxis(x, [1], [0])
-        assert typing.cast("EagerTensorProtocol", getattr(out2, "shape")) == (3, 1)
+        assert as_tensor(getattr(out2, "shape")) == (3, 1)
         out3 = moveaxis(x, -1, -2)
-        assert typing.cast("EagerTensorProtocol", getattr(out3, "shape")) == (3, 1)
+        assert as_tensor(getattr(out3, "shape")) == (3, 1)
     finally:
         global_tracing_state.stop_tracing()

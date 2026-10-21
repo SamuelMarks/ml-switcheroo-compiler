@@ -8,9 +8,10 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_numpy_lax_mocks() -> None:
@@ -32,19 +33,19 @@ def test_numpy_lax_mocks() -> None:
             Returns:
                 EagerValue: The evaluated or processed output.
             """
-            return typing.cast("EagerCallableProtocol", numpy_eager_registry.get)(op)(np, *args, **kwargs)
+            return as_callable(numpy_eager_registry.get)(op)(np, *args, **kwargs)
 
-        (a, b) = typing.cast("EagerCallableProtocol", execute)("ApproxMaxK", typing.cast("EagerCallableProtocol", np.array)([1, 2]))
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(a, typing.cast("EagerCallableProtocol", np.array)([2]))
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(b, typing.cast("EagerCallableProtocol", np.array)([1]))
-        (a, b) = typing.cast("EagerCallableProtocol", execute)("ApproxMaxK", typing.cast("EagerCallableProtocol", np.array)([]))
-        assert typing.cast("EagerTensorProtocol", getattr(a, "size")) == 0
-        assert typing.cast("EagerTensorProtocol", getattr(b, "size")) == 0
+        (a, b) = as_callable(execute)("ApproxMaxK", as_callable(np.array)([1, 2]))
+        assert as_callable(np.array_equal)(a, as_callable(np.array)([2]))
+        assert as_callable(np.array_equal)(b, as_callable(np.array)([1]))
+        (a, b) = as_callable(execute)("ApproxMaxK", as_callable(np.array)([]))
+        assert as_tensor(getattr(a, "size")) == 0
+        assert as_tensor(getattr(b, "size")) == 0
         c = execute("ForiLoop", None, None, np.array([3]))
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(c, typing.cast("EagerCallableProtocol", np.array)([3]))
+        assert as_callable(np.array_equal)(c, as_callable(np.array)([3]))
         c = execute("ForiLoop", None)
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(c, typing.cast("EagerCallableProtocol", np.array)(0))
+        assert as_callable(np.array_equal)(c, as_callable(np.array)(0))
         d = execute("IgammaGradA", np.array([4]))
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(d, typing.cast("EagerCallableProtocol", np.array)([4]))
+        assert as_callable(np.array_equal)(d, as_callable(np.array)([4]))
         d = execute("IgammaGradA")
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(d, typing.cast("EagerCallableProtocol", np.array)(0))
+        assert as_callable(np.array_equal)(d, as_callable(np.array)(0))

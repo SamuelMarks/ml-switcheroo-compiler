@@ -8,9 +8,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ml_switcheroo_compiler.serialization.formats.npz import NpzWeightFormat
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_npz_load_save() -> None:
@@ -23,7 +24,7 @@ def test_npz_load_save() -> None:
 
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=mock_backend):
         res = format.load("dummy.npz")
-        assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", {"a": 1})
+        assert as_tensor(res) == as_tensor({"a": 1})
         mock_backend.load_npz.assert_called_with("dummy.npz")
 
         format.save({"b": 2}, "dummy.npz")
@@ -36,7 +37,7 @@ def test_npz_load_save() -> None:
         with patch("ml_switcheroo_compiler.serialization.formats.npz.parse_npz", return_value={"c": 3}):
             with pytest.warns(UserWarning, match="Backend load_npz failed"):
                 res = format.load("dummy.npz")
-                assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", {"c": 3})
+                assert as_tensor(res) == as_tensor({"c": 3})
 
     # Mock backend without save_npz
     mock_backend_no_save = MagicMock()

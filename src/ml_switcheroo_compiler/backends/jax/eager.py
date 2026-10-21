@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Callable  # noqa: F401
 
 import jax.ops
@@ -12,8 +11,7 @@ import jax.scipy.special
 import jax.scipy.special as jss
 import jax.scipy.stats
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_eager_list, as_float, as_tensor
 
 
 def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
@@ -114,12 +112,12 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     Raises:
         ValueError: An exception.
     """
-    inputs = typing.cast(list[EagerValue], args[0] if len(args) > 0 else kwargs.get("inputs", []))
+    inputs = as_eager_list(args[0] if len(args) > 0 else kwargs.get("inputs", []))
     if not inputs:
         raise ValueError("inputs must not be empty")
     res: EagerValue = inputs[0]
     for i in range(1, len(inputs)):
-        res = typing.cast(EagerTensorProtocol, res) + typing.cast(EagerTensorProtocol, inputs[i])
+        res = as_tensor(res) + as_tensor(inputs[i])
     return res
 
 
@@ -133,9 +131,9 @@ def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Binomial CDF array.
     """
-    k, n, p = typing.cast(EagerTensorProtocol, args[0]), typing.cast(EagerTensorProtocol, args[1]), typing.cast(EagerTensorProtocol, args[2])
-    loc: float = float(typing.cast(float, kwargs.get("loc", 0.0)))
-    return typing.cast(EagerValue, getattr(jss, "betainc")(n - (k - loc), (k - loc) + 1, 1 - p))
+    k, n, p = as_tensor(args[0]), as_tensor(args[1]), as_tensor(args[2])
+    loc: float = float(as_float(kwargs.get("loc", 0.0)))
+    return as_tensor(getattr(jss, "betainc")(n - (k - loc), (k - loc) + 1, 1 - p))
 
 
 def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -148,7 +146,7 @@ def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Binomial PMF array.
     """
-    return typing.cast(EagerValue, getattr(jax.scipy.stats.binom, "pmf")(*args, **kwargs))
+    return as_tensor(getattr(jax.scipy.stats.binom, "pmf")(*args, **kwargs))
 
 
 def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -161,7 +159,7 @@ def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Convolved 2D array.
     """
-    return typing.cast(EagerValue, getattr(jax.scipy.signal, "convolve2d")(*args, **kwargs))
+    return as_tensor(getattr(jax.scipy.signal, "convolve2d")(*args, **kwargs))
 
 
 def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -174,7 +172,7 @@ def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Sample frequencies and power spectral density.
     """
-    return typing.cast(EagerValue, getattr(jax.scipy.signal, "welch")(*args, **kwargs))
+    return as_tensor(getattr(jax.scipy.signal, "welch")(*args, **kwargs))
 
 
 def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -187,7 +185,7 @@ def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerValue, jax.scipy.special.bessel_jn(args[1], v=args[0]))
+    return as_tensor(jax.scipy.special.bessel_jn(args[1], v=args[0]))
 
 
 def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -200,7 +198,7 @@ def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerValue, getattr(jax.ops, "segment_sum")(*args, **kwargs))
+    return as_tensor(getattr(jax.ops, "segment_sum")(*args, **kwargs))
 
 
 def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -213,7 +211,7 @@ def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerValue, getattr(jax.ops, "segment_max")(*args, **kwargs))
+    return as_tensor(getattr(jax.ops, "segment_max")(*args, **kwargs))
 
 
 def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -226,7 +224,7 @@ def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerValue, getattr(jax.ops, "segment_min")(*args, **kwargs))
+    return as_tensor(getattr(jax.ops, "segment_min")(*args, **kwargs))
 
 
 def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -239,7 +237,7 @@ def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> E
     Returns:
             EagerValue: Result.
     """
-    return typing.cast(EagerValue, getattr(jax.ops, "segment_prod")(*args, **kwargs))
+    return as_tensor(getattr(jax.ops, "segment_prod")(*args, **kwargs))
 
 
 def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -255,7 +253,7 @@ def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import jax.numpy as jnp
 
     kwargs.setdefault("ddof", 0)
-    return typing.cast(EagerValue, getattr(jnp, "var")(*args, **kwargs))
+    return as_tensor(getattr(jnp, "var")(*args, **kwargs))
 
 
 def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -283,7 +281,7 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         dt = getattr(jnp, "float8_e4m3fn", jnp.float32)
     else:
         dt = getattr(jnp, dt_str, None)
-    return typing.cast(EagerTensorProtocol, tensor).astype(dt)
+    return as_tensor(tensor).astype(dt)
 
 
 def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -303,7 +301,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and hasattr(rt[0], "shape"):
         max_len: int = max(len(x) for x in rt)
         padded: list[EagerValue] = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
-        return typing.cast(EagerValue, getattr(jnp, "stack")(padded))
+        return as_tensor(getattr(jnp, "stack")(padded))
     return rt
 
 
@@ -433,7 +431,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
 
         func_resolved = resolve_target_api(schema.operations[op_type].target_api, schema.operations[op_type].custom_code, sys.modules[__name__])
         if func_resolved:
-            return typing.cast(TypedVariadicCallable[EagerValue], func_resolved)(*args, **kwargs)
+            return as_callable(func_resolved)(*args, **kwargs)
     import jax.numpy as jnp
 
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -460,7 +458,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
             func = getattr(mod, snake)
             break
     if func is not None:
-        return typing.cast(EagerValue, func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     raise BackendNotSupportedError(f"Operation '{op_type}' is not implemented.") from None

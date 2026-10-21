@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import AttributeValue
-
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicConstraintTracker, SymInt
 from ml_switcheroo_compiler.serialization.ir_format import (
@@ -18,9 +16,10 @@ from ml_switcheroo_compiler.serialization.ir_format import (
     json_to_graph,
     yaml_to_graph,
 )
+from tests.testing_utils import as_attrs, as_callable, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_ir_format() -> None:
@@ -94,7 +93,7 @@ def _test_ir_format_serialization_edge_branches_part_1(_state: dict[str, EagerTe
     g.nodes["n_mixed"] = n_tuple_mixed
     g.nodes["n_none"] = n_none_shape
 
-    data = typing.cast("dict[str, EagerTensorProtocol]", _build_serialization_dict(g))
+    data = as_tensor_dict(_build_serialization_dict(g))
     assert data["nodes"]["n_int"]["shape_metadata"] == [42]
     assert data["nodes"]["n_str_digit"]["shape_metadata"] == [128]
     assert data["nodes"]["n_str_sym"]["shape_metadata"] == ["batch"]
@@ -126,7 +125,7 @@ def _test_ir_format_serialization_edge_branches_part_1(_state: dict[str, EagerTe
         },
     }
 
-    parsed_g = _parse_serialization_dict(typing.cast("dict[str, AttributeValue]", raw_dict))
+    parsed_g = _parse_serialization_dict(as_attrs(raw_dict))
     getattr(_state, "update")({"data": data, "g": g, "n_int_shape": n_int_shape, "n_none_shape": n_none_shape})
     getattr(_state, "update")({"n_str_digit_shape": n_str_digit_shape, "n_str_sym_shape": n_str_sym_shape, "n_tuple_mixed": n_tuple_mixed, "parsed_g": parsed_g})
     getattr(_state, "update")({"raw_dict": raw_dict})
@@ -156,7 +155,7 @@ def _test_ir_format_serialization_edge_branches_part_2(_state: dict[str, EagerTe
 
     # 3. Test _parse_serialization_dict when nodes is not a dict
     empty_nodes_dict: dict[str, EagerValue] = {"nodes": "not_a_dict"}
-    g_empty_nodes = _parse_serialization_dict(typing.cast("dict[str, AttributeValue]", empty_nodes_dict))
+    g_empty_nodes = _parse_serialization_dict(as_attrs(empty_nodes_dict))
     assert len(g_empty_nodes.nodes) == 0
 
     # 4. Test yaml_to_graph with empty / whitespace string
@@ -198,7 +197,7 @@ def _test_ir_format_serialization_edge_branches_part_3(_state: dict[str, EagerTe
     object.__setattr__(n_with_bad_sub, "subgraphs", {"invalid_sub": "not_a_subgraph_with_nodes"})
     g_init_edge.nodes["n_bad_sub"] = n_with_bad_sub
     object.__setattr__(g_init_edge, "inputs", None)  # triggers branch 65 where getattr(graph, 'inputs', None) is falsy
-    init_edge_data = typing.cast("dict[str, EagerTensorProtocol]", _build_serialization_dict(g_init_edge))
+    init_edge_data = as_tensor_dict(_build_serialization_dict(g_init_edge))
     assert init_edge_data["initializers"]["int_val"] == 123
     assert init_edge_data["initializers"]["custom_obj"] == "custom_str_repr"
     assert "invalid_sub" not in init_edge_data["nodes"]["n_bad_sub"].get("subgraphs", {})
@@ -221,7 +220,7 @@ def _test_ir_format_serialization_edge_branches_part_3(_state: dict[str, EagerTe
             },
         },
     }
-    g_parsed_bad_sub = _parse_serialization_dict(typing.cast("dict[str, AttributeValue]", raw_bad_sub_data))
+    g_parsed_bad_sub = _parse_serialization_dict(as_attrs(raw_bad_sub_data))
     assert "node_sub" in g_parsed_bad_sub.nodes
     assert len(g_parsed_bad_sub.nodes["node_sub"].subgraphs) == 0
     assert "node_sub_not_dict" in g_parsed_bad_sub.nodes
@@ -257,12 +256,12 @@ def test_shape_tracker_feedback_and_dynamic_bounds() -> None:
         }
     }
 
-    resolved_shapes = typing.cast("EagerCallableProtocol", ShapeTracker.update_from_feedback)(telemetry, tracker)
+    resolved_shapes = as_callable(ShapeTracker.update_from_feedback)(telemetry, tracker)
     assert resolved_shapes["x"] == (4, 16)
     assert resolved_shapes["dense"] == (4, 32)
 
     # Resolve dynamic bounds across graph
-    resolved_bounds = typing.cast("EagerCallableProtocol", ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker)
+    resolved_bounds = as_callable(ShapeTracker.resolve_dynamic_bounds)(graph, telemetry, tracker)
     assert "batch_dim" in resolved_bounds
     assert resolved_bounds["batch_dim"] == 4
 

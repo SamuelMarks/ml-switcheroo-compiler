@@ -9,7 +9,7 @@ from collections.abc import Iterable, Iterator, Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 
 DatasetElement = typing.Union[int, float, str, bool, list[int], list[float], list[str], tuple[int, ...], "tuple[float, ...]"]
 
@@ -406,7 +406,7 @@ def timeseries_dataset_from_array(
     )
     return typing.cast(
         NumpyDataset,
-        typing.cast("EagerCallableProtocol", NumpyDataset)(
+        as_callable(NumpyDataset)(
             x,
             y,
             config=BatchConfig(

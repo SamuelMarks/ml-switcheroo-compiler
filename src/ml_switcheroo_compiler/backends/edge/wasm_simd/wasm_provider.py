@@ -150,5 +150,5 @@ def get_wasm_simd_op(op_name: str) -> dict[str, str | int | float | None]:
     if isinstance(ops, dict) and op_name in ops:
         val = ops[op_name]
         if isinstance(val, dict):
-            return typing.cast("dict[str, str | int | float | None]", val)
+            return val
     return {}

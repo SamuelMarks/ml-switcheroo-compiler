@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import typing
-
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager.utils import (
     _from_numpy_array,
     _to_numpy_array,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_shape, as_tensor, as_tensor_pair, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig, ResizeOptions
 
@@ -40,7 +38,7 @@ def _standardize_image_input(
         tuple[EagerTensorProtocol, bool]: 4D array and flag indicating if original input was 3D.
     """
     mod = _resolve_backend_mod(np_mod)
-    arr_t = typing.cast(EagerTensorProtocol, arr)
+    arr_t = as_tensor(arr)
     if arr_t.ndim == 2:
         return arr_t[None, :, :, None], False
     if arr_t.ndim == 3:
@@ -62,10 +60,10 @@ def _invert_homography(np_mod: BackendModuleProtocol, h_fwd: EagerValue) -> Eage
     Returns:
         EagerValue: Inverse homography matrix mapping destination to source.
     """
-    h_fwd_t = typing.cast(EagerTensorProtocol, h_fwd)
+    h_fwd_t = as_tensor(h_fwd)
     if h_fwd_t.ndim == 2:
-        return typing.cast("EagerValue", getattr(np_mod, "linalg").inv(h_fwd_t))
-    return typing.cast("EagerValue", getattr(np_mod, "stack")([getattr(np_mod, "linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])], axis=0))
+        return as_tensor(getattr(np_mod, "linalg").inv(h_fwd_t))
+    return as_tensor(getattr(np_mod, "stack")([getattr(np_mod, "linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])], axis=0))
 
 
 def perspective_transform_eager(
@@ -104,7 +102,7 @@ def perspective_transform_eager(
     else:
         h_fwd = _compute_perspective_matrix(np_mod, start_points, end_points)
         h_inv = _invert_homography(np_mod, h_fwd)
-        out = typing.cast(EagerTensorProtocol, _apply_perspective_batch(np_mod, arr, h_inv, config))
+        out = as_tensor(_apply_perspective_batch(np_mod, arr, h_inv, config))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))
@@ -129,11 +127,11 @@ def _apply_elastic_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, config
         return 0
 
     np_mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = typing.cast(tuple[int, ...], getattr(imgs, "shape"))
+    b_count, _, _, c_count = as_shape(getattr(imgs, "shape"))
     out = getattr(np_mod, "zeros_like")(imgs)
 
-    y_coords = typing.cast(EagerTensorProtocol, config.new_y)
-    x_coords = typing.cast(EagerTensorProtocol, config.new_x)
+    y_coords = as_tensor(config.new_y)
+    x_coords = as_tensor(config.new_x)
 
     for b in range(b_count):
         y_idx = min(int(b), int(y_coords.shape[0]) - 1) if getattr(y_coords, "ndim", 2) == 3 else 0
@@ -143,12 +141,12 @@ def _apply_elastic_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, config
         for c in range(c_count):
             out[b, :, :, c] = _np_map_coordinates(
                 np_mod,
-                typing.cast(EagerTensorProtocol, imgs)[b, :, :, c],
+                as_tensor(imgs)[b, :, :, c],
                 (y_b, x_b),
                 order=config.order,
                 fill_value=config.fill_value,
             )
-    return typing.cast("EagerValue", out)
+    return as_tensor(out)
 
 
 class ElasticGridContext(pydantic.BaseModel):
@@ -251,10 +249,10 @@ def elastic_transform_eager(
         fill_val = float(getattr(config, "fill_value", 0.0))
 
         ctx = ElasticGridContext(np_mod=np_mod, H=h, W=w, B=b, disp=displacement)
-        elastic_grid = typing.cast("tuple[EagerTensorProtocol, EagerTensorProtocol]", _compute_elastic_grid(ctx))
+        elastic_grid = as_tensor_pair(_compute_elastic_grid(ctx))
         new_y, new_x = elastic_grid[0], elastic_grid[1]
         cfg = TransformInterpolationConfig(order=order, fill_value=fill_val, new_y=new_y, new_x=new_x)
-        out = typing.cast(EagerTensorProtocol, _apply_elastic_batch(np_mod, arr, cfg))
+        out = as_tensor(_apply_elastic_batch(np_mod, arr, cfg))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))
@@ -314,7 +312,7 @@ def _compute_resize_grid(np_mod: BackendModuleProtocol, ctx: ResizeContext | Non
             y_coords = getattr(np_mod, "arange")(new_h, dtype=getattr(np_mod, "float32")) * scale_y
             x_coords = getattr(np_mod, "arange")(new_w, dtype=getattr(np_mod, "float32")) * scale_x
 
-    return typing.cast("EagerValue", getattr(np_mod, "meshgrid")(y_coords, x_coords, indexing="ij"))
+    return as_tensor(getattr(np_mod, "meshgrid")(y_coords, x_coords, indexing="ij"))
 
 
 def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: EagerValue, coords: EagerValue, order: int) -> EagerValue:
@@ -334,16 +332,16 @@ def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: Ea
         return 0
 
     mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = typing.cast(tuple[int, ...], getattr(imgs, "shape"))
-    y_coords, x_coords = typing.cast("tuple[EagerTensorProtocol, EagerTensorProtocol]", coords)
+    b_count, _, _, c_count = as_shape(getattr(imgs, "shape"))
+    y_coords, x_coords = as_tensor_pair(coords)
 
-    target_out: EagerTensorProtocol = typing.cast(EagerTensorProtocol, out) if out is not None and hasattr(out, "__setitem__") else getattr(mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=getattr(imgs, "dtype"))
+    target_out: EagerTensorProtocol = as_tensor(out) if out is not None and hasattr(out, "__setitem__") else getattr(mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=getattr(imgs, "dtype"))
 
     for b in range(b_count):
         for c in range(c_count):
             target_out[b, :, :, c] = _np_map_coordinates(
                 mod,
-                typing.cast(EagerTensorProtocol, imgs)[b, :, :, c],
+                as_tensor(imgs)[b, :, :, c],
                 (y_coords, x_coords),
                 order=order,
                 fill_value=0.0,
@@ -398,9 +396,9 @@ def _upsample_1d_linear(
         EagerValue: Upsampled 1D array of shape (B, C, target_len).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, orig_len = typing.cast(tuple[int, ...], getattr(x, "shape"))
+    b, c, orig_len = as_shape(getattr(x, "shape"))
     if orig_len == target_len:
-        return typing.cast("EagerValue", getattr(x, "copy")())
+        return as_tensor(getattr(x, "copy")())
 
     if align_corners:
         scale = (orig_len - 1.0) / max(target_len - 1.0, 1.0) if target_len > 1 else 0.0
@@ -416,7 +414,7 @@ def _upsample_1d_linear(
     out = mod.zeros((b, c, target_len), dtype=getattr(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
-            out[b_idx, c_idx] = (1.0 - w) * typing.cast(EagerTensorProtocol, x)[b_idx, c_idx, i0] + w * typing.cast(EagerTensorProtocol, x)[b_idx, c_idx, i1]
+            out[b_idx, c_idx] = (1.0 - w) * as_tensor(x)[b_idx, c_idx, i0] + w * as_tensor(x)[b_idx, c_idx, i1]
     return out
 
 
@@ -438,7 +436,7 @@ def _upsample_3d_trilinear(
         EagerValue: Upsampled 3D array of shape (B, C, target_d, target_h, target_w).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, d, h, w = typing.cast(tuple[int, ...], getattr(x, "shape"))
+    b, c, d, h, w = as_shape(getattr(x, "shape"))
     td, th, tw = target_shape
 
     def _get_coords(orig_len: int, target_len: int) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
@@ -469,7 +467,7 @@ def _upsample_3d_trilinear(
     out = mod.zeros((b, c, td, th, tw), dtype=getattr(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
-            vol = typing.cast(EagerTensorProtocol, x)[b_idx, c_idx]
+            vol = as_tensor(x)[b_idx, c_idx]
             for z in range(td):
                 for y in range(th):
                     c000 = vol[d0[z], h0[y], w0]
@@ -716,7 +714,7 @@ def resize_eager(
     )
     coords = _compute_resize_grid(np_mod, ctx)
     out: EagerTensorProtocol = np_mod.zeros((b, new_h, new_w, c), dtype=arr.dtype)
-    out = typing.cast(EagerTensorProtocol, _apply_resize_batch(np_mod, arr, out, coords, order=order))
+    out = as_tensor(_apply_resize_batch(np_mod, arr, out, coords, order=order))
 
     if data_format == "channels_first":
         out = np_mod.transpose(out, (0, 3, 1, 2))

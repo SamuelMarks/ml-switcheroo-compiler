@@ -5,9 +5,7 @@ Provides operations and node definitions related to text manipulation and proces
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import (
@@ -199,10 +197,10 @@ class TextVectorization(OpDef):
             return ()
         output_sequence_length = kwargs.get("output_sequence_length")
         if output_sequence_length is not None:
-            return s + (int(typing.cast(int, output_sequence_length)),)
+            return s + (int(as_int(output_sequence_length)),)
         max_tokens = kwargs.get("max_tokens")
         if max_tokens is not None and kwargs.get("output_mode") in ("count", "tf_idf", "multi_hot"):
-            return s[:-1] + (int(typing.cast(int, max_tokens)),) if s else (int(typing.cast(int, max_tokens)),)
+            return s[:-1] + (int(as_int(max_tokens)),) if s else (int(as_int(max_tokens)),)
         return s + (SymVar("seq_len"),)
 
 
@@ -281,7 +279,7 @@ class StringJoin(OpDef):
         s = list(_extract_shape(inp))
         axis = kwargs.get("axis")
         if axis is not None and s:
-            ax = int(typing.cast(int, axis))
+            ax = int(as_int(axis))
             if ax < 0:
                 ax += len(s)
             if 0 <= ax < len(s):

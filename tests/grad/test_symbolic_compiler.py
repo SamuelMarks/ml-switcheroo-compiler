@@ -25,6 +25,17 @@ def test_symbolic_compiler_init_and_load(tmp_path: EagerTensorProtocol) -> None:
     assert manifest is not None
     assert compiler.load_manifest() is manifest
 
+    custom_file = tmp_path / "custom_rules.yaml"
+    custom_file.write_text("jvp_rules:\n  Add:\n    jvp: Add($tangent[0], $tangent[1])\n", encoding="utf-8")
+    file_compiler = SymbolicExpressionCompiler(manifest_path=str(custom_file))
+    assert "Add" in file_compiler.load_manifest().jvp_rules
+
+    empty_dir = tmp_path / "empty_rules_dir"
+    empty_dir.mkdir()
+    (empty_dir / "jvp_rules.yaml").write_text("- not_a_dict\n", encoding="utf-8")
+    dir_compiler = SymbolicExpressionCompiler(manifest_path=str(empty_dir))
+    assert dir_compiler.load_manifest().jvp_rules == {}
+
     missing_compiler = SymbolicExpressionCompiler(manifest_path=str(tmp_path / "missing.yaml"))
     with pytest.raises(FileNotFoundError):
         missing_compiler.load_manifest()

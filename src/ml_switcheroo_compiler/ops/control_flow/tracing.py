@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import typing
 import uuid
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 
-from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
+from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
-from ml_switcheroo_compiler.ir.core import IRNode
+from ml_switcheroo_compiler.ir.core import IRNode, as_attrs
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
@@ -37,14 +37,14 @@ def cond_tracing(pred: Tensor, true_fn: TensorOrScalar, false_fn: TensorOrScalar
         from ml_switcheroo_compiler.core.errors import TracingError
 
         raise TracingError("Cannot emit Cond node outside of a tracing context.")
-    true_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(true_fn, (), "true_branch")
-    false_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(false_fn, (), "false_branch")
+    true_graph = _trace_function(true_fn, (), "true_branch")
+    false_graph = _trace_function(false_fn, (), "false_branch")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="If",
         inputs=[getattr(pred.data, "id")],
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"then_branch": true_graph, "else_branch": false_graph}),
+        attributes=as_attrs({"then_branch": true_graph, "else_branch": false_graph}),
         subgraphs={"then_branch": true_graph, "else_branch": false_graph},
         shape_metadata=(),
     )
@@ -76,14 +76,14 @@ def while_loop_tracing(
 
         raise TracingError("Cannot emit While node outside of a tracing context.")
     args = (init_val,) if isinstance(init_val, Tensor) else tuple(getattr(init_val, "__iter__")())
-    cond_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(cond_fn, args, "cond")
-    body_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(body_fn, args, "body")
+    cond_graph = _trace_function(cond_fn, args, "cond")
+    body_graph = _trace_function(body_fn, args, "body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Loop",
         inputs=[getattr(a.data, "id") for a in args],
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"body": body_graph, "cond": cond_graph}),
+        attributes=as_attrs({"body": body_graph, "cond": cond_graph}),
         subgraphs={"body": body_graph, "cond": cond_graph},
         shape_metadata=(),
     )
@@ -136,14 +136,14 @@ def scan_tracing(f: TensorOrScalar, init: TensorOrScalar, xs: TensorOrScalar, le
     x_shape = getattr(xs, "shape")[1:] if xs is not None and len(getattr(xs, "shape")) > 0 else ()
     proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=getattr(getattr(xs, "dtype"), "value"))
     proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, getattr(xs, "dtype"), getattr(xs, "device")))
-    body_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(f, (init, proxy_x_tensor), "scan_body")
+    body_graph = _trace_function(f, (init, proxy_x_tensor), "scan_body")
     init_ids = _flatten_inputs(init)
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Scan",
         inputs=init_ids + [getattr(getattr(xs, "data"), "id")],
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"body": body_graph}),
+        attributes=as_attrs({"body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
     )
@@ -174,13 +174,13 @@ def map_fn_tracing(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None
     x_shape = elems.shape[1:] if len(elems.shape) > 0 else ()
     proxy_x = ProxyTensor(id="proxy_x_tensor", shape=x_shape, dtype=elems.dtype.value)
     proxy_x_tensor = Tensor(proxy_x, TensorConfig(x_shape, elems.dtype, elems.device))
-    body_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(fn, (proxy_x_tensor,), "map_body")
+    body_graph = _trace_function(fn, (proxy_x_tensor,), "map_body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Map",
         inputs=[getattr(elems.data, "id")],
-        attributes=typing.cast("Mapping[str, AttributeValue]", {"body": body_graph}),
+        attributes=as_attrs({"body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
     )
@@ -226,13 +226,13 @@ def pmap_tracing(func: TensorOrScalar, axis_name: str | None = None) -> TensorOr
                 proxy_args.append(Tensor(proxy, TensorConfig(new_shape, a.dtype, a.device)))
             else:
                 getattr(proxy_args, "append")(a)
-        body_graph = typing.cast("TypedVariadicCallable[LogicalGraph]", _trace_function)(func, tuple(proxy_args), "pmap_body")
+        body_graph = _trace_function(func, tuple(proxy_args), "pmap_body")
         out_id = str(uuid.uuid4())
         node = LogicalNode(
             id=out_id,
             op_type="Pmap",
             inputs=[str(getattr(getattr(a, "data", None), "id", "")) for a in args if isinstance(a, Tensor)],
-            attributes=typing.cast("Mapping[str, AttributeValue]", {"axis_name": axis_name, "body": body_graph}),
+            attributes=as_attrs({"axis_name": axis_name, "body": body_graph}),
             subgraphs={"body": body_graph},
             shape_metadata=(),
         )

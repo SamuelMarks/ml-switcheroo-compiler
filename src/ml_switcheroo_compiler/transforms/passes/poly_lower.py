@@ -8,7 +8,7 @@ import typing
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
 
 
 def _lower_in_top_k(node: IRNode, graph: IRGraph, new_nodes: dict[str, IRNode]) -> IRNode:
@@ -144,7 +144,7 @@ def _lower_isotonic_regression(node: IRNode, graph: IRGraph, new_nodes: dict[str
     body_graph.nodes["false_violations"] = IRNode(id="false_violations", op_type="Constant", inputs=[], attributes={"value": False})
     body_graph.outputs = ["array", "next_idx", "false_violations"]
 
-    node.attributes = typing.cast("dict[str, AttributeValue]", {"cond": cond_graph, "body": body_graph})
+    node.attributes = as_attrs({"cond": cond_graph, "body": body_graph})
 
     return node
 

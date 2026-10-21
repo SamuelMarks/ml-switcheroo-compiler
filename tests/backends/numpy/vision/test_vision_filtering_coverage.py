@@ -10,9 +10,10 @@ import pytest
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import vision_filtering as vision_filtering_module
 from ml_switcheroo_compiler.ops.configs import BlurConfig
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_vision_filtering_ops(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -28,35 +29,35 @@ def test_vision_filtering_ops(monkeypatch: pytest.MonkeyPatch) -> None:
         assert hasattr(vision_filtering_module, item)
 
     imgs = np.ones((1, 8, 8, 3), dtype=np.float32)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", vision_filtering_module._np_degeneration)(np, imgs), imgs)
+    assert as_callable(np.array_equal)(as_callable(vision_filtering_module._np_degeneration)(np, imgs), imgs)
     reg_degen = numpy_eager_registry.get("Degeneration")
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", reg_degen)(np, imgs), imgs)
+    assert as_callable(np.array_equal)(as_callable(reg_degen)(np, imgs), imgs)
 
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", vision_filtering_module._np_sharpen)(np, imgs), imgs)
+    assert as_callable(np.array_equal)(as_callable(vision_filtering_module._np_sharpen)(np, imgs), imgs)
     reg_sharp = numpy_eager_registry.get("Sharpen")
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", reg_sharp)(np, imgs), imgs)
+    assert as_callable(np.array_equal)(as_callable(reg_sharp)(np, imgs), imgs)
 
     monkeypatch.setattr(vision_filtering_module, "gaussian_blur_eager", lambda mod, img, cfg: img * 0.5)
     monkeypatch.setattr(vision_filtering_module, "median_filter_eager", lambda mod, img, **kw: img * 0.25)
 
     # GaussianBlur with dict config
     blur_dict = vision_filtering_module._np_gaussian_blur(np, imgs, kernel_size=(3, 3), sigma=(1.0, 1.0))
-    assert typing.cast("EagerCallableProtocol", np.allclose)(blur_dict, imgs * 0.5)
+    assert as_callable(np.allclose)(blur_dict, imgs * 0.5)
 
     # GaussianBlur with BlurConfig
     cfg_obj = BlurConfig(kernel_size=(3, 3), sigma=(1.0, 1.0))
     blur_obj = vision_filtering_module._np_gaussian_blur(np, imgs, config=cfg_obj)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(blur_obj, imgs * 0.5)
+    assert as_callable(np.allclose)(blur_obj, imgs * 0.5)
 
     reg_blur = numpy_eager_registry.get("GaussianBlur")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", reg_blur)(np, imgs, config=cfg_obj), imgs * 0.5)
+    assert as_callable(np.allclose)(as_callable(reg_blur)(np, imgs, config=cfg_obj), imgs * 0.5)
 
     # MedianFilter
     med_res = vision_filtering_module._np_median_filter(np, imgs)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(med_res, imgs * 0.25)
+    assert as_callable(np.allclose)(med_res, imgs * 0.25)
 
     reg_med = numpy_eager_registry.get("MedianFilter")
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", reg_med)(np, imgs), imgs * 0.25)
+    assert as_callable(np.allclose)(as_callable(reg_med)(np, imgs), imgs * 0.25)
 
     # ExtractVolumePatches
     assert vision_filtering_module._np_extract_volume_patches(np).size == 0

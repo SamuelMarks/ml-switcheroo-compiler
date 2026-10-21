@@ -59,6 +59,36 @@ class TypedVariadicCallable(typing.Protocol[_R_co]):
         ...
 
 
+def _is_variadic_callable(fn: TensorOrScalar) -> typing.TypeGuard[VariadicCallableProtocol]:
+    """Check whether `fn` is a callable function or object (and not a module).
+
+    Args:
+        fn (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: True if `fn` is callable and not a module.
+    """
+    return callable(fn) and not isinstance(fn, ModuleType)
+
+
+def invoke_callable(fn: TensorOrScalar, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
+    """Invoke a callable `TensorOrScalar` operand with positional and keyword arguments.
+
+    Args:
+        fn (TensorOrScalar): Target callable object or function.
+        *args (TensorOrScalar): Positional call arguments.
+        **kwargs (TensorOrScalar): Keyword call arguments.
+
+    Returns:
+        TensorOrScalar: Result of invoking `fn(*args, **kwargs)`.
+
+    Raises:
+        TypeError: If `fn` is not callable or is a module object.
+    """
+    assert _is_variadic_callable(fn)
+    return fn(*args, **kwargs)
+
+
 if typing.TYPE_CHECKING:
     import builtins
     import ctypes
@@ -72,7 +102,6 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.registry import (
         BackendModuleProtocol,
         COOTensor,
-        DataclassProtocol,
         EagerCallableProtocol,
         EagerTensorProtocol,
         ShapeProtocol,
@@ -141,7 +170,6 @@ if typing.TYPE_CHECKING:
         ShapeProtocol,
         EagerTensorProtocol,
         BackendModuleProtocol,
-        DataclassProtocol,
         TensorLike,
         GradTensorProtocol,
         FunctionType,

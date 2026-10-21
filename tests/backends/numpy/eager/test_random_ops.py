@@ -10,9 +10,10 @@ import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.random_ops as ro
 from ml_switcheroo_compiler.backends.numpy.eager.random_ops import LookupTableProtocol, RandomDistributionConfig
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_random_ops_coverage() -> None:
@@ -26,9 +27,9 @@ def test_random_ops_coverage() -> None:
             if p.name == "backend_module":
                 args_to_pass.append(np)
             elif p.name in ("x", "y", "tensor", "a", "b", "c", "t"):
-                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                as_callable(args_to_pass.append)(arg)
             else:
-                typing.cast("EagerCallableProtocol", args_to_pass.append)(arg)
+                as_callable(args_to_pass.append)(arg)
         with pytest.raises(TypeError):
             op(*args_to_pass)
         try:

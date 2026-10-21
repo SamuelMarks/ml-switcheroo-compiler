@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from tests.testing_utils import as_callable, as_tensor_dict, as_tensor_list
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class DummyGenerator:
@@ -15,11 +16,11 @@ class DummyGenerator:
 
     def __init__(self) -> None:
         """Test function __init__."""
-        self.sorted_nodes = typing.cast("list[EagerTensorProtocol]", [])
+        self.sorted_nodes = as_tensor_list([])
         self.var_names = {"in1": "var_in1"}
         self.input_idx = 0
-        self._output_returns = typing.cast("list[EagerTensorProtocol]", [])
-        self.lines = typing.cast("list[EagerTensorProtocol]", [])
+        self._output_returns = as_tensor_list([])
+        self.lines = as_tensor_list([])
 
     def _emit_body_return(self, returns: EagerValue) -> None:
         """Test function _emit_body_return.
@@ -27,7 +28,7 @@ class DummyGenerator:
         Args:
             returns: Test parameter `returns`.
         """
-        typing.cast("EagerCallableProtocol", self.lines.append)(f"return {returns}")
+        as_callable(self.lines.append)(f"return {returns}")
 
     def emit_constant(self, node: EagerValue) -> EagerValue:
         """Test function emit_constant.
@@ -53,7 +54,7 @@ class DummyGenerator:
             var: Test parameter `var`.
             val: Test parameter `val`.
         """
-        typing.cast("EagerCallableProtocol", self.lines.append)(f"{var} = {val}")
+        as_callable(self.lines.append)(f"{var} = {val}")
 
     def _emit_input_assignment(self, var: EagerValue, node: EagerValue, pref: EagerValue, idx: EagerValue) -> None:
         """Test function _emit_input_assignment.
@@ -64,7 +65,7 @@ class DummyGenerator:
             pref: Test parameter `pref`.
             idx: Test parameter `idx`.
         """
-        typing.cast("EagerCallableProtocol", self.lines.append)(f"{var} = {pref}[{idx}]")
+        as_callable(self.lines.append)(f"{var} = {pref}[{idx}]")
 
     def _emit_output_assignment(self, node: EagerValue, invars: EagerValue, returns: EagerValue) -> None:
         """Test function _emit_output_assignment.
@@ -74,7 +75,7 @@ class DummyGenerator:
             invars: Test parameter `invars`.
             returns: Test parameter `returns`.
         """
-        typing.cast("EagerCallableProtocol", self._output_returns.append)(returns)
+        as_callable(self._output_returns.append)(returns)
 
     def visit(self, node: EagerValue, invars: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Test function visit.
@@ -92,7 +93,7 @@ class DummyGenerator:
         Args:
             line: Test parameter `line`.
         """
-        typing.cast("EagerCallableProtocol", self.lines.append)(line)
+        as_callable(self.lines.append)(line)
 
 
 class DummyNode:
@@ -109,14 +110,14 @@ class DummyNode:
         self.op_type = op_type
         self.id = id
         self.inputs = inputs or []
-        self.attributes = typing.cast("dict[str, EagerTensorProtocol]", {})
+        self.attributes = as_tensor_dict({})
         self.shape_metadata = ()
 
 
 def test_visitor() -> None:
     """Test function test_visitor."""
     gen = DummyGenerator()
-    vis = typing.cast("EagerCallableProtocol", CodeGeneratorVisitor)(gen)
+    vis = as_callable(CodeGeneratorVisitor)(gen)
 
     n_const = DummyNode("Constant", "c1")
     n_in = DummyNode("Input", "i1")
@@ -138,10 +139,10 @@ def test_visitor() -> None:
 def test_visitor_compute_node_branches() -> None:
     """Test function test_visitor_compute_node_branches."""
     gen = DummyGenerator()
-    vis = typing.cast("EagerCallableProtocol", CodeGeneratorVisitor)(gen)
+    vis = as_callable(CodeGeneratorVisitor)(gen)
 
     n_op = DummyNode("Op", "op2")
     n_op.attributes = {}
     n_op.shape_metadata = ()
-    typing.cast("EagerCallableProtocol", vis.handle_compute_node)(n_op)
+    as_callable(vis.handle_compute_node)(n_op)
     assert "tensor_1 = visited" in gen.lines

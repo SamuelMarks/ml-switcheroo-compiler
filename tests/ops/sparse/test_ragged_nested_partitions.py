@@ -19,9 +19,10 @@ from ml_switcheroo_compiler.ops.sparse import (
     sparse_split,
     sparse_to_dense,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_sparse_extras() -> None:
@@ -31,11 +32,11 @@ def test_sparse_extras() -> None:
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = SparseConcat()
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(None) == ()
+    assert as_callable(op1.infer_shape)(None) == ()
     op2 = SparseSplit()
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(None, None) == ((),)
+    assert as_callable(op2.infer_shape)(None, None) == ((),)
     op3 = SparseToDense()
-    assert typing.cast("EagerCallableProtocol", op3.infer_shape)(None, None, None, None) == ()
+    assert as_callable(op3.infer_shape)(None, None, None, None) == ()
 
     config.eager_mode = False
     from unittest.mock import patch
@@ -55,7 +56,7 @@ def test_ragged_extras() -> None:
     t1 = Tensor(backend.array([1.0]), TensorConfig((1,), DType.Float32, dev))
 
     op1 = BooleanMask()
-    assert typing.cast("EagerCallableProtocol", len)(typing.cast("EagerCallableProtocol", op1.infer_shape)(None, None)) == 1
+    assert as_callable(len)(as_callable(op1.infer_shape)(None, None)) == 1
     op2 = MapFlatValues()
     assert op2.infer_shape(None) == ()
 
@@ -64,5 +65,5 @@ def test_ragged_extras() -> None:
 
     with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node") as mock_emit:
         boolean_mask(t1, t1)
-        typing.cast("EagerCallableProtocol", map_flat_values)(lambda x: x, t1)
+        as_callable(map_flat_values)(lambda x: x, t1)
         assert mock_emit.call_count == 2

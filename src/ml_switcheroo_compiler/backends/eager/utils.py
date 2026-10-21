@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
 
 
 def _resolve_eager_mod(backend_module: BackendModuleProtocol | EagerValue | None) -> BackendModuleProtocol:
@@ -18,7 +16,7 @@ def _resolve_eager_mod(backend_module: BackendModuleProtocol | EagerValue | None
         BackendModuleProtocol: Resolved execution backend module.
     """
     if backend_module is not None and hasattr(backend_module, "zeros") and hasattr(backend_module, "asarray"):
-        resolved = typing.cast(BackendModuleProtocol, getattr(backend_module, "numpy", backend_module))
+        resolved = as_mod(getattr(backend_module, "numpy", backend_module))
         return resolved
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 
@@ -29,18 +27,18 @@ def _resolve_eager_mod(backend_module: BackendModuleProtocol | EagerValue | None
 
 
 def _to_numpy_array(np_mod: BackendModuleProtocol | EagerValue, x: EagerTensorProtocol | EagerValue, name: str) -> EagerValue:
-    """Convert a backend-specific tensor into a backend-compatible array.
+    """Convert a backend tensor `x` into a numpy-compatible array for `np_mod`.
 
     Args:
-        np_mod (BackendModuleProtocol | EagerValue): Target array module providing `asarray`.
-        x (EagerTensorProtocol | EagerValue): Input backend tensor or array.
-        name (str): Source backend module name.
+        np_mod (BackendModuleProtocol | EagerValue): Target numpy-like module.
+        x (EagerTensorProtocol | EagerValue): Input tensor or array.
+        name (str): Backend module name.
 
     Returns:
         EagerValue: Array representation in the target module.
     """
-    mod: BackendModuleProtocol = np_mod  # type: ignore[assignment]
-    tensor: EagerTensorProtocol = x  # type: ignore[assignment]
+    tensor = as_tensor(x)
+    mod = as_mod(np_mod)
     if hasattr(x, "numpy") and callable(getattr(x, "numpy")):
         return tensor.numpy()
     if name == "torch" and hasattr(x, "detach"):
@@ -103,7 +101,6 @@ def _from_numpy_array(
     Returns:
         EagerValue: Backend-native tensor representation.
     """
-    mod: BackendModuleProtocol = backend_module  # type: ignore[assignment]
     if name == "torch":
         return _torch_from_numpy(out, original_tensor)
     if name.startswith("mlx"):
@@ -111,6 +108,7 @@ def _from_numpy_array(
     if name.startswith("jax"):
         return _jax_from_numpy(out)
     if hasattr(backend_module, "array"):
+        mod = as_mod(backend_module)
         if original_tensor is not None and hasattr(original_tensor, "dtype"):
             return mod.array(out, dtype=getattr(original_tensor, "dtype"))
         return mod.array(out)

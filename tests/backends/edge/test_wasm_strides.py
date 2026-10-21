@@ -10,11 +10,12 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 @pytest.fixture(autouse=True)
@@ -52,7 +53,7 @@ def global_wasm_mock() -> Iterator[None]:
             Args:
                 template_name: Test parameter `template_name`.
             """
-            return {"body": typing.cast("EagerCallableProtocol", mock_bodies.get)(template_name, typing.cast("EagerTensorProtocol", "// ") + typing.cast("EagerTensorProtocol", template_name))}
+            return {"body": as_callable(mock_bodies.get)(template_name, as_tensor("// ") + as_tensor(template_name))}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
 

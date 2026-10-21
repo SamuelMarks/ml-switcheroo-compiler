@@ -10,13 +10,13 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter, IRValidator, PassManager, _graph_hash
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_load_from_config() -> None:
@@ -231,9 +231,9 @@ def test_pass_manager_nodes_list() -> None:
 
     IRValidator()
     mock_g = MockGraph()
-    typing.cast("EagerCallableProtocol", IRValidator.check_shapes)(mock_g)
-    h = typing.cast("EagerCallableProtocol", _graph_hash)(mock_g)
-    assert isinstance(typing.cast("EagerValue", h), str)
+    as_callable(IRValidator.check_shapes)(mock_g)
+    h = as_callable(_graph_hash)(mock_g)
+    assert isinstance(as_tensor(h), str)
 
 
 def test_pass_pipeline_load_and_prerequisites() -> None:
@@ -306,11 +306,11 @@ def test_pass_manager_coverage_branches() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = as_tensor_dict({})
 
     dg = DummyGraphWithoutIO()
-    typing.cast("EagerCallableProtocol", _restore_graph)(dg, snap)
-    typing.cast("EagerCallableProtocol", _restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
+    as_callable(_restore_graph)(dg, snap)
+    as_callable(_restore_graph)(dg, {"nodes": [], "inputs": [], "outputs": []})
     from ml_switcheroo_ir import LogicalGraph
 
     lg = LogicalGraph("test_lg")

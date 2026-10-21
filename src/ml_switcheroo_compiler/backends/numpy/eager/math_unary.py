@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -88,7 +86,7 @@ def _np_erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     if hasattr(backend_module, "asarray"):
         x = backend_module.asarray(x)
     if getattr(x, "ndim", 0) == 0:
-        return math.erf(float(typing.cast(float, x)))
+        return math.erf(float(as_float(x)))
     return backend_module.vectorize(math.erf)(x)
 
 
@@ -110,7 +108,7 @@ def _np_erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     if hasattr(backend_module, "asarray"):
         x = backend_module.asarray(x)
     if getattr(x, "ndim", 0) == 0:
-        return math.erfc(float(typing.cast(float, x)))
+        return math.erfc(float(as_float(x)))
     return backend_module.vectorize(math.erfc)(x)
 
 
@@ -196,7 +194,7 @@ def _np_angle(backend_module: BackendModuleProtocol, x: EagerValue, **kwargs: Ea
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(np, "angle")(x))
+    return as_tensor(getattr(np, "angle")(x))
 
 
 @numpy_eager_registry.register("Expm1")

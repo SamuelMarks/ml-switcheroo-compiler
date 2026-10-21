@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 
 try:
     import dask.array as da
@@ -129,7 +129,7 @@ class DaskGenerator(PythonStringGenerator):
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return typing.cast(EagerValue, evaluated)
+            return as_tensor(evaluated)
 
         try:
             import dask
@@ -149,7 +149,7 @@ class DaskGenerator(PythonStringGenerator):
                 """
                 da_args = [getattr(da, "from_array")(a.data if isinstance(a, Tensor) else a) for a in w_args]
                 task = delayed_fn(*da_args)
-                return typing.cast(EagerValue, getattr(dask, "compute")(task)[0])
+                return as_tensor(getattr(dask, "compute")(task)[0])
 
             return dask_aot_runner
         except Exception:

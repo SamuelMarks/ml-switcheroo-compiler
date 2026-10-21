@@ -7,10 +7,10 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as mod
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+    pass
 
 
 def test_custom_coverage() -> None:
@@ -49,6 +49,6 @@ def test_custom_coverage() -> None:
 
         pass
 
-    mod._np_descriptive(typing.cast("EagerValue", DummyBk()), np.array([1.0]))
-    mod._np_distributions(typing.cast("BackendModuleProtocol", DummyBk()), np.array([1.0]))
+    mod._np_descriptive(as_tensor(DummyBk()), np.array([1.0]))
+    mod._np_distributions(as_mod(DummyBk()), np.array([1.0]))
     assert callable(test_custom_coverage)

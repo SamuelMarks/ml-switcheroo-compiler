@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 from .conv1d import conv1d, depthwise_conv1d, separable_conv1d
@@ -72,8 +71,7 @@ def conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             conv1d(
                 inputs,
                 kernel,
@@ -81,11 +79,10 @@ def conv(
                 padding=conf.padding,
                 lhs_dilation=1,
                 rhs_dilation=conf.dilation_rate,
-            ),
+            )
         )
     elif spatial_rank == MATRIX_RANK:
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             conv2d(
                 inputs,
                 kernel,
@@ -93,11 +90,10 @@ def conv(
                 padding=conf.padding,
                 lhs_dilation=1,
                 rhs_dilation=conf.dilation_rate,
-            ),
+            )
         )
     elif spatial_rank == MIN_CONV_RANK:
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             conv3d(
                 inputs,
                 kernel,
@@ -105,7 +101,7 @@ def conv(
                 padding=conf.padding,
                 lhs_dilation=1,
                 rhs_dilation=conf.dilation_rate,
-            ),
+            )
         )
     else:
         raise ValueError(f"Unsupported spatial rank: {spatial_rank}")
@@ -132,8 +128,7 @@ def depthwise_conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             depthwise_conv1d(
                 inputs,
                 kernel,
@@ -141,11 +136,10 @@ def depthwise_conv(
                 padding=conf.padding,
                 lhs_dilation=1,
                 rhs_dilation=conf.dilation_rate,
-            ),
+            )
         )
     elif spatial_rank == MATRIX_RANK:
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             depthwise_conv2d(
                 inputs,
                 kernel,
@@ -154,7 +148,7 @@ def depthwise_conv(
                     padding=conf.padding,
                     dilation_rate=conf.dilation_rate,
                 ),
-            ),
+            )
         )
     else:
         raise ValueError(f"Unsupported spatial rank for depthwise_conv: {spatial_rank}")
@@ -183,8 +177,7 @@ def separable_conv(
     conf = config if config is not None else GenericConvConfig()
     spatial_rank = len(inputs.shape) - 2
     if spatial_rank == 1:
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             separable_conv1d(
                 inputs,
                 depthwise_kernel,
@@ -193,11 +186,10 @@ def separable_conv(
                 padding=conf.padding,
                 lhs_dilation=1,
                 rhs_dilation=conf.dilation_rate,
-            ),
+            )
         )
     elif spatial_rank == MATRIX_RANK:
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             separable_conv2d(
                 inputs,
                 depthwise_kernel,
@@ -206,7 +198,7 @@ def separable_conv(
                 padding=conf.padding,
                 lhs_dilation=1,
                 rhs_dilation=conf.dilation_rate,
-            ),
+            )
         )
     else:
         raise ValueError(f"Unsupported spatial rank for separable_conv: {spatial_rank}")

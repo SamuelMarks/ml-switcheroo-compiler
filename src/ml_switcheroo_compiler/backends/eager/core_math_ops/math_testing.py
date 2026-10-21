@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -39,14 +38,14 @@ def _allclose(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         """
         x_data = getattr(x, "data", x)
         if hasattr(x_data, "item") and callable(getattr(x_data, "item")):
-            return typing.cast("EagerValue", getattr(x_data, "item")())
+            return as_tensor(getattr(x_data, "item")())
         if hasattr(x_data, "tolist"):
-            return typing.cast("EagerValue", getattr(x_data, "tolist")())
+            return as_tensor(getattr(x_data, "tolist")())
         return x_data
 
     if hasattr(backend_module, "allclose"):
-        return typing.cast("EagerValue", getattr(backend_module, "allclose")(a, b, rtol=float(typing.cast(float, _val(rtol))), atol=float(typing.cast(float, _val(atol))), equal_nan=bool(_val(equal_nan))))
-    return _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(typing.cast(float, _val(rtol))), atol=float(typing.cast(float, _val(atol))), equal_nan=bool(_val(equal_nan)))
+        return as_tensor(getattr(backend_module, "allclose")(a, b, rtol=float(as_float(_val(rtol))), atol=float(as_float(_val(atol))), equal_nan=bool(_val(equal_nan))))
+    return _resolve_eager_mod(backend_module).allclose(a, b, rtol=float(as_float(_val(rtol))), atol=float(as_float(_val(atol))), equal_nan=bool(_val(equal_nan)))
 
 
 @global_eager_registry.register("ArrayEquiv")
@@ -108,7 +107,7 @@ def _promotetypes(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "promote_types")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "promote_types")(*args, **kwargs))
 
 
 @global_eager_registry.register("ResultType")
@@ -123,4 +122,4 @@ def _resulttype(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "result_type")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "result_type")(*args, **kwargs))

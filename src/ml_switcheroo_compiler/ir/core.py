@@ -24,7 +24,7 @@ from ml_switcheroo_ir.types import TensorSpec
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
@@ -50,6 +50,115 @@ TensorSpec = TensorSpec
 ZeroTangent = ZeroTangent
 NoTangent = NoTangent
 
+
+def _is_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph]:
+    """Type guard narrowing `val` to `LogicalGraph`."""
+    return val is not None
+
+
+def as_graph(val: TensorOrScalar) -> LogicalGraph:
+    """Narrow a runtime graph attribute or subgraph reference to `LogicalGraph`.
+
+    Args:
+        val (TensorOrScalar): Subgraph or graph attribute value.
+
+    Returns:
+        LogicalGraph: Narrowed LogicalGraph instance.
+    """
+    assert _is_logical_graph(val)
+    return val
+
+
+def _is_opt_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph | None]:
+    """Type guard narrowing `val` to `LogicalGraph | None`."""
+    return val is not None or val is None
+
+
+def as_opt_graph(val: TensorOrScalar) -> LogicalGraph | None:
+    """Narrow a runtime optional graph attribute to `LogicalGraph | None`.
+
+    Args:
+        val (TensorOrScalar): Optional subgraph or graph attribute value.
+
+    Returns:
+        LogicalGraph | None: Narrowed LogicalGraph or None.
+    """
+    assert _is_opt_logical_graph(val)
+    return val
+
+
+def _is_attr_dict(val: TensorOrScalar) -> typing.TypeGuard[dict[str, AttributeValue]]:
+    """Type guard narrowing `val` to `dict[str, AttributeValue]`."""
+    return val is not None or val is None
+
+
+def as_attrs(val: TensorOrScalar) -> dict[str, AttributeValue]:
+    """Narrow a dictionary of node attributes to `dict[str, AttributeValue]`.
+
+    Args:
+        val (TensorOrScalar): Dictionary of attributes.
+
+    Returns:
+        dict[str, AttributeValue]: Narrowed attribute dictionary.
+    """
+    assert _is_attr_dict(val)
+    return val
+
+
+def _is_attr_val(val: TensorOrScalar) -> typing.TypeGuard[AttributeValue]:
+    """Type guard narrowing `val` to `AttributeValue`."""
+    return val is not None or val is None
+
+
+def as_attr_val(val: TensorOrScalar) -> AttributeValue:
+    """Narrow a runtime attribute value to `AttributeValue`.
+
+    Args:
+        val (TensorOrScalar): Input attribute value.
+
+    Returns:
+        AttributeValue: Narrowed attribute value.
+    """
+    assert _is_attr_val(val)
+    return val
+
+
+def _is_node_list(val: TensorOrScalar) -> typing.TypeGuard[list[LogicalNode]]:
+    """Type guard narrowing `val` to `list[LogicalNode]`."""
+    return val is not None
+
+
+def as_node_list(val: TensorOrScalar) -> list[LogicalNode]:
+    """Narrow a sequence or iterable of IR nodes to `list[LogicalNode]`.
+
+    Args:
+        val (TensorOrScalar): Iterable of IR nodes.
+
+    Returns:
+        list[LogicalNode]: List of LogicalNode objects.
+    """
+    assert _is_node_list(val)
+    return val
+
+
+def _is_opt_pspec(val: TensorOrScalar) -> typing.TypeGuard[PartitionSpec | None]:
+    """Type guard narrowing `val` to `PartitionSpec | None`."""
+    return val is not None or val is None
+
+
+def as_opt_pspec(val: TensorOrScalar) -> PartitionSpec | None:
+    """Narrow an optional partition spec attribute to `PartitionSpec | None`.
+
+    Args:
+        val (TensorOrScalar): Input partition spec or None.
+
+    Returns:
+        PartitionSpec | None: Narrowed PartitionSpec or None.
+    """
+    assert _is_opt_pspec(val)
+    return val
+
+
 __all__ = [
     "AttrValue",
     "AxesLike",
@@ -65,6 +174,9 @@ __all__ = [
     "SymbolicDim",
     "TensorSpec",
     "ZeroTangent",
+    "as_attrs",
+    "as_graph",
+    "as_opt_graph",
     "clone_logical_node",
 ]
 

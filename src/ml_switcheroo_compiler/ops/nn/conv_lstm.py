@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.core.constants import (
     CONV_2D_TENSOR_RANK,
     CONV_3D_TENSOR_RANK,
     MIN_CONV_RANK,
 )
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.nn.conv import (
     conv1d,
@@ -126,7 +124,7 @@ def conv1d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(typing.cast("Tensor", x_conv), typing.cast("Tensor", h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(as_tensor_obj(x_conv), as_tensor_obj(h_conv), state, weights, conf.data_format)
 
 
 def conv2d_lstm_cell(
@@ -164,7 +162,7 @@ def conv2d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(typing.cast("Tensor", x_conv), typing.cast("Tensor", h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(as_tensor_obj(x_conv), as_tensor_obj(h_conv), state, weights, conf.data_format)
 
 
 def conv3d_lstm_cell(
@@ -202,7 +200,7 @@ def conv3d_lstm_cell(
         data_format=conf.data_format,
     )
 
-    return _apply_conv_lstm_gates(typing.cast("Tensor", x_conv), typing.cast("Tensor", h_conv), state, weights, conf.data_format)
+    return _apply_conv_lstm_gates(as_tensor_obj(x_conv), as_tensor_obj(h_conv), state, weights, conf.data_format)
 
 
 def _sigmoid(x: Tensor) -> Tensor:

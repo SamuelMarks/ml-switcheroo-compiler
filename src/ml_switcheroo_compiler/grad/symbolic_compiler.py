@@ -13,7 +13,7 @@ from collections.abc import Sequence
 import yaml
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_str
 from ml_switcheroo_compiler.grad.config_models import (
     AutodiffRuleModel,
     AutodiffRulesManifestModel,
@@ -32,7 +32,7 @@ class SymbolicExpressionCompiler:
         """Initialize the symbolic compiler with an optional custom manifest path.
 
         Args:
-            manifest_path (str | None): Optional filesystem path to autodiff rules YAML manifest.
+            manifest_path (str | None): Optional filesystem path to autodiff rules directory or YAML manifest.
         """
         if manifest_path is None:
             manifest_path = os.path.abspath(
@@ -40,7 +40,7 @@ class SymbolicExpressionCompiler:
                     os.path.dirname(__file__),
                     "..",
                     "transforms",
-                    "autodiff_rules.yaml",
+                    "autodiff_rules",
                 )
             )
         self.manifest_path: str = manifest_path
@@ -53,13 +53,29 @@ class SymbolicExpressionCompiler:
             AutodiffRulesManifestModel: Validated autodiff rules manifest model.
 
         Raises:
-            FileNotFoundError: If the configured manifest file does not exist.
+            FileNotFoundError: If the configured manifest path does not exist.
         """
         if self._manifest is not None:
             return self._manifest
 
         if not os.path.exists(self.manifest_path):
             raise FileNotFoundError(f"Autodiff rules manifest not found at: {self.manifest_path}")
+
+        if os.path.isdir(self.manifest_path):
+            combined_data: dict[str, dict[str, AttributeValue]] = {
+                "jvp_rules": {},
+                "vjp_rules": {},
+                "higher_order_rules": {},
+            }
+            for section in ("jvp_rules", "vjp_rules", "higher_order_rules"):
+                sec_file = os.path.join(self.manifest_path, f"{section}.yaml")
+                if os.path.exists(sec_file):
+                    with open(sec_file, encoding="utf-8") as f:
+                        sec_data = yaml.safe_load(f) or {}
+                    if isinstance(sec_data, dict):
+                        combined_data[section].update(sec_data)
+            self._manifest = AutodiffRulesManifestModel.model_validate(combined_data)
+            return self._manifest
 
         with open(self.manifest_path, encoding="utf-8") as f:
             raw_data: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue] | None] = yaml.safe_load(f) or {}
@@ -200,7 +216,7 @@ class SymbolicExpressionCompiler:
         attrs.update(parsed_attrs)
 
         shape_meta = getattr(node, "shape_metadata", None)
-        return typing.cast(str, typing.cast("EagerCallableProtocol", emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
+        return as_str(as_callable(emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
 
     def _resolve_symbolic_variable(
         self,

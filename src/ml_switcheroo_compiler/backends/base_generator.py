@@ -11,7 +11,7 @@ from types import ModuleType
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_str, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
@@ -73,7 +73,7 @@ class CompiledArtifact(pydantic.BaseModel):
         """
         if self.callable_fn is None:
             raise RuntimeError("CompiledArtifact has no executable callable bound.")
-        return typing.cast(TypedVariadicCallable[EagerValue], self.callable_fn)(*args, **kwargs)
+        return as_callable(self.callable_fn)(*args, **kwargs)
 
     def cleanup(self) -> None:
         """Clean up associated temporary directory resources if active."""
@@ -96,7 +96,7 @@ class CompiledArtifact(pydantic.BaseModel):
         if self.metadata is not None and item in self.metadata:
             return self.metadata[item]
         if hasattr(self, item):
-            return typing.cast(EagerValue, getattr(self, item))
+            return as_tensor(getattr(self, item))
         raise KeyError(item)
 
 
@@ -504,10 +504,10 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         for visitor in getattr(self, "visitors", []):
             if hasattr(visitor, method_name):
                 method = getattr(visitor, method_name)
-                return typing.cast(str, method(node, input_vars, **kwargs))
+                return as_str(method(node, input_vars, **kwargs))
         if hasattr(self, method_name) and method_name != "visit_OpNode":
             method = getattr(self, method_name)
-            return typing.cast(str, method(node, input_vars, **kwargs))
+            return as_str(method(node, input_vars, **kwargs))
         if hasattr(self, "visit_OpNode"):
             return self.visit_OpNode(node, input_vars, **kwargs)
         return self.generic_visit(node, input_vars, **kwargs)
@@ -574,7 +574,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         if isinstance(self, type):
             instance = self(target_graph)
-            return typing.cast(EagerValue, instance.compile_aot(target_graph, **kwargs))
+            return as_tensor(instance.compile_aot(target_graph, **kwargs))
 
         if not hasattr(self, "_aot_cache") or getattr(self, "_aot_cache", None) is None:
             self._aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], EagerValue] = {}

@@ -6,7 +6,7 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 from ml_switcheroo_compiler.grad.utils import GradTensorProtocol
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.eager_evaluator import (
@@ -15,6 +15,7 @@ from ml_switcheroo_compiler.ops.eager_evaluator import (
     EvaluationContext,
     EvaluationStrategy,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     pass
@@ -215,7 +216,7 @@ class MockInterpreterTensor:
 def test_eager_tensor_protocol_conformance() -> None:
     """Verify MockEagerTensor conforms to EagerTensorProtocol."""
     t = MockEagerTensor((4, 4))
-    assert isinstance(typing.cast("EagerValue", t), EagerTensorProtocol)
+    assert isinstance(as_tensor(t), EagerTensorProtocol)
     assert t.shape == (4, 4)
     assert t.dtype == "float32"
     assert len(t) == 4
@@ -247,7 +248,7 @@ def test_grad_tensor_protocol_conformance() -> None:
 def test_tensor_like_protocol_conformance() -> None:
     """Verify MockInterpreterTensor conforms to TensorLike protocol."""
     it = MockInterpreterTensor()
-    assert isinstance(typing.cast("EagerValue", it), TensorLike)
+    assert isinstance(as_tensor(it), TensorLike)
     assert it.shape == (1,)
     assert it[0] is it
     assert it.item() == 42.0
@@ -336,17 +337,17 @@ def test_custom_eager_eval_strategy() -> None:
 
     # Test base abstract evaluate method
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        typing.cast("EagerCallableProtocol", EvaluationStrategy)()
+        as_callable(EvaluationStrategy)()
 
     # Test instance passed as op_cls
-    ctx_inst = typing.cast("EagerCallableProtocol", EvaluationContext)(
-        op_cls=typing.cast("EagerCallableProtocol", OpWithEagerEval)(),  # instance rather than type
+    ctx_inst = as_callable(EvaluationContext)(
+        op_cls=as_callable(OpWithEagerEval)(),  # instance rather than type
         op_type="Add",
         args=[10, 20],
         kwargs={},
         backend=DummyBackend,
     )
-    assert typing.cast("EagerCallableProtocol", strategy.evaluate)(ctx_inst) == 30
+    assert as_callable(strategy.evaluate)(ctx_inst) == 30
 
 
 def test_eager_evaluator_dispatch_and_packing() -> None:
@@ -380,7 +381,7 @@ def test_eager_evaluator_dispatch_and_packing() -> None:
 
     res = EagerEvaluator.evaluate("Add", t1, t2)
     assert isinstance(res, Tensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res.data, typing.cast("EagerCallableProtocol", np.array)([4.0, 6.0]))
+    as_callable(np.testing.assert_allclose)(res.data, as_callable(np.array)([4.0, 6.0]))
 
     # Test packing multiple tuple outputs
     res_tuple = EagerEvaluator._pack_outputs((arr1, arr2), t1, "cpu")

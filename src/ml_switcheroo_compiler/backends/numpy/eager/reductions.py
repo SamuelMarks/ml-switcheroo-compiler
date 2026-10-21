@@ -8,9 +8,8 @@ import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
 from ml_switcheroo_compiler.backends.eager import nms_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.configs import WindowConfig
@@ -46,8 +45,6 @@ def _calculate_padding_for_window(padding: str | list[tuple[int, int]], operand_
     if isinstance(padding, str):
         if padding == "SAME":
             return _calc_same_padding(operand_ndim, window_dimensions)
-        return [(0, 0)] * operand_ndim
-    if not padding:
         return [(0, 0)] * operand_ndim
     return [(p[0], p[1]) for p in padding]
 
@@ -143,8 +140,20 @@ def _reduce_window(operand: EagerValue, init_value: EagerValue, computation: str
     operand_arr = np.asarray(operand)
     if not operand_arr.shape:
         operand_arr = operand_arr.reshape((1,))
-    operand_arr = typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", _apply_base_dilation)(operand_arr, config.base_dilation, init_value)
-    pad_width = typing.cast("TypedVariadicCallable[list[tuple[int, int]]]", _calculate_padding_for_window)(config.padding, operand_arr.ndim, config.window_dimensions)
+    base_dil = list(config.base_dilation) if config.base_dilation is not None else None
+    operand_arr = _apply_base_dilation(operand_arr, base_dil, init_value)
+    pad_cfg: str | list[tuple[int, int]]
+    if config.padding is None:
+        pad_cfg = "VALID"
+    elif isinstance(config.padding, str):
+        pad_cfg = config.padding
+    else:
+        pad_cfg = [(p[0], p[1]) if isinstance(p, tuple) else (int(p), int(p)) for p in config.padding]
+    pad_width = _calculate_padding_for_window(
+        pad_cfg,
+        operand_arr.ndim,
+        config.window_dimensions,
+    )
     operand_arr = getattr(np, "pad")(operand_arr, pad_width, mode="constant", constant_values=init_value)
     (view, axis_to_reduce) = _create_sliding_window_view(operand_arr, config)
     strategies: dict[str, EagerCallableProtocol] = {
@@ -170,7 +179,7 @@ def _logsumexp(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = Fa
             tuple[int, ...]: Result.
     """
     xmax = getattr(np, "max")(x, axis=axis, keepdims=True)
-    return typing.cast("EagerValue", np.log(getattr(np, "sum")(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax))
+    return as_tensor(np.log(getattr(np, "sum")(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax))
 
 
 def _segment_sum(
@@ -210,7 +219,7 @@ def _np_nms(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: Ea
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", nms_eager)(backend_module, boxes, scores, max_output_size, **kwargs)
+    return as_callable(nms_eager)(backend_module, boxes, scores, max_output_size, **kwargs)
 
 
 @numpy_eager_registry.register("TrapezoidalIntegral")
@@ -228,7 +237,7 @@ def _np_trapezoidal_integral(backend_module: BackendModuleProtocol, y: EagerValu
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
     axis = kwargs.get("axis", -1)
-    trapz_fn = typing.cast(TypedVariadicCallable[EagerValue], getattr(np, "trapezoid", getattr(np, "trapz", None)))
+    trapz_fn = as_callable(getattr(np, "trapezoid", getattr(np, "trapz", None)))
     if x is not None:
         return trapz_fn(y, x=x, axis=axis)
     return trapz_fn(y, dx=dx, axis=axis)
@@ -253,8 +262,8 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, labels: EagerVal
     y_pred = getattr(predictions, "flatten")()
     if num_classes is None:
         num_classes = max(np.max(y_true), np.max(y_pred)) + 1
-    cm = getattr(np, "bincount")(typing.cast(EagerTensorProtocol, y_true) * typing.cast(EagerTensorProtocol, num_classes) + typing.cast(EagerTensorProtocol, y_pred), weights=weights, minlength=typing.cast(EagerTensorProtocol, num_classes) ** 2)
-    return typing.cast("EagerValue", getattr(cm, "reshape")((num_classes, num_classes)))
+    cm = getattr(np, "bincount")(as_tensor(y_true) * as_tensor(num_classes) + as_tensor(y_pred), weights=weights, minlength=as_tensor(num_classes) ** 2)
+    return as_tensor(getattr(cm, "reshape")((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Cummax")
@@ -274,8 +283,8 @@ def _np_cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
         dtype = getattr(dtype, "value", dtype)
-        return typing.cast("EagerValue", getattr(np.maximum, "accumulate")(a, axis=axis, dtype=dtype))
-    return typing.cast("EagerValue", getattr(np.maximum, "accumulate")(a, axis=axis))
+        return as_tensor(getattr(np.maximum, "accumulate")(a, axis=axis, dtype=dtype))
+    return as_tensor(getattr(np.maximum, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("Cummin")
@@ -295,8 +304,8 @@ def _np_cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
         dtype = getattr(dtype, "value", dtype)
-        return typing.cast("EagerValue", getattr(np.minimum, "accumulate")(a, axis=axis, dtype=dtype))
-    return typing.cast("EagerValue", getattr(np.minimum, "accumulate")(a, axis=axis))
+        return as_tensor(getattr(np.minimum, "accumulate")(a, axis=axis, dtype=dtype))
+    return as_tensor(getattr(np.minimum, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("Cumprod")
@@ -314,7 +323,7 @@ def _np_cumprod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
         kwargs["dtype"] = getattr(dtype, "value", dtype)
-    return typing.cast("EagerValue", getattr(np, "cumprod")(*args, **kwargs))
+    return as_tensor(getattr(np, "cumprod")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Cumlogsumexp")
@@ -333,7 +342,7 @@ def _np_cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, *
     axis = kwargs.get("axis", None)
     if axis is None:
         return np.logaddexp.accumulate(getattr(np, "ravel")(a))
-    return typing.cast("EagerValue", getattr(np.logaddexp, "accumulate")(a, axis=axis))
+    return as_tensor(getattr(np.logaddexp, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("ApproxMaxK")
@@ -385,7 +394,7 @@ def _np_approx_min_k(backend_module: BackendModuleProtocol, x: EagerValue, *args
     if getattr(x, "size") == 0:
         return (x, x)
     idx = getattr(np, "argsort")(x, axis=reduction_dimension)
-    idx = getattr(np, "take")(idx, range(typing.cast("int", k)), axis=reduction_dimension)
+    idx = getattr(np, "take")(idx, range(as_int(k)), axis=reduction_dimension)
     val = getattr(np, "take_along_axis")(x, idx, axis=reduction_dimension)
     return (val, idx)
 
@@ -403,7 +412,7 @@ def _get_k_val(k: EagerValue) -> int:
         return int(getattr(k, "item")())
     if hasattr(k, "data") and hasattr(getattr(k, "data"), "item"):
         return int(getattr(k, "data").item())
-    return int(typing.cast(int, k))
+    return int(as_int(k))
 
 
 @numpy_eager_registry.register("TopK")
@@ -429,11 +438,11 @@ def _np_top_k(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
     if return_indices is False:
         val = backend_module.partition(x, kth, axis=axis)
         slc = [slice(None)] * len(getattr(x, "shape"))
-        typing.cast(EagerTensorProtocol, slc)[axis] = slice(-k, None)
+        as_tensor(slc)[axis] = slice(-k, None)
         return val[tuple(slc)]
     idx = backend_module.argpartition(x, kth, axis=axis)
     slc = [slice(None)] * len(getattr(x, "shape"))
-    typing.cast(EagerTensorProtocol, slc)[axis] = slice(-k, None)
+    as_tensor(slc)[axis] = slice(-k, None)
     idx_k = idx[tuple(slc)]
     if return_indices is True:
         return idx_k

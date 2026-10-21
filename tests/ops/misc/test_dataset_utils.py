@@ -27,9 +27,10 @@ from ml_switcheroo_compiler.utils.dataset_utils import (
     timeseries_dataset_from_array,
     unpack_x_y_sample_weight,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_numpy_dataset() -> None:
@@ -155,4 +156,4 @@ def test_pad_sequences() -> None:
 
 def test_split_dataset() -> None:
     """Test function test_split_dataset."""
-    assert typing.cast("EagerCallableProtocol", split_dataset)("ds") == ("ds", "ds")
+    assert as_callable(split_dataset)("ds") == ("ds", "ds")

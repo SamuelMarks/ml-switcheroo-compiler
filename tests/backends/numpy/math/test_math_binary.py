@@ -30,9 +30,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_binary import (
     _np_true_divide,
     _np_zeta,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_math_binary_ops() -> None:
@@ -42,38 +43,38 @@ def test_math_binary_ops() -> None:
     ia = np.array([2, 4])
     ib = np.array([1, 2])
 
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_add)(np, a, b), a + b)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_subtract)(np, a, b), a - b)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_multiply)(np, a, b), a * b)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_true_divide)(np, a, b), a / b)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_maximum)(np, a, b), typing.cast("EagerCallableProtocol", np.maximum)(a, b))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_minimum)(np, a, b), typing.cast("EagerCallableProtocol", np.minimum)(a, b))
+    assert as_callable(np.array_equal)(as_callable(_np_add)(np, a, b), a + b)
+    assert as_callable(np.array_equal)(as_callable(_np_subtract)(np, a, b), a - b)
+    assert as_callable(np.array_equal)(as_callable(_np_multiply)(np, a, b), a * b)
+    assert as_callable(np.array_equal)(as_callable(_np_true_divide)(np, a, b), a / b)
+    assert as_callable(np.array_equal)(as_callable(_np_maximum)(np, a, b), as_callable(np.maximum)(a, b))
+    assert as_callable(np.array_equal)(as_callable(_np_minimum)(np, a, b), as_callable(np.minimum)(a, b))
 
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_bitwise_and)(np, ia, ib), typing.cast("EagerCallableProtocol", np.bitwise_and)(ia, ib))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_bitwise_or)(np, ia, ib), typing.cast("EagerCallableProtocol", np.bitwise_or)(ia, ib))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_bitwise_xor)(np, ia, ib), typing.cast("EagerCallableProtocol", np.bitwise_xor)(ia, ib))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_left_shift)(np, ia, ib), typing.cast("EagerCallableProtocol", np.left_shift)(ia, ib))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_right_shift)(np, ia, ib), typing.cast("EagerCallableProtocol", np.right_shift)(ia, ib))
+    assert as_callable(np.array_equal)(as_callable(_np_bitwise_and)(np, ia, ib), as_callable(np.bitwise_and)(ia, ib))
+    assert as_callable(np.array_equal)(as_callable(_np_bitwise_or)(np, ia, ib), as_callable(np.bitwise_or)(ia, ib))
+    assert as_callable(np.array_equal)(as_callable(_np_bitwise_xor)(np, ia, ib), as_callable(np.bitwise_xor)(ia, ib))
+    assert as_callable(np.array_equal)(as_callable(_np_left_shift)(np, ia, ib), as_callable(np.left_shift)(ia, ib))
+    assert as_callable(np.array_equal)(as_callable(_np_right_shift)(np, ia, ib), as_callable(np.right_shift)(ia, ib))
 
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_logaddexp)(np, a, b), typing.cast("EagerCallableProtocol", np.logaddexp)(a, b))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_logaddexp2)(np, a, b), typing.cast("EagerCallableProtocol", np.logaddexp2)(a, b))
+    assert as_callable(np.array_equal)(as_callable(_np_logaddexp)(np, a, b), as_callable(np.logaddexp)(a, b))
+    assert as_callable(np.array_equal)(as_callable(_np_logaddexp2)(np, a, b), as_callable(np.logaddexp2)(a, b))
 
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_nan_to_num)(np, typing.cast("EagerCallableProtocol", np.array)([np.nan, 1.0])), typing.cast("EagerCallableProtocol", np.nan_to_num)([np.nan, 1.0]))
+    assert as_callable(np.array_equal)(as_callable(_np_nan_to_num)(np, as_callable(np.array)([np.nan, 1.0])), as_callable(np.nan_to_num)([np.nan, 1.0]))
 
-    f1, f2 = typing.cast("EagerCallableProtocol", _np_frexp)(np, a)
+    f1, f2 = as_callable(_np_frexp)(np, a)
     expected_f1, expected_f2 = np.frexp(a)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(f1, expected_f1)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(f2, expected_f2)
+    assert as_callable(np.array_equal)(f1, expected_f1)
+    assert as_callable(np.array_equal)(f2, expected_f2)
 
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_clip)(np, a, 2.0, 3.0), typing.cast("EagerCallableProtocol", np.clip)(a, 2.0, 3.0))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_amax)(np, a), typing.cast("EagerCallableProtocol", np.amax)(a))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_amin)(np, a), typing.cast("EagerCallableProtocol", np.amin)(a))
+    assert as_callable(np.array_equal)(as_callable(_np_clip)(np, a, 2.0, 3.0), as_callable(np.clip)(a, 2.0, 3.0))
+    assert as_callable(np.array_equal)(as_callable(_np_amax)(np, a), as_callable(np.amax)(a))
+    assert as_callable(np.array_equal)(as_callable(_np_amin)(np, a), as_callable(np.amin)(a))
 
     x = np.array([0.1, 0.9])
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerCallableProtocol", _np_logit)(np, x), typing.cast("EagerCallableProtocol", np.log)(x / (1.0 - x)))
+    assert as_callable(np.allclose)(as_callable(_np_logit)(np, x), as_callable(np.log)(x / (1.0 - x)))
 
     # stubs return zeros
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_polygamma)(np, a), typing.cast("EagerCallableProtocol", np.zeros_like)(a))
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_zeta)(np, a), typing.cast("EagerCallableProtocol", np.zeros_like)(a))
+    assert as_callable(np.array_equal)(as_callable(_np_polygamma)(np, a), as_callable(np.zeros_like)(a))
+    assert as_callable(np.array_equal)(as_callable(_np_zeta)(np, a), as_callable(np.zeros_like)(a))
 
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _eager_remainder)(np, a, b), typing.cast("EagerCallableProtocol", np.remainder)(a, b))
+    assert as_callable(np.array_equal)(as_callable(_eager_remainder)(np, a, b), as_callable(np.remainder)(a, b))

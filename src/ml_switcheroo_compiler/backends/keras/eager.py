@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import sys
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_str, as_tensor
 from ml_switcheroo_compiler.backends.mapping_loader import OpMappingSchema
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -38,7 +37,7 @@ def _convert_arg(arg: EagerValue, keras: EagerValue | None) -> EagerValue:
     ops_mod = getattr(keras, "ops", None) if keras is not None else None
     if isinstance(arg, (list, tuple)) and ops_mod is not None and hasattr(ops_mod, "convert_to_tensor"):
         try:
-            return typing.cast(EagerValue, ops_mod.convert_to_tensor(arg))
+            return as_tensor(ops_mod.convert_to_tensor(arg))
         except Exception:
             return arg
     return arg
@@ -68,16 +67,16 @@ def _try_dispatch_mapped_op(
     if not (target_api or custom_code):
         return None
 
-    func = resolve_target_api(typing.cast("str", target_api), custom_code, keras)
+    func = resolve_target_api(as_str(target_api), custom_code, keras)
     if func is None or not callable(func):
         return None
 
     kwarg_trans = getattr(op_spec, "kwarg_translations", {}) or {}
     translated_kwargs: dict[str, EagerValue] = {kwarg_trans.get(k, k): v for k, v in kwargs.items()}
     if getattr(op_spec, "is_method", False) and args:
-        method = getattr(args[0], typing.cast("str", target_api), None)
+        method = getattr(args[0], as_str(target_api), None)
         if method is not None and callable(method):
-            return typing.cast(typing.Union[EagerValue, "None"], method(*args[1:], **translated_kwargs))
+            return as_tensor(method(*args[1:], **translated_kwargs))
     return func(*args, **translated_kwargs)
 
 

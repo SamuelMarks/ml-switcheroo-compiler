@@ -31,9 +31,10 @@ from ml_switcheroo_compiler.ops.shape_inference import (
     infer_transpose,
 )
 from ml_switcheroo_compiler.transforms.passes.shape_inference import shape_inference_pass
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_symbolic_dimension() -> None:
@@ -284,7 +285,7 @@ def test_shape_inference_pass_with_strides_and_symbolic() -> None:
 
     modified = shape_inference_pass(graph)
     assert modified is True
-    assert typing.cast("EagerValue", graph.nodes["add"].shape_metadata) == (S("batch"), 4)
+    assert as_tensor(graph.nodes["add"].shape_metadata) == (S("batch"), 4)
     assert graph.nodes["add"].attributes["strides"] == (4, 1)
 
 
@@ -305,7 +306,7 @@ def test_load_shape_signatures_missing_file(monkeypatch: EagerTensorProtocol) ->
 
 def test_broadcast_shapes_none_and_edge_cases() -> None:
     """Test broadcasting with None inputs."""
-    assert typing.cast("EagerCallableProtocol", broadcast_shapes)(None, None) == ()
+    assert as_callable(broadcast_shapes)(None, None) == ()
 
 
 def test_conv_3d_and_symbolic() -> None:
@@ -457,12 +458,12 @@ def test_infer_shape_input_extractors() -> None:
             self.shape = s
 
     # Positional args
-    assert typing.cast("EagerCallableProtocol", infer_shape)("Add", typing.cast("EagerCallableProtocol", DummyMeta)((2, 3)), typing.cast("EagerCallableProtocol", DummyShape)((1, 3))) == (2, 3)
+    assert as_callable(infer_shape)("Add", as_callable(DummyMeta)((2, 3)), as_callable(DummyShape)((1, 3))) == (2, 3)
     assert infer_shape("Add", (2, 3), [1, 3]) == (2, 3)
 
     # inputs kwarg
-    assert typing.cast("EagerCallableProtocol", infer_shape)("Add", inputs=[typing.cast("EagerCallableProtocol", DummyMeta)((2, 3)), typing.cast("EagerCallableProtocol", DummyShape)((1, 3))]) == (2, 3)
-    assert typing.cast("EagerCallableProtocol", infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
+    assert as_callable(infer_shape)("Add", inputs=[as_callable(DummyMeta)((2, 3)), as_callable(DummyShape)((1, 3))]) == (2, 3)
+    assert as_callable(infer_shape)("Add", inputs=[(2, 3), [1, 3]]) == (2, 3)
 
 
 def test_coverage_gap_fillers() -> None:

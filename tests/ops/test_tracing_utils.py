@@ -10,9 +10,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import _get_tensor_ids
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MockData:
@@ -29,8 +30,8 @@ class MockData:
 
 def test_get_tensor_ids() -> None:
     """Test function test_get_tensor_ids."""
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("t1"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
-    t2 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("t2"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    t1 = as_callable(Tensor)(as_callable(MockData)("t1"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+    t2 = as_callable(Tensor)(as_callable(MockData)("t2"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
 
     assert _get_tensor_ids(t1) == ["t1"]
     assert _get_tensor_ids([t1, t2]) == ["t1", "t2"]

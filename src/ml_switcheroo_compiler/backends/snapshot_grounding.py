@@ -440,11 +440,13 @@ def compute_levenshtein(s1: str, s2: str) -> int:
     return previous_row[-1]
 
 
-def _split_signature_params(raw_params: list[AttributeValue]) -> list[list[dict[str, AttributeValue]]]:
+def _split_signature_params(
+    raw_params: list[AttributeValue] | list[dict[str, AttributeValue]],
+) -> list[list[dict[str, AttributeValue]]]:
     """Split concatenated or malformed parameter lists into coherent Python signatures.
 
     Args:
-        raw_params (list[AttributeValue]): Raw list of parameter dictionaries.
+        raw_params (list[AttributeValue] | list[dict[str, AttributeValue]]): Raw list of parameter dictionaries.
 
     Returns:
         list[list[dict[str, AttributeValue]]]: Extracted distinct signature parameter lists.
@@ -667,14 +669,14 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, Att
     signatures: list[list[dict[str, AttributeValue]]] = []
     if ref.params:
         primary_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ref.params]
-        signatures.extend(typing.cast("TypedVariadicCallable[list[list[dict[str, AttributeValue]]]]", _split_signature_params)(primary_sig))
+        signatures.extend(_split_signature_params(primary_sig))
 
     if ref.overloads:
         for ov in ref.overloads:
             ov_params: AttributeValue = getattr(ov, "params", ov.get("params") if isinstance(ov, dict) else None)
             if isinstance(ov_params, list) and ov_params:
                 ov_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ov_params]
-                signatures.extend(typing.cast("TypedVariadicCallable[list[list[dict[str, AttributeValue]]]]", _split_signature_params)(ov_sig))
+                signatures.extend(_split_signature_params(ov_sig))
     return signatures
 
 
@@ -690,7 +692,7 @@ def _signatures_from_item(item: dict[str, AttributeValue]) -> list[list[dict[str
     fallback_signatures: list[list[dict[str, AttributeValue]]] = []
     params_obj: AttributeValue = item.get("params")
     if isinstance(params_obj, list) and params_obj:
-        fallback_signatures.extend(typing.cast("TypedVariadicCallable[list[list[dict[str, AttributeValue]]]]", _split_signature_params)(params_obj))
+        fallback_signatures.extend(_split_signature_params(params_obj))
 
     overloads_obj: AttributeValue = item.get("overloads")
     if isinstance(overloads_obj, list):

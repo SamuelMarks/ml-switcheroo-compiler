@@ -7,9 +7,10 @@ import tempfile
 import typing
 
 from ml_switcheroo_compiler.serialization.formats.pickle_format import PickleWeightFormat
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_pickle_load_save() -> None:
@@ -17,4 +18,4 @@ def test_pickle_load_save() -> None:
     fmt = PickleWeightFormat()
     with tempfile.NamedTemporaryFile() as f:
         fmt.save({"a": 1}, f.name)
-        assert typing.cast("EagerTensorProtocol", fmt.load(f.name)) == typing.cast("EagerTensorProtocol", {"a": 1})
+        assert as_tensor(fmt.load(f.name)) == as_tensor({"a": 1})

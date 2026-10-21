@@ -8,9 +8,10 @@ from unittest.mock import mock_open, patch
 import yaml
 
 from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_init, emit_webrtc_op
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_webrtc_no_handlers_yaml() -> None:
@@ -23,7 +24,7 @@ def test_webrtc_no_handlers_yaml() -> None:
             Args:
                 path: Test parameter `path`.
             """
-            return typing.cast("EagerTensorProtocol", "webrtc_topology.yaml") in typing.cast("EagerTensorProtocol", path)
+            return as_tensor("webrtc_topology.yaml") in as_tensor(path)
 
         mock_exists.side_effect = fake_exists
 
@@ -63,11 +64,11 @@ def test_webrtc_with_handlers_yaml() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            if typing.cast("EagerTensorProtocol", "webrtc_topology") in typing.cast("EagerTensorProtocol", path):
-                return typing.cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(topology_data))())
-            elif typing.cast("EagerTensorProtocol", "webrtc_collectives") in typing.cast("EagerTensorProtocol", path):
-                return typing.cast("EagerTensorProtocol", mock_open(read_data=yaml.dump(handlers_data))())
-            return typing.cast("EagerTensorProtocol", mock_open(read_data="")())
+            if as_tensor("webrtc_topology") in as_tensor(path):
+                return as_tensor(mock_open(read_data=yaml.dump(topology_data))())
+            elif as_tensor("webrtc_collectives") in as_tensor(path):
+                return as_tensor(mock_open(read_data=yaml.dump(handlers_data))())
+            return as_tensor(mock_open(read_data="")())
 
         with patch("builtins.open", side_effect=mock_open_file):
             init_str = emit_webrtc_init()

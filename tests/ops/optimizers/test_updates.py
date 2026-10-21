@@ -39,9 +39,10 @@ from ml_switcheroo_compiler.ops.optimizers.updates import (
     rmsprop_update,
     sgd_update,
 )
+from tests.testing_utils import as_callable, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_updates_eager_false() -> None:
@@ -68,7 +69,7 @@ def test_updates_eager_false() -> None:
                 op = op_class()
                 assert op.infer_shape(t, t, t, t, t, t) == (1,)
 
-            assert typing.cast("EagerCallableProtocol", upd.LionConfigOp)().infer_shape(t) == (1,)
+            assert as_callable(upd.LionConfigOp)().infer_shape(t) == (1,)
     finally:
         config.eager_mode = orig
 
@@ -89,22 +90,22 @@ def _test_optimizers_updates_brute_part_1(_state: dict[str, EagerTensorProtocol]
     sgd_c = SGDConfig(lr=0.1, momentum=0.9, weight_decay=0.01)
     sgd_nesterov = SGDConfig(lr=0.1, momentum=0.9, weight_decay=0.01, nesterov=True)
     sgd_update(param, grad, sgd_c)
-    state_sgd = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", sgd_update)(param, grad, sgd_c, state_sgd)
-    typing.cast("EagerCallableProtocol", sgd_update)(param, grad, sgd_c, state_sgd)
-    typing.cast("EagerCallableProtocol", sgd_update)(param, grad, sgd_nesterov, state_sgd)
+    state_sgd = as_tensor_dict({})
+    as_callable(sgd_update)(param, grad, sgd_c, state_sgd)
+    as_callable(sgd_update)(param, grad, sgd_c, state_sgd)
+    as_callable(sgd_update)(param, grad, sgd_nesterov, state_sgd)
 
     adam_c = AdamHyperparams(lr=0.1, weight_decay=0.01)
     adam_update(param, grad, adam_c)
-    state_adam = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", adam_update)(param, grad, adam_c, state_adam)
-    typing.cast("EagerCallableProtocol", adam_update)(param, grad, adam_c, state_adam)
+    state_adam = as_tensor_dict({})
+    as_callable(adam_update)(param, grad, adam_c, state_adam)
+    as_callable(adam_update)(param, grad, adam_c, state_adam)
 
     adamw_c = AdamWHyperparams(lr=0.1)
     adamw_update(param, grad, adamw_c)
-    state_adamw = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", adamw_update)(param, grad, adamw_c, state_adamw)
-    typing.cast("EagerCallableProtocol", adamw_update)(param, grad, adamw_c, state_adamw)
+    state_adamw = as_tensor_dict({})
+    as_callable(adamw_update)(param, grad, adamw_c, state_adamw)
+    as_callable(adamw_update)(param, grad, adamw_c, state_adamw)
 
     adagrad_c = AdagradConfig(lr=0.1, weight_decay=0.01)
     getattr(_state, "update")({"adagrad_c": adagrad_c, "adam_c": adam_c, "adamw_c": adamw_c, "grad": grad})
@@ -120,32 +121,32 @@ def _test_optimizers_updates_brute_part_2(_state: dict[str, EagerTensorProtocol]
         _state: Shared test state dictionary.
     """
     adagrad_c, grad, param = _state["adagrad_c"], _state["grad"], _state["param"]
-    typing.cast("EagerCallableProtocol", adagrad_update)(param, grad, adagrad_c)
-    state_adagrad = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", adagrad_update)(param, grad, adagrad_c, state_adagrad)
+    as_callable(adagrad_update)(param, grad, adagrad_c)
+    state_adagrad = as_tensor_dict({})
+    as_callable(adagrad_update)(param, grad, adagrad_c, state_adagrad)
     rmsprop_c = RMSPropHyperparams(lr=0.1, weight_decay=0.01, centered=True, momentum=0.9)
-    typing.cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c)
-    state_rmsprop = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
-    typing.cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
+    as_callable(rmsprop_update)(param, grad, rmsprop_c)
+    state_rmsprop = as_tensor_dict({})
+    as_callable(rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
+    as_callable(rmsprop_update)(param, grad, rmsprop_c, state_rmsprop)
 
     rmsprop_c2 = RMSPropHyperparams(lr=0.1)
-    typing.cast("EagerCallableProtocol", rmsprop_update)(param, grad, rmsprop_c2)
+    as_callable(rmsprop_update)(param, grad, rmsprop_c2)
 
     adadelta_c = AdadeltaConfig(weight_decay=0.01)
-    typing.cast("EagerCallableProtocol", adadelta_update)(param, grad, adadelta_c)
-    state_adadelta = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", adadelta_update)(param, grad, adadelta_c, state_adadelta)
-    typing.cast("EagerCallableProtocol", adadelta_update)(param, grad, adadelta_c, state_adadelta)
+    as_callable(adadelta_update)(param, grad, adadelta_c)
+    state_adadelta = as_tensor_dict({})
+    as_callable(adadelta_update)(param, grad, adadelta_c, state_adadelta)
+    as_callable(adadelta_update)(param, grad, adadelta_c, state_adadelta)
 
     adamax_c = AdamaxHyperparams(lr=0.1, weight_decay=0.01)
-    typing.cast("EagerCallableProtocol", adamax_update)(param, grad, adamax_c)
-    state_adamax = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", adamax_update)(param, grad, adamax_c, state_adamax)
-    typing.cast("EagerCallableProtocol", adamax_update)(param, grad, adamax_c, state_adamax)
+    as_callable(adamax_update)(param, grad, adamax_c)
+    state_adamax = as_tensor_dict({})
+    as_callable(adamax_update)(param, grad, adamax_c, state_adamax)
+    as_callable(adamax_update)(param, grad, adamax_c, state_adamax)
 
     lion_c = LionConfig(lr=0.1, weight_decay=0.01)
-    typing.cast("EagerCallableProtocol", lion_update)(param, grad, lion_c)
+    as_callable(lion_update)(param, grad, lion_c)
     getattr(_state, "update")({"adadelta_c": adadelta_c, "adamax_c": adamax_c, "lion_c": lion_c, "rmsprop_c": rmsprop_c})
     getattr(_state, "update")({"rmsprop_c2": rmsprop_c2, "state_adadelta": state_adadelta, "state_adagrad": state_adagrad, "state_adamax": state_adamax})
     getattr(_state, "update")({"state_rmsprop": state_rmsprop})
@@ -159,18 +160,18 @@ def _test_optimizers_updates_brute_part_3(_state: dict[str, EagerTensorProtocol]
         _state: Shared test state dictionary.
     """
     grad, lion_c, param = _state["grad"], _state["lion_c"], _state["param"]
-    state_lion = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", lion_update)(param, grad, lion_c, state_lion)
+    state_lion = as_tensor_dict({})
+    as_callable(lion_update)(param, grad, lion_c, state_lion)
 
-    typing.cast("EagerCallableProtocol", adafactor_update)(param, grad, 0.1)
-    typing.cast("EagerCallableProtocol", adafactor_update)(param, grad, 0.1, {})
+    as_callable(adafactor_update)(param, grad, 0.1)
+    as_callable(adafactor_update)(param, grad, 0.1, {})
 
-    typing.cast("EagerCallableProtocol", muon_update)(param, grad, 0.1)
-    typing.cast("EagerCallableProtocol", muon_update)(param, grad, 0.1, momentum=0.9, state={})
-    typing.cast("EagerCallableProtocol", apply_adam)(param, param, param, grad, 0.1)
-    typing.cast("EagerCallableProtocol", apply_adagrad)(param, param, grad, 0.1)
-    typing.cast("EagerCallableProtocol", apply_ftrl)(param, param, param, grad, 0.1)
-    typing.cast("EagerCallableProtocol", apply_rmsprop)(param, param, param, grad, 0.1)
+    as_callable(muon_update)(param, grad, 0.1)
+    as_callable(muon_update)(param, grad, 0.1, momentum=0.9, state={})
+    as_callable(apply_adam)(param, param, param, grad, 0.1)
+    as_callable(apply_adagrad)(param, param, grad, 0.1)
+    as_callable(apply_ftrl)(param, param, param, grad, 0.1)
+    as_callable(apply_rmsprop)(param, param, param, grad, 0.1)
 
     # Tracing
     config.eager_mode = False
@@ -194,10 +195,10 @@ def _test_optimizers_updates_brute_part_4(_state: dict[str, EagerTensorProtocol]
         updates_mod = sys.modules["ml_switcheroo_compiler.ops.optimizers.updates"]
         with patch.object(updates_mod, "_emit_shape_node") as mock_emit:
             mock_emit.return_value = param
-            typing.cast("EagerCallableProtocol", apply_adam)(param, param, param, grad, 0.1)
-            typing.cast("EagerCallableProtocol", apply_adagrad)(param, param, grad, 0.1)
-            typing.cast("EagerCallableProtocol", apply_ftrl)(param, param, param, grad, 0.1)
-            typing.cast("EagerCallableProtocol", apply_rmsprop)(param, param, param, grad, 0.1)
+            as_callable(apply_adam)(param, param, param, grad, 0.1)
+            as_callable(apply_adagrad)(param, param, grad, 0.1)
+            as_callable(apply_ftrl)(param, param, param, grad, 0.1)
+            as_callable(apply_rmsprop)(param, param, param, grad, 0.1)
 
             ApplyAdam().infer_shape(param, param, param)
             ApplyAdagrad().infer_shape(param, param)

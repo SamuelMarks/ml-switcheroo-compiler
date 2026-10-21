@@ -187,7 +187,7 @@ class Isreal(UnaryMathOp):
 
 @register_op("Iscomplexobj")
 class Iscomplexobj(OpDef):
-    """Tests element-wise for complex Any type."""
+    """Tests element-wise for complex object type."""
 
     op_name = "Iscomplexobj"
     np_op_name = "iscomplexobj"
@@ -208,7 +208,7 @@ class Iscomplexobj(OpDef):
 
 @register_op("Isrealobj")
 class Isrealobj(OpDef):
-    """Tests element-wise for real Any type."""
+    """Tests element-wise for real object type."""
 
     op_name = "Isrealobj"
     np_op_name = "isrealobj"
@@ -268,10 +268,10 @@ class Isin(OpDef):
 
 
 def _get_size_from_shape(obj: TensorOrScalar) -> int | None:
-    """Calculate the total number of elements from an Any's shape.
+    """Calculate the total number of elements from an object's shape.
 
     Args:
-        obj (TensorOrScalar): The Any.
+        obj (TensorOrScalar): The object.
 
     Returns:
         int | None: The size.

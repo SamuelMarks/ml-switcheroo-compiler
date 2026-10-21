@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 
 try:
     _has_pkg = importlib.util.find_spec("dask") is not None
@@ -24,4 +23,4 @@ type.__setattr__(DaskGenerator, "zeros", classmethod(zeros))
 type.__setattr__(DaskGenerator, "array", classmethod(array))
 type.__setattr__(DaskGenerator, "asarray", classmethod(asarray))
 type.__setattr__(DaskGenerator, "item", classmethod(item))
-type.__setattr__(DaskGenerator, "execute_op", typing.cast("EagerCallableProtocol", classmethod)(execute_op))
+type.__setattr__(DaskGenerator, "execute_op", as_callable(classmethod)(execute_op))

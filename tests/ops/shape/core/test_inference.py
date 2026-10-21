@@ -6,15 +6,16 @@ import typing
 
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape_inference import _SHAPE_INFERENCE_REGISTRY, infer_shape, register_shape_inference
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_register_shape_inference() -> None:
     """Test function test_register_shape_inference."""
 
-    @typing.cast("EagerCallableProtocol", register_shape_inference)("TestShapeOp")
+    @as_callable(register_shape_inference)("TestShapeOp")
     def my_infer_shape(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Test function my_infer_shape.
 
@@ -86,7 +87,7 @@ def test_infer_shape_args_fallback() -> None:
 
         shape = (1, 2)
 
-    assert typing.cast("EagerCallableProtocol", infer_shape)("TestShapeOpArgsFallback", typing.cast("EagerCallableProtocol", MockWithShape)()) == (10, 20)
+    assert as_callable(infer_shape)("TestShapeOpArgsFallback", as_callable(MockWithShape)()) == (10, 20)
 
 
 def test_infer_shape_exception_handling(mocker: EagerTensorProtocol) -> None:
@@ -150,8 +151,8 @@ def test_normalize_inputs_list_and_non_shape(mocker: EagerTensorProtocol) -> Non
         mocker: Test parameter `mocker`.
     """
     # Line 919: args[0] is a list/tuple of items with shape or tuples
-    assert typing.cast("EagerCallableProtocol", infer_shape)("Add", [(1, 2), (1, 2)]) == (1, 2)
+    assert as_callable(infer_shape)("Add", [(1, 2), (1, 2)]) == (1, 2)
 
     # Branch 932->927: inputs contain items without shape attributes or list/tuple
     mocker.patch("ml_switcheroo_compiler.ops.shape_inference.infer_op_shape_declarative", return_value=())
-    assert typing.cast("EagerCallableProtocol", infer_shape)("Add", inputs=[None, 123]) == ()
+    assert as_callable(infer_shape)("Add", inputs=[None, 123]) == ()

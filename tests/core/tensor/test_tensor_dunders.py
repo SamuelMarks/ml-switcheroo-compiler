@@ -18,9 +18,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_tensor_dunders() -> None:
@@ -91,8 +92,8 @@ def test_tensor_dunders_extra() -> None:
     assert not (t1 > t2).data
     assert (t1 <= t2).data
     assert not (t1 >= t2).data
-    assert not typing.cast("EagerTensorProtocol", getattr(t1 == t2, "data"))
-    assert typing.cast("EagerTensorProtocol", getattr(t1 != t2, "data"))
+    assert not as_tensor(getattr(t1 == t2, "data"))
+    assert as_tensor(getattr(t1 != t2, "data"))
 
 
 def test_tensor_errors() -> None:

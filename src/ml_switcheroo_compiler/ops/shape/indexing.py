@@ -1,9 +1,6 @@
-"""Shape operations for Tensor Anys."""
+"""Shape operations for Tensor objects."""
 
 from __future__ import annotations
-
-import typing
-from collections.abc import Sequence
 
 import pydantic
 
@@ -220,14 +217,14 @@ def where(condition: Tensor, input: Tensor, other: Tensor) -> TensorOrScalar:
     i_shape = getattr(input, "shape", ())
     o_shape = getattr(other, "shape", ())
     try:
-        out_shape = broadcast_shapes(c_shape, i_shape, o_shape)
+        out_shape: tuple[int | str, ...] = tuple(d if isinstance(d, int) else str(d) for d in broadcast_shapes(c_shape, i_shape, o_shape))
     except Exception:
         out_shape = i_shape or c_shape
     return _emit_shape_node(
         "Where",
         inputs,
         {},
-        typing.cast("Sequence[int | str]", out_shape),
+        out_shape,
         inputs[0].dtype if len(inputs) > 0 else DType.Float32,
     )
 
@@ -277,7 +274,7 @@ def boolean_mask(tensor: Tensor, mask: Tensor, axis: int | None = None) -> Tenso
         "BooleanMask",
         inputs,
         attributes,
-        typing.cast("Sequence[int | str]", out_shape),
+        out_shape,
         tensor.dtype,
     )
 

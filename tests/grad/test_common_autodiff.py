@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_autodiff_common() -> None:
@@ -18,7 +20,7 @@ def test_autodiff_common() -> None:
         inputs = [1, 2]
 
     vjp_fn = make_zero_vjp("dummy")
-    assert typing.cast("EagerCallableProtocol", vjp_fn)(None, typing.cast("EagerCallableProtocol", DummyNode)(), "cot") == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
+    assert as_callable(vjp_fn)(None, as_callable(DummyNode)(), "cot") == (UnconnectedGradients.ZERO, UnconnectedGradients.ZERO)
 
     jvp_fn = make_zero_jvp("dummy")
-    assert typing.cast("EagerCallableProtocol", jvp_fn)(None, None, None) == ""
+    assert as_callable(jvp_fn)(None, None, None) == ""

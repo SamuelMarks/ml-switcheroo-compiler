@@ -9,9 +9,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.activations import HardSilu, HardSwish, LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, Squareplus, isotonic_regression, log_softmax, one_hot, rrelu, sigmoid, softmax
 from ml_switcheroo_compiler.tracing import global_tracing_state
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_isotonic_regression_tracing() -> None:
@@ -20,10 +21,10 @@ def test_isotonic_regression_tracing() -> None:
     global_tracing_state.start_tracing()
     try:
         y = Tensor(None, TensorConfig((5,), "float32", "cpu"))
-        out1, out2 = typing.cast("EagerCallableProtocol", isotonic_regression)(y)
-        assert typing.cast("EagerTensorProtocol", getattr(out1, "shape")) == (5,)
-        assert typing.cast("EagerTensorProtocol", getattr(out2, "shape")) == (5,)
-        assert typing.cast("EagerTensorProtocol", getattr(out2, "dtype")) == DType.Int32
+        out1, out2 = as_callable(isotonic_regression)(y)
+        assert as_tensor(getattr(out1, "shape")) == (5,)
+        assert as_tensor(getattr(out2, "shape")) == (5,)
+        assert as_tensor(getattr(out2, "dtype")) == DType.Int32
     finally:
         global_tracing_state.stop_tracing()
         config.eager_mode = True
@@ -92,7 +93,7 @@ def test_activations_eager_mode(mocker: EagerTensorProtocol) -> None:
             """
             return op_name
 
-    typing.cast("EagerCallableProtocol", mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=typing.cast("EagerCallableProtocol", DummyBackend)())
+    as_callable(mocker.patch)("ml_switcheroo_compiler.backends.registry.get_active_backend", return_value=as_callable(DummyBackend)())
 
     assert softmax("x", axis=1) == "Softmax"
 
@@ -108,7 +109,7 @@ def test_rrelu_non_eager_mode() -> None:
 
         id = "n"
 
-    res = typing.cast("EagerCallableProtocol", rrelu)(typing.cast("EagerCallableProtocol", DummyNode)())
+    res = as_callable(rrelu)(as_callable(DummyNode)())
     assert res is not None
 
 
@@ -130,19 +131,19 @@ def test_activations_infer_shape_broadcast() -> None:
     t2 = DummyTensor((2, 1))
 
     op = Softmax()
-    res = typing.cast("EagerCallableProtocol", op.infer_shape)(t1, t2)
+    res = as_callable(op.infer_shape)(t1, t2)
     assert res == (2, 3)
 
     op2 = LogSoftmax()
-    res2 = typing.cast("EagerCallableProtocol", op2.infer_shape)(t1, t2)
+    res2 = as_callable(op2.infer_shape)(t1, t2)
     assert res2 == (2, 3)
 
     op3 = Sigmoid()
-    res3 = typing.cast("EagerCallableProtocol", op3.infer_shape)(t1, t2)
+    res3 = as_callable(op3.infer_shape)(t1, t2)
     assert res3 == (2, 3)
 
     op4 = Rrelu()
-    res4 = typing.cast("EagerCallableProtocol", op4.infer_shape)(t1, t2)
+    res4 = as_callable(op4.infer_shape)(t1, t2)
     assert res4 == (2, 3)
 
 
@@ -163,7 +164,7 @@ def test_onehot_infer_shape() -> None:
 
     t1 = DummyTensor((2, 3))
 
-    res = typing.cast("EagerCallableProtocol", op.infer_shape)(t1, 5, axis=1)
+    res = as_callable(op.infer_shape)(t1, 5, axis=1)
     assert res == (2, 5, 3)
 
 
@@ -183,19 +184,19 @@ def test_activations_non_eager_mode() -> None:
 
         shape_metadata = DummyShape()
 
-    res = typing.cast("EagerCallableProtocol", softmax)(typing.cast("EagerCallableProtocol", DummyNode)())
+    res = as_callable(softmax)(as_callable(DummyNode)())
     assert res is not None
 
-    res = typing.cast("EagerCallableProtocol", log_softmax)(typing.cast("EagerCallableProtocol", DummyNode)())
+    res = as_callable(log_softmax)(as_callable(DummyNode)())
     assert res is not None
 
-    res = typing.cast("EagerCallableProtocol", sigmoid)(typing.cast("EagerCallableProtocol", DummyNode)())
+    res = as_callable(sigmoid)(as_callable(DummyNode)())
     assert res is not None
 
-    res = typing.cast("EagerCallableProtocol", one_hot)(typing.cast("EagerCallableProtocol", DummyNode)(), 5)
+    res = as_callable(one_hot)(as_callable(DummyNode)(), 5)
     assert res is not None
 
-    res = typing.cast("EagerCallableProtocol", rrelu)(typing.cast("EagerCallableProtocol", DummyNode)())
+    res = as_callable(rrelu)(as_callable(DummyNode)())
     assert res is not None
 
 
@@ -217,11 +218,11 @@ def test_activations_infer_shape_missing() -> None:
 
     t = DummyTensor((2, 2))
 
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", HardSilu)().infer_shape)(t) == (2, 2)
+    assert as_callable(as_callable(HardSilu)().infer_shape)(t) == (2, 2)
     assert HardSilu().infer_shape() == ()
 
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", HardSwish)().infer_shape)(t) == (2, 2)
+    assert as_callable(as_callable(HardSwish)().infer_shape)(t) == (2, 2)
     assert HardSwish().infer_shape() == ()
 
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", Squareplus)().infer_shape)(t) == (2, 2)
+    assert as_callable(as_callable(Squareplus)().infer_shape)(t) == (2, 2)
     assert Squareplus().infer_shape() == ()

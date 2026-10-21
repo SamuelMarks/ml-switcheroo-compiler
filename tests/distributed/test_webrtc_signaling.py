@@ -9,9 +9,10 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from ml_switcheroo_compiler.distributed.webrtc_signaling import SignalingServer, _answers, _candidates, _offers
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _test_webrtc_signaling_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -21,28 +22,28 @@ def _test_webrtc_signaling_sub_1(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     base_url = _state["base_url"]
-    req = typing.cast("EagerCallableProtocol", Request)(base_url, method="OPTIONS")
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    req = as_callable(Request)(base_url, method="OPTIONS")
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
         assert resp.headers.get("Access-Control-Allow-Origin") == "*"
 
     # Test POST /offer
     data = json.dumps({"peer_id": "p1", "offer": "offer1"}).encode("utf-8")
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/offer", data=data, method="POST"))
+    req = as_tensor(Request(f"{base_url}/offer", data=data, method="POST"))
     req.add_header("Content-Length", str(len(data)))
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
 
     # Test POST /answer
     data = json.dumps({"peer_id": "p1", "answer": "answer1"}).encode("utf-8")
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/answer", data=data, method="POST"))
+    req = as_tensor(Request(f"{base_url}/answer", data=data, method="POST"))
     req.add_header("Content-Length", str(len(data)))
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
 
     # Test POST /candidate
     data = json.dumps({"peer_id": "p1", "candidate": "cand1"}).encode("utf-8")
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/candidate", data=data, method="POST"))
+    req = as_tensor(Request(f"{base_url}/candidate", data=data, method="POST"))
     req.add_header("Content-Length", str(len(data)))
     getattr(_state, "update")({"data": data, "req": req, "resp": resp})
     _state.update(locals())
@@ -55,32 +56,32 @@ def _test_webrtc_signaling_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     base_url, req = _state["base_url"], _state["req"]
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
 
     # Test POST second candidate
     data = json.dumps({"peer_id": "p1", "candidate": "cand2"}).encode("utf-8")
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/candidate", data=data, method="POST"))
+    req = as_tensor(Request(f"{base_url}/candidate", data=data, method="POST"))
     req.add_header("Content-Length", str(len(data)))
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
 
     # Test GET /offer
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/offer?peer_id=p1"))
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    req = as_tensor(Request(f"{base_url}/offer?peer_id=p1"))
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
-        res = typing.cast("EagerCallableProtocol", json.loads)(typing.cast("EagerCallableProtocol", resp.read)().decode())
+        res = as_callable(json.loads)(as_callable(resp.read)().decode())
         assert res["offer"] == "offer1"
 
     # Test GET /answer
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/answer?peer_id=p1"))
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    req = as_tensor(Request(f"{base_url}/answer?peer_id=p1"))
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
-        res = typing.cast("EagerCallableProtocol", json.loads)(typing.cast("EagerCallableProtocol", resp.read)().decode())
+        res = as_callable(json.loads)(as_callable(resp.read)().decode())
         assert res["answer"] == "answer1"
 
     # Test GET /candidate
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/candidate?peer_id=p1"))
+    req = as_tensor(Request(f"{base_url}/candidate?peer_id=p1"))
     getattr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
     _state.update(locals())
 
@@ -92,31 +93,31 @@ def _test_webrtc_signaling_sub_3(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     base_url, req = _state["base_url"], _state["req"]
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
-        res = typing.cast("EagerCallableProtocol", json.loads)(typing.cast("EagerCallableProtocol", resp.read)().decode())
+        res = as_callable(json.loads)(as_callable(resp.read)().decode())
         assert res["candidates"] == ["cand1", "cand2"]
 
     # Test GET without peer_id
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/offer"))
+    req = as_tensor(Request(f"{base_url}/offer"))
     try:
-        typing.cast("EagerCallableProtocol", urlopen)(req)
+        as_callable(urlopen)(req)
     except HTTPError as e:
         assert e.code == 400
 
     # Test GET not found path
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/invalid?peer_id=p1"))
+    req = as_tensor(Request(f"{base_url}/invalid?peer_id=p1"))
     try:
-        typing.cast("EagerCallableProtocol", urlopen)(req)
+        as_callable(urlopen)(req)
     except HTTPError as e:
         assert e.code == 404
 
     # Test POST not found path
     data = json.dumps({"peer_id": "p1"}).encode("utf-8")
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/invalid", data=data, method="POST"))
+    req = as_tensor(Request(f"{base_url}/invalid", data=data, method="POST"))
     req.add_header("Content-Length", str(len(data)))
     try:
-        typing.cast("EagerCallableProtocol", urlopen)(req)
+        as_callable(urlopen)(req)
     except HTTPError as e:
         assert e.code == 404
     getattr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
@@ -169,27 +170,27 @@ def _test_webrtc_signaling_sub_5(_state: dict[str, EagerTensorProtocol]) -> None
     base_url, req = _state["base_url"], _state["req"]
     req.add_header("Content-Length", "8")
     try:
-        typing.cast("EagerCallableProtocol", urlopen)(req)
+        as_callable(urlopen)(req)
     except HTTPError as e:
         assert e.code == 400
 
     # Test POST without peer_id
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/offer", data=b'{"offer": "no_peer"}', method="POST"))
+    req = as_tensor(Request(f"{base_url}/offer", data=b'{"offer": "no_peer"}', method="POST"))
     req.add_header("Content-Length", "20")
     try:
-        typing.cast("EagerCallableProtocol", urlopen)(req)
+        as_callable(urlopen)(req)
     except HTTPError as e:
         assert e.code == 400
         err_data = json.loads(e.read().decode())
         assert err_data["error"] == "Missing peer_id"
 
     # Test OPTIONS
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/offer", method="OPTIONS"))
-    with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+    req = as_tensor(Request(f"{base_url}/offer", method="OPTIONS"))
+    with as_callable(urlopen)(req) as resp:
         assert resp.status == 200
 
     # Test /ws upgrade path
-    req = typing.cast("EagerTensorProtocol", Request(f"{base_url}/ws"))
+    req = as_tensor(Request(f"{base_url}/ws"))
     getattr(_state, "update")({"req": req, "resp": resp})
     _state.update(locals())
 
@@ -202,7 +203,7 @@ def _test_webrtc_signaling_sub_6(_state: dict[str, EagerTensorProtocol]) -> None
     """
     base_url, req, server = _state["base_url"], _state["req"], _state["server"]
     try:
-        with typing.cast("EagerCallableProtocol", urlopen)(req) as resp:
+        with as_callable(urlopen)(req) as resp:
             assert resp.status in (101, 200)
     except HTTPError as e:
         assert e.code == 101

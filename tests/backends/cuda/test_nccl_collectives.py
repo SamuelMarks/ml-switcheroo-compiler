@@ -21,9 +21,10 @@ from ml_switcheroo_compiler.backends.cuda.nccl_collectives import (
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.distributed.host_collectives import HostCollectiveCommunicator
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_nccl_constants() -> None:
@@ -273,45 +274,45 @@ def test_host_collective_communicator() -> None:
     comm1 = HostCollectiveCommunicator(world_size=2, rank=1)
 
     # AllReduce SUM
-    red_sum = typing.cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="SUM", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(red_sum, [6.0, 8.0, 10.0, 12.0])
+    red_sum = as_callable(comm0.all_reduce)(r0, op="SUM", all_ranks_data=all_data)
+    as_callable(np.testing.assert_allclose)(red_sum, [6.0, 8.0, 10.0, 12.0])
 
     # AllReduce MAX
-    red_max = typing.cast("EagerCallableProtocol", comm1.all_reduce)(r1, op="MAX", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(red_max, [5.0, 6.0, 7.0, 8.0])
+    red_max = as_callable(comm1.all_reduce)(r1, op="MAX", all_ranks_data=all_data)
+    as_callable(np.testing.assert_allclose)(red_max, [5.0, 6.0, 7.0, 8.0])
 
     # AllGather
-    gathered = typing.cast("EagerCallableProtocol", comm0.all_gather)(r0, axis=0, all_ranks_data=all_data)
+    gathered = as_callable(comm0.all_gather)(r0, axis=0, all_ranks_data=all_data)
     assert len(gathered) == 8
 
     # ReduceScatter
-    rs0 = typing.cast("EagerCallableProtocol", comm0.reduce_scatter)(r0, op="SUM", scatter_dim=0, all_ranks_data=all_data)
-    rs1 = typing.cast("EagerCallableProtocol", comm1.reduce_scatter)(r1, op="SUM", scatter_dim=0, all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(rs0, [6.0, 8.0])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(rs1, [10.0, 12.0])
+    rs0 = as_callable(comm0.reduce_scatter)(r0, op="SUM", scatter_dim=0, all_ranks_data=all_data)
+    rs1 = as_callable(comm1.reduce_scatter)(r1, op="SUM", scatter_dim=0, all_ranks_data=all_data)
+    as_callable(np.testing.assert_allclose)(rs0, [6.0, 8.0])
+    as_callable(np.testing.assert_allclose)(rs1, [10.0, 12.0])
 
     # AllToAll
-    a2a0 = typing.cast("EagerCallableProtocol", comm0.all_to_all)(r0, scatter_dim=0, gather_dim=0, all_ranks_data=all_data)
+    a2a0 = as_callable(comm0.all_to_all)(r0, scatter_dim=0, gather_dim=0, all_ranks_data=all_data)
     assert len(a2a0) == 4
 
     # Broadcast
-    bc = typing.cast("EagerCallableProtocol", comm1.broadcast)(r1, root=0, all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(bc, r0)
+    bc = as_callable(comm1.broadcast)(r1, root=0, all_ranks_data=all_data)
+    as_callable(np.testing.assert_allclose)(bc, r0)
 
     # Additional branches: MIN, PROD, unknown op
-    red_min = typing.cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="MIN", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(red_min, [1.0, 2.0, 3.0, 4.0])
-    red_prod = typing.cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="PROD", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(red_prod, [5.0, 12.0, 21.0, 32.0])
-    red_other = typing.cast("EagerCallableProtocol", comm0.all_reduce)(r0, op="CUSTOM", all_ranks_data=all_data)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(red_other, [6.0, 8.0, 10.0, 12.0])
+    red_min = as_callable(comm0.all_reduce)(r0, op="MIN", all_ranks_data=all_data)
+    as_callable(np.testing.assert_allclose)(red_min, [1.0, 2.0, 3.0, 4.0])
+    red_prod = as_callable(comm0.all_reduce)(r0, op="PROD", all_ranks_data=all_data)
+    as_callable(np.testing.assert_allclose)(red_prod, [5.0, 12.0, 21.0, 32.0])
+    red_other = as_callable(comm0.all_reduce)(r0, op="CUSTOM", all_ranks_data=all_data)
+    as_callable(np.testing.assert_allclose)(red_other, [6.0, 8.0, 10.0, 12.0])
 
     # Branches where all_ranks_data is None
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", comm0.all_reduce)(r0, all_ranks_data=None), r0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", comm0.all_gather)(r0, all_ranks_data=None), r0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", comm0.all_to_all)(r0, all_ranks_data=None), r0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", comm0.broadcast)(r0, all_ranks_data=None), r0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", comm0.reduce_scatter)(r0, all_ranks_data=None), [1.0, 2.0])
+    as_callable(np.testing.assert_allclose)(as_callable(comm0.all_reduce)(r0, all_ranks_data=None), r0)
+    as_callable(np.testing.assert_allclose)(as_callable(comm0.all_gather)(r0, all_ranks_data=None), r0)
+    as_callable(np.testing.assert_allclose)(as_callable(comm0.all_to_all)(r0, all_ranks_data=None), r0)
+    as_callable(np.testing.assert_allclose)(as_callable(comm0.broadcast)(r0, all_ranks_data=None), r0)
+    as_callable(np.testing.assert_allclose)(as_callable(comm0.reduce_scatter)(r0, all_ranks_data=None), [1.0, 2.0])
 
 
 def test_nccl_driver_exhaustive_branches() -> None:
@@ -393,7 +394,7 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state: dict[str, EagerT
         Returns:
             int: Return status code.
         """
-        typing.cast("EagerCallableProtocol", ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x12345678)
+        as_callable(ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x12345678)
         return 0
 
     mock_rt.cudaMalloc = fake_malloc_success
@@ -445,7 +446,7 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerT
 
     setattr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("D2H failed"))
     driver.copy_device_to_host(host_buf_ptr, out_arr)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out_arr, arr)
+    assert as_callable(np.allclose)(out_arr, arr)
     del real_buf
 
     # Restore cudaMalloc with non-zero status branch (fails cudaMalloc, falls back to host buffer)

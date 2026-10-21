@@ -41,9 +41,10 @@ from ml_switcheroo_compiler.ops.distributed_ops import (
     reduce_scatter,
     shard_tensor,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -79,7 +80,7 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
 
     import ml_switcheroo_compiler.ops.distributed_ops as dist
 
-    orig_dist_backend = typing.cast("EagerTensorProtocol", getattr(dist, "get_active_backend"))
+    orig_dist_backend = as_tensor(getattr(dist, "get_active_backend"))
     orig_reg_backend = getattr(reg, "_ACTIVE_BACKEND", None)
     has_reg_backend = hasattr(reg, "_ACTIVE_BACKEND")
     setattr(dist, "get_active_backend", lambda: DummyBackend())
@@ -89,8 +90,8 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
-    assert typing.cast("EagerTensorProtocol", getattr(shard_tensor(t, None, None), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(nccl_all_reduce(t), "shape")) == (1,)
+    assert as_tensor(getattr(shard_tensor(t, None, None), "shape")) == (1,)
+    assert as_tensor(getattr(nccl_all_reduce(t), "shape")) == (1,)
     getattr(_state, "update")({"DummyBackend": DummyBackend, "Tensor": Tensor, "TensorConfig": TensorConfig, "config": config})
     getattr(_state, "update")({"dist": dist, "has_reg_backend": has_reg_backend, "orig_dist_backend": orig_dist_backend, "orig_reg_backend": orig_reg_backend})
     getattr(_state, "update")({"reg": reg, "t": t})
@@ -104,18 +105,18 @@ def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", hierarchical_copy_all_reduce)(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", broadcast)(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", all_gather)(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", reduce)(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", all_reduce)(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", reduce_scatter)(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(all_to_all(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(broadcast_arrays(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(broadcast_to(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(broadcast_to_rank(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(broadcasted_iota(t), "shape")) == (1,)
-    assert typing.cast("EagerTensorProtocol", getattr(pbroadcast(t), "shape")) == (1,)
+    assert as_tensor(getattr(as_callable(hierarchical_copy_all_reduce)(t), "shape")) == (1,)
+    assert as_tensor(getattr(as_callable(broadcast)(t), "shape")) == (1,)
+    assert as_tensor(getattr(as_callable(all_gather)(t), "shape")) == (1,)
+    assert as_tensor(getattr(as_callable(reduce)(t), "shape")) == (1,)
+    assert as_tensor(getattr(as_callable(all_reduce)(t), "shape")) == (1,)
+    assert as_tensor(getattr(as_callable(reduce_scatter)(t), "shape")) == (1,)
+    assert as_tensor(getattr(all_to_all(t), "shape")) == (1,)
+    assert as_tensor(getattr(broadcast_arrays(t), "shape")) == (1,)
+    assert as_tensor(getattr(broadcast_to(t), "shape")) == (1,)
+    assert as_tensor(getattr(broadcast_to_rank(t), "shape")) == (1,)
+    assert as_tensor(getattr(broadcasted_iota(t), "shape")) == (1,)
+    assert as_tensor(getattr(pbroadcast(t), "shape")) == (1,)
 
     assert ShardTensor().infer_shape(t) == (1,)
     assert NcclAllReduce().infer_shape(t) == (1,)
@@ -166,14 +167,14 @@ def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None
     config, dist, has_reg_backend, orig_dist_backend = _state["config"], _state["dist"], _state["has_reg_backend"], _state["orig_dist_backend"]
     orig_reg_backend, patch, reg, t = _state["orig_reg_backend"], _state["patch"], _state["reg"], _state["t"]
     with patch("ml_switcheroo_compiler.ops.distributed_ops._emit_shape_node", return_value="emitted"):
-        assert typing.cast("EagerCallableProtocol", shard_tensor)(t, None, None) == "emitted"
-        assert typing.cast("EagerCallableProtocol", nccl_all_reduce)(t) == "emitted"
-        assert typing.cast("EagerCallableProtocol", hierarchical_copy_all_reduce)(t) == "emitted"
-        assert typing.cast("EagerCallableProtocol", broadcast)(t) == "emitted"
-        assert typing.cast("EagerCallableProtocol", all_gather)(t) == "emitted"
-        assert typing.cast("EagerCallableProtocol", reduce)(t) == "emitted"
-        assert typing.cast("EagerCallableProtocol", all_reduce)(t) == "emitted"
-        assert typing.cast("EagerCallableProtocol", reduce_scatter)(t) == "emitted"
+        assert as_callable(shard_tensor)(t, None, None) == "emitted"
+        assert as_callable(nccl_all_reduce)(t) == "emitted"
+        assert as_callable(hierarchical_copy_all_reduce)(t) == "emitted"
+        assert as_callable(broadcast)(t) == "emitted"
+        assert as_callable(all_gather)(t) == "emitted"
+        assert as_callable(reduce)(t) == "emitted"
+        assert as_callable(all_reduce)(t) == "emitted"
+        assert as_callable(reduce_scatter)(t) == "emitted"
         assert all_to_all(t) == "emitted"
         assert broadcast_arrays(t) == "emitted"
         assert broadcast_to(t) == "emitted"

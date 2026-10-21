@@ -13,11 +13,11 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.serialization.formats.hdf5 as hdf5_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.serialization.formats.hdf5 import HDF5WeightLoader, HDF5WeightSaver
+from tests.testing_utils import as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 class _DummyGenerator:
@@ -197,7 +197,7 @@ def test_hdf5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # 1. Test missing h5py module import branch via reload
     monkeypatch.setitem(sys.modules, "h5py", None)
     importlib.reload(hdf5_mod)
-    assert typing.cast("EagerValue", hdf5_mod.h5py) is None
+    assert as_tensor(hdf5_mod.h5py) is None
 
     # Test error raising when h5py is None
     loader_missing = HDF5WeightLoader()
@@ -211,14 +211,14 @@ def test_hdf5_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Restore h5py
     monkeypatch.undo()
     importlib.reload(hdf5_mod)
-    assert typing.cast("EagerValue", hdf5_mod.h5py) is not None
+    assert as_tensor(hdf5_mod.h5py) is not None
 
     loader = HDF5WeightLoader()
     saver = HDF5WeightSaver()
     filepath = str(tmp_path / "weights.h5")
 
     data = {"w": np.array([1.0, 2.0], dtype=np.float32)}
-    saver.save(typing.cast("dict[str, TensorLike]", data), filepath)
+    saver.save(as_tensor_dict(data), filepath)
 
     # Insert a subgroup and dataset to exercise both branches of isinstance(node, h5py.Dataset)
     with h5py.File(filepath, "a") as f:

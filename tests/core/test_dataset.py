@@ -6,8 +6,10 @@ import typing
 
 import pytest
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_dataset_options() -> None:
@@ -108,8 +110,8 @@ def test_dataset_iter_save_load_iters() -> None:
     ds = ds.batch(2, drop_remainder=False)
     batches = list(ds)
     assert len(batches) == 2
-    assert typing.cast("EagerCallableProtocol", len)(batches[0][0].data) == 2
-    assert typing.cast("EagerCallableProtocol", len)(batches[1][0].data) == 1
+    assert as_callable(len)(batches[0][0].data) == 2
+    assert as_callable(len)(batches[1][0].data) == 1
 
     ds = ds.batch(2, drop_remainder=True)
     batches = list(ds)
@@ -133,13 +135,13 @@ def test_dataset_iter_save_load_iters() -> None:
     it = NumpyIterator(ds)
     assert iter(it) is it
     n = next(it)
-    assert typing.cast("EagerCallableProtocol", len)(n) == 2
+    assert as_callable(len)(n) == 2
 
     ds2 = Dataset(t1)
     it2 = ArrayIterator(ds2)
     assert iter(it2) is it2
     n2 = next(it2)
-    assert typing.cast("EagerCallableProtocol", len)(n2) == 1
+    assert as_callable(len)(n2) == 1
 
 
 def test_dataset_coverage_remaining() -> None:

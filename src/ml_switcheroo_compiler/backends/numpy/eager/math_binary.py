@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -295,7 +293,7 @@ def _np_logit(backend_module: BackendModuleProtocol, x: EagerValue, eps: EagerVa
     import numpy as np
 
     with np.errstate(divide="ignore"):
-        return backend_module.log(typing.cast(EagerTensorProtocol, x) / (1.0 - typing.cast(EagerTensorProtocol, x)))
+        return backend_module.log(as_tensor(x) / (1.0 - as_tensor(x)))
 
 
 @numpy_eager_registry.register("Polygamma")

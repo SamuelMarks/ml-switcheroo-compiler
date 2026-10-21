@@ -10,9 +10,8 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 from .pytorch_mixins import PyTorchDistributedVisitor, PyTorchLinalgMixin, PyTorchNNMixin, PyTorchScatterVisitor  # noqa: F401
@@ -244,7 +243,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         """
         import torch
 
-        return typing.cast(EagerValue, torch.load(filepath, weights_only=not allow_pickle))
+        return as_tensor(torch.load(filepath, weights_only=not allow_pickle))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -305,15 +304,17 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
         class GraphModule:
             """Callable module wrapper evaluating the IR graph."""
 
-            def __call__(self, *fn_args: EagerValue) -> EagerValue:
+            def __call__(self, *fn_args: EagerValue, **fn_kwargs: EagerValue) -> EagerValue:
                 """Forward execution call.
 
                 Args:
                     *fn_args (EagerValue): Input tensors.
+                    **fn_kwargs (EagerValue): Keyword arguments.
 
                 Returns:
                     EagerValue: Computed outputs.
                 """
+                del fn_kwargs
                 input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
                 inputs: dict[str, EagerValue] = {}
                 for i, inp_node in enumerate(input_nodes):
@@ -325,9 +326,9 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
                     if len(graph.outputs) == 1:
                         return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return typing.cast(EagerValue, evaluated)
+                return as_tensor(evaluated)
 
-        return typing.cast(EagerValue, GraphModule())
+        return GraphModule()
 
     def _wrap_pytorch_runner(self, compiled_fn: EagerValue, torch_mod: EagerValue) -> EagerValue:
         """Wrap a compiled or traced PyTorch callable to convert inputs via torch.as_tensor.
@@ -353,7 +354,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
             """
             del w_kwargs
             pt_args = [getattr(torch_mod, "as_tensor")(a.data if isinstance(a, Tensor) else a) for a in w_args]
-            return typing.cast(TypedVariadicCallable[EagerValue], compiled_fn)(*pt_args)
+            return as_callable(compiled_fn)(*pt_args)
 
         return runner
 
@@ -385,7 +386,7 @@ class PyTorchCodeGenerator(PyTorchLinalgMixin, PyTorchNNMixin, ClassBasedGenerat
 
             if sample_inputs is not None and isinstance(sample_inputs, (list, tuple)):
                 pt_samples = [torch.as_tensor(x) for x in sample_inputs]
-                traced = typing.cast(TypedVariadicCallable[EagerValue], getattr(torch.jit, "trace"))(mod, pt_samples)
+                traced = as_callable(getattr(torch.jit, "trace"))(mod, pt_samples)
                 return self._wrap_pytorch_runner(traced, torch)
 
             return mod

@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY, MATRIX_RANK
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import LogicalGraph, TensorSpec
@@ -1973,6 +1973,26 @@ class SymbolicConstraintTracker:
                 solution[var] = self._const_map[actual_root]
         return solution
 
+    def _substitute_dim(self, dim: int | str | SymNode | SymInt) -> int | str | SymNode | SymInt:
+        """Substitute a single resolved dimension value.
+
+        Args:
+            dim (int | str | SymNode | SymInt): Single dimension.
+
+        Returns:
+            int | str | SymNode | SymInt: Substituted dimension.
+        """
+        key = self._canonical_key(dim)
+        root = self._find(key)
+        if root in self._const_map:
+            val = self._const_map[root]
+            if isinstance(dim, SymInt):
+                return SymInt(val)
+            if isinstance(dim, SymNode):
+                return SymConst(val)
+            return val
+        return dim
+
     def substitute(
         self,
         dim_or_shape: int | str | SymNode | SymInt | tuple[int | str | SymNode | SymInt, ...],
@@ -1986,21 +2006,8 @@ class SymbolicConstraintTracker:
             Union[int, str, SymNode, SymInt, tuple[...]]: Substituted dimension or shape.
         """
         if isinstance(dim_or_shape, tuple):
-            return tuple(typing.cast("int | str | SymNode | SymInt", self.substitute(d)) for d in dim_or_shape)
-
-        key = self._canonical_key(dim_or_shape)
-        root = self._find(key)
-        if root in self._const_map:
-            val = self._const_map[root]
-            if isinstance(dim_or_shape, SymInt):
-                return SymInt(val)
-            if isinstance(dim_or_shape, SymNode):
-                return SymConst(val)
-            if isinstance(dim_or_shape, int):
-                return val
-            return val
-
-        return dim_or_shape
+            return tuple(self._substitute_dim(d) for d in dim_or_shape)
+        return self._substitute_dim(dim_or_shape)
 
     def track_graph(self, graph: LogicalGraph) -> None:
         """Traverse a logical graph to extract and unify dimension equality constraints.
@@ -2027,34 +2034,28 @@ class SymbolicConstraintTracker:
                 pass
 
 
-def _to_str_shape(shape: tuple[int | str | SymNode | SymInt, ...]) -> tuple[int | str, ...]:
+def _to_str_shape(shape: Sequence[int | str | SymNode | SymInt | IRSymNode | IRSymInt]) -> tuple[int | str, ...]:
     """Convert shape to string representation.
 
     Args:
-        shape (tuple[Union[int, str, SymNode, SymInt], ...]): The shape tuple.
+        shape (Sequence[Union[int, str, SymNode, SymInt]]): The shape tuple.
 
     Returns:
         tuple[Union[int, str], ...]: The string represented shape.
     """
-    return tuple(str(x) if isinstance(x, (SymInt, SymNode)) else x for x in shape)
+    return tuple(x if isinstance(x, int) else str(x) for x in shape)
 
 
-def _from_str_shape(shape: tuple[int | str, ...]) -> tuple[int | SymInt, ...]:
+def _from_str_shape(shape: Sequence[int | str | SymNode | SymInt]) -> tuple[int | SymInt, ...]:
     """Convert shape from string representation.
 
     Args:
-        shape (tuple[Union[int, str], ...]): The string represented shape tuple.
+        shape (Sequence[Union[int, str, SymNode, SymInt]]): The string represented shape tuple.
 
     Returns:
         tuple[Union[int, SymInt], ...]: The integer or SymInt shape.
     """
-    out_shape: list[int | SymInt] = []
-    for dim in shape:
-        if isinstance(dim, str) and not dim.isdigit():
-            out_shape.append(SymInt(dim))
-        else:
-            out_shape.append(int(dim))
-    return tuple(out_shape)
+    return tuple(int(d) if isinstance(d, (int, str)) and str(d).isdigit() else SymInt(str(d)) for d in shape)
 
 
 class ShapeTracker:
@@ -2073,9 +2074,9 @@ class ShapeTracker:
         if not inputs:
             return ()
 
-        shape = typing.cast("TypedVariadicCallable[tuple[int | str, ...]]", _to_str_shape)(inputs[0].shape)
+        shape = _to_str_shape(inputs[0].shape)
         for i in range(1, len(inputs)):
-            shape = typing.cast("TypedVariadicCallable[tuple[int | str, ...]]", _to_str_shape)(broadcast_shapes(shape, typing.cast("TypedVariadicCallable[tuple[int | str, ...]]", _to_str_shape)(inputs[i].shape)))
+            shape = _to_str_shape(broadcast_shapes(shape, _to_str_shape(inputs[i].shape)))
 
         return _from_str_shape(shape)
 
@@ -2093,12 +2094,12 @@ class ShapeTracker:
         Returns:
             tuple[Union[int, SymInt], ...]: The inferred shape or computed result.
         """
-        s1 = typing.cast("TypedVariadicCallable[tuple[int | str, ...]]", _to_str_shape)(input1.shape)
-        s2 = typing.cast("TypedVariadicCallable[tuple[int | str, ...]]", _to_str_shape)(input2.shape)
+        s1 = _to_str_shape(input1.shape)
+        s2 = _to_str_shape(input2.shape)
 
         out_shape_str = matmul_shape(s1, s2)
 
-        return typing.cast("TypedVariadicCallable[tuple[int | SymInt, ...]]", _from_str_shape)(out_shape_str)
+        return _from_str_shape(out_shape_str)
 
     @staticmethod
     def update_from_feedback(

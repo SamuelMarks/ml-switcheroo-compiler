@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ops.tensor_array import TensorArrayRead, TensorArrayStack, TensorArrayWrite
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class MockHandle:
@@ -38,9 +39,9 @@ def test_tensor_array_infer_shape() -> None:
     h2 = MockHandle((2, 3), size=None)
     h3 = MockHandle(elem_shape=(), size="non_int")
 
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", TensorArrayRead)().infer_shape)(h1, 0) == (2, 3)
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", TensorArrayRead)().infer_shape)(h3, 0) == ()
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", TensorArrayWrite)().infer_shape)(h1, 0, None) == ()
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", TensorArrayStack)().infer_shape)(h1) == (4, 2, 3)
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", TensorArrayStack)().infer_shape)(h2) == (None, 2, 3)
-    assert typing.cast("EagerCallableProtocol", typing.cast("EagerCallableProtocol", TensorArrayStack)().infer_shape)(h3) == (None,)
+    assert as_callable(as_callable(TensorArrayRead)().infer_shape)(h1, 0) == (2, 3)
+    assert as_callable(as_callable(TensorArrayRead)().infer_shape)(h3, 0) == ()
+    assert as_callable(as_callable(TensorArrayWrite)().infer_shape)(h1, 0, None) == ()
+    assert as_callable(as_callable(TensorArrayStack)().infer_shape)(h1) == (4, 2, 3)
+    assert as_callable(as_callable(TensorArrayStack)().infer_shape)(h2) == (None, 2, 3)
+    assert as_callable(as_callable(TensorArrayStack)().infer_shape)(h3) == (None,)

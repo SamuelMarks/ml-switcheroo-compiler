@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import typing
 from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalGraph
@@ -11,15 +10,12 @@ from ml_switcheroo_ir import LogicalGraph
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, VariadicCallableProtocol, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
-
-if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol
 
 _COMPILATION_CACHE: dict[str, VariadicCallableProtocol] = {}
 
@@ -42,8 +38,7 @@ def _fallback_eager(
     was_eager = config.eager_mode
     config.eager_mode = True
     try:
-        call_fn: VariadicCallableProtocol = fn  # type: ignore[assignment]
-        return call_fn(*args, **kw)
+        return invoke_callable(fn, *args, **kw)
     finally:
         config.eager_mode = was_eager
 
@@ -199,8 +194,7 @@ def _trace_function_graph(
     proxy_args = _prepare_proxy_args(args)
 
     try:
-        call_fn: VariadicCallableProtocol = fn  # type: ignore[assignment]
-        out = call_fn(*proxy_args, **kw)
+        out = invoke_callable(fn, *proxy_args, **kw)
         _capture_outputs(out)
     except Exception:
         tape.stop_tracing()
@@ -278,8 +272,8 @@ def _build_generated_entrypoint(
             Returns:
                 TensorOrScalar: Evaluated model output.
             """
-            entry_fn: VariadicCallableProtocol = namespace["apply_model"]  # type: ignore[assignment]
-            return entry_fn({}, *w_args, **w_kw)
+            entry_fn = namespace["apply_model"]
+            return invoke_callable(entry_fn, {}, *w_args, **w_kw)
 
         return apply_wrapper
 
@@ -297,8 +291,8 @@ def _build_generated_entrypoint(
             """
             del w_kw
             numpy_args = [a.data if isinstance(a, Tensor) else a for a in w_args]
-            entry_fn: VariadicCallableProtocol = namespace["evaluate"]  # type: ignore[assignment]
-            return entry_fn(numpy_args)
+            entry_fn = namespace["evaluate"]
+            return invoke_callable(entry_fn, numpy_args)
 
         return eval_wrapper
 
@@ -389,8 +383,7 @@ def _compile_with_generator_instance(
     strict = bool(kwargs.get("strict", False))
 
     try:
-        gen_ctor: VariadicCallableProtocol = generator_cls  # type: ignore[assignment]
-        generator = gen_ctor(graph)
+        generator = invoke_callable(generator_cls, graph)
     except Exception as e:
         if strict:
             raise CompilationError(f"Failed to instantiate generator '{backend}': {e}") from e

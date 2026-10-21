@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
@@ -34,7 +32,7 @@ def perspective_transform(
         Tensor: Result.
     """
     if config_obj is None:
-        config_obj = typing.cast(TensorOrScalar, PerspectiveConfig(interpolation=typing.cast("str", kwargs.get("interpolation", "bilinear")), fill_value=typing.cast("float", kwargs.get("fill_value", 0.0)), data_format=typing.cast("str | None", kwargs.get("data_format", None))))
+        config_obj = PerspectiveConfig(interpolation=kwargs.get("interpolation", "bilinear"), fill_value=kwargs.get("fill_value", 0.0), data_format=kwargs.get("data_format", None))
 
     if config.eager_mode:
         backend = get_active_backend()
@@ -73,7 +71,7 @@ def elastic_transform(
         Tensor: Result.
     """
     if config_obj is None:
-        config_obj = typing.cast(TensorOrScalar, ElasticConfig(interpolation=typing.cast("str", kwargs.get("interpolation", "bilinear")), fill_value=typing.cast("float", kwargs.get("fill_value", 0.0)), data_format=typing.cast("str | None", kwargs.get("data_format", None))))
+        config_obj = ElasticConfig(interpolation=kwargs.get("interpolation", "bilinear"), fill_value=kwargs.get("fill_value", 0.0), data_format=kwargs.get("data_format", None))
 
     if config.eager_mode:
         backend = get_active_backend()

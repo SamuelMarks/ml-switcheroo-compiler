@@ -1,0 +1,93 @@
+Add:
+  hvp: Constant(0.0)
+  jvp_order: 2
+  vjp_order: 2
+Sub:
+  hvp: Constant(0.0)
+  jvp_order: 2
+  vjp_order: 2
+Neg:
+  hvp: Constant(0.0)
+  jvp_order: 2
+  vjp_order: 2
+Negative:
+  hvp: Constant(0.0)
+  jvp_order: 2
+  vjp_order: 2
+Mul:
+  hvp: Add(Mul($tangent[0], $cotangent[1]), Mul($tangent[1], $cotangent[0]))
+  jvp_order: 2
+  vjp_order: 2
+Div:
+  hvp: Div(Sub(Mul(Constant(2.0), Mul($input[0], Mul($tangent[1], $cotangent))), Mul($input[1],
+    Add(Mul($tangent[0], $cotangent), Mul($input[0], Mul($tangent[1], $cotangent))))),
+    Pow($input[1], Constant(3.0)))
+  jvp_order: 2
+  vjp_order: 2
+Exp:
+  hvp: Mul($tangent[0], Mul($cotangent, Exp($input[0])))
+  jvp_order: 2
+  vjp_order: 2
+Log:
+  hvp: Neg(Div(Mul($tangent[0], $cotangent), Pow($input[0], Constant(2.0))))
+  jvp_order: 2
+  vjp_order: 2
+Sin:
+  hvp: Neg(Mul($tangent[0], Mul($cotangent, Sin($input[0]))))
+  jvp_order: 2
+  vjp_order: 2
+Cos:
+  hvp: Neg(Mul($tangent[0], Mul($cotangent, Cos($input[0]))))
+  jvp_order: 2
+  vjp_order: 2
+Sinh:
+  hvp: Mul($tangent[0], Mul($cotangent, Sinh($input[0])))
+  jvp_order: 2
+  vjp_order: 2
+Cosh:
+  hvp: Mul($tangent[0], Mul($cotangent, Cosh($input[0])))
+  jvp_order: 2
+  vjp_order: 2
+Tanh:
+  hvp: Neg(Mul(Constant(2.0), Mul($tangent[0], Mul($cotangent, Mul(Tanh($input[0]),
+    Sub(Constant(1.0), Pow(Tanh($input[0]), Constant(2.0))))))))
+  jvp_order: 2
+  vjp_order: 2
+Sqrt:
+  hvp: Neg(Div(Mul($tangent[0], $cotangent), Mul(Constant(4.0), Pow($input[0], Constant(1.5)))))
+  jvp_order: 2
+  vjp_order: 2
+Pow:
+  hvp: Mul($tangent[0], Mul($cotangent, Mul($input[1], Mul(Sub($input[1], Constant(1.0)),
+    Pow($input[0], Sub($input[1], Constant(2.0)))))))
+  jvp_order: 2
+  vjp_order: 2
+Sigmoid:
+  hvp: Mul($tangent[0], Mul($cotangent, Mul(Sigmoid($input[0]), Mul(Sub(Constant(1.0),
+    Sigmoid($input[0])), Sub(Constant(1.0), Mul(Constant(2.0), Sigmoid($input[0])))))))
+  jvp_order: 2
+  vjp_order: 2
+Relu:
+  hvp: Constant(0.0)
+  jvp_order: 2
+  vjp_order: 2
+Abs:
+  hvp: Constant(0.0)
+  jvp_order: 2
+  vjp_order: 2
+MatMul:
+  hvp: Add(MatMul($tangent[0], $cotangent), MatMul($cotangent, $tangent[1]))
+  jvp_order: 2
+  vjp_order: 2
+BatchMatMul:
+  hvp: Add(BatchMatMul($tangent[0], $cotangent), BatchMatMul($cotangent, $tangent[1]))
+  jvp_order: 2
+  vjp_order: 2
+Transpose:
+  hvp: Transpose($tangent[0])
+  jvp_order: 2
+  vjp_order: 2
+Reshape:
+  hvp: Reshape($tangent[0])
+  jvp_order: 2
+  vjp_order: 2

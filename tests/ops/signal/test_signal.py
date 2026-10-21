@@ -7,8 +7,10 @@ import typing
 import numpy as np
 import pytest
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_signal_missing() -> None:
@@ -21,7 +23,7 @@ def test_signal_missing() -> None:
         shape = None
 
     with pytest.raises(ValueError):
-        typing.cast("EagerCallableProtocol", sig._validate_conv2d_args)(typing.cast("EagerCallableProtocol", FakeShape)(), typing.cast("EagerCallableProtocol", FakeShape)())
+        as_callable(sig._validate_conv2d_args)(as_callable(FakeShape)(), as_callable(FakeShape)())
 
     class FakeShape2:
         """Test class FakeShape2."""
@@ -29,10 +31,10 @@ def test_signal_missing() -> None:
         shape = (1, 1)
 
     with pytest.raises(ValueError):
-        typing.cast("EagerCallableProtocol", sig._validate_conv2d_args)(typing.cast("EagerCallableProtocol", FakeShape2)(), typing.cast("EagerCallableProtocol", FakeShape)())
+        as_callable(sig._validate_conv2d_args)(as_callable(FakeShape2)(), as_callable(FakeShape)())
 
     with pytest.raises(ValueError):
-        typing.cast("EagerCallableProtocol", sig._validate_conv2d_args)(typing.cast("EagerCallableProtocol", FakeShape)(), typing.cast("EagerCallableProtocol", FakeShape2)())
+        as_callable(sig._validate_conv2d_args)(as_callable(FakeShape)(), as_callable(FakeShape2)())
 
 
 def test_signal_classes_infer_shape() -> None:
@@ -44,12 +46,12 @@ def test_signal_classes_infer_shape() -> None:
 
         shape = (1, 1)
 
-    assert typing.cast("EagerCallableProtocol", sig.Rfft)().infer_shape(typing.cast("EagerCallableProtocol", DummyData)()) == (1, 1)
-    assert typing.cast("EagerCallableProtocol", sig.Fft2)().infer_shape(typing.cast("EagerCallableProtocol", DummyData)()) == (1, 1)
-    assert typing.cast("EagerCallableProtocol", sig.Fftfreq)().infer_shape(5) == (5,)
-    assert typing.cast("EagerCallableProtocol", sig.Fftfreq)().infer_shape(typing.cast("EagerCallableProtocol", DummyData)()) == ()
-    assert typing.cast("EagerCallableProtocol", sig.Irfft)().infer_shape(typing.cast("EagerCallableProtocol", DummyData)()) == (1, 1)
-    assert typing.cast("EagerCallableProtocol", sig.Ihfft)().infer_shape(typing.cast("EagerCallableProtocol", DummyData)()) == (1, 1)
+    assert as_callable(sig.Rfft)().infer_shape(as_callable(DummyData)()) == (1, 1)
+    assert as_callable(sig.Fft2)().infer_shape(as_callable(DummyData)()) == (1, 1)
+    assert as_callable(sig.Fftfreq)().infer_shape(5) == (5,)
+    assert as_callable(sig.Fftfreq)().infer_shape(as_callable(DummyData)()) == ()
+    assert as_callable(sig.Irfft)().infer_shape(as_callable(DummyData)()) == (1, 1)
+    assert as_callable(sig.Ihfft)().infer_shape(as_callable(DummyData)()) == (1, 1)
 
 
 def test_signal_real_dsp_validation() -> None:

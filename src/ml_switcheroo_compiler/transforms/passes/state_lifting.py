@@ -9,7 +9,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
 from ml_switcheroo_compiler.core.tensor import Tensor
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
 
 def _get_node_items(block: LogicalGraph) -> Iterable[tuple[str, LogicalNode]]:
@@ -79,7 +79,7 @@ def _lift_block(block: LogicalGraph) -> bool:
             block_mod = _lift_block(sub) or block_mod
         for attr_val in node.attributes.values():
             if hasattr(attr_val, "nodes"):
-                block_mod = _lift_block(typing.cast(LogicalGraph, attr_val)) or block_mod
+                block_mod = _lift_block(as_graph(attr_val)) or block_mod
     return block_mod
 
 

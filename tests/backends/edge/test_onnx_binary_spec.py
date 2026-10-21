@@ -9,7 +9,7 @@ import typing
 
 import onnx
 import pytest
-from ml_switcheroo_ir import AttributeValue, NodeDict
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.onnx import (
     ONNXCodeGenerator,
@@ -26,9 +26,10 @@ from ml_switcheroo_compiler.backends.edge.onnx import (
     serialize_value_info,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
+from tests.testing_utils import as_attrs, as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 pytest.importorskip("onnx")
 
@@ -207,7 +208,7 @@ def test_onnx_binary_control_flow_subgraphs() -> None:
         op_type="If",
         inputs=["cond"],
         shape_metadata=(2, 2),
-        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": then_g, "else_branch": else_g}),
+        attributes=as_attrs({"then_branch": then_g, "else_branch": else_g}),
     )
 
     main_g.nodes = NodeDict({"cond": cond_node, "X": in_x, "Y": if_node})
@@ -250,7 +251,7 @@ def test_onnx_binary_loop_subgraph() -> None:
         op_type="Loop",
         inputs=["trip_count", "cond", "v"],
         shape_metadata=(1,),
-        attributes=typing.cast("dict[str, AttributeValue]", {"body": body_g}),
+        attributes=as_attrs({"body": body_g}),
     )
 
     main_g.nodes = NodeDict({"trip_count": trip_count, "cond": cond_node, "v": init_v, "loop_res": loop_node})
@@ -335,7 +336,7 @@ def _test_onnx_additional_edges_and_validation_part_2(_state: dict[str, EagerTen
     f1, f2, f7, pytest = _state["f1"], _state["f2"], _state["f7"], _state["pytest"]
     sub_f2, sub_wt0, sub_wt2, validate_onnx_model_bytes = _state["sub_f2"], _state["sub_wt0"], _state["sub_wt2"], _state["validate_onnx_model_bytes"]
     sub_other_wt = encode_tag(5, 5) + b"\x00\x00\x00\x00"  # wire type 5 inside opset import triggers else break
-    f8 = typing.cast("EagerCallableProtocol", encode_length_delimited)(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
+    f8 = as_callable(encode_length_delimited)(8, sub_f2 + sub_wt0 + sub_wt2 + sub_other_wt)
 
     # Top-level wire types
     f_wt0 = encode_tag(99, 0) + encode_varint(123)
@@ -382,7 +383,7 @@ def _test_onnx_additional_edges_and_validation_part_3(_state: dict[str, EagerTen
     setattr(simple_g, "outputs", ["b"])
     object.__setattr__(simple_g, "sorted_nodes", [in_a, out_b])
 
-    gen = typing.cast("EagerCallableProtocol", ONNXCodeGenerator)(simple_g)
+    gen = as_callable(ONNXCodeGenerator)(simple_g)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 10"):
         gen.serialize_model_to_bytes(opset_version=10)
     with pytest.raises(ValueError, match="Unsupported ONNX opset_version 25"):

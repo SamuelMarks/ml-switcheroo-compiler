@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import typing
 import uuid
 from collections.abc import Sequence
 
@@ -11,7 +10,7 @@ import libcst as cst
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attr_val, as_attrs
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
 _CONFIG = load_transpiler_config(_CONFIG_PATH)
@@ -357,11 +356,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
 
         self._parse_call_args(node.args, inputs, attributes)
 
-        from collections.abc import Mapping
-
-        from ml_switcheroo_ir import AttributeValue
-
-        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=typing.cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=as_attrs(attributes))
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
         return False
@@ -461,11 +456,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        from ml_switcheroo_ir import AttributeValue
-
         ir_node: IRNode = IRNode(id=node_id, op_type="Cond", inputs=inputs, attributes={})
-        ir_node.attributes["true_branch"] = typing.cast(AttributeValue, true_branch)
-        ir_node.attributes["false_branch"] = typing.cast(AttributeValue, false_branch)
+        ir_node.attributes["true_branch"] = as_attr_val(true_branch)
+        ir_node.attributes["false_branch"] = as_attr_val(false_branch)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -495,10 +488,8 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        from ml_switcheroo_ir import AttributeValue
-
         ir_node: IRNode = IRNode(id=node_id, op_type="WhileLoop", inputs=inputs, attributes={})
-        ir_node.attributes["body_subgraph"] = typing.cast(AttributeValue, body_subgraph)
+        ir_node.attributes["body_subgraph"] = as_attr_val(body_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -526,10 +517,8 @@ class ASTToIRVisitor(cst.CSTVisitor):
         node.body.visit(body_visitor)
         body_subgraph = body_visitor.graph
 
-        from ml_switcheroo_ir import AttributeValue
-
         ir_node: IRNode = IRNode(id=node_id, op_type="Scan", inputs=inputs, attributes={"target_var": target_name})
-        ir_node.attributes["body_subgraph"] = typing.cast(AttributeValue, body_subgraph)
+        ir_node.attributes["body_subgraph"] = as_attr_val(body_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -556,11 +545,9 @@ class ASTToIRVisitor(cst.CSTVisitor):
             if k not in self.var_table:
                 self.var_table[k] = v
 
-        from ml_switcheroo_ir import AttributeValue
-
         ir_node: IRNode = IRNode(id=node_id, op_type="TryExcept", inputs=[], attributes={})
-        ir_node.attributes["try_subgraph"] = typing.cast(AttributeValue, try_subgraph)
-        ir_node.attributes["fallback_subgraph"] = typing.cast(AttributeValue, fallback_subgraph)
+        ir_node.attributes["try_subgraph"] = as_attr_val(try_subgraph)
+        ir_node.attributes["fallback_subgraph"] = as_attr_val(fallback_subgraph)
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 
@@ -686,11 +673,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
                         inputs.append(self.var_table[slice_elem.value.value])
                     attributes["index_var"] = slice_elem.value.value
 
-        from collections.abc import Mapping
-
-        from ml_switcheroo_ir import AttributeValue
-
-        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=typing.cast("Mapping[str, AttributeValue]", attributes))
+        ir_node: IRNode = IRNode(id=node_id, op_type=op_type, inputs=inputs, attributes=as_attrs(attributes))
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id
 

@@ -6,10 +6,9 @@ import logging
 import resource
 import sys
 import time
-import typing
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_opt_callable, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 try:
@@ -170,7 +169,7 @@ class KerasProfiler:
         if not callable(get_model):
             raise TypeError("Failed to generate valid get_model function from KerasCodeGenerator")
         model = get_model()
-        return typing.cast("TypedVariadicCallable[EagerValue] | None", model)
+        return as_opt_callable(model)
 
     def _build_step_fn(
         self,
@@ -205,7 +204,7 @@ class KerasProfiler:
 
             if not keras_inputs:
                 if hasattr(keras, "ops") and hasattr(keras.ops, "zeros"):
-                    return typing.cast(EagerValue, keras.ops.zeros((1,), dtype="float32"))
+                    return as_tensor(keras.ops.zeros((1,), dtype="float32"))
                 return 0.0
 
             accum = keras_inputs[0]

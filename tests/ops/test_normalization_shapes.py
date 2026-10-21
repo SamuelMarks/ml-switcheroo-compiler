@@ -6,9 +6,10 @@ import typing
 
 from ml_switcheroo_compiler.ir.shape_system import SymInt
 from ml_switcheroo_compiler.ops.normalization.basic import GroupMean, GroupNorm, GroupVariance
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_group_mean_shapes() -> None:
@@ -36,7 +37,7 @@ def test_group_mean_shapes() -> None:
     # Symbolic
     sym_n = SymInt("N")
     sym_g = SymInt("G")
-    res = typing.cast("EagerCallableProtocol", gm.infer_shape)((sym_n, 8, 5, 5), num_groups=sym_g)
+    res = as_callable(gm.infer_shape)((sym_n, 8, 5, 5), num_groups=sym_g)
     assert len(res) == 4
     assert id(res[0]) == id(sym_n)
     assert id(res[1]) == id(sym_g)
@@ -54,7 +55,7 @@ def test_group_variance_shapes() -> None:
 
     # Symbolic
     sym_n = SymInt("N")
-    res = typing.cast("EagerCallableProtocol", gv.infer_shape)((sym_n, 16, 8, 8), num_groups=4)
+    res = as_callable(gv.infer_shape)((sym_n, 16, 8, 8), num_groups=4)
     assert len(res) == 4
     assert id(res[0]) == id(sym_n)
     assert res[1] == 4
@@ -68,4 +69,4 @@ def test_group_norm_shapes() -> None:
     assert gn.infer_shape(10) == (10,)
 
     sym_n = SymInt("N")
-    assert typing.cast("EagerCallableProtocol", gn.infer_shape)((sym_n, 8)) == (sym_n, 8)
+    assert as_callable(gn.infer_shape)((sym_n, 8)) == (sym_n, 8)

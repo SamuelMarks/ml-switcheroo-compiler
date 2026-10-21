@@ -7,9 +7,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY, JVPRuleCallable, get_jvp, register_jvp
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_jvp_registry_coverage_brute() -> None:
@@ -51,7 +52,7 @@ def test_jvp_registry_coverage_brute() -> None:
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value="data_jvp"):
-        assert typing.cast("EagerTensorProtocol", get_jvp("fake_op_2")) == typing.cast("EagerTensorProtocol", "data_jvp")
+        assert as_tensor(get_jvp("fake_op_2")) == as_tensor("data_jvp")
     from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import has_jvp
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value=None):
@@ -84,7 +85,7 @@ def test_jvp_registry_full_branches() -> None:
         return None
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", side_effect=mock_get_data):
-        assert typing.cast("EagerTensorProtocol", get_jvp("lazy_op_jvp")) == typing.cast("EagerTensorProtocol", "lazy_jvp_result")
+        assert as_tensor(get_jvp("lazy_op_jvp")) == as_tensor("lazy_jvp_result")
     with patch("os.path.exists", return_value=False):
         rules_none = load_primitive_jvp_rules(path="/nonexistent/path/jvp.yaml")
         assert rules_none == {}

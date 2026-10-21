@@ -54,7 +54,7 @@ class OpDef:
             Returns:
                 Tensor: Result.
             """
-            return typing.cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
+            return dispatch_op(self.op_type, *args, **kwargs)
 
         def infer_shape(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
             """Compute the infer shape tensor operation.

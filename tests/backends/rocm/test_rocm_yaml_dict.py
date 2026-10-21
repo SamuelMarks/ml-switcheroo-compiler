@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_rocm_load_yaml_dict_string(monkeypatch: EagerTensorProtocol) -> None:
@@ -152,7 +154,7 @@ def test_rocm_runner_allocate_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
         runner = ROCmRunner()
         ptr = runner.allocate_buffer(100)
-        assert typing.cast("EagerTensorProtocol", getattr(ptr, "value")) == 12345
+        assert as_tensor(getattr(ptr, "value")) == 12345
 
 
 def test_rocm_runner_allocate_ctypes() -> None:
@@ -199,7 +201,7 @@ def test_rocm_runner_allocate_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = ROCmRunner()
             ptr = runner.allocate_buffer(100)
-            assert typing.cast("EagerTensorProtocol", getattr(ptr, "value")) is None
+            assert as_tensor(getattr(ptr, "value")) is None
 
 
 def test_rocm_runner_write_cupy() -> None:
@@ -257,7 +259,7 @@ def test_rocm_runner_write_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert typing.cast("EagerCallableProtocol", runner.write_buffer)(None, b"test") is None
+    assert as_callable(runner.write_buffer)(None, b"test") is None
 
 
 def test_rocm_runner_read_cupy() -> None:
@@ -318,7 +320,7 @@ def test_rocm_runner_read_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    assert typing.cast("EagerCallableProtocol", runner.read_buffer)(None, 4) == b"\x00" * 4
+    assert as_callable(runner.read_buffer)(None, 4) == b"\x00" * 4
 
 
 def test_rocm_runner_read_no_lib() -> None:
@@ -369,7 +371,7 @@ def test_rocm_runner_free_no_ptr() -> None:
     from ml_switcheroo_compiler.backends.rocm.rocm import ROCmRunner
 
     runner = ROCmRunner()
-    typing.cast("EagerCallableProtocol", runner.free_buffer)(None)
+    as_callable(runner.free_buffer)(None)
     assert isinstance(runner, ROCmRunner)
 
 

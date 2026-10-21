@@ -11,6 +11,7 @@ from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field, RootModel
 
 from ml_switcheroo_compiler.core.shape import AttrValue
+from ml_switcheroo_compiler.ir.core import as_attr_val, as_attrs
 
 YamlScalar = typing.Union[typing.Union[str, int, float, "bool"], "None"]
 YamlLeaf = typing.Union[YamlScalar, list[YamlScalar], dict[str, YamlScalar], "list[dict[str, YamlScalar]]"]
@@ -83,7 +84,7 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
         Returns:
             dict[str, AttributeValue]: Dictionary representation.
         """
-        return typing.cast(dict[str, AttributeValue], getattr(super(), "model_dump")(*args, **kwargs))
+        return as_attrs(getattr(super(), "model_dump")(*args, **kwargs))
 
     def items(self) -> ItemsView[str, TopologyConfig]:
         """Return items from the underlying dictionary.
@@ -260,7 +261,7 @@ def load_consolidated_topology(yaml_path: str | None = None) -> DistributedTopol
         with open(pipe_path, encoding="utf-8") as f:
             pipe_raw = yaml.safe_load(f) or {}
         pipe_cfg = PipelineTopologiesConfig.model_validate(pipe_raw)
-        consolidated_dict["pipeline_topologies"] = typing.cast("AttributeValue", pipe_cfg.root)
+        consolidated_dict["pipeline_topologies"] = as_attr_val(pipe_cfg.root)
 
     webrtc_path = os.path.join(base_dir, "webrtc_topology.yaml")
     if os.path.exists(webrtc_path):

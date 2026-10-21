@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -46,7 +44,7 @@ def _np_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(np, "partition")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return as_tensor(getattr(np, "partition")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Percentile")
@@ -61,7 +59,7 @@ def _np_percentile(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(np, "percentile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return as_tensor(getattr(np, "percentile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Quantile")
@@ -76,7 +74,7 @@ def _np_quantile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(np, "quantile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return as_tensor(getattr(np, "quantile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Unique")
@@ -91,7 +89,7 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(np, "unique")(getattr(np, "asarray")(args[0]), *args[1:], **kwargs))
+    return as_tensor(getattr(np, "unique")(getattr(np, "asarray")(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("ArgSort")
@@ -138,7 +136,7 @@ def _np_top_k(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", _top_k)(*args, **kwargs)
+    return as_callable(_top_k)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SearchSorted")

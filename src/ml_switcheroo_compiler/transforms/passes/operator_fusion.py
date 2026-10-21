@@ -9,6 +9,7 @@ import typing
 
 import yaml
 
+from ml_switcheroo_compiler.backends.registry import as_int
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 from ml_switcheroo_compiler.transforms.passes.config_models import (
@@ -501,9 +502,9 @@ class MemoryAwareCostModel:
             return True
 
         if "max_fusion_memory_bytes" in self.config:
-            max_memory: int = int(typing.cast(int, self.config["max_fusion_memory_bytes"]))
+            max_memory: int = int(as_int(self.config["max_fusion_memory_bytes"]))
         elif "compute_intensity_metrics" in self.config and isinstance(self.config["compute_intensity_metrics"], dict):
-            max_memory = int(typing.cast(int, self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512)))
+            max_memory = int(as_int(self.config["compute_intensity_metrics"].get("max_fusion_memory_bytes", 1024 * 1024 * 512)))
         else:
             max_memory = 1024 * 1024 * 512
 
@@ -523,7 +524,7 @@ class MemoryAwareCostModel:
                 dtype: str = str(node.attributes.get("dtype", "float32"))
                 dtype_size: int = 4
                 if isinstance(memory_sizes, dict):
-                    dtype_size = int(typing.cast(int, memory_sizes.get(dtype, 4)))
+                    dtype_size = int(as_int(memory_sizes.get(dtype, 4)))
                 total_mem += elements * dtype_size
 
         return bool(total_mem <= max_memory)

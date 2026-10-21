@@ -36,9 +36,10 @@ from ml_switcheroo_compiler.backends.sparse.kernels import (
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, array, asarray, item, zeros
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable, as_ndarray, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class DummyGraph:
@@ -70,12 +71,12 @@ def test_coo_tensor_properties_and_methods() -> None:
     assert "<COOTensor shape=(2, 3) nnz=3" in repr(coo)
 
     reconstructed = coo.to_dense()
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(reconstructed, dense_2d)
+    as_callable(np.testing.assert_allclose)(reconstructed, dense_2d)
 
     # astype
     coo_f64 = coo.astype(np.float64)
     assert coo_f64.dtype == np.float64
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_f64.to_dense)(), dense_2d)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_f64.to_dense)(), dense_2d)
 
     # 1D COOTensor
     dense_1d = np.array([0.0, 4.0, 0.0, 5.0])
@@ -83,7 +84,7 @@ def test_coo_tensor_properties_and_methods() -> None:
     assert coo_1d.shape == (4,)
     assert coo_1d.ndim == 1
     assert coo_1d.indices.shape == (1, 2)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_1d.to_dense)(), dense_1d)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_1d.to_dense)(), dense_1d)
 
     # 1D explicit reshape
     coo_1d_direct = COOTensor(indices=np.array([1, 3]), values=np.array([4.0, 5.0]), shape=(4,))
@@ -104,7 +105,7 @@ def test_sparse_types_helpers() -> None:
     assert isinstance(z, COOTensor)
     assert z.shape == (3, 4)
     assert z.nnz == 0
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", z.to_dense)(), typing.cast("EagerCallableProtocol", np.zeros)((3, 4)))
+    as_callable(np.testing.assert_allclose)(as_callable(z.to_dense)(), as_callable(np.zeros)((3, 4)))
 
     arr = array(type, [0.0, 2.5, 0.0])
     assert isinstance(arr, COOTensor)
@@ -136,8 +137,8 @@ def test_coo_sum_duplicates() -> None:
 
     canonical = coo_sum_duplicates(indices, values, shape)
     assert canonical.nnz == 1
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(canonical.indices, typing.cast("EagerCallableProtocol", np.array)([[0], [1]]))
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(canonical.values, typing.cast("EagerCallableProtocol", np.array)([5.0]))
+    as_callable(np.testing.assert_array_equal)(canonical.indices, as_callable(np.array)([[0], [1]]))
+    as_callable(np.testing.assert_array_equal)(canonical.values, as_callable(np.array)([5.0]))
 
     # Empty values
     empty = coo_sum_duplicates(np.empty((2, 0), dtype=np.int64), np.empty((0,), dtype=np.float32), (2, 2))
@@ -148,7 +149,7 @@ def test_coo_sum_duplicates() -> None:
     values_1d = np.array([1.0, 2.0, 3.0])
     canonical_1d = coo_sum_duplicates(indices_1d, values_1d, (2,))
     assert canonical_1d.nnz == 2
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", canonical_1d.to_dense)(), [3.0, 3.0])
+    as_callable(np.testing.assert_allclose)(as_callable(canonical_1d.to_dense)(), [3.0, 3.0])
 
     # All cancelling to zero
     zero_vals = np.array([1.0, -1.0])
@@ -163,8 +164,8 @@ def test_coo_fromdense_and_todense() -> None:
     coo = coo_fromdense(dense, index_dtype=np.int32)
     assert coo.indices.dtype == np.int32
     assert coo_todense(coo) is not None
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_todense)(coo), dense)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_todense)(dense), dense)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_todense)(coo), dense)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_todense)(dense), dense)
 
     # Pass existing COOTensor
     coo_id = coo_fromdense(coo)
@@ -184,7 +185,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     # Sparse @ Dense
     prod_dense = coo_matmat(coo_a, dense_b)
     expected_dense = dense_a @ dense_b
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_dense, expected_dense, rtol=1e-5, atol=1e-5)
+    as_callable(np.testing.assert_allclose)(prod_dense, expected_dense, rtol=1e-5, atol=1e-5)
 
     # Transposed Sparse @ Dense
     dense_a_t = dense_a.T
@@ -194,7 +195,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     mat_right = rng.normal(size=(4, 2))
     prod_trans = coo_matmat(coo_a, mat_right, transpose=True)
     expected_trans = dense_a.T @ mat_right
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_trans, expected_trans, rtol=1e-5, atol=1e-5)
+    as_callable(np.testing.assert_allclose)(prod_trans, expected_trans, rtol=1e-5, atol=1e-5)
 
     # Sparse @ Sparse
     dense_b_sparse = rng.choice([0.0, 1.0, -1.0], size=(5, 6), p=[0.8, 0.1, 0.1])
@@ -202,7 +203,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     prod_sp = coo_matmat(coo_a, coo_b)
     assert isinstance(prod_sp, COOTensor)
     expected_sp = dense_a @ dense_b_sparse
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", prod_sp.to_dense)(), expected_sp, rtol=1e-5, atol=1e-5)
+    as_callable(np.testing.assert_allclose)(as_callable(prod_sp.to_dense)(), expected_sp, rtol=1e-5, atol=1e-5)
 
     # Sparse @ Sparse with empty / disjoint matrices
     empty_coo = zeros(type, (4, 5))
@@ -219,7 +220,7 @@ def test_coo_matmat_dense_and_sparse_parity() -> None:
     # Empty matrix with dense matrix
     empty_m = zeros(type, (4, 5))
     prod_empty_dense = coo_matmat(empty_m, dense_b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(prod_empty_dense, typing.cast("EagerCallableProtocol", np.zeros)((4, 3)))
+    as_callable(np.testing.assert_allclose)(prod_empty_dense, as_callable(np.zeros)((4, 3)))
 
 
 def test_coo_matvec_parity() -> None:
@@ -231,22 +232,22 @@ def test_coo_matvec_parity() -> None:
 
     res = coo_matvec(coo_m, v)
     expected = dense_m @ v
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
     # Transposed
     res_t = coo_matvec(coo_m, v, transpose=True)
     expected_t = dense_m.T @ v
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_t, expected_t)
+    as_callable(np.testing.assert_allclose)(res_t, expected_t)
 
     # Sparse vector operand
     v_sparse = coo_fromdense(v)
     res_sp_v = coo_matvec(coo_m, v_sparse)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_sp_v, expected)
+    as_callable(np.testing.assert_allclose)(res_sp_v, expected)
 
     # Empty matrix @ vector
     empty_mat = zeros(type, (3, 3))
     res_empty = coo_matvec(empty_mat, v)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_empty, typing.cast("EagerCallableProtocol", np.zeros)(3))
+    as_callable(np.testing.assert_allclose)(res_empty, as_callable(np.zeros)(3))
 
 
 def test_coo_transpose_parity() -> None:
@@ -256,11 +257,11 @@ def test_coo_transpose_parity() -> None:
 
     # Default reverse transpose
     trans_def = coo_transpose(coo_3d)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", trans_def.to_dense)(), typing.cast("EagerCallableProtocol", dense_3d.transpose)())
+    as_callable(np.testing.assert_allclose)(as_callable(trans_def.to_dense)(), as_callable(dense_3d.transpose)())
 
     # Explicit axes
     trans_perm = coo_transpose(coo_3d, axes=[1, 2, 0])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", trans_perm.to_dense)(), typing.cast("EagerCallableProtocol", dense_3d.transpose)(1, 2, 0))
+    as_callable(np.testing.assert_allclose)(as_callable(trans_perm.to_dense)(), as_callable(dense_3d.transpose)(1, 2, 0))
 
     # Empty tensor transpose
     empty_coo = zeros(type, (2, 3))
@@ -280,12 +281,12 @@ def test_coo_add_sub_parity() -> None:
     # Sparse + Sparse
     sum_ab = coo_add(coo_a, coo_b)
     assert isinstance(sum_ab, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", sum_ab.to_dense)(), a + b)
+    as_callable(np.testing.assert_allclose)(as_callable(sum_ab.to_dense)(), a + b)
 
     # Sparse - Sparse
     diff_ab = coo_sub(coo_a, coo_b)
     assert isinstance(diff_ab, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", diff_ab.to_dense)(), a - b)
+    as_callable(np.testing.assert_allclose)(as_callable(diff_ab.to_dense)(), a - b)
 
     # Identity with empty
     empty = zeros(type, (2, 2))
@@ -294,9 +295,9 @@ def test_coo_add_sub_parity() -> None:
 
     # Mixed Sparse + Dense
     dense_c = np.ones((2, 2))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_add)(coo_a, dense_c), a + dense_c)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_add)(dense_c, coo_a), dense_c + a)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_sub)(coo_a, dense_c), a - dense_c)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_add)(coo_a, dense_c), a + dense_c)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_add)(dense_c, coo_a), dense_c + a)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_sub)(coo_a, dense_c), a - dense_c)
     assert coo_add(1.0, 2.0) == 3.0
 
     # Shape mismatch error
@@ -315,7 +316,7 @@ def test_coo_mul_parity() -> None:
     # Sparse * Sparse
     prod_sp = coo_mul(coo_a, coo_b)
     assert isinstance(prod_sp, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", prod_sp.to_dense)(), a * b)
+    as_callable(np.testing.assert_allclose)(as_callable(prod_sp.to_dense)(), a * b)
 
     # Disjoint sparse multiply
     d1 = COOTensor(indices=np.array([[0], [0]]), values=np.array([1.0]), shape=(2, 2))
@@ -327,7 +328,7 @@ def test_coo_mul_parity() -> None:
     # Sparse * Scalar (non-zero and zero)
     prod_sc = coo_mul(coo_a, 3.5)
     assert isinstance(prod_sc, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", prod_sc.to_dense)(), a * 3.5)
+    as_callable(np.testing.assert_allclose)(as_callable(prod_sc.to_dense)(), a * 3.5)
 
     prod_sc_0 = coo_mul(coo_a, 0.0)
     assert isinstance(prod_sc_0, COOTensor)
@@ -335,23 +336,23 @@ def test_coo_mul_parity() -> None:
 
     prod_sc_left = coo_mul(2.0, coo_a)
     assert isinstance(prod_sc_left, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", prod_sc_left.to_dense)(), 2.0 * a)
+    as_callable(np.testing.assert_allclose)(as_callable(prod_sc_left.to_dense)(), 2.0 * a)
 
     # Sparse * Dense
     dense_d = np.array([[10.0, 20.0], [30.0, 40.0]])
     prod_dense = coo_mul(coo_a, dense_d)
     assert isinstance(prod_dense, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", prod_dense.to_dense)(), a * dense_d)
+    as_callable(np.testing.assert_allclose)(as_callable(prod_dense.to_dense)(), a * dense_d)
 
     prod_dense_rev = coo_mul(dense_d, coo_a)
     assert isinstance(prod_dense_rev, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", prod_dense_rev.to_dense)(), dense_d * a)
+    as_callable(np.testing.assert_allclose)(as_callable(prod_dense_rev.to_dense)(), dense_d * a)
 
     # Empty multiply
     empty = zeros(type, (2, 2))
-    assert typing.cast("EagerTensorProtocol", getattr(coo_mul(empty, coo_b), "nnz")) == 0
-    assert typing.cast("EagerTensorProtocol", getattr(coo_mul(empty, dense_d), "nnz")) == 0
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_mul)(typing.cast("EagerCallableProtocol", np.array)([2.0]), typing.cast("EagerCallableProtocol", np.array)([3.0])), [6.0])
+    assert as_tensor(getattr(coo_mul(empty, coo_b), "nnz")) == 0
+    assert as_tensor(getattr(coo_mul(empty, dense_d), "nnz")) == 0
+    as_callable(np.testing.assert_allclose)(as_callable(coo_mul)(as_callable(np.array)([2.0]), as_callable(np.array)([3.0])), [6.0])
 
     # Shape mismatch error
     with pytest.raises(ValueError, match="Shape mismatch"):
@@ -365,15 +366,15 @@ def test_coo_neg_abs_relu_parity() -> None:
 
     # Neg
     neg_res = coo_neg(coo)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", neg_res.to_dense)(), -dense)
+    as_callable(np.testing.assert_allclose)(as_callable(neg_res.to_dense)(), -dense)
 
     # Abs
     abs_res = coo_abs(coo)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", abs_res.to_dense)(), typing.cast("EagerCallableProtocol", np.abs)(dense))
+    as_callable(np.testing.assert_allclose)(as_callable(abs_res.to_dense)(), as_callable(np.abs)(dense))
 
     # ReLU
     relu_res = coo_relu(coo)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", relu_res.to_dense)(), typing.cast("EagerCallableProtocol", np.maximum)(dense, 0.0))
+    as_callable(np.testing.assert_allclose)(as_callable(relu_res.to_dense)(), as_callable(np.maximum)(dense, 0.0))
 
 
 def test_coo_reshape_parity() -> None:
@@ -383,11 +384,11 @@ def test_coo_reshape_parity() -> None:
 
     reshaped = coo_reshape(coo, (3, 2))
     assert reshaped.shape == (3, 2)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", reshaped.to_dense)(), typing.cast("EagerCallableProtocol", dense.reshape)(3, 2))
+    as_callable(np.testing.assert_allclose)(as_callable(reshaped.to_dense)(), as_callable(dense.reshape)(3, 2))
 
     reshaped_1d = coo_reshape(coo, (6,))
     assert reshaped_1d.shape == (6,)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", reshaped_1d.to_dense)(), typing.cast("EagerCallableProtocol", dense.reshape)(6))
+    as_callable(np.testing.assert_allclose)(as_callable(reshaped_1d.to_dense)(), as_callable(dense.reshape)(6))
 
     # Empty reshape
     empty = zeros(type, (2, 3))
@@ -408,16 +409,16 @@ def test_coo_sum_and_mean_parity() -> None:
     s_glob_kd = coo_sum(coo, keepdims=True)
     assert isinstance(s_glob_kd, COOTensor)
     assert s_glob_kd.shape == (1, 1)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", s_glob_kd.to_dense)(), typing.cast("EagerCallableProtocol", np.sum)(dense, keepdims=True))
+    as_callable(np.testing.assert_allclose)(as_callable(s_glob_kd.to_dense)(), as_callable(np.sum)(dense, keepdims=True))
 
     # Axis sum
     s_ax0 = coo_sum(coo, axis=0)
     assert isinstance(s_ax0, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", s_ax0.to_dense)(), typing.cast("EagerCallableProtocol", np.sum)(dense, axis=0))
+    as_callable(np.testing.assert_allclose)(as_callable(s_ax0.to_dense)(), as_callable(np.sum)(dense, axis=0))
 
     s_ax1_kd = coo_sum(coo, axis=1, keepdims=True)
     assert isinstance(s_ax1_kd, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", s_ax1_kd.to_dense)(), typing.cast("EagerCallableProtocol", np.sum)(dense, axis=1, keepdims=True))
+    as_callable(np.testing.assert_allclose)(as_callable(s_ax1_kd.to_dense)(), as_callable(np.sum)(dense, axis=1, keepdims=True))
 
     # All axes specified as sequence
     s_all_axes = coo_sum(coo, axis=[0, 1])
@@ -429,12 +430,12 @@ def test_coo_sum_and_mean_parity() -> None:
 
     m_glob_kd = coo_mean(coo, keepdims=True)
     assert isinstance(m_glob_kd, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", m_glob_kd.to_dense)(), typing.cast("EagerCallableProtocol", np.mean)(dense, keepdims=True))
+    as_callable(np.testing.assert_allclose)(as_callable(m_glob_kd.to_dense)(), as_callable(np.mean)(dense, keepdims=True))
 
     # Axis mean
     m_ax0 = coo_mean(coo, axis=0)
     assert isinstance(m_ax0, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", m_ax0.to_dense)(), typing.cast("EagerCallableProtocol", np.mean)(dense, axis=0))
+    as_callable(np.testing.assert_allclose)(as_callable(m_ax0.to_dense)(), as_callable(np.mean)(dense, axis=0))
 
     m_axes = coo_mean(coo, axis=[0, 1])
     assert m_axes == float(np.mean(dense))
@@ -442,9 +443,9 @@ def test_coo_sum_and_mean_parity() -> None:
     # Empty sum and mean
     empty = zeros(type, (2, 3))
     assert coo_sum(empty) == 0.0
-    assert typing.cast("EagerTensorProtocol", getattr(coo_sum(empty, keepdims=True), "shape")) == (1, 1)
-    assert typing.cast("EagerTensorProtocol", getattr(coo_sum(empty, axis=0), "shape")) == (3,)
-    assert typing.cast("EagerTensorProtocol", getattr(coo_sum(empty, axis=0, keepdims=True), "shape")) == (1, 3)
+    assert as_tensor(getattr(coo_sum(empty, keepdims=True), "shape")) == (1, 1)
+    assert as_tensor(getattr(coo_sum(empty, axis=0), "shape")) == (3,)
+    assert as_tensor(getattr(coo_sum(empty, axis=0, keepdims=True), "shape")) == (1, 3)
     assert coo_mean(empty) == 0.0
 
 
@@ -454,12 +455,12 @@ def test_coo_dot_parity() -> None:
     a2 = np.array([[1.0, 2.0], [3.0, 4.0]])
     b2 = np.array([[5.0, 6.0], [7.0, 8.0]])
     res22 = coo_dot(coo_fromdense(a2), b2)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res22, a2 @ b2)
+    as_callable(np.testing.assert_allclose)(res22, a2 @ b2)
 
     # 2D @ 1D
     v = np.array([2.0, 3.0])
     res21 = coo_dot(coo_fromdense(a2), v)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res21, a2 @ v)
+    as_callable(np.testing.assert_allclose)(res21, a2 @ v)
 
     # 1D @ 1D
     v1 = np.array([1.0, 2.0, 3.0])
@@ -507,7 +508,7 @@ def test_sparse_generator_lifecycle_and_emission() -> None:
 
     res = fn([coo_a, coo_b])
     assert isinstance(res, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", res.to_dense)(), dense_a + dense_b)
+    as_callable(np.testing.assert_allclose)(as_callable(res.to_dense)(), dense_a + dense_b)
 
     # Generic visit
     node_unary = IRNode(id="u", op_type="Sin", inputs=["x"], attributes={})
@@ -527,10 +528,10 @@ def test_sparse_eager_execute_op() -> None:
 
     # Direct ops
     res_add = execute_op(type, "Add", a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_add, typing.cast("EagerCallableProtocol", a.to_dense)() + b)
+    as_callable(np.testing.assert_allclose)(res_add, as_callable(a.to_dense)() + b)
 
     res_matmat = execute_op(type, "coo_matmat", a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_matmat, typing.cast("EagerCallableProtocol", a.to_dense)() @ b)
+    as_callable(np.testing.assert_allclose)(res_matmat, as_callable(a.to_dense)() @ b)
 
     res_sparse_coo_tensor = execute_op(type, "SparseCooTensor", np.array([[0], [1]]), np.array([3.0]), (2, 2))
     assert isinstance(res_sparse_coo_tensor, COOTensor)
@@ -538,11 +539,11 @@ def test_sparse_eager_execute_op() -> None:
 
     # Schema mapping dispatch
     res_schema = execute_op(type, "coo_todense", a)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_schema, typing.cast("EagerCallableProtocol", a.to_dense)())
+    as_callable(np.testing.assert_allclose)(res_schema, as_callable(a.to_dense)())
 
     with patch.dict("ml_switcheroo_compiler.backends.sparse.eager._DIRECT_OPS", clear=True):
         res_mapped = execute_op(type, "coo_todense", a)
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mapped, typing.cast("EagerCallableProtocol", a.to_dense)())
+        as_callable(np.testing.assert_allclose)(res_mapped, as_callable(a.to_dense)())
 
         with patch("ml_switcheroo_compiler.backends.mapping_loader.dispatch_eager_op", side_effect=BackendNotSupportedError("mock error")):
             global_eager_registry.register("coo_todense")(lambda mod, x: "dispatched_fallback")
@@ -559,12 +560,12 @@ def test_sparse_eager_execute_op() -> None:
             x: Test parameter `x`.
             scale: Test parameter `scale`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.asarray)(x) * typing.cast("EagerCallableProtocol", float)(scale))
+        return as_ndarray(as_callable(np.asarray)(x) * as_callable(float)(scale))
 
     global_eager_registry.register("TestSparseCustomOp")(custom_eager)
     res_custom = execute_op(type, "TestSparseCustomOp", a, 3.0)
     assert isinstance(res_custom, COOTensor)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", res_custom.to_dense)(), typing.cast("EagerCallableProtocol", a.to_dense)() * 3.0)
+    as_callable(np.testing.assert_allclose)(as_callable(res_custom.to_dense)(), as_callable(a.to_dense)() * 3.0)
     del global_eager_registry._registry["TestSparseCustomOp"]
 
     global_eager_registry.register("ScalarOp")(lambda mod, x: 42.0)
@@ -621,8 +622,8 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
     arr = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     res = artifact(arr)
     # Result could be COOTensor or numpy array
-    dense_res = typing.cast("EagerTensorProtocol", getattr(res, "to_dense"))() if hasattr(res, "to_dense") else res
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(dense_res, arr + arr)
+    dense_res = as_tensor(getattr(res, "to_dense"))() if hasattr(res, "to_dense") else res
+    as_callable(np.testing.assert_allclose)(dense_res, arr + arr)
 
     # 2. Multi-output execution with extra unused arguments
     g_multi = IRGraph(name="test_sparse_aot_multi")
@@ -638,20 +639,20 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
     gen_multi = SparseGenerator(g_multi)
     artifact_multi = gen_multi.compile_aot(g_multi)
     res_multi = artifact_multi(arr, "extra_arg")
-    assert typing.cast("EagerValue", isinstance(res_multi, tuple) and len(res_multi) == 2)
+    assert as_tensor(isinstance(res_multi, tuple) and len(res_multi) == 2)
 
     # 3. Fallback execution when compile_fn returns None
     with patch.object(gen, "compile_fn", return_value=None):
         artifact_bad = gen._compile_aot_impl(g)
-        res_fallback = typing.cast("EagerCallableProtocol", artifact_bad)(arr, "extra_arg")
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_fallback, arr + arr)
+        res_fallback = as_callable(artifact_bad)(arr, "extra_arg")
+        as_callable(np.testing.assert_allclose)(res_fallback, arr + arr)
 
     # Multi-output fallback execution
     with patch.object(gen_multi, "compile_fn", return_value=None):
         artifact_multi_fallback = gen_multi._compile_aot_impl(g_multi)
-        res_mf = typing.cast("EagerCallableProtocol", artifact_multi_fallback)(arr, "extra_arg")
-        assert isinstance(typing.cast("EagerValue", res_mf), tuple) and len(res_mf) == 2
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mf[0], arr + arr)
+        res_mf = as_callable(artifact_multi_fallback)(arr, "extra_arg")
+        assert isinstance(as_tensor(res_mf), tuple) and len(res_mf) == 2
+        as_callable(np.testing.assert_allclose)(res_mf[0], arr + arr)
 
     # 4. Fallback execution with empty outputs
     g_empty = IRGraph(name="test_sparse_aot_empty")
@@ -660,8 +661,8 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
     g_empty.outputs = []
     with patch.object(gen, "compile_fn", return_value=None):
         artifact_empty = gen._compile_aot_impl(g_empty)
-        res_empty = typing.cast("EagerCallableProtocol", artifact_empty)(arr)
-        assert isinstance(typing.cast("EagerValue", res_empty), dict)
+        res_empty = as_callable(artifact_empty)(arr)
+        assert isinstance(as_tensor(res_empty), dict)
 
     # 5. Fallback execution when compiled_fn raises inside runner
     def exploding_sparse_fn(*args: EagerValue) -> None:
@@ -674,5 +675,5 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
 
     with patch.object(gen, "compile_fn", return_value=exploding_sparse_fn):
         artifact_crash = gen._compile_aot_impl(g)
-        res_recovered = typing.cast("EagerCallableProtocol", artifact_crash)(arr)
-        typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_recovered, arr + arr)
+        res_recovered = as_callable(artifact_crash)(arr)
+        as_callable(np.testing.assert_allclose)(res_recovered, arr + arr)

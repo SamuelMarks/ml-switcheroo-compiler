@@ -8,9 +8,10 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_segment as math_segment
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_math_segment() -> None:
@@ -20,24 +21,24 @@ def test_math_segment() -> None:
 
     # Branch 1: num_segments is None
     res_none = math_segment._np_segment_sum(np, data, segment_ids, num_segments=None)
-    assert typing.cast("EagerTensorProtocol", getattr(res_none, "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(res_none, "__getitem__")(0)), [4.0, 6.0])
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(res_none, "__getitem__")(1)), [5.0, 6.0])
+    assert as_tensor(getattr(res_none, "shape")) == (2, 2)
+    assert as_callable(np.allclose)(as_tensor(getattr(res_none, "__getitem__")(0)), [4.0, 6.0])
+    assert as_callable(np.allclose)(as_tensor(getattr(res_none, "__getitem__")(1)), [5.0, 6.0])
 
     # Branch 2: num_segments is provided
     res_num = math_segment._np_segment_sum(np, data, segment_ids, num_segments=4)
-    assert typing.cast("EagerTensorProtocol", getattr(res_num, "shape")) == (4, 2)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(res_num, "__getitem__")(0)), [4.0, 6.0])
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(res_num, "__getitem__")(1)), [5.0, 6.0])
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(res_num, "__getitem__")(2)), [0.0, 0.0])
-    assert typing.cast("EagerCallableProtocol", np.allclose)(typing.cast("EagerTensorProtocol", getattr(res_num, "__getitem__")(3)), [0.0, 0.0])
+    assert as_tensor(getattr(res_num, "shape")) == (4, 2)
+    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(0)), [4.0, 6.0])
+    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(1)), [5.0, 6.0])
+    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(2)), [0.0, 0.0])
+    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(3)), [0.0, 0.0])
 
     # Registry SegmentSum
     reg_seg = numpy_eager_registry.get("SegmentSum")
-    res_reg = typing.cast("EagerCallableProtocol", reg_seg)(np, data, segment_ids)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(res_reg, res_none)
+    res_reg = as_callable(reg_seg)(np, data, segment_ids)
+    assert as_callable(np.allclose)(res_reg, res_none)
 
     # SparseSegmentSum directly
     sparse_data = np.array([[2.0, 3.0], [4.0, 5.0]], dtype=np.float32)
     sparse_sum = math_segment._np_sparsesegmentsum(np, sparse_data)
-    assert typing.cast("EagerCallableProtocol", np.allclose)(sparse_sum, [[6.0, 8.0]])
+    assert as_callable(np.allclose)(sparse_sum, [[6.0, 8.0]])

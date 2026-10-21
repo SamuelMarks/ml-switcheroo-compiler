@@ -10,9 +10,10 @@ import numpy as np
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops import array, diag, rand, randint, randn
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_rand_frontend_eager() -> None:
@@ -21,14 +22,14 @@ def test_rand_frontend_eager() -> None:
 
     config.eager_mode = True
     t1 = rand(2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(t1, "shape")) == (2, 3)
+    assert as_tensor(getattr(t1, "shape")) == (2, 3)
     import ml_switcheroo_compiler.backends.registry as reg
 
     setattr(reg, "_ACTIVE_BACKEND", type("D", (), {"execute_op": lambda *a, **k: type("T", (), {"shape": (2, 3)})()})())
-    typing.cast("EagerCallableProtocol", randn)([2, 3])
+    as_callable(randn)([2, 3])
     pass
     t3 = randint(0, 10, (2, 3))
-    assert typing.cast("EagerTensorProtocol", getattr(t3, "shape")) == (2, 3)
+    assert as_tensor(getattr(t3, "shape")) == (2, 3)
     pass
     array(type("D", (), {"shape": (1, 3)})(), dtype=DType.Int32)
     pass

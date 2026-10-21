@@ -11,7 +11,7 @@ import struct
 import typing
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_bytes, as_tensor
 from ml_switcheroo_compiler.backends.hardware_config_models import (
     GridDimensionConfig,
     HardwareTemplateConfig,
@@ -22,7 +22,6 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -140,7 +139,7 @@ def _prepare_metal_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) -
         elif hasattr(arg, "data") and hasattr(getattr(arg, "data"), "tobytes"):
             input_buffers[input_name] = getattr(arg, "data").tobytes()
         else:
-            input_buffers[input_name] = typing.cast("TypedVariadicCallable[bytes]", bytes)(arg)
+            input_buffers[input_name] = as_bytes(arg)
     return input_buffers
 
 
@@ -160,7 +159,7 @@ def _evaluate_metal_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Ea
     res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
         return res_dict.get(graph.outputs[0])
-    return typing.cast(EagerValue, tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict)
+    return tuple(res_dict.get(out) for out in graph.outputs) if graph.outputs else res_dict
 
 
 METAL_SYNTH_MATH_MAP: dict[str, str] = {
@@ -396,7 +395,7 @@ class MetalCodeGenerator(BaseGenerator):
         num_elements, bytes_alloc = _calculate_node_bytes(node)
 
         msl.append(f"    {out_name} = device.newBufferWithLength_options_({bytes_alloc}, 0)")
-        wg: list[int] = typing.cast(list[int], getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg: list[int] = getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1]
 
         gx, gy, gz = _resolve_metal_grid_sizes(node, num_elements, self.graph)
         msl.append(f"    grid_size_{node_idx} = MTLSize({gx}, {gy}, {gz})")
@@ -533,7 +532,7 @@ class MetalCodeGenerator(BaseGenerator):
                         input_buffers = _prepare_metal_input_buffers(graph, args)
                         out_dict = getattr(runner_inst, "execute_graph")(graph, input_buffers)
                         if len(graph.outputs) == 1:
-                            return typing.cast(EagerValue, out_dict.get(graph.outputs[0]))
+                            return as_tensor(out_dict.get(graph.outputs[0]))
                         return tuple(out_dict.get(out_name) for out_name in graph.outputs)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -822,7 +821,7 @@ class MetalRunner:
 
         out_ptr = out_buf.contents()
         c_floats = ctypes.cast(out_ptr, ctypes.POINTER(ctypes.c_float))
-        return typing.cast(ArrayBufferType, [float(c_floats[idx]) for idx in range(num_elements)])
+        return [float(c_floats[idx]) for idx in range(num_elements)]
 
     @staticmethod
     def _to_float32_bytes(data: EagerValue) -> bytes:
@@ -959,7 +958,7 @@ class MetalRunner:
             if buf is not None and hasattr(buf, "contents"):
                 node = graph.nodes.get(out_id)
                 _, byte_size = _calculate_node_bytes(node)
-                ptr = int(typing.cast(int, buf.contents()))
+                ptr = int(buf.contents())
                 results[out_id] = bytes(ctypes.string_at(ptr, byte_size))
 
         return results

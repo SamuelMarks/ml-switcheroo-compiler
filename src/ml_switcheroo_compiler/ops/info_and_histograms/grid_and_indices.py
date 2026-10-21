@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-from collections.abc import Sequence
-
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_shape
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -30,7 +27,7 @@ class Indices(OpDef):
             return ()
         dimensions = args[0]
         dim_len = len(dimensions) if isinstance(dimensions, (list, tuple)) else 0
-        return (dim_len, *typing.cast("Sequence[int]", dimensions)) if dim_len > 0 else ()
+        return (dim_len, *as_shape(dimensions)) if dim_len > 0 else ()
 
 
 @register_op("Ix")
@@ -120,7 +117,7 @@ class Ogrid(OpDef):
 
 @register_op("R")
 class R(OpDef):
-    """Translate slice Anys to concatenation along the first axis."""
+    """Translate slice objects to concatenation along the first axis."""
 
     op_name = "R"
 
@@ -168,7 +165,7 @@ def ogrid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
 
 
 def r_(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
-    """Translate slice Anys to concatenation along the first axis.
+    """Translate slice objects to concatenation along the first axis.
 
     Args:
         *args (TensorOrScalar): Positional args.

@@ -14,9 +14,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.variable_ops import (
     _np_cast,
     _np_read_variable,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_assign() -> None:
@@ -29,8 +30,8 @@ def test_cast() -> None:
     """Test function test_cast."""
     x = np.array([1.5, 2.5])
     res = _np_cast(np, x, "int32")
-    assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == np.int32
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1, 2])
+    assert as_tensor(getattr(res, "dtype")) == np.int32
+    as_callable(np.testing.assert_allclose)(res, [1, 2])
 
     class MockDtype:
         """Test class MockDtype."""
@@ -43,18 +44,18 @@ def test_cast() -> None:
             """
             self.value = val
 
-    res2 = _np_cast(np, x, typing.cast("EagerValue", MockDtype("bfloat16")))
-    assert typing.cast("EagerTensorProtocol", getattr(res2, "dtype")) == np.float32
+    res2 = _np_cast(np, x, as_tensor(MockDtype("bfloat16")))
+    assert as_tensor(getattr(res2, "dtype")) == np.float32
 
-    res3 = _np_cast(np, x, typing.cast("EagerValue", MockDtype("int4")))
-    assert typing.cast("EagerTensorProtocol", getattr(res3, "dtype")) == np.int8
+    res3 = _np_cast(np, x, as_tensor(MockDtype("int4")))
+    assert as_tensor(getattr(res3, "dtype")) == np.int8
 
 
 def test_bitcast() -> None:
     """Test function test_bitcast."""
     x = np.array([1.0], dtype=np.float32)
     res = _np_bitcast(np, x, "int32")
-    assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == np.int32
+    assert as_tensor(getattr(res, "dtype")) == np.int32
 
     class MockDtype:
         """Test class MockDtype."""
@@ -67,8 +68,8 @@ def test_bitcast() -> None:
             """
             self.value = val
 
-    res2 = _np_bitcast(np, x, typing.cast("EagerValue", MockDtype("int32")))
-    assert typing.cast("EagerTensorProtocol", getattr(res2, "dtype")) == np.int32
+    res2 = _np_bitcast(np, x, as_tensor(MockDtype("int32")))
+    assert as_tensor(getattr(res2, "dtype")) == np.int32
 
 
 def test_read_variable() -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 @register_op("Solve")
@@ -112,13 +112,12 @@ def solve(a: Tensor, b: Tensor) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = typing.cast(
-            "TensorLike",
+        data = as_tensor(
             backend.execute_op(
                 "Solve",
                 (a.data if hasattr(a, "device") else a),
                 (b.data if hasattr(b, "device") else b),
-            ),
+            )
         )
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node("Solve", [a, b], {}, [b.shape], [a.dtype])
@@ -139,14 +138,13 @@ def solve_ex(a: Tensor, b: Tensor, check_errors: bool = False) -> TensorOrScalar
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sol, info = typing.cast(
-            "tuple[TensorLike, TensorLike]",
+        sol, info = as_tensor_pair(
             backend.execute_op(
                 "SolveEx",
                 (a.data if hasattr(a, "device") else a),
                 (b.data if hasattr(b, "device") else b),
                 check_errors=check_errors,
-            ),
+            )
         )
         return (
             Tensor(sol, TensorConfig(sol.shape, a.dtype, a.device)),
@@ -176,8 +174,7 @@ def solve_triangular(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = typing.cast(
-            "TensorLike",
+        data = as_tensor(
             backend.execute_op(
                 "TriangularSolve",
                 a.data,
@@ -185,7 +182,7 @@ def solve_triangular(
                 lower=lower,
                 unit_diagonal=unit_diagonal,
                 adjoint=False,
-            ),
+            )
         )
         return Tensor(data, TensorConfig(data.shape, a.dtype, a.device))
     return _emit_linalg_node(

@@ -12,9 +12,10 @@ import numpy as np
 import ml_switcheroo_compiler.ops.reductions.frontend as rd
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
+from tests.testing_utils import as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_reductions_coverage() -> None:
@@ -37,7 +38,7 @@ def test_reductions_coverage() -> None:
             """Test class DummyGraph."""
 
             name = "dummy"
-            nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            nodes = as_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.

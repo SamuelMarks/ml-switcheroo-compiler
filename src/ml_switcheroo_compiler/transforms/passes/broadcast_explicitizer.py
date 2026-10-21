@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import typing
 import uuid
 from collections.abc import (
     Sequence,  # noqa: F401
@@ -11,7 +10,7 @@ from collections.abc import (
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
-from ml_switcheroo_compiler.core.shape import broadcast_shapes
+from ml_switcheroo_compiler.core.shape import SymbolicDim, broadcast_shapes
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
@@ -41,20 +40,25 @@ def _inject_broadcast_node(graph: IRGraph, input_id: str, target_shape: tuple[in
     return new_id
 
 
-def _needs_broadcast(shape1: tuple[int, ...] | None, shape2: tuple[int, ...] | None) -> tuple[int, ...] | None:
+def _needs_broadcast(
+    shape1: Sequence[int | SymbolicDim | None] | None,
+    shape2: Sequence[int | SymbolicDim | None] | None,
+) -> tuple[int, ...] | None:
     """Execute needs broadcast for compiler processing.
 
     Args:
-        shape1 (Optional[tuple[int, ...]]): The shape1 parameter.
-        shape2 (Optional[tuple[int, ...]]): The shape2 parameter.
+        shape1 (Sequence[int | SymbolicDim | None] | None): The shape1 parameter.
+        shape2 (Sequence[int | SymbolicDim | None] | None): The shape2 parameter.
 
     Returns:
             tuple[int, ...]: Result.
     """
     if shape1 is None or shape2 is None or shape1 == shape2:
         return None
+    from ml_switcheroo_compiler.backends.registry import as_shape
+
     try:
-        return broadcast_shapes(shape1, shape2)
+        return broadcast_shapes(as_shape(shape1), as_shape(shape2))
     except Exception:
         return None
 
@@ -78,8 +82,8 @@ def _process_broadcast_node(graph: IRGraph, node: LogicalNode) -> bool:
         return False
 
     in1, in2 = node.inputs
-    shape1 = typing.cast("tuple[int, ...] | None", graph.nodes[in1].shape_metadata)
-    shape2 = typing.cast("tuple[int, ...] | None", graph.nodes[in2].shape_metadata)
+    shape1 = graph.nodes[in1].shape_metadata
+    shape2 = graph.nodes[in2].shape_metadata
 
     target_shape = _needs_broadcast(shape1, shape2)
     if target_shape is None:

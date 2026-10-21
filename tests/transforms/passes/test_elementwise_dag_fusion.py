@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     fuse_elementwise_clusters,
     operator_fusion_pass,
 )
+from tests.testing_utils import as_str
 
 
 def test_elementwise_cluster_fusion_chain() -> None:
@@ -36,7 +37,7 @@ def test_elementwise_cluster_fusion_chain() -> None:
     assert fused.op_type == "FusedElementwise"
     assert fused.inputs == ["in_a", "in_b"]
     fused_ops = typing.cast("list[str]", fused.attributes["fused_ops"])
-    scalar_expr = typing.cast("str", fused.attributes["scalar_expr"])
+    scalar_expr = as_str(fused.attributes["scalar_expr"])
     assert "Add" in fused_ops
     assert "Mul" in fused_ops
     assert "Relu" in fused_ops

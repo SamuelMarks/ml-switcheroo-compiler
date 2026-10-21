@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence  # noqa: F401
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -45,8 +44,8 @@ def _np_sparsedensematmul(backend_module: BackendModuleProtocol, *args: EagerVal
         tuple[int, ...]: Result.
     """
     if hasattr(backend_module, "sparsedensematmul"):
-        return typing.cast(EagerValue, backend_module.sparsedensematmul(*args, **kwargs))
-    return typing.cast(EagerValue, getattr(np, "matmul")(args[0], args[1]))
+        return as_tensor(backend_module.sparsedensematmul(*args, **kwargs))
+    return as_tensor(getattr(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("SparseMapValues")
@@ -63,7 +62,7 @@ def _np_sparsemapvalues(backend_module: BackendModuleProtocol, *args: EagerValue
     """
     fn = args[0]
     sp_input = args[1]
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", fn)(typing.cast("EagerCallableProtocol", backend_module.array)(sp_input)))
+    return as_tensor(as_callable(fn)(as_callable(backend_module.array)(sp_input)))
 
 
 @numpy_eager_registry.register("SparseReshape")
@@ -78,7 +77,7 @@ def _np_sparsereshape(backend_module: BackendModuleProtocol, *args: EagerValue, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(EagerValue, backend_module.reshape(args[0], args[1]))
+    return backend_module.reshape(args[0], args[1])
 
 
 @numpy_eager_registry.register("SparseSampledAdd")
@@ -93,7 +92,7 @@ def _np_sparsesampledadd(backend_module: BackendModuleProtocol, *args: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(EagerValue, backend_module.add(args[0], args[1]))
+    return backend_module.add(args[0], args[1])
 
 
 @numpy_eager_registry.register("SparseTranspose")
@@ -108,7 +107,7 @@ def _np_sparsetranspose(backend_module: BackendModuleProtocol, *args: EagerValue
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(EagerValue, backend_module.transpose(args[0]))
+    return backend_module.transpose(args[0])
 
 
 @numpy_eager_registry.register("decode_csv")
@@ -357,7 +356,7 @@ def _np_decode_image_camel(backend_module: BackendModuleProtocol, *args: EagerVa
             raise ValueError("Expected bytes for image decoding.")
 
         height, width, src_channels = _decode_png_bytes(bytes(data))
-        channels = int(typing.cast(int, kwargs.get("channels", 0)))
+        channels = int(as_int(kwargs.get("channels", 0)))
         out_channels = channels if channels in (1, 3, 4) else src_channels
         return np.zeros((height, width, out_channels), dtype=np.uint8)
     except Exception as e:
@@ -469,7 +468,7 @@ def _np_parse_tensor_camel(backend_module: BackendModuleProtocol, *args: EagerVa
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
     dtype = kwargs.get("out_type", np.float32)
     try:
-        return typing.cast(EagerValue, getattr(np, "array")(pickle.loads(data), dtype=dtype))
+        return as_tensor(getattr(np, "array")(pickle.loads(data), dtype=dtype))
     except Exception as e:
         raise RuntimeError(f"Eager execution failed: {e}") from e
 

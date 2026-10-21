@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
 
 try:
     import keras.ops as kops
@@ -43,7 +41,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
     Returns:
         EagerValue: The array tensor.
     """
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(kops, data, dtype))
+    return as_tensor(as_callable(generic_array)(kops, data, dtype))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -58,8 +56,8 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     """
     del cls
     if hasattr(kops, "asarray"):
-        return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_asarray)(kops, data))
-    return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", generic_array)(kops, data))
+        return as_tensor(as_callable(generic_asarray)(kops, data))
+    return as_tensor(as_callable(generic_array)(kops, data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -72,4 +70,4 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return typing.cast(float, typing.cast("EagerCallableProtocol", generic_item)(kops, data))
+    return as_float(as_callable(generic_item)(kops, data))

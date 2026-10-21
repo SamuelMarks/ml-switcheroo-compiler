@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.mlx.eager import _mlx_reduce_scatter
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MockMLXArray:
@@ -42,7 +42,7 @@ class MockMLXArray:
         Args:
             item: Test parameter `item`.
         """
-        return typing.cast("MockMLXArray", typing.cast("EagerCallableProtocol", MockMLXArray)(typing.cast("EagerCallableProtocol", getattr(self._data, "__getitem__"))(item)))
+        return typing.cast("MockMLXArray", as_callable(MockMLXArray)(as_callable(getattr(self._data, "__getitem__"))(item)))
 
     def __add__(self, other: MockMLXArray) -> MockMLXArray:
         """Elementwise addition.
@@ -50,7 +50,7 @@ class MockMLXArray:
         Args:
             other: Test parameter `other`.
         """
-        return typing.cast("MockMLXArray", typing.cast("EagerCallableProtocol", MockMLXArray)(typing.cast("EagerTensorProtocol", self._data) + typing.cast("EagerTensorProtocol", other._data)))
+        return typing.cast("MockMLXArray", as_callable(MockMLXArray)(as_tensor(self._data) + as_tensor(other._data)))
 
     def __mul__(self, other: MockMLXArray) -> MockMLXArray:
         """Elementwise multiplication.
@@ -58,7 +58,7 @@ class MockMLXArray:
         Args:
             other: Test parameter `other`.
         """
-        return typing.cast("MockMLXArray", typing.cast("EagerCallableProtocol", MockMLXArray)(typing.cast("EagerTensorProtocol", self._data) * typing.cast("EagerTensorProtocol", other._data)))
+        return typing.cast("MockMLXArray", as_callable(MockMLXArray)(as_tensor(self._data) * as_tensor(other._data)))
 
     def to_numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Extract NumPy view."""
@@ -120,7 +120,7 @@ def test_mlx_ring_reduce_scatter_sum() -> None:
 
     # Rank 0 should get chunk 0 reduced: 1 + 2 + 3 = 6
     res0 = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         r0,
         all_ranks_data=all_ranks,
         scatter_dim=0,
@@ -129,19 +129,19 @@ def test_mlx_ring_reduce_scatter_sum() -> None:
     )
     assert isinstance(res0, MockMLXArray)
     assert res0.shape == (2, 4)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", res0.to_numpy)(), 6.0)
+    as_callable(np.testing.assert_allclose)(as_callable(res0.to_numpy)(), 6.0)
 
     # Rank 1 should get chunk 1 reduced
     res1 = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         r1,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="SUM",
         rank=1,
     )
-    assert typing.cast("EagerTensorProtocol", getattr(res1, "shape")) == (2, 4)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res1, "to_numpy")))(), 6.0)
+    assert as_tensor(getattr(res1, "shape")) == (2, 4)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res1, "to_numpy")))(), 6.0)
 
 
 def test_mlx_ring_reduce_scatter_ops() -> None:
@@ -152,47 +152,47 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
 
     # PROD on rank 0 (gets row 0: [2*10, 3*20] = [20, 60])
     res_prod = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         r0,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="PROD",
         rank=0,
     )
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_prod, "to_numpy")))(), [[20.0, 60.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_prod, "to_numpy")))(), [[20.0, 60.0]])
 
     # MAX on rank 1 (gets row 1: [max(4, 30), max(5, 40)] = [30, 40])
     res_max = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         r1,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="MAX",
         rank=1,
     )
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_max, "to_numpy")))(), [[30.0, 40.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_max, "to_numpy")))(), [[30.0, 40.0]])
 
     # MIN on rank 1 (gets row 1: [min(4, 30), min(5, 40)] = [4, 5])
     res_min = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         r1,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="MIN",
         rank=1,
     )
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_min, "to_numpy")))(), [[4.0, 5.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_min, "to_numpy")))(), [[4.0, 5.0]])
 
     # Fallback op (else branch) defaults to SUM
     res_fallback = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         r0,
         all_ranks_data=all_ranks,
         scatter_dim=0,
         op_type="UNKNOWN_OP",
         rank=0,
     )
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_fallback, "to_numpy")))(), [[12.0, 23.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_fallback, "to_numpy")))(), [[12.0, 23.0]])
 
 
 def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
@@ -201,18 +201,18 @@ def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
 
     # World size 3, rank 1 gets rows 2:4
     res = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         tensor,
         world_size=3,
         rank=1,
         scatter_dim=0,
     )
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 2)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res, "to_numpy")))(), [[4.0, 5.0], [6.0, 7.0]])
+    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res, "to_numpy")))(), [[4.0, 5.0], [6.0, 7.0]])
 
     # World size 1 returns tensor unchanged
     res_1 = _mlx_reduce_scatter(
-        typing.cast("BackendModuleProtocol", MockMLXModule()),
+        as_mod(MockMLXModule()),
         tensor,
         world_size=1,
         rank=0,

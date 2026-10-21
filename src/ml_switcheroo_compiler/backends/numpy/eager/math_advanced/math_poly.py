@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Callable, Sequence
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerCallableProtocol,
     EagerValue,
+    as_callable,
     numpy_eager_registry,
 )
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import (
     _get_np_arg,
     _get_sc,
@@ -52,11 +52,11 @@ def _poly_recurrence(
         t_list.append(p1_func(x_b))
 
     for i in range(2, max_n + 1):
-        getattr(t_list, "append")(typing.cast("EagerCallableProtocol", p_next_func)(i - 1, x_b, t_list[-1], t_list[-2]))
+        getattr(t_list, "append")(as_callable(p_next_func)(i - 1, x_b, t_list[-1], t_list[-2]))
 
     t_stacked = np.stack(t_list)
     indices = np.indices(n_b.shape)
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], t_stacked[tuple([n_b] + list(indices))])
+    return as_ndarray(t_stacked[tuple([n_b] + list(indices))])
 
 
 @numpy_eager_registry.register("chebyshev_polynomial_t")
@@ -248,7 +248,7 @@ def _np_shifted_chebyshev_polynomial_t(
     x = _get_np_arg(args, 1)
     if n is None or x is None or sc_module is None:
         return None
-    return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, "None"], getattr(sc_module, "eval_sh_chebyt")(np.asarray(n, dtype=int), x))
+    return as_ndarray(getattr(sc_module, "eval_sh_chebyt")(np.asarray(n, dtype=int), x))
 
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_u")
@@ -272,7 +272,7 @@ def _np_shifted_chebyshev_polynomial_u(
     x = _get_np_arg(args, 1)
     if n is None or x is None or sc_module is None:
         return None
-    return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, "None"], getattr(sc_module, "eval_sh_chebyu")(np.asarray(n, dtype=int), x))
+    return as_ndarray(getattr(sc_module, "eval_sh_chebyu")(np.asarray(n, dtype=int), x))
 
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_v")
@@ -299,7 +299,7 @@ def _np_shifted_chebyshev_polynomial_v(
     n_int = np.asarray(n, dtype=int)
     u_n = getattr(sc_module, "eval_sh_chebyu")(n_int, x)
     u_nm1 = getattr(sc_module, "eval_sh_chebyu")(n_int - 1, x)
-    return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, "None"], u_n - u_nm1 / 2.0)
+    return as_ndarray(u_n - u_nm1 / 2.0)
 
 
 @numpy_eager_registry.register("shifted_chebyshev_polynomial_w")
@@ -326,4 +326,4 @@ def _np_shifted_chebyshev_polynomial_w(
     n_int = np.asarray(n, dtype=int)
     u_n = getattr(sc_module, "eval_sh_chebyu")(n_int, x)
     u_nm1 = getattr(sc_module, "eval_sh_chebyu")(n_int - 1, x)
-    return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], float, "None"], u_n + u_nm1 / 2.0)
+    return as_ndarray(u_n + u_nm1 / 2.0)

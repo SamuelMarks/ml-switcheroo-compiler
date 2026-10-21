@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import threading
-import typing
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_callable, as_int, as_opt_str, as_tensor, global_eager_registry, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 from .indexing import IndexingContext
 
@@ -25,7 +24,7 @@ def _gather_nd(x: EagerValue, indices: EagerValue, **kwargs: EagerValue) -> Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", getattr(x, "__getitem__")(tuple(getattr(np, "moveaxis")(indices, -1, 0))))
+    return as_tensor(getattr(x, "__getitem__")(tuple(getattr(np, "moveaxis")(indices, -1, 0))))
 
 
 def _scatter_nd(indices: EagerValue, updates: EagerValue, shape: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -81,7 +80,7 @@ def _scatter_add(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **
     for idx_val in it:
         pos: list[int] = list(it.multi_index)
         pos[dim] = int(np.asarray(idx_val).item())
-        typing.cast(EagerTensorProtocol, y)[tuple(pos)] += getattr(src, "__getitem__")(it.multi_index)
+        y[tuple(pos)] += getattr(src, "__getitem__")(it.multi_index)
     return y
 
 
@@ -190,7 +189,7 @@ def _np_tensor_scatter_update(backend_module: BackendModuleProtocol, tensor: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(TypedVariadicCallable[EagerValue], global_eager_registry.get("TensorScatterUpdate"))(backend_module, tensor, indices, updates)
+    return as_callable(global_eager_registry.get("TensorScatterUpdate"))(backend_module, tensor, indices, updates)
 
 
 @numpy_eager_registry.register("TensorScatterAdd")
@@ -263,7 +262,7 @@ def _np_gather_nd(backend_module: BackendModuleProtocol, params: EagerValue, ind
             tuple[int, ...]: Result.
     """
     idx: tuple[EagerValue, ...] = tuple(backend_module.moveaxis(backend_module.array(indices), -1, 0))
-    return typing.cast("EagerValue", getattr(params, "__getitem__")(idx))
+    return as_tensor(getattr(params, "__getitem__")(idx))
 
 
 @numpy_eager_registry.register("ScatterNd")
@@ -298,10 +297,10 @@ def _np_scatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[0])
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
-    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
-    dim: int = typing.cast(int, kwargs.get("dim", 0))
+    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[0])
+    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[2])
+    dim: int = as_int(kwargs.get("dim", 0))
     out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.copy(input_data)
     getattr(np, "put_along_axis")(out, index, src, axis=dim)
     return out
@@ -320,9 +319,9 @@ def _np_scatter_add(backend_module: BackendModuleProtocol, *args: EagerValue, **
             tuple[int, ...]: Result.
     """
     input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(args[0])
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[1])
-    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], args[2])
-    dim: int = typing.cast(int, kwargs.get("dim", 0))
+    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[2])
+    dim: int = as_int(kwargs.get("dim", 0))
     getattr(np, "put_along_axis")(input_data, index, np.add(getattr(np, "take_along_axis")(input_data, index, axis=dim), src), axis=dim)
     return input_data
 
@@ -351,7 +350,7 @@ def _np_scatter_apply(backend_module: BackendModuleProtocol, context: IndexingCo
 
     indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[1])
     updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[2])
-    reduction: str | None = typing.cast("str | None", kwargs.get("reduction", None))
+    reduction: str | None = as_opt_str(kwargs.get("reduction", None))
 
     try:
         if reduction == "add":

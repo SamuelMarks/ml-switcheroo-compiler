@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_ir import AttributeValue, NodeDict
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_attrs
 
 
 def test_wasm_cond_generation() -> None:
@@ -37,7 +36,7 @@ def test_wasm_cond_generation() -> None:
         id="node_cond",
         op_type="Cond",
         inputs=["node_in", "node_in", "node_in"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"dtype": "float32", "branch_graphs": [true_graph, false_graph]}),
+        attributes=as_attrs({"dtype": "float32", "branch_graphs": [true_graph, false_graph]}),
         shape_metadata=(3,),
     )
 

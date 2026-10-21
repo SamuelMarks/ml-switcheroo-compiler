@@ -9,9 +9,10 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.common.mixins.image as img_mix
 from ml_switcheroo_compiler.ir.core import IRNode
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class _DummyGenerator:
@@ -184,7 +185,7 @@ def test_image_ast_visitor() -> None:
     Returns:
         None
     """
-    vis = typing.cast("EagerCallableProtocol", img_mix.ImageASTVisitor)(generator=typing.cast("EagerCallableProtocol", _DummyGenerator)())
+    vis = as_callable(img_mix.ImageASTVisitor)(generator=as_callable(_DummyGenerator)())
     node = IRNode("dummy", "Dummy", inputs=[], attributes={})
 
     # With kwargs explicitly supplied

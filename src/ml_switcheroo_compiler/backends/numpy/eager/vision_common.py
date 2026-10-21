@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager.audio import mel_filterbank_eager, mfcc_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -23,7 +21,7 @@ def _np_mel_filterbank(backend_module: BackendModuleProtocol, _: EagerValue, **k
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", mel_filterbank_eager)(backend_module, None, kwargs.get("config", kwargs))
+    return as_callable(mel_filterbank_eager)(backend_module, None, kwargs.get("config", kwargs))
 
 
 @numpy_eager_registry.register("Mfcc")
@@ -38,7 +36,7 @@ def _np_mfcc(backend_module: BackendModuleProtocol, spectrogram: EagerValue, **k
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", mfcc_eager)(backend_module, spectrogram, kwargs.get("config", kwargs))
+    return as_callable(mfcc_eager)(backend_module, spectrogram, kwargs.get("config", kwargs))
 
 
 @numpy_eager_registry.register("PowerIteration")
@@ -63,7 +61,7 @@ def _np_power_iteration(backend_module: BackendModuleProtocol, w: EagerValue, *a
     else:
         u = np.asarray(u_raw)
     v = np.zeros_like(u)
-    for _ in range(typing.cast("int", num_iters)):
+    for _ in range(as_int(num_iters)):
         w_t = np.asarray(getattr(np, "swapaxes")(w, -1, -2))
         v = np.matmul(w_t, u)
         v = v / (np.linalg.norm(v, axis=-2, keepdims=True) + 1e-12)

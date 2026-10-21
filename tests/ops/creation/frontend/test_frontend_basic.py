@@ -9,9 +9,10 @@ import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.ops.creation.frontend_basic import _create_backend_array, _get_dtype_val, _infer_dtype, _try_create_array, array, asarray, convert_to_numpy, convert_to_tensor, empty, empty_like, frombuffer, full, full_like, ones, ones_like, zeros, zeros_like
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_frontend_basic() -> None:
@@ -71,8 +72,8 @@ def test_frontend_basic() -> None:
 
             return T()
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", _try_create_array)(typing.cast("EagerCallableProtocol", DummyBackend)(), [1], "int32"), "dtype")) == "float32"
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", _try_create_array)(typing.cast("EagerCallableProtocol", DummyBackend)(), [1], None), "dtype")) == "float32"
+    assert as_tensor(getattr(as_callable(_try_create_array)(as_callable(DummyBackend)(), [1], "int32"), "dtype")) == "float32"
+    assert as_tensor(getattr(as_callable(_try_create_array)(as_callable(DummyBackend)(), [1], None), "dtype")) == "float32"
 
     class DummyBackendThrow:
         """Test class DummyBackendThrow."""
@@ -87,9 +88,9 @@ def test_frontend_basic() -> None:
             raise Exception()
 
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
-        typing.cast("EagerCallableProtocol", _try_create_array)(typing.cast("EagerCallableProtocol", DummyBackendThrow)(), [1], None)
+        as_callable(_try_create_array)(as_callable(DummyBackendThrow)(), [1], None)
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend", return_value=DummyBackend()):
-        assert typing.cast("EagerTensorProtocol", getattr(_create_backend_array([1], None), "dtype")) == "float32"
+        assert as_tensor(getattr(_create_backend_array([1], None), "dtype")) == "float32"
         from ml_switcheroo_compiler.core.config import config
 
         config.eager_mode = True
@@ -110,7 +111,7 @@ def test_frontend_basic() -> None:
 
             def __init__(self) -> None:
                 """Test function __init__."""
-                self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+                self.nodes = as_tensor_dict({})
 
             def add_node(self, node: EagerValue) -> None:
                 """Test function add_node.
@@ -122,7 +123,7 @@ def test_frontend_basic() -> None:
 
         state.global_tracing_state.is_tracing = True
         setattr(state.global_tracing_state, "active_graph", DummyGraph())
-        setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+        setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
         config.eager_mode = False
         array([1])
         asarray([1])
@@ -279,7 +280,7 @@ def test_frontend_basic_functions() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = as_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -291,7 +292,7 @@ def test_frontend_basic_functions() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -503,7 +504,7 @@ def test_frontend_basic_kwargs() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = as_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -515,7 +516,7 @@ def test_frontend_basic_kwargs() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted"):
         zeros((1,), dtype=DType.Float32)
         ones((1,), dtype=DType.Float32)
@@ -547,10 +548,10 @@ def test_frontend_basic_coverage() -> None:
 
         data = DummyItem()
 
-    assert typing.cast("EagerCallableProtocol", _unpack_shape)((typing.cast("EagerCallableProtocol", DummyData)(), typing.cast("EagerCallableProtocol", DummyItem)(), 2)) == (1, 1, 2)
+    assert as_callable(_unpack_shape)((as_callable(DummyData)(), as_callable(DummyItem)(), 2)) == (1, 1, 2)
     assert _extract_fill_value(1) == 1
-    assert typing.cast("EagerCallableProtocol", _extract_fill_value)(typing.cast("EagerCallableProtocol", DummyData)()) == 1
-    assert typing.cast("EagerCallableProtocol", _extract_fill_value)(typing.cast("EagerCallableProtocol", DummyItem)()) == 1
+    assert as_callable(_extract_fill_value)(as_callable(DummyData)()) == 1
+    assert as_callable(_extract_fill_value)(as_callable(DummyItem)()) == 1
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
@@ -578,7 +579,7 @@ def test_frontend_basic_coverage() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = as_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -590,20 +591,20 @@ def test_frontend_basic_coverage() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted"):
-        assert typing.cast("EagerTensorProtocol", zeros((1,), dtype=DType.Float32)) == typing.cast("EagerTensorProtocol", "emitted")
-        assert typing.cast("EagerTensorProtocol", ones((1,), dtype=DType.Float32)) == typing.cast("EagerTensorProtocol", "emitted")
-        assert typing.cast("EagerTensorProtocol", full((1,), 0, dtype=DType.Float32)) == typing.cast("EagerTensorProtocol", "emitted")
-        assert typing.cast("EagerTensorProtocol", empty((1,), dtype=DType.Float32)) == typing.cast("EagerTensorProtocol", "emitted")
-        assert typing.cast("EagerTensorProtocol", frombuffer(np.zeros(10).tobytes(), count=10)) == typing.cast("EagerTensorProtocol", "emitted")
+        assert as_tensor(zeros((1,), dtype=DType.Float32)) == as_tensor("emitted")
+        assert as_tensor(ones((1,), dtype=DType.Float32)) == as_tensor("emitted")
+        assert as_tensor(full((1,), 0, dtype=DType.Float32)) == as_tensor("emitted")
+        assert as_tensor(empty((1,), dtype=DType.Float32)) == as_tensor("emitted")
+        assert as_tensor(frombuffer(np.zeros(10).tobytes(), count=10)) == as_tensor("emitted")
         from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
         t = Tensor(data="data", config=TensorConfig((1,), DType.Float32, "cpu"))
-        assert typing.cast("EagerTensorProtocol", zeros_like(t)) == typing.cast("EagerTensorProtocol", "emitted")
-        assert typing.cast("EagerTensorProtocol", ones_like(t)) == typing.cast("EagerTensorProtocol", "emitted")
-        assert typing.cast("EagerTensorProtocol", full_like(t, 1)) == typing.cast("EagerTensorProtocol", "emitted")
-        assert typing.cast("EagerTensorProtocol", empty_like(t)) == typing.cast("EagerTensorProtocol", "emitted")
+        assert as_tensor(zeros_like(t)) == as_tensor("emitted")
+        assert as_tensor(ones_like(t)) == as_tensor("emitted")
+        assert as_tensor(full_like(t, 1)) == as_tensor("emitted")
+        assert as_tensor(empty_like(t)) == as_tensor("emitted")
     config.eager_mode = True

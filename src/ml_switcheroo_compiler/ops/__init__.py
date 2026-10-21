@@ -2,6 +2,8 @@
 # pylint: disable=too-many-lines
 """Auto-generated module exports."""
 
+from __future__ import annotations
+
 from ml_switcheroo_compiler.ops.base import (
     OpDef,
     dispatch_eager,
@@ -254,6 +256,7 @@ from ml_switcheroo_compiler.ops.linalg import (
     Vecdot,
     addmm,
     adjoint,
+    as_int,
     band_part,
     banded_triangular_solve,
     block_masked_mm,
@@ -722,7 +725,6 @@ from ml_switcheroo_compiler.ops.vision import (
     BlurConfig,
     Callable,
     DType,
-    EagerCallableProtocol,
     ElasticConfig,
     ElasticTransform,
     Equalization,
@@ -745,6 +747,11 @@ from ml_switcheroo_compiler.ops.vision import (
     affine_generator,
     affine_grid,
     affine_transform,
+    as_callable,
+    as_float,
+    as_opt_str,
+    as_str,
+    as_tensor,
     augmix,
     auto_contrast,
     config,
@@ -854,7 +861,6 @@ __all__ = [
     "DotGeneral",
     "Dsplit",
     "Dstack",
-    "EagerCallableProtocol",
     "EagerTensorProtocol",
     "Einsum",
     "ElasticConfig",
@@ -1048,7 +1054,13 @@ __all__ = [
     "argmin",
     "array",
     "array_split",
+    "as_callable",
+    "as_float",
+    "as_int",
+    "as_opt_str",
+    "as_str",
     "as_string",
+    "as_tensor",
     "asarray",
     "asin",
     "asinh",

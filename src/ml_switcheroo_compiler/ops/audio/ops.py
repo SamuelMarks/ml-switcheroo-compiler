@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -32,7 +30,7 @@ class Stft(OpDef):
                 fft_length = kwargs.get("fft_length", kwargs.get("fft_size", frame_length))
 
                 num_frames = max(1, (signal_length - frame_length) // frame_step + 1)
-                fft_bins = typing.cast(EagerTensorProtocol, fft_length) // 2 + 1
+                fft_bins = as_tensor(fft_length) // 2 + 1
                 shape[-1] = num_frames
                 shape.append(fft_bins)
             return tuple(shape)
@@ -110,7 +108,7 @@ class MelFilterbank(OpDef):
         """
         fft_length = kwargs.get("fft_length", kwargs.get("fft_size", 256))
         num_mel_bins = kwargs.get("num_mel_bins", 128)
-        fft_bins = typing.cast(EagerTensorProtocol, fft_length) // 2 + 1
+        fft_bins = as_tensor(fft_length) // 2 + 1
         return (fft_bins, num_mel_bins)
 
 
@@ -292,8 +290,8 @@ class Mdct(OpDef):
         if not shape:
             return ()
 
-        frame_length = int(typing.cast(int, kwargs.get("frame_length", 512)))
-        frame_step = int(typing.cast(int, kwargs.get("frame_step", 256)))
+        frame_length = int(as_int(kwargs.get("frame_length", 512)))
+        frame_step = int(as_int(kwargs.get("frame_step", 256)))
         pad_end = bool(kwargs.get("pad_end", False))
 
         # If the input represents a pre-framed block (last dim is frame_length)
@@ -339,8 +337,8 @@ class InverseMdct(OpDef):
         if not shape:
             return ()
 
-        fl = int(typing.cast(int, kwargs.get("frame_length", 512)))
-        fs = int(typing.cast(int, kwargs.get("frame_step", 256)))
+        fl = int(as_int(kwargs.get("frame_length", 512)))
+        fs = int(as_int(kwargs.get("frame_step", 256)))
         last = shape[-1]
 
         if last != fl // 2:
@@ -380,8 +378,8 @@ class Frame(OpDef):
         if not shape:
             return ()
 
-        frame_length = int(typing.cast(int, kwargs.get("frame_length", 1)))
-        frame_step = int(typing.cast(int, kwargs.get("frame_step", 1)))
+        frame_length = int(as_int(kwargs.get("frame_length", 1)))
+        frame_step = int(as_int(kwargs.get("frame_step", 1)))
         pad_end = bool(kwargs.get("pad_end", False))
 
         signal_length = shape[-1]
@@ -417,5 +415,5 @@ class OverlapAndAdd(OpDef):
             num_frames = shape[-2]
             frame_length = shape[-1]
             shape.pop()
-            shape[-1] = (int(num_frames) - 1) * int(typing.cast(int, frame_step)) + int(frame_length)
+            shape[-1] = (int(num_frames) - 1) * int(as_int(frame_step)) + int(frame_length)
         return tuple(shape)

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager import iou_eager, nms_eager
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import as_callable, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -109,7 +107,7 @@ def _np_iou(
     Returns:
         np.ndarray: Pairwise IoU matrix.
     """
-    return np.asarray(typing.cast("EagerCallableProtocol", iou_eager)(backend_module, boxes1, boxes2, **kwargs))
+    return np.asarray(as_callable(iou_eager)(backend_module, boxes1, boxes2, **kwargs))
 
 
 @numpy_eager_registry.register("NonMaxSuppression")
@@ -132,7 +130,7 @@ def _np_nms(
     Returns:
         np.ndarray: Indices of selected bounding boxes.
     """
-    return np.asarray(typing.cast("EagerCallableProtocol", nms_eager)(backend_module, boxes, scores, **kwargs))
+    return np.asarray(as_callable(nms_eager)(backend_module, boxes, scores, **kwargs))
 
 
 @numpy_eager_registry.register("PerspectiveTransform")

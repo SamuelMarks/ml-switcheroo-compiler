@@ -15,9 +15,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import checkpoint, grad, remat, value_and_grad
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_checkpoint_activation_eviction_and_memory() -> None:
@@ -40,19 +41,19 @@ def test_checkpoint_activation_eviction_and_memory() -> None:
     t = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     with ConfigContext(eager_mode=False):
-        block_standard = typing.cast("EagerCallableProtocol", _trace_function)(complex_forward, (t,), "std")
-        block_checkpoint = typing.cast("EagerCallableProtocol", _trace_function)(cp_forward, (t,), "cp")
+        block_standard = as_callable(_trace_function)(complex_forward, (t,), "std")
+        block_checkpoint = as_callable(_trace_function)(cp_forward, (t,), "cp")
 
-    std_nodes = [n.op_type for n in (block_standard.nodes if isinstance(typing.cast("EagerValue", block_standard.nodes), list) else block_standard.nodes.values())]
-    cp_nodes = [n.op_type for n in (block_checkpoint.nodes if isinstance(typing.cast("EagerValue", block_checkpoint.nodes), list) else block_checkpoint.nodes.values())]
+    std_nodes = [n.op_type for n in (block_standard.nodes if isinstance(as_tensor(block_standard.nodes), list) else block_standard.nodes.values())]
+    cp_nodes = [n.op_type for n in (block_checkpoint.nodes if isinstance(as_tensor(block_checkpoint.nodes), list) else block_checkpoint.nodes.values())]
 
     # Standard forward keeps all intermediate operations in the tape
     assert len(std_nodes) > len(cp_nodes)
     assert "Checkpoint" in cp_nodes
     # Intermediate Multiply, Add, Subtract operations are not present in the outer checkpoint tape
-    assert typing.cast("EagerCallableProtocol", cp_nodes.count)("Multiply") == 0
-    assert typing.cast("EagerCallableProtocol", cp_nodes.count)("Add") == 0
-    assert typing.cast("EagerCallableProtocol", cp_nodes.count)("Subtract") == 0
+    assert as_callable(cp_nodes.count)("Multiply") == 0
+    assert as_callable(cp_nodes.count)("Add") == 0
+    assert as_callable(cp_nodes.count)("Subtract") == 0
 
 
 def test_checkpoint_gradient_exact_numerical_match() -> None:
@@ -83,7 +84,7 @@ def test_checkpoint_gradient_exact_numerical_match() -> None:
     val_std = get_active_backend().asarray(g_std)
     val_cp = get_active_backend().asarray(g_cp)
 
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(val_std, val_cp, rtol=1e-5, atol=1e-5)
+    as_callable(np.testing.assert_allclose)(val_std, val_cp, rtol=1e-5, atol=1e-5)
 
 
 def test_checkpoint_value_and_grad_parity() -> None:
@@ -105,11 +106,11 @@ def test_checkpoint_value_and_grad_parity() -> None:
     vg_std = value_and_grad(f)
     vg_cp = value_and_grad(f_cp)
 
-    v1, g1 = typing.cast("EagerCallableProtocol", vg_std)(x1)
-    v2, g2 = typing.cast("EagerCallableProtocol", vg_cp)(x2)
+    v1, g1 = as_callable(vg_std)(x1)
+    v2, g2 = as_callable(vg_cp)(x2)
 
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", get_active_backend)().asarray(v1), typing.cast("EagerCallableProtocol", get_active_backend)().asarray(v2))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", get_active_backend)().asarray(g1), typing.cast("EagerCallableProtocol", get_active_backend)().asarray(g2))
+    as_callable(np.testing.assert_allclose)(as_callable(get_active_backend)().asarray(v1), as_callable(get_active_backend)().asarray(v2))
+    as_callable(np.testing.assert_allclose)(as_callable(get_active_backend)().asarray(g1), as_callable(get_active_backend)().asarray(g2))
 
 
 def test_checkpoint_eager_execution() -> None:
@@ -129,4 +130,4 @@ def test_checkpoint_eager_execution() -> None:
     with ConfigContext(eager_mode=True):
         out = f_cp(t)
 
-    assert typing.cast("EagerCallableProtocol", float)(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", get_active_backend)().asarray(out), "__getitem__")(0))) == 15.0
+    assert as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(out), "__getitem__")(0))) == 15.0

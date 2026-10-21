@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 from collections.abc import Callable  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -25,7 +24,7 @@ def _correlate(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "correlate", None)
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     (a, v) = (args[0], args[1])
     mode = kwargs.get("mode", "valid") if hasattr(kwargs, "get") else "valid"
     mod = _resolve_eager_mod(backend_module)
@@ -46,5 +45,5 @@ def _np_windowhann(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "windowhann", getattr(backend_module, "windowhann", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).hanning(*args, **kwargs)

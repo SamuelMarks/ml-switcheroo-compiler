@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_shape, as_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -16,7 +15,7 @@ from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 @register_op("Welch")
@@ -88,8 +87,7 @@ def welch(
 
     if config.eager_mode:
         backend = get_active_backend()
-        f, Pxx = typing.cast(
-            "tuple[TensorLike, TensorLike]",
+        f, Pxx = as_tensor_pair(
             backend.execute_op(
                 "Welch",
                 x.data,
@@ -103,7 +101,7 @@ def welch(
                 scaling=config_params.filter_state.scaling,
                 axis=config_params.filter_state.axis,
                 average=config_params.filter_state.average,
-            ),
+            )
         )
         return (
             Tensor(f, TensorConfig(f.shape, x.dtype, x.device)),
@@ -113,26 +111,23 @@ def welch(
     f_shape = (256,)
     Pxx_shape = (256,)
 
-    f_out, Pxx_out = typing.cast(
-        "tuple[Tensor, Tensor]",
-        _emit_linalg_node(
-            "Welch",
-            [x],
-            {
-                "fs": config_params.window_config.fs,
-                "window": config_params.window_config.window,
-                "nperseg": config_params.window_config.nperseg,
-                "noverlap": config_params.window_config.noverlap,
-                "nfft": config_params.window_config.nfft,
-                "detrend": config_params.filter_state.detrend,
-                "return_onesided": config_params.filter_state.return_onesided,
-                "scaling": config_params.filter_state.scaling,
-                "axis": config_params.filter_state.axis,
-                "average": config_params.filter_state.average,
-            },
-            [f_shape, Pxx_shape],
-            [x.dtype, x.dtype],
-        ),
+    f_out, Pxx_out = _emit_linalg_node(
+        "Welch",
+        [x],
+        {
+            "fs": config_params.window_config.fs,
+            "window": config_params.window_config.window,
+            "nperseg": config_params.window_config.nperseg,
+            "noverlap": config_params.window_config.noverlap,
+            "nfft": config_params.window_config.nfft,
+            "detrend": config_params.filter_state.detrend,
+            "return_onesided": config_params.filter_state.return_onesided,
+            "scaling": config_params.filter_state.scaling,
+            "axis": config_params.filter_state.axis,
+            "average": config_params.filter_state.average,
+        },
+        [f_shape, Pxx_shape],
+        [x.dtype, x.dtype],
     )
     return f_out, Pxx_out
 
@@ -290,14 +285,14 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = typing.cast("tuple[int, ...]", getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
+        out_shape = as_shape(getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = typing.cast("tuple[int, ...]", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+    out_shape = as_shape(Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(
         "Stft",
         [x],
         {"nfft": nfft, "noverlap": noverlap},
-        typing.cast("Sequence[int | str]", out_shape),
+        out_shape,
         "complex64",
     )
 
@@ -316,13 +311,13 @@ def istft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = typing.cast("tuple[int, ...]", getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
+        out_shape = as_shape(getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
-    out_shape = typing.cast("tuple[int, ...]", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
+    out_shape = as_shape(Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(
         "Istft",
         [x],
         {"nfft": nfft, "noverlap": noverlap},
-        typing.cast("Sequence[int | str]", out_shape),
+        out_shape,
         "float32",
     )

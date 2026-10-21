@@ -6,8 +6,10 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
+from tests.testing_utils import as_callable, as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_shape_debugger() -> None:
@@ -51,7 +53,7 @@ def test_shape_debugger() -> None:
         """
         return x
 
-    res = typing.cast("EagerCallableProtocol", debug_shapes)(dummy_model, (2, 2))
+    res = as_callable(debug_shapes)(dummy_model, (2, 2))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" in res
     assert "| output | (2, 2) |" in res
@@ -65,7 +67,7 @@ def test_shape_debugger() -> None:
         """
         raise RuntimeError("boom")
 
-    res = typing.cast("EagerTensorProtocol", debug_shapes(error_model, (2, 2)))
+    res = as_tensor(debug_shapes(error_model, (2, 2)))
     assert "| Node | Shape |" in res
     assert "| input | (2, 2) |" not in res  # because error happens and it resets
 
@@ -82,9 +84,9 @@ def test_shape_debugger() -> None:
 
             pass
 
-        return typing.cast("EagerTensorProtocol", Dummy())
+        return as_tensor(Dummy())
 
-    res = typing.cast("EagerCallableProtocol", debug_shapes)(unknown_model, (2, 2))
+    res = as_callable(debug_shapes)(unknown_model, (2, 2))
     assert "| output | unknown |" in res
 
     # Test to_graphviz

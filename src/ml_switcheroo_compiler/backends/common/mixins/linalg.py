@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
@@ -94,9 +92,9 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         """
         args_str: str = f"{input_vars[0]}, {input_vars[1]}"
         if "lhs_indices" in node.attributes:
-            args_str += f", lhs_indices={input_vars[int(typing.cast(int, node.attributes['lhs_indices']))]}"
+            args_str += f", lhs_indices={input_vars[int(as_int(node.attributes['lhs_indices']))]}"
         if "rhs_indices" in node.attributes:
-            args_str += f", rhs_indices={input_vars[int(typing.cast(int, node.attributes['rhs_indices']))]}"
+            args_str += f", rhs_indices={input_vars[int(as_int(node.attributes['rhs_indices']))]}"
         return f"{self.generator.get_fallback_prefix()}.gather_mm({args_str})"
 
     def visit_SegmentedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -110,7 +108,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(typing.cast(int, node.attributes.get('segments', 2)))]})"
+        return f"{self.generator.get_fallback_prefix()}.segmented_mm({input_vars[0]}, {input_vars[1]}, {input_vars[int(as_int(node.attributes.get('segments', 2)))]})"
 
     def visit_BlockMaskedMm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit target backend code or IR transformation for the BlockMaskedMm operation.
@@ -139,9 +137,9 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        group_size: int = int(typing.cast(int, node.attributes.get("group_size", 64)))
-        bits: int = int(typing.cast(int, node.attributes.get("bits", 4)))
-        idx: int = int(typing.cast(int, node.attributes.get("return_idx", 0)))
+        group_size: int = int(as_int(node.attributes.get("group_size", 64)))
+        bits: int = int(as_int(node.attributes.get("bits", 4)))
+        idx: int = int(as_int(node.attributes.get("return_idx", 0)))
         pfx: str = self.generator.get_fallback_prefix()
 
         if pfx in ("mlx", "mx"):
@@ -160,8 +158,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             str: Result.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
-        group_size: int = int(typing.cast(int, node.attributes.get("group_size", 64)))
-        bits: int = int(typing.cast(int, node.attributes.get("bits", 4)))
+        group_size: int = int(as_int(node.attributes.get("group_size", 64)))
+        bits: int = int(as_int(node.attributes.get("bits", 4)))
         pfx: str = self.generator.get_fallback_prefix()
 
         x: str = input_vars[0]
@@ -184,8 +182,8 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
             str: Result.
         """
         transpose: bool = bool(node.attributes.get("transpose", True))
-        group_size: int = int(typing.cast(int, node.attributes.get("group_size", 64)))
-        bits: int = int(typing.cast(int, node.attributes.get("bits", 4)))
+        group_size: int = int(as_int(node.attributes.get("group_size", 64)))
+        bits: int = int(as_int(node.attributes.get("bits", 4)))
         pfx: str = self.generator.get_fallback_prefix()
 
         x: str = input_vars[0]

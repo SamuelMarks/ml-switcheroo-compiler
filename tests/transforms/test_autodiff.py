@@ -29,9 +29,10 @@ from ml_switcheroo_compiler.transforms.autodiff import (
     jvp,
 )
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_add_nodes() -> None:
@@ -97,30 +98,30 @@ def test_accumulate_gradients() -> None:
 
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff.get_vjp") as mock_get_vjp:
         mock_get_vjp.return_value = lambda g, n, adj: ["adj_i1", "adj_i2"]
-        adjoints = typing.cast("dict[str, EagerTensorProtocol]", {})
-        typing.cast("EagerCallableProtocol", _accumulate_gradients)(graph, n1, "adj_n1", adjoints)
+        adjoints = as_tensor_dict({})
+        as_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints)
         assert adjoints["i1"] == "adj_i1"
 
-        typing.cast("EagerCallableProtocol", _accumulate_gradients)(graph, n1, "adj_n1", adjoints)
+        as_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints)
         assert adjoints["i1"].startswith("adj_i1_add")
 
         # Test Unconnected
         mock_get_vjp.return_value = lambda g, n, adj: [UnconnectedGradients.NONE, UnconnectedGradients.ZERO]
-        adjoints2 = typing.cast("dict[str, EagerTensorProtocol]", {})
-        typing.cast("EagerCallableProtocol", _accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
-        typing.cast("EagerCallableProtocol", _accumulate_gradients)(graph, n1_no_remat, "adj_n1", adjoints2)
+        adjoints2 = as_tensor_dict({})
+        as_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
+        as_callable(_accumulate_gradients)(graph, n1_no_remat, "adj_n1", adjoints2)
         assert "i1" not in adjoints2
 
         # Test Missing VJP
         mock_get_vjp.side_effect = ValueError("missing")
         with pytest.raises(MissingJVPRuleError):
-            typing.cast("EagerCallableProtocol", _accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
+            as_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
 
         # Test length mismatch
         mock_get_vjp.side_effect = None
         mock_get_vjp.return_value = lambda g, n, adj: ["adj_i1"]
         with pytest.raises(ValueError):
-            typing.cast("EagerCallableProtocol", _accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
+            as_callable(_accumulate_gradients)(graph, n1, "adj_n1", adjoints2)
 
 
 def test_backward_pass() -> None:
@@ -244,7 +245,7 @@ def test_invoke_style2_jvp_rule() -> None:
     node = LogicalNode("n", "Add", inputs=["i"])
 
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff._compile_jvp_expr", return_value="compiled"):
-        res = typing.cast("EagerCallableProtocol", _invoke_style2_jvp_rule)(dummy_jvp, sig, graph, node, ["t_i"])
+        res = as_callable(_invoke_style2_jvp_rule)(dummy_jvp, sig, graph, node, ["t_i"])
         assert res == "compiled"
 
     # Return non-str
@@ -257,7 +258,7 @@ def test_invoke_style2_jvp_rule() -> None:
         """
         return 42
 
-    res2 = typing.cast("EagerCallableProtocol", _invoke_style2_jvp_rule)(dummy_jvp2, sig, graph, node, ["t_i"])
+    res2 = as_callable(_invoke_style2_jvp_rule)(dummy_jvp2, sig, graph, node, ["t_i"])
     assert res2 == 42
 
     # Error
@@ -271,7 +272,7 @@ def test_invoke_style2_jvp_rule() -> None:
         raise ValueError("err")
 
     with pytest.raises(MissingJVPRuleError):
-        typing.cast("EagerCallableProtocol", _invoke_style2_jvp_rule)(dummy_jvp3, sig, graph, node, ["t_i"])
+        as_callable(_invoke_style2_jvp_rule)(dummy_jvp3, sig, graph, node, ["t_i"])
 
 
 def test_invoke_jvp_rule() -> None:
@@ -289,7 +290,7 @@ def test_invoke_jvp_rule() -> None:
 
     graph = LogicalGraph()
     node = LogicalNode("n", "Add", inputs=["i"])
-    assert typing.cast("EagerCallableProtocol", _invoke_jvp_rule)(jvp_style1, graph, node, ["t"]) == "t1"
+    assert as_callable(_invoke_jvp_rule)(jvp_style1, graph, node, ["t"]) == "t1"
 
     def jvp_style1_err(graph: EagerValue, node: EagerValue, tangent: EagerValue) -> None:
         """Test function jvp_style1_err.
@@ -302,7 +303,7 @@ def test_invoke_jvp_rule() -> None:
         raise ValueError()
 
     with pytest.raises(MissingJVPRuleError):
-        typing.cast("EagerCallableProtocol", _invoke_jvp_rule)(jvp_style1_err, graph, node, ["t"])
+        as_callable(_invoke_jvp_rule)(jvp_style1_err, graph, node, ["t"])
 
     def jvp_style2(tangent_x: EagerValue, x: EagerValue) -> EagerValue:
         """Test function jvp_style2.
@@ -314,7 +315,7 @@ def test_invoke_jvp_rule() -> None:
         return "t2"
 
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff._invoke_style2_jvp_rule", return_value="t2"):
-        assert typing.cast("EagerCallableProtocol", _invoke_jvp_rule)(jvp_style2, graph, node, ["t"]) == "t2"
+        assert as_callable(_invoke_jvp_rule)(jvp_style2, graph, node, ["t"]) == "t2"
 
     def jvp_bad(x: EagerValue) -> None:
         """Test function jvp_bad.
@@ -325,7 +326,7 @@ def test_invoke_jvp_rule() -> None:
         pass
 
     with pytest.raises(MissingJVPRuleError):
-        typing.cast("EagerCallableProtocol", _invoke_jvp_rule)(jvp_bad, graph, node, ["t"])
+        as_callable(_invoke_jvp_rule)(jvp_bad, graph, node, ["t"])
 
 
 def test_process_jvp_node() -> None:
@@ -342,19 +343,19 @@ def test_process_jvp_node() -> None:
 
     n1_missing = LogicalNode("n1_missing", "Output", inputs=["i_missing"], shape_metadata=())
     graph.nodes["i_missing"] = LogicalNode("i_missing", "Input", shape_metadata=())
-    tangents_empty = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", _process_jvp_node)(graph, n1_missing, tangents_empty)
+    tangents_empty = as_tensor_dict({})
+    as_callable(_process_jvp_node)(graph, n1_missing, tangents_empty)
     assert "i_missing" in tangents_empty
 
     # Test Input/Constant (ignored)
     n2 = LogicalNode("n2", "Input")
-    tangents2 = typing.cast("dict[str, EagerTensorProtocol]", {})
-    typing.cast("EagerCallableProtocol", _process_jvp_node)(graph, n2, tangents2)
+    tangents2 = as_tensor_dict({})
+    as_callable(_process_jvp_node)(graph, n2, tangents2)
     assert "n2" not in tangents2
 
     # Test tangent not present (ignored)
     n3 = LogicalNode("n3", "Add", inputs=["missing"])
-    typing.cast("EagerCallableProtocol", _process_jvp_node)(graph, n3, tangents2)
+    as_callable(_process_jvp_node)(graph, n3, tangents2)
     assert "n3" not in tangents2
 
     # Test normal node
@@ -362,18 +363,18 @@ def test_process_jvp_node() -> None:
     getattr(tangents2, "__setitem__")("i1", "t1")
     with mock.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp") as mock_get:
         mock_get.return_value = lambda graph, node, tangent: "t_out"
-        typing.cast("EagerCallableProtocol", _process_jvp_node)(graph, n4, tangents2)
+        as_callable(_process_jvp_node)(graph, n4, tangents2)
         assert tangents2["n4"] == "t_out"
 
         # Test missing JVP
         mock_get.side_effect = ValueError()
         with pytest.raises(ValueError):
-            typing.cast("EagerCallableProtocol", _process_jvp_node)(graph, n4, tangents2)
+            as_callable(_process_jvp_node)(graph, n4, tangents2)
 
         mock_get.side_effect = None
         with mock.patch("ml_switcheroo_compiler.transforms.autodiff._invoke_jvp_rule", side_effect=ValueError):
             with pytest.raises(ValueError):
-                typing.cast("EagerCallableProtocol", _process_jvp_node)(graph, n4, tangents2)
+                as_callable(_process_jvp_node)(graph, n4, tangents2)
 
 
 def test_forward_pass_jvp() -> None:
@@ -559,7 +560,7 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_1(_state: dict[str, EagerT
     """
     from ml_switcheroo_compiler.transforms.autodiff import _avg_pool2d_vjp, _batch_norm_vjp, _conv2d_vjp_rule, _group_norm_vjp, _layer_norm_vjp, _max_pool2d_with_argmax_vjp, _rms_norm_vjp, conv2d_vjp_input, conv2d_vjp_weight, grad, hvp
 
-    UnconnectedGradients = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.transforms.autodiff"), "UnconnectedGradients"))
+    UnconnectedGradients = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.transforms.autodiff"), "UnconnectedGradients"))
 
     # cotangent_id as list, tuple, and scalar for multi-output grad
     g_multi = LogicalGraph("g_multi")
@@ -633,12 +634,12 @@ def _test_autodiff_extended_vjp_and_hvp_coverage_part_2(_state: dict[str, EagerT
     )
     in_adj = conv2d_vjp_input(g_nn, conv_node_2, "cot")
     w_adj = conv2d_vjp_weight(g_nn, conv_node_2, "cot")
-    assert typing.cast("EagerTensorProtocol", getattr(g_nn.nodes, "__getitem__")(in_adj)).op_type == "Conv2DInputGrad"
-    assert typing.cast("EagerTensorProtocol", getattr(g_nn.nodes, "__getitem__")(w_adj)).op_type == "Conv2DWeightGrad"
+    assert as_tensor(getattr(g_nn.nodes, "__getitem__")(in_adj)).op_type == "Conv2DInputGrad"
+    assert as_tensor(getattr(g_nn.nodes, "__getitem__")(w_adj)).op_type == "Conv2DWeightGrad"
 
     res_rule_2 = _conv2d_vjp_rule(g_nn, conv_node_2, "cot")
     assert len(res_rule_2) == 2
-    assert typing.cast("EagerTensorProtocol", getattr(g_nn.nodes, "__getitem__")(typing.cast("EagerTensorProtocol", getattr(res_rule_2, "__getitem__")(0)))).op_type == "Conv2DInputGrad"
+    assert as_tensor(getattr(g_nn.nodes, "__getitem__")(as_tensor(getattr(res_rule_2, "__getitem__")(0)))).op_type == "Conv2DInputGrad"
     getattr(_state, "update")({"conv_node_2": conv_node_2, "g_nn": g_nn, "hvp_for": hvp_for, "hvp_rof": hvp_rof})
     getattr(_state, "update")({"in_adj": in_adj, "m_graph": m_graph, "mock_g": mock_g, "mock_j": mock_j})
     getattr(_state, "update")({"res_rule_2": res_rule_2, "w_adj": w_adj})

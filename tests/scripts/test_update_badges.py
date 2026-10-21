@@ -18,9 +18,10 @@ from scripts.update_badges import (
     get_test_coverage,
     update_readme,
 )
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_get_color() -> None:
@@ -156,7 +157,7 @@ def test_get_doc_coverage_no_files() -> None:
 
 def test_get_doc_coverage_success() -> None:
     """Verify `get_doc_coverage` across documented and undocumented modules/classes/functions."""
-    mock_walk = typing.cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])])
+    mock_walk = as_tensor([("src/ml_switcheroo_compiler", [], ["core.py", "bad.py", "not_python.txt"])])
 
     core_content = '''"""Module doc."""
 class MyClass:
@@ -197,10 +198,10 @@ def no_doc_func():
             FileNotFoundError: If an unexpected path is opened.
         """
         _ = (args, kwargs)
-        if typing.cast("EagerTensorProtocol", "core.py") in typing.cast("EagerTensorProtocol", path):
-            return typing.cast("EagerTensorProtocol", mock_open(read_data=core_content)())
-        if typing.cast("EagerTensorProtocol", "bad.py") in typing.cast("EagerTensorProtocol", path):
-            return typing.cast("EagerTensorProtocol", mock_open(read_data=bad_content)())
+        if as_tensor("core.py") in as_tensor(path):
+            return as_tensor(mock_open(read_data=core_content)())
+        if as_tensor("bad.py") in as_tensor(path):
+            return as_tensor(mock_open(read_data=bad_content)())
         raise FileNotFoundError("File not found")
 
     with (
@@ -215,7 +216,7 @@ def no_doc_func():
 
 def test_get_doc_coverage_exception_in_file() -> None:
     """Verify `get_doc_coverage` gracefully handles syntax errors in inspected files."""
-    mock_walk = typing.cast("EagerTensorProtocol", [("src/ml_switcheroo_compiler", [], ["fail.py"])])
+    mock_walk = as_tensor([("src/ml_switcheroo_compiler", [], ["fail.py"])])
     with (
         patch("os.path.exists", return_value=True),
         patch("os.walk", return_value=mock_walk),

@@ -6,12 +6,12 @@ import typing
 from unittest.mock import patch
 
 import pytest
-from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.ops.control_flow import AssertOp, AssociativeScan, DebugInfs, DebugNans, ScanOp, SwitchOp, assert_value, associative_scan, case, cond, custom_gradient, fori_loop, map, map_fn, pmap, scan, scan_bind, stop_gradient, switch, switch_case, vectorized_map, while_loop
+from tests.testing_utils import as_callable, as_graph, as_node, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class DummyData:
@@ -47,14 +47,14 @@ class DummyTensor:
 
 def test_control_flow_extra_classes() -> None:
     """Test function test_control_flow_extra_classes."""
-    assert typing.cast("EagerCallableProtocol", AssertOp)().infer_shape(None) == ()
+    assert as_callable(AssertOp)().infer_shape(None) == ()
     t = DummyTensor()
     assert DebugInfs().infer_shape(t) == t
     assert DebugInfs().infer_shape() == ()
     t2 = DummyTensor()
     assert DebugNans().infer_shape(t2) == t2
     assert DebugNans().infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", SwitchOp)().infer_shape(None, None) == ()
+    assert as_callable(SwitchOp)().infer_shape(None, None) == ()
     assert ScanOp().infer_shape() == ()
     t3 = DummyTensor()
     assert AssociativeScan().infer_shape(t3) == t3
@@ -71,15 +71,15 @@ def _test_control_flow_extra_functions_part_1(_state: dict[str, EagerTensorProto
 
     config.eager_mode = True
     with patch("ml_switcheroo_compiler.ops.control_flow.cond_eager", return_value="cond_eager"):
-        assert typing.cast("EagerCallableProtocol", cond)(None, None, None) == "cond_eager"
+        assert as_callable(cond)(None, None, None) == "cond_eager"
     with patch("ml_switcheroo_compiler.ops.control_flow.while_loop_eager", return_value="while_eager"):
-        assert typing.cast("EagerCallableProtocol", while_loop)(None, None, None) == "while_eager"
+        assert as_callable(while_loop)(None, None, None) == "while_eager"
     with patch("ml_switcheroo_compiler.ops.control_flow.scan_eager", return_value="scan_eager"):
-        assert typing.cast("EagerCallableProtocol", scan)(None, None, None) == "scan_eager"
+        assert as_callable(scan)(None, None, None) == "scan_eager"
     with patch("ml_switcheroo_compiler.ops.control_flow.map_fn_eager", return_value="map_fn_eager"):
-        assert typing.cast("EagerCallableProtocol", map_fn)(None, None) == "map_fn_eager"
+        assert as_callable(map_fn)(None, None) == "map_fn_eager"
     with patch("ml_switcheroo_compiler.ops.control_flow.pmap_eager", return_value="pmap_eager"):
-        assert typing.cast("EagerCallableProtocol", pmap)(None) == "pmap_eager"
+        assert as_callable(pmap)(None) == "pmap_eager"
     getattr(_state, "update")({"config": config})
     _state.update(locals())
 
@@ -92,16 +92,16 @@ def _test_control_flow_extra_functions_part_2(_state: dict[str, EagerTensorProto
     """
     config = _state["config"]
     with patch("ml_switcheroo_compiler.ops.control_flow.stop_gradient_eager", return_value="stop_eager"):
-        assert typing.cast("EagerCallableProtocol", stop_gradient)(None) == "stop_eager"
+        assert as_callable(stop_gradient)(None) == "stop_eager"
     with patch("ml_switcheroo_compiler.ops.control_flow.assert_value_eager", return_value="assert_eager"):
         assert_value(None)
     setattr(config, "eager_mode", False)
     with patch("ml_switcheroo_compiler.ops.control_flow.cond_tracing", return_value="cond_tracing"):
-        assert typing.cast("EagerCallableProtocol", cond)(None, None, None) == "cond_tracing"
+        assert as_callable(cond)(None, None, None) == "cond_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.while_loop_tracing", return_value="while_tracing"):
-        assert typing.cast("EagerCallableProtocol", while_loop)(None, None, None) == "while_tracing"
+        assert as_callable(while_loop)(None, None, None) == "while_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.scan_tracing", return_value="scan_tracing"):
-        assert typing.cast("EagerCallableProtocol", scan)(None, None, None) == "scan_tracing"
+        assert as_callable(scan)(None, None, None) == "scan_tracing"
     _state.update(locals())
 
 
@@ -113,11 +113,11 @@ def _test_control_flow_extra_functions_part_3(_state: dict[str, EagerTensorProto
     """
     config = _state["config"]
     with patch("ml_switcheroo_compiler.ops.control_flow.map_fn_tracing", return_value="map_fn_tracing"):
-        assert typing.cast("EagerCallableProtocol", map_fn)(None, None) == "map_fn_tracing"
+        assert as_callable(map_fn)(None, None) == "map_fn_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.pmap_tracing", return_value="pmap_tracing"):
-        assert typing.cast("EagerCallableProtocol", pmap)(None) == "pmap_tracing"
+        assert as_callable(pmap)(None) == "pmap_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.stop_gradient_tracing", return_value="stop_tracing"):
-        assert typing.cast("EagerCallableProtocol", stop_gradient)(None) == "stop_tracing"
+        assert as_callable(stop_gradient)(None) == "stop_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.assert_value_tracing", return_value="assert_tracing"):
         assert_value(None)
     setattr(config, "eager_mode", True)
@@ -140,10 +140,10 @@ def _test_control_flow_extra_functions_part_4(_state: dict[str, EagerTensorProto
                 cond_fn((0, 0))
                 body_wrapper((0, 0))
     with patch("ml_switcheroo_compiler.ops.control_flow.map_fn", return_value="map"):
-        assert typing.cast("EagerCallableProtocol", map)(None, None) == "map"
+        assert as_callable(map)(None, None) == "map"
     with patch("ml_switcheroo_compiler.ops.control_flow.vmap") as vm:
         vm.return_value.return_value = "vmap"
-        assert typing.cast("EagerCallableProtocol", vectorized_map)(None, None) == "vmap"
+        assert as_callable(vectorized_map)(None, None) == "vmap"
     getattr(_state, "update")({"body_wrapper": body_wrapper, "cond_fn": cond_fn, "res": res, "vm": vm})
     getattr(_state, "update")({"wl": wl})
     _state.update(locals())
@@ -156,13 +156,13 @@ def _test_control_flow_extra_functions_part_5(_state: dict[str, EagerTensorProto
         _state: Shared test state dictionary.
     """
     with pytest.raises(ValueError):
-        typing.cast("EagerCallableProtocol", switch)(None, [])
+        as_callable(switch)(None, [])
     with patch("ml_switcheroo_compiler.ops.control_flow.cond") as cnd:
         cnd.return_value = "cond_res"
         with patch("ml_switcheroo_compiler.ops.control_flow.less", return_value="less"):
-            res = typing.cast("EagerCallableProtocol", switch)(typing.cast("EagerCallableProtocol", DummyTensor)(0), [lambda: 1, lambda: 2])
+            res = as_callable(switch)(as_callable(DummyTensor)(0), [lambda: 1, lambda: 2])
         assert res == "cond_res"
-        res2 = typing.cast("EagerCallableProtocol", switch)(typing.cast("EagerCallableProtocol", DummyTensor)(0), [lambda: "leaf"])
+        res2 = as_callable(switch)(as_callable(DummyTensor)(0), [lambda: "leaf"])
         assert res2 == "leaf"
     getattr(_state, "update")({"cnd": cnd, "res": res, "res2": res2})
 
@@ -193,30 +193,30 @@ def test_control_flow_custom_gradient() -> None:
         return (x, lambda g: g)
 
     wrapped = custom_gradient(cg)
-    assert typing.cast("EagerCallableProtocol", wrapped)(1) == 1
+    assert as_callable(wrapped)(1) == 1
     config.eager_mode = False
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emit"):
-        assert typing.cast("EagerCallableProtocol", wrapped)(1) == "emit"
+        assert as_callable(wrapped)(1) == "emit"
 
 
 def test_control_flow_case() -> None:
     """Test function test_control_flow_case."""
     with pytest.raises(ValueError):
         case([])
-    assert typing.cast("EagerCallableProtocol", case)([], default=lambda: "def") == "def"
+    assert as_callable(case)([], default=lambda: "def") == "def"
 
     def true_fn() -> EagerValue:
         """Test function true_fn."""
         return "true"
 
     with patch("ml_switcheroo_compiler.ops.control_flow.cond", return_value="cond_res"):
-        assert typing.cast("EagerCallableProtocol", case)([(typing.cast("EagerCallableProtocol", DummyTensor)(True), true_fn)]) == "cond_res"
+        assert as_callable(case)([(as_callable(DummyTensor)(True), true_fn)]) == "cond_res"
     with pytest.raises(ValueError):
-        typing.cast("EagerCallableProtocol", switch_case)(typing.cast("EagerCallableProtocol", DummyTensor)(), {})
-    assert typing.cast("EagerCallableProtocol", switch_case)(typing.cast("EagerCallableProtocol", DummyTensor)(), {}, default=lambda: "def") == "def"
+        as_callable(switch_case)(as_callable(DummyTensor)(), {})
+    assert as_callable(switch_case)(as_callable(DummyTensor)(), {}, default=lambda: "def") == "def"
     with patch("ml_switcheroo_compiler.ops.control_flow.equal"):
         with patch("ml_switcheroo_compiler.ops.control_flow.cond", return_value="cond_res"):
-            assert typing.cast("EagerCallableProtocol", switch_case)(typing.cast("EagerCallableProtocol", DummyTensor)(), {0: true_fn}) == "cond_res"
+            assert as_callable(switch_case)(as_callable(DummyTensor)(), {0: true_fn}) == "cond_res"
 
 
 def test_control_flow_associative_scan() -> None:
@@ -270,22 +270,22 @@ def _exercise_custom_gradient_variants(custom_gradient: EagerValue) -> None:
 
         node = DummyNode()
 
-    wrapped = typing.cast("EagerCallableProtocol", custom_gradient)(lambda x: (typing.cast("EagerCallableProtocol", Ret)(), lambda g: g))
+    wrapped = as_callable(custom_gradient)(lambda x: (as_callable(Ret)(), lambda g: g))
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emitted"):
-        typing.cast("EagerCallableProtocol", wrapped)(1)
+        as_callable(wrapped)(1)
     for k in [name for name in OpRegistry if name.startswith("CustomGradient_")]:
         getattr(OpRegistry[k], "infer_shape")(None)
-        VJP_REGISTRY[k](typing.cast("LogicalGraph", None), typing.cast("LogicalNode", None), "cotangent")
-        wrapped3 = typing.cast("EagerCallableProtocol", custom_gradient)(lambda x: (typing.cast("EagerCallableProtocol", DummyTensor)(), lambda g: typing.cast("EagerCallableProtocol", DummyProxy)()))
+        VJP_REGISTRY[k](as_graph(None), as_node(None), "cotangent")
+        wrapped3 = as_callable(custom_gradient)(lambda x: (as_callable(DummyTensor)(), lambda g: as_callable(DummyProxy)()))
         with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emitted"):
-            typing.cast("EagerCallableProtocol", wrapped3)(1)
+            as_callable(wrapped3)(1)
         for k3 in [name for name in OpRegistry if name.startswith("CustomGradient_") and name != k]:
-            VJP_REGISTRY[k3](typing.cast("LogicalGraph", None), typing.cast("LogicalNode", None), "cotangent")
-        wrapped2 = typing.cast("EagerCallableProtocol", custom_gradient)(lambda x: (typing.cast("EagerCallableProtocol", DummyTensor)(), lambda g: (g, g)))
+            VJP_REGISTRY[k3](as_graph(None), as_node(None), "cotangent")
+        wrapped2 = as_callable(custom_gradient)(lambda x: (as_callable(DummyTensor)(), lambda g: (g, g)))
         with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emitted"):
-            typing.cast("EagerCallableProtocol", wrapped2)(1)
+            as_callable(wrapped2)(1)
         for k2 in [name for name in OpRegistry if name.startswith("CustomGradient_") and name != k]:
-            VJP_REGISTRY[k2](typing.cast("LogicalGraph", None), typing.cast("LogicalNode", None), "cotangent")
+            VJP_REGISTRY[k2](as_graph(None), as_node(None), "cotangent")
             getattr(OpRegistry[k2], "infer_shape")(None)
             break
         break
@@ -300,12 +300,12 @@ def test_control_flow_extra_more_branches() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow.less", return_value="less"):
         with patch("ml_switcheroo_compiler.ops.control_flow.cond", side_effect=lambda a, b, c: b()):
-            typing.cast("EagerCallableProtocol", switch)(typing.cast("EagerCallableProtocol", DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
+            as_callable(switch)(as_callable(DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
         with patch("ml_switcheroo_compiler.ops.control_flow.cond", side_effect=lambda a, b, c: c()):
-            typing.cast("EagerCallableProtocol", switch)(typing.cast("EagerCallableProtocol", DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
+            as_callable(switch)(as_callable(DummyTensor)(0), [lambda: 1, lambda: 2, lambda: 3])
     config.eager_mode = False
     _exercise_custom_gradient_variants(custom_gradient)
-    assert typing.cast("EagerCallableProtocol", scan_bind)("f", "xs") == ("f", "xs")
+    assert as_callable(scan_bind)("f", "xs") == ("f", "xs")
 
 
 def test_custom_grad_vjp_direct() -> None:
@@ -338,16 +338,16 @@ def test_custom_grad_vjp_direct() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerTensorProtocol", (Ret(), lambda g: P()))
+        return as_tensor((Ret(), lambda g: P()))
 
     w = custom_gradient(cg)
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emit"):
-        typing.cast("EagerCallableProtocol", w)(1)
+        as_callable(w)(1)
     for k in VJP_REGISTRY:
         if k.startswith("CustomGradient_"):
-            VJP_REGISTRY[k](typing.cast("LogicalGraph", None), typing.cast("LogicalNode", None), "cot")
+            VJP_REGISTRY[k](as_graph(None), as_node(None), "cot")
             pass
             pass
             break
@@ -358,14 +358,14 @@ def test_custom_grad_vjp_direct() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerTensorProtocol", (Ret(), lambda g: (P(), "str")))
+        return as_tensor((Ret(), lambda g: (P(), "str")))
 
     w2 = custom_gradient(cg2)
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emit"):
-        typing.cast("EagerCallableProtocol", w2)(1)
+        as_callable(w2)(1)
     for k in VJP_REGISTRY:
         if k.startswith("CustomGradient_"):
-            VJP_REGISTRY[k](typing.cast("LogicalGraph", None), typing.cast("LogicalNode", None), "cot")
+            VJP_REGISTRY[k](as_graph(None), as_node(None), "cot")
     assert callable(w2)
 
 
@@ -399,14 +399,14 @@ def test_cg_clear() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerTensorProtocol", (Ret(), lambda g: P()))
+        return as_tensor((Ret(), lambda g: P()))
 
     old_keys = list(VJP_REGISTRY.keys())
     w = custom_gradient(cg)
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emit"):
-        typing.cast("EagerCallableProtocol", w)(1)
+        as_callable(w)(1)
     new_keys = [k for k in VJP_REGISTRY if k not in old_keys]
     if new_keys:
         new_keys[0]
@@ -419,11 +419,11 @@ def test_cg_clear() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerTensorProtocol", (Ret(), lambda g: (P(), "str")))
+        return as_tensor((Ret(), lambda g: (P(), "str")))
 
     w2 = custom_gradient(cg2)
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emit"):
-        typing.cast("EagerCallableProtocol", w2)(1)
+        as_callable(w2)(1)
     new_keys2 = [k for k in VJP_REGISTRY if k not in old_keys and k not in new_keys]
     if new_keys2:
         new_keys2[0]
@@ -433,7 +433,7 @@ def test_cg_clear() -> None:
 
 def test_scan_bind() -> None:
     """Test function test_scan_bind."""
-    assert typing.cast("EagerCallableProtocol", scan_bind)("f", "xs") == ("f", "xs")
+    assert as_callable(scan_bind)("f", "xs") == ("f", "xs")
 
 
 def test_dyn_vjp() -> None:
@@ -455,11 +455,11 @@ def test_dyn_vjp() -> None:
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emitted"):
-        typing.cast("EagerCallableProtocol", wrapped)(1)
+        as_callable(wrapped)(1)
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY
 
     for k in _VJP_REGISTRY:
         if k.startswith("CustomGradient_"):
-            _VJP_REGISTRY[k](typing.cast("LogicalGraph", None), typing.cast("LogicalNode", None), "cot")
+            _VJP_REGISTRY[k](as_graph(None), as_node(None), "cot")
             break
     assert callable(wrapped)

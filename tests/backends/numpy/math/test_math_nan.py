@@ -18,9 +18,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_nan import (
     _np_zero_fraction,
     _xlogy,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_divide_no_nan() -> None:
@@ -28,7 +29,7 @@ def test_divide_no_nan() -> None:
     x = np.array([1.0, 1.0])
     y = np.array([1.0, 0.0])
     res = _np_divide_no_nan(np, x, y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0, 0.0])
+    as_callable(np.testing.assert_allclose)(res, [1.0, 0.0])
 
 
 def test_multiply_no_nan() -> None:
@@ -36,7 +37,7 @@ def test_multiply_no_nan() -> None:
     x = np.array([1.0, 1.0])
     y = np.array([1.0, 0.0])
     res = _np_multiply_no_nan(np, x, y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [1.0, 0.0])
+    as_callable(np.testing.assert_allclose)(res, [1.0, 0.0])
 
 
 def test_squared_difference() -> None:
@@ -44,7 +45,7 @@ def test_squared_difference() -> None:
     x = np.array([1.0, 2.0])
     y = np.array([1.0, 0.0])
     res = _np_squared_difference(np, x, y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [0.0, 4.0])
+    as_callable(np.testing.assert_allclose)(res, [0.0, 4.0])
 
 
 def test_xdivy() -> None:
@@ -52,7 +53,7 @@ def test_xdivy() -> None:
     x = np.array([0.0, 2.0])
     y = np.array([1.0, 2.0])
     res = _np_xdivy(np, x, y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [0.0, 1.0])
+    as_callable(np.testing.assert_allclose)(res, [0.0, 1.0])
 
 
 def test_xlog1py() -> None:
@@ -60,14 +61,14 @@ def test_xlog1py() -> None:
     x = np.array([0.0, 1.0])
     y = np.array([1.0, np.e - 1])
     res = _np_xlog1py(np, x, y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [0.0, 1.0])
+    as_callable(np.testing.assert_allclose)(res, [0.0, 1.0])
 
 
 def test_reciprocal_no_nan() -> None:
     """Test reciprocal_no_nan."""
     x = np.array([0.0, 2.0])
     res = _np_reciprocal_no_nan(np, x)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [0.0, 0.5])
+    as_callable(np.testing.assert_allclose)(res, [0.0, 0.5])
 
 
 def test_zero_fraction() -> None:
@@ -79,7 +80,7 @@ def test_zero_fraction() -> None:
     # test empty array
     x_empty = np.array([])
     res_empty = _np_zero_fraction(np, x_empty)
-    assert typing.cast("EagerCallableProtocol", np.isnan)(res_empty)
+    assert as_callable(np.isnan)(res_empty)
 
 
 def test_xlogy() -> None:
@@ -87,7 +88,7 @@ def test_xlogy() -> None:
     x = np.array([0.0, 1.0])
     y = np.array([1.0, np.e])
     res = _xlogy(x, y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [0.0, 1.0])
+    as_callable(np.testing.assert_allclose)(res, [0.0, 1.0])
 
 
 def test_nanmean() -> None:

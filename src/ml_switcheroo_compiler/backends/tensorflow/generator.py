@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -33,7 +31,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         import pickle
 
         with open(filepath, "rb") as f:
-            return typing.cast(EagerValue, pickle.load(f))
+            return as_tensor(pickle.load(f))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:
@@ -104,7 +102,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         res = f"tf.{op}({{shape}})"
         if "dtype" in getattr(kwargs, "__iter__")():
-            res += f", dtype='{typing.cast(EagerTensorProtocol, kwargs)['dtype']}'"
+            res += f", dtype='{as_tensor(kwargs)['dtype']}'"
         return res
 
     def _format_full(self, kwargs: EagerValue) -> str:
@@ -118,7 +116,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         """
         res = "tf.full({shape}, {fill_value})"
         if "dtype" in getattr(kwargs, "__iter__")():
-            res += f", dtype='{typing.cast(EagerTensorProtocol, kwargs)['dtype']}'"
+            res += f", dtype='{as_tensor(kwargs)['dtype']}'"
         return res
 
     def _format_transpose(self, kwargs: EagerValue) -> str:
@@ -270,7 +268,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return typing.cast(EagerValue, evaluated)
+            return as_tensor(evaluated)
 
         try:
             import tensorflow as tf
@@ -289,7 +287,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
                     EagerValue: Computed outputs.
                 """
                 tf_args = [tf.convert_to_tensor(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return typing.cast(EagerValue, compiled_fn(*tf_args))
+                return as_tensor(compiled_fn(*tf_args))
 
             return aot_tf_runner
         except Exception:

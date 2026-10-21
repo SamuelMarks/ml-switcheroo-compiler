@@ -6,8 +6,10 @@ import sys
 import typing
 from unittest.mock import MagicMock, patch
 
+from tests.testing_utils import as_callable
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_mlx_eager_distributed_ops() -> None:
@@ -41,14 +43,14 @@ def test_mlx_generator_distributed_ops() -> None:
 
     mixin = MLXOpRegistryMixin()
 
-    ar = typing.cast("EagerCallableProtocol", mixin.visit_AllReduce)(None, ["tensor"])
+    ar = as_callable(mixin.visit_AllReduce)(None, ["tensor"])
     assert "mx.distributed.all_sum(tensor)" in ar
 
-    ag = typing.cast("EagerCallableProtocol", mixin.visit_AllGather)(None, ["tensor"])
+    ag = as_callable(mixin.visit_AllGather)(None, ["tensor"])
     assert "mx.distributed.all_gather(tensor)" in ag
 
-    a2a = typing.cast("EagerCallableProtocol", mixin.visit_AllToAll)(None, ["tensor"])
+    a2a = as_callable(mixin.visit_AllToAll)(None, ["tensor"])
     assert "mx.distributed.all_to_all(tensor)" in a2a
 
-    rs = typing.cast("EagerCallableProtocol", mixin.visit_ReduceScatter)(None, ["tensor"])
+    rs = as_callable(mixin.visit_ReduceScatter)(None, ["tensor"])
     assert "mx.distributed.recv(tensor)" in rs

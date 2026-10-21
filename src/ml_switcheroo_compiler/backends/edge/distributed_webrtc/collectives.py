@@ -11,9 +11,8 @@ import typing
 import zlib
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_eager_list, as_int, as_tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 DEFAULT_CHUNK_SIZE: int = 16384
 HIGH_WATERMARK_BYTES: int = 65536
@@ -85,7 +84,9 @@ class WebRTCDataChannelStream:
         elif hasattr(payload, "tobytes"):
             self._recv_queue.put_nowait(bytes(getattr(payload, "tobytes")()))
         else:
-            self._recv_queue.put_nowait(typing.cast("TypedVariadicCallable[bytes]", bytes)(payload))
+            from ml_switcheroo_compiler.backends.eager_registry import as_bytes
+
+            self._recv_queue.put_nowait(as_bytes(payload))
 
     def _on_buffered_amount_low(self, event: EagerValue | None = None) -> None:
         """Event listener for RTCDataChannel bufferedamountlow event.
@@ -178,7 +179,7 @@ async def _send_data(conn: EagerValue | WebRTCDataChannelStream, data: EagerValu
         chunk_size (int): Size of individual binary chunks in bytes.
     """
     stream = conn if isinstance(conn, WebRTCDataChannelStream) else WebRTCDataChannelStream(conn, chunk_size=chunk_size)
-    arr = typing.cast(EagerTensorProtocol, data)
+    arr = as_tensor(data)
     dtype_obj = arr.dtype
     arr_byteorder = str(getattr(dtype_obj, "byteorder", "="))
 
@@ -257,13 +258,13 @@ async def _recv_data(conn: EagerValue | WebRTCDataChannelStream) -> EagerValue:
     if len(payload) != total_bytes:
         raise ValueError(f"Payload length mismatch: expected {total_bytes}, got {len(payload)}")
 
-    arr = typing.cast(EagerTensorProtocol, get_active_backend().execute_op("frombuffer", payload, dtype=dtype_str)).reshape(shape)
+    arr = as_tensor(get_active_backend().execute_op("frombuffer", payload, dtype=dtype_str)).reshape(shape)
 
     native_order = "<" if sys.byteorder == "little" else ">"
     if expected_byteorder in ("<", ">") and expected_byteorder != native_order:
         arr = arr.astype(getattr(arr.dtype, "newbyteorder")("="))
 
-    return typing.cast(EagerValue, arr.copy())
+    return as_tensor(arr.copy())
 
 
 async def broadcast(
@@ -292,7 +293,7 @@ async def broadcast(
             if i != rank and conn is not None:
                 tasks.append(_send_data(conn, tensor))
         await asyncio.gather(*tasks)
-        return typing.cast(EagerTensorProtocol, tensor).copy()
+        return as_tensor(tensor).copy()
     else:
         conn = conns[root_rank]
         if conn is None:
@@ -322,7 +323,7 @@ async def ring_all_reduce(
     """
     world_size = len(conns)
     if world_size <= 1:
-        return typing.cast(EagerTensorProtocol, tensor).copy()
+        return as_tensor(tensor).copy()
 
     op_upper = op_type.upper()
     if op_upper not in ("SUM", "PROD", "MAX", "MIN"):
@@ -349,8 +350,8 @@ async def ring_all_reduce(
         Returns:
             EagerValue: Result of the reduction.
         """
-        a_t = typing.cast(EagerTensorProtocol, a)
-        b_t = typing.cast(EagerTensorProtocol, b)
+        a_t = as_tensor(a)
+        b_t = as_tensor(b)
         if op_upper == "SUM":
             return a_t + b_t
         elif op_upper == "PROD":
@@ -402,10 +403,10 @@ async def recursive_halving_doubling_all_gather(
     """
     world_size = len(conns)
     if world_size <= 1:
-        return typing.cast(EagerTensorProtocol, tensor).copy()
+        return as_tensor(tensor).copy()
 
     backend = get_active_backend()
-    gathered: dict[int, EagerValue] = {rank: typing.cast(EagerTensorProtocol, tensor).copy()}
+    gathered: dict[int, EagerValue] = {rank: as_tensor(tensor).copy()}
     num_steps = (world_size - 1).bit_length()
 
     for step in range(num_steps):
@@ -422,7 +423,7 @@ async def recursive_halving_doubling_all_gather(
                 _, partner_payload = await asyncio.gather(send_task, recv_task)
 
                 partner_ranks = [r ^ distance for r in current_ranks if (r ^ distance) < world_size]
-                received_slices = typing.cast("Sequence[EagerValue]", backend.execute_op("array_split", partner_payload, len(partner_ranks), axis=axis))
+                received_slices = as_eager_list(backend.execute_op("array_split", partner_payload, len(partner_ranks), axis=axis))
                 for pr, slc in zip(partner_ranks, received_slices):
                     gathered[pr] = slc
 
@@ -444,8 +445,8 @@ def _apply_reduction_op(a: EagerValue, b: EagerValue, op_type: str) -> EagerValu
     Raises:
         ValueError: If op_type is not supported.
     """
-    a_t = typing.cast(EagerTensorProtocol, a)
-    b_t = typing.cast(EagerTensorProtocol, b)
+    a_t = as_tensor(a)
+    b_t = as_tensor(b)
     if op_type == "SUM":
         return a_t + b_t
     if op_type == "PROD":
@@ -482,7 +483,7 @@ async def all_reduce(
     if algorithm == "ring":
         return await ring_all_reduce(tensor, op_type, conns, rank)
 
-    res: EagerValue = typing.cast(EagerTensorProtocol, tensor).copy()
+    res: EagerValue = as_tensor(tensor).copy()
     peer_conns = [conn for i, conn in enumerate(conns) if i != rank and conn is not None]
     await asyncio.gather(*[_send_data(conn, tensor) for conn in peer_conns])
     received_tensors = await asyncio.gather(*[_recv_data(conn) for conn in peer_conns])
@@ -517,7 +518,7 @@ async def all_gather(
 
     world_size = len(conns)
     tensors: list[EagerValue | None] = [None] * world_size
-    tensors[rank] = typing.cast(EagerTensorProtocol, tensor).copy()
+    tensors[rank] = as_tensor(tensor).copy()
 
     send_tasks = []
     for i, conn in enumerate(conns):
@@ -566,7 +567,7 @@ async def ring_reduce_scatter(
     """
     world_size: int = len(conns)
     if world_size <= 1:
-        return typing.cast(EagerTensorProtocol, tensor).copy()
+        return as_tensor(tensor).copy()
 
     op_upper: str = op_type.upper()
     if op_upper not in ("SUM", "PROD", "MAX", "MIN"):
@@ -593,8 +594,8 @@ async def ring_reduce_scatter(
         Returns:
             EagerValue: Computed result.
         """
-        a_t = typing.cast(EagerTensorProtocol, a)
-        b_t = typing.cast(EagerTensorProtocol, b)
+        a_t = as_tensor(a)
+        b_t = as_tensor(b)
         if op_upper == "SUM":
             return a_t + b_t
         elif op_upper == "PROD":
@@ -642,7 +643,7 @@ async def reduce_scatter(
 
     reduced = await all_reduce(tensor, op_type, conns, rank)
     world_size = len(conns)
-    chunks = typing.cast("Sequence[EagerValue]", get_active_backend().execute_op("array_split", reduced, world_size, axis=scatter_dim))
+    chunks = as_eager_list(get_active_backend().execute_op("array_split", reduced, world_size, axis=scatter_dim))
     return chunks[rank]
 
 
@@ -671,7 +672,7 @@ async def all_to_all(
     """
     world_size = len(conns)
     backend = get_active_backend()
-    chunks = typing.cast("Sequence[EagerValue]", backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
+    chunks = as_eager_list(backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
 
     send_tasks = []
     for j, conn in enumerate(conns):
@@ -786,16 +787,13 @@ def _dispatch_pytorch_collective(op: str, tensor: EagerValue, kwargs: dict[str, 
         pt_backend = BackendRegistry.get("pytorch")
         group = kwargs.get("group")
         if op == "AllReduce":
-            return typing.cast(EagerValue, getattr(pt_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), group=group))
+            return as_tensor(getattr(pt_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), group=group))
         if op == "AllGather":
-            return typing.cast(EagerValue, getattr(pt_backend, "all_gather")(tensor, axis=int(typing.cast(int, kwargs.get("axis", 0))), group=group))
+            return as_tensor(getattr(pt_backend, "all_gather")(tensor, axis=int(as_int(kwargs.get("axis", 0))), group=group))
         if op == "ReduceScatter":
-            return typing.cast(
-                EagerValue,
-                getattr(pt_backend, "reduce_scatter")(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(typing.cast(int, kwargs.get("scatter_dim", 0))), group=group),
-            )
+            return as_tensor(getattr(pt_backend, "reduce_scatter")(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(as_int(kwargs.get("scatter_dim", 0))), group=group))
         if op == "Broadcast":
-            return typing.cast(EagerValue, getattr(pt_backend, "broadcast")(tensor, src=int(typing.cast(int, kwargs.get("root", 0))), group=group))
+            return as_tensor(getattr(pt_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0))), group=group))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
@@ -818,11 +816,11 @@ def _dispatch_jax_collective(op: str, tensor: EagerValue, kwargs: dict[str, Eage
         jax_backend = BackendRegistry.get("jax")
         axis_name = str(kwargs.get("axis_name", "data"))
         if op == "AllReduce":
-            return typing.cast(EagerValue, getattr(jax_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name))
+            return as_tensor(getattr(jax_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name))
         if op == "AllGather":
-            return typing.cast(EagerValue, getattr(jax_backend, "all_gather")(tensor, axis_name=axis_name, axis=int(typing.cast(int, kwargs.get("axis", 0)))))
+            return as_tensor(getattr(jax_backend, "all_gather")(tensor, axis_name=axis_name, axis=int(as_int(kwargs.get("axis", 0)))))
         if op == "Broadcast":
-            return typing.cast(EagerValue, getattr(jax_backend, "broadcast")(tensor, src=int(typing.cast(int, kwargs.get("root", 0)))))
+            return as_tensor(getattr(jax_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0)))))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
@@ -839,17 +837,17 @@ def _reduce_rank_sequence(all_ranks_data: Sequence[EagerValue], red_op: str) -> 
         EagerValue: Reduced result tensor.
     """
     backend = get_active_backend()
-    accum = typing.cast(EagerTensorProtocol, all_ranks_data[0]).copy()
+    accum = as_tensor(all_ranks_data[0]).copy()
     for other in all_ranks_data[1:]:
-        other_t = typing.cast(EagerTensorProtocol, other)
+        other_t = as_tensor(other)
         if red_op in ("SUM", "ADD"):
             accum = accum + other_t
         elif red_op in ("PROD", "PRODUCT"):
             accum = accum * other_t
         elif red_op == "MAX":
-            accum = typing.cast(EagerTensorProtocol, backend.execute_op("maximum", accum, other_t))
+            accum = as_tensor(backend.execute_op("maximum", accum, other_t))
         elif red_op == "MIN":
-            accum = typing.cast(EagerTensorProtocol, backend.execute_op("minimum", accum, other_t))
+            accum = as_tensor(backend.execute_op("minimum", accum, other_t))
     return accum
 
 
@@ -870,24 +868,24 @@ def _simulate_multi_rank_collective(
     """
     backend = get_active_backend()
     world_size = len(all_ranks_data)
-    rank = int(typing.cast(int, kwargs.get("rank", 0)))
+    rank = int(as_int(kwargs.get("rank", 0)))
     red_op = str(kwargs.get("op_type", "SUM")).upper()
 
     if op == "AllReduce":
         return _reduce_rank_sequence(all_ranks_data, red_op)
     if op == "AllGather":
-        return backend.execute_op("concatenate", all_ranks_data, axis=int(typing.cast(int, kwargs.get("axis", 0))))
+        return backend.execute_op("concatenate", all_ranks_data, axis=int(as_int(kwargs.get("axis", 0))))
     if op == "ReduceScatter":
         accum = _reduce_rank_sequence(all_ranks_data, red_op)
-        chunks = typing.cast("Sequence[EagerValue]", backend.execute_op("array_split", accum, world_size, axis=int(typing.cast(int, kwargs.get("scatter_dim", 0)))))
+        chunks = as_eager_list(backend.execute_op("array_split", accum, world_size, axis=int(as_int(kwargs.get("scatter_dim", 0)))))
         return chunks[rank]
     if op == "AllToAll":
-        scatter_dim = int(typing.cast(int, kwargs.get("scatter_dim", 0)))
-        gather_dim = int(typing.cast(int, kwargs.get("gather_dim", 0)))
-        gathered = [typing.cast("Sequence[EagerValue]", backend.execute_op("array_split", all_ranks_data[src], world_size, axis=scatter_dim))[rank] for src in range(world_size)]
+        scatter_dim = int(as_int(kwargs.get("scatter_dim", 0)))
+        gather_dim = int(as_int(kwargs.get("gather_dim", 0)))
+        gathered = [as_eager_list(backend.execute_op("array_split", all_ranks_data[src], world_size, axis=scatter_dim))[rank] for src in range(world_size)]
         return backend.execute_op("concatenate", gathered, axis=gather_dim)
     if op == "Broadcast":
-        return typing.cast(EagerTensorProtocol, all_ranks_data[int(typing.cast(int, kwargs.get("root", 0)))]).copy()
+        return as_tensor(all_ranks_data[int(as_int(kwargs.get("root", 0)))]).copy()
     return None
 
 
@@ -928,4 +926,4 @@ def dispatch_collective(
         if sim_res is not None:
             return sim_res
 
-    return typing.cast(EagerTensorProtocol, tensor).copy()
+    return as_tensor(tensor).copy()

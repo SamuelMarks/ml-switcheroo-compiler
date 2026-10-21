@@ -14,9 +14,10 @@ from ml_switcheroo_compiler.backends.rocm.rocm import (
     _synthesize_rocm_kernel,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_no_synthetic_copy_add_fallback_loops_rocm() -> None:
@@ -107,19 +108,19 @@ def test_expanded_rocm_templates_yaml_coverage() -> None:
     for op in new_ops:
         assert op in templates, f"Template for '{op}' missing in rocm_templates.yaml"
         tpl = templates[op]
-        body = typing.cast("EagerTensorProtocol", getattr(tpl, "get"))("body", "")
+        body = as_tensor(getattr(tpl, "get"))("body", "")
         assert "__global__ void" in body, f"Kernel body for '{op}' must contain '__global__ void'"
         assert f"{op}" in body, f"Kernel body for '{op}' should contain function name"
 
     # Specific check for argmax / argmin reduction in HIP
-    argmax_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmax")), "get"))("body", "")
+    argmax_body = as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")("argmax")), "get"))("body", "")
     assert "__shared__ float s_val" in argmax_body
     assert "__shared__ int s_idx" in argmax_body
     assert "hipThreadIdx_x" in argmax_body
     assert "hipBlockIdx_x" in argmax_body
     assert "__syncthreads()" in argmax_body
 
-    argmin_body = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(templates, "__getitem__")("argmin")), "get"))("body", "")
+    argmin_body = as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")("argmin")), "get"))("body", "")
     assert "__shared__ float s_val" in argmin_body
     assert "__shared__ int s_idx" in argmin_body
     assert "hipThreadIdx_x" in argmin_body

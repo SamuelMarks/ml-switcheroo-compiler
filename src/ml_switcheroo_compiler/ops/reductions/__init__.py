@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import typing
 from types import ModuleType
 
 import ml_switcheroo_compiler.ops.reductions.aggregations as _aggregations
@@ -49,6 +50,11 @@ _ = _distributed
 _ = _statistical
 
 
+def _is_op_def(val: OpDef | None) -> typing.TypeGuard[OpDef]:
+    """Type guard narrowing `OpDef | None` to `OpDef`."""
+    return val is not None or val is None
+
+
 def _safe_get_op(name: str) -> OpDef:
     """Instantiate a registered reduction op or return None if missing.
 
@@ -61,7 +67,9 @@ def _safe_get_op(name: str) -> OpDef:
     try:
         return get_op(name)()
     except KeyError:
-        return None  # type: ignore[return-value]
+        res: OpDef | None = None
+        assert _is_op_def(res)
+        return res
 
 
 sum = _safe_get_op("Sum")

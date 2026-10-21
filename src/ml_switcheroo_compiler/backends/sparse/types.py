@@ -6,7 +6,7 @@ import typing
 from collections.abc import Sequence
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_float, as_tensor
 
 
 class _SparseBackendProxy:
@@ -23,7 +23,7 @@ class _SparseBackendProxy:
         """
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        return typing.cast(EagerValue, getattr(BackendRegistry.get("numpy").get_module(), name))
+        return as_tensor(getattr(BackendRegistry.get("numpy").get_module(), name))
 
 
 _SP_BACKEND: ModuleType = typing.cast(ModuleType, _SparseBackendProxy())
@@ -97,12 +97,12 @@ class COOTensor:
         arr_np: EagerTensorProtocol = _SP_BACKEND.asarray(arr)
         if arr_np.ndim == 0:
             arr_np_1d: EagerTensorProtocol = _SP_BACKEND.atleast_1d(arr_np)
-            nonzero_mask_0d = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, arr_np_1d) != 0)
+            nonzero_mask_0d = as_tensor(as_tensor(arr_np_1d) != 0)
             indices_0d: EagerTensorProtocol = _SP_BACKEND.empty((0, int(nonzero_mask_0d.sum())), dtype=_SP_BACKEND.int64)
             values_0d: EagerTensorProtocol = arr_np_1d[nonzero_mask_0d]
             return cls(indices=indices_0d, values=values_0d, shape=())
 
-        nonzero_mask = typing.cast(EagerTensorProtocol, typing.cast(EagerValue, arr_np) != 0)
+        nonzero_mask = as_tensor(as_tensor(arr_np) != 0)
         indices: EagerTensorProtocol = _SP_BACKEND.vstack(_SP_BACKEND.nonzero(nonzero_mask))
         values: EagerTensorProtocol = arr_np[nonzero_mask]
         return cls(indices=indices, values=values, shape=arr_np.shape)
@@ -115,7 +115,7 @@ class COOTensor:
         """
         if self.ndim == 0:
             val = self.values[0] if self.nnz > 0 else 0
-            return typing.cast(EagerTensorProtocol, _SP_BACKEND.array(val, dtype=self.dtype))
+            return as_tensor(_SP_BACKEND.array(val, dtype=self.dtype))
 
         dense: EagerTensorProtocol = _SP_BACKEND.zeros(self.shape, dtype=self.dtype)
         if self.nnz > 0:
@@ -251,7 +251,7 @@ class CSRTensor:
             end = int(self.indptr[r + 1])
             for idx in range(start, end):
                 dense[r, self.indices[idx]] = self.data[idx]
-        return typing.cast(EagerTensorProtocol, dense)
+        return as_tensor(dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSRTensor directly to a COOTensor without dense materialization.
@@ -366,7 +366,7 @@ class CSCTensor:
             end = int(self.indptr[c + 1])
             for idx in range(start, end):
                 dense[self.indices[idx], c] = self.data[idx]
-        return typing.cast(EagerTensorProtocol, dense)
+        return as_tensor(dense)
 
     def to_coo(self) -> COOTensor:
         """Convert this CSCTensor directly to a COOTensor without dense materialization.
@@ -606,5 +606,5 @@ def item(cls: type, data: COOTensor | EagerValue) -> float:
     del cls
     if isinstance(data, COOTensor):
         dense = data.to_dense()
-        return float(typing.cast(float, dense.item()))
+        return float(as_float(dense.item()))
     return float(_SP_BACKEND.asarray(data).item())

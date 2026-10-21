@@ -8,7 +8,7 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.registry import as_callable, as_opt_int_seq, as_shape
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 # Base logic implementation
@@ -119,11 +119,11 @@ def _build_conv_config(
         rhs_dilation = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
     return typing.cast(
         ConvConfig,
-        typing.cast("EagerCallableProtocol", ConvConfig)(
-            window_strides=typing.cast("Sequence[int]", strides),
+        as_callable(ConvConfig)(
+            window_strides=as_shape(strides),
             padding=kwargs.get("padding", "VALID"),
-            lhs_dilation=typing.cast("Sequence[int] | None", lhs_dilation),
-            rhs_dilation=typing.cast("Sequence[int] | None", rhs_dilation),
+            lhs_dilation=as_opt_int_seq(lhs_dilation),
+            rhs_dilation=as_opt_int_seq(rhs_dilation),
             dimension_numbers=dimension_numbers,
         ),
     )
@@ -165,11 +165,11 @@ def _prepare_depthwise_conv(
 
         config_obj = typing.cast(
             TensorOrScalar,
-            typing.cast("EagerCallableProtocol", ConvConfig)(
-                window_strides=typing.cast("Sequence[int]", strides),
+            as_callable(ConvConfig)(
+                window_strides=as_shape(strides),
                 padding=kwargs.get("padding", "VALID"),
-                lhs_dilation=typing.cast("Sequence[int] | None", lhs_dilation),
-                rhs_dilation=typing.cast("Sequence[int] | None", rhs_dilation),
+                lhs_dilation=as_opt_int_seq(lhs_dilation),
+                rhs_dilation=rhs_dilation,
                 dimension_numbers=dimension_numbers,
                 feature_group_count=in_channels,
             ),
@@ -215,7 +215,7 @@ def atrous_conv2d_transpose(
         value (TensorOrScalar): The value parameter.
         filters (TensorOrScalar): The filters parameter.
         output_shape (TensorOrScalar): The output_shape parameter.
-        config (typing.Optional[GenericConvConfig]): The config parameter.
+        config (GenericConvConfig | None): The config parameter.
         name (TensorOrScalar): The name parameter.
 
     Returns:
@@ -295,8 +295,8 @@ def depthwise_conv2d(
     Args:
         input (Tensor): The input parameter.
         filter (Tensor): The filter parameter.
-        config (typing.Optional[GenericConvConfig]): The config parameter.
-        name (typing.Optional[str]): The name parameter.
+        config (GenericConvConfig | None): The config parameter.
+        name (str | None): The name parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -337,7 +337,7 @@ def depthwise_conv2d_backprop_filter(
     from ml_switcheroo_compiler.core.config import config as core_config
 
     raw_filter_shape = getattr(filter_sizes, "shape", None)
-    target_shape: tuple[int | str, ...] = (int(filter_sizes),) if isinstance(filter_sizes, int) else tuple(typing.cast("Sequence[int | str]", filter_sizes)) if isinstance(filter_sizes, (list, tuple)) else tuple(raw_filter_shape) if isinstance(raw_filter_shape, (list, tuple)) else ()
+    target_shape: tuple[int | str, ...] = (int(filter_sizes),) if isinstance(filter_sizes, int) else tuple(filter_sizes) if isinstance(filter_sizes, (list, tuple)) else tuple(raw_filter_shape) if isinstance(raw_filter_shape, (list, tuple)) else ()
     dtype = getattr(input, "dtype", "float32")
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -378,7 +378,7 @@ def depthwise_conv2d_backprop_input(
     from ml_switcheroo_compiler.core.config import config as core_config
 
     raw_input_shape = getattr(input_sizes, "shape", None)
-    target_shape: tuple[int | str, ...] = (int(input_sizes),) if isinstance(input_sizes, int) else tuple(typing.cast("Sequence[int | str]", input_sizes)) if isinstance(input_sizes, (list, tuple)) else tuple(raw_input_shape) if isinstance(raw_input_shape, (list, tuple)) else ()
+    target_shape: tuple[int | str, ...] = (int(input_sizes),) if isinstance(input_sizes, int) else tuple(input_sizes) if isinstance(input_sizes, (list, tuple)) else tuple(raw_input_shape) if isinstance(raw_input_shape, (list, tuple)) else ()
     dtype = getattr(filter, "dtype", "float32")
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -420,7 +420,7 @@ def dilation2d(
     Args:
         input (TensorOrScalar): The input parameter.
         filter (TensorOrScalar): The filter parameter.
-        args (typing.Optional[ConvSpatialArgs]): The args parameter.
+        args (ConvSpatialArgs | None): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -446,7 +446,7 @@ def erosion2d(
     Args:
         value (TensorOrScalar): The value parameter.
         kernel (TensorOrScalar): The kernel parameter.
-        args (typing.Optional[ConvSpatialArgs]): The args parameter.
+        args (ConvSpatialArgs | None): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -472,7 +472,7 @@ def convolution(
     Args:
         input (TensorOrScalar): The input parameter.
         filters (TensorOrScalar): The filters parameter.
-        args (typing.Optional[ConvSpatialArgs]): The args parameter.
+        args (ConvSpatialArgs | None): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -504,7 +504,7 @@ def conv_transpose(
         input (TensorOrScalar): The input parameter.
         filters (TensorOrScalar): The filters parameter.
         output_shape (TensorOrScalar): The output_shape parameter.
-        args (typing.Optional[ConvSpatialArgs]): The args parameter.
+        args (ConvSpatialArgs | None): The args parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -517,4 +517,4 @@ def conv_transpose(
         return get_active_backend().execute_op("ConvTranspose", input, filters, output_shape=output_shape, args=args)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, typing.cast("Sequence[int | str]", output_shape), getattr(input, "dtype", "float32"))
+    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, output_shape, getattr(input, "dtype", "float32"))

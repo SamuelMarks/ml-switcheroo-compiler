@@ -7,16 +7,17 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, BinaryMathOp, Digitize, Lcm, Polyadd, Polyder, Polydiv, Polyint, Polymul, Polysub, Roots, Xlog1py, Xlogy
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_binary_math_op_infer_shape() -> None:
     """Test function test_binary_math_op_infer_shape."""
     op = BinaryMathOp()
     assert op.infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)((2, 2)) == (2, 2)
+    assert as_callable(op.infer_shape)((2, 2)) == (2, 2)
 
 
 def test_digitize_infer_shape() -> None:
@@ -29,7 +30,7 @@ def test_digitize_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()) == (2, 2)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)()) == (2, 2)
 
 
 def test_polyder_infer_shape() -> None:
@@ -42,8 +43,8 @@ def test_polyder_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_polyint_infer_shape() -> None:
@@ -56,8 +57,8 @@ def test_polyint_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_polysub_infer_shape() -> None:
@@ -70,8 +71,8 @@ def test_polysub_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_polyadd_infer_shape() -> None:
@@ -84,8 +85,8 @@ def test_polyadd_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_polymul_infer_shape() -> None:
@@ -98,8 +99,8 @@ def test_polymul_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_polydiv_infer_shape() -> None:
@@ -112,8 +113,8 @@ def test_polydiv_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_poly_infer_shape() -> None:
@@ -128,8 +129,8 @@ def test_poly_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_polyval_infer_shape() -> None:
@@ -144,8 +145,8 @@ def test_polyval_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_polyfit_infer_shape() -> None:
@@ -160,8 +161,8 @@ def test_polyfit_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_roots_infer_shape() -> None:
@@ -174,8 +175,8 @@ def test_roots_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_lcm_infer_shape() -> None:
@@ -188,8 +189,8 @@ def test_lcm_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(1) == 1
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
+    assert as_callable(op.infer_shape)(1) == 1
 
 
 def test_array_equiv_infer_shape() -> None:
@@ -208,7 +209,7 @@ def test_xlogy_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
 
 
 def test_xlog1py_infer_shape() -> None:
@@ -221,7 +222,7 @@ def test_xlog1py_infer_shape() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)(), typing.cast("EagerCallableProtocol", Dummy)()), "shape")) == (2, 2)
+    assert as_tensor(getattr(as_callable(op.infer_shape)(as_callable(Dummy)(), as_callable(Dummy)()), "shape")) == (2, 2)
 
 
 def test_clip_eager() -> None:
@@ -237,7 +238,7 @@ def test_clip_eager() -> None:
 
         shape = (2, 2)
 
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", Dummy)()) == (2, 2)
+    assert as_callable(op.infer_shape)(as_callable(Dummy)()) == (2, 2)
     orig_eager = config.eager_mode
     try:
         config.eager_mode = True
@@ -261,7 +262,7 @@ def test_clip_eager() -> None:
 
         orig_backend = config.backend
         config.backend = "mock_clip"
-        typing.cast("EagerCallableProtocol", BackendRegistry.register)("mock_clip", MockBackend)
+        as_callable(BackendRegistry.register)("mock_clip", MockBackend)
         assert clip(np.array([1.0]), 0.0, 2.0) == "eager_clip"
         config.eager_mode = False
         clip(np.array([1.0]), 0.0, 2.0)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 @register_op("Cholesky")
@@ -50,7 +50,7 @@ def cholesky(input: Tensor) -> TensorOrScalar:
 
         backend = get_active_backend()
         data = backend.execute_op("Cholesky", input.data)
-        arr = typing.cast("TensorLike", backend.array(data))
+        arr = as_tensor(backend.array(data))
         return Tensor(arr, TensorConfig(arr.shape, input.dtype, input.device))
     return _emit_linalg_node("Cholesky", [input], {}, [input.shape], [input.dtype])
 
@@ -91,7 +91,7 @@ def cholesky_ex(input: Tensor, check_errors: bool = False) -> TensorOrScalar:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        L, info = typing.cast("tuple[TensorLike, TensorLike]", backend.execute_op("CholeskyEx", input.data, check_errors=check_errors))
+        L, info = as_tensor_pair(backend.execute_op("CholeskyEx", input.data, check_errors=check_errors))
         return (
             Tensor(L, TensorConfig(L.shape, input.dtype, input.device)),
             Tensor(info, TensorConfig(info.shape, "int32", input.device)),

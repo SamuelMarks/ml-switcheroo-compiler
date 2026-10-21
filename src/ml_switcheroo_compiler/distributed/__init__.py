@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import contextlib
-import typing
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
 
+from ml_switcheroo_compiler.backends.eager_registry import as_tensor
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.ops import distributed_ops
@@ -101,7 +101,7 @@ class TensorLayoutClass:
         self.axes = axes
 
 
-def TensorLayout(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
+def TensorLayout(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorLayoutClass:
     """Create a TensorLayout.
 
     Args:
@@ -109,10 +109,10 @@ def TensorLayout(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
         **kwargs (AttrValue): Keyword arguments.
 
     Returns:
-        TensorOrScalar: TensorLayoutClass instance.
+        TensorLayoutClass: TensorLayoutClass instance.
     """
     axes = kwargs.get("axes", args[0] if args else ())
-    return typing.cast(TensorOrScalar, TensorLayoutClass(axes))
+    return TensorLayoutClass(axes)
 
 
 def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
@@ -148,7 +148,7 @@ def list_devices(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
     _ = (args, kwargs)
     from ml_switcheroo_compiler.core.device import get_physical_devices
 
-    return typing.cast(TensorOrScalar, get_physical_devices())
+    return as_tensor(get_physical_devices())
 
 
 _dist: Distribution | None = None
@@ -197,7 +197,7 @@ def distribute_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrSca
     if config.eager_mode:
         return args[0] if args else kwargs.get("tensor")
 
-    return typing.cast(TensorOrScalar, getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
+    return as_tensor(getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
 
 
 __all__ = [

@@ -24,9 +24,10 @@ from ml_switcheroo_compiler.ops.nn.nlp import (
     sampled_softmax_loss,
     uniform_candidate_sampler,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_nlp_coverage() -> None:
@@ -47,8 +48,8 @@ def test_nlp_coverage() -> None:
     w = Tensor(np.array([[1.0, 2.0, 3.0]]), TensorConfig(shape=(1, 3), dtype=DType("float32"), device=Device("cpu")))
     b = Tensor(np.array([1.0]), TensorConfig(shape=(1,), dtype=DType("float32"), device=Device("cpu")))
 
-    assert typing.cast("EagerCallableProtocol", nce_loss)(w, b, labels, logits, 1) is not None
-    assert typing.cast("EagerCallableProtocol", sampled_softmax_loss)(w, b, labels, logits, 1) is not None
+    assert as_callable(nce_loss)(w, b, labels, logits, 1) is not None
+    assert as_callable(sampled_softmax_loss)(w, b, labels, logits, 1) is not None
     assert ctc_beam_search_decoder(logits, seq_len) is not None
     assert ctc_greedy_decoder(logits, seq_len) is not None
     assert ctc_loss(labels, logits, seq_len, seq_len) is not None
@@ -81,8 +82,8 @@ def test_nlp_options_and_shapes(monkeypatch: EagerTensorProtocol) -> None:
 
         shape = (10, 5)
 
-    assert typing.cast("EagerCallableProtocol", CtcLoss)().infer_shape(None, typing.cast("EagerCallableProtocol", LogitsShape3)(), None, None) == (32,)
-    assert typing.cast("EagerCallableProtocol", CtcLoss)().infer_shape(None, typing.cast("EagerCallableProtocol", LogitsShape2)(), None, None) == (1,)
+    assert as_callable(CtcLoss)().infer_shape(None, as_callable(LogitsShape3)(), None, None) == (32,)
+    assert as_callable(CtcLoss)().infer_shape(None, as_callable(LogitsShape2)(), None, None) == (1,)
 
     orig = config.eager_mode
     config.eager_mode = True
@@ -101,13 +102,13 @@ def test_nlp_options_and_shapes(monkeypatch: EagerTensorProtocol) -> None:
 
     import ml_switcheroo_compiler.backends.registry as reg
 
-    typing.cast("EagerCallableProtocol", monkeypatch.setattr)(reg, "get_active_backend", lambda: typing.cast("EagerCallableProtocol", DummyBackend)())
+    as_callable(monkeypatch.setattr)(reg, "get_active_backend", lambda: as_callable(DummyBackend)())
     try:
         t_labels = Tensor(np.array([1]), TensorConfig(shape=(1,), dtype=DType("int32"), device=Device("cpu")))
         t_logits = Tensor(np.array([[1.0]]), TensorConfig(shape=(1, 1), dtype=DType("float32"), device=Device("cpu")))
         t_len = Tensor(np.array([1]), TensorConfig(shape=(1,), dtype=DType("int32"), device=Device("cpu")))
         res = ctc_loss(t_labels, t_logits, t_len, t_len)
-        assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1,)
+        assert as_tensor(getattr(res, "shape")) == (1,)
     finally:
         config.eager_mode = orig
 
@@ -140,7 +141,7 @@ def test_nlp_tracing_candidate_samplers_and_losses() -> None:
 
         nlp.fixed_unigram_candidate_sampler(t, c)
         nlp.compute_accidental_hits(t, t, c)
-        typing.cast("EagerCallableProtocol", nlp.ctc_loss)(t, t, t, t)
+        as_callable(nlp.ctc_loss)(t, t, t, t)
         nlp.log_uniform_candidate_sampler(t, c)
         nlp.learned_unigram_candidate_sampler(t, c)
         nlp.all_candidate_sampler(t, c)

@@ -6,14 +6,14 @@ import builtins
 import typing
 from types import ModuleType
 
+from ml_switcheroo_compiler.backends.eager_registry import as_bool, as_callable, as_float, as_int, as_opt_int, as_tensor
+
 try:
     import mlx.core as mx
 except ImportError:
     mx = typing.cast(ModuleType, None)
 
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerCallableProtocol,
-    EagerTensorProtocol,
     EagerValue,
     global_eager_registry,
     mlx_eager_registry,
@@ -41,7 +41,7 @@ def _get_mlx_func(op_type: str) -> EagerValue:
         snake = "divide"
     for mod in [mx, getattr(mx, "linalg", None), getattr(mx, "fft", None)]:
         if mod is not None and hasattr(mod, snake):
-            return typing.cast(EagerValue, getattr(mod, snake))
+            return as_tensor(getattr(mod, snake))
     return None
 
 
@@ -70,7 +70,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
         func = _get_mlx_func(op_type)
         if func is None:
             raise AttributeError(f"No attribute found for {op_type}")
-        return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", func)(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -94,7 +94,7 @@ def _mlx_cast(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
         return tensor
-    return typing.cast(EagerValue, getattr(tensor, "astype")(dtype))
+    return as_tensor(getattr(tensor, "astype")(dtype))
 
 
 @mlx_eager_registry.register("Relu")
@@ -113,9 +113,9 @@ def _mlx_relu(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
     try:
         import mlx.nn as nn
 
-        return typing.cast(EagerValue, getattr(nn, "relu")(x))
+        return as_tensor(getattr(nn, "relu")(x))
     except (ImportError, AttributeError):
-        return typing.cast(EagerValue, backend_module.maximum(x, 0))
+        return as_tensor(backend_module.maximum(x, 0))
 
 
 @mlx_eager_registry.register("RaggedTensorToDense")
@@ -145,7 +145,7 @@ def _mlx_ragged_tensor_to_dense(backend_module: BackendModuleProtocol, rt_input:
             else:
                 padded_x = x
             padded.append(padded_x)
-        return typing.cast(EagerValue, backend_module.stack(padded, axis=0))
+        return as_tensor(backend_module.stack(padded, axis=0))
 
     values = None
     row_splits = None
@@ -177,8 +177,8 @@ def _mlx_ragged_tensor_to_dense(backend_module: BackendModuleProtocol, rt_input:
                 row_val = backend_module.concatenate([row_val, pad_arr], axis=0)
             rows.append(row_val)
         if rows:
-            return typing.cast(EagerValue, backend_module.stack(rows, axis=0))
-        return typing.cast(EagerValue, dense_tensor)
+            return as_tensor(backend_module.stack(rows, axis=0))
+        return as_tensor(dense_tensor)
 
     return rt_input
 
@@ -195,7 +195,7 @@ def _mlx_take_along_axis(backend_module: BackendModuleProtocol, *args: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(EagerValue, backend_module.take_along_axis(*args, **kwargs))
+    return as_tensor(backend_module.take_along_axis(*args, **kwargs))
 
 
 @mlx_eager_registry.register("Take")
@@ -210,7 +210,7 @@ def _mlx_take(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast(EagerValue, backend_module.take(*args, **kwargs))
+    return as_tensor(backend_module.take(*args, **kwargs))
 
 
 @mlx_eager_registry.register("TensorScatterUpdate")
@@ -227,9 +227,9 @@ def _mlx_tensor_scatter_update(backend_module: BackendModuleProtocol, *args: Eag
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(typing.cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
+    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = updates
-    return typing.cast(EagerValue, res)
+    return as_tensor(res)
 
 
 @mlx_eager_registry.register("TensorScatterAdd")
@@ -246,9 +246,9 @@ def _mlx_tensor_scatter_add(backend_module: BackendModuleProtocol, *args: EagerV
     """
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(typing.cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
+    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = res[idx] + updates
-    return typing.cast(EagerValue, res)
+    return as_tensor(res)
 
 
 @mlx_eager_registry.register("TensorScatterMax")
@@ -267,9 +267,9 @@ def _mlx_tensor_scatter_max(backend_module: BackendModuleProtocol, *args: EagerV
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(typing.cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
+    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = mx.maximum(res[idx], updates)
-    return typing.cast(EagerValue, res)
+    return as_tensor(res)
 
 
 @mlx_eager_registry.register("TensorScatterMin")
@@ -288,9 +288,9 @@ def _mlx_tensor_scatter_min(backend_module: BackendModuleProtocol, *args: EagerV
 
     (tensor, indices, updates) = (args[0], args[1], args[2])
     res = backend_module.array(tensor)
-    idx: tuple[EagerValue, ...] = tuple(typing.cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
+    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = mx.minimum(res[idx], updates)
-    return typing.cast(EagerValue, res)
+    return as_tensor(res)
 
 
 @mlx_eager_registry.register("ScatterNd")
@@ -316,9 +316,9 @@ def _mlx_scatter_nd(backend_module: BackendModuleProtocol, *args: EagerValue, **
         shape = list(shape)
     # Implement native MLX ScatterNd logic using array indexing
     res = backend_module.zeros(shape, dtype=getattr(updates, "dtype"))
-    idx: tuple[EagerValue, ...] = tuple(typing.cast(EagerTensorProtocol, indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
+    idx: tuple[EagerValue, ...] = tuple(as_tensor(indices)[..., dim] for dim in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
     res[idx] = updates
-    return typing.cast(EagerValue, res)
+    return as_tensor(res)
 
 
 @mlx_eager_registry.register("Reshape")
@@ -340,7 +340,7 @@ def _mlx_reshape(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         shape = getattr(shape, "tolist")()
     if isinstance(shape, tuple):
         shape = list(shape)
-    return typing.cast(EagerValue, backend_module.reshape(args[0] if "input" not in kwargs else kwargs["input"], shape))
+    return as_tensor(backend_module.reshape(args[0] if "input" not in kwargs else kwargs["input"], shape))
 
 
 _MLX_DTYPE_FALLBACK_MAP = {
@@ -366,7 +366,7 @@ def _resolve_dtype(backend_module: BackendModuleProtocol, dtype_val: EagerValue)
     if isinstance(dtype, str) and not hasattr(backend_module, dtype_str):
         for k, v in _MLX_DTYPE_FALLBACK_MAP.items():
             if k in dtype:
-                return typing.cast(EagerValue, getattr(backend_module, v))
+                return as_tensor(getattr(backend_module, v))
     return dtype
 
 
@@ -388,13 +388,13 @@ def _mlx_zeros(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     dtype_val = kwargs.get("dtype", None)
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return typing.cast(EagerValue, backend_module.zeros(shape))
+        return as_tensor(backend_module.zeros(shape))
     if isinstance(shape, (int, float)):
         shape = (int(shape),)
     try:
-        return typing.cast(EagerValue, backend_module.zeros(shape, dtype=dtype))
+        return as_tensor(backend_module.zeros(shape, dtype=dtype))
     except TypeError:
-        return typing.cast(EagerValue, backend_module.zeros(shape))
+        return as_tensor(backend_module.zeros(shape))
 
 
 @mlx_eager_registry.register("Ones")
@@ -415,13 +415,13 @@ def _mlx_ones(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     dtype_val = kwargs.get("dtype", getattr(backend_module, "float32", None))
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return typing.cast(EagerValue, backend_module.ones(shape))
+        return as_tensor(backend_module.ones(shape))
     if isinstance(shape, (int, float)):
         shape = (int(shape),)
     try:
-        return typing.cast(EagerValue, backend_module.ones(shape, dtype=dtype))
+        return as_tensor(backend_module.ones(shape, dtype=dtype))
     except TypeError:
-        return typing.cast(EagerValue, backend_module.ones(shape))
+        return as_tensor(backend_module.ones(shape))
 
 
 @mlx_eager_registry.register("Full")
@@ -443,13 +443,13 @@ def _mlx_full(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     dtype_val = kwargs.get("dtype", getattr(backend_module, "float32", None))
     dtype = _resolve_dtype(backend_module, dtype_val)
     if dtype is None:
-        return typing.cast(EagerValue, backend_module.full(shape, fill_value))
+        return as_tensor(backend_module.full(shape, fill_value))
     if isinstance(shape, (int, float)):
         shape = (int(shape),)
     try:
-        return typing.cast(EagerValue, backend_module.full(shape, fill_value, dtype=dtype))
+        return as_tensor(backend_module.full(shape, fill_value, dtype=dtype))
     except TypeError:
-        return typing.cast(EagerValue, backend_module.full(shape, fill_value))
+        return as_tensor(backend_module.full(shape, fill_value))
 
 
 @mlx_eager_registry.register("Partition")
@@ -466,7 +466,7 @@ def _parse_partition_k(k: EagerValue) -> int:
         return int(getattr(k, "item")())
     if hasattr(k, "data") and hasattr(getattr(k, "data"), "item"):
         return int(getattr(k, "data").item())
-    return int(typing.cast(int, k))
+    return int(as_int(k))
 
 
 def _mlx_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -487,11 +487,11 @@ def _mlx_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     kth: int = max(0, getattr(a, "shape")[-1] - k)
     if return_indices is False:
         if hasattr(backend_module, "topk"):
-            return typing.cast(EagerValue, backend_module.topk(a, k))
-        return typing.cast(EagerValue, backend_module.partition(a, kth, axis=-1)[..., -k:])
+            return as_tensor(backend_module.topk(a, k))
+        return as_tensor(backend_module.partition(a, kth, axis=-1)[..., -k:])
     indices = backend_module.argpartition(a, kth, axis=-1)[..., -k:]
     if return_indices is True:
-        return typing.cast(EagerValue, indices)
+        return as_tensor(indices)
     values = backend_module.take_along_axis(a, indices, axis=-1)
     return (values, indices)
 
@@ -511,7 +511,7 @@ def _mlx_nan_to_num(backend_module: BackendModuleProtocol, *args: EagerValue, **
     valid_kwargs: dict[str, float] = {}
     for key in ("nan", "posinf", "neginf"):
         if key in kwargs:
-            val: float = typing.cast(float, kwargs[key])
+            val: float = as_float(kwargs[key])
             if hasattr(val, "item"):
                 val = float(val.item())
             elif hasattr(val, "data") and hasattr(val.data, "item"):
@@ -519,7 +519,7 @@ def _mlx_nan_to_num(backend_module: BackendModuleProtocol, *args: EagerValue, **
             elif val is not None:
                 val = float(val)
             valid_kwargs[key] = val
-    return typing.cast(EagerValue, backend_module.nan_to_num(*args, **valid_kwargs))
+    return as_tensor(backend_module.nan_to_num(*args, **valid_kwargs))
 
 
 @mlx_eager_registry.register("Cummax")
@@ -592,13 +592,13 @@ def _mlx_slice(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             tuple[int, ...]: Result.
     """
     a = args[0]
-    dim: int = int(typing.cast(int, kwargs.get("dim", 0)))
-    start = typing.cast("int | None", kwargs.get("start"))
-    end = typing.cast("int | None", kwargs.get("end"))
-    step = typing.cast("int | None", kwargs.get("step", 1))
+    dim: int = int(as_int(kwargs.get("dim", 0)))
+    start = as_opt_int(kwargs.get("start"))
+    end = as_opt_int(kwargs.get("end"))
+    step = as_opt_int(kwargs.get("step", 1))
     sl: list[EagerValue] = [builtins.slice(None)] * len(getattr(a, "shape"))
     sl[dim] = builtins.slice(start, end, step)
-    return typing.cast(EagerValue, getattr(a, "__getitem__")(tuple(sl)))
+    return as_tensor(getattr(a, "__getitem__")(tuple(sl)))
 
 
 @mlx_eager_registry.register("Eye")
@@ -619,9 +619,9 @@ def _mlx_eye(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     m_arg = args[1] if len(args) > 1 else None
     if hasattr(m_arg, "data"):
         m_arg = getattr(m_arg, "data")
-    m_val: float = int(typing.cast(int, m_arg)) if m_arg is not None else int(typing.cast(int, n_arg))
-    k_val: float = int(typing.cast(int, kwargs.get("k", 0)))
-    return typing.cast(EagerValue, getattr(backend_module, "eye")(n=int(typing.cast(int, n_arg)), m=m_val, k=k_val, dtype=getattr(backend_module, getattr(kwargs, "get")("dtype", "float32"))))
+    m_val: float = int(as_int(m_arg)) if m_arg is not None else int(as_int(n_arg))
+    k_val: float = int(as_int(kwargs.get("k", 0)))
+    return as_tensor(getattr(backend_module, "eye")(n=int(as_int(n_arg)), m=m_val, k=k_val, dtype=getattr(backend_module, getattr(kwargs, "get")("dtype", "float32"))))
 
 
 @mlx_eager_registry.register("Rope")
@@ -637,11 +637,11 @@ def _mlx_rope(backend_module: BackendModuleProtocol, x: EagerValue, **kwargs: Ea
             tuple[int, ...]: Result.
     """
     dim = kwargs.get("dim")
-    base: float = typing.cast(float, kwargs.get("base", 10000.0))
-    offset: int = typing.cast(int, kwargs.get("offset", 0))
-    traditional: bool = typing.cast(bool, kwargs.get("traditional", False))
-    scale: float = typing.cast(float, kwargs.get("scale", 1.0))
-    return typing.cast(EagerValue, getattr(mx.fast, "rope")(x, dim, traditional=traditional, base=base, scale=scale, offset=offset))
+    base: float = as_float(kwargs.get("base", 10000.0))
+    offset: int = as_int(kwargs.get("offset", 0))
+    traditional: bool = as_bool(kwargs.get("traditional", False))
+    scale: float = as_float(kwargs.get("scale", 1.0))
+    return as_tensor(getattr(mx.fast, "rope")(x, dim, traditional=traditional, base=base, scale=scale, offset=offset))
 
 
 @mlx_eager_registry.register("Variance")
@@ -657,7 +657,7 @@ def _mlx_variance(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
             tuple[int, ...]: Result.
     """
     kwargs.setdefault("ddof", 0)
-    return typing.cast(EagerValue, backend_module.var(*args, **kwargs))
+    return as_tensor(backend_module.var(*args, **kwargs))
 
 
 @mlx_eager_registry.register("AllReduce")
@@ -674,7 +674,7 @@ def _mlx_all_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_sum"):
-        return typing.cast(EagerValue, mx.distributed.all_sum(tensor))
+        return as_tensor(mx.distributed.all_sum(tensor))
     return tensor
 
 
@@ -692,8 +692,8 @@ def _mlx_all_gather(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_gather"):
-        return typing.cast(EagerValue, mx.distributed.all_gather(tensor))
-    return typing.cast(EagerValue, mx.expand_dims(tensor, axis=0))
+        return as_tensor(mx.distributed.all_gather(tensor))
+    return as_tensor(mx.expand_dims(tensor, axis=0))
 
 
 @mlx_eager_registry.register("AllToAll")
@@ -710,7 +710,7 @@ def _mlx_all_to_all(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     mx = backend_module
 
     if hasattr(mx, "distributed") and hasattr(mx.distributed, "all_to_all"):
-        return typing.cast(EagerValue, mx.distributed.all_to_all(tensor))
+        return as_tensor(mx.distributed.all_to_all(tensor))
     return tensor
 
 
@@ -726,7 +726,7 @@ def _slice_scatter_chunk(tensor: EagerValue, scatter_dim: int, rank: int, world_
     Returns:
         EagerValue: Sliced chunk for the specified rank.
     """
-    t_arr = typing.cast(EagerTensorProtocol, tensor)
+    t_arr = as_tensor(tensor)
     dim_size = t_arr.shape[scatter_dim]
     chunk_size = dim_size // world_size
     start_idx = rank * chunk_size
@@ -747,18 +747,19 @@ def _mlx_native_reduce_scatter(mx_mod: EagerValue, tensor: EagerValue, kwargs: d
     Returns:
         EagerValue: Reduced and scattered tensor slice.
     """
-    mod = typing.cast("ModuleType | None", mx_mod)
-    assert mod is not None
+    mod = as_tensor(mx_mod)
     reduced = mod.distributed.all_sum(tensor)
-    group = typing.cast("ModuleType | None", kwargs.get("group"))
+    raw_group = kwargs.get("group")
+    group = as_tensor(raw_group) if raw_group is not None else None
     try:
-        rank = group.rank() if group is not None else (mod.distributed.init().rank() if hasattr(mod.distributed, "init") else 0)
-        world_size = group.size() if group is not None else (mod.distributed.init().size() if hasattr(mod.distributed, "init") else 1)
+        dist_mod = getattr(mod, "distributed", None)
+        rank = as_int(getattr(group, "rank")()) if group is not None else (as_int(getattr(getattr(dist_mod, "init")(), "rank")()) if hasattr(dist_mod, "init") else 0)
+        world_size = as_int(getattr(group, "size")()) if group is not None else (as_int(getattr(getattr(dist_mod, "init")(), "size")()) if hasattr(dist_mod, "init") else 1)
     except Exception:
         rank = 0
         world_size = 1
 
-    scatter_dim = int(typing.cast(int, kwargs.get("scatter_dim", 0)))
+    scatter_dim = int(as_int(kwargs.get("scatter_dim", 0)))
     return _slice_scatter_chunk(reduced, scatter_dim, rank, world_size)
 
 
@@ -774,9 +775,9 @@ def _combine_ring_chunks(mx_mod: EagerValue, accum: EagerValue, peer_chunk: Eage
     Returns:
         EagerValue: Combined chunk result.
     """
-    mod = typing.cast("ModuleType | None", mx_mod)
-    acc_arr = typing.cast(EagerTensorProtocol, accum)
-    peer_arr = typing.cast(EagerTensorProtocol, peer_chunk)
+    mod = as_tensor(mx_mod) if mx_mod is not None else None
+    acc_arr = as_tensor(accum)
+    peer_arr = as_tensor(peer_chunk)
     if red_op in ("PROD", "PRODUCT", "MUL"):
         return mod.multiply(acc_arr, peer_arr) if (mod is not None and hasattr(mod, "multiply")) else (acc_arr * peer_arr)
     if red_op == "MAX":
@@ -813,10 +814,10 @@ def _mlx_ring_reduce_scatter(
     slices = [slice(None)] * getattr(all_ranks_data[0], "ndim", 1)
     slices[scatter_dim] = slice(start, end)
 
-    accum: EagerValue = typing.cast(EagerTensorProtocol, all_ranks_data[rank])[tuple(slices)]
+    accum: EagerValue = as_tensor(all_ranks_data[rank])[tuple(slices)]
     for step in range(1, num_ranks):
         peer = (rank + step) % num_ranks
-        peer_chunk = typing.cast(EagerTensorProtocol, all_ranks_data[peer])[tuple(slices)]
+        peer_chunk = as_tensor(all_ranks_data[peer])[tuple(slices)]
         accum = _combine_ring_chunks(mx_mod, accum, peer_chunk, red_op)
     return accum
 
@@ -839,14 +840,14 @@ def _mlx_reduce_scatter(backend_module: BackendModuleProtocol | None, tensor: Ea
         return _mlx_native_reduce_scatter(mx_mod, tensor, kwargs)
 
     all_ranks_data = kwargs.get("all_ranks_data")
-    scatter_dim = int(typing.cast(int, kwargs.get("scatter_dim", 0)))
+    scatter_dim = int(as_int(kwargs.get("scatter_dim", 0)))
     red_op = str(kwargs.get("op_type", "SUM")).upper()
-    rank = int(typing.cast(int, kwargs.get("rank", 0)))
+    rank = int(as_int(kwargs.get("rank", 0)))
 
     if all_ranks_data:
-        return typing.cast(EagerValue, typing.cast("EagerCallableProtocol", _mlx_ring_reduce_scatter)(mx_mod, all_ranks_data, scatter_dim, rank, red_op))
+        return as_tensor(as_callable(_mlx_ring_reduce_scatter)(mx_mod, all_ranks_data, scatter_dim, rank, red_op))
 
-    world_size = int(typing.cast(int, kwargs.get("world_size", 1)))
+    world_size = int(as_int(kwargs.get("world_size", 1)))
     if hasattr(tensor, "shape"):
         if world_size <= 1:
             return tensor

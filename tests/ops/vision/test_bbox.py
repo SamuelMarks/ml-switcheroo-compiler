@@ -8,9 +8,10 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.bbox import _extract_bounding_boxes_eager, crop, crop_and_resize, crop_images, draw_bounding_boxes, extract_bounding_boxes, extract_patches, pad_images, pad_to_bounding_box
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
@@ -49,14 +50,14 @@ def test_vision_bbox_funcs(mocker: EagerTensorProtocol) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
     setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(crop_and_resize(t, t, t, (10, 10)), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(extract_bounding_boxes(t, t, t, crop_size=10), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(crop(t, 1, 1, 10, 10), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(pad_to_bounding_box(t, 1, 1, 10, 10), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(draw_bounding_boxes(t, t, t), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(crop_images(t, (1, 1, 1, 1)), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(extract_patches(t, (10, 10)), "config")).shape == (2, 3)
-    assert typing.cast("EagerTensorProtocol", getattr(pad_images(t, (1, 1, 1, 1), (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(getattr(crop_and_resize(t, t, t, (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(getattr(extract_bounding_boxes(t, t, t, crop_size=10), "config")).shape == (2, 3)
+    assert as_tensor(getattr(crop(t, 1, 1, 10, 10), "config")).shape == (2, 3)
+    assert as_tensor(getattr(pad_to_bounding_box(t, 1, 1, 10, 10), "config")).shape == (2, 3)
+    assert as_tensor(getattr(draw_bounding_boxes(t, t, t), "config")).shape == (2, 3)
+    assert as_tensor(getattr(crop_images(t, (1, 1, 1, 1)), "config")).shape == (2, 3)
+    assert as_tensor(getattr(extract_patches(t, (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(getattr(pad_images(t, (1, 1, 1, 1), (10, 10)), "config")).shape == (2, 3)
 
 
 def test_extract_bounding_boxes_eager_extra(mocker: EagerTensorProtocol) -> None:
@@ -97,6 +98,6 @@ def test_bbox_opdef_infer_shape() -> None:
         shape = (1, 2, 3)
 
     t = DummyTensor()
-    assert typing.cast("EagerCallableProtocol", ExtractBoundingBoxes)().infer_shape(t) == (1, 2, 3)
-    assert typing.cast("EagerCallableProtocol", Iou)().infer_shape(t) == (1, 2, 3)
-    assert typing.cast("EagerCallableProtocol", Nms)().infer_shape(t) == (1, 2, 3)
+    assert as_callable(ExtractBoundingBoxes)().infer_shape(t) == (1, 2, 3)
+    assert as_callable(Iou)().infer_shape(t) == (1, 2, 3)
+    assert as_callable(Nms)().infer_shape(t) == (1, 2, 3)

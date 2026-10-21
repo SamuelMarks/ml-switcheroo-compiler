@@ -6,7 +6,6 @@ import typing
 from unittest.mock import patch
 
 import numpy as np
-from ml_switcheroo_ir import AttributeValue, LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
@@ -30,9 +29,10 @@ from ml_switcheroo_compiler.transforms.passes.vectorization import (
     vectorization_pass,
     vectorize_graph,
 )
+from tests.testing_utils import as_attrs, as_callable, as_node, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 device = Device(DeviceType.CPU, 0)
 
@@ -41,7 +41,7 @@ def test_vmap_no_tensor_args() -> None:
     """Test calling eager vmap when no arguments are Tensors."""
     with ConfigContext(eager_mode=True):
         f = vmap(lambda: 42)
-        assert typing.cast("EagerCallableProtocol", f)() == 42
+        assert as_callable(f)() == 42
 
 
 def test_vmap_backend_without_asarray() -> None:
@@ -63,14 +63,14 @@ def test_vmap_backend_without_asarray() -> None:
 
     with patch("ml_switcheroo_compiler.ops.vmap.get_active_backend", return_value=BackendNoAsarray()):
         res = _eager_vmap(lambda t: t, 0, 0, (x,))
-        assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerTensorProtocol", getattr(res, "data")), typing.cast("EagerCallableProtocol", np.array)([1, 2]))
+        assert as_callable(np.array_equal)(as_tensor(getattr(res, "data")), as_callable(np.array)([1, 2]))
 
 
 def test_evaluate_static_predicate_numpy_item() -> None:
     """Test evaluate_static_predicate with a numpy scalar having .item()."""
     g = IRGraph()
     np_bool = np.bool_(True)
-    g.nodes["c_np"] = IRNode(id="c_np", op_type="Constant", attributes=typing.cast("dict[str, AttributeValue]", {"value": np_bool}))
+    g.nodes["c_np"] = IRNode(id="c_np", op_type="Constant", attributes=as_attrs({"value": np_bool}))
     assert evaluate_static_predicate(g, "c_np") is True
 
 
@@ -126,9 +126,9 @@ def test_control_flow_opt_edge_cases() -> None:
 
     # Non-IRNode in graph
     g3 = IRGraph()
-    g3.nodes["not_ir"] = typing.cast("LogicalNode", "just_a_string")
+    g3.nodes["not_ir"] = as_node("just_a_string")
     opt3 = control_flow_optimization_pass(g3)
-    assert typing.cast("EagerValue", opt3.nodes["not_ir"]) == "just_a_string"
+    assert as_tensor(opt3.nodes["not_ir"]) == "just_a_string"
 
 
 def test_parallel_scan_edge_cases() -> None:
@@ -148,7 +148,7 @@ def test_parallel_scan_edge_cases() -> None:
     body = IRGraph()
     body.nodes["add"] = IRNode(id="add", op_type="Add", inputs=["x", "y"])
     g.nodes["xs"] = IRNode(id="xs", op_type="Input", inputs=[], shape_metadata=(5,))
-    g.nodes["scan_single"] = IRNode(id="scan_single", op_type="Scan", inputs=["xs"], attributes=typing.cast("dict[str, AttributeValue]", {"body": body}))
+    g.nodes["scan_single"] = IRNode(id="scan_single", op_type="Scan", inputs=["xs"], attributes=as_attrs({"body": body}))
     opt = parallel_scan_pass(g)
     assert opt.nodes["scan_single"].op_type == "Identity"
     assert any("parallel_cumsum" in nid for nid in opt.nodes)
@@ -244,7 +244,7 @@ def test_control_flow_opt_input_output_skipping() -> None:
         id="cond_node",
         op_type="Cond",
         inputs=["pred_const"],
-        attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": tb, "else_branch": fb}),
+        attributes=as_attrs({"then_branch": tb, "else_branch": fb}),
     )
 
     opt = control_flow_optimization_pass(g)

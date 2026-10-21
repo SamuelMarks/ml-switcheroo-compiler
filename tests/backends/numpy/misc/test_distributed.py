@@ -9,9 +9,10 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_all_gather, _np_all_reduce, _np_all_to_all, _np_axis_index, _np_broadcast, _np_reduce, _np_reduce_scatter, _np_shard_tensor, set_np_distributed_context
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_axis_index() -> None:
@@ -69,12 +70,12 @@ def test_np_distributed_context() -> None:
     _np_all_reduce(np, t)
     _np_all_gather(np, t)
     _np_reduce_scatter(np, t)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_all_to_all)(np, t), t)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_reduce)(np, t), t)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_shard_tensor)(np, t), t)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", _np_broadcast)(np, t), t)
+    assert as_callable(np.array_equal)(as_callable(_np_all_to_all)(np, t), t)
+    assert as_callable(np.array_equal)(as_callable(_np_reduce)(np, t), t)
+    assert as_callable(np.array_equal)(as_callable(_np_shard_tensor)(np, t), t)
+    assert as_callable(np.array_equal)(as_callable(_np_broadcast)(np, t), t)
     assert np.array_equal(dist_mod._tcp_dist_ctx.all_reduce_ring(t), t)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(typing.cast("EagerCallableProtocol", dist_mod._tcp_dist_ctx.all_gather_tensors)(t)[0], t)
+    assert as_callable(np.array_equal)(as_callable(dist_mod._tcp_dist_ctx.all_gather_tensors)(t)[0], t)
 
 
 def test_distributed_initialize_timeout() -> None:
@@ -199,20 +200,20 @@ def test_np_ops_coverage() -> None:
     """Test function test_np_ops_coverage."""
     dmod._tcp_dist_ctx.world_size = 2
     dmod._tcp_dist_ctx.rank = 0
-    setattr(dmod._tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: typing.cast("EagerCallableProtocol", np.array)([5.0]) if op == "sum" else typing.cast("EagerCallableProtocol", np.array)([3.0]))
+    setattr(dmod._tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: as_callable(np.array)([5.0]) if op == "sum" else as_callable(np.array)([3.0]))
     setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])])
     t = np.array([2.0])
-    assert typing.cast("EagerTensorProtocol", getattr(_np_all_reduce(np, t, op_type="sum"), "item"))() == 5.0
+    assert as_tensor(getattr(_np_all_reduce(np, t, op_type="sum"), "item"))() == 5.0
     setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])])
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce(np, t, op_type="sum"), "item"))() == 5.0
-    assert typing.cast("EagerTensorProtocol", getattr(_np_all_reduce(np, t, op_type="max"), "item"))() == 3.0
+    assert as_tensor(getattr(_np_reduce(np, t, op_type="sum"), "item"))() == 5.0
+    assert as_tensor(getattr(_np_all_reduce(np, t, op_type="max"), "item"))() == 3.0
     res = _np_all_gather(np, t, axis=0)
-    assert typing.cast("EagerCallableProtocol", np.array_equal)(res, [2.0, 3.0])
+    assert as_callable(np.array_equal)(res, [2.0, 3.0])
     t_rs = np.array([1.0, 2.0])
     setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0, 4.0])])
-    assert typing.cast("EagerTensorProtocol", getattr(_np_reduce_scatter(np, t_rs, op_type="sum"), "item"))() == 4.0
+    assert as_tensor(getattr(_np_reduce_scatter(np, t_rs, op_type="sum"), "item"))() == 4.0
     a2a = _np_all_to_all(np, t_rs)
-    assert typing.cast("EagerCallableProtocol", len)(a2a) == 2
+    assert as_callable(len)(a2a) == 2
 
 
 def test_tcp_dist_ctx_connection_refused() -> None:

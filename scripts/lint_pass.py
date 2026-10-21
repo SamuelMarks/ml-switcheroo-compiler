@@ -25,8 +25,8 @@ def _node_is_verification(sub: ast.AST) -> bool:
         return True
     if isinstance(sub, ast.Call):
         target: ast.expr = sub.func
-        if isinstance(target, ast.Call) and ((isinstance(target.func, ast.Name) and target.func.id == "cast") or (isinstance(target.func, ast.Attribute) and target.func.attr == "cast")) and len(target.args) == 2:
-            target = target.args[1]
+        if isinstance(target, ast.Call) and target.args:
+            target = target.args[-1]
         if isinstance(target, ast.Name) and (target.id.startswith("assert") or target.id.startswith("_check") or target.id.startswith("verify") or target.id.startswith("_test") or target.id.startswith("_run")):
             return True
         if isinstance(target, ast.Attribute) and (target.attr.startswith("assert") or target.attr in ("raises", "warns", "fail", "approx") or target.attr.startswith("check") or target.attr.startswith("verify")):

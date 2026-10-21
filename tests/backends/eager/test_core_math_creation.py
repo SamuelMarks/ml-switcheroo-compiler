@@ -17,10 +17,10 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_creation import (
     _ogrid,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_math_creation_coverage() -> None:
@@ -97,19 +97,19 @@ def test_math_creation_coverage() -> None:
             return "ogrid_res"
 
     backend = MockBackend()
-    assert _fromfunction(typing.cast("BackendModuleProtocol", backend), lambda i: i, (3,)) == "fromfunction_res"
-    assert _from_dlpack(typing.cast("BackendModuleProtocol", backend), None) == "from_dlpack_res"
-    assert _fromiter(typing.cast("BackendModuleProtocol", backend), [1, 2], float) == "fromiter_res"
-    assert _frompyfunc(typing.cast("BackendModuleProtocol", backend), lambda x: x, 1, 1) == "frompyfunc_res"
-    assert _geomspace(typing.cast("BackendModuleProtocol", backend), 1, 1000, 4) == "geomspace_res"
-    assert _mgrid(typing.cast("BackendModuleProtocol", backend), slice(0, 5)) == "mgrid_res"
-    assert _ogrid(typing.cast("BackendModuleProtocol", backend), slice(0, 5)) == "ogrid_res"
+    assert _fromfunction(as_mod(backend), lambda i: i, (3,)) == "fromfunction_res"
+    assert _from_dlpack(as_mod(backend), None) == "from_dlpack_res"
+    assert _fromiter(as_mod(backend), [1, 2], float) == "fromiter_res"
+    assert _frompyfunc(as_mod(backend), lambda x: x, 1, 1) == "frompyfunc_res"
+    assert _geomspace(as_mod(backend), 1, 1000, 4) == "geomspace_res"
+    assert _mgrid(as_mod(backend), slice(0, 5)) == "mgrid_res"
+    assert _ogrid(as_mod(backend), slice(0, 5)) == "ogrid_res"
 
     # Test _np_fromfunction, _np_fromiter, _np_frompyfunc
     # When backend has the function
-    assert _np_fromfunction(typing.cast("BackendModuleProtocol", backend), lambda i: i, (3,)) == "fromfunction_res"
-    assert _np_fromiter(typing.cast("BackendModuleProtocol", backend), [1, 2], float) == "fromiter_res"
-    assert _np_frompyfunc(typing.cast("BackendModuleProtocol", backend), lambda x: x, 1, 1) == "frompyfunc_res"
+    assert _np_fromfunction(as_mod(backend), lambda i: i, (3,)) == "fromfunction_res"
+    assert _np_fromiter(as_mod(backend), [1, 2], float) == "fromiter_res"
+    assert _np_frompyfunc(as_mod(backend), lambda x: x, 1, 1) == "frompyfunc_res"
 
     # When backend lacks the function -> fallbacks to numpy
     class EmptyBackend:
@@ -118,14 +118,14 @@ def test_math_creation_coverage() -> None:
         pass
 
     empty_backend = EmptyBackend()
-    fn_res = _np_fromfunction(typing.cast("BackendModuleProtocol", empty_backend), lambda i, j: i + j, (2, 2), dtype=int)
-    assert typing.cast("EagerTensorProtocol", getattr(fn_res, "shape")) == (2, 2)
+    fn_res = _np_fromfunction(as_mod(empty_backend), lambda i, j: i + j, (2, 2), dtype=int)
+    assert as_tensor(getattr(fn_res, "shape")) == (2, 2)
 
-    it_res = _np_fromiter(typing.cast("BackendModuleProtocol", empty_backend), typing.cast("EagerValue", (x * 2 for x in range(3))), dtype=int)
-    assert typing.cast("EagerCallableProtocol", list)(it_res) == [0, 2, 4]
+    it_res = _np_fromiter(as_mod(empty_backend), as_tensor(x * 2 for x in range(3)), dtype=int)
+    assert as_callable(list)(it_res) == [0, 2, 4]
 
-    pyf = _np_frompyfunc(typing.cast("BackendModuleProtocol", empty_backend), lambda x: x * 3, 1, 1)
-    assert typing.cast("EagerCallableProtocol", pyf)(5) == 15
+    pyf = _np_frompyfunc(as_mod(empty_backend), lambda x: x * 3, 1, 1)
+    assert as_callable(pyf)(5) == 15
 
     # Registry verification
     for op_name in [

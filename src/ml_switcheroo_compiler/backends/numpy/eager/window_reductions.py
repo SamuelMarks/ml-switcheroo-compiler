@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window, _segment_sum
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
@@ -23,7 +21,7 @@ def _np_reduce_window(backend_module: BackendModuleProtocol, *args: EagerValue, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", _reduce_window)(*args, **kwargs)
+    return as_callable(_reduce_window)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SegmentSum")
@@ -38,7 +36,7 @@ def _np_segment_sum(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerCallableProtocol", _segment_sum)(*args, **kwargs)
+    return as_callable(_segment_sum)(*args, **kwargs)
 
 
 @numpy_eager_registry.register("SegmentMax")
@@ -57,10 +55,10 @@ def _np_segment_max(backend_module: BackendModuleProtocol, data: EagerValue, seg
     if num_segments is None:
         num_segments = getattr(np, "max")(segment_ids) + 1
     out = np.full((num_segments,) + getattr(data, "shape")[1:], -np.inf, dtype=getattr(data, "dtype"))
-    for i in range(typing.cast("int", num_segments)):
+    for i in range(as_int(num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            typing.cast(EagerTensorProtocol, out)[i] = np.max(getattr(data, "__getitem__")(mask), axis=0)
+            as_tensor(out)[i] = np.max(getattr(data, "__getitem__")(mask), axis=0)
     return out
 
 
@@ -80,10 +78,10 @@ def _np_segment_min(backend_module: BackendModuleProtocol, data: EagerValue, seg
     if num_segments is None:
         num_segments = getattr(np, "max")(segment_ids) + 1
     out = np.full((num_segments,) + getattr(data, "shape")[1:], np.inf, dtype=getattr(data, "dtype"))
-    for i in range(typing.cast("int", num_segments)):
+    for i in range(as_int(num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            typing.cast(EagerTensorProtocol, out)[i] = np.min(getattr(data, "__getitem__")(mask), axis=0)
+            as_tensor(out)[i] = np.min(getattr(data, "__getitem__")(mask), axis=0)
     return out
 
 
@@ -103,10 +101,10 @@ def _np_segment_prod(backend_module: BackendModuleProtocol, data: EagerValue, se
     if num_segments is None:
         num_segments = getattr(np, "max")(segment_ids) + 1
     out = np.ones((num_segments,) + getattr(data, "shape")[1:], dtype=getattr(data, "dtype"))
-    for i in range(typing.cast("int", num_segments)):
+    for i in range(as_int(num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            typing.cast(EagerTensorProtocol, out)[i] = np.prod(getattr(data, "__getitem__")(mask), axis=0)
+            as_tensor(out)[i] = np.prod(getattr(data, "__getitem__")(mask), axis=0)
     return out
 
 

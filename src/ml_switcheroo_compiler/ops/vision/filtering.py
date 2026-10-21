@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -32,7 +30,7 @@ def gaussian_blur(images: Tensor, config_obj: TensorOrScalar = None, **kwargs: T
             kernel_size = (kernel_size, kernel_size)
         if isinstance(sigma, (float, int)):
             sigma = (float(sigma), float(sigma))
-        config_obj = typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", BlurConfig)(kernel_size=kernel_size, sigma=sigma, data_format=typing.cast("str | None", kwargs.get("data_format", None))))
+        config_obj = BlurConfig(kernel_size=kernel_size, sigma=sigma, data_format=kwargs.get("data_format", None))
 
     padding = kwargs.get("padding", "same")
 

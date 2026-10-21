@@ -7,9 +7,10 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.nn.initializers as init
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class DummyOps:
@@ -55,24 +56,24 @@ def test_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
     assert init._compute_fans((4,)) == (4, 4)
     assert init._compute_fans((3, 3, 16, 32)) == (144, 288)
 
-    assert typing.cast("EagerTensorProtocol", init.zeros(None, (1,))) == typing.cast("EagerTensorProtocol", "zeros")
-    assert typing.cast("EagerTensorProtocol", init.ones(None, (1,))) == typing.cast("EagerTensorProtocol", "ones")
-    assert typing.cast("EagerCallableProtocol", init.constant)(42)(None, (1,)) == "full"
-    assert typing.cast("EagerCallableProtocol", init.uniform)(1.0)(None, (2, 3)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.normal)(1.0, "float32")(None, (2, 3)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.truncated_normal)(1.0, "float32", -2.0, 2.0)(None, (2, 3)) == "scalar_mul"
+    assert as_tensor(init.zeros(None, (1,))) == as_tensor("zeros")
+    assert as_tensor(init.ones(None, (1,))) == as_tensor("ones")
+    assert as_callable(init.constant)(42)(None, (1,)) == "full"
+    assert as_callable(init.uniform)(1.0)(None, (2, 3)) == "scalar_mul"
+    assert as_callable(init.normal)(1.0, "float32")(None, (2, 3)) == "scalar_mul"
+    assert as_callable(init.truncated_normal)(1.0, "float32", -2.0, 2.0)(None, (2, 3)) == "scalar_mul"
 
-    assert typing.cast("EagerCallableProtocol", init.orthogonal)(1.0)(None, (1,)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.orthogonal)(1.0)(None, (3, 3)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.delta_orthogonal)(1.0)(None, (3, 3, 4)) == "scalar_mul"
+    assert as_callable(init.orthogonal)(1.0)(None, (1,)) == "scalar_mul"
+    assert as_callable(init.orthogonal)(1.0)(None, (3, 3)) == "scalar_mul"
+    assert as_callable(init.delta_orthogonal)(1.0)(None, (3, 3, 4)) == "scalar_mul"
 
-    assert typing.cast("EagerCallableProtocol", init.variance_scaling)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(init, "InitializerConfig")))(scale=1.0, mode="fan_in", distribution="truncated_normal"))(None, (2, 4)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.variance_scaling)(typing.cast("EagerCallableProtocol", getattr(init, "InitializerConfig"))(scale=1.0, mode="fan_out", distribution="normal"))(None, (2, 4), "float32") == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.variance_scaling)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(init, "InitializerConfig")))(scale=1.0, mode="fan_avg", distribution="uniform"))(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.variance_scaling)(as_callable(as_tensor(getattr(init, "InitializerConfig")))(scale=1.0, mode="fan_in", distribution="truncated_normal"))(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.variance_scaling)(as_callable(getattr(init, "InitializerConfig"))(scale=1.0, mode="fan_out", distribution="normal"))(None, (2, 4), "float32") == "scalar_mul"
+    assert as_callable(init.variance_scaling)(as_callable(as_tensor(getattr(init, "InitializerConfig")))(scale=1.0, mode="fan_avg", distribution="uniform"))(None, (2, 4)) == "scalar_mul"
 
-    assert typing.cast("EagerCallableProtocol", init.glorot_uniform)()(None, (2, 4)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.glorot_normal)()(None, (2, 4)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.he_uniform)()(None, (2, 4)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.he_normal)()(None, (2, 4)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.lecun_uniform)()(None, (2, 4)) == "scalar_mul"
-    assert typing.cast("EagerCallableProtocol", init.lecun_normal)()(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.glorot_uniform)()(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.glorot_normal)()(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.he_uniform)()(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.he_normal)()(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.lecun_uniform)()(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.lecun_normal)()(None, (2, 4)) == "scalar_mul"

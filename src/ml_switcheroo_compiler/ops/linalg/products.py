@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
@@ -76,7 +74,7 @@ class Matmul(OpDef):
         """
         if isinstance(a, tuple) and isinstance(b, tuple):
             try:
-                return matmul_shape(typing.cast("tuple[int | str, ...]", a), typing.cast("tuple[int | str, ...]", b))
+                return matmul_shape(a, b)
             except ValueError:
                 return None
         return None
@@ -137,8 +135,8 @@ class Trace(OpDef):
         axis1 = kwargs.get("axis1", 0)
         axis2 = kwargs.get("axis2", 1)
         if len(shape) >= 2:
-            shape.pop(max(int(typing.cast(int, axis1)), int(typing.cast(int, axis2))))
-            shape.pop(min(int(typing.cast(int, axis1)), int(typing.cast(int, axis2))))
+            shape.pop(max(int(as_int(axis1)), int(as_int(axis2))))
+            shape.pop(min(int(as_int(axis1)), int(as_int(axis2))))
         return tuple(shape)
 
 

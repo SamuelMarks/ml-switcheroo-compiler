@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -189,6 +187,6 @@ class DPNPGenerator(PythonStringGenerator):
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return typing.cast(EagerValue, evaluated)
+            return as_tensor(evaluated)
 
         return aot_dpnp_runner

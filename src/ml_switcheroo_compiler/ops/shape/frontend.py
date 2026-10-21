@@ -1,6 +1,6 @@
 # pylint: disable=duplicate-code
 
-"""Define shape, memory, and movement operations for Tensor Anys.
+"""Define shape, memory, and movement operations for Tensor objects.
 
 This module provides functions to manipulate tensor shapes, dimensions, and memory
 layouts, supporting both eager execution (using NumPy) and lazy execution (by tracing
@@ -12,10 +12,10 @@ from __future__ import annotations
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
 
@@ -36,7 +36,7 @@ def expand_dims(a: TensorOrScalar, axis: int) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("ExpandDims")().infer_shape(a, axis=axis)
-    return _emit_shape_node("ExpandDims", [a], {"axis": axis}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("ExpandDims", [a], {"axis": axis}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def argwhere(a: TensorOrScalar) -> TensorOrScalar:
@@ -51,7 +51,7 @@ def argwhere(a: TensorOrScalar) -> TensorOrScalar:
     if config.eager_mode:
         data = get_active_backend().execute_op("Argwhere", getattr(a, "data", a))
         return Tensor(data, TensorConfig(getattr(data, "shape"), "int64", getattr(a, "device", None)))
-    return _emit_shape_node("Argwhere", [a], {}, typing.cast("Sequence[int | str]", (None, None)), "int64")
+    return _emit_shape_node("Argwhere", [a], {}, (None, None), "int64")
 
 
 def argpartition(a: TensorOrScalar, kth: TensorOrScalar, axis: int = -1, kind: str = "introselect", order: TensorOrScalar = None) -> TensorOrScalar:
@@ -131,7 +131,7 @@ def compress(condition: TensorOrScalar, a: TensorOrScalar, axis: TensorOrScalar 
         "Compress",
         [condition, a],
         {"axis": axis, "out": out},
-        typing.cast("Sequence[int | str]", (None,)),
+        (None,),
         getattr(a, "dtype", "float32"),
     )
 
@@ -154,7 +154,7 @@ def insert(arr: TensorOrScalar, obj: TensorOrScalar, values: TensorOrScalar, axi
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Insert")().infer_shape(arr, obj=obj, values=values, axis=axis)
-    return _emit_shape_node("Insert", [arr, values] if hasattr(values, "shape") else [arr], {"obj": obj, "axis": axis}, typing.cast("Sequence[int | str]", out_shape), getattr(arr, "dtype", "float32"))
+    return _emit_shape_node("Insert", [arr, values] if hasattr(values, "shape") else [arr], {"obj": obj, "axis": axis}, out_shape, getattr(arr, "dtype", "float32"))
 
 
 def fill_diagonal(a: TensorOrScalar, val: TensorOrScalar, wrap: bool = False) -> TensorOrScalar:
@@ -174,7 +174,7 @@ def fill_diagonal(a: TensorOrScalar, val: TensorOrScalar, wrap: bool = False) ->
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("FillDiagonal")().infer_shape(a, val=val, wrap=wrap)
-    return _emit_shape_node("FillDiagonal", [a, val] if hasattr(val, "shape") else [a], {"val": val, "wrap": wrap}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("FillDiagonal", [a, val] if hasattr(val, "shape") else [a], {"val": val, "wrap": wrap}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def moveaxis(a: TensorOrScalar, source: TensorOrScalar, destination: TensorOrScalar) -> TensorOrScalar:
@@ -195,7 +195,7 @@ def moveaxis(a: TensorOrScalar, source: TensorOrScalar, destination: TensorOrSca
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Moveaxis")().infer_shape(a, source=source, destination=destination)
-    return _emit_shape_node("Moveaxis", [a], {"source": source, "destination": destination}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Moveaxis", [a], {"source": source, "destination": destination}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def permute(a: Tensor, dims: tuple[int, ...] | list[int] | None = None) -> Tensor:
@@ -215,7 +215,7 @@ def permute(a: Tensor, dims: tuple[int, ...] | list[int] | None = None) -> Tenso
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Permute")().infer_shape(a, dims=dims)
-    return _emit_shape_node("Permute", [a], {"dims": dims}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Permute", [a], {"dims": dims}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def swapaxes(a: TensorOrScalar, axis1: int, axis2: int) -> TensorOrScalar:
@@ -236,7 +236,7 @@ def swapaxes(a: TensorOrScalar, axis1: int, axis2: int) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Swapaxes")().infer_shape(a, axis1=axis1, axis2=axis2)
-    return _emit_shape_node("Swapaxes", [a], {"axis1": axis1, "axis2": axis2}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Swapaxes", [a], {"axis1": axis1, "axis2": axis2}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def roll(a: TensorOrScalar, shift: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
@@ -257,7 +257,7 @@ def roll(a: TensorOrScalar, shift: TensorOrScalar, axis: TensorOrScalar = None) 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Roll")().infer_shape(a, shift=shift, axis=axis)
-    return _emit_shape_node("Roll", [a], {"shift": shift, "axis": axis}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Roll", [a], {"shift": shift, "axis": axis}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def atleast_1d(a: TensorOrScalar) -> TensorOrScalar:
@@ -276,7 +276,7 @@ def atleast_1d(a: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Atleast1d")().infer_shape(a)
-    return _emit_shape_node("Atleast1d", [a], {}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Atleast1d", [a], {}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def atleast_2d(a: TensorOrScalar) -> TensorOrScalar:
@@ -295,7 +295,7 @@ def atleast_2d(a: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Atleast2d")().infer_shape(a)
-    return _emit_shape_node("Atleast2d", [a], {}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Atleast2d", [a], {}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def atleast_3d(a: TensorOrScalar) -> TensorOrScalar:
@@ -314,7 +314,7 @@ def atleast_3d(a: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Atleast3d")().infer_shape(a)
-    return _emit_shape_node("Atleast3d", [a], {}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Atleast3d", [a], {}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def _get_squeeze_shape(a: Tensor, axis: int | tuple[int, ...] | list[int] | None) -> tuple[int, ...]:
@@ -350,7 +350,7 @@ def squeeze(a: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
         return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(a, "dtype", "float32"), getattr(a, "device", None)))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    shape_val = typing.cast("TypedVariadicCallable[Sequence[int | str]]", _get_squeeze_shape)(typing.cast("Tensor", a), axis)
+    shape_val = typing.cast("TypedVariadicCallable[Sequence[int | str]]", _get_squeeze_shape)(as_tensor_obj(a), axis)
     return _emit_shape_node("Squeeze", [a], {"axis": axis}, shape_val, getattr(a, "dtype", "float32"))
 
 
@@ -370,7 +370,7 @@ def diagflat(v: TensorOrScalar, k: int = 0) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Diagflat")().infer_shape(v, k=k)
-    return _emit_shape_node("Diagflat", [v], {"k": k}, typing.cast("Sequence[int | str]", out_shape), getattr(v, "dtype", "float32"))
+    return _emit_shape_node("Diagflat", [v], {"k": k}, out_shape, getattr(v, "dtype", "float32"))
 
 
 def block(arrays: TensorOrScalar) -> TensorOrScalar:
@@ -388,7 +388,7 @@ def block(arrays: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Block")().infer_shape(arrays)
-    return typing.cast(TensorOrScalar, typing.cast("EagerCallableProtocol", _emit_shape_node)("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, typing.cast("Sequence[int | str]", out_shape), "float32"))
+    return as_tensor(as_callable(_emit_shape_node)("Block", [arrays] if hasattr(arrays, "shape") else arrays, {}, out_shape, "float32"))
 
 
 def delete(arr: TensorOrScalar, obj: TensorOrScalar, axis: TensorOrScalar = None) -> TensorOrScalar:
@@ -408,7 +408,7 @@ def delete(arr: TensorOrScalar, obj: TensorOrScalar, axis: TensorOrScalar = None
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Delete")().infer_shape(arr, obj=obj, axis=axis)
-    return _emit_shape_node("Delete", [arr], {"obj": obj, "axis": axis}, typing.cast("Sequence[int | str]", out_shape), getattr(arr, "dtype", "float32"))
+    return _emit_shape_node("Delete", [arr], {"obj": obj, "axis": axis}, out_shape, getattr(arr, "dtype", "float32"))
 
 
 def diag_indices(n: int, ndim: int = 2) -> TensorOrScalar:
@@ -431,7 +431,7 @@ def diag_indices(n: int, ndim: int = 2) -> TensorOrScalar:
 
     out_shape = get_op("DiagIndices")().infer_shape(n, ndim=ndim)
     t_n = Tensor(n, TensorConfig((), "int64", None))
-    node = _emit_shape_node("DiagIndices", [t_n], {"ndim": ndim}, typing.cast("Sequence[int | str]", out_shape), "int64")
+    node = _emit_shape_node("DiagIndices", [t_n], {"ndim": ndim}, out_shape, "int64")
     out_tensors = []
     from ml_switcheroo_compiler.tracing import builder
 
@@ -462,7 +462,7 @@ def diag_indices_from(arr: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("DiagIndicesFrom")().infer_shape(arr)
-    node = _emit_shape_node("DiagIndicesFrom", [arr], {}, typing.cast("Sequence[int | str]", out_shape), "int64")
+    node = _emit_shape_node("DiagIndicesFrom", [arr], {}, out_shape, "int64")
     out_tensors = []
     from ml_switcheroo_compiler.tracing import builder
 
@@ -492,7 +492,7 @@ def size(input: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     from ml_switcheroo_compiler.ops.base import get_op
 
     out_shape = get_op("Size")().infer_shape(input, **kwargs)
-    return _emit_shape_node("Size", [input], kwargs, typing.cast("Sequence[int | str]", out_shape), "int32")
+    return _emit_shape_node("Size", [input], kwargs, out_shape, "int32")
 
 
 def reshape(a: Tensor, newshape: int | tuple[int, ...] | list[int]) -> Tensor:
@@ -512,7 +512,7 @@ def reshape(a: Tensor, newshape: int | tuple[int, ...] | list[int]) -> Tensor:
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     out_shape = get_op("Reshape")().infer_shape(a, newshape=newshape)
-    return _emit_shape_node("Reshape", [a], {"newshape": newshape}, typing.cast("Sequence[int | str]", out_shape), getattr(a, "dtype", "float32"))
+    return _emit_shape_node("Reshape", [a], {"newshape": newshape}, out_shape, getattr(a, "dtype", "float32"))
 
 
 def flip(m: Tensor, axis: int | tuple[int, ...] | list[int] | None = None) -> Tensor:

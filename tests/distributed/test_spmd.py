@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_ir import LogicalNode, PartitionSpec
+from ml_switcheroo_ir import PartitionSpec
 
 from ml_switcheroo_compiler.distributed.strategy import MeshShardingStrategy
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
+from tests.testing_utils import as_callable, as_node
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockSharding(PartitionSpec):
@@ -34,10 +35,10 @@ def test_spmd_all_gather(monkeypatch: EagerTensorProtocol) -> None:
         monkeypatch: Test parameter `monkeypatch`.
     """
     graph = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Linear", sharding=typing.cast("EagerCallableProtocol", MockSharding)([None, "x"]))
-    n2 = typing.cast("EagerCallableProtocol", IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=typing.cast("EagerCallableProtocol", MockSharding)(["x", "y"]))
-    graph.nodes["n1"] = typing.cast("LogicalNode", n1)
-    graph.nodes["n2"] = typing.cast("LogicalNode", n2)
+    n1 = as_callable(IRNode)(id="n1", op_type="Linear", sharding=as_callable(MockSharding)([None, "x"]))
+    n2 = as_callable(IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=as_callable(MockSharding)(["x", "y"]))
+    graph.nodes["n1"] = as_node(n1)
+    graph.nodes["n2"] = as_node(n2)
 
     import ml_switcheroo_compiler.transforms.passes.spmd as spmd_mod
 
@@ -56,10 +57,10 @@ def test_spmd_reduce_scatter(monkeypatch: EagerTensorProtocol) -> None:
         monkeypatch: Test parameter `monkeypatch`.
     """
     graph = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Linear", sharding=typing.cast("EagerCallableProtocol", MockSharding)(["x", "y"]))
-    n2 = typing.cast("EagerCallableProtocol", IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=typing.cast("EagerCallableProtocol", MockSharding)(["x", None]))
-    graph.nodes["n1"] = typing.cast("LogicalNode", n1)
-    graph.nodes["n2"] = typing.cast("LogicalNode", n2)
+    n1 = as_callable(IRNode)(id="n1", op_type="Linear", sharding=as_callable(MockSharding)(["x", "y"]))
+    n2 = as_callable(IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=as_callable(MockSharding)(["x", None]))
+    graph.nodes["n1"] = as_node(n1)
+    graph.nodes["n2"] = as_node(n2)
 
     import ml_switcheroo_compiler.transforms.passes.spmd as spmd_mod
 
@@ -74,10 +75,10 @@ def test_spmd_reduce_scatter(monkeypatch: EagerTensorProtocol) -> None:
 def test_spmd_all_reduce() -> None:
     """Test AllReduce injection for reductions."""
     graph = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Linear", sharding=typing.cast("EagerCallableProtocol", MockSharding)(["x"]))
-    n2 = typing.cast("EagerCallableProtocol", IRNode)(id="n2", op_type="Sum", inputs=["n1"], sharding=typing.cast("EagerCallableProtocol", MockSharding)(["x"]))
-    graph.nodes["n1"] = typing.cast("LogicalNode", n1)
-    graph.nodes["n2"] = typing.cast("LogicalNode", n2)
+    n1 = as_callable(IRNode)(id="n1", op_type="Linear", sharding=as_callable(MockSharding)(["x"]))
+    n2 = as_callable(IRNode)(id="n2", op_type="Sum", inputs=["n1"], sharding=as_callable(MockSharding)(["x"]))
+    graph.nodes["n1"] = as_node(n1)
+    graph.nodes["n2"] = as_node(n2)
 
     # We mock rules to ensure AllReduce is triggered for Sum
     import ml_switcheroo_compiler.transforms.passes.spmd as spmd_mod
@@ -93,10 +94,10 @@ def test_spmd_all_reduce() -> None:
 def test_spmd_all_to_all() -> None:
     """Test AllToAll injection."""
     graph = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Linear", sharding=typing.cast("EagerCallableProtocol", MockSharding)(["x", None]))
-    n2 = typing.cast("EagerCallableProtocol", IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=typing.cast("EagerCallableProtocol", MockSharding)([None, "y"]))
-    graph.nodes["n1"] = typing.cast("LogicalNode", n1)
-    graph.nodes["n2"] = typing.cast("LogicalNode", n2)
+    n1 = as_callable(IRNode)(id="n1", op_type="Linear", sharding=as_callable(MockSharding)(["x", None]))
+    n2 = as_callable(IRNode)(id="n2", op_type="Linear", inputs=["n1"], sharding=as_callable(MockSharding)([None, "y"]))
+    graph.nodes["n1"] = as_node(n1)
+    graph.nodes["n2"] = as_node(n2)
 
     import ml_switcheroo_compiler.transforms.passes.spmd as spmd_mod
 
@@ -111,9 +112,9 @@ def test_spmd_all_to_all() -> None:
 def test_mesh_sharding_strategy() -> None:
     """Test the MeshShardingStrategy."""
     graph = IRGraph()
-    n1 = typing.cast("EagerCallableProtocol", IRNode)(id="n1", op_type="Linear", sharding=typing.cast("EagerCallableProtocol", MockSharding)(["x"]))
+    n1 = as_callable(IRNode)(id="n1", op_type="Linear", sharding=as_callable(MockSharding)(["x"]))
     n2 = IRNode(id="n2", op_type="Linear", inputs=["n1"])
-    graph.nodes["n1"] = typing.cast("LogicalNode", n1)
+    graph.nodes["n1"] = as_node(n1)
     graph.nodes["n2"] = n2
 
     strategy = MeshShardingStrategy()

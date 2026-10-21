@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 from .math_special import _dispatch_special
@@ -26,11 +25,11 @@ def _det(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "det"):
-        return typing.cast("EagerValue", func.det(*args, **kwargs))
+        return as_tensor(func.det(*args, **kwargs))
     if hasattr(backend_module, "det"):
-        return typing.cast("EagerValue", getattr(backend_module, "det")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "det")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").det(getattr(backend_module, "asarray")(x)))
+    return as_tensor(getattr(backend_module, "linalg").det(getattr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eig")
@@ -47,11 +46,11 @@ def _eig(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eig"):
-        return typing.cast("EagerValue", func.eig(*args, **kwargs))
+        return as_tensor(func.eig(*args, **kwargs))
     if hasattr(backend_module, "eig"):
-        return typing.cast("EagerValue", getattr(backend_module, "eig")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "eig")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").eig(getattr(backend_module, "asarray")(x)))
+    return as_tensor(getattr(backend_module, "linalg").eig(getattr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eigh")
@@ -68,11 +67,11 @@ def _eigh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigh"):
-        return typing.cast("EagerValue", func.eigh(*args, **kwargs))
+        return as_tensor(func.eigh(*args, **kwargs))
     if hasattr(backend_module, "eigh"):
-        return typing.cast("EagerValue", getattr(backend_module, "eigh")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "eigh")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").eigh(getattr(backend_module, "asarray")(x)))
+    return as_tensor(getattr(backend_module, "linalg").eigh(getattr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eigvals")
@@ -89,11 +88,11 @@ def _eigvals(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigvals"):
-        return typing.cast("EagerValue", func.eigvals(*args, **kwargs))
+        return as_tensor(func.eigvals(*args, **kwargs))
     if hasattr(backend_module, "eigvals"):
-        return typing.cast("EagerValue", getattr(backend_module, "eigvals")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "eigvals")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").eigvals(getattr(backend_module, "asarray")(x)))
+    return as_tensor(getattr(backend_module, "linalg").eigvals(getattr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eigvalsh")
@@ -110,11 +109,11 @@ def _eigvalsh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "eigvalsh"):
-        return typing.cast("EagerValue", func.eigvalsh(*args, **kwargs))
+        return as_tensor(func.eigvalsh(*args, **kwargs))
     if hasattr(backend_module, "eigvalsh"):
-        return typing.cast("EagerValue", getattr(backend_module, "eigvalsh")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "eigvalsh")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").eigvalsh(getattr(backend_module, "asarray")(x)))
+    return as_tensor(getattr(backend_module, "linalg").eigvalsh(getattr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Cholesky")
@@ -131,11 +130,11 @@ def _cholesky(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "cholesky"):
-        return typing.cast("EagerValue", func.cholesky(*args, **kwargs))
+        return as_tensor(func.cholesky(*args, **kwargs))
     if hasattr(backend_module, "cholesky"):
-        return typing.cast("EagerValue", getattr(backend_module, "cholesky")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "cholesky")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").cholesky(getattr(backend_module, "asarray")(x)))
+    return as_tensor(getattr(backend_module, "linalg").cholesky(getattr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("CholeskyEx")
@@ -172,11 +171,11 @@ def _norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "norm"):
-        return typing.cast("EagerValue", func.norm(*args, **kwargs))
+        return as_tensor(func.norm(*args, **kwargs))
     if hasattr(backend_module, "norm"):
-        return typing.cast("EagerValue", getattr(backend_module, "norm")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "norm")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").norm(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(getattr(backend_module, "linalg").norm(getattr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Pinv")
@@ -193,11 +192,11 @@ def _pinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "pinv"):
-        return typing.cast("EagerValue", func.pinv(*args, **kwargs))
+        return as_tensor(func.pinv(*args, **kwargs))
     if hasattr(backend_module, "pinv"):
-        return typing.cast("EagerValue", getattr(backend_module, "pinv")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "pinv")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").pinv(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(getattr(backend_module, "linalg").pinv(getattr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Qr")
@@ -214,11 +213,11 @@ def _qr(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "qr"):
-        return typing.cast("EagerValue", func.qr(*args, **kwargs))
+        return as_tensor(func.qr(*args, **kwargs))
     if hasattr(backend_module, "qr"):
-        return typing.cast("EagerValue", getattr(backend_module, "qr")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "qr")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").qr(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(getattr(backend_module, "linalg").qr(getattr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Svd")
@@ -235,11 +234,11 @@ def _svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "svd"):
-        return typing.cast("EagerValue", func.svd(*args, **kwargs))
+        return as_tensor(func.svd(*args, **kwargs))
     if hasattr(backend_module, "svd"):
-        return typing.cast("EagerValue", getattr(backend_module, "svd")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "svd")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").svd(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(getattr(backend_module, "linalg").svd(getattr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Tensorinv")
@@ -256,11 +255,11 @@ def _tensorinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorinv"):
-        return typing.cast("EagerValue", func.tensorinv(*args, **kwargs))
+        return as_tensor(func.tensorinv(*args, **kwargs))
     if hasattr(backend_module, "tensorinv"):
-        return typing.cast("EagerValue", getattr(backend_module, "tensorinv")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "tensorinv")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").tensorinv(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(getattr(backend_module, "linalg").tensorinv(getattr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Inv")
@@ -277,11 +276,11 @@ def _inv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "inv"):
-        return typing.cast("EagerValue", func.inv(*args, **kwargs))
+        return as_tensor(func.inv(*args, **kwargs))
     if hasattr(backend_module, "inv"):
-        return typing.cast("EagerValue", getattr(backend_module, "inv")(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "inv")(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "linalg").inv(getattr(backend_module, "asarray")(x)))
+    return as_tensor(getattr(backend_module, "linalg").inv(getattr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Vander")
@@ -296,7 +295,7 @@ def _vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "vander")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "vander")(*args, **kwargs))
 
 
 @global_eager_registry.register("Schur")
@@ -328,7 +327,7 @@ def _np_svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """
     func = getattr(backend_module, "svd", getattr(backend_module, "svd", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.svd(*args, **kwargs)
 
 
@@ -346,7 +345,7 @@ def _np_svdvals(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     func = getattr(backend_module, "svdvals", getattr(backend_module, "svdvals", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.svd(*args, **kwargs)[1]
 
 
@@ -364,7 +363,7 @@ def _np_tensorinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """
     func = getattr(backend_module, "tensorinv", getattr(backend_module, "tensorinv", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.tensorinv(*args, **kwargs)
 
 
@@ -382,7 +381,7 @@ def _np_triinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "triinv", getattr(backend_module, "triinv", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.inv(args[0])
 
 
@@ -400,7 +399,7 @@ def _np_uniqueinverse(backend_module: BackendModuleProtocol, *args: EagerValue, 
     """
     func = getattr(backend_module, "uniqueinverse", getattr(backend_module, "uniqueinverse", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unique(args[0], return_inverse=True)
 
 
@@ -418,7 +417,7 @@ def _np_vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "vander", getattr(backend_module, "vander", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).vander(*args, **kwargs)
 
 
@@ -436,5 +435,5 @@ def _np_vectornorm(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "vectornorm", getattr(backend_module, "vectornorm", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.norm(*args, **kwargs)

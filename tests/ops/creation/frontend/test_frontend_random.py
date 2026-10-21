@@ -6,9 +6,10 @@ import typing
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.ops.creation.frontend_random import manual_seed, rand, randint, randn
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_frontend_random() -> None:
@@ -36,15 +37,15 @@ def test_frontend_random() -> None:
     setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
     import ml_switcheroo_compiler.ops.creation.frontend_random as rand_mod
 
-    orig_rand_backend = typing.cast("EagerTensorProtocol", getattr(rand_mod, "get_active_backend"))
+    orig_rand_backend = as_tensor(getattr(rand_mod, "get_active_backend"))
     setattr(rand_mod, "get_active_backend", lambda: DummyBackend())
 
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
-    assert typing.cast("EagerTensorProtocol", getattr(rand(1), "data")) == "Rand"
-    assert typing.cast("EagerTensorProtocol", getattr(randn(1), "data")) == "Randn"
-    assert typing.cast("EagerTensorProtocol", getattr(randint(0, 10, (1,)), "data")) == "Randint"
+    assert as_tensor(getattr(rand(1), "data")) == "Rand"
+    assert as_tensor(getattr(randn(1), "data")) == "Randn"
+    assert as_tensor(getattr(randint(0, 10, (1,)), "data")) == "Randint"
 
     manual_seed(42)
 

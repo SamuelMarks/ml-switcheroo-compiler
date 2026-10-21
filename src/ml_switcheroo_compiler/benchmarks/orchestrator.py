@@ -7,6 +7,7 @@ import multiprocessing
 import pathlib
 import typing
 
+from ml_switcheroo_compiler.backends.eager_registry import as_float
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.benchmarks.config_models import (
     BenchmarkPlan,
@@ -316,14 +317,14 @@ class BenchmarkOrchestrator:
                     raw_latencies = metrics.get("latencies", [])
                     lat_list: list[float] = [float(x) for x in raw_latencies] if isinstance(raw_latencies, list) and raw_latencies else [0.0]
                     stat_metrics = compute_statistical_metrics(lat_list)
-                    mean_lat: float = float(typing.cast(float, stat_metrics["mean_ms"]))
+                    mean_lat: float = float(as_float(stat_metrics["mean_ms"]))
 
                     peak_mem_raw = metrics.get("peak_memory_mb")
                     peak_mem: float | None = float(peak_mem_raw) if isinstance(peak_mem_raw, (int, float)) else None
 
-                    p50: float = float(typing.cast(float, stat_metrics["p50_ms"]))
-                    p95: float = float(typing.cast(float, stat_metrics["p95_ms"]))
-                    p99: float = float(typing.cast(float, stat_metrics["p99_ms"]))
+                    p50: float = float(as_float(stat_metrics["p50_ms"]))
+                    p95: float = float(as_float(stat_metrics["p95_ms"]))
+                    p99: float = float(as_float(stat_metrics["p99_ms"]))
 
                     throughput: float = (1000.0 / mean_lat) * batch_size if mean_lat > 0.0 else 0.0
 

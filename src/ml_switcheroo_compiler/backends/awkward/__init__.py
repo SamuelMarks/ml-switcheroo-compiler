@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 
 from . import eager, generator, types
 from .eager import execute_op
@@ -42,7 +40,7 @@ type.__setattr__(AwkwardGenerator, "unflatten", staticmethod(unflatten))
 type.__setattr__(AwkwardGenerator, "with_field", staticmethod(with_field))
 type.__setattr__(AwkwardGenerator, "unzip", staticmethod(unzip))
 type.__setattr__(AwkwardGenerator, "item", staticmethod(item))
-type.__setattr__(AwkwardGenerator, "execute_op", typing.cast("EagerCallableProtocol", staticmethod)(execute_op))
+type.__setattr__(AwkwardGenerator, "execute_op", as_callable(staticmethod)(execute_op))
 type.__setattr__(AwkwardGenerator, "broadcast_ragged", staticmethod(broadcast_ragged))
 type.__setattr__(AwkwardGenerator, "is_ragged", staticmethod(is_ragged))
 type.__setattr__(AwkwardGenerator, "ragged_shape", staticmethod(ragged_shape))

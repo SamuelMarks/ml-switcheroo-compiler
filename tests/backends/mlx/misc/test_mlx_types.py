@@ -7,9 +7,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 pytest.importorskip("mlx.core")
 
@@ -22,10 +23,10 @@ def test_mlx_types() -> None:
     assert zeros is not None
     import mlx.core as mx
 
-    typing.cast("EagerCallableProtocol", array)(None, [1, 2])
-    typing.cast("EagerCallableProtocol", asarray)(None, [3, 4])
-    typing.cast("EagerCallableProtocol", zeros)(None, (2,))
-    typing.cast("EagerCallableProtocol", item)(None, typing.cast("EagerCallableProtocol", mx.array)([5]))
+    as_callable(array)(None, [1, 2])
+    as_callable(asarray)(None, [3, 4])
+    as_callable(zeros)(None, (2,))
+    as_callable(item)(None, as_callable(mx.array)([5]))
 
 
 def test_mlx_types_asarray_mock() -> None:
@@ -35,7 +36,7 @@ def test_mlx_types_asarray_mock() -> None:
     from ml_switcheroo_compiler.backends.mlx.types import asarray
 
     setattr(mx, "asarray", lambda x: mx.array(x))
-    typing.cast("EagerCallableProtocol", asarray)(None, [1, 2])
+    as_callable(asarray)(None, [1, 2])
     delattr(mx, "asarray")
     assert callable(asarray)
 
@@ -62,7 +63,7 @@ def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
         """
         if name == "mlx":
             return None
-        return typing.cast("EagerValue", getattr(importlib.util, "_find_spec")(name, package))
+        return as_tensor(getattr(importlib.util, "_find_spec")(name, package))
 
     monkeypatch.setattr(importlib.util, "find_spec", mock_find_spec)
     monkeypatch.delitem(sys.modules, "pytest", raising=False)

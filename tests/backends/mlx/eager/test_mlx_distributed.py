@@ -7,10 +7,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_mlx_all_to_all_fallback(mocker: EagerTensorProtocol) -> None:
@@ -33,9 +33,9 @@ def test_mlx_all_to_all_fallback(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    typing.cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    as_callable(mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
-    assert _mlx_all_to_all(typing.cast("BackendModuleProtocol", None), "tensor") == "tensor"
+    assert _mlx_all_to_all(as_mod(None), "tensor") == "tensor"
 
 
 def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
@@ -91,9 +91,9 @@ def test_mlx_reduce_scatter_exception(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    typing.cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    as_callable(mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
-    res = _mlx_reduce_scatter(typing.cast("BackendModuleProtocol", DummyMLX.core), "tensor", group=typing.cast("EagerValue", DummyGroup()))
+    res = _mlx_reduce_scatter(as_mod(DummyMLX.core), "tensor", group=as_tensor(DummyGroup()))
     assert res == "sliced"
 
 
@@ -118,7 +118,7 @@ def test_mlx_reduce_scatter_not_supported(mocker: EagerTensorProtocol) -> None:
 
     import sys
 
-    typing.cast("EagerCallableProtocol", mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
+    as_callable(mocker.patch.dict)(sys.modules, {"mlx": DummyMLX, "mlx.core": DummyMLX.core})
 
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         _mlx_reduce_scatter(None, "tensor")

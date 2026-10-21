@@ -5,10 +5,9 @@ from __future__ import annotations
 import resource
 import sys
 import time
-import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -53,7 +52,7 @@ def _sync_dask_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, 
         return type(result)(computed)
     if hasattr(result, "compute") and callable(getattr(result, "compute")):
         try:
-            return typing.cast(EagerValue, getattr(result, "compute")())
+            return as_tensor(getattr(result, "compute")())
         except Exception:
             return result
     return result

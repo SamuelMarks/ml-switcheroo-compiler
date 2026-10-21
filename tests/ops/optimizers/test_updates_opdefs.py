@@ -10,9 +10,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.optimizers.updates import ApplyAdagrad, ApplyAdam, ApplyFtrl, ApplyRMSProp, apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_updates_extras_old() -> None:
@@ -42,13 +43,13 @@ def test_updates_extras_old() -> None:
 def test_opdefs() -> None:
     """Test function test_opdefs."""
     op1 = ApplyAdam()
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)(None, None, None) == ()
+    assert as_callable(op1.infer_shape)(None, None, None) == ()
     op2 = ApplyAdagrad()
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)(None, None) == ()
+    assert as_callable(op2.infer_shape)(None, None) == ()
     op3 = ApplyFtrl()
-    assert typing.cast("EagerCallableProtocol", op3.infer_shape)(None, None, None) == ()
+    assert as_callable(op3.infer_shape)(None, None, None) == ()
     op4 = ApplyRMSProp()
-    assert typing.cast("EagerCallableProtocol", op4.infer_shape)(None, None, None) == ()
+    assert as_callable(op4.infer_shape)(None, None, None) == ()
 
 
 def _test_updates_extras_full_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -127,13 +128,13 @@ def _test_updates_extras_full_sub_3(_state: dict[str, EagerTensorProtocol]) -> N
 
     import ml_switcheroo_compiler.ops.optimizers.updates as updates
 
-    orig_get = typing.cast("EagerTensorProtocol", getattr(updates, "get_active_backend"))
+    orig_get = as_tensor(getattr(updates, "get_active_backend"))
     setattr(updates, "get_active_backend", lambda: MockBackend())
     try:
-        typing.cast("EagerCallableProtocol", updates.apply_adam)(t, t, t, t, 0.1)
-        typing.cast("EagerCallableProtocol", updates.apply_adagrad)(t, t, t, 0.1)
-        typing.cast("EagerCallableProtocol", updates.apply_ftrl)(t, t, t, t, 0.1)
-        typing.cast("EagerCallableProtocol", updates.apply_rmsprop)(t, t, t, t, 0.1)
+        as_callable(updates.apply_adam)(t, t, t, t, 0.1)
+        as_callable(updates.apply_adagrad)(t, t, t, 0.1)
+        as_callable(updates.apply_ftrl)(t, t, t, t, 0.1)
+        as_callable(updates.apply_rmsprop)(t, t, t, t, 0.1)
     finally:
         setattr(updates, "get_active_backend", orig_get)
     getattr(_state, "update")({"MockBackend": MockBackend, "orig_get": orig_get, "updates": updates})

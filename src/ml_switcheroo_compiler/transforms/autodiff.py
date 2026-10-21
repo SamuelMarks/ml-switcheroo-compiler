@@ -13,20 +13,22 @@ from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 from ml_switcheroo_compiler.core.shape import ShapeLike, TensorOrScalar
 from ml_switcheroo_compiler.ir.core import IRGraph, clone_logical_node
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import JVPRuleCallable
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp
 
 
+@typing.runtime_checkable
 class JvpRuleCallable(typing.Protocol):
     """Protocol for JVP rule functions (both graph-based and expression-based)."""
 
-    def __call__(self, *args: IRGraph | LogicalNode | str | list[str]) -> str | tuple[str, ...]:
+    def __call__(self, *args: IRGraph | LogicalNode | str | list[str]) -> str | tuple[str, ...] | UnconnectedGradients | None:
         """Execute the JVP rule.
 
         Args:
             *args: Rule arguments.
 
         Returns:
-            str | tuple[str, ...]: Output tangent node ID(s) or expression string.
+            str | tuple[str, ...] | UnconnectedGradients | None: Output tangent node ID(s) or expression string.
         """
         ...
 
@@ -345,7 +347,7 @@ def _init_adjoints(
     Args:
         new_graph (LogicalGraph): The gradient computation graph.
         output_ids (list[str]): Target output node IDs.
-        cotangent_id (typing.Optional[str | Sequence[str] | dict[str, str]]): Optional seed cotangent(s).
+        cotangent_id (str | Sequence[str] | dict[str, str] | None): Optional seed cotangent(s).
 
     Returns:
         dict[str, str]: Initial mapping of node IDs to adjoint node IDs.
@@ -384,7 +386,7 @@ def grad(graph: LogicalGraph, wrt: list[str], output_id: str | Sequence[str], co
         graph (LogicalGraph): The graph parameter.
         wrt (list[str]): The wrt parameter.
         output_id (str | Sequence[str]): The output_id parameter.
-        cotangent_id (typing.Optional[str | Sequence[str] | dict[str, str]]): The cotangent_id parameter.
+        cotangent_id (str | Sequence[str] | dict[str, str] | None): The cotangent_id parameter.
 
     Returns:
         LogicalGraph: Result.
@@ -518,23 +520,23 @@ def _compile_jvp_expr(expr_str: str, graph: IRGraph, shape_metadata: ShapeLike, 
 
 
 def _invoke_style2_jvp_rule(
-    jvp_func: JvpRuleCallable,
+    jvp_func: JvpRuleCallable | JVPRuleCallable,
     sig: inspect.Signature,
     new_graph: IRGraph,
     node: LogicalNode,
     input_tangents: list[str],
-) -> str | tuple[str, ...]:
+) -> str | tuple[str, ...] | UnconnectedGradients | None:
     """Invoke a JVP rule using the 'style 2' parameter mapping.
 
     Args:
-        jvp_func (JvpRuleCallable): The JVP function.
+        jvp_func (JvpRuleCallable | JVPRuleCallable): The JVP function.
         sig (inspect.Signature): The signature of the JVP function.
         new_graph (IRGraph): The target IR graph.
         node (LogicalNode): The IR node.
         input_tangents (list[str]): The list of input tangents.
 
     Returns:
-        str | tuple[str, ...]: The result of the JVP rule.
+        str | tuple[str, ...] | UnconnectedGradients | None: The result of the JVP rule.
     """
     args = input_tangents + getattr(node, "inputs", [])
     param_keys = [name for name, param in sig.parameters.items() if param.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)]
@@ -550,6 +552,7 @@ def _invoke_style2_jvp_rule(
     safe_call_args = [safe_id_map[orig_id] for orig_id in call_args]
 
     try:
+        assert isinstance(jvp_func, JvpRuleCallable)
         expr = jvp_func(*safe_call_args)
         if isinstance(expr, str):
             return _compile_jvp_expr(expr, new_graph, getattr(node, "shape_metadata", None), inverse_map)
@@ -559,21 +562,21 @@ def _invoke_style2_jvp_rule(
 
 
 def _invoke_jvp_rule(
-    jvp_func: JvpRuleCallable,
+    jvp_func: JvpRuleCallable | JVPRuleCallable,
     new_graph: IRGraph,
     node: LogicalNode,
     input_tangents: list[str],
-) -> str | tuple[str, ...]:
+) -> str | tuple[str, ...] | UnconnectedGradients | None:
     """Invoke a JVP rule function, auto-detecting the style.
 
     Args:
-        jvp_func (JvpRuleCallable): The JVP function.
+        jvp_func (JvpRuleCallable | JVPRuleCallable): The JVP function.
         new_graph (IRGraph): The target IR graph.
         node (LogicalNode): The IR node.
         input_tangents (list[str]): The list of input tangents.
 
     Returns:
-        str | tuple[str, ...]: The result of the JVP rule.
+        str | tuple[str, ...] | UnconnectedGradients | None: The result of the JVP rule.
     """
     import inspect
 
@@ -648,7 +651,7 @@ def _process_jvp_node(
         return
 
     try:
-        jvp_func: JvpRuleCallable = get_jvp(getattr(node, "op_type"))  # type: ignore[assignment]
+        jvp_func: JvpRuleCallable | JVPRuleCallable = get_jvp(getattr(node, "op_type"))
     except ValueError:
         raise ValueError(f"Missing JVP rule for operation: {getattr(node, 'op_type', 'Unknown')}") from None
 
@@ -746,7 +749,7 @@ def hvp(
         tangents (list[str]): Tangent vector node IDs corresponding to primals.
         outputs (list[str]): Output node IDs to differentiate.
         mode (str): HVP computation mode ('forward-over-reverse' or 'reverse-over-forward').
-        projected_tangents (typing.Optional[list[str]]): Optional projected tangent node IDs
+        projected_tangents (list[str] | None): Optional projected tangent node IDs
             for projecting non-scalar or multi-node outputs into a directional scalar/vector.
 
     Returns:

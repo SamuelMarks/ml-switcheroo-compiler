@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import as_str
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.type_promotion import promote_types
@@ -53,7 +52,7 @@ def _infer_constant_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
             return True
         return False
 
-    dtypes[node.id] = typing.cast(str, node.attributes.get("dtype", DType.Float32.value))
+    dtypes[node.id] = as_str(node.attributes.get("dtype", DType.Float32.value))
     return False
 
 
@@ -67,7 +66,7 @@ def _infer_input_dtype(node: LogicalNode, dtypes: dict[str, str]) -> bool:
     Returns:
         bool: True if node was modified.
     """
-    dtypes[node.id] = typing.cast(str, node.attributes.get("dtype", DType.Float32.value))
+    dtypes[node.id] = as_str(node.attributes.get("dtype", DType.Float32.value))
     return False
 
 

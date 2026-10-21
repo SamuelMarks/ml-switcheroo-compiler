@@ -8,9 +8,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp, register_vjp
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_vjp_registry_coverage() -> None:
@@ -22,7 +23,7 @@ def test_vjp_registry_coverage() -> None:
     if "fake_op" in _VJP_REGISTRY:
         del _VJP_REGISTRY["fake_op"]
 
-    @typing.cast("EagerCallableProtocol", register_vjp)("fake_op")
+    @as_callable(register_vjp)("fake_op")
     def fake_vjp() -> None:
         """Evaluate and process the fake vjp operation.
 
@@ -32,7 +33,7 @@ def test_vjp_registry_coverage() -> None:
 
     with pytest.raises(ValueError, match="already registered"):
 
-        @typing.cast("EagerCallableProtocol", register_vjp)("fake_op")
+        @as_callable(register_vjp)("fake_op")
         def fake_vjp2() -> None:
             """Evaluate and process the fake vjp2 operation.
 
@@ -50,7 +51,7 @@ def test_vjp_registry_coverage() -> None:
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", return_value="data_vjp"):
-        assert typing.cast("EagerTensorProtocol", get_vjp("fake_op_2")) == typing.cast("EagerTensorProtocol", "data_vjp")
+        assert as_tensor(get_vjp("fake_op_2")) == as_tensor("data_vjp")
 
     # Test get_vjp_from_data and has_vjp
     from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import has_vjp
@@ -79,7 +80,7 @@ def test_vjp_registry_lazy_load() -> None:
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data):
         res = get_vjp("test_lazy_op")
-        assert typing.cast("EagerTensorProtocol", res) == typing.cast("EagerTensorProtocol", "lazy_loaded_vjp")
+        assert as_tensor(res) == as_tensor("lazy_loaded_vjp")
 
 
 def test_has_vjp_not_in_registry_or_data() -> None:

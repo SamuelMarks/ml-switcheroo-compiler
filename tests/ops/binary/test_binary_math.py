@@ -7,8 +7,10 @@ from unittest.mock import patch
 
 import pytest
 
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_binary_math_extra_coverage() -> None:
@@ -44,7 +46,7 @@ def test_eager_eval_branches() -> None:
     from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, Betainc, Diff, Digitize, Poly, Polyadd, Polyder, Polydiv, Polyfit, Polyint, Polymul, Polysub, Polyval, Roots
 
     for cls in [Diff, Digitize, ArrayEquiv, Betainc, Polyadd, Polysub, Polymul, Polydiv, Polyval, Poly, Polyder, Polyfit, Polyint, Roots]:
-        assert typing.cast("EagerTensorProtocol", getattr(cls(), "op_name")) is not None
+        assert as_tensor(getattr(cls(), "op_name")) is not None
 
 
 def test_binary_math_shapes_again() -> None:
@@ -55,15 +57,15 @@ def test_binary_math_shapes_again() -> None:
         """Test class DummyTensor."""
 
         shape = (1,)
-        attributes = typing.cast("dict[str, EagerTensorProtocol]", {})
+        attributes = as_tensor_dict({})
         shape_metadata = (1,)
 
     assert Diff().infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", Digitize)().infer_shape(typing.cast("EagerCallableProtocol", DummyTensor)()) == (1,)
+    assert as_callable(Digitize)().infer_shape(as_callable(DummyTensor)()) == (1,)
     assert Digitize().infer_shape() == ()
     assert ArrayEquiv().infer_shape() == ()
-    assert typing.cast("EagerCallableProtocol", Betainc)().infer_shape(typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", DummyTensor)(), typing.cast("EagerCallableProtocol", DummyTensor)()) == (1,)
-    assert typing.cast("EagerCallableProtocol", Clip)().infer_shape(typing.cast("EagerCallableProtocol", DummyTensor)()) == (1,)
+    assert as_callable(Betainc)().infer_shape(as_callable(DummyTensor)(), as_callable(DummyTensor)(), as_callable(DummyTensor)()) == (1,)
+    assert as_callable(Clip)().infer_shape(as_callable(DummyTensor)()) == (1,)
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -78,7 +80,7 @@ def test_binary_math_shapes_again() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = as_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -90,7 +92,7 @@ def test_binary_math_shapes_again() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
     with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):
         pass
         pass
@@ -115,7 +117,7 @@ def test_binary_math_clip_emit() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = as_tensor_dict({})
 
         def add_node(self, node: EagerValue) -> None:
             """Test function add_node.
@@ -127,7 +129,7 @@ def test_binary_math_clip_emit() -> None:
 
     state.global_tracing_state.is_tracing = True
     setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", typing.cast("EagerTensorProtocol", getattr(state.global_tracing_state.active_graph, "add_node")))
+    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):

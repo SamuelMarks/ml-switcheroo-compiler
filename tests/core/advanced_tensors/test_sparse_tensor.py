@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.core.sparse_tensor import SparseTensor, SparseTensorCOO, SparseTensorCSR
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class DummyTensor:
@@ -24,18 +25,18 @@ def test_sparse_tensor() -> None:
     """Test function test_sparse_tensor."""
     t = DummyTensor()
 
-    st = typing.cast("EagerCallableProtocol", SparseTensor)(t, (10, 10))
+    st = as_callable(SparseTensor)(t, (10, 10))
     assert st.shape == (10, 10)
     assert st.dtype == "float32"
     assert st.device == "cpu"
     assert bool(st.requires_grad) is True
     assert st.format == "base"
 
-    coo = typing.cast("EagerCallableProtocol", SparseTensorCOO)(t, t, (10, 10))
+    coo = as_callable(SparseTensorCOO)(t, t, (10, 10))
     assert coo.indices == t
     assert coo.format == "coo"
 
-    csr = typing.cast("EagerCallableProtocol", SparseTensorCSR)(t, t, t, (10, 10))
+    csr = as_callable(SparseTensorCSR)(t, t, t, (10, 10))
     assert csr.row_pointers == t
     assert csr.column_indices == t
     assert csr.format == "csr"

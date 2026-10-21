@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 # ruff: noqa: E501
 
@@ -26,7 +28,7 @@ def test_builder_extract_proxy() -> None:
         data = FakeData()
         shape = (2, 2)
 
-    (id1, shape1) = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(typing.cast("EagerCallableProtocol", FakeTensor)())
+    (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor)())
     assert id1 == "my_id"
     assert shape1 == (2, 2)
 
@@ -46,7 +48,7 @@ def test_builder_extract_proxy() -> None:
     class FakeTracingState:
         """Test class FakeTracingState."""
 
-        constant_cache = typing.cast("dict[str, EagerTensorProtocol]", {})
+        constant_cache = as_tensor_dict({})
         is_tracing = True
         active_graph = True
 
@@ -58,11 +60,11 @@ def test_builder_extract_proxy() -> None:
             """
             pass
 
-    old_state = typing.cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
+    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
     setattr(bmod, "global_tracing_state", FakeTracingState())
-    (id2, shape2) = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(typing.cast("EagerCallableProtocol", FakeTensor2)())
+    (id2, shape2) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor2)())
     assert id2 in FakeTracingState.constant_cache.values()
-    (id3, shape3) = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(typing.cast("EagerCallableProtocol", FakeTensor2)())
+    (id3, shape3) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor2)())
     assert id2 == id3
     setattr(bmod, "global_tracing_state", old_state)
 
@@ -75,7 +77,7 @@ def test_builder_extract_constant() -> None:
     class FakeTracingState:
         """Test class FakeTracingState."""
 
-        constant_cache = typing.cast("dict[str, EagerTensorProtocol]", {})
+        constant_cache = as_tensor_dict({})
         is_tracing = True
         active_graph = True
 
@@ -87,7 +89,7 @@ def test_builder_extract_constant() -> None:
             """
             pass
 
-    old_state = typing.cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
+    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
     setattr(bmod, "global_tracing_state", FakeTracingState())
 
     class ProxyT:
@@ -124,7 +126,7 @@ def test_builder_extract_constant() -> None:
             return getattr(self.data, "shape", ())
 
     val = [ProxyT("id_1", (1,)), RealTensor(123)]
-    (id1, shape1) = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_constant)(val)
+    (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_constant)(val)
     assert id1[0] == "id_1"
     setattr(bmod, "global_tracing_state", old_state)
 
@@ -165,7 +167,7 @@ def test_builder_tensor_cache_missing() -> None:
             """
             pass
 
-    old_state = typing.cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
+    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
     setattr(bmod, "global_tracing_state", FakeTracingState())
 
     class FakeData:
@@ -181,9 +183,9 @@ def test_builder_tensor_cache_missing() -> None:
         device = None
         requires_grad = False
 
-    fake_t = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", FakeData)(), typing.cast("EagerCallableProtocol", FakeConfig)())
+    fake_t = as_callable(Tensor)(as_callable(FakeData)(), as_callable(FakeConfig)())
     setattr(fake_t, "_data", FakeData())
-    (id1, shape1) = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_from_tensor)(fake_t)
+    (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_tensor)(fake_t)
     assert shape1 == (1,)
 
     # Check that extracting twice from same tensor uses cached tensor hash if data ID is None?
@@ -214,7 +216,7 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             """
             pass
 
-    old_state = typing.cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
+    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
     setattr(bmod, "global_tracing_state", FakeTracingState())
 
     class DummyNotTensor:
@@ -228,7 +230,7 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             """Test function tolist."""
             return [42]
 
-    (ids, shapes, first) = typing.cast("EagerCallableProtocol", TracingNodeBuilder.extract_proxy_inputs)((typing.cast("EagerCallableProtocol", DummyNotTensor)(),))
+    (ids, shapes, first) = as_callable(TracingNodeBuilder.extract_proxy_inputs)((as_callable(DummyNotTensor)(),))
     assert len(ids) == 1
     assert shapes[0] == ()
     setattr(bmod, "global_tracing_state", old_state)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -97,7 +95,7 @@ class CupyGenerator(PythonStringGenerator):
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return typing.cast(EagerValue, evaluated)
+            return evaluated
 
         try:
             import cupy as cp

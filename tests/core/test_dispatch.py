@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dispatch import dispatch
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -66,7 +67,7 @@ def test_dispatch_tracing() -> None:
 
         t = Tensor(None, TensorConfig((2, 2), "float32", "cpu"))
         out = dispatch("test", "TestDispatchTracing", t)
-        assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == ()
-        assert typing.cast("EagerTensorProtocol", getattr(out, "dtype")).value == "float32"
+        assert as_tensor(getattr(out, "shape")) == ()
+        assert as_tensor(getattr(out, "dtype")).value == "float32"
     finally:
         global_tracing_state.stop_tracing()

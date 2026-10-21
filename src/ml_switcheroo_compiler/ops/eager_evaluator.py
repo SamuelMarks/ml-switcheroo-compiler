@@ -7,7 +7,7 @@ import typing  # noqa: F401
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import as_tensor
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -67,10 +67,10 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
         op_inst = op_cls() if isinstance(op_cls, type) else op_cls
         eager_eval_fn = getattr(op_inst, "eager_eval", None)
         if callable(eager_eval_fn):
-            return typing.cast(EagerPayload, eager_eval_fn(*ctx.args, **ctx.kwargs))
+            return as_tensor(eager_eval_fn(*ctx.args, **ctx.kwargs))
         forward_fn = getattr(op_inst, "forward", None)
         if callable(forward_fn):
-            return typing.cast(EagerPayload, forward_fn(*ctx.args, **ctx.kwargs))
+            return as_tensor(forward_fn(*ctx.args, **ctx.kwargs))
         raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
 
 
@@ -86,7 +86,7 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         Returns:
             EagerPayload: Evaluated raw tensor or scalar data.
         """
-        return typing.cast(EagerPayload, getattr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
+        return as_tensor(getattr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
 
 
 class EagerEvaluator:
@@ -119,7 +119,7 @@ class EagerEvaluator:
         first_tensor: Tensor | None,
         device: Device | str | None,
     ) -> Tensor | tuple[Tensor, ...]:
-        """Pack raw output data into Tensor Anys.
+        """Pack raw output data into Tensor objects.
 
         Args:
             res_data (EagerPayload): The raw data returned by the backend.
@@ -133,7 +133,7 @@ class EagerEvaluator:
                 Tensor(
                     d,
                     TensorConfig(
-                        typing.cast(EagerTensorProtocol, d).shape if hasattr(d, "shape") else (),
+                        d.shape if hasattr(d, "shape") else (),
                         resolve_dtype(d, first_tensor),
                         device,
                     ),
@@ -142,7 +142,7 @@ class EagerEvaluator:
             )
 
         dtype = resolve_dtype(res_data, first_tensor)
-        shape = typing.cast(EagerTensorProtocol, res_data).shape if hasattr(res_data, "shape") else ()
+        shape = as_tensor(res_data).shape if hasattr(res_data, "shape") else ()
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod

@@ -8,9 +8,10 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.optimizers as opt_mod
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
 
 
 class MockCpuResult:
@@ -137,7 +138,7 @@ class MockTorchStyleBackend:
         Returns:
             np.ndarray: Computed mean.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.mean)(x, axis=dim, keepdims=keepdim))
+        return as_ndarray(as_callable(np.mean)(x, axis=dim, keepdims=keepdim))
 
     def var(self, x: np.ndarray[tuple[int, ...], np.dtype[np.generic]], dim: tuple[int, ...], keepdim: bool = True, unbiased: bool = False) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Compute variance across dimensions.
@@ -152,7 +153,7 @@ class MockTorchStyleBackend:
             np.ndarray: Computed variance.
         """
         ddof: int = 1 if unbiased else 0
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", typing.cast("EagerCallableProtocol", np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
+        return as_ndarray(as_callable(np.var)(x, axis=dim, keepdims=keepdim, ddof=ddof))
 
 
 class MockFailingAxisBackend:
@@ -182,7 +183,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         return self.fallback.mean(x, dim=dim_val, keepdim=keepdim_val)
 
@@ -202,7 +203,7 @@ class MockFailingAxisBackend:
         """
         if "axis" in kwargs:
             raise TypeError("Use dim instead of axis")
-        dim_val: tuple[int, ...] = typing.cast("tuple[int, ...]", kwargs["dim"])
+        dim_val: tuple[int, ...] = as_shape(kwargs["dim"])
         keepdim_val: bool = bool(kwargs.get("keepdim", True))
         unbiased_val: bool = bool(kwargs.get("unbiased", False))
         return self.fallback.var(x, dim=dim_val, keepdim=keepdim_val, unbiased=unbiased_val)
@@ -274,16 +275,16 @@ class MockMathBackend:
 class SignalBackendWrapper:
     """Signal execution backend ensuring reliable array padding."""
 
-    def __getattr__(self, name: str) -> TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    def __getattr__(self, name: str) -> EagerCallableProtocol:
         """Delegate to numpy module.
 
         Args:
             name (str): Attribute name.
 
         Returns:
-            TypedVariadicCallable[np.ndarray]: Resolved callable attribute.
+            EagerCallableProtocol: Resolved callable attribute.
         """
-        return typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", getattr(np, name))
+        return as_callable(getattr(np, name))
 
     def pad(
         self,
@@ -503,28 +504,28 @@ def test_optimizers_coverage() -> None:
     grad = np.full((2, 2), 0.1, dtype=np.float64)
 
     # 1. Adam
-    p_new, m_new, v_new = typing.cast("EagerCallableProtocol", opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(m_new, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(v_new, "shape")) == (2, 2)
+    p_new, m_new, v_new = as_callable(opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
+    assert as_tensor(getattr(p_new, "shape")) == (2, 2)
+    assert as_tensor(getattr(m_new, "shape")) == (2, 2)
+    assert as_tensor(getattr(v_new, "shape")) == (2, 2)
 
     # 2. Adagrad
     accum = np.zeros((2, 2), dtype=np.float64)
-    p_new_ada, accum_new_ada = typing.cast("EagerCallableProtocol", opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new_ada, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(accum_new_ada, "shape")) == (2, 2)
+    p_new_ada, accum_new_ada = as_callable(opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
+    assert as_tensor(getattr(p_new_ada, "shape")) == (2, 2)
+    assert as_tensor(getattr(accum_new_ada, "shape")) == (2, 2)
 
     # 3. Ftrl
     linear = np.zeros((2, 2), dtype=np.float64)
-    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = typing.cast("EagerCallableProtocol", opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new_ftrl, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(accum_new_ftrl, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(linear_new_ftrl, "shape")) == (2, 2)
+    p_new_ftrl, accum_new_ftrl, linear_new_ftrl = as_callable(opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
+    assert as_tensor(getattr(p_new_ftrl, "shape")) == (2, 2)
+    assert as_tensor(getattr(accum_new_ftrl, "shape")) == (2, 2)
+    assert as_tensor(getattr(linear_new_ftrl, "shape")) == (2, 2)
 
     # 4. RMSProp
     ms = np.ones((2, 2), dtype=np.float64)
     mom = np.zeros((2, 2), dtype=np.float64)
-    p_new_rms, ms_new_rms, mom_new_rms = typing.cast("EagerCallableProtocol", opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
-    assert typing.cast("EagerTensorProtocol", getattr(p_new_rms, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(ms_new_rms, "shape")) == (2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(mom_new_rms, "shape")) == (2, 2)
+    p_new_rms, ms_new_rms, mom_new_rms = as_callable(opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
+    assert as_tensor(getattr(p_new_rms, "shape")) == (2, 2)
+    assert as_tensor(getattr(ms_new_rms, "shape")) == (2, 2)
+    assert as_tensor(getattr(mom_new_rms, "shape")) == (2, 2)

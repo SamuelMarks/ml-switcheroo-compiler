@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.dropout import dropout2d
 from ml_switcheroo_compiler.tracing import global_tracing_state
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_dropout2d_shape() -> None:
@@ -31,8 +32,8 @@ def test_dropout2d_shape() -> None:
             try:
                 a = Tensor(None, TensorConfig((2, 3, 64, 64), DType.Float32, None))
                 out = dropout2d(a, p=0.5)
-                assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 3, 64, 64)
-                assert typing.cast("EagerTensorProtocol", getattr(out, "dtype")) == DType.Float32
+                assert as_tensor(getattr(out, "shape")) == (2, 3, 64, 64)
+                assert as_tensor(getattr(out, "dtype")) == DType.Float32
             finally:
                 global_tracing_state.stop_tracing()
         except Exception as e:
@@ -57,7 +58,7 @@ def test_dropout2d_eager() -> None:
             a_data = np.random.randn(2, 3, 64, 64).astype(np.float32)
             a = Tensor(a_data, TensorConfig((2, 3, 64, 64), DType.Float32, None))
             out = dropout2d(a, p=0.5)
-            assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 3, 64, 64)
+            assert as_tensor(getattr(out, "shape")) == (2, 3, 64, 64)
         except Exception as e:
             raise e
             pass

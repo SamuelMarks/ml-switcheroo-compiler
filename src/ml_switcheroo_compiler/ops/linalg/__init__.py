@@ -1,12 +1,12 @@
 # ruff: noqa: E402
 # auto-generate-all
-# exclude_exports: OpDef, register_op
+# exclude_exports: OpDef, register_op, annotations
 
 """Linear algebra operations package."""
 
-from typing import cast
+from __future__ import annotations
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvTranspose
@@ -128,7 +128,7 @@ class Vecdot(OpDef):
             return ()
         x_shape = getattr(args[0], "shape", ())
         y_shape = getattr(args[1], "shape", ())
-        axis = int(cast(int, kwargs.get("axis", -1)))
+        axis = int(as_int(kwargs.get("axis", -1)))
         x_norm = axis if axis >= 0 else len(x_shape) + axis
         y_norm = axis if axis >= 0 else len(y_shape) + axis
         x_batch = tuple(dim for idx, dim in enumerate(x_shape) if idx != x_norm)
@@ -238,10 +238,10 @@ __all__ = [
     "Vecdot",
     "addmm",
     "adjoint",
+    "as_int",
     "band_part",
     "banded_triangular_solve",
     "block_masked_mm",
-    "cast",
     "cholesky_solve",
     "cond",
     "conjugate_gradient",

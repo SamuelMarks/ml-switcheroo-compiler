@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import os
-import typing
 
 import yaml
-from ml_switcheroo_ir import AttributeValue, LogicalGraph
+from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode, clone_logical_node
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode, as_graph, clone_logical_node
 
 
 def _load_config() -> dict[str, AttributeValue]:
@@ -21,7 +20,7 @@ def _load_config() -> dict[str, AttributeValue]:
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             res = yaml.safe_load(f)
-            return typing.cast(dict[str, AttributeValue], res) if res else {}
+            return res if res else {}
     return {}
 
 
@@ -109,7 +108,8 @@ def _unroll_single_node(
         new_nodes (dict[str, LogicalNode]): Target node map.
     """
     current_state_ids = list(node.inputs)
-    lower_val = typing.cast(int, node.attributes.get("lower", 0)) if isinstance(node.attributes.get("lower"), int) else 0
+    raw_lower = node.attributes.get("lower", 0)
+    lower_val: int = raw_lower if isinstance(raw_lower, int) else 0
 
     for i in range(bound):
         id_map: dict[str, str] = {}
@@ -158,8 +158,10 @@ def unroll_loops(graph: IRGraph) -> IRGraph:
         IRGraph: Graph with unrolled loops.
     """
     config = _load_config()
-    default_limit = typing.cast(int, config.get("default_unroll_limit", 10))
-    heuristics = typing.cast(list[dict[str, AttributeValue]], config.get("heuristics", []))
+    raw_limit = config.get("default_unroll_limit", 10)
+    default_limit: int = raw_limit if isinstance(raw_limit, int) else 10
+    raw_heuristics = config.get("heuristics", [])
+    heuristics: list[dict[str, AttributeValue]] = [h for h in raw_heuristics if isinstance(h, dict)] if isinstance(raw_heuristics, list) else []
 
     unrolled = False
     new_nodes: dict[str, LogicalNode] = {}
@@ -169,7 +171,7 @@ def unroll_loops(graph: IRGraph) -> IRGraph:
         body_graph = node.attributes.get("body")
         if bound is not None and bound <= default_limit and body_graph and hasattr(body_graph, "nodes"):
             unrolled = True
-            _unroll_single_node(node_id, node, bound, typing.cast("LogicalGraph", body_graph), new_nodes)
+            _unroll_single_node(node_id, node, bound, as_graph(body_graph), new_nodes)
             continue
 
         new_nodes[node_id] = node

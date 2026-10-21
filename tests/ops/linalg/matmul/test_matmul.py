@@ -10,9 +10,10 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 mod = sys.modules["ml_switcheroo_compiler.ops.linalg.matmul"]
 
 
@@ -26,7 +27,7 @@ class DummyTensor:
             shape: Test parameter `shape`.
         """
         self.shape = shape
-        self.data = typing.cast("EagerCallableProtocol", np.zeros)(shape)
+        self.data = as_callable(np.zeros)(shape)
         self.dtype = "float32"
         self.device = None
 
@@ -217,9 +218,9 @@ def test_matmul_missing(monkeypatch: EagerTensorProtocol) -> None:
     from ml_switcheroo_compiler.ops.linalg.matmul import BlockMaskedMm, GatherMm, dot_general
 
     op1 = BlockMaskedMm()
-    assert typing.cast("EagerCallableProtocol", op1.infer_shape)((2, 3), (4, 5)) is None
+    assert as_callable(op1.infer_shape)((2, 3), (4, 5)) is None
     op2 = GatherMm()
-    assert typing.cast("EagerCallableProtocol", op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
+    assert as_callable(op2.infer_shape)((2, 3), (4, 5), lhs_indices=None, rhs_indices=None) is None
     with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
         with mock.patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
             t1 = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
@@ -233,14 +234,14 @@ def test_solvers_missing() -> None:
     from ml_switcheroo_compiler.ops.linalg.solvers import Pinv
 
     op = Pinv()
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(None) == ()
+    assert as_callable(op.infer_shape)(None) == ()
 
     class DummyShape:
         """Test class DummyShape."""
 
         shape = (3,)
 
-    assert typing.cast("EagerCallableProtocol", op.infer_shape)(typing.cast("EagerCallableProtocol", DummyShape)()) == (3,)
+    assert as_callable(op.infer_shape)(as_callable(DummyShape)()) == (3,)
 
 
 def test_einsum_missing() -> None:

@@ -10,9 +10,10 @@ from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_utils import ReduceWindow, reduce_window
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_frontend_utils_extras() -> None:
@@ -36,7 +37,7 @@ def test_frontend_utils_extras() -> None:
     class MockTensor(Tensor):
         """Test class MockTensor."""
 
-        data = typing.cast("EagerTensorProtocol", MockData())
+        data = as_tensor(MockData())
         shape = (1, 2)
         dtype = DType("float32")
         device = Device("cpu")
@@ -53,7 +54,7 @@ def test_frontend_utils_extras() -> None:
     orig_add_node = state.global_tracing_state.add_node
     setattr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        typing.cast("EagerCallableProtocol", reduce_window)(t, 0.0, "add", typing.cast("EagerCallableProtocol", DummyConfig)())
+        as_callable(reduce_window)(t, 0.0, "add", as_callable(DummyConfig)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing

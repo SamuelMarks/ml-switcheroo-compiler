@@ -7,10 +7,10 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_internal as mi
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_callable, as_mod, as_ndarray, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 class MockBackend:
@@ -27,7 +27,7 @@ class MockBackend:
             a: Test parameter `a`.
             b: Test parameter `b`.
         """
-        return typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]]", (typing.cast("EagerTensorProtocol", a) @ typing.cast("EagerTensorProtocol", b)) + typing.cast("EagerTensorProtocol", 1))
+        return as_ndarray((as_tensor(a) @ as_tensor(b)) + as_tensor(1))
 
 
 def _test_math_internal_operations_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -39,39 +39,39 @@ def _test_math_internal_operations_part_1(_state: dict[str, EagerTensorProtocol]
     bk = MockBackend()
 
     # 1. _np_population_count
-    pop = mi._np_population_count(typing.cast("BackendModuleProtocol", bk), [0, 1, 3, 7, 15])
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(pop, [0, 1, 2, 3, 4])
+    pop = mi._np_population_count(as_mod(bk), [0, 1, 3, 7, 15])
+    as_callable(np.testing.assert_array_equal)(pop, [0, 1, 2, 3, 4])
 
     # 2. _np_get_printoptions_
-    assert mi._np_get_printoptions_(typing.cast("BackendModuleProtocol", bk)) == {"precision": 8}
+    assert mi._np_get_printoptions_(as_mod(bk)) == {"precision": 8}
 
     # 3. _np_affineconfig
-    assert mi._np_affineconfig(typing.cast("BackendModuleProtocol", bk), scale=2.0) == {"scale": 2.0}
+    assert mi._np_affineconfig(as_mod(bk), scale=2.0) == {"scale": 2.0}
 
     # 4. _np_blurconfig
-    blur = mi._np_blurconfig(typing.cast("BackendModuleProtocol", bk), kernel_size=(3, 3), sigma=1.0)
+    blur = mi._np_blurconfig(as_mod(bk), kernel_size=(3, 3), sigma=1.0)
     assert blur is not None
 
     # 5. _np_customroot (with and without solve)
-    res_root = mi._np_customroot(typing.cast("BackendModuleProtocol", bk), lambda x: x, 5.0, lambda f, g: 42.0)
+    res_root = mi._np_customroot(as_mod(bk), lambda x: x, 5.0, lambda f, g: 42.0)
     assert res_root == 42.0
-    res_root_no_solve = mi._np_customroot(typing.cast("BackendModuleProtocol", bk), lambda x: x, 5.0)
+    res_root_no_solve = mi._np_customroot(as_mod(bk), lambda x: x, 5.0)
     assert res_root_no_solve == 5.0
 
     # 6. _np_elasticconfig
-    elastic = mi._np_elasticconfig(typing.cast("BackendModuleProtocol", bk), interpolation="nearest")
+    elastic = mi._np_elasticconfig(as_mod(bk), interpolation="nearest")
     assert elastic is not None
 
     # 7. LinearOperator configurations
-    assert mi._np_linearoperator(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatoradjoint(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatorcirculant(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatorcirculant2d(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatorcirculant3d(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatorcomposition(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatorhouseholder(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatorkronecker(typing.cast("BackendModuleProtocol", bk)) is not None
-    assert mi._np_linearoperatorlowrankupdate(typing.cast("BackendModuleProtocol", bk)) is not None
+    assert mi._np_linearoperator(as_mod(bk)) is not None
+    assert mi._np_linearoperatoradjoint(as_mod(bk)) is not None
+    assert mi._np_linearoperatorcirculant(as_mod(bk)) is not None
+    assert mi._np_linearoperatorcirculant2d(as_mod(bk)) is not None
+    assert mi._np_linearoperatorcirculant3d(as_mod(bk)) is not None
+    assert mi._np_linearoperatorcomposition(as_mod(bk)) is not None
+    assert mi._np_linearoperatorhouseholder(as_mod(bk)) is not None
+    assert mi._np_linearoperatorkronecker(as_mod(bk)) is not None
+    assert mi._np_linearoperatorlowrankupdate(as_mod(bk)) is not None
     getattr(_state, "update")({"bk": bk, "blur": blur, "elastic": elastic, "pop": pop})
     getattr(_state, "update")({"res_root": res_root, "res_root_no_solve": res_root_no_solve})
     _state.update(locals())
@@ -92,27 +92,27 @@ def _test_math_internal_operations_part_2(_state: dict[str, EagerTensorProtocol]
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     b = np.array([[2.0, 0.0], [1.0, 2.0]])
     res_bkm = mi._np_rawmatmul(bk, a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_bkm, a @ b + 1)
+    as_callable(np.testing.assert_allclose)(res_bkm, a @ b + 1)
 
     class EmptyBackend:
         """Test class EmptyBackend."""
 
         pass
 
-    res_default_mm = mi._np_rawmatmul(typing.cast("BackendModuleProtocol", EmptyBackend()), a, b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_default_mm, a @ b)
+    res_default_mm = mi._np_rawmatmul(as_mod(EmptyBackend()), a, b)
+    as_callable(np.testing.assert_allclose)(res_default_mm, a @ b)
 
     # 10. _np_rawmerge
     merge_list = mi._np_rawmerge(bk, [10, 20])
-    assert typing.cast("EagerTensorProtocol", getattr(merge_list, "__getitem__")(0)) == 10
-    assert typing.cast("EagerTensorProtocol", getattr(merge_list, "__getitem__")(1)) == 0
+    assert as_tensor(getattr(merge_list, "__getitem__")(0)) == 10
+    assert as_tensor(getattr(merge_list, "__getitem__")(1)) == 0
 
     merge_args = mi._np_rawmerge(bk, 10, 20)
-    assert typing.cast("EagerTensorProtocol", getattr(merge_args, "__getitem__")(0)) == 10
+    assert as_tensor(getattr(merge_args, "__getitem__")(0)) == 10
 
     merge_empty = mi._np_rawmerge(bk)
-    assert typing.cast("EagerTensorProtocol", getattr(merge_empty, "__getitem__")(0)) is None
-    assert typing.cast("EagerTensorProtocol", getattr(merge_empty, "__getitem__")(1)) == -1
+    assert as_tensor(getattr(merge_empty, "__getitem__")(0)) is None
+    assert as_tensor(getattr(merge_empty, "__getitem__")(1)) == -1
 
     # 11. _np_rawop
     assert mi._np_rawop(bk, 999) == 999
@@ -145,23 +145,23 @@ def _test_math_internal_operations_part_3(_state: dict[str, EagerTensorProtocol]
     assert scan_invalid == "not_callable"
 
     scan_empty = mi._np_scanop(bk, elems=np.array([]), fn=lambda x, y: x + y)
-    assert typing.cast("EagerTensorProtocol", getattr(scan_empty, "size")) == 0
+    assert as_tensor(getattr(scan_empty, "size")) == 0
 
     scan_no_acc = mi._np_scanop(bk, elems=np.array([1, 2, 3]), fn=lambda x, y: x + y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(scan_no_acc, [1, 3, 6])
+    as_callable(np.testing.assert_array_equal)(scan_no_acc, [1, 3, 6])
 
     scan_with_acc = mi._np_scanop(bk, lambda x, y: x + y, np.array([1, 2, 3]), 10)
-    typing.cast("EagerCallableProtocol", np.testing.assert_array_equal)(scan_with_acc, [11, 13, 16])
+    as_callable(np.testing.assert_array_equal)(scan_with_acc, [11, 13, 16])
 
     # 14. _np_tensorarrayread and _np_tensorarraywrite (both within bounds and extending)
     handle = [10, 20]
     assert mi._np_tensorarrayread(bk, handle, 1) == 20
 
     h_in = mi._np_tensorarraywrite(bk, handle, 0, 99)
-    assert typing.cast("EagerTensorProtocol", getattr(h_in, "__getitem__")(0)) == 99
+    assert as_tensor(getattr(h_in, "__getitem__")(0)) == 99
 
     h_ext = mi._np_tensorarraywrite(bk, handle, 4, 88)
-    assert typing.cast("EagerCallableProtocol", len)(h_ext) == 5
+    assert as_callable(len)(h_ext) == 5
     getattr(_state, "update")({"h_ext": h_ext, "h_in": h_in, "handle": handle, "scan_empty": scan_empty})
     getattr(_state, "update")({"scan_invalid": scan_invalid, "scan_no_acc": scan_no_acc, "scan_with_acc": scan_with_acc, "sw_false": sw_false})
     getattr(_state, "update")({"sw_op_false": sw_op_false, "sw_op_true": sw_op_true, "sw_true": sw_true})

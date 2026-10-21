@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerCallableProtocol, EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_tensor, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.products import Adjoint, MatrixRank, MatrixTranspose, Trace
 from ml_switcheroo_compiler.ops.linalg.solvers import EighTridiagonal, Sqrtm
@@ -85,15 +85,14 @@ def cross(
         data = backend.execute_op("Cross", a.data, b.data, **kw)
         return Tensor(data, TensorConfig(getattr(data, "shape"), a.dtype, a.device))
     out_shape = a.shape
-    return typing.cast(
-        Tensor,
-        typing.cast("EagerCallableProtocol", _emit_linalg_node)(
+    return as_tensor_obj(
+        as_callable(_emit_linalg_node)(
             "Cross",
             [a, b],
             axes or {"axisa": -1, "axisb": -1, "axisc": -1, "axis": None},
             [out_shape],
             [a.dtype],
-        ),
+        )
     )
 
 
@@ -246,7 +245,7 @@ def eigh_tridiagonal(
     Args:
         alpha (Tensor): The diagonal elements.
         beta (Tensor): The off-diagonal elements.
-        kwargs (dict[str, bool | str | Any | float | None] | None): Additional keyword arguments.
+        kwargs (dict[str, bool | str | int | float | None] | None): Additional keyword arguments.
 
     Returns:
         Tensor: The eigenvalues.
@@ -257,15 +256,14 @@ def eigh_tridiagonal(
         return Tensor(data, TensorConfig(getattr(data, "shape"), alpha.dtype, alpha.device))
 
     out_shape = getattr(EighTridiagonal(), "infer_shape")(alpha, beta)
-    return typing.cast(
-        TensorOrScalar,
-        typing.cast("EagerCallableProtocol", _emit_linalg_node)(
+    return as_tensor(
+        as_callable(_emit_linalg_node)(
             "EighTridiagonal",
             [alpha, beta],
             kwargs or {},
             [tuple(out_shape)],
             [alpha.dtype],
-        ),
+        )
     )
 
 

@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.matmul import block_masked_mm
 from ml_switcheroo_compiler.tracing import global_tracing_state
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_block_masked_mm_shape() -> None:
@@ -31,8 +32,8 @@ def test_block_masked_mm_shape() -> None:
             a = Tensor(None, TensorConfig((2, 64, 128), DType.Float32, None))
             b = Tensor(None, TensorConfig((2, 128, 64), DType.Float32, None))
             out = block_masked_mm(a, b, block_size=64)
-            assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 64, 64)
-            assert typing.cast("EagerTensorProtocol", getattr(out, "dtype")) == DType.Float32
+            assert as_tensor(getattr(out, "shape")) == (2, 64, 64)
+            assert as_tensor(getattr(out, "dtype")) == DType.Float32
         finally:
             global_tracing_state.stop_tracing()
     except Exception as e:
@@ -55,7 +56,7 @@ def test_block_masked_mm_eager() -> None:
         a = Tensor(a_data, TensorConfig((2, 64, 128), DType.Float32, None))
         b = Tensor(b_data, TensorConfig((2, 128, 64), DType.Float32, None))
         out = block_masked_mm(a, b, block_size=64)
-        assert typing.cast("EagerTensorProtocol", getattr(out, "shape")) == (2, 64, 64)
+        assert as_tensor(getattr(out, "shape")) == (2, 64, 64)
     except Exception as e:
         raise e
         pass

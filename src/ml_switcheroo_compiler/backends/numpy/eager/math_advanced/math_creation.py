@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 if typing.TYPE_CHECKING:
@@ -33,7 +34,7 @@ def _np_fromfunction_(
     Returns:
         np.ndarray: The computed array from function coordinates.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.fromfunction(*args, **kwargs))
+    return as_ndarray(backend_module.fromfunction(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Fromiter")
@@ -52,7 +53,7 @@ def _np_fromiter_(
     Returns:
         np.ndarray: Output 1-dimensional array.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.fromiter(*args, **kwargs))
+    return as_ndarray(backend_module.fromiter(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Frompyfunc")
@@ -90,7 +91,7 @@ def _np_geomspace_(
     Returns:
         np.ndarray: Computed geometric progression array.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.geomspace(*args, **kwargs))
+    return as_ndarray(backend_module.geomspace(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Zeros")
@@ -109,7 +110,7 @@ def _np_zeros_(
     Returns:
         np.ndarray: Array of zeros with given shape.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.zeros(*args, **kwargs))
+    return as_ndarray(backend_module.zeros(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Ones")
@@ -128,7 +129,7 @@ def _np_ones_(
     Returns:
         np.ndarray: Array of ones with given shape.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.ones(*args, **kwargs))
+    return as_ndarray(backend_module.ones(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Empty")
@@ -147,7 +148,7 @@ def _np_empty_(
     Returns:
         np.ndarray: Uninitialized array with given shape.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.empty(*args, **kwargs))
+    return as_ndarray(backend_module.empty(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Full")
@@ -166,7 +167,7 @@ def _np_full_(
     Returns:
         np.ndarray: Array filled with constant value.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.full(*args, **kwargs))
+    return as_ndarray(backend_module.full(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ZerosLike")
@@ -185,7 +186,7 @@ def _np_zeros_like_(
     Returns:
         np.ndarray: Array of zeros like prototype.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.zeros_like(*args, **kwargs))
+    return as_ndarray(backend_module.zeros_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("OnesLike")
@@ -204,7 +205,7 @@ def _np_ones_like_(
     Returns:
         np.ndarray: Array of ones like prototype.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.ones_like(*args, **kwargs))
+    return as_ndarray(backend_module.ones_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("EmptyLike")
@@ -223,7 +224,7 @@ def _np_empty_like_(
     Returns:
         np.ndarray: Empty array like prototype.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.empty_like(*args, **kwargs))
+    return as_ndarray(backend_module.empty_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("FullLike")
@@ -242,7 +243,7 @@ def _np_full_like_(
     Returns:
         np.ndarray: Full array like prototype filled with value.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.full_like(*args, **kwargs))
+    return as_ndarray(backend_module.full_like(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Arange")
@@ -261,7 +262,7 @@ def _np_arange_(
     Returns:
         np.ndarray: Evenly spaced values array.
     """
-    return typing.cast(np.ndarray[tuple[int, ...], np.dtype[np.generic]], backend_module.arange(*args, **kwargs))
+    return as_ndarray(backend_module.arange(*args, **kwargs))
 
 
 @numpy_eager_registry.register("LinearOperatorIdentity")
@@ -344,8 +345,8 @@ def _np_fromdlpack(
         Union[np.ndarray, int, float]: Tensor converted from DLPack.
     """
     if hasattr(backend_module, "from_dlpack"):
-        return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, "float"], backend_module.from_dlpack(*args, **kwargs))
-    return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], int, "float"], args[0])
+        return as_ndarray(backend_module.from_dlpack(*args, **kwargs))
+    return as_ndarray(args[0])
 
 
 @numpy_eager_registry.register("Frombuffer")
@@ -366,4 +367,4 @@ def _np_frombuffer(
     """
     if not args:
         return None
-    return typing.cast(typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], "None"], getattr(np, "frombuffer")(args[0], **kwargs))
+    return as_ndarray(getattr(np, "frombuffer")(args[0], **kwargs))

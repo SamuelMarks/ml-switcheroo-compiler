@@ -7,9 +7,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.mixins import TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
     from ml_switcheroo_compiler.ops.base import OpDef
 
 
@@ -29,43 +30,43 @@ def test_mixins() -> None:
     """Test function test_mixins."""
     t = DummyTensor()
 
-    assert typing.cast("EagerTensorProtocol", (t + 1)[0]) == typing.cast("EagerTensorProtocol", "Add")
-    assert typing.cast("EagerTensorProtocol", (1 + t)[0]) == typing.cast("EagerTensorProtocol", "Add")
-    assert typing.cast("EagerTensorProtocol", (t - 1)[0]) == typing.cast("EagerTensorProtocol", "Subtract")
-    assert typing.cast("EagerTensorProtocol", (1 - t)[0]) == typing.cast("EagerTensorProtocol", "Subtract")
-    assert typing.cast("EagerTensorProtocol", (t * 1)[0]) == typing.cast("EagerTensorProtocol", "Multiply")
-    assert typing.cast("EagerTensorProtocol", (1 * t)[0]) == typing.cast("EagerTensorProtocol", "Multiply")
-    assert typing.cast("EagerTensorProtocol", (t / 1)[0]) == typing.cast("EagerTensorProtocol", "TrueDivide")
-    assert typing.cast("EagerTensorProtocol", (1 / t)[0]) == typing.cast("EagerTensorProtocol", "TrueDivide")
-    assert typing.cast("EagerTensorProtocol", (t**1)[0]) == typing.cast("EagerTensorProtocol", "Power")
-    assert typing.cast("EagerTensorProtocol", (1**t)[0]) == typing.cast("EagerTensorProtocol", "Power")
-    assert typing.cast("EagerTensorProtocol", (t // 1)[0]) == typing.cast("EagerTensorProtocol", "FloorDivide")
-    assert typing.cast("EagerTensorProtocol", (1 // t)[0]) == typing.cast("EagerTensorProtocol", "FloorDivide")
-    assert typing.cast("EagerTensorProtocol", (t % 1)[0]) == typing.cast("EagerTensorProtocol", "Mod")
-    assert typing.cast("EagerTensorProtocol", (1 % t)[0]) == typing.cast("EagerTensorProtocol", "Mod")
+    assert as_tensor((t + 1)[0]) == as_tensor("Add")
+    assert as_tensor((1 + t)[0]) == as_tensor("Add")
+    assert as_tensor((t - 1)[0]) == as_tensor("Subtract")
+    assert as_tensor((1 - t)[0]) == as_tensor("Subtract")
+    assert as_tensor((t * 1)[0]) == as_tensor("Multiply")
+    assert as_tensor((1 * t)[0]) == as_tensor("Multiply")
+    assert as_tensor((t / 1)[0]) == as_tensor("TrueDivide")
+    assert as_tensor((1 / t)[0]) == as_tensor("TrueDivide")
+    assert as_tensor((t**1)[0]) == as_tensor("Power")
+    assert as_tensor((1**t)[0]) == as_tensor("Power")
+    assert as_tensor((t // 1)[0]) == as_tensor("FloorDivide")
+    assert as_tensor((1 // t)[0]) == as_tensor("FloorDivide")
+    assert as_tensor((t % 1)[0]) == as_tensor("Mod")
+    assert as_tensor((1 % t)[0]) == as_tensor("Mod")
 
-    assert typing.cast("EagerTensorProtocol", (t & 1)[0]) == typing.cast("EagerTensorProtocol", "BitwiseAnd")
-    assert typing.cast("EagerTensorProtocol", (1 & t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseAnd")
-    assert typing.cast("EagerTensorProtocol", (t | 1)[0]) == typing.cast("EagerTensorProtocol", "BitwiseOr")
-    assert typing.cast("EagerTensorProtocol", (1 | t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseOr")
-    assert typing.cast("EagerTensorProtocol", (t ^ 1)[0]) == typing.cast("EagerTensorProtocol", "BitwiseXor")
-    assert typing.cast("EagerTensorProtocol", (1 ^ t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseXor")
-    assert typing.cast("EagerTensorProtocol", (t << 1)[0]) == typing.cast("EagerTensorProtocol", "LeftShift")
-    assert typing.cast("EagerTensorProtocol", (1 << t)[0]) == typing.cast("EagerTensorProtocol", "LeftShift")
-    assert typing.cast("EagerTensorProtocol", (t >> 1)[0]) == typing.cast("EagerTensorProtocol", "RightShift")
-    assert typing.cast("EagerTensorProtocol", (1 >> t)[0]) == typing.cast("EagerTensorProtocol", "RightShift")
+    assert as_tensor((t & 1)[0]) == as_tensor("BitwiseAnd")
+    assert as_tensor((1 & t)[0]) == as_tensor("BitwiseAnd")
+    assert as_tensor((t | 1)[0]) == as_tensor("BitwiseOr")
+    assert as_tensor((1 | t)[0]) == as_tensor("BitwiseOr")
+    assert as_tensor((t ^ 1)[0]) == as_tensor("BitwiseXor")
+    assert as_tensor((1 ^ t)[0]) == as_tensor("BitwiseXor")
+    assert as_tensor((t << 1)[0]) == as_tensor("LeftShift")
+    assert as_tensor((1 << t)[0]) == as_tensor("LeftShift")
+    assert as_tensor((t >> 1)[0]) == as_tensor("RightShift")
+    assert as_tensor((1 >> t)[0]) == as_tensor("RightShift")
 
-    assert typing.cast("EagerTensorProtocol", (-t)[0]) == typing.cast("EagerTensorProtocol", "Negative")
-    assert typing.cast("EagerTensorProtocol", (+t)[0]) == typing.cast("EagerTensorProtocol", "Positive")
-    assert typing.cast("EagerTensorProtocol", abs(t)[0]) == typing.cast("EagerTensorProtocol", "Abs")
-    assert typing.cast("EagerTensorProtocol", (~t)[0]) == typing.cast("EagerTensorProtocol", "BitwiseNot")
+    assert as_tensor((-t)[0]) == as_tensor("Negative")
+    assert as_tensor((+t)[0]) == as_tensor("Positive")
+    assert as_tensor(abs(t)[0]) == as_tensor("Abs")
+    assert as_tensor((~t)[0]) == as_tensor("BitwiseNot")
 
-    assert typing.cast("EagerTensorProtocol", (t < 1)[0]) == "Less"
-    assert typing.cast("EagerTensorProtocol", (t > 1)[0]) == "Greater"
-    assert typing.cast("EagerTensorProtocol", (t <= 1)[0]) == "LessEqual"
-    assert typing.cast("EagerTensorProtocol", (t >= 1)[0]) == "GreaterEqual"
-    assert typing.cast("EagerTensorProtocol", getattr((typing.cast("EagerTensorProtocol", t) == typing.cast("EagerTensorProtocol", 1)), "__getitem__")(0)) == typing.cast("EagerTensorProtocol", "Equal")
-    assert typing.cast("EagerTensorProtocol", getattr((typing.cast("EagerTensorProtocol", t) != typing.cast("EagerTensorProtocol", 1)), "__getitem__")(0)) == typing.cast("EagerTensorProtocol", "NotEqual")
+    assert as_tensor((t < 1)[0]) == "Less"
+    assert as_tensor((t > 1)[0]) == "Greater"
+    assert as_tensor((t <= 1)[0]) == "LessEqual"
+    assert as_tensor((t >= 1)[0]) == "GreaterEqual"
+    assert as_tensor(getattr((as_tensor(t) == as_tensor(1)), "__getitem__")(0)) == as_tensor("Equal")
+    assert as_tensor(getattr((as_tensor(t) != as_tensor(1)), "__getitem__")(0)) == as_tensor("NotEqual")
 
     assert hash(t) == id(t)
 

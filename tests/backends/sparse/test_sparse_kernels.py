@@ -10,9 +10,10 @@ import pytest
 import ml_switcheroo_compiler.backends.sparse as sp_pkg
 from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _test_sparse_conversions_and_kernels_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -28,21 +29,21 @@ def _test_sparse_conversions_and_kernels_part_1(_state: dict[str, EagerTensorPro
     csr = sp_pkg.coo_to_csr(coo)
     csc = sp_pkg.coo_to_csc(coo)
 
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", csr.to_dense)(), dense_mat)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", csc.to_dense)(), dense_mat)
+    as_callable(np.testing.assert_allclose)(as_callable(csr.to_dense)(), dense_mat)
+    as_callable(np.testing.assert_allclose)(as_callable(csc.to_dense)(), dense_mat)
 
     # CSR <-> CSC and COO roundtrips
     coo_from_csr = sp_pkg.csr_to_coo(csr)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_from_csr.to_dense)(), dense_mat)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_from_csr.to_dense)(), dense_mat)
 
     csc_from_csr = sp_pkg.csr_to_csc(csr)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", csc_from_csr.to_dense)(), dense_mat)
+    as_callable(np.testing.assert_allclose)(as_callable(csc_from_csr.to_dense)(), dense_mat)
 
     coo_from_csc = sp_pkg.csc_to_coo(csc)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", coo_from_csc.to_dense)(), dense_mat)
+    as_callable(np.testing.assert_allclose)(as_callable(coo_from_csc.to_dense)(), dense_mat)
 
     csr_from_csc = sp_pkg.csc_to_csr(csc)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", csr_from_csc.to_dense)(), dense_mat)
+    as_callable(np.testing.assert_allclose)(as_callable(csr_from_csc.to_dense)(), dense_mat)
 
     # Non-2D error checking
     coo_1d = COOTensor.from_dense(np.array([1.0, 0.0, 2.0]))
@@ -68,7 +69,7 @@ def _test_sparse_conversions_and_kernels_part_2(_state: dict[str, EagerTensorPro
         _state: Shared test state dictionary.
     """
     csc, csr, dense_mat, empty_coo = _state["csc"], _state["csr"], _state["dense_mat"], _state["empty_coo"]
-    empty_csc = typing.cast("EagerCallableProtocol", sp_pkg.coo_to_csc)(empty_coo)
+    empty_csc = as_callable(sp_pkg.coo_to_csc)(empty_coo)
     assert empty_csc.nnz == 0
 
     # SpMM and dense_spmm
@@ -76,22 +77,22 @@ def _test_sparse_conversions_and_kernels_part_2(_state: dict[str, EagerTensorPro
     expected_prod = dense_mat @ dense_rhs
 
     spmm_res = sp_pkg.spmm(csr, dense_rhs)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(spmm_res, expected_prod)
+    as_callable(np.testing.assert_allclose)(spmm_res, expected_prod)
 
     spmm_csc_res = sp_pkg.spmm(csc, dense_rhs)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(spmm_csc_res, expected_prod)
+    as_callable(np.testing.assert_allclose)(spmm_csc_res, expected_prod)
 
     dense_lhs = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32)
     expected_dense_spmm = dense_lhs @ dense_mat
     dense_spmm_res = sp_pkg.dense_spmm(dense_lhs, csr)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(dense_spmm_res, expected_dense_spmm)
+    as_callable(np.testing.assert_allclose)(dense_spmm_res, expected_dense_spmm)
 
     # SpGEMM
     dense_b = np.array([[0.0, 2.0, 0.0], [1.0, 0.0, 3.0], [0.0, 4.0, 0.0]], dtype=np.float32)
     csr_b = CSRTensor.from_dense(dense_b)
     expected_spgemm = dense_mat @ dense_b
     spgemm_res = sp_pkg.spgemm(csr, csr_b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", spgemm_res.to_dense)(), expected_spgemm)
+    as_callable(np.testing.assert_allclose)(as_callable(spgemm_res.to_dense)(), expected_spgemm)
 
     bad_b = CSRTensor.from_dense(np.ones((4, 4), dtype=np.float32))
     with pytest.raises(ValueError, match="Shape mismatch for SpGEMM"):
@@ -99,7 +100,7 @@ def _test_sparse_conversions_and_kernels_part_2(_state: dict[str, EagerTensorPro
 
     # Elementwise addition (CSR and CSC)
     expected_add = dense_mat + dense_b
-    csr_add_res = typing.cast("EagerCallableProtocol", sp_pkg.csr_add)(csr, csr_b)
+    csr_add_res = as_callable(sp_pkg.csr_add)(csr, csr_b)
     getattr(_state, "update")({"bad_b": bad_b, "csr_add_res": csr_add_res, "csr_b": csr_b, "dense_b": dense_b})
     getattr(_state, "update")({"dense_lhs": dense_lhs, "dense_rhs": dense_rhs, "dense_spmm_res": dense_spmm_res, "empty_csc": empty_csc})
     getattr(_state, "update")({"expected_add": expected_add, "expected_dense_spmm": expected_dense_spmm, "expected_prod": expected_prod, "expected_spgemm": expected_spgemm})
@@ -115,25 +116,25 @@ def _test_sparse_conversions_and_kernels_part_3(_state: dict[str, EagerTensorPro
     """
     bad_b, csc, csr, csr_add_res = _state["bad_b"], _state["csc"], _state["csr"], _state["csr_add_res"]
     dense_b, expected_add = _state["dense_b"], _state["expected_add"]
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", csr_add_res.to_dense)(), expected_add)
+    as_callable(np.testing.assert_allclose)(as_callable(csr_add_res.to_dense)(), expected_add)
 
     csc_b = CSCTensor.from_dense(dense_b)
-    csc_add_res = typing.cast("EagerCallableProtocol", sp_pkg.csc_add)(csc, csc_b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", csc_add_res.to_dense)(), expected_add)
+    csc_add_res = as_callable(sp_pkg.csc_add)(csc, csc_b)
+    as_callable(np.testing.assert_allclose)(as_callable(csc_add_res.to_dense)(), expected_add)
 
     # Empty operand branches for addition
     empty_csr_zero = CSRTensor.from_dense(np.zeros((3, 3), dtype=np.float32))
-    assert typing.cast("EagerCallableProtocol", sp_pkg.csr_add)(csr, empty_csr_zero) is csr
-    assert typing.cast("EagerCallableProtocol", sp_pkg.csr_add)(empty_csr_zero, csr) is csr
+    assert as_callable(sp_pkg.csr_add)(csr, empty_csr_zero) is csr
+    assert as_callable(sp_pkg.csr_add)(empty_csr_zero, csr) is csr
 
     empty_csc_zero = CSCTensor.from_dense(np.zeros((3, 3), dtype=np.float32))
-    assert typing.cast("EagerCallableProtocol", sp_pkg.csc_add)(csc, empty_csc_zero) is csc
-    assert typing.cast("EagerCallableProtocol", sp_pkg.csc_add)(empty_csc_zero, csc) is csc
+    assert as_callable(sp_pkg.csc_add)(csc, empty_csc_zero) is csc
+    assert as_callable(sp_pkg.csc_add)(empty_csc_zero, csc) is csc
 
     with pytest.raises(ValueError, match="Shape mismatch for CSR addition"):
-        typing.cast("EagerCallableProtocol", sp_pkg.csr_add)(csr, bad_b)
+        as_callable(sp_pkg.csr_add)(csr, bad_b)
     with pytest.raises(ValueError, match="Shape mismatch for CSC addition"):
-        typing.cast("EagerCallableProtocol", sp_pkg.csc_add)(csc, typing.cast("EagerCallableProtocol", CSCTensor.from_dense)(typing.cast("EagerCallableProtocol", np.ones)((4, 4), dtype=np.float32)))
+        as_callable(sp_pkg.csc_add)(csc, as_callable(CSCTensor.from_dense)(as_callable(np.ones)((4, 4), dtype=np.float32)))
 
     # Sparse convolution masks with 2D, 3D and padding
     x_2d = np.ones((4, 4), dtype=np.float32)
@@ -167,19 +168,19 @@ def _test_sparse_conversions_and_kernels_part_4(_state: dict[str, EagerTensorPro
     tensor_to_mask = np.array([[10.0, 20.0], [30.0, 40.0]], dtype=np.float32)
     s_mask_res = sp_pkg.sparse_mask(tensor_to_mask, mask)
     assert s_mask_res.nnz == 2
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", s_mask_res.to_dense)(), [[10.0, 0.0], [0.0, 40.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(s_mask_res.to_dense)(), [[10.0, 0.0], [0.0, 40.0]])
 
     x = np.ones((1, 1, 4, 4), dtype=np.float32)
     weight = np.ones((1, 1, 3, 3), dtype=np.float32)
     conv_mask_res = sp_pkg.sparse_conv2d_mask(x, weight, mask)
     assert conv_mask_res.nnz == 2
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(conv_mask_res.values, [9.0, 9.0])
+    as_callable(np.testing.assert_allclose)(conv_mask_res.values, [9.0, 9.0])
 
     # Eager dispatch
     res_eager_spmm = sp_pkg.execute_op(SparseGenerator, "spmm", csr, dense_rhs)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_eager_spmm, expected_prod)
+    as_callable(np.testing.assert_allclose)(res_eager_spmm, expected_prod)
     res_eager_spgemm = sp_pkg.execute_op(SparseGenerator, "spgemm", csr, csr_b)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(res_eager_spgemm, "to_dense")))(), expected_spgemm)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_eager_spgemm, "to_dense")))(), expected_spgemm)
     getattr(_state, "update")({"conv_3d_res": conv_3d_res, "conv_mask_res": conv_mask_res, "mask": mask, "res_eager_spgemm": res_eager_spgemm})
     getattr(_state, "update")({"res_eager_spmm": res_eager_spmm, "s_mask_res": s_mask_res, "tensor_to_mask": tensor_to_mask, "weight": weight})
     getattr(_state, "update")({"x": x})

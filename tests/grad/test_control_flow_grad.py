@@ -11,9 +11,10 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.control_flow import cond, while_loop
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_cond_grad() -> None:
@@ -32,7 +33,7 @@ def test_cond_grad() -> None:
             Args:
                 x: Test parameter `x`.
             """
-            return (typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)) * typing.cast("EagerTensorProtocol", x)
+            return (as_tensor(x) * as_tensor(x)) * as_tensor(x)
 
         def false_fn(x: EagerValue) -> EagerValue:
             """Test function false_fn.
@@ -40,16 +41,16 @@ def test_cond_grad() -> None:
             Args:
                 x: Test parameter `x`.
             """
-            return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", x)
+            return as_tensor(x) * as_tensor(x)
 
-        c = typing.cast("EagerTensorProtocol", x) > typing.cast("EagerTensorProtocol", 0.0)
-        return typing.cast("EagerCallableProtocol", cond)(c, lambda: typing.cast("EagerCallableProtocol", true_fn)(x), lambda: typing.cast("EagerCallableProtocol", false_fn)(x))
+        c = as_tensor(x) > as_tensor(0.0)
+        return as_callable(cond)(c, lambda: as_callable(true_fn)(x), lambda: as_callable(false_fn)(x))
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
-    out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x)
+    out, vjp_fn = as_callable(vjp)(f, x)
     assert out is not None
     # Test backward pass graph construction
-    gx = typing.cast("EagerCallableProtocol", vjp_fn)(typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), typing.cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu"))))
+    gx = as_callable(vjp_fn)(as_callable(Tensor)(as_callable(np.array)([1.0], dtype=np.float32), as_callable(TensorConfig)((1,), DType.Float32, as_callable(Device)("cpu"))))
     assert gx is not None
 
 
@@ -69,7 +70,7 @@ def test_while_loop_grad() -> None:
             Args:
                 val: Test parameter `val`.
             """
-            return typing.cast("EagerValue", getattr(val, "__getitem__")(0) < 10.0)
+            return as_tensor(getattr(val, "__getitem__")(0) < 10.0)
 
         def body_fn(val: EagerValue) -> EagerValue:
             """Test function body_fn.
@@ -79,12 +80,12 @@ def test_while_loop_grad() -> None:
             """
             return (getattr(val, "__getitem__")(0) + x,)
 
-        res = typing.cast("EagerCallableProtocol", while_loop)(cond_fn, body_fn, (x,))
+        res = as_callable(while_loop)(cond_fn, body_fn, (x,))
         return res[0]
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
-    out, vjp_fn = typing.cast("EagerCallableProtocol", vjp)(f, x)
+    out, vjp_fn = as_callable(vjp)(f, x)
     assert out is not None
-    gx = typing.cast("EagerCallableProtocol", vjp_fn)(typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", np.array)([1.0], dtype=np.float32), typing.cast("EagerCallableProtocol", TensorConfig)((1,), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu"))))
+    gx = as_callable(vjp_fn)(as_callable(Tensor)(as_callable(np.array)([1.0], dtype=np.float32), as_callable(TensorConfig)((1,), DType.Float32, as_callable(Device)("cpu"))))
     assert gx is not None

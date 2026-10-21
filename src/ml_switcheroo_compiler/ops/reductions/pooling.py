@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -220,7 +217,7 @@ class MaxUnpool1D(OpDef):
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
         if output_size is not None and hasattr(output_size, "__getitem__"):
             s = list(getattr(operand, "shape"))
-            typing.cast(EagerTensorProtocol, s)[-1] = getattr(output_size, "__getitem__")(0)
+            s[-1] = getattr(output_size, "__getitem__")(0)
             return tuple(s)
         return ()
 

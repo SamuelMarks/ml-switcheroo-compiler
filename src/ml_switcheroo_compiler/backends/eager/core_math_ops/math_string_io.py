@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -37,7 +36,7 @@ def _fromfile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "fromfile")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "fromfile")(*args, **kwargs))
 
 
 @global_eager_registry.register("Fromstring")
@@ -54,9 +53,9 @@ def _fromstring(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     func = getattr(backend_module, "fromstring", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     x = args[0]
-    return typing.cast("EagerValue", getattr(backend_module, "fromstring")(x, **kwargs))
+    return as_tensor(getattr(backend_module, "fromstring")(x, **kwargs))
 
 
 @global_eager_registry.register("DecodeImage")
@@ -73,7 +72,7 @@ def _np_decodeimage(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "decodeimage", getattr(backend_module, "decodeimage", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.zeros(kwargs.get("shape", (224, 224, 3)) if hasattr(kwargs, "get") else (224, 224, 3), dtype=mod.uint8)
 
@@ -92,7 +91,7 @@ def _np_fromfile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """
     func = getattr(backend_module, "fromfile", getattr(backend_module, "fromfile", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fromfile(*args, **kwargs)
 
 
@@ -110,7 +109,7 @@ def _np_fromstring(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     func = getattr(backend_module, "fromstring", getattr(backend_module, "fromstring", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).fromstring(*args, **kwargs)
 
 
@@ -128,7 +127,7 @@ def _np_parsetensor(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "parsetensor", getattr(backend_module, "parsetensor", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).array(args[0])
 
 
@@ -146,7 +145,7 @@ def _np_stringlower(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "stringlower", getattr(backend_module, "stringlower", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.char.lower(mod.asarray(args[0], dtype=str))
 
@@ -165,7 +164,7 @@ def _np_stringsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "stringsplit", getattr(backend_module, "stringsplit", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.char.split(mod.asarray(args[0], dtype=str))
 
@@ -184,7 +183,7 @@ def _np_stringtohash(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     func = getattr(backend_module, "stringtohash", getattr(backend_module, "stringtohash", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.array([hash(str(x)) for x in mod.asarray(args[0]).flatten()]).reshape(tuple(int(d) for d in mod.shape(args[0])))
 
@@ -203,7 +202,7 @@ def _np_stringtonumber(backend_module: BackendModuleProtocol, *args: EagerValue,
     """
     func = getattr(backend_module, "stringtonumber", getattr(backend_module, "stringtonumber", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).asarray(args[0], dtype=float)
 
 
@@ -221,7 +220,7 @@ def _np_stringupper(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "stringupper", getattr(backend_module, "stringupper", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
     return mod.char.upper(mod.asarray(args[0], dtype=str))
 
@@ -240,7 +239,7 @@ def _np_textvectorization(backend_module: BackendModuleProtocol, *args: EagerVal
     """
     func = getattr(backend_module, "textvectorization", getattr(backend_module, "textvectorization", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -258,7 +257,7 @@ def _np_writefile(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """
     func = getattr(backend_module, "writefile", getattr(backend_module, "writefile", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
 
     import os
 

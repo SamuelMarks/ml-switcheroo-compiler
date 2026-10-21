@@ -15,9 +15,10 @@ from ml_switcheroo_compiler.backends.numpy.eager.activation_ops import (
     _np_softplus,
     _np_softsign,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_relu() -> None:
@@ -28,7 +29,7 @@ def test_relu() -> None:
     """
     x = np.array([-1.0, 1.0])
     res = _np_relu(np, x)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, [0.0, 1.0])
+    as_callable(np.testing.assert_allclose)(res, [0.0, 1.0])
 
 
 def test_elu() -> None:
@@ -40,7 +41,7 @@ def test_elu() -> None:
     x = np.array([-1.0, 1.0])
     res = _np_elu(np, x, alpha=2.0)
     expected = np.where(x > 0, x, 2.0 * (np.exp(x) - 1.0))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_celu() -> None:
@@ -52,7 +53,7 @@ def test_celu() -> None:
     x = np.array([-1.0, 1.0])
     res = _np_celu(np, x, alpha=2.0)
     expected = np.maximum(0.0, x) + np.minimum(0.0, 2.0 * (np.exp(x / 2.0) - 1.0))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_softplus() -> None:
@@ -64,7 +65,7 @@ def test_softplus() -> None:
     x = np.array([-1.0, 1.0])
     res = _np_softplus(np, x)
     expected = np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0.0)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_softsign() -> None:
@@ -76,7 +77,7 @@ def test_softsign() -> None:
     x = np.array([-1.0, 1.0])
     res = _np_softsign(np, x)
     expected = x / (1.0 + np.abs(x))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_mish() -> None:
@@ -89,7 +90,7 @@ def test_mish() -> None:
     res = _np_mish(np, x)
     softplus_x = np.log1p(np.exp(-np.abs(x))) + np.maximum(x, 0.0)
     expected = x * np.tanh(softplus_x)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)
 
 
 def test_log_sigmoid() -> None:
@@ -101,4 +102,4 @@ def test_log_sigmoid() -> None:
     x = np.array([-1.0, 1.0])
     res = _np_log_sigmoid(np, x)
     expected = -np.log1p(np.exp(-x))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res, expected)
+    as_callable(np.testing.assert_allclose)(res, expected)

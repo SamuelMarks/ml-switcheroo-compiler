@@ -7,9 +7,10 @@ import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def _create_mock_tf() -> MagicMock:
@@ -70,24 +71,24 @@ def test_tf_ops_parity() -> None:
     mock_tf = _create_mock_tf()
     with patch.dict(sys.modules, {"tensorflow": mock_tf}):
         # Math
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "Add", [1.0], [2.0]) == "tf_add"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "Multiply", [2.0], [3.0]) == "tf_mul"
+        assert as_callable(execute_op)(None, "Add", [1.0], [2.0]) == "tf_add"
+        assert as_callable(execute_op)(None, "Multiply", [2.0], [3.0]) == "tf_mul"
 
         # Reductions
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "ReduceSum", [1.0, 2.0], dim=0) == "tf_sum"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "ReduceMean", [1.0, 2.0], dim=0) == "tf_mean"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "ArgMax", [1.0, 2.0], dim=0) == "tf_argmax"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "ArgMin", [1.0, 2.0], dim=0) == "tf_argmin"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "ReduceL2", [1.0, 2.0]) == "tf_l2norm"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "CumSum", [1.0, 2.0], dim=0) == "tf_cumsum"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "CumProd", [1.0, 2.0], dim=0) == "tf_cumprod"
+        assert as_callable(execute_op)(None, "ReduceSum", [1.0, 2.0], dim=0) == "tf_sum"
+        assert as_callable(execute_op)(None, "ReduceMean", [1.0, 2.0], dim=0) == "tf_mean"
+        assert as_callable(execute_op)(None, "ArgMax", [1.0, 2.0], dim=0) == "tf_argmax"
+        assert as_callable(execute_op)(None, "ArgMin", [1.0, 2.0], dim=0) == "tf_argmin"
+        assert as_callable(execute_op)(None, "ReduceL2", [1.0, 2.0]) == "tf_l2norm"
+        assert as_callable(execute_op)(None, "CumSum", [1.0, 2.0], dim=0) == "tf_cumsum"
+        assert as_callable(execute_op)(None, "CumProd", [1.0, 2.0], dim=0) == "tf_cumprod"
 
         # Linear algebra
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "MatMul", [[1.0]], [[2.0]]) == "tf_matmul"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "Cholesky", [[1.0]]) == "tf_cholesky"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "QR", [[1.0]]) == ("tf_q", "tf_r")
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "SVD", [[1.0]]) == ("tf_s", "tf_u", "tf_v")
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "Solve", [[1.0]], [[2.0]]) == "tf_solve"
+        assert as_callable(execute_op)(None, "MatMul", [[1.0]], [[2.0]]) == "tf_matmul"
+        assert as_callable(execute_op)(None, "Cholesky", [[1.0]]) == "tf_cholesky"
+        assert as_callable(execute_op)(None, "QR", [[1.0]]) == ("tf_q", "tf_r")
+        assert as_callable(execute_op)(None, "SVD", [[1.0]]) == ("tf_s", "tf_u", "tf_v")
+        assert as_callable(execute_op)(None, "Solve", [[1.0]], [[2.0]]) == "tf_solve"
 
 
 def test_tf_control_flow_and_vision_parity() -> None:
@@ -105,8 +106,8 @@ def test_tf_control_flow_and_vision_parity() -> None:
             """Return false branch constant."""
             return 0
 
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "Cond", pred, true_fn, false_fn) == "tf_cond"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "If", pred, true_fn, false_fn) == "tf_cond"
+        assert as_callable(execute_op)(None, "Cond", pred, true_fn, false_fn) == "tf_cond"
+        assert as_callable(execute_op)(None, "If", pred, true_fn, false_fn) == "tf_cond"
 
         def cond_fn(i: EagerValue) -> EagerValue:
             """Evaluate loop continuation condition.
@@ -114,7 +115,7 @@ def test_tf_control_flow_and_vision_parity() -> None:
             Args:
                 i: Test parameter `i`.
             """
-            return typing.cast("EagerTensorProtocol", i) < typing.cast("EagerTensorProtocol", 10)
+            return as_tensor(i) < as_tensor(10)
 
         def body_fn(i: EagerValue) -> EagerValue:
             """Increment loop counter.
@@ -122,13 +123,13 @@ def test_tf_control_flow_and_vision_parity() -> None:
             Args:
                 i: Test parameter `i`.
             """
-            return typing.cast("EagerTensorProtocol", i) + typing.cast("EagerTensorProtocol", 1)
+            return as_tensor(i) + as_tensor(1)
 
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "WhileLoop", cond_fn, body_fn, [0]) == "tf_while_loop"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "While", cond_fn, body_fn, [0]) == "tf_while_loop"
+        assert as_callable(execute_op)(None, "WhileLoop", cond_fn, body_fn, [0]) == "tf_while_loop"
+        assert as_callable(execute_op)(None, "While", cond_fn, body_fn, [0]) == "tf_while_loop"
 
         # Vision and NN
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "Conv2D", [[[[1.0]]]], [[[[1.0]]]]) == "tf_conv2d"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "MaxPool2D", [[[[1.0]]]]) == "tf_maxpool"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "AvgPool2D", [[[[1.0]]]]) == "tf_avgpool"
-        assert typing.cast("EagerCallableProtocol", execute_op)(None, "ResizeBilinear", [[[[1.0]]]], size=(2, 2)) == "tf_resize"
+        assert as_callable(execute_op)(None, "Conv2D", [[[[1.0]]]], [[[[1.0]]]]) == "tf_conv2d"
+        assert as_callable(execute_op)(None, "MaxPool2D", [[[[1.0]]]]) == "tf_maxpool"
+        assert as_callable(execute_op)(None, "AvgPool2D", [[[[1.0]]]]) == "tf_avgpool"
+        assert as_callable(execute_op)(None, "ResizeBilinear", [[[[1.0]]]], size=(2, 2)) == "tf_resize"

@@ -7,14 +7,13 @@ import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
 from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxControlFlowVisitor,
     JaxDistributedVisitor,
     JaxMathVisitor,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -273,7 +272,7 @@ class JAXCodeGenerator(BaseGenerator):
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-            return typing.cast(EagerValue, evaluated)
+            return evaluated
 
         return fallback_forward
 
@@ -301,7 +300,7 @@ class JAXCodeGenerator(BaseGenerator):
             """
             del w_kwargs
             jax_args = [getattr(jnp_mod, "asarray")(a.data if isinstance(a, Tensor) else a) for a in w_args]
-            return typing.cast(TypedVariadicCallable[EagerValue], target_fn)(*jax_args)
+            return as_callable(target_fn)(*jax_args)
 
         return executable
 

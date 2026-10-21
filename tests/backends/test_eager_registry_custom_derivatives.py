@@ -6,9 +6,10 @@ import typing
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends import eager_registry as m
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_tuple_get_item_coverage() -> None:
@@ -38,7 +39,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             x: Test parameter `x`.
             y: Test parameter `y`.
         """
-        return typing.cast("EagerTensorProtocol", x) * typing.cast("EagerTensorProtocol", y)
+        return as_tensor(x) * as_tensor(y)
 
     res_fun = m._eager_custom_jvp(backend, 3, 4, fun=my_fun)
     assert res_fun == 12
@@ -68,7 +69,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             p: Test parameter `p`.
             t: Test parameter `t`.
         """
-        return (typing.cast("EagerTensorProtocol", p) + typing.cast("EagerTensorProtocol", 1), typing.cast("EagerTensorProtocol", t) + typing.cast("EagerTensorProtocol", 1))
+        return (as_tensor(p) + as_tensor(1), as_tensor(t) + as_tensor(1))
 
     res_rule2 = m._eager_process_custom_jvp_call(backend, 10, 2, num_primals=1, jvp_rule=rule_unpacked)
     assert res_rule2 == (11, 3)

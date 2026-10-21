@@ -6,8 +6,8 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config, disable_compile, enable_compile, enable_op_determinism, enable_tensor_float_32_execution, tensor_float_32_execution_enabled
+from tests.testing_utils import as_module_type, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -16,24 +16,23 @@ if typing.TYPE_CHECKING:
 def test_config_extras() -> None:
     """Test function test_config_extras."""
     config.seed = 42
-    assert typing.cast("EagerValue", config.seed) == 42
+    assert as_tensor(config.seed) == 42
 
     config.op_determinism = False
     enable_op_determinism()
-    assert typing.cast("EagerValue", config.op_determinism) is True
+    assert config.op_determinism is True
 
     config.tensor_float_32_execution = False
     enable_tensor_float_32_execution(True)
-    assert typing.cast("EagerValue", tensor_float_32_execution_enabled()) is True
+    assert tensor_float_32_execution_enabled() is True
 
     disable_compile()
-    assert typing.cast("EagerValue", config.eager_mode) is True
+    assert bool(config.eager_mode)
     enable_compile()
-    assert typing.cast("EagerValue", config.eager_mode) is False
+    assert not bool(config.eager_mode)
 
     # Trigger the tracing check by mocking
     import sys
-    import types
 
     class MockTracingState:
         """Test class MockTracingState."""
@@ -46,12 +45,12 @@ def test_config_extras() -> None:
         global_tracing_state = MockTracingState()
 
     orig_state = sys.modules.get("ml_switcheroo_compiler.tracing.state")
-    sys.modules["ml_switcheroo_compiler.tracing.state"] = typing.cast("types.ModuleType", MockStateMod())
+    sys.modules["ml_switcheroo_compiler.tracing.state"] = as_module_type(MockStateMod())
     config.eager_mode = True  # Even if true, is_tracing forces false
-    assert typing.cast("EagerValue", config.eager_mode) is False
+    assert not bool(config.eager_mode)
 
     MockTracingState.is_tracing = False
-    assert typing.cast("EagerValue", config.eager_mode) is True
+    assert bool(config.eager_mode)
 
     if orig_state is not None:
         sys.modules["ml_switcheroo_compiler.tracing.state"] = orig_state
@@ -117,9 +116,9 @@ def test_eager_mode_stream_context() -> None:
     """Test function test_eager_mode_stream_context."""
     from ml_switcheroo_compiler.core.config import EagerMode, StreamContext
 
-    with typing.cast("EagerTensorProtocol", EagerMode()):
+    with as_tensor(EagerMode()):
         assert config.eager_mode is True
-    with typing.cast("EagerTensorProtocol", StreamContext("test")):
+    with as_tensor(StreamContext("test")):
         assert config.current_stream == "test"
 
 

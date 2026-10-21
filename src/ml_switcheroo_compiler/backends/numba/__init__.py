@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+from ml_switcheroo_compiler.backends.eager_registry import as_callable
 
 try:
     _has_pkg = importlib.util.find_spec("numba") is not None
@@ -24,7 +23,7 @@ type.__setattr__(NumbaGenerator, "zeros", staticmethod(zeros))
 type.__setattr__(NumbaGenerator, "array", staticmethod(array))
 type.__setattr__(NumbaGenerator, "asarray", staticmethod(asarray))
 type.__setattr__(NumbaGenerator, "item", staticmethod(item))
-type.__setattr__(NumbaGenerator, "execute_op", typing.cast("EagerCallableProtocol", staticmethod)(execute_op))
+type.__setattr__(NumbaGenerator, "execute_op", as_callable(staticmethod)(execute_op))
 
 __all__ = [
     "NumbaGenerator",

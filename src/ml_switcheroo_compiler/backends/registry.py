@@ -8,9 +8,6 @@ from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
-    DataclassProtocol as DataclassProtocol,
-)
-from ml_switcheroo_compiler.backends.eager_registry import (
     EagerCallableProtocol as EagerCallableProtocol,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -22,11 +19,56 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 from ml_switcheroo_compiler.backends.eager_registry import (
     ShapeProtocol as ShapeProtocol,
 )
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_bool as as_bool,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_bytes as as_bytes,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_callable as as_callable,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_eager_list as as_eager_list,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_float as as_float,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_int as as_int,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_opt_int as as_opt_int,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_opt_int_seq as as_opt_int_seq,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_opt_str as as_opt_str,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_shape as as_shape,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_str as as_str,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_tensor as as_tensor,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_tensor_pair as as_tensor_pair,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_tensor_triple as as_tensor_triple,
+)
 from ml_switcheroo_compiler.backends.protocols import (
     BackendModuleProtocol as BackendModuleProtocol,
 )
 from ml_switcheroo_compiler.backends.protocols import (
     BackendNamespaceProtocol as BackendNamespaceProtocol,
+)
+from ml_switcheroo_compiler.backends.protocols import (
+    as_mod as as_mod,
 )
 from ml_switcheroo_compiler.core.config import config
 

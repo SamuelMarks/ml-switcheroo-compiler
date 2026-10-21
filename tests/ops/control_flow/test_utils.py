@@ -11,9 +11,10 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import _get_tensor_ids, _process_trace_outputs, _trace_function, _wrap_proxy_inputs
+from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class DummyData:
@@ -25,14 +26,14 @@ class DummyData:
 def test_control_flow_utils() -> None:
     """Test function test_control_flow_utils."""
     t_cfg = TensorConfig((1,), DType.Float32, "cpu")
-    t = typing.cast("EagerCallableProtocol", Tensor)(data=typing.cast("EagerCallableProtocol", DummyData)(), config=t_cfg)
+    t = as_callable(Tensor)(data=as_callable(DummyData)(), config=t_cfg)
 
     g = LogicalGraph("g")
     # wrap proxy inputs
-    ids, args = typing.cast("EagerCallableProtocol", _wrap_proxy_inputs)(((t,), 42), g)
-    assert typing.cast("EagerValue", len(ids)) == 1
-    assert typing.cast("EagerValue", args[1]) == 42
-    assert isinstance(typing.cast("EagerValue", args[0]), tuple)
+    ids, args = as_callable(_wrap_proxy_inputs)(((t,), 42), g)
+    assert as_tensor(len(ids)) == 1
+    assert as_tensor(args[1]) == 42
+    assert isinstance(as_tensor(args[0]), tuple)
 
     # subgraph without input_specs attribute
     class SubgraphNoSpecs:
@@ -40,21 +41,21 @@ def test_control_flow_utils() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            self.nodes = typing.cast("dict[str, EagerTensorProtocol]", {})
+            self.nodes = as_tensor_dict({})
 
     g_nospecs = SubgraphNoSpecs()
-    ids_nospecs, args_nospecs = typing.cast("EagerCallableProtocol", _wrap_proxy_inputs)((t,), g_nospecs)
-    assert typing.cast("EagerValue", len(ids_nospecs)) == 1
-    assert typing.cast("EagerValue", len(args_nospecs)) == 1
+    ids_nospecs, args_nospecs = as_callable(_wrap_proxy_inputs)((t,), g_nospecs)
+    assert as_tensor(len(ids_nospecs)) == 1
+    assert as_tensor(len(args_nospecs)) == 1
 
     # get tensor ids
-    assert typing.cast("EagerValue", _get_tensor_ids(t)) == ["id"]
-    assert typing.cast("EagerValue", _get_tensor_ids([t])) == ["id"]
+    assert as_tensor(_get_tensor_ids(t)) == ["id"]
+    assert as_tensor(_get_tensor_ids([t])) == ["id"]
 
     # Nested Tensor unwrap (line 78)
-    t_inner = typing.cast("EagerCallableProtocol", Tensor)(data=typing.cast("EagerCallableProtocol", DummyData)(), config=t_cfg)
+    t_inner = as_callable(Tensor)(data=as_callable(DummyData)(), config=t_cfg)
     t_outer = Tensor(data=t_inner, config=t_cfg)
-    assert typing.cast("EagerValue", _get_tensor_ids(t_outer)) == ["id"]
+    assert as_tensor(_get_tensor_ids(t_outer)) == ["id"]
 
     # Direct id on Tensor (lines 81-82)
     class DirectIdTensor(Tensor):
@@ -79,7 +80,7 @@ def test_control_flow_utils() -> None:
 
     # process trace outputs
     g2 = LogicalGraph("g2")
-    out_id = typing.cast("EagerCallableProtocol", _process_trace_outputs)(t, g2)
+    out_id = as_callable(_process_trace_outputs)(t, g2)
     assert out_id in g2.nodes
 
     # trace function
@@ -91,9 +92,9 @@ def test_control_flow_utils() -> None:
         """
         return x
 
-    block = typing.cast("EagerCallableProtocol", _trace_function)(my_fn, (t,), "my_block")
-    assert isinstance(typing.cast("EagerValue", block), LogicalGraph)
-    assert typing.cast("EagerTensorProtocol", getattr(block, "id")) == "my_block"
+    block = as_callable(_trace_function)(my_fn, (t,), "my_block")
+    assert isinstance(as_tensor(block), LogicalGraph)
+    assert as_tensor(getattr(block, "id")) == "my_block"
     assert block.name == "my_block"
     assert len(block.inputs) == 1
     assert len(block.outputs) == 1

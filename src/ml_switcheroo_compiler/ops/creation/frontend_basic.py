@@ -5,12 +5,12 @@ from __future__ import annotations
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_str, as_tensor, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
@@ -52,7 +52,7 @@ def _infer_dtype(val_arr: TensorOrScalar) -> DType:
     dtype_str = str(getattr(val_arr, "dtype", "float32"))
     if dtype_str.startswith("<U") or dtype_str.startswith("|S"):
         return DType.String
-    if dtype_str == "Any" or dtype_str == "O":
+    if dtype_str in ("Any", "object", "O"):
         return DType.Object
     return DType(dtype_str)
 
@@ -90,23 +90,23 @@ def _try_create_array(
     """
     if dtype_val is None:
         try:
-            return typing.cast(TensorOrScalar, getattr(backend, "array")(obj))
+            return as_tensor(getattr(backend, "array")(obj))
         except ValueError:
-            return typing.cast(TensorOrScalar, getattr(backend, "array")(obj, dtype="Any"))
+            return as_tensor(getattr(backend, "array")(obj, dtype="Any"))
     try:
-        return typing.cast(TensorOrScalar, getattr(backend, "array")(obj, dtype=dtype_val))
+        return as_tensor(getattr(backend, "array")(obj, dtype=dtype_val))
     except TypeError:
-        return typing.cast(TensorOrScalar, getattr(backend, "array")(obj))
+        return as_tensor(getattr(backend, "array")(obj))
 
 
 def _create_backend_array(
-    Any: TensorOrScalar | Tensor | Sequence[TensorOrScalar],
+    obj: TensorOrScalar | Tensor | Sequence[TensorOrScalar],
     dtype: DType | str | type | None,
 ) -> TensorOrScalar:
     """Create the backend array.
 
     Args:
-        Any (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): The Any parameter.
+        obj (TensorOrScalar | Tensor | Sequence[TensorOrScalar]): The obj parameter.
         dtype (DType | str | type | None): The dtype parameter.
 
     Returns:
@@ -117,25 +117,25 @@ def _create_backend_array(
     if dtype is not None:
         dtype_val = _get_dtype_val(dtype)
 
-    res = _try_create_array(backend, Any, dtype_val)
+    res = _try_create_array(backend, obj, dtype_val)
 
     return res
 
 
 def array(
-    Any: TensorOrScalar,
+    obj: TensorOrScalar,
     dtype: DType | None = None,
 ) -> Tensor:
     """Create an array.
 
     Args:
-        Any (TensorOrScalar): The Any parameter.
+        obj (TensorOrScalar): The obj parameter.
         dtype (DType | None): The dtype parameter.
 
     Returns:
         Tensor: Result.
     """
-    val_arr = _create_backend_array(Any, dtype)
+    val_arr = _create_backend_array(obj, dtype)
     if dtype is None:
         dtype = _infer_dtype(val_arr)
 
@@ -146,7 +146,7 @@ def array(
 
     out_id = TracingNodeBuilder.extract_from_constant(val_arr)[0]
 
-    return Tensor(ProxyTensor(typing.cast(str, out_id), shape, dtype.value), TensorConfig(shape, dtype, config.default_device))
+    return Tensor(ProxyTensor(as_str(out_id), shape, dtype.value), TensorConfig(shape, dtype, config.default_device))
 
 
 def asarray(
@@ -175,7 +175,7 @@ def convert_to_tensor(
     x: TensorOrScalar,
     dtype: DType | None = None,
 ) -> Tensor:
-    """Convert the given Any to a Tensor.
+    """Convert the given object to a Tensor.
 
     Args:
         x (TensorOrScalar): Object to convert.
@@ -213,7 +213,7 @@ def zeros(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return typing.cast(Tensor, _emit_creation_node("Zeros", shape, dtype, {}))
+    return as_tensor_obj(_emit_creation_node("Zeros", shape, dtype, {}))
 
 
 def ones(
@@ -242,7 +242,7 @@ def ones(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return typing.cast(Tensor, _emit_creation_node("Ones", shape, dtype, {}))
+    return as_tensor_obj(_emit_creation_node("Ones", shape, dtype, {}))
 
 
 def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int | bool:
@@ -257,7 +257,6 @@ def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int 
     val = fill_value.data if hasattr(fill_value, "data") else fill_value
     if hasattr(val, "item"):
         val = getattr(val, "item")()
-    import typing
 
     return typing.cast("float | int | bool", val)
 
@@ -304,14 +303,13 @@ def full(
     if config.eager_mode:
         return _full_eager(shape, fill_value, dtype, device)
 
-    return typing.cast(
-        Tensor,
+    return as_tensor_obj(
         _emit_creation_node(
             "Full",
             shape,
             dtype,
             {"fill_value": fill_value},
-        ),
+        )
     )
 
 
@@ -339,7 +337,7 @@ def zeros_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
-    return typing.cast(Tensor, _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0}))
+    return as_tensor_obj(_emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0}))
 
 
 def ones_like(
@@ -366,7 +364,7 @@ def ones_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
-    return typing.cast(Tensor, _emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1}))
+    return as_tensor_obj(_emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1}))
 
 
 def full_like(
@@ -396,14 +394,13 @@ def full_like(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
-    return typing.cast(
-        Tensor,
+    return as_tensor_obj(
         _emit_creation_node(
             "ConstantOfShape",
             input.shape,
             dtype,
             {"value": fill_value},
-        ),
+        )
     )
 
 
@@ -433,7 +430,7 @@ def empty(
             dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
-    return typing.cast(Tensor, _emit_creation_node("Zeros", shape, dtype, {}))
+    return as_tensor_obj(_emit_creation_node("Zeros", shape, dtype, {}))
 
 
 def empty_like(x: Tensor, dtype: DType | None = None) -> Tensor:
@@ -462,7 +459,7 @@ def convert_to_numpy(x: Tensor) -> TensorOrScalar:
 
     backend = get_active_backend()
     if hasattr(backend, "convert_to_numpy"):
-        return typing.cast(TensorOrScalar, getattr(backend, "convert_to_numpy")(x))
+        return as_tensor(getattr(backend, "convert_to_numpy")(x))
     if hasattr(x, "numpy"):
         return x.numpy()
     return backend.asarray(getattr(x, "data", x))
@@ -477,7 +474,7 @@ def frombuffer(
     """Create a 1-D tensor from a buffer.
 
     Args:
-        buffer (TensorOrScalar): An Any that exposes the buffer interface.
+        buffer (TensorOrScalar): An object that exposes the buffer interface.
         dtype (Optional[DType]): Data type of the returned array.
         count (int): Number of items to read. -1 means all data in the buffer.
         offset (int): Start reading the buffer from this offset.
@@ -496,4 +493,4 @@ def frombuffer(
         )
         shape = getattr(data, "shape") if hasattr(data, "shape") else ()
         return Tensor(data, TensorConfig(shape, dtype, config.default_device))
-    return typing.cast(Tensor, _emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset}))
+    return as_tensor_obj(_emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset}))

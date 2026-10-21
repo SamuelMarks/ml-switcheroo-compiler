@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef
 
 if typing.TYPE_CHECKING:
@@ -38,7 +38,7 @@ class ReductionOp(OpDef):
         """
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
-        return typing.cast(Tensor, dispatch_op(self.op_type, *args, **kwargs))
+        return as_tensor_obj(dispatch_op(self.op_type, *args, **kwargs))
 
     def infer_shape(
         self,

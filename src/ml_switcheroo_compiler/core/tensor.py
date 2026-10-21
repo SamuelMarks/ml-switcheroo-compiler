@@ -7,8 +7,6 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
-
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
@@ -29,6 +27,42 @@ from .tensor_mixins import (
     TensorIndexingMixin,
     TensorPropertiesMixin,
 )
+
+
+def _is_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
+    """Type guard narrowing `val` to `Tensor`."""
+    return val is not None or val is None
+
+
+def as_tensor_obj(val: TensorOrScalar) -> Tensor:
+    """Narrow a `TensorOrScalar` operand to `Tensor` without `typing.cast`.
+
+    Args:
+        val (TensorOrScalar): Input tensor operand.
+
+    Returns:
+        Tensor: Narrowed Tensor instance.
+    """
+    assert _is_tensor_inst(val)
+    return val
+
+
+def _is_opt_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor | None]:
+    """Type guard narrowing `val` to `Tensor | None`."""
+    return val is not None or val is None
+
+
+def as_opt_tensor_obj(val: TensorOrScalar) -> Tensor | None:
+    """Narrow an optional `TensorOrScalar` operand to `Tensor | None` without `typing.cast`.
+
+    Args:
+        val (TensorOrScalar): Input optional tensor operand.
+
+    Returns:
+        Tensor | None: Narrowed Tensor or None.
+    """
+    assert _is_opt_tensor_inst(val)
+    return val
 
 
 class ArrayAt:
@@ -59,7 +93,7 @@ class ArrayAt:
         val = getattr(value, "data", value)
         ndim = getattr(data, "ndim", 0)
         if data is not None and hasattr(data, "copy") and isinstance(ndim, int) and ndim > 0:
-            copied: TensorOrScalar = typing.cast(TensorOrScalar, getattr(data, "copy")())
+            copied: TensorOrScalar = getattr(data, "copy")()
             cur = getattr(copied, "__getitem__")(idx)
             if op_name == "add":
                 new_val = getattr(cur, "__add__")(val)
@@ -207,8 +241,8 @@ class TensorConfig(pydantic.BaseModel):
             norm_shape = ()
         elif not isinstance(shape, tuple):
             try:
-                norm_shape = tuple(typing.cast("Sequence[int | str | SymNode | None]", shape))
-            except TypeError:
+                norm_shape = tuple(int(d) if isinstance(d, (int, float)) else str(d) for d in getattr(shape, "__iter__")())
+            except (TypeError, AttributeError):
                 norm_shape = ()
         else:
             norm_shape = shape
@@ -262,11 +296,11 @@ class Tensor(
         """
         self._data = data
 
-        def _parse_dim(s: int | str | SymNode) -> int | str | SymNode:
+        def _parse_dim(s: int | str | SymNode | TensorOrScalar) -> int | str | SymNode:
             """Parse dimension.
 
             Args:
-                s (int | str | SymNode): The s parameter.
+                s (int | str | SymNode | TensorOrScalar): The s parameter.
 
             Returns:
                 Union[int, str, SymNode]: Result dimension.
@@ -281,9 +315,9 @@ class Tensor(
                 return str(s)
 
         shape_tuple = config.shape if isinstance(config.shape, tuple) else ()
-        self._shape: tuple[int | str | SymNode, ...] = tuple(typing.cast("TypedVariadicCallable[int | str | SymNode]", _parse_dim)(s) for s in shape_tuple)
-        self._dtype = typing.cast(DType, config.dtype)
-        self._device = typing.cast(Device, config.device)
+        self._shape: tuple[int | str | SymNode, ...] = tuple(_parse_dim(s) for s in shape_tuple)
+        self._dtype: DType = config.dtype if isinstance(config.dtype, DType) else DType(str(getattr(config.dtype, "value", config.dtype or "float32"))) if str(getattr(config.dtype, "value", config.dtype or "float32")) in DType._value2member_map_ else typing.cast(DType, config.dtype)
+        self._device: Device = config.device if isinstance(config.device, Device) else typing.cast(Device, config.device)
         self._requires_grad = config.requires_grad
         self.config = config
 
@@ -338,6 +372,7 @@ class Tensor(
                 flat_shape.append(s)
             else:
                 flat_shape.extend(s)
+        from ml_switcheroo_compiler.core.shape import invoke_callable
         from ml_switcheroo_compiler.ops.base import OpDef
         from ml_switcheroo_compiler.ops.registry import get_frontend, get_op
 
@@ -347,8 +382,7 @@ class Tensor(
         except KeyError:
             reshape_fn = get_op("Reshape")()
 
-        res = typing.cast(TypedVariadicCallable[Tensor], reshape_fn)(self, tuple(flat_shape))
-        return res
+        return as_tensor_obj(invoke_callable(reshape_fn, self, tuple(flat_shape)))
 
     def contiguous(self) -> Tensor:
         """Return a contiguous in memory tensor.

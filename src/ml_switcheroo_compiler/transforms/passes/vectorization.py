@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 import os
-import typing
 
 import yaml
-from ml_switcheroo_ir import LogicalGraph
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.backends.registry import as_int, as_shape
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph, clone_logical_node
 
 
 def _load_vmap_rules() -> dict[str, dict[str, AttributeValue]]:
@@ -23,8 +22,8 @@ def _load_vmap_rules() -> dict[str, dict[str, AttributeValue]]:
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
-            if isinstance(data, dict) and "rules" in data:
-                return typing.cast(dict[str, dict[str, AttributeValue]], data["rules"])
+            if isinstance(data, dict) and isinstance(data.get("rules"), dict):
+                return {str(k): dict(v) for k, v in data["rules"].items() if isinstance(v, dict)}
     return {}
 
 
@@ -161,20 +160,20 @@ def _apply_batch_axis_policy(
         str: Final lifted operation type name.
     """
     if policy == "shift_axis":
-        if isinstance(new_attrs.get("axis"), int) and int(typing.cast(int, new_attrs["axis"])) >= 0:
-            new_attrs["axis"] = int(typing.cast(int, new_attrs["axis"])) + 1
-        if isinstance(new_attrs.get("dim"), int) and int(typing.cast(int, new_attrs["dim"])) >= 0:
-            new_attrs["dim"] = int(typing.cast(int, new_attrs["dim"])) + 1
+        if isinstance(new_attrs.get("axis"), int) and int(as_int(new_attrs["axis"])) >= 0:
+            new_attrs["axis"] = int(as_int(new_attrs["axis"])) + 1
+        if isinstance(new_attrs.get("dim"), int) and int(as_int(new_attrs["dim"])) >= 0:
+            new_attrs["dim"] = int(as_int(new_attrs["dim"])) + 1
         if isinstance(new_attrs.get("axes"), (list, tuple)):
             new_attrs["axes"] = tuple(a + 1 if isinstance(a, int) and a >= 0 else a for a in getattr(new_attrs["axes"], "__iter__")())
     elif policy == "shift_permutation":
-        perm = list(typing.cast(tuple[int, ...], new_attrs.get("permutation", ())))
+        perm = list(as_shape(new_attrs.get("permutation", ())))
         new_attrs["permutation"] = tuple([0] + [p + 1 for p in perm])
     elif policy == "prepend_batch_dim":
         if isinstance(new_attrs.get("shape"), (list, tuple)):
-            new_attrs["shape"] = (batch_size, *typing.cast(tuple[int, ...], new_attrs["shape"]))
+            new_attrs["shape"] = (batch_size, *as_shape(new_attrs["shape"]))
         if isinstance(new_attrs.get("newshape"), (list, tuple)):
-            new_attrs["newshape"] = (batch_size, *typing.cast(tuple[int, ...], new_attrs["newshape"]))
+            new_attrs["newshape"] = (batch_size, *as_shape(new_attrs["newshape"]))
     elif policy == "batch_matmul":
         return "BatchMatMul"
     return lift_op
@@ -348,10 +347,12 @@ def _inline_vmap_node(
     if not body_graph or not hasattr(body_graph, "nodes"):
         return False
 
-    in_axes = node.attributes.get("in_axes", 0)
-    out_axes = node.attributes.get("out_axes", 0)
-    batch_size = typing.cast("TypedVariadicCallable[int]", _infer_vmap_batch_size)(graph, node, in_axes)
-    v_body = typing.cast("TypedVariadicCallable[IRGraph]", vectorize_graph)(_ensure_ir_graph(typing.cast("LogicalGraph", body_graph)), in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
+    raw_in_axes = node.attributes.get("in_axes", 0)
+    in_axes: int | tuple[int, ...] = raw_in_axes if isinstance(raw_in_axes, int) else as_shape(raw_in_axes)
+    raw_out_axes = node.attributes.get("out_axes", 0)
+    out_axes: int | tuple[int, ...] = raw_out_axes if isinstance(raw_out_axes, int) else as_shape(raw_out_axes)
+    batch_size = _infer_vmap_batch_size(graph, node, in_axes)
+    v_body = vectorize_graph(_ensure_ir_graph(as_graph(body_graph)), in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
 
     id_map: dict[str, str] = dict(zip(v_body.inputs, node.inputs))
     for b_id, b_node in v_body.nodes.items():

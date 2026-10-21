@@ -7,9 +7,10 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.ops.eager_evaluator import EvaluationContext, EvaluationStrategy
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_evaluation_strategy_base() -> None:
@@ -24,8 +25,8 @@ def test_evaluation_strategy_base() -> None:
             Args:
                 ctx: Test parameter `ctx`.
             """
-            return typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(super(), "evaluate")))(ctx)
+            return as_callable(as_tensor(getattr(super(), "evaluate")))(ctx)
 
-    ctx = typing.cast("EagerCallableProtocol", EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
+    ctx = as_callable(EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
     with pytest.raises(NotImplementedError):
         DummyStrategy().evaluate(ctx)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.registry import as_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -33,13 +34,11 @@ def _infer_group_stat_shape(
     num_groups = kwargs.get("num_groups", shape[1])
     keepdims = kwargs.get("keepdims", True)
 
-    import typing
-
     if not keepdims:
-        return typing.cast(tuple[int, ...], (shape[0], num_groups))
+        return as_shape((shape[0], num_groups))
 
     out_shape = [shape[0], num_groups] + [1] * (len(shape) - 2)
-    return typing.cast(tuple[int, ...], tuple(out_shape))
+    return as_shape(tuple(out_shape))
 
 
 @register_op("GroupMean")

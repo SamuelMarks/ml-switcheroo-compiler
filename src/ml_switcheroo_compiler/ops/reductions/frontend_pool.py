@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.backends.registry import as_shape, as_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 
 from .frontend_utils import _emit_reduction_node
 
@@ -191,31 +190,35 @@ def fractional_max_pool3d(
 
     if config.eager_mode:
         backend = get_active_backend()
-        data, indices = typing.cast(
-            "tuple[TensorOrScalar, TensorOrScalar]",
+        data, indices = as_tensor_pair(
             backend.execute_op(
                 "FractionalMaxPool3D",
                 operand.data,
                 output_size=output_size,
                 output_ratio=output_ratio,
                 random_samples=getattr(random_samples, "data") if random_samples is not None else None,
-            ),
+            )
         )
         return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))
 
+    fmp_attrs: dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None] = {
+        "output_size": output_size,
+        "output_ratio": as_shape(output_ratio),
+        "random_samples": as_tensor_obj(random_samples),
+    }
     pooled = _emit_reduction_node(
         "FractionalMaxPool3D",
         [operand],
-        typing.cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
+        fmp_attrs,
         tuple(out_shape),
         operand.dtype,
     )
     indices_tensor = _emit_reduction_node(
         "FractionalMaxPool3D_Indices",
         [operand],
-        typing.cast("dict[str, Tensor | Sequence[int] | Sequence[tuple[int, int]] | int | float | str | None]", {"output_size": output_size, "output_ratio": output_ratio, "random_samples": random_samples}),
+        fmp_attrs,
         tuple(out_shape),
-        typing.cast("DType", "int64"),
+        DType.Int64,
     )
     return pooled, indices_tensor
 
@@ -281,24 +284,23 @@ def adaptive_max_pool3d(
     if config.eager_mode:
         backend = get_active_backend()
         if return_indices:
-            data, indices = typing.cast(
-                "tuple[TensorOrScalar, TensorOrScalar]",
+            data, indices = as_tensor_pair(
                 backend.execute_op(
                     "AdaptiveMaxPool3D",
                     operand.data,
                     output_size=output_size,
                     return_indices=True,
-                ),
+                )
             )
             return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))
         else:
-            data = backend.execute_op(
+            single_data = backend.execute_op(
                 "AdaptiveMaxPool3D",
                 operand.data,
                 output_size=output_size,
                 return_indices=False,
             )
-            return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device))
+            return Tensor(backend.array(single_data), TensorConfig(tuple(out_shape), operand.dtype, operand.device))
 
     pooled = _emit_reduction_node(
         "AdaptiveMaxPool3D",
@@ -313,7 +315,7 @@ def adaptive_max_pool3d(
             [operand],
             {"output_size": output_size, "return_indices": return_indices},
             tuple(out_shape),
-            typing.cast("DType", "int64"),
+            DType.Int64,
         )
         return pooled, indices_tensor
     return pooled

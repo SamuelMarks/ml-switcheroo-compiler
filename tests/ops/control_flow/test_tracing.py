@@ -16,11 +16,12 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow.tracing import _flatten_inputs, assert_value_tracing, cond_tracing, map_fn_tracing, pmap_tracing, scan_tracing, stop_gradient_tracing, while_loop_tracing
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class MockData:
@@ -46,18 +47,18 @@ def enable_tracing_mode() -> Iterator[None]:
 
 def test_cond_tracing() -> None:
     """Test function test_cond_tracing."""
-    pred = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("pred"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Bool, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    pred = as_callable(Tensor)(as_callable(MockData)("pred"), as_callable(TensorConfig)((), DType.Bool, as_callable(Device)("cpu")))
 
     def true_fn() -> EagerValue:
         """Test function true_fn."""
-        return typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("t"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+        return as_callable(Tensor)(as_callable(MockData)("t"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
 
     def false_fn() -> EagerValue:
         """Test function false_fn."""
-        return typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("f"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+        return as_callable(Tensor)(as_callable(MockData)("f"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
 
-    res = typing.cast("EagerCallableProtocol", cond_tracing)(pred, true_fn, false_fn)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "config")).dtype == DType.Float32
+    res = as_callable(cond_tracing)(pred, true_fn, false_fn)
+    assert as_tensor(getattr(res, "config")).dtype == DType.Float32
 
 
 def test_while_loop_tracing() -> None:
@@ -69,7 +70,7 @@ def test_while_loop_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("c"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Bool, typing.cast("EagerCallableProtocol", Device)("cpu")))
+        return as_callable(Tensor)(as_callable(MockData)("c"), as_callable(TensorConfig)((), DType.Bool, as_callable(Device)("cpu")))
 
     def body_fn(x: EagerValue) -> EagerValue:
         """Test function body_fn.
@@ -77,10 +78,10 @@ def test_while_loop_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return [typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("b"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))]
+        return [as_callable(Tensor)(as_callable(MockData)("b"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))]
 
-    init_val = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("init"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
-    res = typing.cast("EagerCallableProtocol", while_loop_tracing)(cond_fn, body_fn, [init_val])
+    init_val = as_callable(Tensor)(as_callable(MockData)("init"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+    res = as_callable(while_loop_tracing)(cond_fn, body_fn, [init_val])
     assert res[0].config.dtype == DType.Float32
 
 
@@ -94,15 +95,15 @@ def test_scan_tracing() -> None:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
         """
-        new_carry = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("nc"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+        new_carry = as_callable(Tensor)(as_callable(MockData)("nc"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
         return [new_carry], [new_carry]
 
-    init = [typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("init"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))]
-    xs = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("xs"), typing.cast("EagerCallableProtocol", TensorConfig)((3,), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    init = [as_callable(Tensor)(as_callable(MockData)("init"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))]
+    xs = as_callable(Tensor)(as_callable(MockData)("xs"), as_callable(TensorConfig)((3,), DType.Float32, as_callable(Device)("cpu")))
 
-    res_carry, res_ys = typing.cast("EagerCallableProtocol", scan_tracing)(scan_fn, init, xs)
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res_carry, "__getitem__")(0)), "config")).dtype == DType.Float32
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(res_ys, "__getitem__")(0)), "config")).dtype == DType.Float32
+    res_carry, res_ys = as_callable(scan_tracing)(scan_fn, init, xs)
+    assert as_tensor(getattr(as_tensor(getattr(res_carry, "__getitem__")(0)), "config")).dtype == DType.Float32
+    assert as_tensor(getattr(as_tensor(getattr(res_ys, "__getitem__")(0)), "config")).dtype == DType.Float32
 
 
 def test_map_fn_tracing() -> None:
@@ -114,12 +115,12 @@ def test_map_fn_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("m"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+        return as_callable(Tensor)(as_callable(MockData)("m"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
 
-    elems = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("elems"), typing.cast("EagerCallableProtocol", TensorConfig)((3,), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    elems = as_callable(Tensor)(as_callable(MockData)("elems"), as_callable(TensorConfig)((3,), DType.Float32, as_callable(Device)("cpu")))
 
-    res = typing.cast("EagerCallableProtocol", map_fn_tracing)(fn, elems)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "config")).dtype == DType.Float32
+    res = as_callable(map_fn_tracing)(fn, elems)
+    assert as_tensor(getattr(res, "config")).dtype == DType.Float32
 
 
 def test_pmap_tracing() -> None:
@@ -133,18 +134,18 @@ def test_pmap_tracing() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("p"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+        return as_callable(Tensor)(as_callable(MockData)("p"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
 
-    x = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("x"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
-    res = typing.cast("EagerCallableProtocol", fn)(x)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "config")).dtype == DType.Float32
+    x = as_callable(Tensor)(as_callable(MockData)("x"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
+    res = as_callable(fn)(x)
+    assert as_tensor(getattr(res, "config")).dtype == DType.Float32
 
 
 def test_stop_gradient_tracing() -> None:
     """Test function test_stop_gradient_tracing."""
     from ml_switcheroo_compiler.ops.control_flow.tracing import stop_gradient_tracing
 
-    x = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("x"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Float32, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    x = as_callable(Tensor)(as_callable(MockData)("x"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
     res = stop_gradient_tracing(x)
     assert res.config.dtype == DType.Float32
     assert bool(res.config.requires_grad) is False
@@ -154,7 +155,7 @@ def test_assert_value_tracing() -> None:
     """Test function test_assert_value_tracing."""
     from ml_switcheroo_compiler.ops.control_flow.tracing import assert_value_tracing
 
-    x = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockData)("x"), typing.cast("EagerCallableProtocol", TensorConfig)((), DType.Bool, typing.cast("EagerCallableProtocol", Device)("cpu")))
+    x = as_callable(Tensor)(as_callable(MockData)("x"), as_callable(TensorConfig)((), DType.Bool, as_callable(Device)("cpu")))
     assert_value_tracing(x, "test msg")
 
 
@@ -170,7 +171,7 @@ def test_tracing_error_outside_context() -> None:
     with pytest.raises(TracingError):
         map_fn_tracing(MagicMock(), MagicMock())
     with pytest.raises(TracingError):
-        typing.cast("EagerCallableProtocol", pmap_tracing)(typing.cast("EagerCallableProtocol", MagicMock)())(1)
+        as_callable(pmap_tracing)(as_callable(MagicMock)())(1)
 
     assert stop_gradient_tracing(1) == 1
 
@@ -201,9 +202,9 @@ def test_while_loop_tensor_init() -> None:
     t = Tensor(ProxyTensor("t", (), DType.Int32.value), TensorConfig((), DType.Int32, None))
 
     global_tracing_state.start_tracing()
-    res = typing.cast("EagerCallableProtocol", while_loop_tracing)(c, b, t)
+    res = as_callable(while_loop_tracing)(c, b, t)
     global_tracing_state.stop_tracing()
-    assert isinstance(typing.cast("EagerValue", res), Tensor)
+    assert isinstance(as_tensor(res), Tensor)
 
 
 def test_flatten_inputs_other() -> None:
@@ -225,7 +226,7 @@ def test_pmap_tracing_other_args() -> None:
 
     t = Tensor(ProxyTensor("t", (), DType.Int32.value), TensorConfig((), DType.Int32, None))
     global_tracing_state.start_tracing()
-    res = typing.cast("EagerCallableProtocol", pmap_tracing)(f)(t, 1)
+    res = as_callable(pmap_tracing)(f)(t, 1)
     global_tracing_state.stop_tracing()
     assert res is not None
 

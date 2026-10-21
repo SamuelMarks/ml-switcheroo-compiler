@@ -2,11 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_ir import LogicalGraph
-
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph, clone_logical_node
 
 
 def evaluate_static_predicate(graph: IRGraph, pred_id: str) -> bool | None:
@@ -169,12 +165,12 @@ def _optimize_cond_node(
     if static_pred is not None and (true_branch or false_branch):
         active_branch = true_branch if static_pred else false_branch
         if active_branch:
-            _inline_active_branch(node_id, node, typing.cast("LogicalGraph", active_branch), new_nodes)
+            _inline_active_branch(node_id, node, as_graph(active_branch), new_nodes)
             return True, True
         return True, False
 
     if true_branch and false_branch:
-        hoisted = _hoist_common_invariants(graph, node_id, typing.cast("LogicalGraph", true_branch), typing.cast("LogicalGraph", false_branch))
+        hoisted = _hoist_common_invariants(graph, node_id, as_graph(true_branch), as_graph(false_branch))
         if hoisted:
             for h_node in hoisted:
                 new_nodes[h_node.id] = h_node

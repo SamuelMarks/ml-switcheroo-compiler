@@ -8,9 +8,10 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.audio_features import _np_dct, _np_frame, _np_idct, _np_inverse_mdct, _np_mdct, _np_overlap_and_add
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_audio_missing() -> None:
@@ -36,19 +37,19 @@ def test_audio_missing() -> None:
         _np_idct(np, np.ones((10,)), type=5)
 
     res3 = _np_mdct(np, np.ones((20,)))
-    assert typing.cast("EagerCallableProtocol", len)(res3) == 10
+    assert as_callable(len)(res3) == 10
 
     with pytest.raises(ValueError):
         _np_mdct(np, np.ones((20,)), N=8)
 
     res4 = _np_inverse_mdct(np, np.ones((10,)))
-    assert typing.cast("EagerCallableProtocol", len)(res4) == 20
+    assert as_callable(len)(res4) == 20
 
     res5 = _np_frame(np, np.ones((100,)), frame_length=10, frame_step=5)
     assert res5 is not None
 
     res5b = _np_frame(np, np.ones((5,)), frame_length=10, frame_step=5)
-    assert typing.cast("EagerTensorProtocol", getattr(res5b, "shape")) == (0, 10)
+    assert as_tensor(getattr(res5b, "shape")) == (0, 10)
 
     res6 = _np_overlap_and_add(np, np.ones((10, 10)), frame_step=5)
     assert res6 is not None

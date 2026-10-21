@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import builtins  # noqa: F401
-import typing
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
+    as_tensor,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
@@ -32,8 +32,8 @@ def _matmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
         EagerValue: Matrix product result.
     """
     mod = backend_module
-    a = typing.cast(EagerTensorProtocol, args[0])
-    b = typing.cast(EagerTensorProtocol, args[1])
+    a = as_tensor(args[0])
+    b = as_tensor(args[1])
     kw = dict(kwargs)
     if kw.pop("transpose_a", False):
         a = mod.swapaxes(a, -1, -2)
@@ -59,7 +59,7 @@ def _batch_matmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """
     if hasattr(backend_module, "matmul"):
         return backend_module.matmul(*args, **kwargs)
-    return typing.cast(EagerTensorProtocol, args[0]) @ typing.cast(EagerTensorProtocol, args[1])
+    return as_tensor(args[0]) @ as_tensor(args[1])
 
 
 @global_eager_registry.register("Dot")
@@ -76,7 +76,7 @@ def _dot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """
     if hasattr(backend_module, "dot"):
         return backend_module.dot(*args, **kwargs)
-    return typing.cast(EagerTensorProtocol, args[0]) @ typing.cast(EagerTensorProtocol, args[1])
+    return as_tensor(args[0]) @ as_tensor(args[1])
 
 
 @global_eager_registry.register("Einsum")
@@ -121,24 +121,24 @@ def _scaled_dot_product_attention_eager(backend_module: BackendModuleProtocol, q
     mask = kwargs.get("mask", None) if hasattr(kwargs, "get") else None
 
     if scale is None:
-        scale = 1.0 / math.sqrt(typing.cast(EagerTensorProtocol, query).shape[-1])
+        scale = 1.0 / math.sqrt(as_tensor(query).shape[-1])
 
     # key transpose
-    key_t_axes = list(range(len(typing.cast(EagerTensorProtocol, key).shape)))
+    key_t_axes = list(range(len(as_tensor(key).shape)))
     key_t_axes[-1], key_t_axes[-2] = key_t_axes[-2], key_t_axes[-1]
 
     if hasattr(backend_module, "transpose"):
         key_t: EagerTensorProtocol = mod.transpose(key, axes=key_t_axes)
     else:
-        key_t = typing.cast(EagerTensorProtocol, key)
+        key_t = as_tensor(key)
 
     scores: EagerTensorProtocol = mod.matmul(query, key_t) * scale
 
     if is_causal:
-        scores = typing.cast(EagerTensorProtocol, _apply_causal_mask(backend_module, scores))
+        scores = as_tensor(_apply_causal_mask(backend_module, scores))
 
     if mask is not None:
-        scores = scores + typing.cast(EagerTensorProtocol, mask)
+        scores = scores + as_tensor(mask)
 
     attn = _apply_softmax(backend_module, scores)
 
@@ -160,7 +160,7 @@ def _cholesky_solve(backend_module: BackendModuleProtocol, *args: EagerValue, **
     mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "cho_solve"):
-        return typing.cast("EagerValue", func.cho_solve(*args, **kwargs))
+        return as_tensor(func.cho_solve(*args, **kwargs))
     if hasattr(backend_module, "cho_solve"):
         return mod.cho_solve(*args, **kwargs)
 
@@ -183,7 +183,7 @@ def _banded_triangular_solve(backend_module: BackendModuleProtocol, *args: Eager
     mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve_banded"):
-        return typing.cast("EagerValue", func.solve_banded(*args, **kwargs))
+        return as_tensor(func.solve_banded(*args, **kwargs))
     if hasattr(backend_module, "solve_banded"):
         return mod.solve_banded(*args, **kwargs)
 
@@ -206,7 +206,7 @@ def _matrix_power(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_power"):
-        return typing.cast("EagerValue", func.matrix_power(*args, **kwargs))
+        return as_tensor(func.matrix_power(*args, **kwargs))
     if hasattr(backend_module, "matrix_power"):
         return mod.matrix_power(*args, **kwargs)
 
@@ -229,7 +229,7 @@ def _matrix_rank(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "matrix_rank"):
-        return typing.cast("EagerValue", func.matrix_rank(*args, **kwargs))
+        return as_tensor(func.matrix_rank(*args, **kwargs))
     if hasattr(backend_module, "matrix_rank"):
         return mod.matrix_rank(*args, **kwargs)
 
@@ -252,7 +252,7 @@ def _solve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "solve"):
-        return typing.cast("EagerValue", func.solve(*args, **kwargs))
+        return as_tensor(func.solve(*args, **kwargs))
     if hasattr(backend_module, "solve"):
         return mod.solve(*args, **kwargs)
 
@@ -275,7 +275,7 @@ def _tensorsolve(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     mod = backend_module
     func = getattr(backend_module, "linalg", None)
     if func and hasattr(func, "tensorsolve"):
-        return typing.cast("EagerValue", func.tensorsolve(*args, **kwargs))
+        return as_tensor(func.tensorsolve(*args, **kwargs))
     if hasattr(backend_module, "tensorsolve"):
         return mod.tensorsolve(*args, **kwargs)
 
@@ -297,7 +297,7 @@ def _np_tensorsolve(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "tensorsolve", getattr(backend_module, "tensorsolve", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.tensorsolve(*args, **kwargs)
 
 
@@ -315,7 +315,7 @@ def _np_triangularsolve(backend_module: BackendModuleProtocol, *args: EagerValue
     """
     func = getattr(backend_module, "triangularsolve", getattr(backend_module, "triangularsolve", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.solve(*args)
 
 
@@ -333,7 +333,7 @@ def _np_tridiagonalmatmul(backend_module: BackendModuleProtocol, *args: EagerVal
     """
     func = getattr(backend_module, "tridiagonalmatmul", getattr(backend_module, "tridiagonalmatmul", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).matmul(args[0], args[1])
 
 
@@ -351,7 +351,7 @@ def _np_tridiagonalsolve(backend_module: BackendModuleProtocol, *args: EagerValu
     """
     func = getattr(backend_module, "tridiagonalsolve", getattr(backend_module, "tridiagonalsolve", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.solve(*args)
 
 
@@ -369,5 +369,5 @@ def _np_vecdot(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "vecdot", getattr(backend_module, "vecdot", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).vdot(args[0], args[1])

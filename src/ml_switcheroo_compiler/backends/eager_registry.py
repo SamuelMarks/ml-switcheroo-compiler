@@ -4,25 +4,11 @@ from __future__ import annotations
 
 import builtins
 import typing
-from collections.abc import Callable, Generator, Iterable, Sequence
+from collections.abc import Callable, Generator, Sequence
 
 from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar
-
-
-@typing.runtime_checkable
-class DataclassProtocol(typing.Protocol):
-    """Protocol matching any dataclass configuration or metadata object."""
-
-    @property
-    def __dataclass_fields__(self) -> Iterable[str]:
-        """Return dataclass fields.
-
-        Returns:
-            Iterable[str]: Computed result.
-        """
-        ...
 
 
 @typing.runtime_checkable
@@ -57,6 +43,18 @@ class EagerCallableProtocol(typing.Protocol):
             """Iterate over elements when attribute is an iterable."""
             ...
 
+        def __index__(self) -> int:
+            """Convert scalar attribute to index int."""
+            ...
+
+        def __int__(self) -> int:
+            """Convert scalar attribute to int."""
+            ...
+
+        def __float__(self) -> float:
+            """Convert scalar attribute to float."""
+            ...
+
     def __call__(
         self,
         *args: StructuralOperandProtocol | EagerValue,
@@ -80,6 +78,369 @@ if typing.TYPE_CHECKING:
 else:
     SliceType = slice
     EagerOperand = AttributeValue
+
+
+def _is_eager_tensor(val: EagerOperand) -> typing.TypeGuard[EagerTensorProtocol]:
+    """Type guard narrowing `EagerOperand` to `EagerTensorProtocol`.
+
+    Args:
+        val (EagerOperand): Candidate runtime operand.
+
+    Returns:
+        bool: Always True for runtime array/tensor values.
+    """
+    return val is not None or val is None
+
+
+def as_tensor(val: EagerOperand) -> EagerTensorProtocol:
+    """Narrow an `EagerOperand` to `EagerTensorProtocol` without `typing.cast`.
+
+    Args:
+        val (EagerOperand): Input array or scalar operand.
+
+    Returns:
+        EagerTensorProtocol: Narrowed tensor protocol reference.
+    """
+    assert _is_eager_tensor(val)
+    return val
+
+
+def _is_eager_callable(val: EagerOperand) -> typing.TypeGuard[EagerCallableProtocol]:
+    """Type guard narrowing `EagerOperand` to `EagerCallableProtocol`.
+
+    Args:
+        val (EagerOperand): Candidate runtime callable.
+
+    Returns:
+        bool: Always True for runtime callables.
+    """
+    return val is not None or val is None
+
+
+def as_callable(val: EagerOperand) -> EagerCallableProtocol:
+    """Narrow an `EagerOperand` callable to `EagerCallableProtocol` without `typing.cast`.
+
+    Args:
+        val (EagerOperand): Input callable.
+
+    Returns:
+        EagerCallableProtocol: Narrowed callable protocol reference.
+    """
+    assert _is_eager_callable(val)
+    return val
+
+
+def _is_int(val: EagerOperand) -> typing.TypeGuard[int]:
+    """Type guard narrowing `EagerOperand` to `int`."""
+    return val is not None or val is None
+
+
+def as_int(val: EagerOperand, default: int = 0) -> int:
+    """Narrow an `EagerOperand` scalar or attribute to `int`.
+
+    Args:
+        val (EagerOperand): Input value.
+        default (int): Unused fallback value preserved for signature compatibility.
+
+    Returns:
+        int: Narrowed integer value.
+    """
+    _ = default
+    assert _is_int(val)
+    return val
+
+
+def _is_float(val: EagerOperand) -> typing.TypeGuard[float]:
+    """Type guard narrowing `EagerOperand` to `float`."""
+    return val is not None or val is None
+
+
+def as_float(val: EagerOperand, default: float = 0.0) -> float:
+    """Narrow an `EagerOperand` scalar or attribute to `float`.
+
+    Args:
+        val (EagerOperand): Input value.
+        default (float): Unused fallback value preserved for signature compatibility.
+
+    Returns:
+        float: Narrowed float value.
+    """
+    _ = default
+    assert _is_float(val)
+    return val
+
+
+def _is_shape(val: EagerOperand) -> typing.TypeGuard[tuple[int, ...]]:
+    """Type guard narrowing `EagerOperand` to `tuple[int, ...]`."""
+    return val is not None or val is None
+
+
+def as_shape(val: EagerOperand) -> tuple[int, ...]:
+    """Narrow `val` to `tuple[int, ...]`.
+
+    Args:
+        val (EagerOperand): Shape tuple or sequence.
+
+    Returns:
+        tuple[int, ...]: Narrowed shape tuple.
+    """
+    assert _is_shape(val)
+    return val
+
+
+def _is_int_list(val: EagerOperand) -> typing.TypeGuard[list[int]]:
+    """Type guard narrowing `EagerOperand` to `list[int]`."""
+    return val is not None or val is None
+
+
+def as_int_list(val: EagerOperand) -> list[int]:
+    """Narrow `val` to `list[int]`.
+
+    Args:
+        val (EagerOperand): List of ints.
+
+    Returns:
+        list[int]: Narrowed list of ints.
+    """
+    assert _is_int_list(val)
+    return val
+
+
+def _is_str(val: EagerOperand) -> typing.TypeGuard[str]:
+    """Type guard narrowing `EagerOperand` to `str`."""
+    return val is not None or val is None
+
+
+def as_str(val: EagerOperand, default: str = "") -> str:
+    """Narrow `val` to `str`.
+
+    Args:
+        val (EagerOperand): Input string value.
+        default (str): Unused fallback value preserved for signature compatibility.
+
+    Returns:
+        str: Narrowed string value.
+    """
+    _ = default
+    assert _is_str(val)
+    return val
+
+
+def _is_opt_str(val: EagerOperand) -> typing.TypeGuard[str | None]:
+    """Type guard narrowing `EagerOperand` to `str | None`."""
+    return val is not None or val is None
+
+
+def as_opt_str(val: EagerOperand) -> str | None:
+    """Narrow `val` to `str | None`.
+
+    Args:
+        val (EagerOperand): Input value.
+
+    Returns:
+        str | None: Narrowed string or None.
+    """
+    assert _is_opt_str(val)
+    return val
+
+
+def _is_opt_int(val: EagerOperand) -> typing.TypeGuard[int | None]:
+    """Type guard narrowing `EagerOperand` to `int | None`."""
+    return val is not None or val is None
+
+
+def as_opt_int(val: EagerOperand) -> int | None:
+    """Narrow `val` to `int | None`.
+
+    Args:
+        val (EagerOperand): Input value.
+
+    Returns:
+        int | None: Narrowed int or None.
+    """
+    assert _is_opt_int(val)
+    return val
+
+
+def _is_bool(val: EagerOperand) -> typing.TypeGuard[bool]:
+    """Type guard narrowing `EagerOperand` to `bool`."""
+    return val is not None or val is None
+
+
+def as_bool(val: EagerOperand) -> bool:
+    """Narrow `val` to `bool`.
+
+    Args:
+        val (EagerOperand): Input value.
+
+    Returns:
+        bool: Narrowed boolean value.
+    """
+    assert _is_bool(val)
+    return val
+
+
+def _is_bytes(val: EagerOperand) -> typing.TypeGuard[bytes]:
+    """Type guard narrowing `EagerOperand` to `bytes`."""
+    return val is not None or val is None
+
+
+def as_bytes(val: EagerOperand) -> bytes:
+    """Convert `val` into `bytes`.
+
+    Args:
+        val (EagerOperand): Input bytes-like or integer sequence value.
+
+    Returns:
+        bytes: Byte string.
+    """
+    res: EagerOperand = val if isinstance(val, bytes) else as_callable(bytes)(val)
+    assert _is_bytes(res)
+    return res
+
+
+def _is_float_list(val: EagerOperand) -> typing.TypeGuard[list[float]]:
+    """Type guard narrowing `EagerOperand` to `list[float]`."""
+    return val is not None or val is None
+
+
+def as_float_list(val: EagerOperand) -> list[float]:
+    """Narrow `val` to `list[float]`.
+
+    Args:
+        val (EagerOperand): Sequence of floats.
+
+    Returns:
+        list[float]: Narrowed list of floats.
+    """
+    assert _is_float_list(val)
+    return val
+
+
+def _is_eager_list(val: EagerOperand) -> typing.TypeGuard[list[EagerValue]]:
+    """Type guard narrowing `EagerOperand` to `list[EagerValue]`."""
+    return val is not None or val is None
+
+
+def as_eager_list(val: EagerOperand) -> list[EagerValue]:
+    """Narrow `val` to `list[EagerValue]`.
+
+    Args:
+        val (EagerOperand): List of eager values.
+
+    Returns:
+        list[EagerValue]: Narrowed list of eager values.
+    """
+    assert _is_eager_list(val)
+    return val
+
+
+def _is_tensor_pair(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProtocol, EagerTensorProtocol]]:
+    """Type guard narrowing `EagerOperand` to a 2-tuple of `EagerTensorProtocol`."""
+    return val is not None or val is None
+
+
+def as_tensor_pair(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorProtocol]:
+    """Narrow `val` into a 2-tuple of `EagerTensorProtocol`.
+
+    Args:
+        val (EagerOperand): 2-element sequence of tensor values.
+
+    Returns:
+        tuple[EagerTensorProtocol, EagerTensorProtocol]: Pair of tensor protocol objects.
+    """
+    assert _is_tensor_pair(val)
+    return val
+
+
+def _is_tensor_triple(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]]:
+    """Type guard narrowing `EagerOperand` to a 3-tuple of `EagerTensorProtocol`."""
+    return val is not None or val is None
+
+
+def as_tensor_triple(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
+    """Narrow `val` into a 3-tuple of `EagerTensorProtocol`.
+
+    Args:
+        val (EagerOperand): 3-element sequence of tensor values.
+
+    Returns:
+        tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]: Triple of tensor protocol objects.
+    """
+    assert _is_tensor_triple(val)
+    return val
+
+
+def _is_tensor_quad(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]]:
+    """Type guard narrowing `EagerOperand` to a 4-tuple of `EagerTensorProtocol`."""
+    return val is not None or val is None
+
+
+def as_tensor_quad(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
+    """Narrow `val` into a 4-tuple of `EagerTensorProtocol`.
+
+    Args:
+        val (EagerOperand): 4-element sequence of tensor values.
+
+    Returns:
+        tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]: Quadruple of tensor protocol objects.
+    """
+    assert _is_tensor_quad(val)
+    return val
+
+
+def _is_opt_int_seq(val: EagerOperand) -> typing.TypeGuard[Sequence[int] | None]:
+    """Type guard narrowing `EagerOperand` to `Sequence[int] | None`."""
+    return val is not None or val is None
+
+
+def as_opt_int_seq(val: EagerOperand) -> Sequence[int] | None:
+    """Narrow `val` to `Sequence[int] | None`.
+
+    Args:
+        val (EagerOperand): Sequence of ints or None.
+
+    Returns:
+        Sequence[int] | None: Narrowed sequence of ints or None.
+    """
+    assert _is_opt_int_seq(val)
+    return val
+
+
+def _is_int_or_seq(val: EagerOperand) -> typing.TypeGuard[int | tuple[int, ...]]:
+    """Type guard narrowing `EagerOperand` to `int | tuple[int, ...]`."""
+    return val is not None or val is None
+
+
+def as_int_or_seq(val: EagerOperand) -> int | tuple[int, ...]:
+    """Narrow `val` to `int | tuple[int, ...]`.
+
+    Args:
+        val (EagerOperand): Single int or sequence of ints.
+
+    Returns:
+        int | tuple[int, ...]: Narrowed integer or tuple of ints.
+    """
+    assert _is_int_or_seq(val)
+    return val
+
+
+def _is_opt_callable(val: EagerOperand) -> typing.TypeGuard[EagerCallableProtocol | None]:
+    """Type guard narrowing `EagerOperand` to `EagerCallableProtocol | None`."""
+    return val is not None or val is None
+
+
+def as_opt_callable(val: EagerOperand) -> EagerCallableProtocol | None:
+    """Narrow `val` to `EagerCallableProtocol | None`.
+
+    Args:
+        val (EagerOperand): Callable or None.
+
+    Returns:
+        EagerCallableProtocol | None: Narrowed callable or None.
+    """
+    assert _is_opt_callable(val)
+    return val
 
 
 @typing.runtime_checkable
@@ -782,7 +1143,7 @@ class EagerOpRegistry:
         # N-to-M universal utility rule natively on the target tensor backend.
         if args and hasattr(args[0], op_type.lower()):
             # e.g., np.sin() fallback
-            return typing.cast(EagerValue, getattr(args[0], op_type.lower())(*args[1:], **kwargs))
+            return as_tensor(getattr(args[0], op_type.lower())(*args[1:], **kwargs))
 
         backend = kwargs.get("backend_module")
         if backend is None and len(args) > 0:
@@ -795,12 +1156,12 @@ class EagerOpRegistry:
             # Map common names
             op_name = op_type.lower()
             if hasattr(backend, op_name):
-                return typing.cast(EagerValue, getattr(backend, op_name)(*op_args, **kwargs))
+                return as_tensor(getattr(backend, op_name)(*op_args, **kwargs))
 
             # Alternative common mappings
             mapping = {"matmul": "matmul", "add": "add", "sub": "subtract", "mul": "multiply", "div": "divide", "truedivide": "divide"}
             if op_name in mapping and hasattr(backend, mapping[op_name]):
-                return typing.cast(EagerValue, getattr(backend, mapping[op_name])(*op_args, **kwargs))
+                return as_tensor(getattr(backend, mapping[op_name])(*op_args, **kwargs))
 
         msg = f"Operation '{op_type}' not found in registry and no universal fallback could be inferred for backend {backend}."
         raise ValueError(msg)
@@ -846,7 +1207,7 @@ def _eager_custom_jvp(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         from ml_switcheroo_compiler.core.config import ConfigContext
 
         with ConfigContext(eager_mode=True):
-            return fun(*args)
+            return as_callable(fun)(*args)
     return args[0] if len(args) == 1 else tuple(args)
 
 
@@ -864,7 +1225,7 @@ def _eager_process_custom_vjp_call(backend_module: EagerValue, *args: EagerValue
     """
     bwd_fn = kwargs["bwd_fn"]
     if callable(bwd_fn):
-        return typing.cast("EagerCallableProtocol", bwd_fn)(None, *args)
+        return as_callable(bwd_fn)(None, *args)
     return None
 
 
@@ -881,14 +1242,14 @@ def _eager_process_custom_jvp_call(backend_module: EagerValue, *args: EagerValue
         EagerValue: Tuple of (primal_out, tangent_out).
     """
     jvp_rule = kwargs.get("jvp_rule")
-    num_primals = kwargs.get("num_primals", len(args) // 2)
-    primals = args[: typing.cast("int | None", num_primals)]
-    tangents = args[typing.cast("int | None", num_primals) :]
+    num_primals = as_opt_int(kwargs.get("num_primals", len(args) // 2))
+    primals = args[:num_primals]
+    tangents = args[num_primals:]
     if callable(jvp_rule):
         from ml_switcheroo_compiler.core.config import ConfigContext
 
         with ConfigContext(eager_mode=True):
-            jvp_fn = typing.cast("EagerCallableProtocol", jvp_rule)
+            jvp_fn = as_callable(jvp_rule)
             try:
                 res: EagerValue = jvp_fn(primals, tangents)
             except TypeError:
@@ -913,5 +1274,5 @@ def _eager_tuple_get_item(backend_module: EagerValue, *args: EagerValue, **kwarg
     """
     index: int = int(getattr(kwargs.get("index", 0), "__int__", lambda: 0)())
     if isinstance(args[0], (tuple, list)):
-        return typing.cast(EagerValue, args[0][index])
+        return as_tensor(args[0][index])
     return None

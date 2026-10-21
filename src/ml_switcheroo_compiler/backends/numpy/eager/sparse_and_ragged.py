@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -37,7 +35,7 @@ def _np_sparse_reduce_max(backend_module: BackendModuleProtocol, x: EagerValue, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", np.max(np.asarray(x)))
+    return as_tensor(np.max(np.asarray(x)))
 
 
 @numpy_eager_registry.register("SparseReduceSum")
@@ -52,7 +50,7 @@ def _np_sparse_reduce_sum(backend_module: BackendModuleProtocol, x: EagerValue, 
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", np.sum(np.asarray(x)))
+    return as_tensor(np.sum(np.asarray(x)))
 
 
 @numpy_eager_registry.register("SparseSegmentMean")
@@ -69,7 +67,7 @@ def _np_sparse_segment_mean(backend_module: BackendModuleProtocol, data: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", np.mean(np.asarray(data)))
+    return as_tensor(np.mean(np.asarray(data)))
 
 
 @numpy_eager_registry.register("SparseSegmentSqrtN")
@@ -86,7 +84,7 @@ def _np_sparse_segment_sqrt_n(backend_module: BackendModuleProtocol, data: Eager
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", np.sum(np.asarray(data)) / np.sqrt(max(1, np.asarray(segment_ids).size)))
+    return as_tensor(np.sum(np.asarray(data)) / np.sqrt(max(1, np.asarray(segment_ids).size)))
 
 
 @numpy_eager_registry.register("SparseSegmentSum")
@@ -103,7 +101,7 @@ def _np_sparse_segment_sum(backend_module: BackendModuleProtocol, data: EagerVal
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", np.sum(np.asarray(data)))
+    return as_tensor(np.sum(np.asarray(data)))
 
 
 @numpy_eager_registry.register("SparseExpandDims")
@@ -123,7 +121,7 @@ def _np_sparse_expand_dims(backend_module: BackendModuleProtocol, x: EagerValue,
     ax = kwargs.get("axis", axis)
     if ax is None:
         ax = -1
-    return typing.cast("EagerValue", getattr(np, "expand_dims")(np.asarray(x), axis=ax))
+    return as_tensor(getattr(np, "expand_dims")(np.asarray(x), axis=ax))
 
 
 @numpy_eager_registry.register("RaggedDot")
@@ -139,4 +137,4 @@ def _np_ragged_dot(backend_module: BackendModuleProtocol, a: EagerValue, b: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return typing.cast("EagerValue", np.dot(np.asarray(a), np.asarray(b)))
+    return as_tensor(np.dot(np.asarray(a), np.asarray(b)))

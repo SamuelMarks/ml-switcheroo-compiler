@@ -14,9 +14,10 @@ from ml_switcheroo_compiler.ir.shape_system import (
     SymUnaryOp,
     SymVar,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_non_polynomial_operators_evaluation() -> None:
@@ -140,7 +141,7 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return typing.cast("EagerValue", getattr(env, "__getitem__")("x") > 10)
+        return as_tensor(getattr(env, "__getitem__")("x") > 10)
 
     def cond_2(env: EagerValue) -> EagerValue:
         """Check if x > 0.
@@ -148,12 +149,12 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return typing.cast("EagerValue", getattr(env, "__getitem__")("x") > 0)
+        return as_tensor(getattr(env, "__getitem__")("x") > 0)
 
-    piecewise = typing.cast("EagerCallableProtocol", SymPiecewise)(
+    piecewise = as_callable(SymPiecewise)(
         cases=[
-            (cond_1, typing.cast("EagerCallableProtocol", SymConst)(100)),
-            (cond_2, typing.cast("EagerCallableProtocol", SymConst)(50)),
+            (cond_1, as_callable(SymConst)(100)),
+            (cond_2, as_callable(SymConst)(50)),
         ],
         default=SymConst(0),
     )

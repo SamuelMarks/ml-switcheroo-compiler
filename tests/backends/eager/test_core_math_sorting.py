@@ -20,10 +20,10 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_sorting import (
     _quantile,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
-from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from tests.testing_utils import as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_math_sort_coverage() -> None:
@@ -73,10 +73,10 @@ def test_math_sort_coverage() -> None:
             return "sort_complex_val"
 
     sb = SortBackend()
-    assert _argsort(typing.cast("BackendModuleProtocol", sb), [3, 1, 2], axis=1) == "argsort_1"
-    assert _lexsort(typing.cast("BackendModuleProtocol", sb), ([1, 2], [3, 4])) == "lexsort_val"
-    assert _searchsorted(typing.cast("BackendModuleProtocol", sb), [1, 2, 3], 2) == "searchsorted_val"
-    assert _sortcomplex(typing.cast("BackendModuleProtocol", sb), [1 + 2j, 1 - 2j]) == "sort_complex_val"
+    assert _argsort(as_mod(sb), [3, 1, 2], axis=1) == "argsort_1"
+    assert _lexsort(as_mod(sb), ([1, 2], [3, 4])) == "lexsort_val"
+    assert _searchsorted(as_mod(sb), [1, 2, 3], 2) == "searchsorted_val"
+    assert _sortcomplex(as_mod(sb), [1 + 2j, 1 - 2j]) == "sort_complex_val"
 
     # Registry
     assert global_eager_registry.get("Argsort") is not None
@@ -106,7 +106,7 @@ def test_math_sorting_coverage() -> None:
             """
             return f"argpartition_{axis}"
 
-    assert _argpartition(typing.cast("BackendModuleProtocol", ArgpartBackend()), [3, 1, 2], kth=1, axis=0) == "argpartition_0"
+    assert _argpartition(as_mod(ArgpartBackend()), [3, 1, 2], kth=1, axis=0) == "argpartition_0"
 
     # Case B: backend lacks argsort -> returns a directly
     class EmptyBackend:
@@ -114,7 +114,7 @@ def test_math_sorting_coverage() -> None:
 
         pass
 
-    assert _argpartition(typing.cast("BackendModuleProtocol", EmptyBackend()), "original_a", kth=1) == "original_a"
+    assert _argpartition(as_mod(EmptyBackend()), "original_a", kth=1) == "original_a"
 
     # _median, _percentile, _quantile
     class StatBackend:
@@ -148,9 +148,9 @@ def test_math_sorting_coverage() -> None:
             return "quantile_val"
 
     st = StatBackend()
-    assert _median(typing.cast("BackendModuleProtocol", st), [1, 2, 3]) == "median_val"
-    assert _percentile(typing.cast("BackendModuleProtocol", st), [1, 2, 3], 50) == "percentile_val"
-    assert _quantile(typing.cast("BackendModuleProtocol", st), [1, 2, 3], 0.5) == "quantile_val"
+    assert _median(as_mod(st), [1, 2, 3]) == "median_val"
+    assert _percentile(as_mod(st), [1, 2, 3], 50) == "percentile_val"
+    assert _quantile(as_mod(st), [1, 2, 3], 0.5) == "quantile_val"
 
     # _np_partition
     # Case A: backend has partition
@@ -166,11 +166,11 @@ def test_math_sorting_coverage() -> None:
             """
             return "partition_val"
 
-    assert _np_partition(typing.cast("BackendModuleProtocol", PartitionBackend()), [3, 1, 2], 1) == "partition_val"
+    assert _np_partition(as_mod(PartitionBackend()), [3, 1, 2], 1) == "partition_val"
 
     # Case B: backend lacks partition -> fallback to np.partition
-    part_res = _np_partition(typing.cast("BackendModuleProtocol", EmptyBackend()), np.array([3, 1, 2]), 1)
-    assert typing.cast("EagerTensorProtocol", getattr(part_res, "__getitem__")(1)) == 2
+    part_res = _np_partition(as_mod(EmptyBackend()), np.array([3, 1, 2]), 1)
+    assert as_tensor(getattr(part_res, "__getitem__")(1)) == 2
 
     # Registry
     assert global_eager_registry.get("Argpartition") is not None

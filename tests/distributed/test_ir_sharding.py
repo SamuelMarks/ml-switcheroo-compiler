@@ -5,9 +5,10 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.ir.core import IRNode
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+    pass
 
 
 def test_ir_node_sharding() -> None:
@@ -19,4 +20,4 @@ def test_ir_node_sharding() -> None:
     node = IRNode("node_1", "Add")
     object.__setattr__(node, "sharding", "shard_info")
     assert hasattr(node, "sharding")
-    assert typing.cast("EagerTensorProtocol", node.sharding) == typing.cast("EagerTensorProtocol", "shard_info")
+    assert as_tensor(node.sharding) == as_tensor("shard_info")

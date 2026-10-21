@@ -13,9 +13,10 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import cond
 from ml_switcheroo_compiler.tracing import ProxyTensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
+from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 device = Device(DeviceType.CPU, 0)
 
 
@@ -61,5 +62,5 @@ def test_cond_trace() -> None:
 
         global_tracing_state.start_tracing()
         res = cond(pred, true_fn, false_fn)
-        assert typing.cast("EagerTensorProtocol", getattr(res, "dtype")) == DType.Float32
+        assert as_tensor(getattr(res, "dtype")) == DType.Float32
         global_tracing_state.stop_tracing()

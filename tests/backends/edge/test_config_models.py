@@ -22,9 +22,10 @@ from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import (
     WasmTemplateConfig,
     WasmTemplatesConfig,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_wgsl_config_model() -> None:
@@ -47,7 +48,7 @@ def test_wgsl_config_model() -> None:
             }
         }
     }
-    config = typing.cast("EagerCallableProtocol", WgslTemplatesConfig)(**data)
+    config = as_callable(WgslTemplatesConfig)(**data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["workgroup_size"] == [1, 2, 3]
     assert dumped["templates"]["test"]["workgroup_layout"]["max_workgroup_invocations"] == 256
@@ -84,7 +85,7 @@ def test_wasm_config_model() -> None:
             }
         }
     }
-    config = typing.cast("EagerCallableProtocol", WasmTemplatesConfig)(**data)
+    config = as_callable(WasmTemplatesConfig)(**data)
     dumped = config.model_dump()
     assert dumped["templates"]["test"]["simd_unroll_factor"] == 4
     assert dumped["templates"]["test"]["alignment"]["alignment_bytes"] == 16
@@ -105,7 +106,7 @@ def test_wasm_config_model() -> None:
 
     intrs_cfg = WasmIntrinsicsConfig(intrinsics={"test": intr_cfg}, scalars={"abs": "return std::abs(a);"})
     assert "test" in intrs_cfg.intrinsics
-    assert typing.cast("EagerTensorProtocol", getattr(intrs_cfg.scalars, "__getitem__")("abs")) == "return std::abs(a);"
+    assert as_tensor(getattr(intrs_cfg.scalars, "__getitem__")("abs")) == "return std::abs(a);"
 
 
 def test_onnx_and_stablehlo_config_models() -> None:

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
@@ -41,4 +40,4 @@ def dispatch(module_name: str, func_name: str, *args: TensorOrScalar, **kwargs: 
     except Exception:
         out_shape = ()
     out_dtype = getattr(args[0], "dtype", "float32") if args else "float32"
-    return _emit_shape_node(func_name, list(args), kwargs, typing.cast("Sequence[int | str]", out_shape), out_dtype)
+    return _emit_shape_node(func_name, list(args), kwargs, out_shape, out_dtype)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 import yaml
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.grad.config_models import (
     AutodiffRuleModel,
@@ -56,21 +57,25 @@ def test_higher_order_autodiff_model() -> None:
 
 
 def test_autodiff_rules_manifest_validation() -> None:
-    """Validate transforms/autodiff_rules.yaml against AutodiffRulesManifestModel."""
-    rules_path = os.path.abspath(
+    """Validate modular transforms/autodiff_rules/*.yaml against AutodiffRulesManifestModel."""
+    rules_dir = os.path.abspath(
         os.path.join(
             os.path.dirname(__file__),
             "..",
             "src",
             "ml_switcheroo_compiler",
             "transforms",
-            "autodiff_rules.yaml",
+            "autodiff_rules",
         )
     )
-    assert os.path.exists(rules_path)
+    assert os.path.isdir(rules_dir)
 
-    with open(rules_path, encoding="utf-8") as f:
-        raw_manifest = yaml.safe_load(f)
+    raw_manifest: dict[str, dict[str, AttributeValue]] = {}
+    for section in ("jvp_rules", "vjp_rules", "higher_order_rules"):
+        sec_path = os.path.join(rules_dir, f"{section}.yaml")
+        assert os.path.exists(sec_path)
+        with open(sec_path, encoding="utf-8") as f:
+            raw_manifest[section] = yaml.safe_load(f)
 
     manifest = AutodiffRulesManifestModel.model_validate(raw_manifest)
     assert len(manifest.jvp_rules) > 0

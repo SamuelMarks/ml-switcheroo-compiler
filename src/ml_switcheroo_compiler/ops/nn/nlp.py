@@ -6,7 +6,7 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -356,8 +356,7 @@ def ctc_beam_search_decoder(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        decoded, log_probs = typing.cast(
-            "tuple[TensorOrScalar, TensorOrScalar]",
+        decoded, log_probs = as_tensor_pair(
             backend.execute_op(
                 "CtcBeamSearchDecoder",
                 getattr(inputs, "data", inputs),
@@ -365,7 +364,7 @@ def ctc_beam_search_decoder(
                 beam_width=beam_width,
                 top_paths=top_paths,
                 merge_repeated=merge_repeated,
-            ),
+            )
         )
         return [decoded], Tensor(log_probs, TensorConfig(getattr(log_probs, "shape", (1,)), "float32", "cpu"))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -473,10 +472,7 @@ def ctc_unique_labels(labels: TensorOrScalar, name: TensorOrScalar = None) -> Te
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        unique, indices = typing.cast(
-            "tuple[TensorOrScalar, TensorOrScalar]",
-            backend.execute_op("CtcUniqueLabels", getattr(labels, "data", labels), name=name),
-        )
+        unique, indices = as_tensor_pair(backend.execute_op("CtcUniqueLabels", getattr(labels, "data", labels), name=name))
         return (
             Tensor(unique, TensorConfig(getattr(unique, "shape", lbl_shape), "int32", "cpu")),
             Tensor(indices, TensorConfig(getattr(indices, "shape", lbl_shape), "int32", "cpu")),

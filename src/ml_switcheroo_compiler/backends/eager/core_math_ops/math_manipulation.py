@@ -7,8 +7,9 @@ import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
-    EagerTensorProtocol,
     EagerValue,
+    as_int,
+    as_tensor,
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
@@ -28,9 +29,9 @@ def _all_gather(backend_module: BackendModuleProtocol, tensor: EagerValue, *args
             EagerValue: Result.
     """
     if hasattr(backend_module, "stack"):
-        return typing.cast("EagerValue", getattr(backend_module, "stack")([tensor]))
+        return as_tensor(getattr(backend_module, "stack")([tensor]))
     if hasattr(backend_module, "array"):
-        return typing.cast("EagerValue", getattr(backend_module, "array")([tensor]))
+        return as_tensor(getattr(backend_module, "array")([tensor]))
     return tensor
 
 
@@ -46,7 +47,7 @@ def _argwhere(backend_module: BackendModuleProtocol, a: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "argwhere")(a))
+    return as_tensor(getattr(backend_module, "argwhere")(a))
 
 
 @global_eager_registry.register("Extract")
@@ -63,7 +64,7 @@ def _extract(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     func = getattr(backend_module, "extract", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     (condition, arr) = (args[0], args[1])
     mod = _resolve_eager_mod(backend_module)
     return mod.extract(mod.asarray(condition), mod.asarray(arr))
@@ -82,7 +83,7 @@ def _pswapaxes(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             EagerValue: Result.
     """
     if hasattr(backend_module, "lax") and hasattr(getattr(backend_module, "lax"), "pswapaxes"):
-        return typing.cast("EagerValue", getattr(backend_module, "lax").pswapaxes(*args, **kwargs))
+        return as_tensor(getattr(backend_module, "lax").pswapaxes(*args, **kwargs))
     return args[0] if args else None
 
 
@@ -98,7 +99,7 @@ def _rot90(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "rot90")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "rot90")(*args, **kwargs))
 
 
 @global_eager_registry.register("Nonzero")
@@ -113,7 +114,7 @@ def _nonzero(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "nonzero")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "nonzero")(*args, **kwargs))
 
 
 @global_eager_registry.register("Repeat")
@@ -128,7 +129,7 @@ def _repeat(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "repeat")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "repeat")(*args, **kwargs))
 
 
 @global_eager_registry.register("Tile")
@@ -143,7 +144,7 @@ def _tile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    return typing.cast("EagerValue", getattr(backend_module, "tile")(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "tile")(*args, **kwargs))
 
 
 @global_eager_registry.register("UpdateSlice")
@@ -169,7 +170,7 @@ def _updateslice(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     out = getattr(backend_module, "array")(x).copy()
     slices = tuple(slice(s, s + getattr(update, "shape", ())[i]) for (i, s) in enumerate(getattr(start_indices, "__iter__")()))
     out[slices] = update
-    return typing.cast("EagerValue", out)
+    return as_tensor(out)
 
 
 @global_eager_registry.register("Flatnonzero")
@@ -186,8 +187,8 @@ def _flatnonzero(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     """
     func = getattr(backend_module, "flatnonzero", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    return typing.cast("EagerValue", getattr(backend_module, "flatnonzero")(getattr(backend_module, "asarray")(args[0])))
+        return as_tensor(func(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "flatnonzero")(getattr(backend_module, "asarray")(args[0])))
 
 
 @global_eager_registry.register("Fliplr")
@@ -204,8 +205,8 @@ def _fliplr(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """
     func = getattr(backend_module, "fliplr", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    return typing.cast("EagerValue", getattr(backend_module, "fliplr")(getattr(backend_module, "asarray")(args[0])))
+        return as_tensor(func(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "fliplr")(getattr(backend_module, "asarray")(args[0])))
 
 
 @global_eager_registry.register("Flipud")
@@ -222,8 +223,8 @@ def _flipud(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """
     func = getattr(backend_module, "flipud", None)
     if func:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    return typing.cast("EagerValue", getattr(backend_module, "flipud")(getattr(backend_module, "asarray")(args[0])))
+        return as_tensor(func(*args, **kwargs))
+    return as_tensor(getattr(backend_module, "flipud")(getattr(backend_module, "asarray")(args[0])))
 
 
 @global_eager_registry.register("Hsplit")
@@ -240,7 +241,7 @@ def _np_hsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "hsplit", getattr(backend_module, "hsplit", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).hsplit(args[0], args[1])
 
 
@@ -261,7 +262,7 @@ def _np_scatterapply(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     func = getattr(backend_module, "scatterapply", getattr(backend_module, "scatterapply", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -279,7 +280,7 @@ def _np_scatternd(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     """
     func = getattr(backend_module, "scatternd", getattr(backend_module, "scatternd", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -297,7 +298,7 @@ def _np_tensorarraystack(backend_module: BackendModuleProtocol, *args: EagerValu
     """
     func = getattr(backend_module, "tensorarraystack", getattr(backend_module, "tensorarraystack", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).stack(args[0])
 
 
@@ -315,7 +316,7 @@ def _np_tensorscatterupdate(backend_module: BackendModuleProtocol, *args: EagerV
     """
     func = getattr(backend_module, "tensorscatterupdate", getattr(backend_module, "tensorscatterupdate", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -333,7 +334,7 @@ def _np_unfold(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "unfold", getattr(backend_module, "unfold", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return args[0]
 
 
@@ -351,9 +352,9 @@ def _np_unstack(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     func = getattr(backend_module, "unstack", getattr(backend_module, "unstack", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    axis: int = int(typing.cast(int, kwargs.get("axis", 0)))
-    return _resolve_eager_mod(backend_module).split(args[0], typing.cast(EagerTensorProtocol, args[0]).shape[axis], axis=axis)
+        return as_tensor(func(*args, **kwargs))
+    axis: int = int(as_int(kwargs.get("axis", 0)))
+    return _resolve_eager_mod(backend_module).split(args[0], as_tensor(args[0]).shape[axis], axis=axis)
 
 
 @global_eager_registry.register("UpdateSlice")
@@ -373,8 +374,8 @@ def _np_updateslice(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     func = getattr(backend_module, "updateslice", getattr(backend_module, "updateslice", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
-    typing.cast(EagerTensorProtocol, args[0])[args[1]] = args[2]
+        return as_tensor(func(*args, **kwargs))
+    as_tensor(args[0])[args[1]] = args[2]
     return args[0]
 
 
@@ -392,7 +393,7 @@ def _np_vsplit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     """
     func = getattr(backend_module, "vsplit", getattr(backend_module, "vsplit", None))
     if func is not None:
-        return typing.cast("EagerValue", func(*args, **kwargs))
+        return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).vsplit(args[0], args[1])
 
 
@@ -411,8 +412,8 @@ def _np_transpose(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     perm = kwargs.get("permutation", kwargs.get("axes", None))
     if hasattr(backend_module, "transpose"):
         if perm is not None:
-            return typing.cast("EagerValue", getattr(backend_module, "transpose")(args[0], axes=perm))
-        return typing.cast("EagerValue", getattr(backend_module, "transpose")(args[0]))
+            return as_tensor(getattr(backend_module, "transpose")(args[0], axes=perm))
+        return as_tensor(getattr(backend_module, "transpose")(args[0]))
     return _resolve_eager_mod(backend_module).transpose(args[0], axes=perm)
 
 
@@ -431,5 +432,5 @@ def _np_broadcast_to(backend_module: BackendModuleProtocol, *args: EagerValue, *
     """
     target_shape = kwargs.get("shape", args[1] if len(args) > 1 else ())
     if hasattr(backend_module, "broadcast_to"):
-        return typing.cast("EagerValue", getattr(backend_module, "broadcast_to")(args[0], target_shape))
+        return as_tensor(getattr(backend_module, "broadcast_to")(args[0], target_shape))
     return _resolve_eager_mod(backend_module).broadcast_to(args[0], target_shape)

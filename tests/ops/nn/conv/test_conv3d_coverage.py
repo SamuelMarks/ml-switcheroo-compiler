@@ -11,9 +11,10 @@ import ml_switcheroo_compiler.ops.nn.conv3d as conv3d_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.configs import ConvConfig
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class DummyWithShape:
@@ -50,7 +51,7 @@ def test_conv3d_full_coverage() -> None:
             TensorConfig((2, 2, 2, 2, 4), DType("float32"), Device("cpu")),
         )
 
-        cfg = typing.cast("EagerCallableProtocol", ConvConfig)(
+        cfg = as_callable(ConvConfig)(
             window_strides=(1, 1, 1),
             padding="VALID",
             dimension_numbers=((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)),

@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.binary import add
 from ml_switcheroo_compiler.ops.linalg.einsum_frontend import einsum
 from ml_switcheroo_compiler.ops.linalg.matmul import matmul
@@ -23,7 +21,7 @@ def linear(input: Tensor, weight: Tensor, bias: Tensor | None = None) -> TensorO
     Returns:
         The transformed tensor.
     """
-    out = matmul(input, typing.cast("Tensor", swapaxes(weight, -1, -2)))
+    out = matmul(input, as_tensor_obj(swapaxes(weight, -1, -2)))
     if bias is not None:
         out = add(out, bias)
     return out

@@ -1,13 +1,12 @@
-"""Shape operations for Tensor Anys."""
+"""Shape operations for Tensor objects."""
 
 from __future__ import annotations
 
 import builtins
 import math
-import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.config import config
@@ -40,7 +39,7 @@ def slice(
     if config.eager_mode:
         sl = [builtins.slice(None)] * len(input.shape)
         sl[axis] = builtins.slice(start, end, step)
-        data = typing.cast(EagerTensorProtocol, input.data)[tuple(sl)]
+        data = as_tensor(input.data)[tuple(sl)]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -97,7 +96,7 @@ def strided_slice(
     """
     if config.eager_mode:
         idx = tuple(builtins.slice(b, e, s) for b, e, s in zip(begin, end, strides))
-        data = typing.cast(EagerTensorProtocol, input.data)[idx]
+        data = as_tensor(input.data)[idx]
         return Tensor(data, TensorConfig(data.shape, input.dtype, input.device))
     inputs = [input]
     base_shape = inputs[0].shape
@@ -200,7 +199,7 @@ class IndexInDim(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("a"))
         index = args[1] if len(args) > 1 else kwargs.get("index", kwargs.get("indices"))
-        axis = int(typing.cast(int, kwargs.get("axis", 0)))
+        axis = int(as_int(kwargs.get("axis", 0)))
         keepdims = bool(kwargs.get("keepdims", True))
         raw_shape = getattr(operand, "shape", getattr(operand, "shape_metadata", operand if isinstance(operand, (list, tuple)) else ()))
         shape = list(int(d) for d in raw_shape)

@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_eager_list, as_int, numpy_eager_registry
+from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 
 @numpy_eager_registry.register("AssociativeScan")
@@ -26,8 +24,8 @@ def _np_associative_scan(backend_module: BackendModuleProtocol, *args: EagerValu
     if len(args) < 2:
         return args[0]
     fn = args[0]
-    elems: list[EagerValue] = typing.cast(list[EagerValue], args[1])
-    axis: int = typing.cast(int, kwargs.get("axis", 0))
+    elems: list[EagerValue] = as_eager_list(args[1])
+    axis: int = as_int(kwargs.get("axis", 0))
 
     elems_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(elems)
     out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.empty_like(elems_arr)
@@ -38,7 +36,7 @@ def _np_associative_scan(backend_module: BackendModuleProtocol, *args: EagerValu
     acc: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = elems_arr[0]
     out[0] = acc
     for i in range(1, elems_arr.shape[0]):
-        acc = typing.cast("TypedVariadicCallable[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", fn)(acc, elems_arr[i])
+        acc = as_ndarray(as_callable(fn)(acc, elems_arr[i]))
         out[i] = acc
 
     out = np.moveaxis(out, 0, axis)

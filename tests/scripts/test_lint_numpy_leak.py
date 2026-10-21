@@ -15,9 +15,10 @@ from scripts.lint_numpy_leak import (
     check_for_third_party_leaks,
     main,
 )
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_check_for_numpy_leaks() -> None:
@@ -171,7 +172,7 @@ def test_check_for_third_party_leaks_import_fallback() -> None:
         if "scripts.lint_dependencies" in name and first_call:
             first_call = False
             raise ImportError("Mocked initial import error")
-        return typing.cast("EagerCallableProtocol", orig_import)(name, *args, **kwargs)
+        return as_callable(orig_import)(name, *args, **kwargs)
 
     saved_mod = sys.modules.pop("scripts.lint_dependencies", None)
     try:

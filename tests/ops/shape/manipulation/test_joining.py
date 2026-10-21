@@ -7,9 +7,10 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.joining import append, column_stack, concatenate, dstack, hstack, stack, vstack
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 class MockTensor:
@@ -47,7 +48,7 @@ def test_concatenate(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(concatenate([t1, t2], 0), "config")).shape == (6, 3)
+    assert as_tensor(getattr(concatenate([t1, t2], 0), "config")).shape == (6, 3)
 
 
 def test_stack(mocker: EagerTensorProtocol) -> None:
@@ -66,7 +67,7 @@ def test_stack(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 2, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(stack([t1, t2], 0), "config")).shape == (2, 2, 3)
+    assert as_tensor(getattr(stack([t1, t2], 0), "config")).shape == (2, 2, 3)
 
 
 def test_vstack(mocker: EagerTensorProtocol) -> None:
@@ -85,7 +86,7 @@ def test_vstack(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(vstack([t1, t2]), "config")).shape == (6, 3)
+    assert as_tensor(getattr(vstack([t1, t2]), "config")).shape == (6, 3)
 
 
 def test_hstack(mocker: EagerTensorProtocol) -> None:
@@ -104,7 +105,7 @@ def test_hstack(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 7)))
-    assert typing.cast("EagerTensorProtocol", getattr(hstack([t1, t2]), "config")).shape == (2, 7)
+    assert as_tensor(getattr(hstack([t1, t2]), "config")).shape == (2, 7)
 
 
 def test_dstack(mocker: EagerTensorProtocol) -> None:
@@ -123,7 +124,7 @@ def test_dstack(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3, 2)))
-    assert typing.cast("EagerTensorProtocol", getattr(dstack([t1, t2]), "config")).shape == (2, 3, 2)
+    assert as_tensor(getattr(dstack([t1, t2]), "config")).shape == (2, 3, 2)
 
 
 def test_append(mocker: EagerTensorProtocol) -> None:
@@ -144,7 +145,7 @@ def test_append(mocker: EagerTensorProtocol) -> None:
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
     setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
-    assert typing.cast("EagerTensorProtocol", getattr(append(t1, t2, axis=0), "config")).shape == (6, 3)
+    assert as_tensor(getattr(append(t1, t2, axis=0), "config")).shape == (6, 3)
 
 
 def test_column_stack(mocker: EagerTensorProtocol) -> None:
@@ -176,32 +177,32 @@ def test_stack_dtype_branches(mocker: EagerTensorProtocol) -> None:
 
         name = "int32"
 
-    t1 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)).data, typing.cast("EagerCallableProtocol", TensorConfig)((2, 3), typing.cast("EagerCallableProtocol", FakeDTypeName)(), "cpu"))
-    typing.cast("EagerCallableProtocol", stack)([t1, t1], 0)
+    t1 = as_callable(Tensor)(as_callable(MockTensor)((2, 3)).data, as_callable(TensorConfig)((2, 3), as_callable(FakeDTypeName)(), "cpu"))
+    as_callable(stack)([t1, t1], 0)
 
     class FakeDTypeDunderName:
         """Test class FakeDTypeDunderName."""
 
         __name__ = "int32"
 
-    t2 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)).data, typing.cast("EagerCallableProtocol", TensorConfig)((2, 3), typing.cast("EagerCallableProtocol", FakeDTypeDunderName)(), "cpu"))
-    typing.cast("EagerCallableProtocol", stack)([t2, t2], 0)
+    t2 = as_callable(Tensor)(as_callable(MockTensor)((2, 3)).data, as_callable(TensorConfig)((2, 3), as_callable(FakeDTypeDunderName)(), "cpu"))
+    as_callable(stack)([t2, t2], 0)
 
     class FakeDTypeValue:
         """Test class FakeDTypeValue."""
 
         value = "int32"
 
-    t3 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)).data, typing.cast("EagerCallableProtocol", TensorConfig)((2, 3), typing.cast("EagerCallableProtocol", FakeDTypeValue)(), "cpu"))
-    typing.cast("EagerCallableProtocol", stack)([t3, t3], 0)
+    t3 = as_callable(Tensor)(as_callable(MockTensor)((2, 3)).data, as_callable(TensorConfig)((2, 3), as_callable(FakeDTypeValue)(), "cpu"))
+    as_callable(stack)([t3, t3], 0)
 
     class FakeDTypeInvalid:
         """Test class FakeDTypeInvalid."""
 
         pass
 
-    t4 = typing.cast("EagerCallableProtocol", Tensor)(typing.cast("EagerCallableProtocol", MockTensor)((2, 3)).data, typing.cast("EagerCallableProtocol", TensorConfig)((2, 3), typing.cast("EagerCallableProtocol", FakeDTypeInvalid)(), "cpu"))
-    res4 = typing.cast("EagerCallableProtocol", stack)([t4, t4], 0)
+    t4 = as_callable(Tensor)(as_callable(MockTensor)((2, 3)).data, as_callable(TensorConfig)((2, 3), as_callable(FakeDTypeInvalid)(), "cpu"))
+    res4 = as_callable(stack)([t4, t4], 0)
     assert res4 is not None
 
 

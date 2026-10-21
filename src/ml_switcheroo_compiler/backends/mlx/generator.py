@@ -3,11 +3,9 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 from .mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXShapeOpsVisitor, MLXVisionVisitor
@@ -324,7 +322,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
                     EagerValue: Computed outputs.
                 """
                 mlx_args = [getattr(mx, "array")(a.data if isinstance(a, Tensor) else a) for a in w_args]
-                return typing.cast(EagerValue, compiled_fn(*mlx_args, **w_kwargs))
+                return as_tensor(compiled_fn(*mlx_args, **w_kwargs))
 
             return aot_mlx_runner
         except Exception:
@@ -350,7 +348,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
                     if len(graph.outputs) == 1:
                         return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)
-                return typing.cast(EagerValue, evaluated)
+                return as_tensor(evaluated)
 
             return fallback_forward
 

@@ -29,7 +29,7 @@ class DomainOpMigrationSpec(pydantic.BaseModel):
     is_binary: bool = False
 
 
-BASE_DIR: str = "src/ml_switcheroo_compiler/ops/definitions"
+BASE_DIR: str = os.environ.get("ML_SWITCHEROO_DEFS_DIR", "src/ml_switcheroo_compiler/ops/definitions")
 
 # Op name canonical aliases mapping
 NAME_ALIASES: dict[str, str] = {

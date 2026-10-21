@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
@@ -474,7 +474,7 @@ class MatrixNorm(OpDef):
         axis = kwargs.get("axis", (-2, -1))
         keepdims = bool(kwargs.get("keepdims", False))
 
-        axes = (axis,) if isinstance(axis, int) else typing.cast("tuple[int, ...]", axis)
+        axes: tuple[int, ...] = (axis,) if isinstance(axis, int) else tuple(int(d) for d in axis if isinstance(d, (int, float))) if isinstance(axis, (list, tuple)) else (-2, -1)
         if keepdims:
             out_shape = list(shape)
             for d in axes:
@@ -511,7 +511,7 @@ class VectorNorm(OpDef):
         axis = kwargs.get("axis", -1)
         keepdims = bool(kwargs.get("keepdims", False))
 
-        axes = (axis,) if isinstance(axis, int) else typing.cast("tuple[int, ...]", axis)
+        axes: tuple[int, ...] = (axis,) if isinstance(axis, int) else tuple(int(d) for d in axis if isinstance(d, (int, float))) if isinstance(axis, (list, tuple)) else (-1,)
         if keepdims:
             out_shape = list(shape)
             for d in axes:
@@ -564,7 +564,7 @@ class Tensorinv(OpDef):
         """
         in_shape = a.shape
         ind = kwargs.get("ind", 2)
-        return in_shape[int(typing.cast(int, ind)) :] + in_shape[: int(typing.cast(int, ind))]
+        return in_shape[int(as_int(ind)) :] + in_shape[: int(as_int(ind))]
 
 
 @register_op("Tensorsolve")

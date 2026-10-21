@@ -4,12 +4,11 @@
 from __future__ import annotations
 
 import os
-import typing
 
 import yaml
-from ml_switcheroo_ir import AttributeValue, LogicalGraph
+from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_opt_graph, clone_logical_node
 
 
 def _load_scan_rules() -> dict[str, AttributeValue]:
@@ -23,7 +22,7 @@ def _load_scan_rules() -> dict[str, AttributeValue]:
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
             if isinstance(data, dict):
-                return typing.cast(dict[str, AttributeValue], data)
+                return data
     return {}
 
 
@@ -41,15 +40,18 @@ def detect_associative_reduction(body_graph: IRGraph | None, rules: dict[str, At
         return None
 
     nodes = body_graph.nodes if hasattr(body_graph.nodes, "values") else {n.id: n for n in getattr(body_graph, "nodes", [])}
-    assoc_map = typing.cast(dict[str, dict[str, str]], rules.get("associative_ops", {}))
+    raw_assoc = rules.get("associative_ops", {})
+    assoc_map = raw_assoc if isinstance(raw_assoc, dict) else {}
 
     # Check non-input/output operational nodes
     compute_nodes = [n for n in nodes.values() if getattr(n, "op_type", "") not in ("Input", "Output")]
     if len(compute_nodes) == 1:
         op_node = compute_nodes[0]
-        op_type = getattr(op_node, "op_type", "")
+        op_type = str(getattr(op_node, "op_type", ""))
         if op_type in assoc_map:
-            prim = assoc_map[op_type].get("parallel_primitive", "CumSum")
+            entry = assoc_map[op_type]
+            raw_prim = entry.get("parallel_primitive", "CumSum") if isinstance(entry, dict) else "CumSum"
+            prim = str(raw_prim)
             return op_type, prim
 
     return None
@@ -70,7 +72,7 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
 
     for node_id, node in graph.nodes.items():
         if getattr(node, "op_type", "") == "Scan":
-            body = typing.cast("LogicalGraph | None", node.attributes.get("body"))
+            body = as_opt_graph(node.attributes.get("body"))
             reduction_info = detect_associative_reduction(body, rules)
 
             if reduction_info is not None:

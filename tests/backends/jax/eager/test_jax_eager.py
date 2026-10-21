@@ -24,6 +24,7 @@ from ml_switcheroo_compiler.backends.jax.eager import (
     _execute_welch,
     execute_op,
 )
+from tests.testing_utils import as_callable, as_tensor
 
 try:
     import jax
@@ -46,9 +47,9 @@ def _test_jax_eager_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     except ImportError:
         pytest.skip("JAX not available")
     res = _execute_adaptive_avg_pool(jnp.ones((2, 2)), 1)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (2, 1)
+    assert as_tensor(getattr(res, "shape")) == (2, 1)
     res2 = _execute_adaptive_avg_pool(jnp.ones((2, 2)), (1, 1))
-    assert typing.cast("EagerTensorProtocol", getattr(res2, "shape")) == (1, 1)
+    assert as_tensor(getattr(res2, "shape")) == (1, 1)
     res = _execute_accumulate_n([jnp.ones((2, 2)), jnp.ones((2, 2))])
     assert jnp.all(res == 2.0)
     res = _execute_binom_cdf(1, 2, 0.5)
@@ -62,13 +63,13 @@ def _test_jax_eager_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     res = _execute_bessel_jn(1, 2.0)
     assert res is not None
     res = _execute_unsorted_segment_sum(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 3
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 3
     res = _execute_unsorted_segment_max(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 2
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 2
     res = _execute_unsorted_segment_min(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 1
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 1
     res = _execute_unsorted_segment_prod(jnp.array([1, 2, 3]), jnp.array([0, 0, 1]), 2)
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 2
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 2
     res = _execute_variance(jnp.array([1.0, 2.0, 3.0]))
     getattr(_state, "update")({"res": res, "res2": res2})
     _state.update(locals())
@@ -88,9 +89,9 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "int4"
 
-    res = typing.cast("EagerCallableProtocol", _execute_cast)(typing.cast("EagerCallableProtocol", jnp.array)([1.0]), dtype=typing.cast("EagerCallableProtocol", MockDtype)())
+    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), dtype=as_callable(MockDtype)())
     assert res.dtype == jnp.int8
-    res = typing.cast("EagerCallableProtocol", _execute_cast)(typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", MockDtype)())
+    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype)())
     assert res.dtype == jnp.int8
 
     class MockDtype2:
@@ -98,7 +99,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "bfloat16"
 
-    res = typing.cast("EagerCallableProtocol", _execute_cast)(typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", MockDtype2)())
+    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype2)())
     assert res.dtype == jnp.bfloat16
 
     class MockDtype3:
@@ -106,7 +107,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float16"
 
-    res = typing.cast("EagerCallableProtocol", _execute_cast)(typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", MockDtype3)())
+    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype3)())
     assert res.dtype == jnp.float16
 
     class MockDtype4:
@@ -114,7 +115,7 @@ def _test_jax_eager_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float8"
 
-    res = typing.cast("EagerCallableProtocol", _execute_cast)(typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", MockDtype4)())
+    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype4)())
     getattr(_state, "update")({"MockDtype": MockDtype, "MockDtype2": MockDtype2, "MockDtype3": MockDtype3, "MockDtype4": MockDtype4})
     getattr(_state, "update")({"res": res})
     _state.update(locals())
@@ -134,17 +135,17 @@ def _test_jax_eager_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> 
 
         value = "float32"
 
-    res = typing.cast("EagerCallableProtocol", _execute_cast)(typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", MockDtype5)())
+    res = as_callable(_execute_cast)(as_callable(jnp.array)([1.0]), as_callable(MockDtype5)())
     assert res.dtype == jnp.float32
-    res = typing.cast("EagerTensorProtocol", _execute_ragged_tensor_to_dense([jnp.array([1.0]), jnp.array([1.0, 2.0])]))
+    res = as_tensor(_execute_ragged_tensor_to_dense([jnp.array([1.0]), jnp.array([1.0, 2.0])]))
     assert res.shape == (2, 2)
-    res = typing.cast("EagerTensorProtocol", _execute_ragged_tensor_to_dense(jnp.array([1.0])))
+    res = as_tensor(_execute_ragged_tensor_to_dense(jnp.array([1.0])))
     assert res.shape == (1,)
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Add", typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", jnp.array)([2.0]))
+    res = as_callable(execute_op)(None, "Add", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
     assert res[0] == 3.0
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Variance", typing.cast("EagerCallableProtocol", jnp.array)([1.0, 2.0, 3.0]))
+    res = as_callable(execute_op)(None, "Variance", as_callable(jnp.array)([1.0, 2.0, 3.0]))
     assert res is not None
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Cumprod", typing.cast("EagerCallableProtocol", jnp.array)([1.0, 2.0, 3.0]))
+    res = as_callable(execute_op)(None, "Cumprod", as_callable(jnp.array)([1.0, 2.0, 3.0]))
     assert res is not None
     from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 
@@ -157,9 +158,9 @@ def _test_jax_eager_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> 
             args: Test parameter `args`.
             kwargs: Test parameter `kwargs`.
         """
-        return typing.cast("EagerTensorProtocol", getattr(jnp_module, "array"))([42.0])
+        return as_tensor(getattr(jnp_module, "array"))([42.0])
 
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "DummyGlobalOp", typing.cast("EagerCallableProtocol", jnp.array)([1.0]))
+    res = as_callable(execute_op)(None, "DummyGlobalOp", as_callable(jnp.array)([1.0]))
     assert res[0] == 42.0
     getattr(_state, "update")({"MockDtype5": MockDtype5, "_dummy_global_op": _dummy_global_op, "global_eager_registry": global_eager_registry, "res": res})
     _state.update(locals())
@@ -174,7 +175,7 @@ def _test_jax_eager_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> 
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     with pytest.raises(BackendNotSupportedError):
-        typing.cast("EagerCallableProtocol", execute_op)(None, "UnknownOp123")
+        as_callable(execute_op)(None, "UnknownOp123")
     getattr(_state, "update")({"BackendNotSupportedError": BackendNotSupportedError})
 
 
@@ -198,10 +199,10 @@ def _test_jax_eager_execute_op_lambdas_part_1(_state: dict[str, EagerTensorProto
 
     from ml_switcheroo_compiler.backends.jax.eager import _OP_DISPATCH
 
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ActivityRegularization")))(1.0)
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AdaptiveMaxPool3D_Indices")))(typing.cast("EagerCallableProtocol", jnp.ones)((2, 2)), 1)
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AdaptiveLogSoftmaxWithLoss")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Adjoint")))(typing.cast("EagerCallableProtocol", jnp.ones)((2, 2)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("ActivityRegularization")))(1.0)
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AdaptiveMaxPool3D_Indices")))(as_callable(jnp.ones)((2, 2)), 1)
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AdaptiveLogSoftmaxWithLoss")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("Adjoint")))(as_callable(jnp.ones)((2, 2)))
     from unittest import mock
 
     with (
@@ -211,20 +212,20 @@ def _test_jax_eager_execute_op_lambdas_part_1(_state: dict[str, EagerTensorProto
         mock.patch("jax.lax.pmax", lambda x, **kw: x, create=True),
         mock.patch("jax.lax.reduce_scatter", lambda x, *args, **kw: x, create=True),
     ):
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllGather")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllToAll")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="sum")
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="max")
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="sum")
-        typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), op_type="max")
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AlphaDropout")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AsString")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Assert")))(True, typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("Assign")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignAdd")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignSub")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssignVariable")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)), typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
-    typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(_OP_DISPATCH, "__getitem__")("AssociativeScan")))(typing.cast("EagerCallableProtocol", jnp.ones)((2,)))
+        as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AllGather")))(as_callable(jnp.ones)((2,)))
+        as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AllToAll")))(as_callable(jnp.ones)((2,)))
+        as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(as_callable(jnp.ones)((2,)), op_type="sum")
+        as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AllReduce")))(as_callable(jnp.ones)((2,)), op_type="max")
+        as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(as_callable(jnp.ones)((2,)), op_type="sum")
+        as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("ReduceScatter")))(as_callable(jnp.ones)((2,)), op_type="max")
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AlphaDropout")))(as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AsString")))(as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("Assert")))(True, as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("Assign")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AssignAdd")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AssignSub")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AssignVariable")))(as_callable(jnp.ones)((2,)), as_callable(jnp.ones)((2,)))
+    as_callable(as_tensor(getattr(_OP_DISPATCH, "__getitem__")("AssociativeScan")))(as_callable(jnp.ones)((2,)))
     getattr(_state, "update")({"_OP_DISPATCH": _OP_DISPATCH, "jnp": jnp, "mock": mock})
     _state.update(locals())
 
@@ -326,14 +327,14 @@ def test_jax_eager_execute_op_fallback() -> None:
     with mock.patch("ml_switcheroo_compiler.backends.mapping_loader.resolve_target_api", return_value=None):
         with mock.patch("ml_switcheroo_compiler.backends.eager_registry.global_eager_registry.get", return_value=None):
             with pytest.raises(Exception, match=".*"):
-                typing.cast("EagerCallableProtocol", execute_op)(None, "Mish", typing.cast("EagerCallableProtocol", jnp.array)([1.0]))
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Mul", typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", jnp.array)([2.0]))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 2.0
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Sub", typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", jnp.array)([2.0]))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == -1.0
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Div", typing.cast("EagerCallableProtocol", jnp.array)([1.0]), typing.cast("EagerCallableProtocol", jnp.array)([2.0]))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "__getitem__")(0)) == 0.5
-    res = typing.cast("EagerCallableProtocol", execute_op)(None, "Eig", typing.cast("EagerCallableProtocol", jnp.eye)(2))
+                as_callable(execute_op)(None, "Mish", as_callable(jnp.array)([1.0]))
+    res = as_callable(execute_op)(None, "Mul", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 2.0
+    res = as_callable(execute_op)(None, "Sub", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
+    assert as_tensor(getattr(res, "__getitem__")(0)) == -1.0
+    res = as_callable(execute_op)(None, "Div", as_callable(jnp.array)([1.0]), as_callable(jnp.array)([2.0]))
+    assert as_tensor(getattr(res, "__getitem__")(0)) == 0.5
+    res = as_callable(execute_op)(None, "Eig", as_callable(jnp.eye)(2))
     assert res is not None
 
 
@@ -356,4 +357,4 @@ def test_jax_adaptive_max_pool_tuple_size() -> None:
 
     operand = jnp.ones((1, 1, 4, 4))
     res = _execute_adaptive_max_pool(operand, (2, 2))
-    assert typing.cast("EagerTensorProtocol", getattr(res, "shape")) == (1, 1, 2, 2)
+    assert as_tensor(getattr(res, "shape")) == (1, 1, 2, 2)

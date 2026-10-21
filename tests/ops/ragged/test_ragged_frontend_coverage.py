@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 class DummyWithShape:
@@ -63,7 +64,7 @@ def test_ragged_frontend_coverage() -> None:
             assert isinstance(ragged_fe_mod.ragged_range(0, 10, 2), Tensor)
             assert isinstance(ragged_fe_mod.ragged_row_splits_to_segment_ids(t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.ragged_segment_ids_to_row_splits(t_dummy), Tensor)
-            assert isinstance(typing.cast("EagerCallableProtocol", ragged_fe_mod.ragged_stack)([t_dummy, t_dummy]), Tensor)
+            assert isinstance(as_callable(ragged_fe_mod.ragged_stack)([t_dummy, t_dummy]), Tensor)
             assert isinstance(ragged_fe_mod.ragged_stack_dynamic_partitions(t_dummy, t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.ragged_gather(t_dummy, t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.ragged_tensor_to_dense(t_dummy), Tensor)
@@ -72,7 +73,7 @@ def test_ragged_frontend_coverage() -> None:
             assert isinstance(ragged_fe_mod.ragged_dynamic_broadcast(t_dummy, (2, 3)), Tensor)
             assert isinstance(ragged_fe_mod.ragged_dot(t_dummy, t_dummy), Tensor)
             assert isinstance(ragged_fe_mod.boolean_mask(t_dummy, t_dummy), Tensor)
-            assert isinstance(typing.cast("EagerCallableProtocol", ragged_fe_mod.map_flat_values)(lambda x: x, t_dummy), Tensor)
+            assert isinstance(as_callable(ragged_fe_mod.map_flat_values)(lambda x: x, t_dummy), Tensor)
 
         # Non-eager mode
         config.eager_mode = False
@@ -95,9 +96,9 @@ def test_ragged_frontend_coverage() -> None:
         with patch("ml_switcheroo_compiler.ops.ragged.frontend.get_op", return_value=MockRaggedOp):
             with patch("ml_switcheroo_compiler.ops.ragged.frontend._emit_linalg_node", return_value="emitted_ragged"):
                 res_graph = ragged_fe_mod.ragged_constant(t_dummy)
-                assert typing.cast("EagerTensorProtocol", res_graph) == typing.cast("EagerTensorProtocol", "emitted_ragged")
+                assert as_tensor(res_graph) == as_tensor("emitted_ragged")
 
                 res_graph_no_args = ragged_fe_mod._ragged_op("RaggedConstant")
-                assert typing.cast("EagerTensorProtocol", res_graph_no_args) == typing.cast("EagerTensorProtocol", "emitted_ragged")
+                assert as_tensor(res_graph_no_args) == as_tensor("emitted_ragged")
     finally:
         config.eager_mode = orig_eager

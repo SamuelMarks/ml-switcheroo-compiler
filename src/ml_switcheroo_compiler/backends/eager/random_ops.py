@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing  # noqa: F401
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_eager_list, as_int_list, as_tensor, global_eager_registry
 
 RandVal = EagerValue
 
@@ -21,7 +21,7 @@ def prng_key(backend_module: EagerValue, seed: int) -> RandVal:
             RandVal: Result.
     """
     if hasattr(backend_module, "array"):
-        return typing.cast(RandVal, getattr(backend_module, "array")([0, seed], dtype="uint32"))
+        return as_tensor(getattr(backend_module, "array")([0, seed], dtype="uint32"))
     return [0, seed]
 
 
@@ -41,7 +41,7 @@ def random_split(backend_module: EagerValue, key: EagerValue, num: int = 2) -> R
 
     data_list = [[random.randint(0, 0xFFFFFFFF), random.randint(0, 0xFFFFFFFF)] for _ in range(num)]
     if hasattr(backend_module, "array"):
-        return typing.cast(RandVal, getattr(backend_module, "array")(data_list, dtype="uint32"))
+        return as_tensor(getattr(backend_module, "array")(data_list, dtype="uint32"))
     return data_list
 
 
@@ -57,11 +57,11 @@ def random_fold_in(backend_module: EagerValue, key: EagerValue, data: int) -> Ra
     Returns:
             RandVal: Result.
     """
-    val0 = int(typing.cast(list[int], key)[0]) if hasattr(key, "__getitem__") else 0
-    val1 = int(typing.cast(list[int], key)[1]) if hasattr(key, "__getitem__") else 0
+    val0 = int(as_int_list(key)[0]) if hasattr(key, "__getitem__") else 0
+    val1 = int(as_int_list(key)[1]) if hasattr(key, "__getitem__") else 0
     data_list = [val0 + data, val1]
     if hasattr(backend_module, "array"):
-        return typing.cast(RandVal, getattr(backend_module, "array")(data_list, dtype="uint32"))
+        return as_tensor(getattr(backend_module, "array")(data_list, dtype="uint32"))
     return data_list
 
 
@@ -77,21 +77,21 @@ def rand(backend_module: EagerValue, *args: RandVal, **kwargs: RandVal) -> RandV
     Returns:
             RandVal: Result.
     """
-    shape = typing.cast(tuple[EagerValue, ...], kwargs.get("shape", args if args else ()) if hasattr(kwargs, "get") else ())
+    shape = as_eager_list(kwargs.get("shape", args if args else ()) if hasattr(kwargs, "get") else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
-        shape = tuple(shape[0])
+        shape = list(shape[0])
     if hasattr(backend_module, "random"):
         rand_mod = getattr(backend_module, "random")
         if hasattr(rand_mod, "uniform"):
-            return typing.cast(RandVal, rand_mod.uniform(size=shape))
+            return as_tensor(rand_mod.uniform(size=shape))
         if hasattr(rand_mod, "rand"):
-            return typing.cast(RandVal, rand_mod.rand(*shape))
+            return as_tensor(rand_mod.rand(*shape))
     if hasattr(backend_module, "rand"):
-        return typing.cast(RandVal, getattr(backend_module, "rand")(*shape))
+        return as_tensor(getattr(backend_module, "rand")(*shape))
     if hasattr(backend_module, "uniform"):
-        return typing.cast(RandVal, getattr(backend_module, "uniform")(size=shape))
+        return as_tensor(getattr(backend_module, "uniform")(size=shape))
 
-    return typing.cast(RandVal, getattr(backend_module, "random").uniform(size=shape))
+    return as_tensor(getattr(backend_module, "random").uniform(size=shape))
 
 
 @global_eager_registry.register("Randn")
@@ -106,21 +106,21 @@ def randn(backend_module: EagerValue, *args: RandVal, **kwargs: RandVal) -> Rand
     Returns:
             RandVal: Result.
     """
-    shape = typing.cast(tuple[EagerValue, ...], kwargs.get("shape", args if args else ()) if hasattr(kwargs, "get") else ())
+    shape = as_eager_list(kwargs.get("shape", args if args else ()) if hasattr(kwargs, "get") else ())
     if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
-        shape = tuple(shape[0])
+        shape = list(shape[0])
     if hasattr(backend_module, "random"):
         rand_mod = getattr(backend_module, "random")
         if hasattr(rand_mod, "normal"):
-            return typing.cast(RandVal, rand_mod.normal(size=shape))
+            return as_tensor(rand_mod.normal(size=shape))
         if hasattr(rand_mod, "randn"):
-            return typing.cast(RandVal, rand_mod.randn(*shape))
+            return as_tensor(rand_mod.randn(*shape))
     if hasattr(backend_module, "randn"):
-        return typing.cast(RandVal, getattr(backend_module, "randn")(*shape))
+        return as_tensor(getattr(backend_module, "randn")(*shape))
     if hasattr(backend_module, "normal"):
-        return typing.cast(RandVal, getattr(backend_module, "normal")(size=shape))
+        return as_tensor(getattr(backend_module, "normal")(size=shape))
 
-    return typing.cast(RandVal, getattr(backend_module, "random").normal(size=shape))
+    return as_tensor(getattr(backend_module, "random").normal(size=shape))
 
 
 @global_eager_registry.register("Randint")
@@ -139,6 +139,6 @@ def randint(backend_module: EagerValue, *args: RandVal, **kwargs: RandVal) -> Ra
     high = kwargs.get("high", args[1] if len(args) > 1 else 10) if hasattr(kwargs, "get") else 10
     shape = kwargs.get("shape", args[2] if len(args) > 2 else ()) if hasattr(kwargs, "get") else ()
     if hasattr(backend_module, "random") and hasattr(getattr(backend_module, "random"), "randint"):
-        return typing.cast(RandVal, getattr(backend_module, "random").randint(low, high, size=shape))
+        return as_tensor(getattr(backend_module, "random").randint(low, high, size=shape))
 
-    return typing.cast(RandVal, getattr(backend_module, "random").randint(low, high, size=shape))
+    return as_tensor(getattr(backend_module, "random").randint(low, high, size=shape))

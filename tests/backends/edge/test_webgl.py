@@ -8,9 +8,10 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_webgl_generator() -> None:
@@ -351,10 +352,10 @@ def test_webgl_aot_runner_execution() -> None:
     artifact = gen.compile_aot(graph)
     inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     res_single = artifact(inp)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_single, inp + inp)
+    as_callable(np.testing.assert_allclose)(res_single, inp + inp)
     # Extra argument branch coverage
     res_extra = artifact(inp, "extra_arg")
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_extra, inp + inp)
+    as_callable(np.testing.assert_allclose)(res_extra, inp + inp)
 
     # 2. Multiple outputs
     n_sub = IRNode(id="z", op_type="Sub", inputs=["y", "x"], shape_metadata=(2, 2))
@@ -365,8 +366,8 @@ def test_webgl_aot_runner_execution() -> None:
     artifact_multi = gen_multi.compile_aot(graph, opt_level=1)
     res_multi = artifact_multi(inp)
     assert isinstance(res_multi, tuple) and len(res_multi) == 2
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[0], inp + inp)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_multi[1], inp)
+    as_callable(np.testing.assert_allclose)(res_multi[0], inp + inp)
+    as_callable(np.testing.assert_allclose)(res_multi[1], inp)
 
     # 3. Empty outputs
     graph_empty = IRGraph(name="test_webgl_runner_empty")

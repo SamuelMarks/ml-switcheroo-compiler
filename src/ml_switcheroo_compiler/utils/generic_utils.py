@@ -15,7 +15,7 @@ from types import ModuleType
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, as_float, as_tensor
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.utils.serialization_utils import (
@@ -271,7 +271,7 @@ class Progbar:
         pairs: Iterable[tuple[TensorOrScalar, TensorOrScalar]] = typing.cast("Iterable[tuple[TensorOrScalar, TensorOrScalar]]", values) if isinstance(values, Iterable) else ()
         for item in pairs:
             k = str(item[0])
-            v = float(typing.cast(float, item[1]))
+            v = float(as_float(item[1]))
             if k not in self._values_order:
                 self._values_order.append(k)
             if k in self.stateful_metrics:
@@ -499,10 +499,10 @@ class bounding_boxes:
         Raises:
             ValueError: If relative coordinates are used without `image_shape` or format is unknown.
         """
-        c0 = typing.cast(EagerTensorProtocol, arr)[..., 0]
-        c1 = typing.cast(EagerTensorProtocol, arr)[..., 1]
-        c2 = typing.cast(EagerTensorProtocol, arr)[..., 2]
-        c3 = typing.cast(EagerTensorProtocol, arr)[..., 3]
+        c0 = as_tensor(arr)[..., 0]
+        c1 = as_tensor(arr)[..., 1]
+        c2 = as_tensor(arr)[..., 2]
+        c3 = as_tensor(arr)[..., 3]
         if src_lower == "xyxy":
             return c0, c1, c2, c3
         if src_lower == "xywh":
@@ -545,19 +545,19 @@ class bounding_boxes:
         """
         x1, y1, x2, y2 = coords
         if tgt_lower == "xyxy":
-            return typing.cast(TensorOrScalar, backend_mod.stack([x1, y1, x2, y2], axis=-1))
+            return as_tensor(backend_mod.stack([x1, y1, x2, y2], axis=-1))
         if tgt_lower == "xywh":
-            return typing.cast(TensorOrScalar, backend_mod.stack([x1, y1, x2 - x1, y2 - y1], axis=-1))
+            return as_tensor(backend_mod.stack([x1, y1, x2 - x1, y2 - y1], axis=-1))
         if tgt_lower == "center_xywh":
-            return typing.cast(TensorOrScalar, backend_mod.stack([(x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1], axis=-1))
+            return as_tensor(backend_mod.stack([(x1 + x2) / 2.0, (y1 + y2) / 2.0, x2 - x1, y2 - y1], axis=-1))
         if tgt_lower == "yxyx":
-            return typing.cast(TensorOrScalar, backend_mod.stack([y1, x1, y2, x2], axis=-1))
+            return as_tensor(backend_mod.stack([y1, x1, y2, x2], axis=-1))
         if tgt_lower == "rel_xyxy":
             if image_shape is None:
                 msg = "image_shape (height, width) is required to convert to relative bounding box format."
                 raise ValueError(msg)
             h_img, w_img = image_shape
-            return typing.cast(TensorOrScalar, backend_mod.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1))
+            return as_tensor(backend_mod.stack([x1 / w_img, y1 / h_img, x2 / w_img, y2 / h_img], axis=-1))
         return arr
 
     @classmethod
@@ -597,7 +597,7 @@ class bounding_boxes:
         src_lower = source.lower()
         tgt_lower = target.lower()
         if src_lower == tgt_lower:
-            return typing.cast(TensorOrScalar, arr)
+            return as_tensor(arr)
 
         coords = typing.cast(
             "tuple[EagerTensorProtocol, ...]",

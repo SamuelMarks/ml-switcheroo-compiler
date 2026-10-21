@@ -8,16 +8,17 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode, NodeDict
+from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.constant_folding import (
     _evaluate_constant_node,
     constant_folding_pass,
 )
+from tests.testing_utils import as_attrs, as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_constant_folding_coverage_brute() -> None:
@@ -80,7 +81,7 @@ def test_constant_folding_numel_branch(monkeypatch: pytest.MonkeyPatch) -> None:
             dict[str, object]: Evaluated outputs dictionary.
         """
         _ = (g, inputs, backend)
-        return {"n1": typing.cast("EagerCallableProtocol", MockVal)()}
+        return {"n1": as_callable(MockVal)()}
 
     monkeypatch.setattr("ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph", mock_eval)
     mock_backend = MagicMock()
@@ -94,8 +95,8 @@ def test_constant_folding_numel_branch(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_constant_folding() -> None:
     """Verify that the constant folding pass folds an Add operation on two Constant nodes."""
     g = LogicalGraph(outputs=["n1"])
-    g.nodes["c1"] = LogicalNode(id="c1", op_type="Constant", attributes=typing.cast("dict[str, AttributeValue]", {"value": np.array([2.0])}))
-    g.nodes["c2"] = LogicalNode(id="c2", op_type="Constant", attributes=typing.cast("dict[str, AttributeValue]", {"value": np.array([3.0])}))
+    g.nodes["c1"] = LogicalNode(id="c1", op_type="Constant", attributes=as_attrs({"value": np.array([2.0])}))
+    g.nodes["c2"] = LogicalNode(id="c2", op_type="Constant", attributes=as_attrs({"value": np.array([3.0])}))
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Add", inputs=["c1", "c2"])
     assert constant_folding_pass(g) is True
     assert g.nodes["n1"].op_type == "Constant"
@@ -106,7 +107,7 @@ def test_constant_folding() -> None:
 def test_constant_folding_unsupported_op() -> None:
     """Verify that constant folding ignores unsupported operations."""
     g = LogicalGraph(outputs=["n1"])
-    g.nodes["c1"] = LogicalNode(id="c1", op_type="Constant", attributes=typing.cast("dict[str, AttributeValue]", {"value": np.array([2.0])}))
+    g.nodes["c1"] = LogicalNode(id="c1", op_type="Constant", attributes=as_attrs({"value": np.array([2.0])}))
     g.nodes["n1"] = LogicalNode(id="n1", op_type="UnknownOp", inputs=["c1"])
     assert constant_folding_pass(g) is False
     assert g.nodes["n1"].op_type == "UnknownOp"
@@ -115,8 +116,8 @@ def test_constant_folding_unsupported_op() -> None:
 def test_constant_folding_scalar_unwrap() -> None:
     """Verify that constant folding unwraps 1-element numpy arrays to Python scalars."""
     g = LogicalGraph(outputs=["n1"])
-    g.nodes["c1"] = LogicalNode(id="c1", op_type="Constant", attributes=typing.cast("dict[str, AttributeValue]", {"value": np.array([2])}))
-    g.nodes["c2"] = LogicalNode(id="c2", op_type="Constant", attributes=typing.cast("dict[str, AttributeValue]", {"value": np.array([3])}))
+    g.nodes["c1"] = LogicalNode(id="c1", op_type="Constant", attributes=as_attrs({"value": np.array([2])}))
+    g.nodes["c2"] = LogicalNode(id="c2", op_type="Constant", attributes=as_attrs({"value": np.array([3])}))
     g.nodes["n1"] = LogicalNode(id="n1", op_type="Add", inputs=["c1", "c2"])
     assert constant_folding_pass(g) is True
     assert g.nodes["n1"].op_type == "Constant"
@@ -192,14 +193,14 @@ def test_constant_folding_backend_item_branch() -> None:
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"n1": ScalarNoItem()},
     ):
-        val2 = typing.cast("EagerCallableProtocol", _evaluate_constant_node)(node, ["c1"], graph, backend=None)
+        val2 = as_callable(_evaluate_constant_node)(node, ["c1"], graph, backend=None)
         assert isinstance(val2, ScalarNoItem)
 
     with mock.patch(
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"n1": np.array([42])},
     ):
-        val3 = typing.cast("EagerCallableProtocol", _evaluate_constant_node)(node, ["c1"], graph, backend=None)
+        val3 = as_callable(_evaluate_constant_node)(node, ["c1"], graph, backend=None)
         assert val3 == 42
 
 
@@ -227,7 +228,7 @@ def test_constant_folding_backend_instance_item_branch() -> None:
         "ml_switcheroo_compiler.transforms.passes.constant_folding.evaluate_graph",
         return_value={"c0": np.array([42.0])},
     ):
-        val = typing.cast("EagerCallableProtocol", _evaluate_constant_node)(node, [], graph, typing.cast("EagerCallableProtocol", MockBackendWithItem)())
+        val = as_callable(_evaluate_constant_node)(node, [], graph, as_callable(MockBackendWithItem)())
         assert val == 42.0
 
 
@@ -297,7 +298,7 @@ def test_constant_folding_attributes_subgraph_and_exceptions() -> None:
     parent.nodes["while_node"] = LogicalNode(
         id="while_node",
         op_type="While",
-        attributes=typing.cast("dict[str, AttributeValue]", {"body_graph": subgraph}),
+        attributes=as_attrs({"body_graph": subgraph}),
     )
 
     res = constant_folding_pass(parent)
@@ -318,7 +319,7 @@ def test_constant_folding_attributes_subgraph_and_exceptions() -> None:
             "sub_node": LogicalNode(
                 id="sub_node",
                 op_type="CustomOp",
-                attributes=typing.cast("dict[str, AttributeValue]", {"scalar_val": 42, "child_g": subgraph_unmodified}),
+                attributes=as_attrs({"scalar_val": 42, "child_g": subgraph_unmodified}),
                 subgraphs={"sub1": subgraph_unmodified, "non_graph": "not_a_graph"},
             )
         }

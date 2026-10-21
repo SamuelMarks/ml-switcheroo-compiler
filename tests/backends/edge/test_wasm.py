@@ -7,17 +7,18 @@ import typing
 from unittest.mock import patch
 
 import pytest
-from ml_switcheroo_ir import AttributeValue, NodeDict
+from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_list
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
 
 def test_wasm_instantiation() -> None:
@@ -52,15 +53,15 @@ def test_wasm_visit_methods() -> None:
 
     node_conv = IRNode("Conv2D", "conv_1", inputs=["in1", "in2"])
     setattr(node_conv, "attributes", {"strides": [1, 1], "padding": "SAME"})
-    typing.cast("EagerCallableProtocol", generator.visit_Conv2D)(node_conv, "Conv2D", "conv_1", ["in1", "in2"], [2, 2, 2, 2], 16)
+    as_callable(generator.visit_Conv2D)(node_conv, "Conv2D", "conv_1", ["in1", "in2"], [2, 2, 2, 2], 16)
 
     node_max = IRNode("MaxPool2D", "max_1", inputs=["in1"])
     setattr(node_max, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
-    typing.cast("EagerCallableProtocol", generator.visit_MaxPool2D)(node_max, "MaxPool2D", "max_1", ["in1"], [2, 2, 2, 2], 16)
+    as_callable(generator.visit_MaxPool2D)(node_max, "MaxPool2D", "max_1", ["in1"], [2, 2, 2, 2], 16)
 
     node_if = IRNode("If", "if_1", inputs=[])
     object.__setattr__(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
-    typing.cast("EagerCallableProtocol", generator.visit_If)(node_if, "If", "if_1", [], [], 0)
+    as_callable(generator.visit_If)(node_if, "If", "if_1", [], [], 0)
 
     node_concat = IRNode("Concat", "cat_1", inputs=["in1", "in2"])
     setattr(node_concat, "attributes", {"axis": 0})
@@ -96,31 +97,31 @@ def test_wasm_coverage_methods() -> None:
 
     node = IRNode("AvgPool2D", "avg_1", inputs=["in1"])
     setattr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "SAME"})
-    typing.cast("EagerCallableProtocol", generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_1", ["in1"], [2, 2, 2, 2], 16)
+    as_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_1", ["in1"], [2, 2, 2, 2], 16)
 
     node = IRNode("AvgPool2D", "avg_2", inputs=["in1"])
     setattr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
-    typing.cast("EagerCallableProtocol", generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_2", ["in1"], [2, 2, 2, 2], 16)
+    as_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_2", ["in1"], [2, 2, 2, 2], 16)
 
     node = IRNode("AllReduce", "allr_1", inputs=["in1"])
-    typing.cast("EagerCallableProtocol", generator.visit_AllReduce)(node, "AllReduce", "allr_1", ["in1"], [4], 4)
+    as_callable(generator.visit_AllReduce)(node, "AllReduce", "allr_1", ["in1"], [4], 4)
 
     node = IRNode("AllGather", "allg_1", inputs=["in1"])
-    typing.cast("EagerCallableProtocol", generator.visit_AllGather)(node, "AllGather", "allg_1", ["in1"], [4], 4)
+    as_callable(generator.visit_AllGather)(node, "AllGather", "allg_1", ["in1"], [4], 4)
 
     node = IRNode("AllToAll", "allt_1", inputs=["in1"])
-    typing.cast("EagerCallableProtocol", generator.visit_AllToAll)(node, "AllToAll", "allt_1", ["in1"], [4], 4)
+    as_callable(generator.visit_AllToAll)(node, "AllToAll", "allt_1", ["in1"], [4], 4)
 
     node = IRNode("ReduceScatter", "reds_1", inputs=["in1"])
-    typing.cast("EagerCallableProtocol", generator.visit_ReduceScatter)(node, "ReduceScatter", "reds_1", ["in1"], [4], 4)
+    as_callable(generator.visit_ReduceScatter)(node, "ReduceScatter", "reds_1", ["in1"], [4], 4)
 
     node = IRNode("Cond", "cond_1", inputs=[])
     object.__setattr__(node, "attributes", {"true_branch": IRGraph(), "false_branch": IRGraph()})
-    typing.cast("EagerCallableProtocol", generator.visit_Cond)(node, "Cond", "cond_1", [], [], 0)
+    as_callable(generator.visit_Cond)(node, "Cond", "cond_1", [], [], 0)
 
     node = IRNode("Scan", "scan_1", inputs=[])
     object.__setattr__(node, "attributes", {"body": IRGraph()})
-    typing.cast("EagerCallableProtocol", generator.visit_Scan)(node, "Scan", "scan_1", [], [], 0)
+    as_callable(generator.visit_Scan)(node, "Scan", "scan_1", [], [], 0)
 
     node = IRNode("MatMul", "mat_1", inputs=["in1", "in2"])
     object.__setattr__(node, "shape_metadata", [2, 2])
@@ -130,7 +131,7 @@ def test_wasm_coverage_methods() -> None:
     n2 = IRNode("I", "in2", inputs=[])
     object.__setattr__(n2, "shape_metadata", [2, 2])
     object.__setattr__(graph, "sorted_nodes", [n1, n2])
-    typing.cast("EagerCallableProtocol", generator.visit_MatMul)(node, "MatMul", "mat_1", ["in1", "in2"], [2, 2], 4)
+    as_callable(generator.visit_MatMul)(node, "MatMul", "mat_1", ["in1", "in2"], [2, 2], 4)
 
     node = IRNode("Log", "log_1", inputs=["in1"])
     node = IRNode("Exp", "exp_1", inputs=["in1"])
@@ -139,7 +140,7 @@ def test_wasm_coverage_methods() -> None:
     # Some helper methods
     assert generator._num_elements([2, 3]) == 6
 
-    assert typing.cast("EagerCallableProtocol", generator._num_elements)(4) == 1
+    assert as_callable(generator._num_elements)(4) == 1
 
     # Generate test function
 
@@ -186,8 +187,8 @@ def global_wasm_mock() -> Iterator[EagerValue]:
 
                 path = Path(__file__).parent.parent.parent.parent / "src" / "ml_switcheroo_compiler" / "backends" / "edge" / "wasm_simd" / "wasm_templates" / "Conv3D.yaml"
                 with open(path) as f:
-                    return typing.cast("EagerTensorProtocol", yaml.safe_load(f)["Conv3D"])
-            return {"body": typing.cast("EagerCallableProtocol", mock_bodies.get)(template_name, typing.cast("EagerTensorProtocol", "// ") + typing.cast("EagerTensorProtocol", template_name))}
+                    return as_tensor(yaml.safe_load(f)["Conv3D"])
+            return {"body": as_callable(mock_bodies.get)(template_name, as_tensor("// ") + as_tensor(template_name))}
 
         mock_get_wasm_template.side_effect = mock_template_resolver
         try:
@@ -569,7 +570,7 @@ def test_wasm_while_loop_coverage() -> None:
     body_graph.outputs = ["b_out"]
 
     g = IRGraph()
-    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes=typing.cast("dict[str, AttributeValue]", {"body": body_graph}))
+    n_while = IRNode("while", "WhileLoop", inputs=["in1"], attributes=as_attrs({"body": body_graph}))
     n_while.shape_metadata = (1,)
 
     in1 = IRNode("in1", "Input")
@@ -604,7 +605,7 @@ def test_wasm_cond_coverage() -> None:
     else_graph.outputs = ["e_out"]
 
     g = IRGraph()
-    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=typing.cast("dict[str, AttributeValue]", {"then_branch": then_graph, "else_branch": else_graph}))
+    n_cond = IRNode("cond", "Cond", inputs=["cond_in", "t_in", "e_in"], attributes=as_attrs({"then_branch": then_graph, "else_branch": else_graph}))
     n_cond.shape_metadata = (1,)
 
     cond_in = IRNode("cond_in", "Input")
@@ -625,18 +626,18 @@ def test_wasm_cond_coverage() -> None:
 class DummyGraph:
     """Dummy graph."""
 
-    nodes = typing.cast("list[EagerTensorProtocol]", [])
+    nodes = as_tensor_list([])
 
 
 def test_wasm_aligned_alloc() -> None:
     """Test aligned alloc."""
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
     assert gen._allocate_aligned_memory(128, 16) == "std::aligned_alloc(16, 128);"
 
 
 def test_wasm_generate_striding_logic() -> None:
     """Test striding logic."""
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
     strides, c_code = gen._generate_striding_logic([])
     assert strides == []
     assert c_code == "0"
@@ -652,7 +653,7 @@ def test_wasm_compile_clang_fallback(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
     mocker.patch("shutil.which", side_effect=lambda x: "clang" if x == "clang" else None)
     mocker.patch("subprocess.run")
     js, wasm = gen.compile_wasm("/tmp")
@@ -665,7 +666,7 @@ def test_wasm_compile_no_compiler(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
     mocker.patch("shutil.which", return_value=None)
     with pytest.raises(CompilationError, match="Neither emcc nor clang found"):
         gen.compile_wasm("/tmp")
@@ -679,9 +680,9 @@ def test_wasm_compile_subprocess_error(mocker: EagerTensorProtocol) -> None:
     """
     import subprocess
 
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
     mocker.patch("shutil.which", return_value="emcc")
-    typing.cast("EagerCallableProtocol", mocker.patch)("subprocess.run", side_effect=typing.cast("EagerCallableProtocol", subprocess.CalledProcessError)(1, "emcc", b"out", b"err"))
+    as_callable(mocker.patch)("subprocess.run", side_effect=as_callable(subprocess.CalledProcessError)(1, "emcc", b"out", b"err"))
     with pytest.raises(CompilationError, match="WASM compilation failed: err"):
         gen.compile_wasm("/tmp")
 
@@ -692,23 +693,23 @@ def test_wasm_compile_generic_error(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
     mocker.patch("shutil.which", return_value="emcc")
-    typing.cast("EagerCallableProtocol", mocker.patch)("subprocess.run", side_effect=typing.cast("EagerCallableProtocol", Exception)("foo"))
+    as_callable(mocker.patch)("subprocess.run", side_effect=as_callable(Exception)("foo"))
     with pytest.raises(CompilationError, match="WASM compilation failed with unknown error: foo"):
         gen.compile_wasm("/tmp")
 
 
 def test_wasm_generic_visit() -> None:
     """Test generic visit."""
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
 
         id = "dummy_id"
 
-    assert typing.cast("EagerCallableProtocol", gen.generic_visit)(typing.cast("EagerCallableProtocol", DummyNode)(), []) == "dummy_id"
+    assert as_callable(gen.generic_visit)(as_callable(DummyNode)(), []) == "dummy_id"
 
 
 def test_wasm_visit_conv2d_shapes(mocker: EagerTensorProtocol) -> None:
@@ -717,7 +718,7 @@ def test_wasm_visit_conv2d_shapes(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -728,8 +729,8 @@ def test_wasm_visit_conv2d_shapes(mocker: EagerTensorProtocol) -> None:
     # Mock get_wasm_template and get_cpp_helpers
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": "body"})
 
-    typing.cast("EagerCallableProtocol", gen.visit_Conv2D)(typing.cast("EagerCallableProtocol", DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], 5, 5)  # shape is int
-    typing.cast("EagerCallableProtocol", gen.visit_Conv2D)(typing.cast("EagerCallableProtocol", DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], [1, 5], 5)  # shape length < 4
+    as_callable(gen.visit_Conv2D)(as_callable(DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], 5, 5)  # shape is int
+    as_callable(gen.visit_Conv2D)(as_callable(DummyNode)(), "Conv2D", "conv_id", ["in0", "in1"], [1, 5], 5)  # shape length < 4
     assert gen is not None
 
 
@@ -739,7 +740,7 @@ def test_wasm_visit_pool2d_shapes(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -751,8 +752,8 @@ def test_wasm_visit_pool2d_shapes(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": "body"})
 
     # shape and in0_shape are int/float and length < 4
-    typing.cast("EagerCallableProtocol", gen._generate_pooling2d)(typing.cast("EagerCallableProtocol", DummyNode)(), "pool_id", ["in0"], 5, "max_pool2d")
-    typing.cast("EagerCallableProtocol", gen._generate_pooling2d)(typing.cast("EagerCallableProtocol", DummyNode)(), "pool_id", ["in0"], [1, 5], "max_pool2d")
+    as_callable(gen._generate_pooling2d)(as_callable(DummyNode)(), "pool_id", ["in0"], 5, "max_pool2d")
+    as_callable(gen._generate_pooling2d)(as_callable(DummyNode)(), "pool_id", ["in0"], [1, 5], "max_pool2d")
     assert gen is not None
 
 
@@ -762,7 +763,7 @@ def test_wasm_generate_op_missing_template(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -770,10 +771,10 @@ def test_wasm_generate_op_missing_template(mocker: EagerTensorProtocol) -> None:
         id = "op_id"
 
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {}}}})
-    UnimplementedMathError = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
+    UnimplementedMathError = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
 
-    with typing.cast("EagerCallableProtocol", pytest.raises)(UnimplementedMathError, match="Missing WASM SIMD template"):
-        typing.cast("EagerCallableProtocol", gen._generate_op)(typing.cast("EagerCallableProtocol", DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
+    with as_callable(pytest.raises)(UnimplementedMathError, match="Missing WASM SIMD template"):
+        as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
 
 
 def test_wasm_generate_op_missing_body(mocker: EagerTensorProtocol) -> None:
@@ -782,7 +783,7 @@ def test_wasm_generate_op_missing_body(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -792,10 +793,10 @@ def test_wasm_generate_op_missing_body(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {"template": "fake_template"}}}})
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"not_body": "x"})
 
-    UnimplementedMathError = typing.cast("EagerTensorProtocol", getattr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
+    UnimplementedMathError = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
 
-    with typing.cast("EagerCallableProtocol", pytest.raises)(UnimplementedMathError, match="MISSING BODY FOR: FakeOp"):
-        typing.cast("EagerCallableProtocol", gen._generate_op)(typing.cast("EagerCallableProtocol", DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
+    with as_callable(pytest.raises)(UnimplementedMathError, match="MISSING BODY FOR: FakeOp"):
+        as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
 
 
 def test_wasm_generate_op_shapes(mocker: EagerTensorProtocol) -> None:
@@ -804,7 +805,7 @@ def test_wasm_generate_op_shapes(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
 
     class DummyNode:
         """Dummy node."""
@@ -814,8 +815,8 @@ def test_wasm_generate_op_shapes(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {"template": "fake_template"}}}})
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"body": "body_code"})
 
-    typing.cast("EagerCallableProtocol", gen._generate_op)(typing.cast("EagerCallableProtocol", DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
-    typing.cast("EagerCallableProtocol", gen._generate_op)(typing.cast("EagerCallableProtocol", DummyNode)(), "FakeOp", "op_id", ["in0"], [1, 5], 5)
+    as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
+    as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], [1, 5], 5)
     assert gen is not None
 
 
@@ -825,7 +826,7 @@ def test_wasm_visit_cond_mapped_inputs(mocker: EagerTensorProtocol) -> None:
     Args:
         mocker: Mocker fixture.
     """
-    gen = typing.cast("EagerCallableProtocol", WasmCodeGenerator)(typing.cast("EagerCallableProtocol", DummyGraph)())
+    gen = as_callable(WasmCodeGenerator)(as_callable(DummyGraph)())
 
     class DummySubNode:
         """Dummy sub node."""
@@ -846,7 +847,7 @@ def test_wasm_visit_cond_mapped_inputs(mocker: EagerTensorProtocol) -> None:
             Returns:
                 list: Dummy subnode.
             """
-            return [typing.cast("EagerCallableProtocol", DummySubNode)()]
+            return [as_callable(DummySubNode)()]
 
     class DummyNode:
         """Dummy node."""
@@ -855,7 +856,7 @@ def test_wasm_visit_cond_mapped_inputs(mocker: EagerTensorProtocol) -> None:
         attributes = {"true_graph": DummyBranchGraph(), "false_graph": DummyBranchGraph()}
 
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm.WasmCodeGenerator._generate_op")
-    typing.cast("EagerCallableProtocol", gen.visit_Cond)(typing.cast("EagerCallableProtocol", DummyNode)(), "Cond", "cond_id", ["pred", "in_branch_inputs"], [1], 1)
+    as_callable(gen.visit_Cond)(as_callable(DummyNode)(), "Cond", "cond_id", ["pred", "in_branch_inputs"], [1], 1)
     assert gen is not None
 
 
@@ -865,7 +866,7 @@ def test_wasm_missing_coverage() -> None:
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
     graph = IRGraph()
-    n1 = IRNode("if_node", "If", inputs=["in1"], attributes=typing.cast("dict[str, AttributeValue]", {"branch_graphs": [IRGraph()]}))
+    n1 = IRNode("if_node", "If", inputs=["in1"], attributes=as_attrs({"branch_graphs": [IRGraph()]}))
     graph.nodes["if_node"] = n1
     graph.inputs = ["in1"]
     graph.outputs = ["if_node"]
@@ -873,7 +874,7 @@ def test_wasm_missing_coverage() -> None:
     gen = WasmCodeGenerator(graph)
     gen.visit_If(n1, "If", "if_node", ["in1"], [10], 10)
 
-    n2 = IRNode("cond_node", "Cond", inputs=["in1"], attributes=typing.cast("dict[str, AttributeValue]", {"branch_graphs": [IRGraph(), IRGraph()]}))
+    n2 = IRNode("cond_node", "Cond", inputs=["in1"], attributes=as_attrs({"branch_graphs": [IRGraph(), IRGraph()]}))
     gen.visit_Cond(n2, "Cond", "cond_node", ["in1"], [10], 10)
     assert gen is not None
 
@@ -990,8 +991,8 @@ def test_wasm_shape_telemetry() -> None:
     assert payload["inputs"] == ["in0"]
     assert payload["outputs"] == ["mul0"]
     assert len(payload["nodes"]) == 2
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("id")) == "in0"
-    assert typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("shape_metadata")) == [2, 4]
+    assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("id")) == "in0"
+    assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("shape_metadata")) == [2, 4]
 
     # Test applying telemetry back
     gen.apply_shape_telemetry({"mul0": [4, 8]})
@@ -1080,7 +1081,7 @@ def test_wasm_conv3d_branches_coverage() -> None:
         attributes={"stride": (2, 2, 2), "padding": (1, 1, 1), "dilation": (1, 1, 1)},
     )
     object.__setattr__(node_c2, "shape_metadata", 8)
-    typing.cast("EagerCallableProtocol", gen.visit_Conv3D)(node_c2, "Conv3D", "conv3d_scalar", ["in_scalar", "w_scalar"], 8, 8)
+    as_callable(gen.visit_Conv3D)(node_c2, "Conv3D", "conv3d_scalar", ["in_scalar", "w_scalar"], 8, 8)
 
     # Test Conv3D with 2-element stride and padding
     node_c3 = IRNode(
@@ -1123,7 +1124,7 @@ def test_wasm_scan_body_graph_and_blank_lines() -> None:
     gen = WasmCodeGenerator(main_graph)
 
     # visit_Scan with body_graph
-    scan_node = IRNode("scan_0", "Scan", inputs=["in0"], attributes=typing.cast("dict[str, AttributeValue]", {"body_graph": sub_graph}))
+    scan_node = IRNode("scan_0", "Scan", inputs=["in0"], attributes=as_attrs({"body_graph": sub_graph}))
     gen.visit_Scan(scan_node, "Scan", "scan_0", ["in0"], [2, 2], 4)
 
     # _generate_op with template having blank lines to cover line.strip() branch

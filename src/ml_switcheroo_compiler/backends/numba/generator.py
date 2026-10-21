@@ -9,7 +9,7 @@ from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -623,7 +623,7 @@ class NumbaGenerator(PythonStringGenerator):
             if compiled_fn is not None:
                 try:
                     args_tuple = tuple(getattr(a, "data", a) for a in args)
-                    return typing.cast(TypedVariadicCallable[EagerValue], compiled_fn)(args_tuple)
+                    return as_callable(compiled_fn)(args_tuple)
                 except Exception:
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -635,7 +635,7 @@ class NumbaGenerator(PythonStringGenerator):
                     feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict, backend=NumbaGenerator)
             if not graph.outputs:
-                return typing.cast(EagerValue, res_dict)
+                return as_tensor(res_dict)
             if len(graph.outputs) == 1:
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)

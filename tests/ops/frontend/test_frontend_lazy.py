@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -12,6 +9,7 @@ from ml_switcheroo_compiler.ops import creation, linalg, shape
 from ml_switcheroo_compiler.ops.linalg import decompositions as linalg_decomp
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+from tests.testing_utils import as_tensor
 
 
 def test_lazy_frontend_direct_1() -> None:
@@ -33,9 +31,9 @@ def test_lazy_frontend_direct_1() -> None:
         assert isinstance(shape.roll(x, 1), Tensor)
         assert isinstance(shape.concatenate((x, y)), Tensor)
         assert isinstance(shape.stack((x, y)), Tensor)
-        assert len(typing.cast("EagerTensorProtocol", shape.split(x, 2))) == 1
-        assert len(typing.cast("EagerTensorProtocol", shape.hsplit(x, 2))) == 2
-        assert len(typing.cast("EagerTensorProtocol", shape.vsplit(x, 2))) == 2
+        assert len(as_tensor(shape.split(x, 2))) == 1
+        assert len(as_tensor(shape.hsplit(x, 2))) == 2
+        assert len(as_tensor(shape.vsplit(x, 2))) == 2
         assert global_tracing_state.active_graph is not None
         assert len(global_tracing_state.active_graph.nodes) > 0
     finally:
@@ -53,7 +51,7 @@ def test_lazy_frontend_direct_2() -> None:
     try:
         p_3d = ProxyTensor(id="3d", shape=(2, 2, 2), dtype=DType.Float32)
         t_3d = Tensor(p_3d, TensorConfig((2, 2, 2), DType.Float32, "cpu"))
-        assert len(typing.cast("EagerTensorProtocol", shape.dsplit(t_3d, 2))) == 2
+        assert len(as_tensor(shape.dsplit(t_3d, 2))) == 2
         assert isinstance(shape.misc.tile(x, (2, 2)), Tensor)
         assert isinstance(shape.misc.repeat(x, 2), Tensor)
         assert isinstance(shape.misc.pad(x, ((1, 1), (1, 1))), Tensor)
@@ -127,16 +125,16 @@ def test_lazy_frontend_direct_4() -> None:
     try:
         assert isinstance(linalg_decomp.matrix_power(x, 2), Tensor)
         assert isinstance(linalg_decomp.cholesky(x), Tensor)
-        assert len(typing.cast("EagerTensorProtocol", linalg_decomp.qr(x))) == 2
-        assert len(typing.cast("EagerTensorProtocol", linalg_decomp.svd(x))) == 3
-        assert len(typing.cast("EagerTensorProtocol", linalg_decomp.eig(x))) == 2
-        assert len(typing.cast("EagerTensorProtocol", linalg_decomp.eigh(x))) == 2
+        assert len(as_tensor(linalg_decomp.qr(x))) == 2
+        assert len(as_tensor(linalg_decomp.svd(x))) == 3
+        assert len(as_tensor(linalg_decomp.eig(x))) == 2
+        assert len(as_tensor(linalg_decomp.eigh(x))) == 2
         assert isinstance(linalg_decomp.eigvals(x), Tensor)
         assert isinstance(linalg_decomp.eigvalsh(x), Tensor)
         assert isinstance(linalg_decomp.norm(x), Tensor)
         assert isinstance(linalg.cond(x), Tensor)
         assert isinstance(linalg_decomp.det(x), Tensor)
-        assert len(typing.cast("EagerTensorProtocol", linalg_decomp.slogdet(x))) == 2
+        assert len(as_tensor(linalg_decomp.slogdet(x))) == 2
         assert isinstance(linalg.trace(x), Tensor)
         assert isinstance(linalg_decomp.solve(x, y), Tensor)
         assert isinstance(linalg_decomp.inv(x), Tensor)

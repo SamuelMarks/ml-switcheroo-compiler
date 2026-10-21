@@ -12,9 +12,10 @@ from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import DTypePromotionError
 from ml_switcheroo_compiler.core.type_promotion import promote_types
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 def test_type_promotion_complex128_downgrade() -> None:
@@ -41,7 +42,7 @@ def test_promote_types() -> None:
     assert promote_types(DType.Float64, DType.Complex64) == DType.Complex128
     assert promote_types(DType.Float64, DType.Float32) == DType.Float64
     with pytest.raises(DTypePromotionError):
-        typing.cast("EagerCallableProtocol", promote_types)("unknown", DType.Float32)
+        as_callable(promote_types)("unknown", DType.Float32)
     config.jax_enable_x64 = False
 
 
@@ -55,7 +56,7 @@ def test_bool_promotion() -> None:
     """Test boolean promotion."""
     assert promote_types(DType.Bool, DType.Bool) == DType.Bool
     with pytest.raises(DTypePromotionError):
-        typing.cast("EagerCallableProtocol", promote_types)("bool", "bool")
+        as_callable(promote_types)("bool", "bool")
 
 
 def test_promote_complex128_downcast() -> None:
@@ -84,7 +85,7 @@ def test_type_promotion_129() -> None:
             """Test function __hash__."""
             return hash(DType.Bool)
 
-    res = typing.cast("EagerCallableProtocol", tp.promote_types)(typing.cast("EagerCallableProtocol", FakeType)(), typing.cast("EagerCallableProtocol", FakeType)())
+    res = as_callable(tp.promote_types)(as_callable(FakeType)(), as_callable(FakeType)())
     assert isinstance(res, FakeType)
 
 

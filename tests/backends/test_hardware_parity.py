@@ -9,13 +9,13 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable, as_int, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def test_hardware_operation_coverage_and_workgroup_rules() -> None:
@@ -28,18 +28,15 @@ def test_hardware_operation_coverage_and_workgroup_rules() -> None:
     assert len(metal_gen.config.templates) >= 20
     core_ops = ["add", "sub", "mul", "div", "relu", "exp", "log", "tanh", "maximum", "silu", "gelu"]
     for op in core_ops:
-        assert typing.cast("EagerValue", op) in cuda_gen.config.templates
-        assert typing.cast("EagerValue", op) in rocm_gen.config.templates
-        assert typing.cast("EagerValue", op) in metal_gen.config.templates
-        cuda_wg = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(cuda_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        metal_wg = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        rocm_wg = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(rocm_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        assert typing.cast("EagerValue", isinstance(typing.cast("EagerValue", cuda_wg), list) and typing.cast("EagerCallableProtocol", len)(cuda_wg) == 3 and (typing.cast("EagerTensorProtocol", getattr(cuda_wg, "__getitem__")(0)) > 0))
-        assert typing.cast(
-            "EagerValue",
-            isinstance(typing.cast("EagerValue", metal_wg), list) and len(metal_wg) == 3 and (typing.cast("int", metal_wg[0]) > 0),
-        )
-        assert isinstance(typing.cast("EagerValue", rocm_wg), list) and len(rocm_wg) == 3 and (typing.cast("int", rocm_wg[0]) > 0)
+        assert as_tensor(op) in cuda_gen.config.templates
+        assert as_tensor(op) in rocm_gen.config.templates
+        assert as_tensor(op) in metal_gen.config.templates
+        cuda_wg = as_tensor(getattr(as_tensor(getattr(cuda_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        metal_wg = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        rocm_wg = as_tensor(getattr(as_tensor(getattr(rocm_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        assert as_tensor(isinstance(as_tensor(cuda_wg), list) and as_callable(len)(cuda_wg) == 3 and (as_tensor(getattr(cuda_wg, "__getitem__")(0)) > 0))
+        assert as_tensor(isinstance(as_tensor(metal_wg), list) and len(metal_wg) == 3 and (as_int(metal_wg[0]) > 0))
+        assert isinstance(as_tensor(rocm_wg), list) and len(rocm_wg) == 3 and (as_int(rocm_wg[0]) > 0)
 
 
 def test_dynamic_buffer_allocation_and_launch() -> None:
@@ -79,18 +76,18 @@ def test_metal_native_execution_parity() -> None:
         pytest.skip("Apple Silicon Metal device/driver not available on host system")
     runner = MetalRunner()
     metal_gen = MetalCodeGenerator(IRGraph())
-    relu_tpl = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("relu")), "get"))("body", "")
+    relu_tpl = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")("relu")), "get"))("body", "")
     x = np.array([-5.0, 0.0, 3.5, 12.0], dtype=np.float32)
-    relu_res = typing.cast("EagerCallableProtocol", runner.execute_kernel)(relu_tpl, "relu", x)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(relu_res, typing.cast("EagerCallableProtocol", np.maximum)(0.0, x))
-    add_tpl = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("add")), "get"))("body", "")
+    relu_res = as_callable(runner.execute_kernel)(relu_tpl, "relu", x)
+    as_callable(np.testing.assert_allclose)(relu_res, as_callable(np.maximum)(0.0, x))
+    add_tpl = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")("add")), "get"))("body", "")
     y = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
-    add_res = typing.cast("EagerCallableProtocol", runner.execute_kernel)(add_tpl, "add", x, y)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(add_res, x + y)
-    exp_tpl = typing.cast("EagerTensorProtocol", getattr(typing.cast("EagerTensorProtocol", getattr(metal_gen.config.templates, "__getitem__")("exp")), "get"))("body", "")
+    add_res = as_callable(runner.execute_kernel)(add_tpl, "add", x, y)
+    as_callable(np.testing.assert_allclose)(add_res, x + y)
+    exp_tpl = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")("exp")), "get"))("body", "")
     x_small = np.array([0.0, 1.0, 2.0, -1.0], dtype=np.float32)
-    exp_res = typing.cast("EagerCallableProtocol", runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(exp_res, typing.cast("EagerCallableProtocol", np.exp)(x_small), rtol=1e-05, atol=1e-05)
+    exp_res = as_callable(runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
+    as_callable(np.testing.assert_allclose)(exp_res, as_callable(np.exp)(x_small), rtol=1e-05, atol=1e-05)
 
 
 def test_cuda_driver_presence_or_graceful_skip() -> None:
@@ -180,23 +177,23 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     b_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
     ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.matmul(a_np, b_np)
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
     torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
     jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
     mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
     x_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.sum(x_np, axis=-1, keepdims=True)
-    ref_mean = typing.cast("EagerCallableProtocol", np.mean)(x_np, axis=-1, keepdims=True)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
+    ref_mean = as_callable(np.mean)(x_np, axis=-1, keepdims=True)
+    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("ReduceSum", x_np, axis=-1, keepdims=True), ref_sum)
+    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("ReduceMean", x_np, axis=-1, keepdims=True), ref_mean)
     x_act: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([-2.0, -1.0, 0.0, 1.0, 2.0], dtype=np.float32)
     ref_sig: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = 1.0 / (1.0 + np.exp(-x_act))
     ref_tanh: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.tanh(x_act)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-05, atol=1e-05)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(typing.cast("EagerCallableProtocol", NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("Sigmoid", x_act), ref_sig, rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(NumpyGenerator.execute_op)("Tanh", x_act), ref_tanh, rtol=1e-05, atol=1e-05)
 
 
 def test_unsupported_backend_eager_dispatch_raises_error() -> None:
@@ -290,13 +287,13 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
         assert op in metal_gen.config.templates, f"Missing {op} in Metal"
         c_tpl = cuda_gen.config.templates[op]
         assert "float32" in getattr(c_tpl, "get")("type_mappings", {})
-        assert typing.cast("EagerTensorProtocol", getattr(c_tpl, "get"))("grid_calc") is not None
+        assert as_tensor(getattr(c_tpl, "get"))("grid_calc") is not None
         r_tpl = rocm_gen.config.templates[op]
         assert "float32" in getattr(r_tpl, "get")("type_mappings", {})
-        assert typing.cast("EagerTensorProtocol", getattr(r_tpl, "get"))("grid_calc") is not None
+        assert as_tensor(getattr(r_tpl, "get"))("grid_calc") is not None
         m_tpl = metal_gen.config.templates[op]
         assert "float32" in getattr(m_tpl, "get")("type_mappings", {})
-        assert typing.cast("EagerTensorProtocol", getattr(m_tpl, "get"))("grid_calc") is not None
+        assert as_tensor(getattr(m_tpl, "get"))("grid_calc") is not None
     g = IRGraph()
     n_in = IRNode("in0", "Input", shape_metadata=(10, 10), attributes={"dtype": "float32"})
     n_elu = IRNode("elu_op", "Elu", inputs=["in0"], shape_metadata=(10, 10), attributes={"dtype": "float32"})
@@ -355,25 +352,17 @@ def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, E
     y_tf = tf.constant(y_np)
     out_tf = (tf.matmul(tf.nn.relu(x_tf + y_tf), tf.sin(x_tf)) - tf.exp(-tf.abs(y_tf))).numpy()
     if out_tf.shape == z_ref.shape:
-        assert typing.cast("EagerCallableProtocol", np.allclose)(out_tf, z_ref, atol=1e-05, rtol=0.0001)
+        assert as_callable(np.allclose)(out_tf, z_ref, atol=1e-05, rtol=0.0001)
     import keras.ops as kops
 
     out_k = np.array(kops.matmul(kops.relu(x_np + y_np), kops.sin(x_np)) - kops.exp(-kops.abs(y_np)))
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out_k, z_ref, atol=1e-05, rtol=0.0001)
+    assert as_callable(np.allclose)(out_k, z_ref, atol=1e-05, rtol=0.0001)
     import dask.array as da
 
-    x_d = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "from_array")))(x_np)
-    y_d = typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "from_array")))(y_np)
-    out_d = typing.cast(
-        "EagerCallableProtocol",
-        (
-            typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "matmul")))(
-                typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "maximum")))(0.0, x_d + y_d), typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "sin")))(x_d)
-            )
-            - typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "exp")))(-typing.cast("EagerCallableProtocol", typing.cast("EagerTensorProtocol", getattr(da, "abs")))(y_d))
-        ).compute,
-    )()
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out_d, z_ref, atol=1e-05, rtol=0.0001)
+    x_d = as_callable(as_tensor(getattr(da, "from_array")))(x_np)
+    y_d = as_callable(as_tensor(getattr(da, "from_array")))(y_np)
+    out_d = as_callable((as_callable(as_tensor(getattr(da, "matmul")))(as_callable(as_tensor(getattr(da, "maximum")))(0.0, x_d + y_d), as_callable(as_tensor(getattr(da, "sin")))(x_d)) - as_callable(as_tensor(getattr(da, "exp")))(-as_callable(as_tensor(getattr(da, "abs")))(y_d))).compute)()
+    assert as_callable(np.allclose)(out_d, z_ref, atol=1e-05, rtol=0.0001)
     _state.update(locals())
 
 
@@ -386,19 +375,17 @@ def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, E
     (x_np, y_np, z_ref) = (_state["x_np"], _state["y_np"], _state["z_ref"])
     import mlx.core as mx
 
-    x_m = typing.cast("EagerCallableProtocol", mx.array)(x_np)
-    y_m = typing.cast("EagerCallableProtocol", mx.array)(y_np)
-    out_m = typing.cast("EagerCallableProtocol", np.array)(
-        typing.cast("EagerCallableProtocol", mx.matmul)(typing.cast("EagerCallableProtocol", mx.maximum)(0.0, x_m + y_m), typing.cast("EagerCallableProtocol", mx.sin)(x_m)) - typing.cast("EagerCallableProtocol", mx.exp)(-typing.cast("EagerCallableProtocol", mx.abs)(y_m))
-    )
-    assert typing.cast("EagerCallableProtocol", np.allclose)(out_m, z_ref, atol=1e-05, rtol=0.0001)
+    x_m = as_callable(mx.array)(x_np)
+    y_m = as_callable(mx.array)(y_np)
+    out_m = as_callable(np.array)(as_callable(mx.matmul)(as_callable(mx.maximum)(0.0, x_m + y_m), as_callable(mx.sin)(x_m)) - as_callable(mx.exp)(-as_callable(mx.abs)(y_m)))
+    assert as_callable(np.allclose)(out_m, z_ref, atol=1e-05, rtol=0.0001)
     with pytest.raises(ModuleNotFoundError):
         import cupy as cp
 
         x_cp = cp.asarray(x_np)
         y_cp = cp.asarray(y_np)
         out_cp = cp.asnumpy(cp.matmul(cp.maximum(0.0, x_cp + y_cp), cp.sin(x_cp)) - cp.exp(-cp.abs(y_cp)))
-        assert typing.cast("EagerCallableProtocol", np.allclose)(out_cp, z_ref, atol=1e-05, rtol=0.0001)
+        assert as_callable(np.allclose)(out_cp, z_ref, atol=1e-05, rtol=0.0001)
 
 
 def test_golden_seed_cross_backend_float_equivalence() -> None:

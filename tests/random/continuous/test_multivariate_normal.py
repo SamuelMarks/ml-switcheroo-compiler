@@ -9,16 +9,17 @@ from unittest.mock import MagicMock, patch
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.continuous.multivariate_normal import MultivariateNormalOptions, multivariate_normal
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    pass
 
 
 def test_multivariate_normal_basic() -> None:
     """Test multivariate_normal function with default options and non-Tensor inputs."""
     with patch.object(sys.modules["ml_switcheroo_compiler.random.continuous.multivariate_normal"], "_emit_random_node") as mock_emit:
         mock_emit.return_value = "mocked_result"
-        result = typing.cast("EagerCallableProtocol", multivariate_normal)("key", "mean", "cov")
+        result = as_callable(multivariate_normal)("key", "mean", "cov")
         assert result == "mocked_result"
         mock_emit.assert_called_once_with("MultivariateNormal", ["key"], (), dtypes.DType.Float32, {"method": "cholesky"})
 
@@ -32,5 +33,5 @@ def test_multivariate_normal_with_tensors_and_options() -> None:
         mock_emit.return_value = "mocked_result"
         options = MultivariateNormalOptions(shape=(2, 2), dtype=dtypes.DType.Float64, method="svd")
         result = multivariate_normal("key", mock_mean, mock_cov, options=options)
-        assert typing.cast("EagerTensorProtocol", result) == typing.cast("EagerTensorProtocol", "mocked_result")
+        assert as_tensor(result) == as_tensor("mocked_result")
         mock_emit.assert_called_once_with("MultivariateNormal", ["key", mock_mean, mock_cov], (2, 2), dtypes.DType.Float64, {"method": "svd"})

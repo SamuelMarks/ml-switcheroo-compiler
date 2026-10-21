@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import typing
 
+from tests.testing_utils import as_tensor
+
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_extract_proxy_inputs_elif_branch() -> None:
@@ -27,7 +29,7 @@ def test_extract_proxy_inputs_elif_branch() -> None:
             """
             pass
 
-    old_state = typing.cast("EagerTensorProtocol", getattr(bmod, "global_tracing_state"))
+    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
     setattr(bmod, "global_tracing_state", FakeTracingState())
 
     class NonTensorWithId:

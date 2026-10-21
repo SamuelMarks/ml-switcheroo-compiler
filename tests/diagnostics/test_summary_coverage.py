@@ -11,9 +11,10 @@ import numpy as np
 
 import ml_switcheroo_compiler.diagnostics.summary as summary_mod
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol
+    pass
 
 
 class _DummyBadShape:
@@ -67,7 +68,7 @@ def test_summary_exhaustive() -> None:
 
         # 5. encode_image with integer 2D array: (16, 16)
         arr2d = np.full((16, 16), 128, dtype=np.uint8)
-        bytes2d = typing.cast("EagerCallableProtocol", summary_mod.encode_image)(arr2d)
+        bytes2d = as_callable(summary_mod.encode_image)(arr2d)
         assert bytes2d[:4] == b"\x89PNG"
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)

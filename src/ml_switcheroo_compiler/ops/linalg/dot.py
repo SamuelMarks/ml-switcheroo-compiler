@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -23,7 +22,7 @@ def _has_valid_shape(obj: Tensor | Sequence[int] | None) -> bool:
     return hasattr(obj, "shape") and bool(getattr(obj, "shape"))
 
 
-def _extract_dot_operand_shape(obj: Tensor | Sequence[int] | None) -> tuple[int, ...]:
+def _extract_dot_operand_shape(obj: TensorOrScalar) -> tuple[int, ...]:
     """Extract shape tuple from a tensor or shape sequence.
 
     Args:
@@ -39,7 +38,7 @@ def _extract_dot_operand_shape(obj: Tensor | Sequence[int] | None) -> tuple[int,
         if sm:
             return tuple(int(d) for d in sm)
     if isinstance(obj, (list, tuple)):
-        return tuple(int(d) for d in obj)
+        return tuple(int(d) for d in obj if isinstance(d, (int, float)))
     return ()
 
 
@@ -89,8 +88,8 @@ class Dot(OpDef):
         if inp_a is None or inp_b is None:
             return ()
 
-        shape_a = typing.cast("TypedVariadicCallable[tuple[int, ...]]", _extract_dot_operand_shape)(inp_a)
-        shape_b = typing.cast("TypedVariadicCallable[tuple[int, ...]]", _extract_dot_operand_shape)(inp_b)
+        shape_a = _extract_dot_operand_shape(inp_a)
+        shape_b = _extract_dot_operand_shape(inp_b)
         return _compute_dot_contraction_shape(shape_a, shape_b)
 
 

@@ -8,9 +8,10 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol
+    from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
 
 def _test_numba_parallel_loop_emission_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -38,7 +39,7 @@ def _test_numba_parallel_loop_emission_part_1(_state: dict[str, EagerTensorProto
     a_mat = np.ones((4, 4), dtype=np.float32)
     b_mat = np.ones((4, 4), dtype=np.float32)
     res_mm = fn_mm([a_mat, b_mat])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_mm, a_mat @ b_mat)
+    as_callable(np.testing.assert_allclose)(res_mm, a_mat @ b_mat)
 
     # BatchMatMul
     g_bmm = IRGraph()
@@ -61,7 +62,7 @@ def _test_numba_parallel_loop_emission_part_2(_state: dict[str, EagerTensorProto
     g_bmm = _state["g_bmm"]
     setattr(g_bmm, "outputs", ["bmm"])
 
-    gen_bmm = typing.cast("EagerCallableProtocol", NumbaGenerator)(g_bmm, fastmath=True, parallel=True)
+    gen_bmm = as_callable(NumbaGenerator)(g_bmm, fastmath=True, parallel=True)
     code_bmm = gen_bmm.generate()
     assert "for _b in nb.prange(" in code_bmm
 
@@ -69,7 +70,7 @@ def _test_numba_parallel_loop_emission_part_2(_state: dict[str, EagerTensorProto
     a_batch = np.ones((2, 3, 4), dtype=np.float32)
     b_batch = np.ones((2, 4, 5), dtype=np.float32)
     res_bmm = fn_bmm([a_batch, b_batch])
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_bmm, a_batch @ b_batch)
+    as_callable(np.testing.assert_allclose)(res_bmm, a_batch @ b_batch)
 
     # Conv2D
     g_conv = IRGraph()
@@ -102,7 +103,7 @@ def _test_numba_parallel_loop_emission_part_3(_state: dict[str, EagerTensorProto
     fn_conv, g_matmul, w_conv, x_conv = _state["fn_conv"], _state["g_matmul"], _state["w_conv"], _state["x_conv"]
     res_conv = fn_conv([x_conv, w_conv])
     assert res_conv.shape == (2, 1, 2, 2)
-    typing.cast("EagerCallableProtocol", np.testing.assert_allclose)(res_conv, 9.0)
+    as_callable(np.testing.assert_allclose)(res_conv, 9.0)
 
     # MaxPool2D and AvgPool2D
     g_pool = IRGraph()
@@ -120,11 +121,11 @@ def _test_numba_parallel_loop_emission_part_3(_state: dict[str, EagerTensorProto
     fn_pool = gen_pool.compile_fn()
     x_pool = np.arange(32, dtype=np.float32).reshape(2, 1, 4, 4)
     res_maxp, res_avgp = fn_pool([x_pool])
-    assert typing.cast("EagerTensorProtocol", getattr(res_maxp, "shape")) == (2, 1, 2, 2)
-    assert typing.cast("EagerTensorProtocol", getattr(res_avgp, "shape")) == (2, 1, 2, 2)
+    assert as_tensor(getattr(res_maxp, "shape")) == (2, 1, 2, 2)
+    assert as_tensor(getattr(res_avgp, "shape")) == (2, 1, 2, 2)
 
     # Non-parallel fallback branch coverage
-    gen_nopar = typing.cast("EagerCallableProtocol", NumbaGenerator)(g_matmul, fastmath=False, parallel=False)
+    gen_nopar = as_callable(NumbaGenerator)(g_matmul, fastmath=False, parallel=False)
     code_nopar = gen_nopar.generate()
     assert "np.matmul" in code_nopar
 

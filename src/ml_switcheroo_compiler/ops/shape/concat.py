@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
 
@@ -31,7 +30,7 @@ class Concatenate(OpDef):
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
             shapes = typing.cast("list[tuple[int, ...]] | tuple[tuple[int, ...], ...]", args[0])
-            axis = int(typing.cast(int, kwargs.get("axis", 0)))
+            axis = int(as_int(kwargs.get("axis", 0)))
             if not shapes:
                 return ()
             res = list(shapes[0])
@@ -171,7 +170,7 @@ class Hstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # Hstack: if 1D, sum sizes. if >1D, sum along axis 1.
@@ -201,7 +200,7 @@ class Vstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # Vstack: if 1D, stack as rows => (N, M). if >1D, sum along axis 0.
@@ -231,7 +230,7 @@ class Dstack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # Dstack: if 1D => (1, M, N). if 2D => (N, M, P). if 3D, sum along axis 2.
@@ -263,7 +262,7 @@ class ColumnStack(OpDef):
             tuple: Result.
         """
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            shapes = [getattr(s, "shape") if hasattr(s, "shape") else typing.cast("Sequence[int]", s) for s in args[0]]
+            shapes = [getattr(s, "shape") if hasattr(s, "shape") else s for s in args[0]]
             if not shapes:
                 return ()
             # ColumnStack: 1D arrays are treated as 2D columns (N, 1) and stacked horizontally.
@@ -337,7 +336,7 @@ class Append(OpDef):
         axis = kwargs.get("axis")
         if axis is not None:
             res = list(args[0].shape)
-            typing.cast(EagerTensorProtocol, res)[axis] += getattr(getattr(args, "__getitem__")(1).shape, "__getitem__")(axis) if len(args) > 1 and hasattr(getattr(args, "__getitem__")(1), "shape") else 1
+            as_tensor(res)[axis] += getattr(getattr(args, "__getitem__")(1).shape, "__getitem__")(axis) if len(args) > 1 and hasattr(getattr(args, "__getitem__")(1), "shape") else 1
             return tuple(res)
         import math
 

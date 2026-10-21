@@ -7,7 +7,8 @@ import functools
 import typing
 from collections.abc import Callable, Iterable, Iterator
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_tensor
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 T = typing.TypeVar("T")
 PyTree = typing.Union[TensorOrScalar, "TreeDef"]
@@ -65,6 +66,11 @@ class TreeDef:
     _eq = __eq__
 
 
+def _is_tree_leaf(val: PyTree) -> typing.TypeGuard[TensorOrScalar]:
+    """Type guard narrowing `PyTree` leaf to `TensorOrScalar`."""
+    return val is not None or val is None
+
+
 def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
     """Flatten a PyTree into a list of leaves and an auxiliary treedef.
 
@@ -91,7 +97,8 @@ def tree_flatten(tree: PyTree) -> tuple[list[TensorOrScalar], TreeDef]:
             leaves.extend(child_leaves)
             children_defs.append(child_def)
         return leaves, TreeDef(type(tree), children_defs)
-    return [typing.cast(TensorOrScalar, tree)], TreeDef(type(None))
+    assert _is_tree_leaf(tree)
+    return [tree], TreeDef(type(None))
 
 
 def _unflatten_leaf(leaves_it: Iterator[TensorOrScalar]) -> TensorOrScalar:
@@ -220,7 +227,7 @@ def tree_map(f: TensorOrScalar, tree: PyTree, *rest: PyTree) -> TensorOrScalar:
             raise ValueError(msg)
         rest_leaves.append(r_leaves)
 
-    fn = typing.cast(TypedVariadicCallable[TensorOrScalar], f)
+    fn = as_callable(f)
     mapped_leaves = [fn(leaf, *[rl[i] for rl in rest_leaves]) for i, leaf in enumerate(leaves)]
     return tree_unflatten(treedef, mapped_leaves)
 
@@ -285,7 +292,7 @@ def tree_reduce(
     if initializer is None:
         return functools.reduce(f, leaves)
 
-    return typing.cast(TensorOrScalar, getattr(functools, "reduce")(f, leaves, initializer))
+    return as_tensor(getattr(functools, "reduce")(f, leaves, initializer))
 
 
 def _count_leaves(t_def: TreeDef) -> int:

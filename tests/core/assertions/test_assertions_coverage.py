@@ -7,9 +7,10 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.core.assertions as asst_mod
+from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+    from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
 def test_core_assertions_exhaustive() -> None:
@@ -53,9 +54,9 @@ def test_core_assertions_exhaustive() -> None:
             """Test function all."""
             return False
 
-    assert bool(typing.cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(typing.cast("EagerCallableProtocol", WithNumpy)())) is True
-    assert bool(typing.cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(typing.cast("EagerCallableProtocol", WithAll)())) is True
-    assert bool(typing.cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(typing.cast("EagerCallableProtocol", WithAllFalse)())) is False
+    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(WithNumpy)())) is True
+    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(WithAll)())) is True
+    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(WithAllFalse)())) is False
 
     class ValueErrorBool:
         """Test class ValueErrorBool."""
@@ -66,9 +67,9 @@ def test_core_assertions_exhaustive() -> None:
 
         def __iter__(self) -> EagerValue:
             """Test function __iter__."""
-            return typing.cast("EagerTensorProtocol", iter([True, True]))
+            return as_tensor(iter([True, True]))
 
-    assert bool(typing.cast("EagerCallableProtocol", asst_mod._evaluate_single_condition)(typing.cast("EagerCallableProtocol", ValueErrorBool)())) is True
+    assert bool(as_callable(asst_mod._evaluate_single_condition)(as_callable(ValueErrorBool)())) is True
 
     # 4. Failure in evaluate_assertions raises AssertionError
     asst_mod.record_assertion(False, "Failed assertion 1")

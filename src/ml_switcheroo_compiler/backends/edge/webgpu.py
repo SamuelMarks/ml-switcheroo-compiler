@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import typing  # noqa: F401
 
-from ml_switcheroo_ir import LogicalGraph
-
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_int_list
 from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLEmitter
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
 
 @register_backend("webgpu")
@@ -241,7 +239,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_op_mapping
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
-        decl_mapping: dict[str, str] = typing.cast(dict[str, str], dict(get_wgsl_op_mapping(resolved_op) or get_wgsl_op_mapping(op_type)))
+        raw_decl = get_wgsl_op_mapping(resolved_op) or get_wgsl_op_mapping(op_type) or {}
+        decl_mapping: dict[str, str] = {str(k): str(v) for k, v in raw_decl.items()}
         if decl_mapping:
             mapping: dict[str, str] = decl_mapping
             if resolved_op == "Constant":
@@ -431,7 +430,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_webgpu_ops
 
-        dispatch_rules = typing.cast("dict[str, dict[str, str]]", get_webgpu_ops().get("dispatch_rules", {}))
+        raw_rules = get_webgpu_ops().get("dispatch_rules", {})
+        dispatch_rules: dict[str, dict[str, str]] = {str(k): {str(sk): str(sv) for sk, sv in v.items()} for k, v in raw_rules.items() if isinstance(v, dict)} if isinstance(raw_rules, dict) else {}
         rule: dict[str, str] = dispatch_rules.get(mapping.get("template", "default"), dispatch_rules.get("default", {}))
 
         fmt_args: dict[str, EagerValue] = dict(expr_format_args)
@@ -471,7 +471,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         _, out_strides = self._get_shape_and_strides(node)
 
         template = get_wgsl_template(mapping["template"])
-        wg_size: list[int] = list(typing.cast("list[int]", template.get("workgroup_size", [64, 1, 1])))
+        wg_size: list[int] = list(as_int_list(template.get("workgroup_size", [64, 1, 1])))
         wg_x, wg_y, wg_z = wg_size
 
         outer_m: int = self._num_elements(shape[:-1]) if len(shape) > 1 else 1
@@ -604,8 +604,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))  # noqa: F841
-        nelem = int(typing.cast("int", kwargs.get("nelem", 1)))
+        shape = as_int_list(kwargs.get("shape", []))  # noqa: F841
+        nelem = int(as_int(kwargs.get("nelem", 1)))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
@@ -622,7 +622,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         if body_graph:
             from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 
-            for sub_node in topological_sort(typing.cast("LogicalGraph", body_graph)):
+            for sub_node in topological_sort(as_graph(body_graph)):
                 op_type: str = getattr(sub_node, "op_type", "")
                 mapping: dict[str, str] = OPS_REGISTRY.get(op_type, {}).get("variants", {}).get("edge_wgsl", {})
                 expr: str = mapping.get("expr", "")
@@ -645,7 +645,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
             comparator: str = "<"
             threshold: str = "10.0"
-            for sub_node in topological_sort(typing.cast("LogicalGraph", cond_graph)):
+            for sub_node in topological_sort(as_graph(cond_graph)):
                 op_type = getattr(sub_node, "op_type", "")
                 if op_type in ("Less", "Lt"):
                     comparator = "<"
@@ -681,8 +681,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))  # noqa: F841
-        nelem = int(typing.cast("int", kwargs.get("nelem", 1)))
+        shape = as_int_list(kwargs.get("shape", []))  # noqa: F841
+        nelem = int(as_int(kwargs.get("nelem", 1)))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
@@ -707,7 +707,7 @@ class WebGPUCodeGenerator(BaseGenerator):
             current_state: str = "buf_in0_f32[idx]"
             from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 
-            for sub_node in topological_sort(typing.cast("LogicalGraph", branch_graph)):
+            for sub_node in topological_sort(as_graph(branch_graph)):
                 op_type: str = getattr(sub_node, "op_type", "")
                 mapping: dict[str, str] = OPS_REGISTRY.get(op_type, {}).get("variants", {}).get("edge_wgsl", {})
                 expr: str = mapping.get("expr", "")
@@ -743,8 +743,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))  # noqa: F841
-        nelem = int(typing.cast("int", kwargs.get("nelem", 1)))
+        shape = as_int_list(kwargs.get("shape", []))  # noqa: F841
+        nelem = int(as_int(kwargs.get("nelem", 1)))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template, get_wgsl_template  # noqa: F401
@@ -957,8 +957,10 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.config_models import MemorySchemasConfig
 
         graph_attrs: dict[str, EagerValue] = getattr(self.graph, "attributes", {})
-        dynamic_schema = typing.cast("dict[str, EagerValue]", graph_attrs.get("dynamic_memory_schema", {}))
-        dynamic_offsets = typing.cast("list[dict[str, str]]", dynamic_schema.get("dynamic_offsets", []))
+        raw_schema = graph_attrs.get("dynamic_memory_schema", {})
+        dynamic_schema: dict[str, EagerValue] = dict(raw_schema) if isinstance(raw_schema, dict) else {}
+        raw_offsets = dynamic_schema.get("dynamic_offsets", [])
+        dynamic_offsets: list[dict[str, str]] = [{str(k): str(v) for k, v in item.items()} for item in raw_offsets if isinstance(item, dict)] if isinstance(raw_offsets, list) else []
         if not dynamic_offsets:
             return
 
@@ -969,7 +971,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         with open(yaml_path) as f:
             schemas: dict[str, EagerValue] = MemorySchemasConfig(**yaml.safe_load(f)).model_dump()
 
-        tpls = typing.cast("dict[str, str]", typing.cast("dict[str, EagerValue]", schemas.get("schemas", {})).get("js_orchestration_templates", {}))
+        raw_schemas_sub = schemas.get("schemas", {})
+        raw_tpls = raw_schemas_sub.get("js_orchestration_templates", {}) if isinstance(raw_schemas_sub, dict) else {}
+        tpls: dict[str, str] = {str(k): str(v) for k, v in raw_tpls.items()} if isinstance(raw_tpls, dict) else {}
         resize_tpl: str = tpls.get("dynamic_resize", "")
         offset_tpl: str = tpls.get("runtime_offset_calc", "")
 
@@ -1080,7 +1084,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_MatMul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for MatMul with tiling and shared memory caching.
@@ -1093,7 +1097,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_BatchMatMul(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for BatchMatMul with tiling and shared memory caching.
@@ -1106,7 +1110,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_Attention(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for Multi-Head Attention with workgroup shared memory reduction.
@@ -1119,8 +1123,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch (x, y, z) expressions.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))
-        nelem = int(typing.cast("int", kwargs.get("nelem", 1)))
+        shape = as_int_list(kwargs.get("shape", []))
+        nelem = int(as_int(kwargs.get("nelem", 1)))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
@@ -1169,7 +1173,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_MaxPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for MaxPool2D compute shader.
@@ -1182,7 +1186,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_AvgPool(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for AvgPool compute shader.
@@ -1195,7 +1199,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_AvgPool2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for AvgPool2D compute shader.
@@ -1208,7 +1212,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Generated WGSL lines and dispatch dimensions.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def _record_node_concrete_shape(
         self,
@@ -1230,9 +1234,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         if meta and isinstance(meta, (list, tuple)) and len(meta) == len(concrete):
             for m_dim, c_dim in zip(meta, concrete):
                 if hasattr(m_dim, "node"):
-                    solved_env[str(m_dim.node)] = int(typing.cast(int, c_dim))
+                    solved_env[str(m_dim.node)] = int(as_int(c_dim))
                 elif isinstance(m_dim, str):
-                    solved_env[m_dim] = int(typing.cast(int, c_dim))
+                    solved_env[m_dim] = int(as_int(c_dim))
         node.shape_metadata = tuple(int(x) for x in concrete if isinstance(x, (int, float)))
 
     def _eval_symbolic_dim(self, dim: EagerValue, solved_env: dict[str, int]) -> int | None:
@@ -1294,7 +1298,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_Trig(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for Trig (Sin/Cos).
@@ -1307,7 +1311,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_ReduceSum(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for ReduceSum.
@@ -1320,7 +1324,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        return typing.cast(tuple[list[str], str, str, str], getattr(self, "_get_wgsl_for_op")(node, kwargs.get("shape", []), kwargs.get("nelem", 1), kwargs.get("clean_id", "")))
+        return self._get_wgsl_for_op(node, as_int_list(kwargs.get("shape", [])), int(as_int(kwargs.get("nelem", 1))), str(kwargs.get("clean_id", "")))
 
     def visit_Conv2D(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> tuple[list[str], str, str, str]:
         """Emit WGSL for Conv2D.
@@ -1333,8 +1337,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))
-        nelem = int(typing.cast("int", kwargs.get("nelem", 1)))  # noqa: F841
+        shape = as_int_list(kwargs.get("shape", []))
+        nelem = int(as_int(kwargs.get("nelem", 1)))  # noqa: F841
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
@@ -1377,7 +1381,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))
+        shape = as_int_list(kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
@@ -1424,7 +1428,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))
+        shape = as_int_list(kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
@@ -1483,7 +1487,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))
+        shape = as_int_list(kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
@@ -1542,7 +1546,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[str], str, str, str]: Computed result.
         """
-        shape = typing.cast("list[int]", kwargs.get("shape", []))
+        shape = as_int_list(kwargs.get("shape", []))
         clean_id = str(kwargs.get("clean_id", ""))
 
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template

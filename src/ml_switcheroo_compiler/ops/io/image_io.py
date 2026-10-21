@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.tensor import Tensor
+from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -33,8 +31,7 @@ def decode_image(
     if config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-        return typing.cast(
-            Tensor,
+        return as_tensor_obj(
             get_active_backend().execute_op(
                 "DecodeImage",
                 contents,
@@ -42,7 +39,7 @@ def decode_image(
                 dtype=dtype,
                 name=name,
                 expand_animations=expand_animations,
-            ),
+            )
         )
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -113,7 +110,7 @@ def decode_jpeg(
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_jpeg"):
-        return typing.cast(Tensor, backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio))
+        return as_tensor_obj(backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio))
     return _decode_image_with_pil(contents, channels)
 
 
@@ -136,7 +133,7 @@ def decode_png(
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_png"):
-        return typing.cast(Tensor, backend_cls.decode_png(contents, channels=channels, dtype=dtype))
+        return as_tensor_obj(backend_cls.decode_png(contents, channels=channels, dtype=dtype))
     return _decode_image_with_pil(contents, channels)
 
 
@@ -153,7 +150,7 @@ def decode_gif(contents: Tensor | bytes | str | None) -> Tensor:
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_gif"):
-        return typing.cast(Tensor, backend_cls.decode_gif(contents))
+        return as_tensor_obj(backend_cls.decode_gif(contents))
     return _decode_image_with_pil(contents)
 
 
@@ -174,7 +171,7 @@ def decode_bmp(
 
     backend_cls = get_active_backend()
     if hasattr(backend_cls, "decode_bmp"):
-        return typing.cast(Tensor, backend_cls.decode_bmp(contents, channels=channels))
+        return as_tensor_obj(backend_cls.decode_bmp(contents, channels=channels))
     return _decode_image_with_pil(contents, channels)
 
 
