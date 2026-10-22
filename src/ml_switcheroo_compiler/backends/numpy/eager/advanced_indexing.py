@@ -39,7 +39,7 @@ def _scatter_nd(indices: EagerValue, updates: EagerValue, shape: EagerValue, **k
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "zeros")(shape, dtype=getattr(updates, "dtype"))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "zeros")(shape, dtype=getattr(updates, "dtype"))
     res[tuple(getattr(np, "moveaxis")(indices, -1, 0))] = updates
     return res
 
@@ -57,7 +57,7 @@ def _scatter(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **kwar
     Returns:
             tuple[int, ...]: Result.
     """
-    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(x)
+    y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(x)
     getattr(np, "put_along_axis")(y, index, src, axis=dim)
     return y
 
@@ -75,7 +75,7 @@ def _scatter_add(x: EagerValue, index: EagerValue, src: EagerValue, dim: int, **
     Returns:
             tuple[int, ...]: Result.
     """
-    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(x)
+    y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(x)
     it: np.nditer = getattr(np, "nditer")(index, flags=["multi_index"])
     for idx_val in it:
         pos: list[int] = list(it.multi_index)
@@ -95,11 +95,11 @@ def _tensor_scatter_update(tensor: EagerValue, indices: EagerValue, updates: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
         indices = np.asarray(indices)
     idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
-    res[idx_tuple] = updates
+    as_tensor(res)[idx_tuple] = updates
     return res
 
 
@@ -114,7 +114,7 @@ def _tensor_scatter_add(tensor: EagerValue, indices: EagerValue, updates: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
         indices = np.asarray(indices)
     idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
@@ -133,7 +133,7 @@ def _tensor_scatter_max(tensor: EagerValue, indices: EagerValue, updates: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
         indices = np.asarray(indices)
     idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
@@ -152,7 +152,7 @@ def _tensor_scatter_min(tensor: EagerValue, indices: EagerValue, updates: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(tensor)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(tensor)
     if not isinstance(indices, (tuple, list, np.ndarray)):
         indices = np.asarray(indices)
     idx_tuple: tuple[EagerValue, ...] = tuple(getattr(np, "moveaxis")(indices, -1, 0))
@@ -279,9 +279,9 @@ def _np_scatter_nd(backend_module: BackendModuleProtocol, indices: EagerValue, u
     Returns:
             tuple[int, ...]: Result.
     """
-    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "zeros")(shape, dtype=getattr(updates, "dtype"))
+    out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "zeros")(shape, dtype=getattr(updates, "dtype"))
     idx: tuple[EagerValue, ...] = tuple(np.moveaxis(np.array(indices), -1, 0))
-    out[idx] = updates
+    as_tensor(out)[idx] = updates
     return out
 
 
@@ -297,11 +297,11 @@ def _np_scatter(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[0])
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[1])
-    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[2])
+    input_data: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(args[0])
+    index: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(args[2])
     dim: int = as_int(kwargs.get("dim", 0))
-    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.copy(input_data)
+    out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.copy(input_data)
     getattr(np, "put_along_axis")(out, index, src, axis=dim)
     return out
 
@@ -318,9 +318,9 @@ def _np_scatter_add(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             tuple[int, ...]: Result.
     """
-    input_data: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(args[0])
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[1])
-    src: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[2])
+    input_data: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(args[0])
+    index: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(args[1])
+    src: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(args[2])
     dim: int = as_int(kwargs.get("dim", 0))
     getattr(np, "put_along_axis")(input_data, index, np.add(getattr(np, "take_along_axis")(input_data, index, axis=dim), src), axis=dim)
     return input_data
@@ -344,12 +344,12 @@ def _np_scatter_apply(backend_module: BackendModuleProtocol, context: IndexingCo
     """
     if len(args) == 0:
         return None
-    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0]).copy()
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0]).copy()
     if len(args) < 3:
         return tensor
 
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[1])
-    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[2])
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[1])
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[2])
     reduction: str | None = as_opt_str(kwargs.get("reduction", None))
 
     try:

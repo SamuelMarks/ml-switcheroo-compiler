@@ -5,13 +5,16 @@ from __future__ import annotations
 import typing
 
 import pytest
-import torch
 
 import ml_switcheroo_compiler.backends.pytorch.eager as pytorch_eager
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
+    import torch
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+torch = pytest.importorskip("torch")
 
 
 def _test_pytorch_eager_additional_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:

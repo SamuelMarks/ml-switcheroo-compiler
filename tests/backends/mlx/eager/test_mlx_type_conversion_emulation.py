@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-import mlx.core as mx
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -38,8 +37,11 @@ from ml_switcheroo_compiler.backends.mlx.eager import (
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
+    import mlx.core as mx
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-pytest.importorskip("mlx.core")
+
+mx = pytest.importorskip("mlx.core")
 
 
 def test_numpy_conversion_fallback() -> None:

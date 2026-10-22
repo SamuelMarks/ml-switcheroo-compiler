@@ -12,10 +12,10 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("Relu")
 def _np_relu(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     *args: float | int | str | bool | None,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np relu operation on the active backend array.
 
     Args:
@@ -36,7 +36,7 @@ def _np_elu(
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     alpha: float = 1.0,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np elu operation on the active backend array.
 
     Args:
@@ -57,7 +57,7 @@ def _np_celu(
     x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     alpha: float = 1.0,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np celu operation on the active backend array.
 
     Args:
@@ -75,9 +75,9 @@ def _np_celu(
 @numpy_eager_registry.register("Softplus")
 def _np_softplus(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np softplus operation on the active backend array.
 
     Args:
@@ -94,9 +94,9 @@ def _np_softplus(
 @numpy_eager_registry.register("Softsign")
 def _np_softsign(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np softsign operation on the active backend array.
 
     Args:
@@ -113,9 +113,9 @@ def _np_softsign(
 @numpy_eager_registry.register("Mish")
 def _np_mish(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np mish operation on the active backend array.
 
     Args:
@@ -133,9 +133,9 @@ def _np_mish(
 @numpy_eager_registry.register("LogSigmoid")
 def _np_log_sigmoid(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np log sigmoid operation on the active backend array.
 
     Args:

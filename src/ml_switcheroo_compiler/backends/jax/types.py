@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 import typing
 
-import jax.numpy as jnp
+if typing.TYPE_CHECKING:
+    import jax.numpy as jnp
+else:
+    _has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
+    jnp = importlib.import_module("jax.numpy") if _has_jax else None
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,

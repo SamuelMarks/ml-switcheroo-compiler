@@ -237,7 +237,7 @@ def _np_cross(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    axes: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(kwargs.pop("axes", None))
+    axes: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(kwargs.pop("axes", None))
     if axes:
         kwargs.update({k: v for k, v in getattr(axes, "items")() if v is not None})
     if "axis" in kwargs and kwargs["axis"] is None:
@@ -374,7 +374,7 @@ def _np_lu_pivots(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
 
     pivots: list[int] = as_int_list(args[0])
     n: int = int(as_int(args[1]))
-    perm: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.arange(n)
+    perm: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(np.arange(n))
     for i, p in enumerate(pivots):
         perm[i], perm[p] = perm[p], perm[i]
     return perm
@@ -428,10 +428,10 @@ def _np_tridiagonal(backend_module: BackendModuleProtocol, *args: EagerValue, **
     """
     import numpy as np
 
-    a: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[0])
-    diag: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.diagonal(a)
-    off_diag: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.diagonal(a, offset=1)
-    q: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.eye(a.shape[0])
+    a: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(args[0])
+    diag: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.diagonal(a)
+    off_diag: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.diagonal(a, offset=1)
+    q: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.eye(a.shape[0])
     return diag, off_diag, q
 
 
@@ -542,7 +542,7 @@ def _np_qdwh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     import numpy as np
     import scipy.linalg
 
-    a: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(args[0])
+    a: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(args[0])
     u, p = scipy.linalg.polar(a)
     return u, p, np.array(0, dtype=np.int32), np.array(True, dtype=bool)
 

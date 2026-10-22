@@ -12,9 +12,9 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("All")
 def _np_all(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | bool | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | bool | None,
     **kwargs: int | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np all operation on the active backend array.
 
     Args:
@@ -31,9 +31,9 @@ def _np_all(
 @numpy_eager_registry.register("CountNonzero")
 def _np_count_nonzero(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | bool | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | bool | None,
     **kwargs: int | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np count nonzero operation on the active backend array.
 
     Args:

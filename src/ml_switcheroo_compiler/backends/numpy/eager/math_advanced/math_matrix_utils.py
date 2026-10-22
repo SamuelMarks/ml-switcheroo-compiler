@@ -150,9 +150,9 @@ def _np_confusion_matrix(backend_module: EagerValue, *args: EagerValue, **kwargs
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "confusion_matrix"):
-            cls_or_func = _ops.confusion_matrix
+            cls_or_func = getattr(_ops, "confusion_matrix")
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
-                return as_tensor(cls_or_func(*args, **kwargs))
+                return as_callable(cls_or_func)(*args, **kwargs)
     except Exception:
         # Ignore dynamic load errors
         logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
@@ -181,9 +181,9 @@ def _np_distributions(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "distributions"):
-            cls_or_func = _ops.distributions
+            cls_or_func = getattr(_ops, "distributions")
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
-                return as_tensor(cls_or_func(*args, **kwargs))
+                return as_callable(cls_or_func)(*args, **kwargs)
     except Exception as e:
         print("EXCEPTION IN _np_distributions:", repr(e))
         # Ignore dynamic load errors

@@ -139,7 +139,7 @@ class LayoutMap:
         """
         import yaml
 
-        return yaml.safe_dump(self.to_dict(), sort_keys=False)
+        return str(yaml.safe_dump(self.to_dict(), sort_keys=False))
 
     @classmethod
     def from_yaml(cls, yaml_content: str, device_mesh: DeviceMesh | None = None) -> LayoutMap:

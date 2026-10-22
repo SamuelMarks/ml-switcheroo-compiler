@@ -14,10 +14,10 @@ from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
 
 
 def _gelu(
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     *args: float | int | None,
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Gaussian Error Linear Unit (GELU) activation.
 
     Args:
@@ -36,10 +36,10 @@ def _gelu(
 @numpy_eager_registry.register("Relu")
 def _np_relu(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     *args: float | int | None,
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Rectified Linear Unit (ReLU) activation.
 
     Args:
@@ -57,9 +57,9 @@ def _np_relu(
 @numpy_eager_registry.register("AlphaDropout")
 def _np_alpha_dropout(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | bool | int | tuple[int, ...] | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Alpha Dropout for self-normalizing neural networks.
 
     Args:
@@ -92,9 +92,9 @@ def _np_alpha_dropout(
 @numpy_eager_registry.register("ActivityRegularization")
 def _np_activity_regularization(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate activity regularization passthrough.
 
     Args:
@@ -111,10 +111,10 @@ def _np_activity_regularization(
 @numpy_eager_registry.register("Dropout")
 def _np_dropout(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     rate: float = 0.5,
     **kwargs: float | bool | int | tuple[int, ...] | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate inverted dropout on tensor.
 
     Args:
@@ -137,15 +137,15 @@ def _np_dropout(
     noise_shape_val = kwargs.get("noise_shape", None)
     noise_shape = noise_shape_val if isinstance(noise_shape_val, tuple) else x.shape
     mask = rng.binomial(1, 1.0 - rate_f, size=noise_shape)
-    return np.divide(np.multiply(x, mask), 1.0 - rate_f)
+    return as_ndarray(np.divide(np.multiply(x, mask), 1.0 - rate_f))
 
 
 @numpy_eager_registry.register("TimeDistributed")
 def _np_time_distributed(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: str | float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply an operation over time steps of a sequential tensor.
 
     Args:
@@ -169,9 +169,9 @@ def _np_time_distributed(
 @numpy_eager_registry.register("Rope")
 def _np_rope(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: int | float | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply Rotary Positional Encoding (RoPE) to embeddings.
 
     Args:
@@ -209,10 +209,10 @@ def _np_rope(
 @numpy_eager_registry.register("Rrelu")
 def _np_rrelu(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     *args: float | int | None,
     **kwargs: float | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Randomized Leaky Rectified Linear Unit (RReLU).
 
     Args:

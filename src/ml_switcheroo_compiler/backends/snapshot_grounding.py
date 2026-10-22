@@ -572,8 +572,9 @@ def _extract_ast_canonical_ops(py_path: str) -> list[AttributeValue]:
     collected: list[AttributeValue] = []
     for node in tree.body:
         val_node = getattr(node, "value", None)
-        if isinstance(val_node, ast.List) and "CANONICAL_" in ast.unparse(node):
-            raw_ops = typing.cast("list[AttributeValue]", ast.literal_eval(val_node))
+        list_node = val_node.args[0] if isinstance(val_node, ast.Call) and val_node.args else val_node
+        if isinstance(list_node, ast.List) and "CANONICAL_" in ast.unparse(node):
+            raw_ops = typing.cast("list[AttributeValue]", ast.literal_eval(list_node))
             collected.extend(raw_ops)
     return collected
 

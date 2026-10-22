@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-import dask.array as da
 import pytest
 
 from ml_switcheroo_compiler.backends.dask.eager import (
@@ -19,9 +18,10 @@ from ml_switcheroo_compiler.backends.dask.eager import (
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    pass
+    import dask.array as da
 
 pytest.importorskip("dask")
+da = pytest.importorskip("dask.array")
 
 
 def test_dask_chunk_propagation() -> None:

@@ -42,11 +42,17 @@ def test_validate_rdna_instruction() -> None:
 
 def test_validate_ptx_instruction() -> None:
     """Verify NVIDIA PTX instruction grounding and argument typing."""
-    valid_report = validate_ptx_instruction("add", sm_arch="sm_80", types=["f32"])
+    import os
+
+    import ml_ecosystem_snapshots
+    from ml_ecosystem_snapshots.grounding import GroundingEngine
+
+    eng = GroundingEngine(base_dirs=[os.path.join(os.path.dirname(ml_ecosystem_snapshots.__file__), "snapshots")])
+    valid_report = validate_ptx_instruction("add", sm_arch="sm_80", types=["f32"], engine=eng)
     assert valid_report.is_grounded is True
     assert not valid_report.diagnostics
 
-    unknown_report = validate_ptx_instruction("nonexistent_ptx_mnemonic_123")
+    unknown_report = validate_ptx_instruction("nonexistent_ptx_mnemonic_123", engine=eng)
     assert unknown_report.is_grounded is False
 
 

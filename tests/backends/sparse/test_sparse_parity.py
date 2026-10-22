@@ -321,9 +321,12 @@ def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTe
     """
     (g, prepared, profiler) = (_state["g"], _state["prepared"], _state["profiler"])
     assert len(prepared) == 4
-    import sparse as pydata_sparse
+    try:
+        import sparse as pydata_sparse
 
-    pydata_coo = pydata_sparse.COO.from_numpy(np.array([1.0, 2.0]))
+        pydata_coo = pydata_sparse.COO.from_numpy(np.array([1.0, 2.0]))
+    except ImportError:
+        pydata_coo = mock.MagicMock(coords=np.array([[0, 1]]), data=np.array([1.0, 2.0]), shape=(2,))
     prepared_pydata = profiler._prepare_inputs(g, {"pydata": pydata_coo})
     assert len(prepared_pydata) == 1
     g_sum = IRGraph()

@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-import tensorflow as tf
+import importlib.util
+import sys
+import typing
+
+if typing.TYPE_CHECKING:
+    import tensorflow as tf
+else:
+    _has_tf = sys.modules.get("tensorflow") is not None or ("tensorflow" not in sys.modules and importlib.util.find_spec("tensorflow") is not None)
+    tf = importlib.import_module("tensorflow") if _has_tf else None
 
 from ml_switcheroo_compiler.backends.eager import (
     generic_array,

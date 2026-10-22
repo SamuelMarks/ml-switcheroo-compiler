@@ -14,9 +14,9 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("Sum")
 def _np_sum(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate sum reduction.
 
     Args:
@@ -33,9 +33,9 @@ def _np_sum(
 @numpy_eager_registry.register("Mean")
 def _np_mean(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate mean reduction.
 
     Args:
@@ -52,9 +52,9 @@ def _np_mean(
 @numpy_eager_registry.register("Max")
 def _np_max(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate max reduction.
 
     Args:
@@ -71,9 +71,9 @@ def _np_max(
 @numpy_eager_registry.register("Min")
 def _np_min(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate min reduction.
 
     Args:
@@ -90,9 +90,9 @@ def _np_min(
 @numpy_eager_registry.register("Variance")
 def _np_variance(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate variance reduction.
 
     Args:
@@ -110,9 +110,9 @@ def _np_variance(
 @numpy_eager_registry.register("Std")
 def _np_std(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate standard deviation reduction.
 
     Args:
@@ -129,9 +129,9 @@ def _np_std(
 @numpy_eager_registry.register("Argmax")
 def _np_argmax(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate argmax reduction.
 
     Args:
@@ -148,9 +148,9 @@ def _np_argmax(
 @numpy_eager_registry.register("Argmin")
 def _np_argmin(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate argmin reduction.
 
     Args:
@@ -167,9 +167,9 @@ def _np_argmin(
 @numpy_eager_registry.register("Prod")
 def _np_prod(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate product reduction.
 
     Args:
@@ -186,9 +186,9 @@ def _np_prod(
 @numpy_eager_registry.register("AnyOp")
 def _np_any_op(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate any boolean reduction.
 
     Args:
@@ -205,9 +205,9 @@ def _np_any_op(
 @numpy_eager_registry.register("Cumsum")
 def _np_cumsum(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | tuple[int, ...] | None,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | tuple[int, ...] | None,
     **kwargs: int | float | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate cumulative sum.
 
     Args:
@@ -224,9 +224,9 @@ def _np_cumsum(
 @numpy_eager_registry.register("AddN")
 def _np_add_n(
     backend_module: BackendModuleProtocol,
-    inputs: Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    inputs: Sequence[np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
     **kwargs: int | float | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate addition of a sequence of tensors.
 
     Args:
@@ -242,7 +242,7 @@ def _np_add_n(
     """
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res: EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] = inputs[0]
+    res: EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]] = inputs[0]
     for i in range(1, len(inputs)):
         res = backend_module.add(res, inputs[i])
     return as_ndarray(res)
@@ -251,9 +251,9 @@ def _np_add_n(
 @numpy_eager_registry.register("AccumulateN")
 def _np_accumulate_n(
     backend_module: BackendModuleProtocol,
-    inputs: Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+    inputs: Sequence[np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
     **kwargs: int | float | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate accumulation of a sequence of tensors.
 
     Args:
@@ -269,7 +269,7 @@ def _np_accumulate_n(
     """
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res: EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] = inputs[0]
+    res: EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]] = inputs[0]
     for i in range(1, len(inputs)):
         res = backend_module.add(res, inputs[i])
     return as_ndarray(res)
@@ -278,10 +278,10 @@ def _np_accumulate_n(
 @numpy_eager_registry.register("CumulativeLogsumexp")
 def _np_cumulative_logsumexp(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     axis: int = 0,
     **kwargs: int | float | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate cumulative logsumexp along a specified axis.
 
     Args:

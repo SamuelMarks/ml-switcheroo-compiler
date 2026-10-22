@@ -46,7 +46,7 @@ from ml_switcheroo_compiler.backends.pytorch.profiler import (
     _get_process_memory_mb as torch_get_mem,
 )
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import as_callable, as_tensor, install_profiler_backend_stubs
 
 try:
     import jax
@@ -63,6 +63,20 @@ except Exception:
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    import sys
+
+    install_profiler_backend_stubs(monkeypatch)
+    monkeypatch.setattr(sys.modules[__name__], "torch", sys.modules["torch"])
+    monkeypatch.setattr(sys.modules[__name__], "jax", sys.modules["jax"])
+    monkeypatch.setattr(sys.modules[__name__], "jnp", sys.modules["jax.numpy"])
 
 
 def test_numpy_profiler_branches() -> None:

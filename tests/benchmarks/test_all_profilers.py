@@ -42,10 +42,75 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from tests.testing_utils import as_callable, as_node_dict, as_tensor
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from ml_switcheroo_compiler.backends.eager_registry import (
         EagerTensorProtocol,
         EagerValue,
     )
+
+
+def _make_mock_tf() -> MagicMock:
+    """Construct a fallback mock tensorflow module when tensorflow is not installed."""
+    m = MagicMock()
+    m.convert_to_tensor.side_effect = lambda v, dtype=None: np.asarray(v, dtype=np.float32)
+    m.zeros.side_effect = lambda shape, dtype=None: np.zeros(shape, dtype=np.float32)
+    m.zeros_like.side_effect = lambda x: np.zeros_like(np.asarray(x))
+    m.add.side_effect = lambda a, b: np.asarray(a) + np.asarray(b)
+    m.float32 = np.float32
+    m.config.list_physical_devices.return_value = []
+    return m
+
+
+def _make_mock_da() -> MagicMock:
+    """Construct a fallback mock dask.array module when dask is not installed."""
+    m = MagicMock()
+    m.from_array.side_effect = lambda v, chunks="auto": np.asarray(v)
+    m.zeros.side_effect = lambda shape, dtype=None: np.zeros(shape, dtype=np.float32)
+    m.zeros_like.side_effect = lambda x: np.zeros_like(np.asarray(x))
+    m.add.side_effect = lambda a, b: np.asarray(a) + np.asarray(b)
+    m.float32 = np.float32
+    return m
+
+
+def _make_mock_keras() -> MagicMock:
+    """Construct a fallback mock keras module when keras is not installed."""
+    m = MagicMock()
+    m.ops.convert_to_tensor.side_effect = lambda v, dtype=None: np.asarray(v, dtype=np.float32)
+    m.ops.convert_to_numpy.side_effect = lambda v: np.asarray(v)
+    m.ops.zeros.side_effect = lambda shape, dtype=None: np.zeros(shape, dtype=np.float32)
+    m.ops.zeros_like.side_effect = lambda x: np.zeros_like(np.asarray(x))
+    m.ops.add.side_effect = lambda a, b: np.asarray(a) + np.asarray(b)
+    m.backend.backend.return_value = "numpy"
+    return m
+
+
+@pytest.fixture(autouse=True)
+def _ensure_optional_profiler_backends() -> Iterator[None]:
+    """Ensure dask, tensorflow, and keras profiler modules have non-None backend objects when not installed."""
+    import ml_switcheroo_compiler.backends.dask.profiler as dask_prof
+    import ml_switcheroo_compiler.backends.keras.profiler as k_prof
+    import ml_switcheroo_compiler.backends.tensorflow.profiler as tf_prof
+
+    orig_tf = getattr(tf_prof, "tf", None)
+    orig_da = getattr(dask_prof, "da", None)
+    orig_keras = getattr(k_prof, "keras", None)
+
+    if orig_tf is None:
+        setattr(tf_prof, "tf", _make_mock_tf())
+    if orig_da is None:
+        setattr(dask_prof, "da", _make_mock_da())
+    if orig_keras is None:
+        setattr(k_prof, "keras", _make_mock_keras())
+
+    yield
+
+    if orig_tf is None and getattr(tf_prof, "tf", None) is None:
+        setattr(tf_prof, "tf", _make_mock_tf())
+    if orig_da is None and getattr(dask_prof, "da", None) is None:
+        setattr(dask_prof, "da", _make_mock_da())
+    if orig_keras is None and getattr(k_prof, "keras", None) is None:
+        setattr(k_prof, "keras", _make_mock_keras())
 
 
 # ==============================================================================
@@ -100,6 +165,8 @@ def test_tf_profiler_memory() -> None:
         importlib.reload(tf_prof)
         assert as_tensor(getattr(tf_prof, "tf")) is None
     importlib.reload(tf_prof)
+    if getattr(tf_prof, "tf", None) is None:
+        setattr(tf_prof, "tf", _make_mock_tf())
 
     with as_callable(patch.object)(as_tensor(getattr(tf_prof, "sys")), "platform", "linux"):
         assert tf_prof._get_process_memory_mb() > 0.0
@@ -166,14 +233,18 @@ def test_keras_profiler_memory_and_sync() -> None:
     """Test Keras peak memory and synchronization across backends."""
     mock_keras = MagicMock()
     mock_keras.backend.backend.return_value = "torch"
+    mock_torch = MagicMock()
+    mock_torch.cuda.is_available.return_value = True
+    mock_torch.cuda.max_memory_allocated.return_value = 1024 * 1024 * 32
     with patch("ml_switcheroo_compiler.backends.keras.profiler.keras", mock_keras):
-        with patch("torch.cuda.is_available", return_value=True):
-            with patch("torch.cuda.max_memory_allocated", return_value=1024 * 1024 * 32):
-                assert _get_keras_peak_memory_mb() == 32.0
+        with patch.dict(sys.modules, {"torch": mock_torch}):
+            assert _get_keras_peak_memory_mb() == 32.0
 
     mock_keras.backend.backend.return_value = "tensorflow"
+    mock_tf = MagicMock()
+    mock_tf.config.experimental.get_memory_info.return_value = {"peak": 1024 * 1024 * 12}
     with patch("ml_switcheroo_compiler.backends.keras.profiler.keras", mock_keras):
-        with patch("tensorflow.config.experimental.get_memory_info", return_value={"peak": 1024 * 1024 * 12}):
+        with patch.dict(sys.modules, {"tensorflow": mock_tf}):
             assert _get_keras_peak_memory_mb() == 12.0
 
     mock_val = MagicMock()
@@ -997,10 +1068,13 @@ def _test_keras_profiler_additional_branches_part_2(_state: dict[str, EagerTenso
 
     import ml_switcheroo_compiler.backends.keras.profiler as k_prof
 
+    orig_keras = getattr(k_prof, "keras", None)
     with patch.dict("sys.modules", {"keras": None}):
         importlib.reload(k_prof)
         assert as_tensor(getattr(k_prof, "keras")) is None
     importlib.reload(k_prof)
+    if getattr(k_prof, "keras", None) is None and orig_keras is not None:
+        setattr(k_prof, "keras", orig_keras)
 
     with as_callable(patch.object)(as_tensor(getattr(k_prof, "sys")), "platform", "linux"):
         assert k_prof._get_process_memory_mb() > 0.0
@@ -1169,12 +1243,17 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_1(_state: dict
         assert dp.da is None
     sys.modules["ml_switcheroo_compiler.backends.dask"] = dask_pkg
     importlib.reload(dp)
+    if getattr(dp, "da", None) is None:
+        setattr(dp, "da", _make_mock_da())
+        setattr(dp, "dask", MagicMock())
     sys.modules["ml_switcheroo_compiler.backends.keras"] = keras_pkg
     with patch.dict(sys.modules, {"keras": None}):
         importlib.reload(kp)
         assert as_tensor(getattr(kp, "keras")) is None
     sys.modules["ml_switcheroo_compiler.backends.keras"] = keras_pkg
     importlib.reload(kp)
+    if getattr(kp, "keras", None) is None:
+        setattr(kp, "keras", _make_mock_keras())
     sys.modules["ml_switcheroo_compiler.backends.tensorflow"] = tf_pkg
     getattr(_state, "update")({"dask_pkg": dask_pkg, "dp": dp, "importlib": importlib, "keras_pkg": keras_pkg})
     getattr(_state, "update")({"kp": kp, "sys": sys, "tf_pkg": tf_pkg, "tp": tp})
@@ -1194,6 +1273,8 @@ def _test_backends_dask_and_tf_and_keras_profiler_edge_cases_part_2(_state: dict
         assert as_tensor(tp.tf) is None
     sys.modules["ml_switcheroo_compiler.backends.tensorflow"] = tf_pkg
     importlib.reload(tp)
+    if getattr(tp, "tf", None) is None:
+        setattr(tp, "tf", _make_mock_tf())
     mock_dask_lazy = MagicMock()
     mock_dask_lazy.compute.side_effect = RuntimeError("compute failed")
     assert dp._sync_dask_result(mock_dask_lazy) is mock_dask_lazy

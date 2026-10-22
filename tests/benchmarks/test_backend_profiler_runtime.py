@@ -10,10 +10,16 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import as_callable, as_tensor, install_profiler_backend_stubs
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+@pytest.fixture(autouse=True)
+def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    install_profiler_backend_stubs(monkeypatch)
 
 
 def test_numpy_profiler_runtime() -> None:

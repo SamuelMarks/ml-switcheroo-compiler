@@ -15,10 +15,10 @@ from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
 @numpy_eager_registry.register("StringToHash")
 def _np_string_to_hash(
     backend_module: BackendModuleProtocol,
-    input_tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[str] | str,
+    input_tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[str] | str,
     num_buckets: int,
     **kwargs: int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate string hashing into buckets via SHA256.
 
     Args:
@@ -50,9 +50,9 @@ def _np_string_to_hash(
 @numpy_eager_registry.register("TextVectorization")
 def _np_text_vectorization(
     backend_module: BackendModuleProtocol,
-    inputs: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[str] | list[list[str]] | str,
+    inputs: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[str] | list[list[str]] | str,
     **kwargs: str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate text vectorization fallback.
 
     Args:
@@ -75,9 +75,9 @@ def _np_text_vectorization(
 @numpy_eager_registry.register("AsString")
 def _np_as_string(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float | str | bool,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float | str | bool,
     **kwargs: int | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate string conversion of input scalar or array.
 
     Args:
@@ -97,9 +97,9 @@ def _np_as_string(
 @numpy_eager_registry.register("CreateToken")
 def _np_create_token(
     backend_module: BackendModuleProtocol,
-    *args: str | int | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    *args: str | int | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: dict[str, int] | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate subword tokenization creation.
 
     Args:

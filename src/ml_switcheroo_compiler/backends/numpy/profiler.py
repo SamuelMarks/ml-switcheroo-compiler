@@ -33,7 +33,7 @@ class NumpyProfiler:
     def profile_graph(
         self,
         graph: IRGraph,
-        inputs: dict[str, list[float] | list[list[float]] | np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
+        inputs: dict[str, list[float] | list[list[float]] | np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
         device: str | None = None,
         num_iters: int = 10,
         warmup_iters: int = 2,
@@ -54,14 +54,14 @@ class NumpyProfiler:
 
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
-        np_inputs_dict: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]] = {}
+        np_inputs_dict: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = {}
         for k, val in inputs.items():
             if isinstance(val, np.ndarray):
                 np_inputs_dict[k] = val
             else:
                 np_inputs_dict[k] = np.asarray(val, dtype=np.float32)
 
-        np_input_list: list[np.ndarray[tuple[int, ...], np.dtype[np.generic]]] = list(np_inputs_dict.values())
+        np_input_list: list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = list(np_inputs_dict.values())
 
         def _execute_step() -> EagerValue:
             """Execute a single evaluation step on NumPy backend.

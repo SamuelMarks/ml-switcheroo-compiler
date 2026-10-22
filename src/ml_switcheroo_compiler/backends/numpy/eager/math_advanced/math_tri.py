@@ -29,8 +29,8 @@ if typing.TYPE_CHECKING:
 def _np_tri(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: int | np.dtype[np.generic] | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: int | np.dtype[np.float64] | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Construct an array with ones at and below the given diagonal and zeros elsewhere.
 
     Args:
@@ -49,7 +49,7 @@ def _np_trilindices(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | None,
-) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Return the indices for the lower-triangle of an (n, m) array.
 
     Args:
@@ -69,7 +69,7 @@ def _np_trilindicesfrom(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | None,
-) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Return the indices for the lower-triangle of an array.
 
     Args:
@@ -89,7 +89,7 @@ def _np_trimzeros(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Trim the leading and/or trailing zeros from a 1-D array or sequence.
 
     Args:
@@ -108,7 +108,7 @@ def _np_triuindices(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | None,
-) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Return the indices for the upper-triangle of an (n, m) array.
 
     Args:
@@ -128,7 +128,7 @@ def _np_triuindicesfrom(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | None,
-) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Return the indices for the upper-triangle of an array.
 
     Args:
@@ -147,8 +147,8 @@ def _np_triuindicesfrom(
 def _np_fromstring_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | int | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """A new 1-D array initialized from text data in a string.
 
     Args:
@@ -159,7 +159,7 @@ def _np_fromstring_(
     Returns:
         np.ndarray: 1-D array created from string.
     """
-    return as_ndarray(backend_module.fromstring(*args, **kwargs))
+    return as_ndarray(getattr(backend_module, "frombuffer" if "sep" not in kwargs and hasattr(backend_module, "frombuffer") else "fromstring")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("MatrixPower")
@@ -167,7 +167,7 @@ def _np_linalg_matrix_power_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Raise a square matrix to the (integer) power n.
 
     Args:
@@ -291,7 +291,7 @@ def _np_confusion_matrix(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None:
     """Evaluate confusion matrix of true and predicted labels.
 
     Args:
@@ -309,7 +309,7 @@ def _np_confusion_matrix(
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
         num_classes = max(int(np.max(y_true).item()), int(np.max(y_pred).item())) + 1
-    return np.bincount(np.add(np.multiply(y_true, num_classes), y_pred), minlength=num_classes**2).reshape((num_classes, num_classes))
+    return as_ndarray(np.bincount(np.add(np.multiply(y_true, num_classes), y_pred), minlength=num_classes**2).reshape((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Distributions")
@@ -317,7 +317,7 @@ def _np_distributions(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | str | None,
-) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.generic]]] | None:
+) -> dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]] | None:
     """Compute histogram counts and bin edges for distribution inspection.
 
     Args:
@@ -332,18 +332,18 @@ def _np_distributions(
     if a is None:
         return None
     counts, bins = np.histogram(a, bins="auto")
-    return {"counts": counts, "bins": bins}
+    return {"counts": as_ndarray(counts), "bins": as_ndarray(bins)}
 
 
 @numpy_eager_registry.register("StridedSlice")
 def _np_stridedslice(
     backend_module: BackendModuleProtocol,
-    data: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    data: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     start: Sequence[int],
     end: Sequence[int],
     strides: Sequence[int],
     **kwargs: int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate strided slice eagerly on an array.
 
     Args:

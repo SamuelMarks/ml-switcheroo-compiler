@@ -13,40 +13,61 @@ from ml_switcheroo_compiler.distributed.distributed_config import DistributedCon
 
 def test_pytorch_initialize_distributed() -> None:
     """Test PyTorch initialize_distributed."""
-    with patch("torch.distributed.is_initialized", return_value=False):
-        with patch("torch.distributed.init_process_group") as mock_init:
-            config = DistributedConfig(backend="nccl", init_method="env://", world_size=4, rank=0)
-            PyTorchCodeGenerator.initialize_distributed(backend_config=config)
-            mock_init.assert_called_once_with(backend="nccl", init_method="env://", world_size=4, rank=0)
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock
 
-    with patch("torch.distributed.is_initialized", return_value=True):
-        with patch("torch.distributed.init_process_group") as mock_init:
-            PyTorchCodeGenerator.initialize_distributed()
-            mock_init.assert_not_called()
+    mock_torch = MagicMock()
+    ctx = patch.dict(sys.modules, {"torch": mock_torch, "torch.distributed": mock_torch.distributed}) if importlib.util.find_spec("torch") is None else MagicMock()
+    with ctx:
+        with patch("torch.distributed.is_initialized", return_value=False):
+            with patch("torch.distributed.init_process_group") as mock_init:
+                config = DistributedConfig(backend="nccl", init_method="env://", world_size=4, rank=0)
+                PyTorchCodeGenerator.initialize_distributed(backend_config=config)
+                mock_init.assert_called_once_with(backend="nccl", init_method="env://", world_size=4, rank=0)
+
+        with patch("torch.distributed.is_initialized", return_value=True):
+            with patch("torch.distributed.init_process_group") as mock_init:
+                PyTorchCodeGenerator.initialize_distributed()
+                mock_init.assert_not_called()
 
 
 def test_jax_initialize_distributed() -> None:
     """Test JAX initialize_distributed."""
-    with patch("jax.distributed.initialize") as mock_init:
-        config = DistributedConfig(world_size=4, rank=0, options={"coordinator_address": "localhost:1234"})
-        JAXCodeGenerator.initialize_distributed(backend_config=config)
-        mock_init.assert_called_once_with(coordinator_address="localhost:1234", num_processes=4, process_id=0)
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock
 
-    with patch("jax.distributed.initialize") as mock_init:
-        JAXCodeGenerator.initialize_distributed()
-        mock_init.assert_called_once_with()
+    mock_jax = MagicMock()
+    ctx = patch.dict(sys.modules, {"jax": mock_jax, "jax.distributed": mock_jax.distributed}) if importlib.util.find_spec("jax") is None else MagicMock()
+    with ctx:
+        with patch("jax.distributed.initialize") as mock_init:
+            config = DistributedConfig(world_size=4, rank=0, options={"coordinator_address": "localhost:1234"})
+            JAXCodeGenerator.initialize_distributed(backend_config=config)
+            mock_init.assert_called_once_with(coordinator_address="localhost:1234", num_processes=4, process_id=0)
+
+        with patch("jax.distributed.initialize") as mock_init:
+            JAXCodeGenerator.initialize_distributed()
+            mock_init.assert_called_once_with()
 
 
 def test_dask_initialize_distributed() -> None:
     """Test Dask initialize_distributed."""
-    with patch("dask.distributed.Client") as mock_client:
-        config = DistributedConfig(options={"scheduler_address": "localhost:8786"})
-        DaskGenerator.initialize_distributed(backend_config=config)
-        mock_client.assert_called_once_with("localhost:8786")
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock
 
-    with patch("dask.distributed.Client") as mock_client:
-        DaskGenerator.initialize_distributed()
-        mock_client.assert_called_once_with()
+    mock_dask = MagicMock()
+    ctx = patch.dict(sys.modules, {"dask": mock_dask, "dask.distributed": mock_dask.distributed}) if importlib.util.find_spec("dask") is None else MagicMock()
+    with ctx:
+        with patch("dask.distributed.Client") as mock_client:
+            config = DistributedConfig(options={"scheduler_address": "localhost:8786"})
+            DaskGenerator.initialize_distributed(backend_config=config)
+            mock_client.assert_called_once_with("localhost:8786")
+
+        with patch("dask.distributed.Client") as mock_client:
+            DaskGenerator.initialize_distributed()
+            mock_client.assert_called_once_with()
 
 
 def test_webgpu_initialize_distributed() -> None:

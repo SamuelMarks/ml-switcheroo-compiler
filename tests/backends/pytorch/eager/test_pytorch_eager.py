@@ -7,7 +7,6 @@ import typing
 from unittest.mock import MagicMock
 
 import pytest
-import torch
 
 import ml_switcheroo_compiler.backends.pytorch.eager as pytorch_eager
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -16,14 +15,13 @@ from ml_switcheroo_compiler.backends.pytorch.types import array, asarray, item, 
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from tests.testing_utils import as_callable, as_tensor
 
-try:
+if typing.TYPE_CHECKING:
     import torch
-except ImportError:
-    pytest.skip("PyTorch not available", allow_module_level=True)
+
+try:
+    torch = pytest.importorskip("torch")
 except RuntimeError as e:
     pytest.skip(f"PyTorch not available: {e}", allow_module_level=True)
-if typing.TYPE_CHECKING:
-    pass
 
 
 def test_pytorch_eager_coverage() -> None:

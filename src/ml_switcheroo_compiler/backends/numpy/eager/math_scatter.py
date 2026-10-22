@@ -15,10 +15,10 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("TensorScatterUpdate")
 def _np_tensor_scatter_update(
     backend_module: BackendModuleProtocol,
-    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate tensor scatter update operation.
 
     Args:
@@ -39,10 +39,10 @@ def _np_tensor_scatter_update(
 @numpy_eager_registry.register("TensorScatterAdd")
 def _np_tensor_scatter_add(
     backend_module: BackendModuleProtocol,
-    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate tensor scatter add operation.
 
     Args:
@@ -63,10 +63,10 @@ def _np_tensor_scatter_add(
 @numpy_eager_registry.register("TensorScatterMax")
 def _np_tensor_scatter_max(
     backend_module: BackendModuleProtocol,
-    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate tensor scatter maximum operation.
 
     Args:
@@ -87,10 +87,10 @@ def _np_tensor_scatter_max(
 @numpy_eager_registry.register("TensorScatterMin")
 def _np_tensor_scatter_min(
     backend_module: BackendModuleProtocol,
-    tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate tensor scatter minimum operation.
 
     Args:
@@ -111,11 +111,11 @@ def _np_tensor_scatter_min(
 @numpy_eager_registry.register("ScatterNd")
 def _np_scatter_nd(
     backend_module: BackendModuleProtocol,
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | Sequence[int],
-    updates: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | Sequence[int],
+    updates: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     shape: tuple[int, ...],
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate scatter_nd operation creating zero tensor with scattered updates.
 
     Args:
@@ -137,9 +137,9 @@ def _np_scatter_nd(
 @numpy_eager_registry.register("Scatter")
 def _np_scatter(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int,
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int,
     **kwargs: int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate scatter operation along a dimension.
 
     Args:
@@ -161,10 +161,10 @@ def _np_scatter(
 
 
 def _band_part(
-    input_tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    input_tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     num_lower: int,
     num_upper: int,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate band_part matrix operation.
 
     Args:
@@ -183,9 +183,9 @@ def _band_part(
 @numpy_eager_registry.register("GatherNd")
 def _np_gather_nd(
     backend_module: BackendModuleProtocol,
-    params: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    params: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np gather nd operation on the active backend array.
 
     Args:
@@ -203,10 +203,10 @@ def _np_gather_nd(
 @numpy_eager_registry.register("TakeAlongAxis")
 def _np_take_along_axis(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     axis: int,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np take along axis operation on the active backend array.
 
     Args:
@@ -226,10 +226,10 @@ def _np_take_along_axis(
 @numpy_eager_registry.register("DynamicSlice")
 def _np_dynamic_slice(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     start_indices: Sequence[int],
     slice_sizes: Sequence[int],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate dynamic slicing from variable starts with fixed sizes.
 
     Args:
@@ -248,9 +248,9 @@ def _np_dynamic_slice(
 @numpy_eager_registry.register("DynamicUpdateSlice")
 def _np_dynamic_update_slice(
     backend_module: BackendModuleProtocol,
-    *args: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | Sequence[int],
+    *args: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | Sequence[int],
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate dynamic update slice operation.
 
     Args:

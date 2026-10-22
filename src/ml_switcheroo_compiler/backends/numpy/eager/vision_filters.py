@@ -12,11 +12,11 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("RandomGaussianBlur")
 def _np_random_gaussian_blur(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     kernel_size: tuple[int, int] | int,
     sigma: tuple[float, float] | float,
     **kwargs: float | int | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np random gaussian blur operation on the active backend array.
 
     Args:
@@ -35,10 +35,10 @@ def _np_random_gaussian_blur(
 @numpy_eager_registry.register("RandomSharpness")
 def _np_random_sharpness(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     factor: float,
     **kwargs: float | int | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np random sharpness operation on the active backend array.
 
     Args:

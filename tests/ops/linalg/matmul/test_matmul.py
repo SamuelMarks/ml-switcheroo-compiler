@@ -125,15 +125,13 @@ def test_matmul_opdefs() -> None:
     """Test function test_matmul_opdefs."""
     op1 = mod.BlockMaskedMm()
     assert op1.infer_shape((2, 2), (2, 2)) == (2, 2)
-    with pytest.raises(AttributeError):
-        with patch("ml_switcheroo_compiler.ops.linalg.matmul.matmul_shape", side_effect=ValueError):
-            op1.infer_shape((2, 2), (3, 3))
+    with patch.object(mod, "matmul_shape", side_effect=ValueError):
+        assert op1.infer_shape((2, 2), (3, 3)) is None
     assert op1.infer_shape("not_tuple", "not_tuple") == ()
     op2 = mod.GatherMm()
     assert op2.infer_shape("not_tuple", "not_tuple") == ()
-    with pytest.raises(AttributeError):
-        with patch("ml_switcheroo_compiler.ops.linalg.matmul.matmul_shape", side_effect=ValueError):
-            op2.infer_shape((2, 2), (3, 3))
+    with patch.object(mod, "matmul_shape", side_effect=ValueError):
+        assert op2.infer_shape((2, 2), (3, 3)) is None
     assert op2.infer_shape((2, 2), (2, 2), lhs_indices=(3,)) == (3, 2, 2)
     assert op2.infer_shape((2, 2), (2, 2), rhs_indices=(3,)) == (3, 2, 2)
     assert op2.infer_shape((2, 2), (2, 2)) == (2, 2)
@@ -246,8 +244,6 @@ def test_solvers_missing() -> None:
 
 def test_einsum_missing() -> None:
     """Test function test_einsum_missing."""
-    import pytest
-
     from ml_switcheroo_compiler.ops.linalg.einsum import ParsedEquationPart
 
     p = ParsedEquationPart(chars="ij", shape=(3,))

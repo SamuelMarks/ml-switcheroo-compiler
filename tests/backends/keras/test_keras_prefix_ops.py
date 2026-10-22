@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-import keras.ops as kops
 import numpy as np
 import pytest
 
@@ -14,9 +13,12 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
+    import keras.ops as kops
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 pytest.importorskip("keras")
+kops = pytest.importorskip("keras.ops")
 
 
 def _load_prefix_functions() -> dict[str, TypedVariadicCallable[EagerValue]]:

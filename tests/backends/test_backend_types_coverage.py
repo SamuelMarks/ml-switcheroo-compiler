@@ -32,6 +32,37 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # 2. Restore and normal execution
     monkeypatch.undo()
+    if importlib.util.find_spec("dask") is None:
+        import types
+
+        mock_dask = types.ModuleType("dask")
+        mock_da = types.ModuleType("dask.array")
+
+        class _MockDaskArr:
+            """Mock Dask array."""
+
+            def __init__(self, arr: EagerValue) -> None:
+                """Initialize _MockDaskArr.
+
+                Args:
+                    arr: Underlying numpy array.
+                """
+                self._arr = np.asarray(arr)
+
+            def compute(self) -> EagerValue:
+                """Compute numpy array.
+
+                Returns:
+                    EagerValue: Computed array.
+                """
+                return as_tensor(self._arr)
+
+        setattr(mock_da, "zeros", lambda shape, **kw: _MockDaskArr(np.zeros(shape)))
+        setattr(mock_da, "array", lambda data, dtype=None, **kw: _MockDaskArr(np.array(data, dtype=dtype)))
+        setattr(mock_da, "asarray", lambda data, **kw: _MockDaskArr(np.asarray(data)))
+        setattr(mock_dask, "array", mock_da)
+        monkeypatch.setitem(sys.modules, "dask", mock_dask)
+        monkeypatch.setitem(sys.modules, "dask.array", mock_da)
     importlib.reload(dask_types)
     assert as_tensor(getattr(dask_types, "da")) is not None
 
@@ -45,6 +76,8 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     assert as_arr is not None
     val = dask_types.item(type, np.array(42.0))
     assert val == 42.0
+    monkeypatch.undo()
+    importlib.reload(dask_types)
 
 
 def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -63,6 +96,17 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # 2. Restore and normal execution
     monkeypatch.undo()
+    if importlib.util.find_spec("mlx") is None:
+        import types
+
+        mock_mlx = types.ModuleType("mlx")
+        mock_mx = types.ModuleType("mlx.core")
+        setattr(mock_mx, "zeros", np.zeros)
+        setattr(mock_mx, "array", np.array)
+        setattr(mock_mx, "float32", np.float32)
+        setattr(mock_mlx, "core", mock_mx)
+        monkeypatch.setitem(sys.modules, "mlx", mock_mlx)
+        monkeypatch.setitem(sys.modules, "mlx.core", mock_mx)
     importlib.reload(mlx_types)
     assert as_tensor(mlx_types.mx) is not None
 
@@ -91,13 +135,15 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
             return np.array(data)
 
     monkeypatch.setattr(mlx_types, "mx", MockMxWithAsarray)
-    res_with_asarray = mlx_types.asarray(type, [1, 2])
-    assert res_with_asarray is not None
+    res_mx_asarray = mlx_types.asarray(type, [1, 2])
+    assert res_mx_asarray is not None
 
     # 4. Fallback branch when mx does not have asarray (native mlx)
     monkeypatch.setattr(mlx_types, "mx", mlx_types.mx)
     res_native = mlx_types.asarray(type, [1, 2])
     assert res_native is not None
+    monkeypatch.undo()
+    importlib.reload(mlx_types)
 
 
 def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -116,6 +162,17 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # 2. Restore and normal execution
     monkeypatch.undo()
+    if importlib.util.find_spec("keras") is None:
+        import types
+
+        mock_keras = types.ModuleType("keras")
+        mock_kops = types.ModuleType("keras.ops")
+        setattr(mock_kops, "zeros", np.zeros)
+        setattr(mock_kops, "array", np.array)
+        setattr(mock_kops, "convert_to_tensor", np.asarray)
+        setattr(mock_keras, "ops", mock_kops)
+        monkeypatch.setitem(sys.modules, "keras", mock_keras)
+        monkeypatch.setitem(sys.modules, "keras.ops", mock_kops)
     importlib.reload(keras_types)
     assert as_tensor(getattr(keras_types, "kops")) is not None
 
@@ -144,3 +201,5 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(keras_types, "kops", MockKopsWithAsarray)
     res_kops_asarray = keras_types.asarray(type, [1, 2])
     assert res_kops_asarray is not None
+    monkeypatch.undo()
+    importlib.reload(keras_types)

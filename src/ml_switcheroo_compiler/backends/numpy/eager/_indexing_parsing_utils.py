@@ -21,9 +21,10 @@ def _eval_constant(node: ast.AST) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    if getattr(node, "value", None) is Ellipsis:
-        return Ellipsis
-    return getattr(node, "value", None)
+    val = getattr(node, "value", None)
+    if val is ...:
+        return ...
+    return val if isinstance(val, (int, float, complex, str, bool)) else None
 
 
 def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> SliceType:

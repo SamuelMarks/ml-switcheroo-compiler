@@ -30,8 +30,8 @@ class IndexingContext(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     axis: int = 0
-    start_index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | None = None
-    limit_index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | None = None
+    start_index: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | None = None
+    limit_index: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | None = None
     slice_size: int | None = None
     stride: int = 1
     keepdims: bool = True
@@ -41,7 +41,7 @@ def _dynamic_update_slice(
     x: EagerValue,
     update: EagerValue,
     start_indices: EagerValue,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager dynamic update slice operation on the active backend array.
 
     Args:
@@ -52,7 +52,7 @@ def _dynamic_update_slice(
     Returns:
             tuple[int, ...]: Result.
     """
-    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "copy")(x)
+    out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "copy")(x)
 
     def _to_int(v: EagerValue) -> int:
         """Execute the eager to int operation on the active backend array.
@@ -70,7 +70,7 @@ def _dynamic_update_slice(
         return int(as_int(v))
 
     slices: tuple[EagerValue, ...] = tuple(slice(_to_int(start), _to_int(start) + int(size)) for (start, size) in zip(getattr(start_indices, "__iter__")(), getattr(update, "shape")))
-    out[slices] = update
+    as_tensor(out)[slices] = update
     return out
 
 
@@ -211,7 +211,7 @@ def _np_dynamic_update_index_in_dim(backend_module: BackendModuleProtocol, targe
     """
     operand, update, index = target.operand, target.update, target.index
     operand_arr = np.copy(np.asarray(operand))
-    idx: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(index).item()
+    idx: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(index).item()
     sl: list[EagerValue] = [slice(None)] * operand_arr.ndim
     sl[context.axis] = idx
     getattr(operand_arr, "__setitem__")(tuple(sl), update)
@@ -267,7 +267,7 @@ def _np_getitem(backend_module: BackendModuleProtocol, x: EagerValue, key: str) 
     Returns:
             tuple[int, ...]: Result.
     """
-    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(_safe_parse_key(key))
+    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(_safe_parse_key(key))
     return as_tensor(getattr(x, "__getitem__")(parsed_key))
 
 
@@ -284,8 +284,8 @@ def _np_setitem(backend_module: BackendModuleProtocol, x: EagerValue, value: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = as_ndarray(_safe_parse_key(key))
-    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.copy(np.asarray(x))
+    parsed_key: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(_safe_parse_key(key))
+    out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.copy(np.asarray(x))
     out[parsed_key] = np.asarray(value)
     return out
 
@@ -322,7 +322,7 @@ def gather_eager(np_mod: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """
     t = args[0] if len(args) > 0 else kwargs.get("tensor")
     dim: int | None = as_opt_int(args[1] if len(args) > 1 else kwargs.get("dim"))
-    index: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None", args[2] if len(args) > 2 else kwargs.get("index"))
+    index: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None", args[2] if len(args) > 2 else kwargs.get("index"))
     if hasattr(t, "numpy"):
         t = getattr(t, "numpy")()
     if hasattr(index, "numpy"):

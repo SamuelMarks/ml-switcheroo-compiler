@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -180,7 +180,7 @@ def _np_categorical_generalized_cross_entropy(backend_module: BackendModuleProto
         return backend_module.zeros(1)
     y_true = np.asarray(args[0])
     y_pred = np.asarray(args[1])
-    q = kwargs.get("q", 0.9)
+    q = as_float(kwargs.get("q", 0.9))
     y_pred = np.clip(y_pred, 1e-7, 1.0)
 
     # GCE = (1 - sum(y_true * y_pred^q)) / q

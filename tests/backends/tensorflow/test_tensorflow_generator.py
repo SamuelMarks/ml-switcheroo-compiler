@@ -5,7 +5,6 @@ from __future__ import annotations
 import typing
 
 import pytest
-import tensorflow as tf
 
 from ml_switcheroo_compiler.backends.tensorflow.eager import execute_op
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
@@ -14,8 +13,11 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
+    import tensorflow as tf
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
-pytest.importorskip("tensorflow")
+
+tf = pytest.importorskip("tensorflow")
 
 
 def test_tensorflow_generator_coverage() -> None:

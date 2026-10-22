@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
 
 from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -12,6 +13,22 @@ from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+@pytest.fixture(autouse=True)
+def _ensure_numba_stub(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Provide a NumPy-backed numba stub when numba is not installed."""
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock
+
+    if importlib.util.find_spec("numba") is None:
+        mock_nb = MagicMock()
+        mock_nb.njit.side_effect = lambda *a, **kw: a[0] if a and callable(a[0]) else (lambda fn: fn)
+        mock_nb.prange = range
+        mock_nb.np.numpy_support.np = np
+        mock_nb.vectorize.side_effect = lambda *a, **kw: lambda fn: np.vectorize(fn)
+        monkeypatch.setitem(sys.modules, "numba", mock_nb)
 
 
 def _test_numba_parallel_loop_emission_part_1(_state: dict[str, EagerTensorProtocol]) -> None:

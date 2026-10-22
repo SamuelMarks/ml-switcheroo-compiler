@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import numpy as np
+import pytest
 
 from tests.testing_utils import as_tensor
 
@@ -12,11 +13,16 @@ if typing.TYPE_CHECKING:
     pass
 
 
-def test_jax_ragged_eager() -> None:
+def test_jax_ragged_eager(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test function test_jax_ragged_eager."""
-    import jax.numpy as jnp
-
+    import ml_switcheroo_compiler.backends.jax.eager as jax_eager
     from ml_switcheroo_compiler.backends.jax.eager import _execute_ragged_tensor_to_dense
+
+    try:
+        import jax.numpy as jnp
+    except ImportError:
+        jnp = np
+        monkeypatch.setattr(jax_eager, "jnp", np)
 
     a = [jnp.array([1, 2]), jnp.array([1])]
     res = _execute_ragged_tensor_to_dense(a)

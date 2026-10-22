@@ -14,7 +14,7 @@ def _np_argpartition(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | tuple[int, ...] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Perform an indirect partition along the given axis.
 
     Args:
@@ -33,7 +33,7 @@ def _np_lexsort_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement Lexsort via lexsort.
 
     Args:
@@ -52,7 +52,7 @@ def _np_median_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement Median via median.
 
     Args:

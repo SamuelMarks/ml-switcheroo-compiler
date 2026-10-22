@@ -7,7 +7,6 @@ import struct
 import tempfile
 import typing
 
-import onnx
 import pytest
 from ml_switcheroo_ir import NodeDict
 
@@ -29,9 +28,11 @@ from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 from tests.testing_utils import as_attrs, as_callable
 
 if typing.TYPE_CHECKING:
+    import onnx
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
-pytest.importorskip("onnx")
+onnx = pytest.importorskip("onnx")
 
 
 def test_protobuf_wire_primitives() -> None:

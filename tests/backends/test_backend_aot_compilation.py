@@ -142,16 +142,19 @@ def test_jax_compile_aot_impl() -> None:
     np.testing.assert_allclose(np.asarray(res_aot_tensor), np.exp(inp), rtol=1e-4)
 
     # 3. Load / save / savez / savez_compressed methods
-    with (
-        patch("jax.numpy.load", return_value=inp, create=True),
-        patch("jax.numpy.save", create=True),
-        patch("jax.numpy.savez", create=True),
-        patch("jax.numpy.savez_compressed", create=True),
-    ):
-        assert JAXCodeGenerator.load("dummy.npy") is not None
-        JAXCodeGenerator.save("dummy.npy", inp)
-        JAXCodeGenerator.savez("dummy.npz", inp, k=inp)
-        JAXCodeGenerator.savez_compressed("dummy.npz", inp, k=inp)
+    mock_jax = MagicMock()
+    ctx = patch.dict(sys.modules, {"jax": mock_jax, "jax.numpy": mock_jax.numpy}) if importlib.util.find_spec("jax") is None else MagicMock()
+    with ctx:
+        with (
+            patch("jax.numpy.load", return_value=inp, create=True),
+            patch("jax.numpy.save", create=True),
+            patch("jax.numpy.savez", create=True),
+            patch("jax.numpy.savez_compressed", create=True),
+        ):
+            assert JAXCodeGenerator.load("dummy.npy") is not None
+            JAXCodeGenerator.save("dummy.npy", inp)
+            JAXCodeGenerator.savez("dummy.npz", inp, k=inp)
+            JAXCodeGenerator.savez_compressed("dummy.npz", inp, k=inp)
 
 
 def test_jax_compile_aot_fallback_and_missing_model() -> None:
@@ -390,15 +393,18 @@ def test_mlx_compile_aot_impl() -> None:
     np.testing.assert_allclose(np.asarray(res_static), np.exp(inp), rtol=1e-4)
 
     # Load / save / savez / savez_compressed methods
-    with (
-        patch("mlx.core.load", return_value=inp),
-        patch("mlx.core.save"),
-        patch("mlx.core.save_safetensors"),
-    ):
-        assert MLXCodeGenerator.load("dummy.safetensors") is not None
-        MLXCodeGenerator.save("dummy.npy", inp)
-        MLXCodeGenerator.savez("dummy.safetensors", inp, k=inp)
-        MLXCodeGenerator.savez_compressed("dummy.safetensors", inp, k=inp)
+    mock_mlx = MagicMock()
+    ctx = patch.dict(sys.modules, {"mlx": mock_mlx, "mlx.core": mock_mlx.core}) if importlib.util.find_spec("mlx") is None else MagicMock()
+    with ctx:
+        with (
+            patch("mlx.core.load", return_value=inp),
+            patch("mlx.core.save"),
+            patch("mlx.core.save_safetensors"),
+        ):
+            assert MLXCodeGenerator.load("dummy.safetensors") is not None
+            MLXCodeGenerator.save("dummy.npy", inp)
+            MLXCodeGenerator.savez("dummy.safetensors", inp, k=inp)
+            MLXCodeGenerator.savez_compressed("dummy.safetensors", inp, k=inp)
 
 
 def test_mlx_compile_aot_fallbacks() -> None:
@@ -543,18 +549,22 @@ def test_onnx_compile_aot_impl() -> None:
     mock_session = MagicMock()
     mock_session.run.return_value = [np.exp(inp)]
     mock_ref.ReferenceEvaluator.return_value = mock_session
+    mock_onnx = MagicMock()
+    mock_onnx.reference = mock_ref
+    ctx = patch.dict(sys.modules, {"onnx": mock_onnx, "onnx.reference": mock_ref}) if importlib.util.find_spec("onnx") is None else MagicMock()
 
-    with patch("onnx.reference.ReferenceEvaluator", mock_ref.ReferenceEvaluator):
-        runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, opset_version=18))
-        res = runner(inp)
-        assert res is not None
-        assert mock_session.run.called
+    with ctx:
+        with patch("onnx.reference.ReferenceEvaluator", mock_ref.ReferenceEvaluator):
+            runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, opset_version=18))
+            res = runner(inp)
+            assert res is not None
+            assert mock_session.run.called
 
-    # Fallback runner when ReferenceEvaluator fails
-    with patch("onnx.reference.ReferenceEvaluator", side_effect=RuntimeError("ReferenceEvaluator unavailable")):
-        runner_fallback: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
-        res_fallback = runner_fallback(inp)
-        assert res_fallback is not None
+        # Fallback runner when ReferenceEvaluator fails
+        with patch("onnx.reference.ReferenceEvaluator", side_effect=RuntimeError("ReferenceEvaluator unavailable")):
+            runner_fallback: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph))
+            res_fallback = runner_fallback(inp)
+            assert res_fallback is not None
 
 
 def test_stablehlo_compile_aot_impl() -> None:

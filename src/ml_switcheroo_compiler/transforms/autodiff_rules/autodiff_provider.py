@@ -240,7 +240,7 @@ def _fallback_finite_difference_jvp(graph: TensorOrScalar, node: TensorOrScalar,
     pos_inputs = []
     neg_inputs = []
 
-    tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+    tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
     for _idx, (inp, tang) in enumerate(zip(getattr(node, "inputs"), tangents_list)):
         eps_t = emit_ir_node(as_opt_graph(graph), "Multiply", [epsilon, tang], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None))
         pos_inputs.append(emit_ir_node(as_opt_graph(graph), "Add", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
@@ -550,7 +550,7 @@ def get_jvp_from_data(op_type: str) -> Callable[[TensorOrScalar, TensorOrScalar,
         Returns:
             str: Emitted JVP tangent node ID.
         """
-        tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+        tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
         return _parse_expression(as_graph(graph), as_str(jvp_expr), typing.cast("LogicalNode", node), tangents=tangents_list)
 
     return data_jvp

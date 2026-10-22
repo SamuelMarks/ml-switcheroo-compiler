@@ -9,7 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
-LookupInput = typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.generic]], list[typing.Union[int, "str"]], int, "str"]
+LookupInput = typing.Union[np.ndarray[tuple[int, ...], np.dtype[np.float64]], list[typing.Union[int, "str"]], int, "str"]
 
 
 @numpy_eager_registry.register("Hashing")
@@ -58,7 +58,7 @@ def _np_lookup(
     inputs: LookupInput,
     vocabulary: LookupInput,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np lookup operation on the active backend array.
 
     Args:
@@ -70,10 +70,10 @@ def _np_lookup(
     Returns:
         np.ndarray: Result array.
     """
-    inputs_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(inputs)
-    vocab: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(vocabulary)
+    inputs_arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(inputs)
+    vocab: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(vocabulary)
     # basic mapping fallback
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.zeros_like(inputs_arr, dtype=np.int32)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.zeros_like(inputs_arr, dtype=np.int32)
     for i, v in enumerate(vocab):
         res[inputs_arr == v] = i
     return res

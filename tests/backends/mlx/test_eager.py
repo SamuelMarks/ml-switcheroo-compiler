@@ -29,17 +29,16 @@ mock_mx = MagicMock()
 mock_pkg = MagicMock()
 mock_pkg.__spec__ = MagicMock()
 
-if not _has_real_mlx:
-    sys.modules["mlx"] = mock_pkg
-    sys.modules["mlx.core"] = mock_mx
-    sys.modules["mlx.core.distributed"] = MagicMock()
-
 
 @pytest.fixture(autouse=True, scope="module")
 def _cleanup_mlx_modules() -> Iterator[None]:
     """Setup and restore eager.mx and sys.modules for test module execution."""
     orig_eager_mx = as_tensor(getattr(eager, "mx"))
     setattr(eager, "mx", mock_mx)
+    if not _has_real_mlx:
+        sys.modules["mlx"] = mock_pkg
+        sys.modules["mlx.core"] = mock_mx
+        sys.modules["mlx.core.distributed"] = MagicMock()
     yield
     setattr(eager, "mx", orig_eager_mx)
     if not _has_real_mlx:
@@ -453,21 +452,12 @@ def test_mlx_cum_ops_dtype_fallbacks() -> None:
 def test_mlx_relu_and_zeros_and_reduce_scatter_coverage() -> None:
     """Test _mlx_relu fallback, scalar shape in _mlx_zeros, and _mlx_reduce_scatter exception fallback."""
     # 1. _mlx_relu with mlx.nn present
-    try:
-        import mlx.nn  # noqa: F401
-
-        has_mlx_nn = True
-    except (ImportError, AttributeError):
-        has_mlx_nn = False
-
-    if has_mlx_nn:
-        with patch("mlx.nn.relu", return_value="relu_out"):
-            assert eager._mlx_relu(mock_mx, "x") == "relu_out"
-    else:
-        mock_nn = MagicMock()
-        mock_nn.relu.return_value = "relu_out"
-        with patch.dict(sys.modules, {"mlx.nn": mock_nn}):
-            assert eager._mlx_relu(mock_mx, "x") == "relu_out"
+    mock_nn = MagicMock()
+    mock_nn.relu.return_value = "relu_out"
+    mock_mlx_pkg = MagicMock()
+    mock_mlx_pkg.nn = mock_nn
+    with patch.dict(sys.modules, {"mlx": mock_mlx_pkg, "mlx.nn": mock_nn}):
+        assert eager._mlx_relu(mock_mx, "x") == "relu_out"
 
     # 2. _mlx_relu fallback to maximum
     with patch.dict(sys.modules, {"mlx.nn": None}):

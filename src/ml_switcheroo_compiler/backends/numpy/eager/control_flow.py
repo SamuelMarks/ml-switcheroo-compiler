@@ -27,13 +27,13 @@ def _np_associative_scan(backend_module: BackendModuleProtocol, *args: EagerValu
     elems: list[EagerValue] = as_eager_list(args[1])
     axis: int = as_int(kwargs.get("axis", 0))
 
-    elems_arr: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(elems)
-    out: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.empty_like(elems_arr)
+    elems_arr: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(elems)
+    out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.empty_like(elems_arr)
 
     elems_arr = np.moveaxis(elems_arr, axis, 0)
     out = np.moveaxis(out, axis, 0)
 
-    acc: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = elems_arr[0]
+    acc: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = elems_arr[0]
     out[0] = acc
     for i in range(1, elems_arr.shape[0]):
         acc = as_ndarray(as_callable(fn)(acc, elems_arr[i]))

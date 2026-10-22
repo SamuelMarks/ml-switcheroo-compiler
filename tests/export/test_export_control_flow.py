@@ -46,9 +46,13 @@ def test_onnx_control_flow(tmp_path: EagerTensorProtocol) -> None:
 
     # Export to disk
     out_path = os.path.join(str(tmp_path), "model.onnx")
+    import importlib.util
     import unittest.mock
 
-    with unittest.mock.patch("onnx.checker.check_model"):
+    if importlib.util.find_spec("onnx") is not None:
+        with unittest.mock.patch("onnx.checker.check_model"):
+            gen.export_onnx(out_path)
+    else:
         gen.export_onnx(out_path)
     assert os.path.exists(out_path)
 
@@ -68,6 +72,10 @@ def test_stablehlo_control_flow() -> None:
 
 def test_onnx_fallback() -> None:
     """Test function test_onnx_fallback."""
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock, patch
+
     graph = IRGraph()
     graph.nodes["in0"] = IRNode("in0", "Input", inputs=[])
     graph.nodes["unknown"] = IRNode("unknown", "SomeRandomOp", inputs=["in0"])
@@ -76,8 +84,10 @@ def test_onnx_fallback() -> None:
     gen = ONNXCodeGenerator(graph)
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    with pytest.raises(BackendNotSupportedError):
-        gen.generate()
+    ctx = patch.dict(sys.modules, {"onnx": MagicMock()}) if importlib.util.find_spec("onnx") is None else MagicMock()
+    with ctx:
+        with pytest.raises(BackendNotSupportedError):
+            gen.generate()
 
 
 def test_stablehlo_fallback() -> None:

@@ -26,7 +26,7 @@ def _np_bessel_j0(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Bessel function of the first kind of order 0.
 
     Args:
@@ -46,7 +46,7 @@ def _np_bessel_j1(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Bessel function of the first kind of order 1.
 
     Args:
@@ -66,7 +66,7 @@ def _np_bessel_k0(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate modified Bessel function of the second kind of order 0.
 
     Args:
@@ -86,7 +86,7 @@ def _np_bessel_k0e(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exponentially scaled modified Bessel function K0e.
 
     Args:
@@ -106,7 +106,7 @@ def _np_bessel_k1(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate modified Bessel function of the second kind of order 1.
 
     Args:
@@ -126,7 +126,7 @@ def _np_bessel_k1e(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exponentially scaled modified Bessel function K1e.
 
     Args:
@@ -146,7 +146,7 @@ def _np_bessel_y0(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Bessel function of the second kind of order 0.
 
     Args:
@@ -166,7 +166,7 @@ def _np_bessel_y1(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Bessel function of the second kind of order 1.
 
     Args:
@@ -186,7 +186,7 @@ def _np_dawsn(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Dawson's integral.
 
     Args:
@@ -206,7 +206,7 @@ def _np_expint(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exponential integral E_n(x).
 
     Args:
@@ -229,7 +229,7 @@ def _np_fresnel_cos(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Fresnel cosine integral.
 
     Args:
@@ -249,7 +249,7 @@ def _np_fresnel_sin(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Fresnel sine integral.
 
     Args:
@@ -269,7 +269,7 @@ def _np_spence(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Spence's function (dilogarithm).
 
     Args:
@@ -287,9 +287,9 @@ def _np_spence(
 @numpy_eager_registry.register("BesselI0")
 def _np_bessel_i0(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | int,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | int,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate modified Bessel function of the first kind of order 0.
 
     Args:
@@ -306,9 +306,9 @@ def _np_bessel_i0(
 @numpy_eager_registry.register("BesselI1")
 def _np_bessel_i1(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | int,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | int,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate modified Bessel function of the first kind of order 1.
 
     Args:
@@ -325,10 +325,10 @@ def _np_bessel_i1(
 @numpy_eager_registry.register("BesselJn")
 def _np_bessel_jn(
     backend_module: BackendModuleProtocol,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | int,
-    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | int,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | int,
+    y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | int,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Bessel function of the first kind of real order.
 
     Args:
@@ -348,7 +348,7 @@ def _np_bartlett(
     backend_module: BackendModuleProtocol,
     M: int,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return the Bartlett window.
 
     Args:
@@ -367,7 +367,7 @@ def _np_digamma(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate the digamma (psi) function via `scipy.special.digamma`.
 
     Args:
@@ -386,7 +386,7 @@ def _np_igammac(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate regularized upper incomplete gamma function via `scipy.special.gammaincc`.
 
     Args:
@@ -405,7 +405,7 @@ def _np_polygamma(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate polygamma function of order n via `scipy.special.polygamma`.
 
     Args:
@@ -424,7 +424,7 @@ def _np_igamma(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate regularized lower incomplete gamma function via `scipy.special.gammainc`.
 
     Args:
@@ -443,7 +443,7 @@ def _np_gamma(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate the gamma function via `scipy.special.gamma`.
 
     Args:
@@ -462,7 +462,7 @@ def _np_modifiedbesseli1(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate modified Bessel function of order 1 via `scipy.special.i1`.
 
     Args:
@@ -483,7 +483,7 @@ def _np_betainc_special(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate regularized incomplete beta function via `scipy.special.betainc`.
 
     Args:
@@ -502,7 +502,7 @@ def _np_beta_func(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate the Euler Beta function via `scipy.special.beta`.
 
     Args:
@@ -523,7 +523,7 @@ def _np_betapdf(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate the Beta probability density function via `scipy.stats.beta.pdf`.
 
     Args:
@@ -544,7 +544,7 @@ def _np_zeta(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate the Hurwitz/Riemann zeta function via `scipy.special.zeta`.
 
     Args:
@@ -563,7 +563,7 @@ def _np_xlog1py(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate `x * log1p(y)` with safe zero handling via `scipy.special.xlog1py`.
 
     Args:

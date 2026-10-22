@@ -14,7 +14,7 @@ def _np_mvlgamma(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | float,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np mvlgamma operation on the active backend array.
 
     Args:

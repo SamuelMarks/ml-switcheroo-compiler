@@ -61,7 +61,7 @@ def _np_block_masked_mm(backend_module: BackendModuleProtocol, *args: EagerValue
 
 
 @numpy_eager_registry.register("Mul")
-def _np_mul(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_mul(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate elementwise multiplication in NumPy eager mode.
 
     Args:
@@ -76,7 +76,7 @@ def _np_mul(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
 
 
 @numpy_eager_registry.register("MaxPool2DWithArgmax")
-def _np_max_pool2d_with_argmax_forward(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_max_pool2d_with_argmax_forward(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate 2D max pooling forward in NumPy eager mode.
 
     Args:
@@ -105,7 +105,7 @@ def _np_max_pool2d_with_argmax_forward(backend_module: BackendModuleProtocol, *a
 
 
 @numpy_eager_registry.register("BatchNorm")
-def _np_batch_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_batch_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate BatchNorm forward in NumPy eager mode.
 
     Args:
@@ -139,7 +139,7 @@ def _np_batch_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **k
 
 
 @numpy_eager_registry.register("BatchNormInputGrad")
-def _np_batch_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_batch_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact analytical gradient of BatchNorm with respect to input.
 
     Args:
@@ -177,7 +177,7 @@ def _np_batch_norm_input_grad(backend_module: BackendModuleProtocol, *args: Eage
 
 
 @numpy_eager_registry.register("BatchNormGammaGrad")
-def _np_batch_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_batch_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of BatchNorm with respect to scale (gamma).
 
     Args:
@@ -200,7 +200,7 @@ def _np_batch_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: Eage
 
 
 @numpy_eager_registry.register("BatchNormBetaGrad")
-def _np_batch_norm_beta_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_batch_norm_beta_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of BatchNorm with respect to shift (beta).
 
     Args:
@@ -217,7 +217,7 @@ def _np_batch_norm_beta_grad(backend_module: BackendModuleProtocol, *args: Eager
 
 
 @numpy_eager_registry.register("LayerNorm")
-def _np_layer_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_layer_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate LayerNorm forward in NumPy eager mode.
 
     Args:
@@ -242,7 +242,7 @@ def _np_layer_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **k
 
 
 @numpy_eager_registry.register("LayerNormInputGrad")
-def _np_layer_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_layer_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact analytical gradient of LayerNorm with respect to input.
 
     Args:
@@ -274,7 +274,7 @@ def _np_layer_norm_input_grad(backend_module: BackendModuleProtocol, *args: Eage
 
 
 @numpy_eager_registry.register("LayerNormGammaGrad")
-def _np_layer_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_layer_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of LayerNorm with respect to gamma.
 
     Args:
@@ -298,7 +298,7 @@ def _np_layer_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: Eage
 
 
 @numpy_eager_registry.register("LayerNormBetaGrad")
-def _np_layer_norm_beta_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_layer_norm_beta_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of LayerNorm with respect to beta.
 
     Args:
@@ -316,7 +316,7 @@ def _np_layer_norm_beta_grad(backend_module: BackendModuleProtocol, *args: Eager
 
 
 @numpy_eager_registry.register("RMSNorm")
-def _np_rms_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_rms_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate RMSNorm forward in NumPy eager mode.
 
     Args:
@@ -338,7 +338,7 @@ def _np_rms_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
 
 @numpy_eager_registry.register("RMSNormInputGrad")
-def _np_rms_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_rms_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact analytical gradient of RMSNorm with respect to input.
 
     Args:
@@ -364,7 +364,7 @@ def _np_rms_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerV
 
 
 @numpy_eager_registry.register("RMSNormGammaGrad")
-def _np_rms_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_rms_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of RMSNorm with respect to gamma.
 
     Args:
@@ -386,7 +386,7 @@ def _np_rms_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerV
 
 
 @numpy_eager_registry.register("GroupNorm")
-def _np_group_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_group_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate GroupNorm forward in NumPy eager mode.
 
     Args:
@@ -420,7 +420,7 @@ def _np_group_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **k
 
 
 @numpy_eager_registry.register("GroupNormInputGrad")
-def _np_group_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_group_norm_input_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of GroupNorm with respect to input.
 
     Args:
@@ -462,7 +462,7 @@ def _np_group_norm_input_grad(backend_module: BackendModuleProtocol, *args: Eage
 
 
 @numpy_eager_registry.register("GroupNormGammaGrad")
-def _np_group_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_group_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of GroupNorm with respect to gamma.
 
     Args:
@@ -494,7 +494,7 @@ def _np_group_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: Eage
 
 
 @numpy_eager_registry.register("GroupNormBetaGrad")
-def _np_group_norm_beta_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_group_norm_beta_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of GroupNorm with respect to beta.
 
     Args:
@@ -511,7 +511,7 @@ def _np_group_norm_beta_grad(backend_module: BackendModuleProtocol, *args: Eager
 
 
 @numpy_eager_registry.register("AvgPool2D")
-def _np_avg_pool2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_avg_pool2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate AvgPool2D forward in NumPy eager mode.
 
     Args:
@@ -543,7 +543,7 @@ def _np_avg_pool2d(backend_module: BackendModuleProtocol, *args: EagerValue, **k
 
 
 @numpy_eager_registry.register("AvgPool2DGrad")
-def _np_avg_pool2d_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_avg_pool2d_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of AvgPool2D with respect to input.
 
     Args:
@@ -575,7 +575,7 @@ def _np_avg_pool2d_grad(backend_module: BackendModuleProtocol, *args: EagerValue
 
 
 @numpy_eager_registry.register("MaxPool2DWithArgmaxGrad")
-def _np_max_pool2d_with_argmax_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_max_pool2d_with_argmax_grad(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exact gradient of MaxPool2DWithArgmax with respect to input.
 
     Args:

@@ -469,7 +469,6 @@ def _generate_stubs_from_snapshot(data: dict[str, AttributeValue], be_name: str,
     """
     lines: list[str] = [
         f'"""Auto-generated high-fidelity type stubs for {be_name} from ml-ecosystem-snapshots."""',
-        "# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103",
         "",
         "from collections.abc import Sequence",
         "",
@@ -553,7 +552,6 @@ def _generate_stubs_from_live_module(fw_name: str | tuple[str, ...], be_name: st
     """
     lines: list[str] = [
         f'"""Auto-generated high-fidelity type stubs for {be_name} from live module introspection."""',
-        "# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103",
         "",
         "from collections.abc import Sequence",
         "",
@@ -597,7 +595,6 @@ def _generate_fallback_backend_stubs(be_name: str, out_path: str) -> int:
     """
     lines: list[str] = [
         f'"""Auto-generated high-fidelity type stubs for {be_name} backend."""',
-        "# ruff: noqa: E501, UP007, UP045, D100, D101, D102, D103",
         "",
         "from collections.abc import Sequence",
         "",

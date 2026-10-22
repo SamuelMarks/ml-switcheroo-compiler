@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import typing
 
-import torch
+import pytest
 
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
+    import torch
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+torch = pytest.importorskip("torch")
 
 
 def test_pytorch_ragged_tensor_to_tensor_eager() -> None:

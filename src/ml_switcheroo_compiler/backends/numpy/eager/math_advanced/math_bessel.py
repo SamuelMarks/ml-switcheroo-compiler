@@ -20,7 +20,7 @@ def _np_bessel_i0e(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exponentially scaled modified Bessel function of order 0.
 
     Args:
@@ -39,7 +39,7 @@ def _np_bessel_i1e(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate exponentially scaled modified Bessel function of order 1.
 
     Args:
@@ -58,7 +58,7 @@ def _np_modified_bessel_i0(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Evaluate modified Bessel function of order 0.
 
     Args:
@@ -80,7 +80,7 @@ def _np_modified_bessel_i1(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Evaluate modified Bessel function of order 1.
 
     Args:
@@ -111,7 +111,7 @@ def _np_modified_bessel_k0(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Evaluate modified Bessel function of second kind of order 0.
 
     Args:
@@ -142,7 +142,7 @@ def _np_modified_bessel_k1(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Evaluate modified Bessel function of second kind of order 1.
 
     Args:

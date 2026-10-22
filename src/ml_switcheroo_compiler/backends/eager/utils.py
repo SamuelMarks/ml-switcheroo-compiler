@@ -21,7 +21,7 @@ def _resolve_eager_mod(backend_module: BackendModuleProtocol | EagerValue | None
     from ml_switcheroo_compiler.backends.registry import BackendRegistry, get_active_backend
 
     active = get_active_backend()
-    backend_cls = BackendRegistry.get(str(active)) if not hasattr(active, "get_module") else active
+    backend_cls = BackendRegistry.get("numpy") if not hasattr(active, "get_module") else active
     mod: BackendModuleProtocol = backend_cls.get_module()
     return mod
 

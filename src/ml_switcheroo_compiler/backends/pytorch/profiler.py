@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import resource
 import sys
@@ -9,7 +10,11 @@ import time
 import typing
 from collections.abc import Callable
 
-import torch
+if typing.TYPE_CHECKING:
+    import torch
+else:
+    _has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
+    torch = importlib.import_module("torch") if _has_torch else None
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
@@ -51,8 +56,8 @@ def _get_process_memory_mb() -> float:
     return float(rusage) / 1024.0
 
 
-class TorchGraphModule(torch.nn.Module):
-    """Executable torch.nn.Module compiling and executing an IRGraph natively."""
+class TorchGraphModule:
+    """Executable wrapper around a generated torch.nn.Module compiling and executing an IRGraph natively."""
 
     def __init__(self, graph: IRGraph) -> None:
         """Initialize TorchGraphModule with the IR computation graph.
@@ -63,7 +68,6 @@ class TorchGraphModule(torch.nn.Module):
         Raises:
             TypeError: If the generated model class is invalid or missing.
         """
-        super().__init__()
         self.graph: IRGraph = graph
         from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
@@ -75,6 +79,30 @@ class TorchGraphModule(torch.nn.Module):
             self.model: torch.nn.Module = model_cls()
         else:
             raise TypeError("Failed to generate valid torch.nn.Module from IRGraph")
+
+    def to(self, device: torch.device) -> TorchGraphModule:
+        """Move the wrapped model to the specified device.
+
+        Args:
+            device (torch.device): Target execution device.
+
+        Returns:
+            TorchGraphModule: Self reference after device placement.
+        """
+        self.model = self.model.to(device)
+        return self
+
+    def __call__(self, *args: torch.Tensor | dict[str, torch.Tensor], **kwargs: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
+        """Invoke forward pass on the wrapped model.
+
+        Args:
+            *args (Union[torch.Tensor, dict[str, torch.Tensor]]): Positional inputs or input dict.
+            **kwargs (torch.Tensor): Named tensor inputs.
+
+        Returns:
+            Union[torch.Tensor, tuple[torch.Tensor, ...], dict[str, torch.Tensor]]: Evaluated output tensors.
+        """
+        return self.forward(*args, **kwargs)
 
     def forward(self, *args: torch.Tensor | dict[str, torch.Tensor], **kwargs: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
         """Execute the native compiled graph forward pass.
@@ -199,7 +227,7 @@ class PyTorchProfiler:
         graph: IRGraph,
         device: torch.device,
         input_list: list[torch.Tensor],
-    ) -> torch.nn.Module | None:
+    ) -> TorchGraphModule | torch.nn.Module | None:
         """Compile an IRGraph into an optimized PyTorch module.
 
         Args:
@@ -208,13 +236,13 @@ class PyTorchProfiler:
             input_list (list[torch.Tensor]): Input tensor examples for tracing.
 
         Returns:
-            Optional[torch.nn.Module]: Compiled PyTorch module.
+            Optional[Union[TorchGraphModule, torch.nn.Module]]: Compiled PyTorch module.
         """
         base_module = TorchGraphModule(graph).to(device)
-        compiled: torch.nn.Module = base_module
+        compiled: TorchGraphModule | torch.nn.Module = base_module
         if callable(getattr(torch, "compile", None)):
             try:
-                compiled = _as_nn_module(torch.compile(base_module))
+                compiled = _as_nn_module(getattr(torch, "compile")(base_module))
             except Exception:
                 compiled = base_module
         if compiled is base_module and hasattr(torch, "jit") and callable(getattr(torch.jit, "trace", None)) and input_list:
@@ -311,7 +339,7 @@ class PyTorchProfiler:
         has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         torch_input_list: list[torch.Tensor] = self._prepare_ordered_inputs(graph, inputs, torch_dev)
 
-        compiled_module: torch.nn.Module | None = None
+        compiled_module: TorchGraphModule | torch.nn.Module | None = None
         if has_ops:
             compiled_module = self._compile_module(graph, torch_dev, torch_input_list)
 

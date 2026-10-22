@@ -70,7 +70,39 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
-warn_untyped_fields = true
+
+[[tool.mypy.overrides]]
+module = [
+    "torch",
+    "torch.*",
+    "jax",
+    "jax.*",
+    "scipy",
+    "scipy.*",
+    "tensorflow",
+    "tensorflow.*",
+    "keras",
+    "keras.*",
+    "dask",
+    "dask.*",
+    "onnx",
+    "onnx.*",
+    "mlx",
+    "mlx.*",
+    "cupy",
+    "cupy.*",
+    "numba",
+    "numba.*",
+    "sparse",
+    "sparse.*",
+    "pyarrow",
+    "pyarrow.*",
+    "awkward",
+    "awkward.*",
+    "transformers",
+    "transformers.*",
+]
+follow_imports = "skip"
 
 
 [tool.coverage.run]

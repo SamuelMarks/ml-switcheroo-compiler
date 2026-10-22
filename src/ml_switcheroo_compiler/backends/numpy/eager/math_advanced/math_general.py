@@ -654,7 +654,7 @@ def _np_key(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
     return np.array([0, 0], dtype=np.uint32)
 
 
-def _get_np_arg(arg: Sequence[EagerValue], i: int) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None:
+def _get_np_arg(arg: Sequence[EagerValue], i: int) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None:
     """Get numpy arg.
 
     Args:
@@ -662,7 +662,7 @@ def _get_np_arg(arg: Sequence[EagerValue], i: int) -> np.ndarray[tuple[int, ...]
         i (int): The i parameter.
 
     Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None: Result.
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None: Result.
     """
     return np.asarray(arg[i]) if len(arg) > i else None
 
@@ -778,9 +778,9 @@ def _np_rem_2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "rem"):
-            cls_or_func = _ops.rem
+            cls_or_func = getattr(_ops, "rem")
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
-                return cls_or_func(*args, **kwargs)
+                return as_callable(cls_or_func)(*args, **kwargs)
     except Exception:
         # Ignore errors and fallback
         logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
@@ -808,9 +808,9 @@ def _np_descriptive_2(backend_module: EagerValue, *args: EagerValue, **kwargs: E
         import ml_switcheroo_compiler.ops as _ops
 
         if hasattr(_ops, "descriptive"):
-            cls_or_func = _ops.descriptive
+            cls_or_func = getattr(_ops, "descriptive")
             if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
-                return as_tensor(cls_or_func(*args, **kwargs))
+                return as_callable(cls_or_func)(*args, **kwargs)
     except Exception:
         # Ignore errors and fallback
         logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)

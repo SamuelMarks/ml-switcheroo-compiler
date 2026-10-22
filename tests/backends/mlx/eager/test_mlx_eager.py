@@ -5,15 +5,15 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch
 
-import mlx.core as mx
 import pytest
 
 from ml_switcheroo_compiler.backends.mlx.eager import execute_op
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
-    pass
-pytest.importorskip("mlx.core")
+    import mlx.core as mx
+
+mx = pytest.importorskip("mlx.core")
 
 
 def test_mlx_eager_coverage_part1() -> None:

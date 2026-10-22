@@ -529,10 +529,11 @@ def _test_all_core_math_ops_coverage_sub_4(_state: dict[str, EagerTensorProtocol
     (args, kwargs) = build_call(fb)
     orig_scipy = sys.modules.get("scipy.special")
     orig_scipy2 = sys.modules.get("scipy.linalg")
+    orig_scipy_root = sys.modules.get("scipy")
     getattr(sys.modules, "__setitem__")("scipy.special", None)
     getattr(sys.modules, "__setitem__")("scipy.linalg", None)
     getattr(sys.modules, "__setitem__")("scipy", None)
-    getattr(_state, "update")({"args": args, "kwargs": kwargs, "orig_scipy": orig_scipy, "orig_scipy2": orig_scipy2})
+    getattr(_state, "update")({"args": args, "kwargs": kwargs, "orig_scipy": orig_scipy, "orig_scipy2": orig_scipy2, "orig_scipy_root": orig_scipy_root})
     _state.update(locals())
 
 
@@ -544,6 +545,7 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
     """
     (args, kwargs, op, orig_scipy) = (_state["args"], _state["kwargs"], _state["op"], _state["orig_scipy"])
     orig_scipy2 = _state["orig_scipy2"]
+    orig_scipy_root = _state["orig_scipy_root"]
     try:
         as_callable(op)(*args, **as_attrs(kwargs))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -557,7 +559,9 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
             getattr(sys.modules, "__setitem__")("scipy.linalg", orig_scipy2)
         elif "scipy.linalg" in sys.modules:
             del sys.modules["scipy.linalg"]
-        if "scipy" in sys.modules:
+        if as_tensor(orig_scipy_root) is not None:
+            getattr(sys.modules, "__setitem__")("scipy", orig_scipy_root)
+        elif "scipy" in sys.modules:
             del sys.modules["scipy"]
     _state.update(locals())
 

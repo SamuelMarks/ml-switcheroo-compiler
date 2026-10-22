@@ -19,10 +19,16 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
 )
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
 from ml_switcheroo_compiler.ir.core import IRGraph
-from tests.testing_utils import as_callable, as_tensor
+from tests.testing_utils import as_callable, as_tensor, install_profiler_backend_stubs
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
+
+
+@pytest.fixture(autouse=True)
+def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    install_profiler_backend_stubs(monkeypatch)
 
 
 def test_benchmark_plan_model() -> None:

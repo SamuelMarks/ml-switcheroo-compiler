@@ -72,19 +72,19 @@ def _np_dct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     type: int = as_int(kwargs.get("type", 2))
     axis: int = as_int(kwargs.get("axis", -1))
     norm: str | None = as_opt_str(kwargs.get("norm", None))
 
     N = x.shape[axis]
-    m: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _dct_1d_matrix(N, type, norm)
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
+    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _dct_1d_matrix(N, type, norm)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
     res = np.moveaxis(res, -1, axis)
     return res
 
 
-def _idct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _idct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager idct 1d matrix operation on the active backend array.
 
     Args:
@@ -133,14 +133,14 @@ def _np_idct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     type: int = as_int(kwargs.get("type", 2))
     axis: int = as_int(kwargs.get("axis", -1))
     norm: str | None = as_opt_str(kwargs.get("norm", None))
 
     N = x.shape[axis]
-    m: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _idct_1d_matrix(N, type, norm)
-    res: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
+    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _idct_1d_matrix(N, type, norm)
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
     res = np.moveaxis(res, -1, axis)
     return res
 
@@ -160,7 +160,7 @@ def _np_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Raises:
         ValueError: An exception.
     """
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     N = kwargs.get("N", x.shape[-1] // 2)
 
     n_int = int(as_int(N))
@@ -186,7 +186,7 @@ def _np_inverse_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     N = x.shape[-1]
 
     k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)
@@ -208,7 +208,7 @@ def _np_frame(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     frame_length: int = as_int(kwargs.get("frame_length", 1))
     frame_step: int = as_int(kwargs.get("frame_step", 1))
     num_frames: int = (x.shape[-1] - frame_length) // frame_step + 1
@@ -231,7 +231,7 @@ def _np_overlap_and_add(backend_module: BackendModuleProtocol, *args: EagerValue
     Returns:
             tuple[int, ...]: Result.
     """
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.asarray(args[0])
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[0])
     frame_step: int = as_int(kwargs.get("frame_step", 1))
     num_frames: int = x.shape[-2]
     frame_length: int = x.shape[-1]
@@ -242,7 +242,7 @@ def _np_overlap_and_add(backend_module: BackendModuleProtocol, *args: EagerValue
     batch_shape: tuple[int, ...] = orig_shape[:-2]
     flat_batch_size: int = int(np.prod(batch_shape)) if batch_shape else 1
 
-    flat_signal: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = x.reshape((flat_batch_size, num_frames, frame_length))
+    flat_signal: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = x.reshape((flat_batch_size, num_frames, frame_length))
     flat_res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = res.reshape((flat_batch_size, res_length))
 
     for i in range(num_frames):

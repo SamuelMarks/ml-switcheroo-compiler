@@ -13,11 +13,11 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 def _np_affine_generator(
     backend_module: BackendModuleProtocol,
     batch_size: int,
-    angles: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float,
-    shears: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float,
-    zooms: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float,
+    angles: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[float] | float,
+    shears: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[float] | float,
+    zooms: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[float] | float,
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Generate affine transformation matrices for a batch.
 
     Args:
@@ -40,10 +40,10 @@ def _np_affine_generator(
 @numpy_eager_registry.register("ElasticTransform")
 def _np_elastic_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    displacement: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    displacement: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply elastic transformation to an image using displacement.
 
     Args:
@@ -69,11 +69,11 @@ def _np_elastic_transform(
 @numpy_eager_registry.register("ExtractBoundingBoxes")
 def _np_extract_bounding_boxes(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    boxes: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    box_indices: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    boxes: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    box_indices: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Extract bounding box crops from images.
 
     Args:
@@ -92,10 +92,10 @@ def _np_extract_bounding_boxes(
 @numpy_eager_registry.register("IoU")
 def _np_iou(
     backend_module: BackendModuleProtocol,
-    boxes1: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    boxes2: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    boxes1: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    boxes2: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Compute Intersection-over-Union between two sets of boxes.
 
     Args:
@@ -113,11 +113,11 @@ def _np_iou(
 @numpy_eager_registry.register("NonMaxSuppression")
 def _np_nms(
     backend_module: BackendModuleProtocol,
-    boxes: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    scores: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    boxes: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    scores: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     max_output_size: int,
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Perform non-maximum suppression on bounding boxes.
 
     Args:
@@ -136,12 +136,12 @@ def _np_nms(
 @numpy_eager_registry.register("PerspectiveTransform")
 def _np_perspective_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    start_points: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    end_points: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    start_points: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    end_points: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     config: dict[str, float] | float | None = None,
     **kwargs: float | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply perspective transformation to images.
 
     Args:
@@ -161,11 +161,11 @@ def _np_perspective_transform(
 @numpy_eager_registry.register("AffineGrid")
 def _np_affine_grid(
     backend_module: BackendModuleProtocol,
-    theta: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float,
+    theta: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float,
     size: tuple[int, ...],
     align_corners: bool = False,
     **kwargs: bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float:
     """Generate 2D flow field given a batch of affine matrices.
 
     Args:
@@ -189,11 +189,11 @@ def _np_affine_grid(
 @numpy_eager_registry.register("AffineTransform")
 def _np_affine_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    transforms: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    transforms: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     interpolation: str = "nearest",
     **kwargs: str | float | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Apply affine transform to image tensors.
 
     Args:

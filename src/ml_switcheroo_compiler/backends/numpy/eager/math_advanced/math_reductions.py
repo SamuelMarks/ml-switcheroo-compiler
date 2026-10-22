@@ -39,7 +39,7 @@ def _np_psum(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np psum operation on the active backend array.
 
     Args:
@@ -64,7 +64,7 @@ def _np_reduce_precision(
     x: ArrayInput,
     exponent_bits: int,
     mantissa_bits: int,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Reduce the precision of a tensor to a specified number of exponent and mantissa bits.
 
     Args:
@@ -84,7 +84,7 @@ def _np_sparsereducemax(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement SparseReduceMax.
 
     Args:

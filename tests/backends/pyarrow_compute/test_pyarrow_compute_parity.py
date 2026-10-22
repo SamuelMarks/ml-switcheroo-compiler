@@ -6,7 +6,6 @@ import typing
 from unittest import mock
 
 import numpy as np
-import pyarrow as pa
 import pytest
 from ml_switcheroo_ir import NodeDict
 
@@ -29,7 +28,11 @@ from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
+    import pyarrow as pa
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+pa = pytest.importorskip("pyarrow")
 
 
 def test_zero_copy_buffer_views_between_arrow_and_tensor() -> None:

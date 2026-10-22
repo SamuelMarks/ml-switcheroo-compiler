@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import resource
 import sys
 import time
+import typing
 
-import jax
-import jax.numpy as jnp
+if typing.TYPE_CHECKING:
+    import jax
+    import jax.numpy as jnp
+else:
+    _has_jax = sys.modules.get("jax") is not None or ("jax" not in sys.modules and importlib.util.find_spec("jax") is not None)
+    jax = importlib.import_module("jax") if _has_jax else None
+    jnp = importlib.import_module("jax.numpy") if _has_jax else None
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -192,11 +199,11 @@ class JAXProfiler:
             if has_ops and compiled_fn is not None:
                 return compiled_fn(*jax_input_list)
             if not jax_input_list:
-                return jnp.zeros((1,), dtype=jnp.float32)
+                return as_tensor(jnp.zeros((1,), dtype=jnp.float32))
             accum = jnp.zeros_like(jax_input_list[0])
             for t in jax_input_list:
                 accum = jnp.add(accum, t)
-            return accum
+            return as_tensor(accum)
 
         for _ in range(max(1, warmup_iters)):
             _sync_jax_result(_execute_step())

@@ -21,7 +21,7 @@ def _np_extract_volume_patches(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: EagerValue,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Extract 3D volume patches using NumPy `lib.stride_tricks.sliding_window_view`.
 
     Args:
@@ -61,9 +61,9 @@ def _np_extract_volume_patches(
 @numpy_eager_registry.register("Degeneration")
 def _np_degeneration(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np degeneration operation on the active backend array.
 
     Args:
@@ -80,9 +80,9 @@ def _np_degeneration(
 @numpy_eager_registry.register("GaussianBlur")
 def _np_gaussian_blur(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: BlurConfig | dict[str, tuple[int, int] | tuple[float, float] | str | None] | tuple[int, int] | tuple[float, float] | float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np gaussian blur operation on the active backend array.
 
     Args:
@@ -104,9 +104,9 @@ def _np_gaussian_blur(
 @numpy_eager_registry.register("MedianFilter")
 def _np_median_filter(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np median filter operation on the active backend array.
 
     Args:
@@ -123,9 +123,9 @@ def _np_median_filter(
 @numpy_eager_registry.register("Sharpen")
 def _np_sharpen(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np sharpen operation on the active backend array.
 
     Args:

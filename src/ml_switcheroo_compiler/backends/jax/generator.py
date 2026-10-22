@@ -7,7 +7,7 @@ import typing  # noqa: F401
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
 from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxControlFlowVisitor,
     JaxDistributedVisitor,
@@ -77,7 +77,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        return jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding)
+        return as_tensor(jnp.load(filepath, allow_pickle=allow_pickle, fix_imports=fix_imports, encoding=encoding))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:

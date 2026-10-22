@@ -27,9 +27,16 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
     load_workloads,
 )
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
+from tests.testing_utils import install_profiler_backend_stubs
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
+
+
+@pytest.fixture(autouse=True)
+def _ensure_profiler_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure optional profiler backend stubs are installed when packages are missing."""
+    install_profiler_backend_stubs(monkeypatch)
 
 
 def test_load_default_manifests() -> None:

@@ -12,11 +12,11 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("SegmentSum")
 def _np_segment_sum(
     backend_module: BackendModuleProtocol,
-    data: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    data: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     segment_ids: np.ndarray[tuple[int, ...], np.dtype[np.int64]],
     num_segments: int | None = None,
     **kwargs: int | float | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np segment sum operation on the active backend array.
 
     Args:
@@ -40,7 +40,7 @@ def _np_sparsesegmentsum(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | float | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement SparseSegmentSum.
 
     Args:

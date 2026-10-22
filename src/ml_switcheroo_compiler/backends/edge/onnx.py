@@ -12,7 +12,7 @@ from collections.abc import Callable, Sequence
 import yaml
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
@@ -568,7 +568,7 @@ class ONNXCodeGenerator(BaseGenerator):
         Returns:
             str: Serialized ONNX text representation.
         """
-        lines: list[str] = ["ir_version: 7", 'producer_name: "ml-switcheroo-compiler"', "graph {"]
+        lines: list[str] = ["ir_version: 7", 'producer_name: "ml-switcheroo-compiler"', "graph ml_switcheroo_graph {"]
 
         for node in self.sorted_nodes:
             if getattr(node, "op_type", "") == "Input":
@@ -615,7 +615,7 @@ class ONNXCodeGenerator(BaseGenerator):
         dynamic_axes: dict[str, dict[int, str]] | None,
         TensorProto: type[TensorProtoType],
         is_output: bool,
-    ) -> ValueInfoProtoType:
+    ) -> EagerValue:
         """Construct an ONNX TensorValueInfoProto for a single node.
 
         Args:
@@ -625,7 +625,7 @@ class ONNXCodeGenerator(BaseGenerator):
             is_output (bool): True if building for an output.
 
         Returns:
-            ValueInfoProtoType: An ONNX ValueInfoProto object.
+            EagerValue: An ONNX ValueInfoProto object.
         """
         from onnx import helper
 
@@ -638,7 +638,7 @@ class ONNXCodeGenerator(BaseGenerator):
         if dynamic_axes and name in dynamic_axes:
             for axis_idx, axis_name in dynamic_axes[name].items():
                 shape_list[axis_idx] = axis_name
-        return helper.make_tensor_value_info(name, proto_type, shape_list)
+        return as_tensor(helper.make_tensor_value_info(name, proto_type, shape_list))
 
     def _build_onnx_value_infos(
         self,
@@ -646,7 +646,7 @@ class ONNXCodeGenerator(BaseGenerator):
         dynamic_axes: dict[str, dict[int, str]] | None,
         TensorProto: type[TensorProtoType],
         is_output: bool = False,
-    ) -> list[ValueInfoProtoType]:
+    ) -> list[EagerValue]:
         """Construct a list of ONNX TensorValueInfoProtos.
 
         Args:
@@ -1087,7 +1087,7 @@ class ONNXCodeGenerator(BaseGenerator):
                 Returns:
                     EagerValue: Computed outputs.
                 """
-                return session.run(None, self._prepare_runner_input_feed(graph, w_args, w_kwargs))
+                return as_tensor(session.run(None, self._prepare_runner_input_feed(graph, w_args, w_kwargs)))
 
             return onnx_reference_runner
         except Exception:

@@ -16,11 +16,11 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 @numpy_eager_registry.register("RandomShear")
 def _np_random_shear(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     y_factor: tuple[float, float] | float,
     x_factor: tuple[float, float] | float | None = None,
     **kwargs: float | int | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np random shear operation on the active backend array.
 
     Args:
@@ -39,10 +39,10 @@ def _np_random_shear(
 @numpy_eager_registry.register("RandomPerspective")
 def _np_random_perspective(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     factor: float,
     **kwargs: float | int | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np random perspective operation on the active backend array.
 
     Args:
@@ -60,11 +60,11 @@ def _np_random_perspective(
 @numpy_eager_registry.register("RandomElasticTransform")
 def _np_random_elastic_transform(
     backend_module: BackendModuleProtocol,
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     alpha: float,
     sigma: float,
     **kwargs: float | int | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager np random elastic transform operation on the active backend array.
 
     Args:

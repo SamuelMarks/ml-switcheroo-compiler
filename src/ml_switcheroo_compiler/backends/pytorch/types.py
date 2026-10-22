@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
-import torch
+import importlib.util
+import sys
+import typing
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+if typing.TYPE_CHECKING:
+    import torch
+else:
+    _has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
+    torch = importlib.import_module("torch") if _has_torch else None
+
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -25,7 +33,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return torch.zeros(shape)
+    return as_tensor(torch.zeros(shape))
 
 
 def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
@@ -52,8 +60,8 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     if dtype is not None:
         dtype_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
         dt = getattr(torch, dtype_str, None)
-        return torch.tensor(data, dtype=dt)
-    return torch.tensor(data)
+        return as_tensor(torch.tensor(data, dtype=dt))
+    return as_tensor(torch.tensor(data))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -74,7 +82,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return torch.as_tensor(data)
+    return as_tensor(torch.as_tensor(data))
 
 
 def item(cls: type, data: EagerValue) -> float:

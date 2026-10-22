@@ -5,13 +5,15 @@ from __future__ import annotations
 import typing
 
 import numpy as np
-import torch
+import pytest
 
 from ml_switcheroo_compiler.backends.pytorch.eager import _execute_ragged_tensor_to_dense
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
-    pass
+    import torch
+
+torch = pytest.importorskip("torch")
 
 
 def test_pytorch_ragged_eager() -> None:

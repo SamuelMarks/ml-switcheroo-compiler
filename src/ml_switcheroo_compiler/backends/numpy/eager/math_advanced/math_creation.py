@@ -22,8 +22,8 @@ if typing.TYPE_CHECKING:
 def _np_fromfunction_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | tuple[int, ...] | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | tuple[int, ...] | bool | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Construct an array by executing a function over each coordinate.
 
     Args:
@@ -41,8 +41,8 @@ def _np_fromfunction_(
 def _np_fromiter_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | int | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Create a new 1-dimensional array from an iterable object.
 
     Args:
@@ -79,8 +79,8 @@ def _np_frompyfunc_(
 def _np_geomspace_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: float | int | bool | np.dtype[np.generic] | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: float | int | bool | np.dtype[np.float64] | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return numbers spaced evenly on a log scale (a geometric progression).
 
     Args:
@@ -98,8 +98,8 @@ def _np_geomspace_(
 def _np_zeros_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return a new array of given shape and type, filled with zeros.
 
     Args:
@@ -117,8 +117,8 @@ def _np_zeros_(
 def _np_ones_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return a new array of given shape and type, filled with ones.
 
     Args:
@@ -136,8 +136,8 @@ def _np_ones_(
 def _np_empty_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return a new array of given shape and type, without initializing entries.
 
     Args:
@@ -155,8 +155,8 @@ def _np_empty_(
 def _np_full_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return a new array of given shape and type, filled with fill_value.
 
     Args:
@@ -174,8 +174,8 @@ def _np_full_(
 def _np_zeros_like_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return an array of zeros with the same shape and type as a given array.
 
     Args:
@@ -193,8 +193,8 @@ def _np_zeros_like_(
 def _np_ones_like_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return an array of ones with the same shape and type as a given array.
 
     Args:
@@ -212,8 +212,8 @@ def _np_ones_like_(
 def _np_empty_like_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return an empty array with the same shape and type as a given array.
 
     Args:
@@ -231,8 +231,8 @@ def _np_empty_like_(
 def _np_full_like_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | str | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return a full array with the same shape and type as a given array.
 
     Args:
@@ -250,8 +250,8 @@ def _np_full_like_(
 def _np_arange_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    **kwargs: np.dtype[np.float64] | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return evenly spaced values within a given interval.
 
     Args:
@@ -269,7 +269,7 @@ def _np_arange_(
 def _np_linearoperatoridentity(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: int | np.dtype[np.generic] | str | None,
+    **kwargs: int | np.dtype[np.float64] | str | None,
 ) -> LinearOperatorIdentity:
     """Implement LinearOperatorIdentity creation.
 
@@ -290,7 +290,7 @@ def _np_linearoperatoridentity(
 def _np_linearoperatorscaledidentity(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: int | float | np.ndarray[tuple[int, ...], np.dtype[np.generic]] | np.dtype[np.generic] | str | None,
+    **kwargs: int | float | np.ndarray[tuple[int, ...], np.dtype[np.float64]] | np.dtype[np.float64] | str | None,
 ) -> LinearOperatorScaledIdentity:
     """Implement LinearOperatorScaledIdentity creation.
 
@@ -311,7 +311,7 @@ def _np_linearoperatorscaledidentity(
 def _np_linearoperatorzeros(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: int | np.dtype[np.generic] | str | None,
+    **kwargs: int | np.dtype[np.float64] | str | None,
 ) -> LinearOperatorZeros:
     """Implement LinearOperatorZeros creation.
 
@@ -333,7 +333,7 @@ def _np_fromdlpack(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: int | float | str | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | float:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | float:
     """Evaluate from_dlpack conversion or return object fallback.
 
     Args:
@@ -353,8 +353,8 @@ def _np_fromdlpack(
 def _np_frombuffer(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
-    **kwargs: np.dtype[np.generic] | int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None:
+    **kwargs: np.dtype[np.float64] | int | None,
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None:
     """Interpret a buffer as a 1-dimensional array.
 
     Args:

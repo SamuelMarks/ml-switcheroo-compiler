@@ -112,4 +112,4 @@ def _np_bitwise_count(backend_module: BackendModuleProtocol, *args: EagerValue, 
     import numpy as np
 
     x = np.asarray(args[0])
-    return np.array([bin(n).count("1") for n in x.flat]).reshape(x.shape)
+    return np.array([bin(bool(n) if isinstance(n, np.bool_) else n).count("1") for n in x.flat]).reshape(x.shape)

@@ -1066,6 +1066,9 @@ class EagerTensorProtocol(typing.Protocol):
         ...
 
 
+getattr(EagerTensorProtocol, "__protocol_attrs__", set[str]()).discard("__get_pydantic_core_schema__")
+
+
 BackendArray = EagerTensorProtocol
 EagerValue = TensorOrScalar
 _F = typing.TypeVar("_F")

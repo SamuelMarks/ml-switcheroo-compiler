@@ -23,6 +23,22 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 
+@pytest.fixture(autouse=True)
+def _ensure_numba_stub(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Provide a NumPy-backed numba stub when numba is not installed."""
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock
+
+    if importlib.util.find_spec("numba") is None:
+        mock_nb = MagicMock()
+        mock_nb.njit.side_effect = lambda *a, **kw: a[0] if a and callable(a[0]) else (lambda fn: fn)
+        mock_nb.prange = range
+        mock_nb.np.numpy_support.np = np
+        mock_nb.vectorize.side_effect = lambda *a, **kw: lambda fn: np.vectorize(fn)
+        monkeypatch.setitem(sys.modules, "numba", mock_nb)
+
+
 def test_numba_dynamic_control_flow_visitors_and_parity() -> None:
     """Verify Numba JIT emission and parity for Cond, WhileLoop, and Scan control flow."""
     g = IRGraph()

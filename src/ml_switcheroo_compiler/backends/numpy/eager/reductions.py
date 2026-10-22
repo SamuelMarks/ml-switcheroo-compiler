@@ -49,11 +49,11 @@ def _calculate_padding_for_window(padding: str | list[tuple[int, int]], operand_
     return [(p[0], p[1]) for p in padding]
 
 
-def _create_sliding_window_view(operand: np.ndarray[tuple[int, ...], np.dtype[np.generic]], config: WindowConfig) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], tuple[int, ...]]:
+def _create_sliding_window_view(operand: np.ndarray[tuple[int, ...], np.dtype[np.float64]], config: WindowConfig) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], tuple[int, ...]]:
     """Execute the eager create sliding window view operation on the active backend array.
 
     Args:
-        operand (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): The operand parameter.
+        operand (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The operand parameter.
         config (WindowConfig): The config parameter.
 
     Returns:
@@ -81,11 +81,11 @@ def _create_sliding_window_view(operand: np.ndarray[tuple[int, ...], np.dtype[np
     return (view, axis_to_reduce)
 
 
-def _apply_base_dilation(operand: np.ndarray[tuple[int, ...], np.dtype[np.generic]], base_dilation: list[int] | None, init_value: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _apply_base_dilation(operand: np.ndarray[tuple[int, ...], np.dtype[np.float64]], base_dilation: list[int] | None, init_value: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager apply base dilation operation on the active backend array.
 
     Args:
-        operand (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): The operand parameter.
+        operand (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The operand parameter.
         base_dilation (typing.Optional[list[int]]): The base_dilation parameter.
         init_value (EagerValue): The init_value parameter.
 
@@ -101,7 +101,7 @@ def _apply_base_dilation(operand: np.ndarray[tuple[int, ...], np.dtype[np.generi
     return new_op
 
 
-def _top_k(x: EagerValue, k: int, axis: int = -1) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _top_k(x: EagerValue, k: int, axis: int = -1) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Execute the eager top k operation on the active backend array.
 
     Args:
@@ -118,7 +118,7 @@ def _top_k(x: EagerValue, k: int, axis: int = -1) -> tuple[np.ndarray[tuple[int,
     slc = [slice(None)] * getattr(x, "ndim")
     slc[axis] = slice(-1, -(k + 1), -1)
     idx_k = idx[tuple(slc)]
-    val_k: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(np, "take_along_axis")(x, idx_k, axis=axis)
+    val_k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "take_along_axis")(x, idx_k, axis=axis)
     return (val_k, idx_k)
 
 
@@ -183,14 +183,14 @@ def _logsumexp(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = Fa
 
 
 def _segment_sum(
-    data: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
+    data: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
     segment_ids: np.ndarray[tuple[int, ...], np.dtype[np.int64]],
     num_segments: int | None = None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager segment sum operation on the active backend array.
 
     Args:
-        data (np.ndarray[tuple[int, ...], np.dtype[np.generic]]): The data parameter.
+        data (np.ndarray[tuple[int, ...], np.dtype[np.float64]]): The data parameter.
         segment_ids (np.ndarray[tuple[int, ...], np.dtype[np.int64]]): The segment_ids parameter.
         num_segments (int | None): The num_segments parameter.
 

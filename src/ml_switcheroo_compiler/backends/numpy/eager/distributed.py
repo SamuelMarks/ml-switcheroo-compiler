@@ -101,7 +101,7 @@ class TCPDistributedContext:
 
         t.join()
 
-    def all_reduce_ring(self, tensor: np.ndarray[tuple[int, ...], np.dtype[np.generic]], op_type: str = "sum", backend_module: BackendModuleProtocol = np) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def all_reduce_ring(self, tensor: np.ndarray[tuple[int, ...], np.dtype[np.float64]], op_type: str = "sum", backend_module: BackendModuleProtocol = np) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Evaluate all_reduce_ring.
 
         Args:
@@ -110,12 +110,12 @@ class TCPDistributedContext:
             backend_module: The backend_module parameter.
 
         Returns:
-            np.ndarray[tuple[int, ...], np.dtype[np.generic]]: Computed result.
+            np.ndarray[tuple[int, ...], np.dtype[np.float64]]: Computed result.
         """
         if self.world_size <= 1:
             return tensor
 
-        chunks: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = getattr(backend_module, "array_split")(tensor, self.world_size)
+        chunks: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(backend_module, "array_split")(tensor, self.world_size)
 
         # Scatter-reduce phase
         for step in range(self.world_size - 1):

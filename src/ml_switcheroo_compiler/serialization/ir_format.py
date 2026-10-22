@@ -277,7 +277,7 @@ def graph_to_yaml(graph: IRGraph) -> str:
         str: YAML string representation of the graph.
     """
     data = _build_serialization_dict(graph)
-    return yaml.safe_dump(dict(data), sort_keys=False)
+    return str(yaml.safe_dump(dict(data), sort_keys=False))
 
 
 def yaml_to_graph(yaml_str: str) -> IRGraph:

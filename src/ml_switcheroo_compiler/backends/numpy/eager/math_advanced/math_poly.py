@@ -20,12 +20,12 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 def _poly_recurrence(
-    n: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int | Sequence[int],
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | int | Sequence[float],
+    n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int | Sequence[int],
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | int | Sequence[float],
     p0: float,
     p1_func: Callable[[np.ndarray[tuple[int, ...], np.dtype[np.float64]]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
     p_next_func: Callable[[int, np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate polynomial recurrence relations iteratively.
 
     Args:
@@ -47,7 +47,7 @@ def _poly_recurrence(
     if max_n < 0:
         return np.zeros_like(x_b)
 
-    t_list: list[np.ndarray[tuple[int, ...], np.dtype[np.generic]]] = [np.ones_like(x_b) * p0]
+    t_list: list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = [np.ones_like(x_b) * p0]
     if max_n >= 1:
         t_list.append(p1_func(x_b))
 
@@ -64,7 +64,7 @@ def _np_chebyshev_polynomial_t(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Chebyshev polynomial of first kind T_n(x).
 
     Args:
@@ -90,7 +90,7 @@ def _np_chebyshev_polynomial_u(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Chebyshev polynomial of second kind U_n(x).
 
     Args:
@@ -116,7 +116,7 @@ def _np_hermite_polynomial_h(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate physicist's Hermite polynomial H_n(x).
 
     Args:
@@ -142,7 +142,7 @@ def _np_hermite_polynomial_he(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate probabilist's Hermite polynomial He_n(x).
 
     Args:
@@ -168,7 +168,7 @@ def _np_laguerre_polynomial_l(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Laguerre polynomial L_n(x).
 
     Args:
@@ -200,7 +200,7 @@ def _np_legendre_polynomial_p(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate Legendre polynomial P_n(x).
 
     Args:
@@ -232,7 +232,7 @@ def _np_shifted_chebyshev_polynomial_t(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Implement shifted Chebyshev polynomial of first kind.
 
     Args:
@@ -256,7 +256,7 @@ def _np_shifted_chebyshev_polynomial_u(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Implement shifted Chebyshev polynomial of second kind.
 
     Args:
@@ -280,7 +280,7 @@ def _np_shifted_chebyshev_polynomial_v(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Implement shifted Chebyshev polynomial of third kind V_n(x).
 
     Args:
@@ -307,7 +307,7 @@ def _np_shifted_chebyshev_polynomial_w(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float | None:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | float | None:
     """Implement shifted Chebyshev polynomial of fourth kind W_n(x).
 
     Args:

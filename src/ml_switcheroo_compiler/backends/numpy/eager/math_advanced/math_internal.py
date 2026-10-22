@@ -26,7 +26,7 @@ def _np_population_count(backend_module: BackendModuleProtocol, x: EagerValue, *
     Returns: np.ndarray: The computed result.
     """
     x_arr = np.asarray(x)
-    return np.array([bin(n).count("1") for n in x_arr.flat]).reshape(x_arr.shape)
+    return np.array([bin(bool(n) if isinstance(n, np.bool_) else n).count("1") for n in x_arr.flat]).reshape(x_arr.shape)
 
 
 @numpy_eager_registry.register("GetPrintoptions")

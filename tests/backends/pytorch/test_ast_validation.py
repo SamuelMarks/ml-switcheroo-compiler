@@ -25,14 +25,35 @@ def test_pytorch_generator_no_numpy_crashes() -> None:
     prefix_str = "\n".join(prefix_lines)
 
     # We will execute the prefix in a dictionary
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock, patch
+
+    mock_torch = MagicMock()
+    ctx = (
+        patch.dict(
+            sys.modules,
+            {
+                "torch": mock_torch,
+                "torch.nn": mock_torch.nn,
+                "torch.nn.functional": mock_torch.nn.functional,
+                "torch.fft": mock_torch.fft,
+                "torch.linalg": mock_torch.linalg,
+                "torch.special": mock_torch.special,
+            },
+        )
+        if importlib.util.find_spec("torch") is None
+        else MagicMock()
+    )
     exec_globals = as_tensor_dict({})
-    try:
-        exec(prefix_str, exec_globals)
-    except NameError as e:
-        pytest.fail(f"NameError during PyTorch AST prefix execution: {e}")
-    except ImportError as e:
-        pytest.fail(f"ImportError during PyTorch AST prefix execution: {e}")
-    except Exception as e:
-        pytest.fail(f"Unexpected error during PyTorch AST prefix execution: {e}")
+    with ctx:
+        try:
+            exec(prefix_str, exec_globals)
+        except NameError as e:
+            pytest.fail(f"NameError during PyTorch AST prefix execution: {e}")
+        except ImportError as e:
+            pytest.fail(f"ImportError during PyTorch AST prefix execution: {e}")
+        except Exception as e:
+            pytest.fail(f"Unexpected error during PyTorch AST prefix execution: {e}")
 
     assert "np" not in exec_globals and "numpy" not in exec_globals, "Numpy import should not be in prefix to prevent leaks."

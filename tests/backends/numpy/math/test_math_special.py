@@ -1940,8 +1940,10 @@ def _test_np_ops_missing_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
     del _ops.serialize_tensor
     del _ops.write_file
     del _ops.confusion_matrix
-    delattr(_ops, "descriptive")
-    delattr(_ops, "distributions")
+    if hasattr(_ops, "descriptive"):
+        delattr(_ops, "descriptive")
+    if hasattr(_ops, "distributions"):
+        delattr(_ops, "distributions")
     _np_rawmatmul(np, np.ones((2, 2)), np.ones((2, 2)))
     _np_sparsedensematmul(np, np.ones((2, 2)), np.ones((2, 2)))
     _np_decode_csv(np, "1,2,3")
@@ -2277,9 +2279,8 @@ def test__np_choose() -> None:
 
 def test__np_clip() -> None:
     """Test function test__np_clip."""
-    with pytest.raises(ValueError):
-        mm._np_clip(np, np.ones((2, 2)))
-    mm._np_clip(np)
+    assert mm._np_clip(np, np.ones((2, 2)), 0.0, 1.0) is not None
+    assert mm._np_clip(np) is None
 
 
 def test__np_clz() -> None:
@@ -2647,7 +2648,7 @@ def test__np_frompyfunc_() -> None:
 
 def test__np_fromstring_() -> None:
     """Test function test__np_fromstring_."""
-    mm._np_fromstring_(np, np.ones((2, 2)))
+    mm._np_fromstring_(np, "1 2", sep=" ")
     with pytest.raises(TypeError):
         mm._np_fromstring_(np)
 
@@ -3724,8 +3725,7 @@ def test__np_trilindicesfrom() -> None:
 
 def test__np_trimzeros() -> None:
     """Test function test__np_trimzeros."""
-    with pytest.raises(ValueError):
-        mm._np_trimzeros(np, np.ones((2, 2)))
+    mm._np_trimzeros(np, np.array([0, 1, 2, 0]))
     with pytest.raises(IndexError):
         mm._np_trimzeros(np)
 

@@ -6,8 +6,6 @@ import typing
 from unittest.mock import patch
 
 import pytest
-import torch
-import torch.distributed as dist
 
 from ml_switcheroo_compiler.backends.pytorch.eager import (
     _execute_accumulate_n,
@@ -29,7 +27,13 @@ from ml_switcheroo_compiler.backends.pytorch.eager import (
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
+    import torch
+    import torch.distributed as dist
+
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+
+torch = pytest.importorskip("torch")
+dist = pytest.importorskip("torch.distributed")
 
 
 def test_accumulate_n() -> None:

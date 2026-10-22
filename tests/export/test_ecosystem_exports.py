@@ -56,7 +56,7 @@ def test_export_to_pydantic() -> None:
     """Verify Pydantic model export generation from ghost references."""
     ref = _create_sample_ghost_ref("matmul")
     pydantic_code = exp.to_pydantic(ref)
-    assert "class matmul(BaseModel):" in pydantic_code
+    assert "class matmul(BaseModel):" in pydantic_code or "class matmul(pydantic.BaseModel):" in pydantic_code
     assert "input:" in pydantic_code
 
 

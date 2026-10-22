@@ -129,7 +129,7 @@ def _np_zero_fraction(backend_module: BackendModuleProtocol, x: EagerValue, **kw
     return backend_module.array(backend_module.divide(num_zeros, total_elements).astype(float))
 
 
-def _xlogy(x: EagerValue, y: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _xlogy(x: EagerValue, y: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager xlogy operation on the active backend array.
 
     Args:

@@ -239,7 +239,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         import mlx.core as mx
 
         # Note: MLX load does not use allow_pickle, fix_imports, or encoding
-        return mx.load(filepath)
+        return as_tensor(mx.load(filepath))
 
     @classmethod
     def save(cls: type, file: str, arr: EagerValue, allow_pickle: bool = True, fix_imports: bool = True) -> None:

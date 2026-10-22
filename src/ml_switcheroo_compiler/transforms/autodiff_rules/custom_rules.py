@@ -675,7 +675,7 @@ def custom_jvp_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) 
 
     from ml_switcheroo_ir import LogicalNode
 
-    tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+    tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
 
     jvp_subgraph = getattr(node, "subgraphs", {}).get("jvp") or node.attributes.get("jvp_graph") or node.attributes.get("custom_forward_subgraph")
     if jvp_subgraph is not None and hasattr(jvp_subgraph, "nodes") and hasattr(jvp_subgraph, "inputs"):
@@ -817,7 +817,7 @@ def index_put_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) -
 
     from ml_switcheroo_ir import LogicalNode
 
-    tangents_list = list(tangents) if isinstance(tangents, (tuple, list)) else [tangents]
+    tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
     t_target = tangents_list[0] if len(tangents_list) > 0 else "0"
     t_val = tangents_list[1] if len(tangents_list) > 1 else "0"
     out_id = f"index_put_tan_{uuid.uuid4().hex[:6]}"

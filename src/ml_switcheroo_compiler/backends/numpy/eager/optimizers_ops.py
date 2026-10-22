@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
@@ -24,7 +24,7 @@ def _np_apply_adam(backend_module: BackendModuleProtocol, param: EagerValue, m: 
         A tuple of (updated_param, updated_m, updated_v).
     """
     p, m_, v_, g = np.asarray(param), np.asarray(m), np.asarray(v), np.asarray(grad)
-    lr = kwargs.get("lr", 0.001)
+    lr = as_float(kwargs.get("lr", 0.001))
     beta1, beta2, eps = 0.9, 0.999, 1e-8
     m_new = m_ * beta1 + g * (1.0 - beta1)
     v_new = v_ * beta2 + (g**2) * (1.0 - beta2)
@@ -48,7 +48,7 @@ def _np_apply_adagrad(backend_module: BackendModuleProtocol, param: EagerValue, 
         A tuple of (updated_param, updated_accum).
     """
     p, a, g = np.asarray(param), np.asarray(accum), np.asarray(grad)
-    lr = kwargs.get("lr", 0.01)
+    lr = as_float(kwargs.get("lr", 0.01))
     a_new = a + g**2
     update = g / (np.sqrt(a_new) + 1e-10)
     p_new = p - lr * update
@@ -71,7 +71,7 @@ def _np_apply_ftrl(backend_module: BackendModuleProtocol, param: EagerValue, acc
         A tuple of (updated_param, updated_accum, updated_linear).
     """
     p, a, lin, g = np.asarray(param), np.asarray(accum), np.asarray(linear), np.asarray(grad)
-    lr = kwargs.get("lr", 0.001)
+    lr = as_float(kwargs.get("lr", 0.001))
     a_new = a + g**2
     sigma = (np.sqrt(a_new) - np.sqrt(a)) / lr
     l_new = lin - g + sigma * p
@@ -95,7 +95,7 @@ def _np_apply_rmsprop(backend_module: BackendModuleProtocol, param: EagerValue, 
         A tuple of (updated_param, updated_ms, updated_mom).
     """
     p, m, mo, g = np.asarray(param), np.asarray(ms), np.asarray(mom), np.asarray(grad)
-    lr = kwargs.get("lr", 0.001)
+    lr = as_float(kwargs.get("lr", 0.001))
     rho, momentum, eps = 0.9, 0.0, 1e-8
     m_new = m * rho + (g**2) * (1.0 - rho)
     mo_new = mo * momentum + g / (np.sqrt(m_new) + eps)

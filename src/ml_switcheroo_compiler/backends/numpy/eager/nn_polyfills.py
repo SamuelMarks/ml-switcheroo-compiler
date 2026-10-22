@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
-def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Vectorized Ramanujan/Stirling approximation of log(gamma(x)) for x > 0 in pure NumPy.
 
     Args:
@@ -30,7 +30,7 @@ def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> n
 
 
 @numpy_eager_registry.register("LogPoissonLoss")
-def _np_log_poisson_loss(backend_module: BackendModuleProtocol, targets: EagerValue, predictions: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_log_poisson_loss(backend_module: BackendModuleProtocol, targets: EagerValue, predictions: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Numerically stable vectorized LogPoissonLoss computation.
 
     Args:
@@ -63,7 +63,7 @@ def _np_log_poisson_loss(backend_module: BackendModuleProtocol, targets: EagerVa
 
 
 @numpy_eager_registry.register("AllCandidateSampler")
-def _np_all_candidate_sampler(backend_module: BackendModuleProtocol, true_classes: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _np_all_candidate_sampler(backend_module: BackendModuleProtocol, true_classes: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Numerically stable vectorized eager fallback for AllCandidateSampler.
 
     Args:
@@ -87,7 +87,7 @@ def _np_all_candidate_sampler(backend_module: BackendModuleProtocol, true_classe
     prob = num_sampled / max(1, num_classes)
     true_expected_count = np.full(t.shape, prob, dtype=np.float32)
     sampled_expected_count = np.full((num_sampled,), prob, dtype=np.float32)
-    return sampled.astype(np.int32), true_expected_count, sampled_expected_count
+    return as_ndarray(sampled.astype(np.int32)), as_ndarray(true_expected_count), as_ndarray(sampled_expected_count)
 
 
 def _np_ctc_beam_step(
@@ -182,7 +182,7 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
         best_paths = sorted(beam.items(), key=lambda x: np.logaddexp(x[1][0], x[1][1]), reverse=True)
         best_paths_by_batch.append(best_paths)
 
-    sparse_list: list[tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]] = []
+    sparse_list: list[tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]] = []
     log_probs_matrix = getattr(np, "zeros")((batch_size, top_paths), dtype=np.float32)
 
     for p in range(as_int(top_paths)):
@@ -203,7 +203,7 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
         ind_arr = np.array(indices_p, dtype=np.int64) if indices_p else np.zeros((0, 2), dtype=np.int64)
         val_arr = np.array(values_p, dtype=np.int64)
         shape_arr = np.array([batch_size, max_len], dtype=np.int64)
-        sparse_list.append((ind_arr, val_arr, shape_arr))
+        sparse_list.append((as_ndarray(ind_arr), as_ndarray(val_arr), as_ndarray(shape_arr)))
 
     if top_paths == 1:
         if not sparse_list:
@@ -213,7 +213,7 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
 
 
 @numpy_eager_registry.register("CtcUniqueLabels")
-def _np_ctc_unique_labels(backend_module: BackendModuleProtocol, labels: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _np_ctc_unique_labels(backend_module: BackendModuleProtocol, labels: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Eager fallback for _np_ctc_unique_labels.
 
     Args:
@@ -230,7 +230,7 @@ def _np_ctc_unique_labels(backend_module: BackendModuleProtocol, labels: EagerVa
 
 
 @numpy_eager_registry.register("NormalizeMoments")
-def _np_normalize_moments(backend_module: BackendModuleProtocol, counts: EagerValue, mean_ss: EagerValue, variance_ss: EagerValue, shift: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _np_normalize_moments(backend_module: BackendModuleProtocol, counts: EagerValue, mean_ss: EagerValue, variance_ss: EagerValue, shift: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Eager fallback for _np_normalize_moments.
 
     Args:
@@ -256,7 +256,7 @@ def _np_normalize_moments(backend_module: BackendModuleProtocol, counts: EagerVa
 @numpy_eager_registry.register("SufficientStatistics")
 def _np_sufficient_statistics(
     backend_module: BackendModuleProtocol, x: EagerValue, axes: EagerValue, **kwargs: EagerValue
-) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Eager fallback for _np_sufficient_statistics.
 
     Args:
@@ -273,15 +273,15 @@ def _np_sufficient_statistics(
     keepdims = bool(kwargs.get("keepdims", False))
     divisor = np.prod([arr.shape[i] for i in range(arr.ndim) if i not in (axes_tup or ())]) if axes_tup else 1
     counts = np.array(arr.size / divisor, dtype=np.float32)
-    counts = np.broadcast_to(counts, np.mean(arr, axis=axes_tup, keepdims=keepdims).shape)
-    shift = np.mean(arr, axis=axes_tup, keepdims=True)
-    m_ss = np.sum(arr - shift, axis=axes_tup, keepdims=keepdims)
-    v_ss = np.sum(np.square(arr - shift), axis=axes_tup, keepdims=keepdims)
-    return counts, m_ss, v_ss, np.squeeze(shift) if not keepdims else shift
+    counts = np.broadcast_to(counts, getattr(np, "mean")(arr, axis=axes_tup, keepdims=keepdims).shape)
+    shift = getattr(np, "mean")(arr, axis=axes_tup, keepdims=True)
+    m_ss = getattr(np, "sum")(arr - shift, axis=axes_tup, keepdims=keepdims)
+    v_ss = getattr(np, "sum")(np.square(arr - shift), axis=axes_tup, keepdims=keepdims)
+    return as_ndarray(counts), as_ndarray(m_ss), as_ndarray(v_ss), as_ndarray(np.squeeze(shift)) if not keepdims else as_ndarray(shift)
 
 
 @numpy_eager_registry.register("WeightedMoments")
-def _np_weighted_moments(backend_module: BackendModuleProtocol, x: EagerValue, axes: EagerValue, frequency_weights: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _np_weighted_moments(backend_module: BackendModuleProtocol, x: EagerValue, axes: EagerValue, frequency_weights: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Eager fallback for _np_weighted_moments.
 
     Args:
@@ -298,14 +298,14 @@ def _np_weighted_moments(backend_module: BackendModuleProtocol, x: EagerValue, a
     fw = np.asarray(frequency_weights)
     axes_tup: tuple[int, ...] | None = tuple(np.asarray(axes).tolist()) if axes is not None else None
     keepdims = bool(kwargs.get("keepdims", False))
-    sum_w = np.sum(fw, axis=axes_tup, keepdims=keepdims)
-    mean = np.sum(arr * fw, axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
-    var = np.sum(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes_tup or 0)), axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
-    return mean, var
+    sum_w = getattr(np, "sum")(fw, axis=axes_tup, keepdims=keepdims)
+    mean = getattr(np, "sum")(arr * fw, axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    var = getattr(np, "sum")(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes_tup or 0)), axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    return as_ndarray(mean), as_ndarray(var)
 
 
 @numpy_eager_registry.register("MaxPoolWithArgmax")
-def _np_max_pool_with_argmax(backend_module: BackendModuleProtocol, input: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _np_max_pool_with_argmax(backend_module: BackendModuleProtocol, input: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Eager fallback for _np_max_pool_with_argmax.
 
     Args:
@@ -332,7 +332,7 @@ def _np_max_pool_with_argmax(backend_module: BackendModuleProtocol, input: Eager
 
 
 @numpy_eager_registry.register("CollapseRepeated")
-def _np_collapse_repeated(backend_module: BackendModuleProtocol, labels: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _np_collapse_repeated(backend_module: BackendModuleProtocol, labels: EagerValue, **kwargs: EagerValue) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Eager fallback for _np_collapse_repeated.
 
     Args:
@@ -353,7 +353,7 @@ def _np_collapse_repeated(backend_module: BackendModuleProtocol, labels: EagerVa
 
 
 @numpy_eager_registry.register("QuantizedConv")
-def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """NumPy eager evaluation fallback for QuantizedConv.
 
     Args:
@@ -413,7 +413,7 @@ def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue,
 
 
 @numpy_eager_registry.register("DepthwiseConv2dNativeBackpropFilter")
-def _np_depthwise_conv2d_backprop_filter(backend_module: BackendModuleProtocol, input_val: EagerValue, filter_sizes: EagerValue, out_backprop: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_depthwise_conv2d_backprop_filter(backend_module: BackendModuleProtocol, input_val: EagerValue, filter_sizes: EagerValue, out_backprop: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Compute depthwise conv2d filter gradient in NumPy eager mode.
 
     Args:
@@ -432,7 +432,7 @@ def _np_depthwise_conv2d_backprop_filter(backend_module: BackendModuleProtocol, 
 
 
 @numpy_eager_registry.register("DepthwiseConv2dNativeBackpropInput")
-def _np_depthwise_conv2d_backprop_input(backend_module: BackendModuleProtocol, input_sizes: EagerValue, filter_val: EagerValue, out_backprop: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def _np_depthwise_conv2d_backprop_input(backend_module: BackendModuleProtocol, input_sizes: EagerValue, filter_val: EagerValue, out_backprop: EagerValue, **kwargs: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Compute depthwise conv2d input gradient in NumPy eager mode.
 
     Args:

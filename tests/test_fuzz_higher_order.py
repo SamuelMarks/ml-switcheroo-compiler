@@ -37,6 +37,10 @@ def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: Eager
     """
     if backend_name == "mlx":
         pytest.importorskip("mlx.core")
+    elif backend_name == "pytorch":
+        pytest.importorskip("torch")
+    elif backend_name == "jax":
+        pytest.importorskip("jax")
     from ml_switcheroo_compiler.core.config import config
 
     prev = config.backend

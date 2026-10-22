@@ -34,8 +34,16 @@ def test_generator_basics(monkeypatch: EagerTensorProtocol) -> None:
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
+    import sys
+    from unittest.mock import MagicMock
+
     import numpy as np
-    import torch
+
+    try:
+        import torch
+    except ImportError:
+        torch = MagicMock()
+        getattr(monkeypatch, "setitem")(sys.modules, "torch", torch)
 
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)

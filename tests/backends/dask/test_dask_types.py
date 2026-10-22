@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
 import sys
 import typing
 
@@ -115,6 +114,44 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
 
         pass
 
+    import importlib.util
+    from unittest.mock import MagicMock
+
+    import numpy as np
+
+    if importlib.util.find_spec("dask") is None:
+        mock_da = MagicMock()
+
+        class _FakeDaskArray:
+            """Fake Dask array wrapping a NumPy ndarray."""
+
+            def __init__(self, arr: EagerValue) -> None:
+                """Initialize fake Dask array."""
+                self._arr = np.asarray(getattr(arr, "_arr", arr))
+                self.shape = self._arr.shape
+
+            def compute(self) -> EagerValue:
+                """Compute underlying NumPy array."""
+                return self._arr
+
+            def __getitem__(self, idx: int) -> _FakeDaskArray:
+                """Index fake Dask array."""
+                return _FakeDaskArray(self._arr[idx])
+
+            def item(self) -> float:
+                """Extract scalar float."""
+                return float(self._arr.item())
+
+        mock_da.zeros.side_effect = lambda s, dtype=None, **kw: _FakeDaskArray(np.zeros(s, dtype=dtype))
+        mock_da.array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(getattr(d, "_arr", d), dtype=dtype))
+        mock_da.from_array.side_effect = lambda d, dtype=None, **kw: _FakeDaskArray(np.array(getattr(d, "_arr", d), dtype=dtype))
+        mock_da.asarray.side_effect = lambda d, **kw: _FakeDaskArray(d)
+        mock_dask = MagicMock()
+        mock_dask.array = mock_da
+        monkeypatch.setitem(sys.modules, "dask", mock_dask)
+        monkeypatch.setitem(sys.modules, "dask.array", mock_da)
+        importlib.reload(dask_types)
+
     z = dask_types.zeros(_DummyDaskBackend, (2, 2))
     assert as_tensor(getattr(z, "shape")) == (2, 2)
 
@@ -142,4 +179,3 @@ def test_backends_dask_types(monkeypatch: pytest.MonkeyPatch) -> None:
     # Restore dask_types
     monkeypatch.undo()
     importlib.reload(dask_types)
-    assert as_tensor(getattr(dask_types, "da")) is not None

@@ -23,7 +23,7 @@ class RandomDistributionConfig(typing.Protocol):
 class LookupTableProtocol(typing.Protocol):
     """Protocol for table objects supporting lookup."""
 
-    def lookup(self, keys: np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    def lookup(self, keys: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
         """Lookup keys in table.
 
         Args:
@@ -40,7 +40,7 @@ def _np_normal(
     backend_module: BackendModuleProtocol,
     shape: tuple[int, ...] | list[int] | int,
     **kwargs: str | float | int | RandomDistributionConfig | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate normal distribution random sampling.
 
     Args:
@@ -63,7 +63,7 @@ def _np_uniform(
     backend_module: BackendModuleProtocol,
     shape: tuple[int, ...] | list[int] | int,
     **kwargs: str | float | int | RandomDistributionConfig | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate uniform distribution random sampling.
 
     Args:
@@ -88,9 +88,9 @@ def _np_uniform(
 @numpy_eager_registry.register("StatelessSplit")
 def _np_stateless_split(
     backend_module: BackendModuleProtocol,
-    seed: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[int | str] | int | str,
+    seed: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[int | str] | int | str,
     **kwargs: int | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate stateless PRNG key split.
 
     Args:
@@ -115,16 +115,16 @@ def _np_stateless_split(
     else:
         s_val = 0
     rng = np.random.RandomState(s_val)
-    return rng.randint(0, 2**31 - 1, size=(num, 2), dtype=np.int64)
+    return as_ndarray(rng.randint(0, 2**31 - 1, size=(num, 2), dtype=np.int64))
 
 
 @numpy_eager_registry.register("Lookup")
 def _np_lookup(
     backend_module: BackendModuleProtocol,
-    table: dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int,
-    keys: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[int | str] | int | str,
+    table: dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]] | int,
+    keys: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | list[int | str] | int | str,
     **kwargs: int | float | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Evaluate lookup table query on keys.
 
     Args:

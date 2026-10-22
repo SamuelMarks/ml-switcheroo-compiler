@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 import numpy.typing as npt
 
 # A generic payload type that could be transmitted via IPC
-IpcPayload = typing.Union[npt.NDArray[np.generic], str, int, float, list[int], tuple[int, typing.Union[npt.NDArray[np.generic], str, int, float, bool, "bytes"]], bool, "bytes"]
+IpcPayload = typing.Union[npt.NDArray[np.float64], str, int, float, list[int], tuple[int, typing.Union[npt.NDArray[np.float64], str, int, float, bool, "bytes"]], bool, "bytes"]
 
 
 BASE_PORT = 15200
@@ -148,7 +148,7 @@ def _ipc_all_gather(tensor: IpcPayload, axis: int | None, mesh: DeviceMesh | Non
     if isinstance(tensor, str):
         return tensor
 
-    t: npt.NDArray[np.generic] = np.asarray(tensor)
+    t: npt.NDArray[np.float64] = np.asarray(tensor)
     if mesh is not None and getattr(mesh, "size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
         size: int = getattr(mesh, "size", 1)
@@ -175,7 +175,7 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: Dev
     if isinstance(tensor, str):
         return tensor
 
-    t: npt.NDArray[np.generic] = np.asarray(tensor)
+    t: npt.NDArray[np.float64] = np.asarray(tensor)
     if mesh is not None and getattr(mesh, "size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
         size: int = getattr(mesh, "size", 1)
@@ -194,7 +194,7 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: Dev
             reduced = sum(getattr(exchanged, "__iter__")())
 
         # Scatter (slice and return own chunk)
-        sub_arrays: list[npt.NDArray[np.generic]] = np.array_split(reduced, size, axis=axis if axis is not None else 0)
+        sub_arrays: list[npt.NDArray[np.float64]] = np.array_split(reduced, size, axis=axis if axis is not None else 0)
         return sub_arrays[rank % len(sub_arrays)]
 
     return t
@@ -214,7 +214,7 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
     if isinstance(tensor, str):
         return tensor
 
-    t: npt.NDArray[np.generic] = np.asarray(tensor)
+    t: npt.NDArray[np.float64] = np.asarray(tensor)
     if mesh is not None and getattr(mesh, "size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
         size: int = getattr(mesh, "size", 1)
@@ -225,12 +225,12 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
 
         # Perform reduction and return same result on all workers
         if op == "sum":
-            return np.asarray(np.add.reduce(arrs))
+            return np.asarray(getattr(np.add, "reduce")(arrs))
         elif op == "max":
-            return np.asarray(np.maximum.reduce(arrs))
+            return np.asarray(getattr(np.maximum, "reduce")(arrs))
         elif op == "min":
-            return np.asarray(np.minimum.reduce(arrs))
+            return np.asarray(getattr(np.minimum, "reduce")(arrs))
         else:
-            return np.asarray(np.add.reduce(arrs))
+            return np.asarray(getattr(np.add, "reduce")(arrs))
 
     return t

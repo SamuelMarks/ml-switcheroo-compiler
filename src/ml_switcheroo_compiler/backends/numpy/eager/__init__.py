@@ -12,12 +12,12 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callab
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
-def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Type guard narrowing `val` to `np.ndarray`."""
     return val is not None or val is None
 
 
-def as_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]]) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+def as_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Narrow an `EagerValue` array to `np.ndarray` without `typing.cast`.
 
     Args:
@@ -81,9 +81,9 @@ import ml_switcheroo_compiler.backends.numpy.eager.window_reductions  # noqa: F4
 def execute_op(
     cls: type,
     op_type: str,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Execute the eager execute op operation on the active backend array.
 
     Args:
@@ -119,9 +119,9 @@ def execute_op(
 @numpy_eager_registry.register("Clone")
 def clone_op(
     np_mod: BackendModuleProtocol | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Clone an array using np.copy.
 
     Args:
@@ -139,9 +139,9 @@ def clone_op(
 @numpy_eager_registry.register("Repeat")
 def repeat(
     np_mod: BackendModuleProtocol | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Repeat.
 
     Args:
@@ -158,9 +158,9 @@ def repeat(
 @numpy_eager_registry.register("Searchsorted")
 def searchsorted(
     np_mod: BackendModuleProtocol | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Searchsorted.
 
     Args:
@@ -177,12 +177,12 @@ def searchsorted(
 @numpy_eager_registry.register("Split")
 def split(
     np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
     num_or_size_splits: int | list[int] | tuple[int, ...] | EagerValue,
     axis: int = 0,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> list[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> list[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Split array.
 
     Args:
@@ -203,11 +203,11 @@ def split(
 @numpy_eager_registry.register("Squeeze")
 def squeeze(
     np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
     axis: int | None = None,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Squeeze array.
 
     Args:
@@ -226,11 +226,11 @@ def squeeze(
 @numpy_eager_registry.register("Stack")
 def stack(
     np_mod: BackendModuleProtocol | EagerValue,
-    arrays: typing.Sequence[np.ndarray[tuple[int, ...], np.dtype[np.generic]]] | EagerValue,
+    arrays: typing.Sequence[np.ndarray[tuple[int, ...], np.dtype[np.float64]]] | EagerValue,
     axis: int = 0,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Stack arrays.
 
     Args:
@@ -249,11 +249,11 @@ def stack(
 @numpy_eager_registry.register("Unstack")
 def unstack(
     np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
     axis: int = 0,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], ...]:
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], ...]:
     """Unstack array.
 
     Args:
@@ -279,11 +279,11 @@ def unstack(
 @numpy_eager_registry.register("Equal")
 def equal(
     np_mod: BackendModuleProtocol | EagerValue,
-    x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
-    y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerValue,
-    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]] | bool:
+    x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
+    y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerValue,
+    *args: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    **kwargs: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]] | bool:
     """Check if x and y are equal.
 
     Args:

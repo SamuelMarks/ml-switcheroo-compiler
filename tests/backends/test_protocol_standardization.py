@@ -180,37 +180,16 @@ class MockGradTensor:
         return 3
 
 
-class MockInterpreterTensor:
+class MockInterpreterTensor(MockEagerTensor):
     """Mock tensor satisfying TensorLike interpreter protocol."""
 
     def __init__(self) -> None:
         """Initialize MockInterpreterTensor."""
-        self._shape = (1,)
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        """Get shape."""
-        return self._shape
-
-    def __getitem__(self, key: EagerValue) -> MockInterpreterTensor:
-        """Get item.
-
-        Args:
-            key: Test parameter `key`.
-        """
-        return self
+        super().__init__((1,))
 
     def item(self) -> int | float | bool:
         """Get scalar item."""
         return 42.0
-
-    def __len__(self) -> int:
-        """Get length."""
-        return 1
-
-    def __getattr__(self, name: str) -> EagerValue:
-        """Fallback attribute for runtime protocol conformance."""
-        return 1
 
 
 def test_eager_tensor_protocol_conformance() -> None:

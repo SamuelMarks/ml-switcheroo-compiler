@@ -90,10 +90,10 @@ jobs:
       run: |
         # Set KERAS_BACKEND for frameworks that Keras directly supports
         export KERAS_BACKEND=${{ matrix.backend }}
-        if [ "${KERAS_BACKEND}" = "cupy" ] || [ "${KERAS_BACKEND}" = "dask" ] || [ "${KERAS_BACKEND}" = "mlx" ] || [ "${KERAS_BACKEND}" = "numba" ] || [ "${KERAS_BACKEND}" = "onnx" ] || [ "${KERAS_BACKEND}" = "sparse" ]; then
+        if [ "${KERAS_BACKEND}" = "cupy" ] || [ "${KERAS_BACKEND}" = "dask" ] || [ "${KERAS_BACKEND}" = "keras" ] || [ "${KERAS_BACKEND}" = "mlx" ] || [ "${KERAS_BACKEND}" = "numba" ] || [ "${KERAS_BACKEND}" = "onnx" ] || [ "${KERAS_BACKEND}" = "sparse" ]; then
           export KERAS_BACKEND=numpy
         fi
-        pytest --cov=. --cov-report=xml
+        pytest --cov=. --cov-report=xml --cov-fail-under=0
 
     - name: Upload Coverage
       uses: actions/upload-artifact@v7

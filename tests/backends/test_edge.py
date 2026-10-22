@@ -6,7 +6,6 @@ from __future__ import annotations
 import typing
 from unittest.mock import patch
 
-import ml_dtypes
 import pytest
 from ml_switcheroo_ir import LogicalGraph
 
@@ -70,12 +69,6 @@ def global_wasm_mock() -> Iterator[None]:
         finally:
             OPS_REGISTRY.clear()
             OPS_REGISTRY.update(saved_registry)
-
-
-import onnx
-
-if not hasattr(ml_dtypes, "float4_e2m1fn"):
-    pytestmark = pytest.mark.skip("ml_dtypes version incompatible with onnx on this system.")
 
 
 def test_edge_generators() -> None:
@@ -283,6 +276,7 @@ def test_onnx_binary_export(tmp_path: EagerTensorProtocol) -> None:
     except TypeError:
         return
     assert os.path.exists(out_file)
+    onnx = pytest.importorskip("onnx")
     try:
         model = onnx.load(out_file)
     except TypeError:

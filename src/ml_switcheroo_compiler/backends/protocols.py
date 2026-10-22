@@ -88,6 +88,9 @@ class BackendModuleProtocol(typing.Protocol):
             ...
 
 
+getattr(BackendModuleProtocol, "__protocol_attrs__", set[str]()).discard("__get_pydantic_core_schema__")
+
+
 def _is_backend_mod(val: EagerValue) -> typing.TypeGuard[BackendModuleProtocol]:
     """Type guard narrowing `EagerValue` to `BackendModuleProtocol`.
 

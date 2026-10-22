@@ -87,8 +87,10 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
 
 
 def test_tf_generator_pure_tf_and_aot() -> None:
-    """Verify generate_pure_tf and compile_aot execution with tf.function and interpreter fallback."""
-    from unittest.mock import patch
+    """Verify generate_pure_tf and compile_aot execution with tf.function."""
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock, patch
 
     import numpy as np
 
@@ -104,13 +106,10 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     g.outputs = ["y"]
 
     gen = TensorFlowCodeGenerator(g)
-
-    # 1. generate
     code = gen.generate()
     assert "def apply_model" in code
     assert "import tensorflow as tf" in code
 
-    # 2. compile_aot with simulated tf.function
     g_aot = IRGraph()
     n_in_aot = IRNode(id="x", op_type="Input", shape_metadata=[2, 2], attributes={"dtype": "float32"})
     n_relu_aot = IRNode(id="y", op_type="Relu", inputs=["x"], shape_metadata=[2, 2], attributes={"dtype": "float32"})
@@ -118,14 +117,35 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     g_aot.inputs = ["x"]
     g_aot.outputs = ["y"]
 
-    with patch("tensorflow.function", side_effect=lambda fn, **kw: fn):
-        runner = gen.compile_aot(g_aot, jit_compile=True)
-        x_val = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
-        cfg_2x2 = TensorConfig(shape=[2, 2], dtype="float32", device="cpu")
-        out = runner(Tensor(x_val, cfg_2x2))
-        as_callable(np.testing.assert_allclose)(out, as_callable(np.maximum)(x_val, 0.0))
+    mock_tf = MagicMock()
+    mock_tf.nn.relu.side_effect = lambda x: np.maximum(x, 0.0)
+    mock_tf.convert_to_tensor.side_effect = lambda x: np.asarray(x)
+    ctx = patch.dict(sys.modules, {"tensorflow": mock_tf}) if importlib.util.find_spec("tensorflow") is None else MagicMock()
 
-    # 3. compile_aot exception fallback to forward_fn
+    with ctx:
+        with patch("tensorflow.function", side_effect=lambda fn, **kw: fn):
+            runner = gen.compile_aot(g_aot, jit_compile=True)
+            x_val = np.array([[-1.0, 2.0], [3.0, -4.0]], dtype=np.float32)
+            cfg_2x2 = TensorConfig(shape=[2, 2], dtype="float32", device="cpu")
+            out = runner(Tensor(x_val, cfg_2x2))
+            as_callable(np.testing.assert_allclose)(out, as_callable(np.maximum)(x_val, 0.0))
+
+
+def test_tf_generator_aot_fallback() -> None:
+    """Verify compile_aot exception fallback to interpreter evaluation."""
+    import importlib.util
+    import sys
+    from unittest.mock import MagicMock, patch
+
+    import numpy as np
+
+    from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
+    from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+    from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
+
+    mock_tf = MagicMock()
+    ctx = patch.dict(sys.modules, {"tensorflow": mock_tf}) if importlib.util.find_spec("tensorflow") is None else MagicMock()
+
     g_multi = IRGraph()
     n_a = IRNode(id="a", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
     n_b = IRNode(id="b_extra", op_type="Input", shape_metadata=[2], attributes={"dtype": "float32"})
@@ -136,25 +156,23 @@ def test_tf_generator_pure_tf_and_aot() -> None:
     g_multi.outputs = ["add", "sub"]
     gen_multi = TensorFlowCodeGenerator(g_multi)
 
-    with patch("tensorflow.function", side_effect=RuntimeError("TF jit error")):
-        with patch(
-            "ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph",
-            return_value={"add": np.array([2.0, 4.0]), "sub": np.array([0.0, 0.0])},
-        ):
-            fb_runner = gen_multi.compile_aot(g_multi)
+    with ctx:
+        with patch("tensorflow.function", side_effect=RuntimeError("TF jit error")):
+            with patch(
+                "ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph",
+                return_value={"add": np.array([2.0, 4.0]), "sub": np.array([0.0, 0.0])},
+            ):
+                fb_runner = gen_multi.compile_aot(g_multi)
 
-            # Calling with only 1 arg triggers i >= len(fn_args) branch for b_extra
-            a_val = np.array([1.0, 2.0], dtype=np.float32)
-            res_multi = fb_runner(Tensor(a_val, TensorConfig(shape=[2], dtype="float32", device="cpu")))
-            assert isinstance(res_multi, tuple)
-            assert len(res_multi) == 2
+                a_val = np.array([1.0, 2.0], dtype=np.float32)
+                res_multi = fb_runner(Tensor(a_val, TensorConfig(shape=[2], dtype="float32", device="cpu")))
+                assert isinstance(res_multi, tuple)
+                assert len(res_multi) == 2
 
-            # Single output
-            g_multi.outputs = ["add"]
-            res_single = fb_runner(a_val)
-            as_callable(np.testing.assert_allclose)(res_single, [2.0, 4.0])
+                g_multi.outputs = ["add"]
+                res_single = fb_runner(a_val)
+                as_callable(np.testing.assert_allclose)(res_single, [2.0, 4.0])
 
-            # No outputs
-            g_multi.outputs = []
-            res_dict = fb_runner(a_val)
-            assert isinstance(res_dict, dict)
+                g_multi.outputs = []
+                res_dict = fb_runner(a_val)
+                assert isinstance(res_dict, dict)

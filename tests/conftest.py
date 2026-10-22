@@ -45,13 +45,20 @@ def reset_global_tracing_state() -> Iterator[None]:
     import copy
 
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
+    from ml_switcheroo_compiler.utils.generic_utils import get_custom_objects
 
+    for _tmp_file in ("/tmp/ml_switcheroo_test_file.txt", "/tmp/ml_switcheroo_test_file2.txt"):
+        with open(_tmp_file, "wb") as _f:
+            _f.write(b"content")
+
+    get_custom_objects().clear()
     orig_yaml_registry = copy.deepcopy(_YAML_REGISTRY)
     config.eager_mode = False
     config.backend = "numpy"
 
     yield
 
+    get_custom_objects().clear()
     _YAML_REGISTRY.clear()
     _YAML_REGISTRY.update(orig_yaml_registry)
     state.global_tracing_state.is_tracing = old_is_tracing

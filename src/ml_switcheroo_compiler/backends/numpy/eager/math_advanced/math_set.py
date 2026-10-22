@@ -14,7 +14,7 @@ def _np_union1d(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Find the union of two one-dimensional arrays.
 
     Args:
@@ -33,7 +33,7 @@ def _np_intersect1d_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement Intersect1d via intersect1d.
 
     Args:
@@ -52,7 +52,7 @@ def _np_isin_(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement Isin via isin.
 
     Args:

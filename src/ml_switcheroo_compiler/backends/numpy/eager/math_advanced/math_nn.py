@@ -16,7 +16,7 @@ def _np_convolve(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Return the discrete, linear convolution of two one-dimensional sequences.
 
     Args:
@@ -35,7 +35,7 @@ def _np_convgeneraldilatedlocal(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement ConvGeneralDilatedLocal.
 
     Args:
@@ -56,7 +56,7 @@ def _np_convgeneraldilatedpatches(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement ConvGeneralDilatedPatches.
 
     Args:
@@ -77,7 +77,7 @@ def _np_convwithgeneralpadding(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement ConvWithGeneralPadding.
 
     Args:
@@ -98,7 +98,7 @@ def _np_rawconv2d(
     backend_module: BackendModuleProtocol,
     *args: EagerValue,
     **kwargs: float | int | str | bool | None,
-) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
+) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
     """Implement RawConv2D.
 
     Args:

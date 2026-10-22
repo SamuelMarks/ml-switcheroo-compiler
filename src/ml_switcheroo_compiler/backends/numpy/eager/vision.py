@@ -45,9 +45,9 @@ class InterpolationConfig(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    images: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
-    src_y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
-    src_x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
+    images: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
+    src_y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
+    src_x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
     H: int = 0
     W: int = 0
 
@@ -84,10 +84,10 @@ class BilinearCoords(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    y0: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerTensorProtocol
-    y1: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerTensorProtocol
-    x0: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerTensorProtocol
-    x1: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | EagerTensorProtocol
+    y0: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerTensorProtocol
+    y1: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerTensorProtocol
+    x0: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerTensorProtocol
+    x1: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerTensorProtocol
 
 
 def _compute_bilinear_pixels(np: BackendModuleProtocol, images: EagerValue, coords: BilinearCoords) -> EagerValue:
@@ -113,7 +113,7 @@ def _compute_bilinear_weights(
     dy: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerTensorProtocol,
     dx: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | EagerTensorProtocol,
 ) -> tuple[
-    EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]], EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]], EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]], EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+    EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]], EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]], EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]], EagerTensorProtocol | np.ndarray[tuple[int, ...], np.dtype[np.float64]]
 ]:
     """Execute the eager compute bilinear weights operation on the active backend array.
 
@@ -349,9 +349,9 @@ class RotationInterpolationConfig(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    img: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
-    src_x: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
-    src_y: np.ndarray[tuple[int, ...], np.dtype[np.generic]] | None = None
+    img: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
+    src_x: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
+    src_y: np.ndarray[tuple[int, ...], np.dtype[np.float64]] | None = None
     fill_mode: str = "nearest"
     fill_value: float = 0.0
 
@@ -377,9 +377,9 @@ def _get_rotation_coords(np: BackendModuleProtocol, src_x_clip: EagerValue, src_
 
 
 def _gather_rotation_pixels(
-    img: np.ndarray[tuple[int, ...], np.dtype[np.generic]],
-    coords: tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]],
-) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
+    img: np.ndarray[tuple[int, ...], np.dtype[np.float64]],
+    coords: tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]],
+) -> tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
     """Gather pixels for rotation.
 
     Args:

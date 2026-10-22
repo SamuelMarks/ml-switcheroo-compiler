@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 import typing  # noqa: F401
 
-import torch
+if typing.TYPE_CHECKING:
+    import torch
+
+    from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+
+    F: BackendModuleProtocol
+else:
+    _has_torch = sys.modules.get("torch") is not None or ("torch" not in sys.modules and importlib.util.find_spec("torch") is not None)
+    torch = importlib.import_module("torch") if _has_torch else None
+    F = importlib.import_module("torch.nn.functional") if _has_torch else None
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_int, as_str, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
@@ -258,7 +269,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], torch.Tensor):
         from torch.nn.utils.rnn import pad_sequence
 
-        return pad_sequence(list(rt), batch_first=True, padding_value=float(as_float(default_value if default_value is not None else 0.0)))
+        return as_tensor(pad_sequence(list(rt), batch_first=True, padding_value=float(as_float(default_value if default_value is not None else 0.0))))
 
     # 3. If it's a dictionary or namedtuple with 'values' and 'row_splits' (standard ragged encoding)
     values = None
@@ -286,7 +297,7 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
             if length > 0:
                 dense_tensor[i, :length] = values[start:end]
 
-        return dense_tensor
+        return as_tensor(dense_tensor)
 
     return rt
 
@@ -501,7 +512,6 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
 
         s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-        import torch.nn.functional as F
 
         func = None
         for mod in [torch, F, getattr(torch, "linalg", None), getattr(torch, "fft", None)]:
