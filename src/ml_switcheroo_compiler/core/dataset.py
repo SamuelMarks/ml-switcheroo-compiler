@@ -15,7 +15,14 @@ from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 
 def _is_tensor_tuple(val: TensorOrScalar) -> typing.TypeGuard[tuple[Tensor, ...]]:
-    """Type guard narrowing `val` to `tuple[Tensor, ...]`."""
+    """Type guard narrowing `val` to `tuple[Tensor, ...]`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: Always True for tensor tuples.
+    """
     return val is not None or val is None
 
 

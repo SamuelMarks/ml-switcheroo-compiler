@@ -13,7 +13,7 @@ from tests.testing_utils import as_callable, as_tensor
 if typing.TYPE_CHECKING:
     import mlx.core as mx
 
-mx = pytest.importorskip("mlx.core")
+mx = pytest.importorskip("mlx.core", exc_type=ImportError)
 
 
 def test_mlx_eager_coverage_part1() -> None:

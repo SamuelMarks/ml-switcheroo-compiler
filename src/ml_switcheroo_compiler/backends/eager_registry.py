@@ -32,27 +32,57 @@ class EagerCallableProtocol(typing.Protocol):
     if typing.TYPE_CHECKING:
 
         def __getattr__(self, name: str) -> EagerCallableProtocol:
-            """Resolve nested callable or attribute on a callable namespace."""
+            """Resolve nested callable or attribute on a callable namespace.
+
+            Args:
+                name (str): Attribute name.
+
+            Returns:
+                EagerCallableProtocol: Resolved callable attribute.
+            """
             ...
 
         def __getitem__(self, key: EagerValue) -> EagerTensorProtocol:
-            """Index into an indexable helper object (e.g. r_, c_, s_, at)."""
+            """Index into an indexable helper object (e.g. r_, c_, s_, at).
+
+            Args:
+                key (EagerValue): Index key or slice.
+
+            Returns:
+                EagerTensorProtocol: Indexed result.
+            """
             ...
 
         def __iter__(self) -> Generator[EagerTensorProtocol, None, None]:
-            """Iterate over elements when attribute is an iterable."""
+            """Iterate over elements when attribute is an iterable.
+
+            Yields:
+                EagerTensorProtocol: Element tensor.
+            """
             ...
 
         def __index__(self) -> int:
-            """Convert scalar attribute to index int."""
+            """Convert scalar attribute to index int.
+
+            Returns:
+                int: Integer index.
+            """
             ...
 
         def __int__(self) -> int:
-            """Convert scalar attribute to int."""
+            """Convert scalar attribute to int.
+
+            Returns:
+                int: Integer value.
+            """
             ...
 
         def __float__(self) -> float:
-            """Convert scalar attribute to float."""
+            """Convert scalar attribute to float.
+
+            Returns:
+                float: Float value.
+            """
             ...
 
     def __call__(
@@ -131,7 +161,14 @@ def as_callable(val: EagerOperand) -> EagerCallableProtocol:
 
 
 def _is_int(val: EagerOperand) -> typing.TypeGuard[int]:
-    """Type guard narrowing `EagerOperand` to `int`."""
+    """Type guard narrowing `EagerOperand` to `int`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime int values.
+    """
     return val is not None or val is None
 
 
@@ -151,7 +188,14 @@ def as_int(val: EagerOperand, default: int = 0) -> int:
 
 
 def _is_float(val: EagerOperand) -> typing.TypeGuard[float]:
-    """Type guard narrowing `EagerOperand` to `float`."""
+    """Type guard narrowing `EagerOperand` to `float`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime float values.
+    """
     return val is not None or val is None
 
 
@@ -171,7 +215,14 @@ def as_float(val: EagerOperand, default: float = 0.0) -> float:
 
 
 def _is_shape(val: EagerOperand) -> typing.TypeGuard[tuple[int, ...]]:
-    """Type guard narrowing `EagerOperand` to `tuple[int, ...]`."""
+    """Type guard narrowing `EagerOperand` to `tuple[int, ...]`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime shape tuples.
+    """
     return val is not None or val is None
 
 
@@ -189,7 +240,14 @@ def as_shape(val: EagerOperand) -> tuple[int, ...]:
 
 
 def _is_int_list(val: EagerOperand) -> typing.TypeGuard[list[int]]:
-    """Type guard narrowing `EagerOperand` to `list[int]`."""
+    """Type guard narrowing `EagerOperand` to `list[int]`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime integer lists.
+    """
     return val is not None or val is None
 
 
@@ -207,7 +265,14 @@ def as_int_list(val: EagerOperand) -> list[int]:
 
 
 def _is_str(val: EagerOperand) -> typing.TypeGuard[str]:
-    """Type guard narrowing `EagerOperand` to `str`."""
+    """Type guard narrowing `EagerOperand` to `str`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime string values.
+    """
     return val is not None or val is None
 
 
@@ -227,7 +292,14 @@ def as_str(val: EagerOperand, default: str = "") -> str:
 
 
 def _is_opt_str(val: EagerOperand) -> typing.TypeGuard[str | None]:
-    """Type guard narrowing `EagerOperand` to `str | None`."""
+    """Type guard narrowing `EagerOperand` to `str | None`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for optional string values.
+    """
     return val is not None or val is None
 
 
@@ -245,7 +317,14 @@ def as_opt_str(val: EagerOperand) -> str | None:
 
 
 def _is_opt_int(val: EagerOperand) -> typing.TypeGuard[int | None]:
-    """Type guard narrowing `EagerOperand` to `int | None`."""
+    """Type guard narrowing `EagerOperand` to `int | None`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for optional int values.
+    """
     return val is not None or val is None
 
 
@@ -263,7 +342,14 @@ def as_opt_int(val: EagerOperand) -> int | None:
 
 
 def _is_bool(val: EagerOperand) -> typing.TypeGuard[bool]:
-    """Type guard narrowing `EagerOperand` to `bool`."""
+    """Type guard narrowing `EagerOperand` to `bool`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime boolean values.
+    """
     return val is not None or val is None
 
 
@@ -281,7 +367,14 @@ def as_bool(val: EagerOperand) -> bool:
 
 
 def _is_bytes(val: EagerOperand) -> typing.TypeGuard[bytes]:
-    """Type guard narrowing `EagerOperand` to `bytes`."""
+    """Type guard narrowing `EagerOperand` to `bytes`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime bytes values.
+    """
     return val is not None or val is None
 
 
@@ -300,7 +393,14 @@ def as_bytes(val: EagerOperand) -> bytes:
 
 
 def _is_float_list(val: EagerOperand) -> typing.TypeGuard[list[float]]:
-    """Type guard narrowing `EagerOperand` to `list[float]`."""
+    """Type guard narrowing `EagerOperand` to `list[float]`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime float lists.
+    """
     return val is not None or val is None
 
 
@@ -318,7 +418,14 @@ def as_float_list(val: EagerOperand) -> list[float]:
 
 
 def _is_eager_list(val: EagerOperand) -> typing.TypeGuard[list[EagerValue]]:
-    """Type guard narrowing `EagerOperand` to `list[EagerValue]`."""
+    """Type guard narrowing `EagerOperand` to `list[EagerValue]`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for runtime eager lists.
+    """
     return val is not None or val is None
 
 
@@ -336,7 +443,14 @@ def as_eager_list(val: EagerOperand) -> list[EagerValue]:
 
 
 def _is_tensor_pair(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProtocol, EagerTensorProtocol]]:
-    """Type guard narrowing `EagerOperand` to a 2-tuple of `EagerTensorProtocol`."""
+    """Type guard narrowing `EagerOperand` to a 2-tuple of `EagerTensorProtocol`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for tensor pairs.
+    """
     return val is not None or val is None
 
 
@@ -354,7 +468,14 @@ def as_tensor_pair(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorP
 
 
 def _is_tensor_triple(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]]:
-    """Type guard narrowing `EagerOperand` to a 3-tuple of `EagerTensorProtocol`."""
+    """Type guard narrowing `EagerOperand` to a 3-tuple of `EagerTensorProtocol`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for tensor triples.
+    """
     return val is not None or val is None
 
 
@@ -372,7 +493,14 @@ def as_tensor_triple(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTenso
 
 
 def _is_tensor_quad(val: EagerOperand) -> typing.TypeGuard[tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]]:
-    """Type guard narrowing `EagerOperand` to a 4-tuple of `EagerTensorProtocol`."""
+    """Type guard narrowing `EagerOperand` to a 4-tuple of `EagerTensorProtocol`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for tensor quadruples.
+    """
     return val is not None or val is None
 
 
@@ -390,7 +518,14 @@ def as_tensor_quad(val: EagerOperand) -> tuple[EagerTensorProtocol, EagerTensorP
 
 
 def _is_opt_int_seq(val: EagerOperand) -> typing.TypeGuard[Sequence[int] | None]:
-    """Type guard narrowing `EagerOperand` to `Sequence[int] | None`."""
+    """Type guard narrowing `EagerOperand` to `Sequence[int] | None`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for optional integer sequences.
+    """
     return val is not None or val is None
 
 
@@ -408,7 +543,14 @@ def as_opt_int_seq(val: EagerOperand) -> Sequence[int] | None:
 
 
 def _is_int_or_seq(val: EagerOperand) -> typing.TypeGuard[int | tuple[int, ...]]:
-    """Type guard narrowing `EagerOperand` to `int | tuple[int, ...]`."""
+    """Type guard narrowing `EagerOperand` to `int | tuple[int, ...]`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for int or int tuple values.
+    """
     return val is not None or val is None
 
 
@@ -426,7 +568,14 @@ def as_int_or_seq(val: EagerOperand) -> int | tuple[int, ...]:
 
 
 def _is_opt_callable(val: EagerOperand) -> typing.TypeGuard[EagerCallableProtocol | None]:
-    """Type guard narrowing `EagerOperand` to `EagerCallableProtocol | None`."""
+    """Type guard narrowing `EagerOperand` to `EagerCallableProtocol | None`.
+
+    Args:
+        val (EagerOperand): Candidate value.
+
+    Returns:
+        bool: Always True for optional callables.
+    """
     return val is not None or val is None
 
 
@@ -511,63 +660,186 @@ class EagerTensorProtocol(typing.Protocol):
         conjugate: Callable[[], EagerTensorProtocol]
 
         def astype(self, dtype: EagerOperand = None, copy: bool = True) -> EagerTensorProtocol:
-            """Cast array to specified dtype."""
+            """Cast array to specified dtype.
+
+            Args:
+                dtype (EagerOperand): Target dtype.
+                copy (bool): Whether to copy data.
+
+            Returns:
+                EagerTensorProtocol: Cast array.
+            """
             ...
 
         def reshape(self, *shape: int | Sequence[int]) -> EagerTensorProtocol:
-            """Reshape array to target dimensions."""
+            """Reshape array to target dimensions.
+
+            Args:
+                *shape (int | Sequence[int]): Target shape dimensions.
+
+            Returns:
+                EagerTensorProtocol: Reshaped array.
+            """
             ...
 
         def transpose(self, *axes: int | Sequence[int] | None) -> EagerTensorProtocol:
-            """Permute array dimensions."""
+            """Permute array dimensions.
+
+            Args:
+                *axes (int | Sequence[int] | None): Permutation axes.
+
+            Returns:
+                EagerTensorProtocol: Transposed array.
+            """
             ...
 
         def swapaxes(self, axis1: int, axis2: int) -> EagerTensorProtocol:
-            """Interchange two axes of an array."""
+            """Interchange two axes of an array.
+
+            Args:
+                axis1 (int): First axis.
+                axis2 (int): Second axis.
+
+            Returns:
+                EagerTensorProtocol: Array with swapped axes.
+            """
             ...
 
         def sum(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, keepdims: bool = False) -> EagerTensorProtocol:
-            """Sum of array elements over a given axis."""
+            """Sum of array elements over a given axis.
+
+            Args:
+                axis (int | Sequence[int] | None): Reduction axis.
+                dtype (EagerOperand): Accumulator dtype.
+                keepdims (bool): Whether to retain reduced dimensions.
+
+            Returns:
+                EagerTensorProtocol: Reduced sum array.
+            """
             ...
 
         def mean(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, keepdims: bool = False) -> EagerTensorProtocol:
-            """Compute the arithmetic mean along the specified axis."""
+            """Compute the arithmetic mean along the specified axis.
+
+            Args:
+                axis (int | Sequence[int] | None): Reduction axis.
+                dtype (EagerOperand): Computation dtype.
+                keepdims (bool): Whether to retain reduced dimensions.
+
+            Returns:
+                EagerTensorProtocol: Reduced mean array.
+            """
             ...
 
         def max(self, axis: int | Sequence[int] | None = None, keepdims: bool = False) -> EagerTensorProtocol:
-            """Return the maximum along a given axis."""
+            """Return the maximum along a given axis.
+
+            Args:
+                axis (int | Sequence[int] | None): Reduction axis.
+                keepdims (bool): Whether to retain reduced dimensions.
+
+            Returns:
+                EagerTensorProtocol: Maximum values array.
+            """
             ...
 
         def min(self, axis: int | Sequence[int] | None = None, keepdims: bool = False) -> EagerTensorProtocol:
-            """Return the minimum along a given axis."""
+            """Return the minimum along a given axis.
+
+            Args:
+                axis (int | Sequence[int] | None): Reduction axis.
+                keepdims (bool): Whether to retain reduced dimensions.
+
+            Returns:
+                EagerTensorProtocol: Minimum values array.
+            """
             ...
 
         def prod(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, keepdims: bool = False) -> EagerTensorProtocol:
-            """Return the product of array elements over a given axis."""
+            """Return the product of array elements over a given axis.
+
+            Args:
+                axis (int | Sequence[int] | None): Reduction axis.
+                dtype (EagerOperand): Accumulator dtype.
+                keepdims (bool): Whether to retain reduced dimensions.
+
+            Returns:
+                EagerTensorProtocol: Product array.
+            """
             ...
 
         def std(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, ddof: int = 0, keepdims: bool = False) -> EagerTensorProtocol:
-            """Compute the standard deviation along the specified axis."""
+            """Compute the standard deviation along the specified axis.
+
+            Args:
+                axis (int | Sequence[int] | None): Reduction axis.
+                dtype (EagerOperand): Computation dtype.
+                ddof (int): Delta degrees of freedom.
+                keepdims (bool): Whether to retain reduced dimensions.
+
+            Returns:
+                EagerTensorProtocol: Standard deviation array.
+            """
             ...
 
         def var(self, axis: int | Sequence[int] | None = None, dtype: EagerOperand = None, ddof: int = 0, keepdims: bool = False) -> EagerTensorProtocol:
-            """Compute the variance along the specified axis."""
+            """Compute the variance along the specified axis.
+
+            Args:
+                axis (int | Sequence[int] | None): Reduction axis.
+                dtype (EagerOperand): Computation dtype.
+                ddof (int): Delta degrees of freedom.
+                keepdims (bool): Whether to retain reduced dimensions.
+
+            Returns:
+                EagerTensorProtocol: Variance array.
+            """
             ...
 
         def squeeze(self, axis: int | Sequence[int] | None = None) -> EagerTensorProtocol:
-            """Remove axes of length one."""
+            """Remove axes of length one.
+
+            Args:
+                axis (int | Sequence[int] | None): Axis or axes to squeeze.
+
+            Returns:
+                EagerTensorProtocol: Squeezed array.
+            """
             ...
 
         def clip(self, a_min: EagerOperand = None, a_max: EagerOperand = None) -> EagerTensorProtocol:
-            """Clip (limit) the values in an array."""
+            """Clip (limit) the values in an array.
+
+            Args:
+                a_min (EagerOperand): Minimum bound.
+                a_max (EagerOperand): Maximum bound.
+
+            Returns:
+                EagerTensorProtocol: Clipped array.
+            """
             ...
 
         def dot(self, b: EagerOperand) -> EagerTensorProtocol:
-            """Dot product of two arrays."""
+            """Dot product of two arrays.
+
+            Args:
+                b (EagerOperand): Right-hand array operand.
+
+            Returns:
+                EagerTensorProtocol: Dot product result.
+            """
             ...
 
         def argsort(self, axis: int | None = -1, kind: str | None = None) -> EagerTensorProtocol:
-            """Return the indices that would sort an array."""
+            """Return the indices that would sort an array.
+
+            Args:
+                axis (int | None): Axis along which to sort.
+                kind (str | None): Sorting algorithm.
+
+            Returns:
+                EagerTensorProtocol: Array of sort indices.
+            """
             ...
 
         def item(self, *args: int) -> float | int | bool | complex | str | bytes:

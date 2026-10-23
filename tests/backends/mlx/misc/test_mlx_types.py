@@ -12,7 +12,7 @@ from tests.testing_utils import as_callable, as_tensor
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-pytest.importorskip("mlx.core")
+pytest.importorskip("mlx.core", exc_type=ImportError)
 
 
 def test_mlx_types() -> None:

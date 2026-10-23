@@ -13,7 +13,14 @@ from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 
 
 def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
-    """Type guard narrowing `val` to `np.ndarray`."""
+    """Type guard narrowing `val` to `np.ndarray`.
+
+    Args:
+        val (EagerValue | np.ndarray): Candidate array value.
+
+    Returns:
+        bool: Always True for runtime array values.
+    """
     return val is not None or val is None
 
 

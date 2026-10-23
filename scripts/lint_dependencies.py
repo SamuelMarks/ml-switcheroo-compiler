@@ -2,12 +2,10 @@
 
 Allowed global third-party dependencies outside tests:
 - pyyaml (yaml)
-- pillow (PIL)
 - pydantic
 - cdd / cdd-python
 - libcst
 - h5py
-- numpy (standard foundation)
 
 Allowed backend-specific single external dependencies:
 - backends/pytorch: torch
@@ -17,7 +15,7 @@ Allowed backend-specific single external dependencies:
 - backends/dask: dask
 - backends/tensorflow: tensorflow
 - backends/keras: keras
-- backends/numpy (and backends/eager): scipy
+- backends/numpy: numpy, scipy
 """
 
 from __future__ import annotations
@@ -109,7 +107,6 @@ STDLIB_MODULES: set[str] = (
 )
 ALLOWED_GLOBAL_EXTERNAL: set[str] = {
     "yaml",
-    "PIL",
     "pydantic",
     "cdd",
     "libcst",

@@ -7,7 +7,20 @@ name = "ml-switcheroo-compiler"
 version = "0.1.0"
 description = "Abstract ML Machine Compiler for Reverse-Mode AD, Optimization, and Graph Functionalization."
 authors = [{ name = "Samuel Marks" }]
+readme = "README.md"
 requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Compilers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 dynamic = ["dependencies", "optional-dependencies"]
 
 [tool.hatch.metadata]
@@ -54,6 +67,7 @@ convention = "google"
 
 [tool.mypy]
 python_version = "3.10"
+mypy_path = ["src"]
 plugins = ["pydantic.mypy"]
 strict = true
 disallow_any_explicit = true

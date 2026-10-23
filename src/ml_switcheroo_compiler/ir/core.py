@@ -52,7 +52,14 @@ NoTangent = NoTangent
 
 
 def _is_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph]:
-    """Type guard narrowing `val` to `LogicalGraph`."""
+    """Type guard narrowing `val` to `LogicalGraph`.
+
+    Args:
+        val (TensorOrScalar): Candidate graph value.
+
+    Returns:
+        bool: True if non-None.
+    """
     return val is not None
 
 
@@ -70,7 +77,14 @@ def as_graph(val: TensorOrScalar) -> LogicalGraph:
 
 
 def _is_opt_logical_graph(val: TensorOrScalar) -> typing.TypeGuard[LogicalGraph | None]:
-    """Type guard narrowing `val` to `LogicalGraph | None`."""
+    """Type guard narrowing `val` to `LogicalGraph | None`.
+
+    Args:
+        val (TensorOrScalar): Candidate optional graph value.
+
+    Returns:
+        bool: Always True for optional graph values.
+    """
     return val is not None or val is None
 
 
@@ -88,7 +102,14 @@ def as_opt_graph(val: TensorOrScalar) -> LogicalGraph | None:
 
 
 def _is_attr_dict(val: TensorOrScalar) -> typing.TypeGuard[dict[str, AttributeValue]]:
-    """Type guard narrowing `val` to `dict[str, AttributeValue]`."""
+    """Type guard narrowing `val` to `dict[str, AttributeValue]`.
+
+    Args:
+        val (TensorOrScalar): Candidate attribute dictionary.
+
+    Returns:
+        bool: Always True for attribute dictionaries.
+    """
     return val is not None or val is None
 
 
@@ -106,7 +127,14 @@ def as_attrs(val: TensorOrScalar) -> dict[str, AttributeValue]:
 
 
 def _is_attr_val(val: TensorOrScalar) -> typing.TypeGuard[AttributeValue]:
-    """Type guard narrowing `val` to `AttributeValue`."""
+    """Type guard narrowing `val` to `AttributeValue`.
+
+    Args:
+        val (TensorOrScalar): Candidate attribute value.
+
+    Returns:
+        bool: Always True for attribute values.
+    """
     return val is not None or val is None
 
 
@@ -124,7 +152,14 @@ def as_attr_val(val: TensorOrScalar) -> AttributeValue:
 
 
 def _is_node_list(val: TensorOrScalar) -> typing.TypeGuard[list[LogicalNode]]:
-    """Type guard narrowing `val` to `list[LogicalNode]`."""
+    """Type guard narrowing `val` to `list[LogicalNode]`.
+
+    Args:
+        val (TensorOrScalar): Candidate node list.
+
+    Returns:
+        bool: True if non-None.
+    """
     return val is not None
 
 
@@ -142,7 +177,14 @@ def as_node_list(val: TensorOrScalar) -> list[LogicalNode]:
 
 
 def _is_opt_pspec(val: TensorOrScalar) -> typing.TypeGuard[PartitionSpec | None]:
-    """Type guard narrowing `val` to `PartitionSpec | None`."""
+    """Type guard narrowing `val` to `PartitionSpec | None`.
+
+    Args:
+        val (TensorOrScalar): Candidate optional partition spec.
+
+    Returns:
+        bool: Always True for optional partition specs.
+    """
     return val is not None or val is None
 
 

@@ -25,7 +25,11 @@ class FallbackPrefixProtocol(typing.Protocol):
 
     @property
     def code(self) -> list[str]:
-        """Return generated code lines."""
+        """Return generated code lines.
+
+        Returns:
+            list[str]: Code lines.
+        """
         ...
 
     def __init__(self, graph: AttributeValue = None) -> None:

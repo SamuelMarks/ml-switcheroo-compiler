@@ -19,35 +19,78 @@ from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 
 def _is_opt_int_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[Sequence[int] | None]:
-    """Type guard narrowing `val` to `Sequence[int] | None`."""
+    """Type guard narrowing `val` to `Sequence[int] | None`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Candidate value.
+
+    Returns:
+        bool: Always True for optional integer sequences.
+    """
     return val is not None or val is None
 
 
 def _to_opt_int_seq(val: int | float | str | Sequence[int | S] | None) -> Sequence[int] | None:
-    """Convert a shape/dilation/stride argument to `Sequence[int] | None`."""
+    """Convert a shape/dilation/stride argument to `Sequence[int] | None`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Input value.
+
+    Returns:
+        Sequence[int] | None: Narrowed sequence of ints or None.
+    """
     assert _is_opt_int_seq_val(val)
     return val
 
 
 def _is_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int]]:
-    """Type guard narrowing `val` to `int | Sequence[int]`."""
+    """Type guard narrowing `val` to `int | Sequence[int]`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Candidate value.
+
+    Returns:
+        bool: Always True for int or integer sequences.
+    """
     return val is not None or val is None
 
 
 def _to_int_or_seq(val: int | float | str | Sequence[int | S] | None, default: int = 1) -> int | Sequence[int]:
-    """Convert a stride/padding/dilation argument to `int | Sequence[int]`."""
+    """Convert a stride/padding/dilation argument to `int | Sequence[int]`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Input value.
+        default (int): Unused fallback value preserved for signature compatibility.
+
+    Returns:
+        int | Sequence[int]: Narrowed integer or sequence of ints.
+    """
     _ = default
     assert _is_int_or_seq_val(val)
     return val
 
 
 def _is_opt_int_or_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[int | Sequence[int] | None]:
-    """Type guard narrowing `val` to `int | Sequence[int] | None`."""
+    """Type guard narrowing `val` to `int | Sequence[int] | None`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Candidate value.
+
+    Returns:
+        bool: Always True for optional int or integer sequences.
+    """
     return val is not None or val is None
 
 
 def _to_opt_int_or_seq(val: int | float | str | Sequence[int | S] | None) -> int | Sequence[int] | None:
-    """Convert an optional stride/dilation argument to `int | Sequence[int] | None`."""
+    """Convert an optional stride/dilation argument to `int | Sequence[int] | None`.
+
+    Args:
+        val (int | float | str | Sequence[int | S] | None): Input value.
+
+    Returns:
+        int | Sequence[int] | None: Narrowed integer, sequence of ints, or None.
+    """
     assert _is_opt_int_or_seq_val(val)
     return val
 

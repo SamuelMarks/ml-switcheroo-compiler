@@ -36,7 +36,7 @@ def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: Eager
         val1: Test parameter `val1`.
     """
     if backend_name == "mlx":
-        pytest.importorskip("mlx.core")
+        pytest.importorskip("mlx.core", exc_type=ImportError)
     elif backend_name == "pytorch":
         pytest.importorskip("torch")
     elif backend_name == "jax":

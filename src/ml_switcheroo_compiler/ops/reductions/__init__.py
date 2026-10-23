@@ -51,7 +51,14 @@ _ = _statistical
 
 
 def _is_op_def(val: OpDef | None) -> typing.TypeGuard[OpDef]:
-    """Type guard narrowing `OpDef | None` to `OpDef`."""
+    """Type guard narrowing `OpDef | None` to `OpDef`.
+
+    Args:
+        val (OpDef | None): Candidate op definition.
+
+    Returns:
+        bool: Always True for op definitions.
+    """
     return val is not None or val is None
 
 

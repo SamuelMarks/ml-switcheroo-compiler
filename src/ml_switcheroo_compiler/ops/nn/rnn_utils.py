@@ -28,7 +28,12 @@ class _PositionalRNNModel(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     def __init__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
-        """Initialize model from positional or keyword arguments."""
+        """Initialize model from positional or keyword arguments.
+
+        Args:
+            *args (TensorOrScalar): Positional field values.
+            **kwargs (TensorOrScalar): Keyword field values.
+        """
         super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 
@@ -122,7 +127,15 @@ def scan(
             xs = cf_reverse(xs, (0,))
 
         def _step_fn(c: tuple[Tensor, ...], x_elem: Tensor) -> tuple[tuple[Tensor, ...], Tensor]:
-            """Invoke RNN step function."""
+            """Invoke RNN step function.
+
+            Args:
+                c (tuple[Tensor, ...]): Carry state tuple.
+                x_elem (Tensor): Current input slice.
+
+            Returns:
+                tuple[tuple[Tensor, ...], Tensor]: Updated carry and step output.
+            """
             res_step = invoke_callable(fn_callable, c, x_elem)
             c_next, y_next = getattr(res_step, "__iter__")()
             c_tup: tuple[Tensor, ...] = tuple(c_next) if isinstance(c_next, (list, tuple)) else (as_tensor_obj(c_next),)

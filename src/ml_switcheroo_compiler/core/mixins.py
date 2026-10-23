@@ -15,7 +15,14 @@ if typing.TYPE_CHECKING:
 
 
 def _is_tensor(val: _MixinSelf) -> typing.TypeGuard[Tensor]:
-    """Type guard narrowing `self` on Tensor mixins to `Tensor`."""
+    """Type guard narrowing `self` on Tensor mixins to `Tensor`.
+
+    Args:
+        val (_MixinSelf): Mixin `self` instance.
+
+    Returns:
+        bool: True if instance is non-None.
+    """
     return val is not None
 
 
@@ -352,7 +359,14 @@ class TensorBitwiseMixin:
 
 
 def _is_bool_like(val: Tensor) -> typing.TypeGuard[bool]:
-    """Type guard narrowing tensor comparison result to `bool` for `object.__eq__` signature compatibility."""
+    """Type guard narrowing tensor comparison result to `bool` for `object.__eq__` signature compatibility.
+
+    Args:
+        val (Tensor): Tensor comparison result.
+
+    Returns:
+        bool: True if instance is non-None.
+    """
     return val is not None
 
 

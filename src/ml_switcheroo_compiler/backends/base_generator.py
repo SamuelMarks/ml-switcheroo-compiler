@@ -311,12 +311,23 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         @classmethod
         def get_module(cls) -> ModuleType:
-            """Return the underlying backend Python module."""
+            """Return the underlying backend Python module.
+
+            Returns:
+                ModuleType: Backend module.
+            """
             ...
 
         @classmethod
         def get_scipy_module(cls, submodule: str = "special") -> ModuleType:
-            """Return the underlying SciPy module."""
+            """Return the underlying SciPy module.
+
+            Args:
+                submodule (str): Submodule name.
+
+            Returns:
+                ModuleType: SciPy submodule.
+            """
             ...
 
         @classmethod
@@ -327,11 +338,28 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             fix_imports: bool = True,
             encoding: str = "ASCII",
         ) -> EagerValue:
-            """Load serialized array or checkpoint from filepath."""
+            """Load serialized array or checkpoint from filepath.
+
+            Args:
+                filepath (str): Path to file.
+                allow_pickle (bool): Allow pickled objects.
+                fix_imports (bool): Fix Python 2 imports.
+                encoding (str): String encoding.
+
+            Returns:
+                EagerValue: Loaded array or dictionary.
+            """
             ...
 
         def __getattr__(self, name: str) -> TypedVariadicCallable[str]:
-            """Resolve dynamic visitor or mapping methods on generator instances."""
+            """Resolve dynamic visitor or mapping methods on generator instances.
+
+            Args:
+                name (str): Method or attribute name.
+
+            Returns:
+                TypedVariadicCallable[str]: Dynamic method callable.
+            """
             ...
 
     def __init__(
@@ -660,7 +688,15 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
     if typing.TYPE_CHECKING:
 
         def generic_visit(self, node: IRNode, input_vars: list[str]) -> str:
-            """Fallback visit method for operations not explicitly handled."""
+            """Fallback visit method for operations not explicitly handled.
+
+            Args:
+                node (IRNode): The node.
+                input_vars (list[str]): The inputs.
+
+            Returns:
+                str: The code string.
+            """
             ...
 
     else:

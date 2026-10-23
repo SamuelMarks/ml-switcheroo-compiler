@@ -163,7 +163,7 @@ def test_cuda_and_rocm_argument_marshalling() -> None:
 
 def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     """Verify numerical parity across native backends compared to NumPy references."""
-    pytest.importorskip("mlx.core")
+    pytest.importorskip("mlx.core", exc_type=ImportError)
     import jax.numpy as jnp
     import mlx.core as mx
     import torch

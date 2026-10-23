@@ -30,7 +30,14 @@ _TestValT = typing.TypeVar("_TestValT")
 
 
 def _is_callable_proto(val: _TestValT) -> typing.TypeGuard[EagerCallableProtocol]:
-    """Type guard narrowing `val` to `EagerCallableProtocol`."""
+    """Type guard narrowing `val` to `EagerCallableProtocol`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime callables.
+    """
     return val is not None or val is None
 
 
@@ -48,7 +55,14 @@ def as_callable(val: _TestValT) -> EagerCallableProtocol:
 
 
 def _is_tensor_proto(val: _TestValT) -> typing.TypeGuard[EagerTensorProtocol]:
-    """Type guard narrowing `val` to `EagerTensorProtocol`."""
+    """Type guard narrowing `val` to `EagerTensorProtocol`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime tensors.
+    """
     return val is not None or val is None
 
 
@@ -66,7 +80,14 @@ def as_tensor(val: _TestValT) -> EagerTensorProtocol:
 
 
 def _is_mod_proto(val: _TestValT) -> typing.TypeGuard[BackendModuleProtocol]:
-    """Type guard narrowing `val` to `BackendModuleProtocol`."""
+    """Type guard narrowing `val` to `BackendModuleProtocol`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime backend modules.
+    """
     return val is not None or val is None
 
 
@@ -84,7 +105,14 @@ def as_mod(val: _TestValT) -> BackendModuleProtocol:
 
 
 def _is_ndarray_proto(val: _TestValT) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.generic]]]:
-    """Type guard narrowing `val` to `np.ndarray`."""
+    """Type guard narrowing `val` to `np.ndarray`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime arrays.
+    """
     return val is not None or val is None
 
 
@@ -103,7 +131,14 @@ def as_ndarray(val: _TestValT) -> np.ndarray[tuple[int, ...], np.dtype[np.generi
 
 
 def _is_tensor_inst_proto(val: _TestValT) -> typing.TypeGuard[Tensor]:
-    """Type guard narrowing `val` to `Tensor`."""
+    """Type guard narrowing `val` to `Tensor`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime Tensor instances.
+    """
     return val is not None or val is None
 
 
@@ -121,7 +156,14 @@ def as_tensor_obj(val: _TestValT) -> Tensor:
 
 
 def _is_attrs_proto(val: _TestValT) -> typing.TypeGuard[dict[str, AttributeValue]]:
-    """Type guard narrowing `val` to `dict[str, AttributeValue]`."""
+    """Type guard narrowing `val` to `dict[str, AttributeValue]`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime attribute dicts.
+    """
     return val is not None or val is None
 
 
@@ -140,7 +182,14 @@ def as_attrs(val: _TestValT) -> dict[str, AttributeValue]:
 
 
 def _is_attr_val_proto(val: _TestValT) -> typing.TypeGuard[AttributeValue]:
-    """Type guard narrowing `val` to `AttributeValue`."""
+    """Type guard narrowing `val` to `AttributeValue`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime attribute values.
+    """
     return val is not None or val is None
 
 
@@ -159,7 +208,14 @@ def as_attr_val(val: _TestValT) -> AttributeValue:
 
 
 def _is_graph_proto(val: _TestValT) -> typing.TypeGuard[LogicalGraph]:
-    """Type guard narrowing `val` to `LogicalGraph`."""
+    """Type guard narrowing `val` to `LogicalGraph`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime graphs.
+    """
     return val is not None or val is None
 
 
@@ -178,7 +234,14 @@ def as_graph(val: _TestValT) -> LogicalGraph:
 
 
 def _is_tensor_dict(val: _TestValT) -> typing.TypeGuard[dict[str, EagerTensorProtocol]]:
-    """Type guard narrowing `val` to `dict[str, EagerTensorProtocol]`."""
+    """Type guard narrowing `val` to `dict[str, EagerTensorProtocol]`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime tensor dictionaries.
+    """
     return val is not None or val is None
 
 
@@ -196,7 +259,14 @@ def as_tensor_dict(val: _TestValT) -> dict[str, EagerTensorProtocol]:
 
 
 def _is_tensor_list(val: _TestValT) -> typing.TypeGuard[list[EagerTensorProtocol]]:
-    """Type guard narrowing `val` to `list[EagerTensorProtocol]`."""
+    """Type guard narrowing `val` to `list[EagerTensorProtocol]`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime tensor lists.
+    """
     return val is not None or val is None
 
 
@@ -214,7 +284,14 @@ def as_tensor_list(val: _TestValT) -> list[EagerTensorProtocol]:
 
 
 def _is_node_dict(val: _TestValT) -> typing.TypeGuard[dict[str, LogicalNode]]:
-    """Type guard narrowing `val` to `dict[str, LogicalNode]`."""
+    """Type guard narrowing `val` to `dict[str, LogicalNode]`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime node dictionaries.
+    """
     return val is not None or val is None
 
 
@@ -232,7 +309,14 @@ def as_node_dict(val: _TestValT) -> dict[str, LogicalNode]:
 
 
 def _is_logical_node(val: _TestValT) -> typing.TypeGuard[LogicalNode]:
-    """Type guard narrowing `val` to `LogicalNode`."""
+    """Type guard narrowing `val` to `LogicalNode`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime nodes.
+    """
     return val is not None or val is None
 
 
@@ -250,7 +334,14 @@ def as_node(val: _TestValT) -> LogicalNode:
 
 
 def _is_module_type(val: _TestValT) -> typing.TypeGuard[types.ModuleType]:
-    """Type guard narrowing `val` to `types.ModuleType`."""
+    """Type guard narrowing `val` to `types.ModuleType`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime modules.
+    """
     return val is not None or val is None
 
 
@@ -268,7 +359,14 @@ def as_module_type(val: _TestValT) -> types.ModuleType:
 
 
 def _is_type_obj(val: _TestValT) -> typing.TypeGuard[type]:
-    """Type guard narrowing `val` to `type`."""
+    """Type guard narrowing `val` to `type`.
+
+    Args:
+        val (_TestValT): Candidate value.
+
+    Returns:
+        bool: Always True for runtime types.
+    """
     return val is not None or val is None
 
 
@@ -299,49 +397,104 @@ class _MockTorchDevice:
     """Mock torch.device implementation."""
 
     def __init__(self, dev_type: EagerValue = "cpu") -> None:
-        """Initialize mock device."""
+        """Initialize mock device.
+
+        Args:
+            dev_type (EagerValue): Device type string or object.
+        """
         self.type = str(getattr(dev_type, "type", dev_type)).split(":")[0]
 
-    def __eq__(self, other: EagerValue) -> bool:
-        """Check device equality."""
-        return self.type == str(getattr(other, "type", other)).split(":")[0]
+    if not typing.TYPE_CHECKING:
+
+        def __eq__(self, other: EagerValue) -> bool:
+            """Check device equality.
+
+            Args:
+                other (EagerValue): Other device object.
+
+            Returns:
+                bool: True if equal.
+            """
+            return self.type == str(getattr(other, "type", other)).split(":")[0]
 
 
 class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
     """NumPy-backed mock torch.Tensor."""
 
     def to(self, *args: EagerValue, **kwargs: EagerValue) -> _MockTorchTensor:
-        """Move tensor to target device or dtype."""
+        """Move tensor to target device or dtype.
+
+        Args:
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            _MockTorchTensor: Self tensor.
+        """
         del args, kwargs
         return self
 
     def detach(self) -> _MockTorchTensor:
-        """Detach tensor from computation graph."""
+        """Detach tensor from computation graph.
+
+        Returns:
+            _MockTorchTensor: Detached tensor.
+        """
         return self
 
     def cpu(self) -> _MockTorchTensor:
-        """Move tensor to CPU."""
+        """Move tensor to CPU.
+
+        Returns:
+            _MockTorchTensor: CPU tensor.
+        """
         return self
 
     def numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
-        """Convert to NumPy ndarray."""
+        """Convert to NumPy ndarray.
+
+        Returns:
+            np.ndarray: NumPy array.
+        """
         return np.asarray(self)
 
     def clone(self) -> _MockTorchTensor:
-        """Clone tensor."""
+        """Clone tensor.
+
+        Returns:
+            _MockTorchTensor: Cloned tensor.
+        """
         return np.asarray(self).copy().view(_MockTorchTensor)
 
     @property
     def device(self) -> _MockTorchDevice:
-        """Return mock device."""
+        """Return mock device.
+
+        Returns:
+            _MockTorchDevice: CPU device.
+        """
         return _MockTorchDevice("cpu")
 
     def unsqueeze(self, dim: int) -> _MockTorchTensor:
-        """Insert dimension of size 1."""
+        """Insert dimension of size 1.
+
+        Args:
+            dim (int): Dimension index.
+
+        Returns:
+            _MockTorchTensor: Unsqueeze tensor.
+        """
         return np.expand_dims(np.asarray(self), axis=dim).view(_MockTorchTensor)
 
     def expand(self, *sizes: EagerValue) -> _MockTorchTensor:
-        """Broadcast tensor to target sizes."""
+        """Broadcast tensor to target sizes.
+
+        Args:
+            *sizes (EagerValue): Target broadcast shape.
+
+        Returns:
+            _MockTorchTensor: Broadcasted tensor.
+        """
         target = sizes[0] if len(sizes) == 1 and isinstance(sizes[0], (tuple, list)) else sizes
         return np.broadcast_to(np.asarray(self), as_shape(target)).copy().view(_MockTorchTensor)
 
@@ -350,16 +503,37 @@ class _MockNNModule:
     """Mock torch.nn.Module base class."""
 
     def to(self, *args: EagerValue, **kwargs: EagerValue) -> _MockNNModule:
-        """Move module to device."""
+        """Move module to device.
+
+        Args:
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            _MockNNModule: Self module.
+        """
         del args, kwargs
         return self
 
     def register_parameter(self, name: str, param: EagerValue) -> None:
-        """Register parameter on module."""
+        """Register parameter on module.
+
+        Args:
+            name (str): Parameter name.
+            param (EagerValue): Parameter tensor.
+        """
         setattr(self, name, param)
 
     def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Invoke forward method."""
+        """Invoke forward method.
+
+        Args:
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            EagerValue: Forward output.
+        """
         return as_callable(getattr(self, "forward"))(*args, **kwargs)
 
 
@@ -367,12 +541,25 @@ class _MockNNLinear(_MockNNModule):
     """Mock torch.nn.Linear layer."""
 
     def __init__(self, in_features: int, out_features: int, bias: bool = True) -> None:
-        """Initialize mock linear layer."""
+        """Initialize mock linear layer.
+
+        Args:
+            in_features (int): Input feature count.
+            out_features (int): Output feature count.
+            bias (bool): Whether to include bias.
+        """
         self.weight = np.zeros((out_features, in_features), dtype=np.float32).view(_MockTorchTensor)
         self.bias = np.zeros((out_features,), dtype=np.float32).view(_MockTorchTensor) if bias else None
 
     def forward(self, x: EagerValue) -> _MockTorchTensor:
-        """Compute linear projection."""
+        """Compute linear projection.
+
+        Args:
+            x (EagerValue): Input tensor.
+
+        Returns:
+            _MockTorchTensor: Projected tensor.
+        """
         res = np.matmul(np.asarray(x), np.swapaxes(np.asarray(self.weight), -1, -2))
         if self.bias is not None:
             res = res + np.asarray(self.bias)
@@ -383,12 +570,21 @@ class _MockJaxArray(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
     """NumPy-backed mock jax.Array."""
 
     def block_until_ready(self) -> _MockJaxArray:
-        """Synchronize array evaluation."""
+        """Synchronize array evaluation.
+
+        Returns:
+            _MockJaxArray: Self array.
+        """
         return self
 
 
 def _install_torch_stub(mp_setitem: EagerCallableProtocol, mp_setattr: EagerCallableProtocol) -> None:
-    """Install NumPy-backed mock torch module when torch is not installed."""
+    """Install NumPy-backed mock torch module when torch is not installed.
+
+    Args:
+        mp_setitem (EagerCallableProtocol): MonkeyPatch setitem callable.
+        mp_setattr (EagerCallableProtocol): MonkeyPatch setattr callable.
+    """
     import sys
     from unittest.mock import MagicMock
 
@@ -445,7 +641,12 @@ def _install_torch_stub(mp_setitem: EagerCallableProtocol, mp_setattr: EagerCall
 
 
 def _install_jax_stub(mp_setitem: EagerCallableProtocol, mp_setattr: EagerCallableProtocol) -> None:
-    """Install NumPy-backed mock jax module when jax is not installed."""
+    """Install NumPy-backed mock jax module when jax is not installed.
+
+    Args:
+        mp_setitem (EagerCallableProtocol): MonkeyPatch setitem callable.
+        mp_setattr (EagerCallableProtocol): MonkeyPatch setattr callable.
+    """
     import sys
     from unittest.mock import MagicMock
 
@@ -500,13 +701,33 @@ def _install_jax_stub(mp_setitem: EagerCallableProtocol, mp_setattr: EagerCallab
     mp_setattr(jax_types, "jnp", mock_jnp)
 
 
+def _has_working_mlx() -> bool:
+    """Check whether mlx.core can be imported and loaded cleanly.
+
+    Returns:
+        bool: True if mlx.core imports without error.
+    """
+    import importlib
+
+    try:
+        return importlib.import_module("mlx.core") is not None
+    except Exception:
+        return False
+
+
 def _install_mlx_and_sparse_stubs(mp_setitem: EagerCallableProtocol, mp_setattr: EagerCallableProtocol) -> None:
-    """Install NumPy-backed mock mlx and sparse modules when not installed."""
+    """Install NumPy-backed mock mlx and sparse modules when not installed.
+
+    Args:
+        mp_setitem (EagerCallableProtocol): MonkeyPatch setitem callable.
+        mp_setattr (EagerCallableProtocol): MonkeyPatch setattr callable.
+    """
     import importlib.util
     import sys
     from unittest.mock import MagicMock
 
-    if importlib.util.find_spec("mlx") is None:
+    if not _has_working_mlx():
+        import ml_switcheroo_compiler.backends.mlx.eager as mlx_eager
         import ml_switcheroo_compiler.backends.mlx.profiler as mlx_prof
         import ml_switcheroo_compiler.backends.mlx.types as mlx_types
 
@@ -533,6 +754,7 @@ def _install_mlx_and_sparse_stubs(mp_setitem: EagerCallableProtocol, mp_setattr:
             mp_setitem(sys.modules, mod_name, mod_obj)
         mp_setattr(mlx_prof, "mx", mock_mx)
         mp_setattr(mlx_types, "mx", mock_mx)
+        mp_setattr(mlx_eager, "mx", mock_mx)
 
     if importlib.util.find_spec("sparse") is None:
         import ml_switcheroo_compiler.backends.sparse.profiler as sp_prof
@@ -551,11 +773,11 @@ def _install_mlx_and_sparse_stubs(mp_setitem: EagerCallableProtocol, mp_setattr:
         mp_setattr(sp_prof, "sparse", mock_sparse)
 
 
-def install_profiler_backend_stubs(monkeypatch: EagerValue) -> None:
+def install_profiler_backend_stubs(monkeypatch: _TestValT) -> None:
     """Install NumPy-backed mock modules for optional profiler backends when not installed.
 
     Args:
-        monkeypatch: Pytest MonkeyPatch instance.
+        monkeypatch (_TestValT): Pytest MonkeyPatch instance.
     """
     import importlib.util
 

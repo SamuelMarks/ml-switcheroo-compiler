@@ -37,7 +37,12 @@ class AsStringConfig(pydantic.BaseModel):
     fill: str | TensorOrScalar = ""
 
     def __init__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> None:
-        """Initialize AsStringConfig from positional or keyword arguments."""
+        """Initialize AsStringConfig from positional or keyword arguments.
+
+        Args:
+            *args (TensorOrScalar): Positional field values.
+            **kwargs (TensorOrScalar): Keyword field values.
+        """
         super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 

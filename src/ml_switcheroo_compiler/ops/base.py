@@ -35,11 +35,26 @@ class OpDef:
     if typing.TYPE_CHECKING:
 
         def __call__(self, *args: TensorOrScalar, **kwargs: TensorOrScalar) -> Tensor:
-            """Universal dispatcher for the operation."""
+            """Universal dispatcher for the operation.
+
+            Args:
+                *args (TensorOrScalar): Positional args.
+                **kwargs (TensorOrScalar): Keyword args.
+
+            Returns:
+                Tensor: Result.
+            """
             ...
 
         def __getattr__(self, name: str) -> TypedVariadicCallable[TensorOrScalar]:
-            """Resolve infer_shape, eager_eval, and operation-specific methods."""
+            """Resolve infer_shape, eager_eval, and operation-specific methods.
+
+            Args:
+                name (str): Method name.
+
+            Returns:
+                TypedVariadicCallable[TensorOrScalar]: Resolved callable.
+            """
             ...
 
     else:

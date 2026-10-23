@@ -22,23 +22,51 @@ from ml_switcheroo_compiler.ir.core import IRGraph
 
 
 def _is_torch_out(val: EagerValue) -> typing.TypeGuard[torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]]:
-    """Type guard narrowing forward output to PyTorch tensor collection."""
+    """Type guard narrowing forward output to PyTorch tensor collection.
+
+    Args:
+        val (EagerValue): Candidate forward output.
+
+    Returns:
+        bool: Always True for runtime PyTorch outputs.
+    """
     return val is not None or val is None
 
 
 def _as_torch_out(val: EagerValue) -> torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]:
-    """Narrow forward output to PyTorch tensor collection."""
+    """Narrow forward output to PyTorch tensor collection.
+
+    Args:
+        val (EagerValue): Forward output value.
+
+    Returns:
+        torch.Tensor | tuple[torch.Tensor, ...] | dict[str, torch.Tensor]: Narrowed PyTorch output.
+    """
     assert _is_torch_out(val)
     return val
 
 
 def _is_nn_module(val: EagerValue) -> typing.TypeGuard[torch.nn.Module]:
-    """Type guard narrowing compiled artifact to `torch.nn.Module`."""
+    """Type guard narrowing compiled artifact to `torch.nn.Module`.
+
+    Args:
+        val (EagerValue): Candidate module instance.
+
+    Returns:
+        bool: Always True for runtime modules.
+    """
     return val is not None or val is None
 
 
 def _as_nn_module(val: EagerValue) -> torch.nn.Module:
-    """Narrow compiled artifact to `torch.nn.Module`."""
+    """Narrow compiled artifact to `torch.nn.Module`.
+
+    Args:
+        val (EagerValue): Compiled module instance.
+
+    Returns:
+        torch.nn.Module: Narrowed PyTorch module.
+    """
     assert _is_nn_module(val)
     return val
 

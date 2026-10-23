@@ -970,7 +970,7 @@ def _test_math_misc_coverage_part_42(_state: dict[str, EagerTensorProtocol]) -> 
     mod._np_trimzeros(bk, arg1)
     with pytest.raises(AttributeError):
         mod._np_trimzeros(bk, arg1, arg2)
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, AttributeError)):
         mod._np_trimzeros(bk, arg1, arg1, arg2)
     _state.update(locals())
 

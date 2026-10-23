@@ -21,7 +21,11 @@ class CallableObjectProtocol(typing.Protocol):
 
     @property
     def __name__(self) -> str:
-        """Return the callable's name."""
+        """Return the callable's name.
+
+        Returns:
+            str: Callable name.
+        """
         ...
 
 

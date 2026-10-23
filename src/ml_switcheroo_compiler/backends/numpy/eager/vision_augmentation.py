@@ -210,7 +210,12 @@ class _PositionalVisionModel(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     def __init__(self, *args: EagerValue, **kwargs: EagerValue) -> None:
-        """Initialize model from positional or keyword arguments."""
+        """Initialize model from positional or keyword arguments.
+
+        Args:
+            *args (EagerValue): Positional field values.
+            **kwargs (EagerValue): Keyword field values.
+        """
         super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 

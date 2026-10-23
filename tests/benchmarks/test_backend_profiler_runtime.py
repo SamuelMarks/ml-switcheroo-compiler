@@ -233,10 +233,13 @@ def _test_mlx_profiler_runtime_part_2(_state: dict[str, EagerTensorProtocol]) ->
     import ml_switcheroo_compiler.backends.mlx.profiler as mlx_prof
 
     sys.modules["ml_switcheroo_compiler.backends.mlx"] = real_mlx_pkg
+    orig_mx = getattr(mlx_prof, "mx", None)
     with patch.dict(sys.modules, {"mlx": None, "mlx.core": None}):
         importlib.reload(mlx_prof)
         assert as_tensor(getattr(mlx_prof, "mx")) is None
     importlib.reload(mlx_prof)
+    if as_tensor(getattr(mlx_prof, "mx")) is None and orig_mx is not None:
+        setattr(mlx_prof, "mx", orig_mx)
     from ml_switcheroo_ir import LogicalNode
 
     from ml_switcheroo_compiler.backends.mlx.profiler import _prepare_mlx_inputs, _sync_mlx_result

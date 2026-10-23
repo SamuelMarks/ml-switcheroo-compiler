@@ -30,7 +30,14 @@ from .tensor_mixins import (
 
 
 def _is_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
-    """Type guard narrowing `val` to `Tensor`."""
+    """Type guard narrowing `val` to `Tensor`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: Always True for runtime tensor values.
+    """
     return val is not None or val is None
 
 
@@ -48,7 +55,14 @@ def as_tensor_obj(val: TensorOrScalar) -> Tensor:
 
 
 def _is_opt_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor | None]:
-    """Type guard narrowing `val` to `Tensor | None`."""
+    """Type guard narrowing `val` to `Tensor | None`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: Always True for optional tensor values.
+    """
     return val is not None or val is None
 
 

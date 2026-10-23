@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Callable
     from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
 
-pytest.importorskip("mlx.core")
+pytest.importorskip("mlx.core", exc_type=ImportError)
 
 
 class DummyNode:

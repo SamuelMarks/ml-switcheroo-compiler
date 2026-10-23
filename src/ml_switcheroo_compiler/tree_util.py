@@ -67,7 +67,14 @@ class TreeDef:
 
 
 def _is_tree_leaf(val: PyTree) -> typing.TypeGuard[TensorOrScalar]:
-    """Type guard narrowing `PyTree` leaf to `TensorOrScalar`."""
+    """Type guard narrowing `PyTree` leaf to `TensorOrScalar`.
+
+    Args:
+        val (PyTree): Candidate leaf value.
+
+    Returns:
+        bool: Always True for tree leaves.
+    """
     return val is not None or val is None
 
 

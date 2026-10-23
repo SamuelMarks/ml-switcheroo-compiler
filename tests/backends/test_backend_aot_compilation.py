@@ -394,7 +394,13 @@ def test_mlx_compile_aot_impl() -> None:
 
     # Load / save / savez / savez_compressed methods
     mock_mlx = MagicMock()
-    ctx = patch.dict(sys.modules, {"mlx": mock_mlx, "mlx.core": mock_mlx.core}) if importlib.util.find_spec("mlx") is None else MagicMock()
+    try:
+        import mlx.core as _real_mx
+
+        _has_mlx_core = _real_mx is not None
+    except Exception:
+        _has_mlx_core = False
+    ctx = patch.dict(sys.modules, {"mlx": mock_mlx, "mlx.core": mock_mlx.core}) if not _has_mlx_core else MagicMock()
     with ctx:
         with (
             patch("mlx.core.load", return_value=inp),

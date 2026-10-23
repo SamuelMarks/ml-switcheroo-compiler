@@ -420,7 +420,7 @@ def test_real_cross_backend_execution() -> None:
 
 def test_numerical_equivalence_across_backends() -> None:
     """Verify numerical equivalence across backends on identical operations."""
-    pytest.importorskip("mlx.core")
+    pytest.importorskip("mlx.core", exc_type=ImportError)
     import jax.numpy as jnp
     import mlx.core as mx
     import torch

@@ -41,7 +41,7 @@ if typing.TYPE_CHECKING:
 
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-mx = pytest.importorskip("mlx.core")
+mx = pytest.importorskip("mlx.core", exc_type=ImportError)
 
 
 def test_numpy_conversion_fallback() -> None:

@@ -16,7 +16,12 @@ class _PositionalConfigModel(pydantic.BaseModel):
     model_config = pydantic.ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     def __init__(self, *args: AttrValue, **kwargs: AttrValue) -> None:
-        """Initialize configuration model from positional or keyword arguments."""
+        """Initialize configuration model from positional or keyword arguments.
+
+        Args:
+            *args (AttrValue): Positional field values.
+            **kwargs (AttrValue): Keyword field values.
+        """
         super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 
@@ -101,7 +106,12 @@ class BlurConfig(_PositionalConfigModel):
     data_format: str | AttrValue | None = None
 
     def __init__(self, *args: AttrValue, **kwargs: AttrValue) -> None:
-        """Initialize BlurConfig requiring kernel_size and sigma."""
+        """Initialize BlurConfig requiring kernel_size and sigma.
+
+        Args:
+            *args (AttrValue): Positional field values.
+            **kwargs (AttrValue): Keyword field values.
+        """
         merged = {**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs}
         if "kernel_size" not in merged or "sigma" not in merged:
             msg = "BlurConfig.__init__() missing required arguments: 'kernel_size' and 'sigma'"

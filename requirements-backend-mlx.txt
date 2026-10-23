@@ -1,1 +1,2 @@
-mlx
+mlx; sys_platform == "darwin"
+mlx[cpu]; sys_platform == "linux" or sys_platform == "win32"

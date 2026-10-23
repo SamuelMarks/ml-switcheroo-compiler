@@ -28,7 +28,12 @@ class EvaluationContext(pydantic.BaseModel):
     backend: type | EagerPayload | None = None
 
     def __init__(self, *args: EagerPayload, **kwargs: EagerPayload) -> None:
-        """Initialize EvaluationContext from positional or keyword arguments."""
+        """Initialize EvaluationContext from positional or keyword arguments.
+
+        Args:
+            *args (EagerPayload): Positional field values.
+            **kwargs (EagerPayload): Keyword field values.
+        """
         super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
 
 

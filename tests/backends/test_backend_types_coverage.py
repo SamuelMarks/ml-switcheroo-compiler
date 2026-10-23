@@ -32,7 +32,8 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # 2. Restore and normal execution
     monkeypatch.undo()
-    if importlib.util.find_spec("dask") is None:
+    importlib.reload(dask_types)
+    if as_tensor(getattr(dask_types, "da")) is None:
         import types
 
         mock_dask = types.ModuleType("dask")
@@ -63,7 +64,7 @@ def test_dask_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
         setattr(mock_dask, "array", mock_da)
         monkeypatch.setitem(sys.modules, "dask", mock_dask)
         monkeypatch.setitem(sys.modules, "dask.array", mock_da)
-    importlib.reload(dask_types)
+        importlib.reload(dask_types)
     assert as_tensor(getattr(dask_types, "da")) is not None
 
     z = dask_types.zeros(type, (2, 2))
@@ -96,7 +97,8 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # 2. Restore and normal execution
     monkeypatch.undo()
-    if importlib.util.find_spec("mlx") is None:
+    importlib.reload(mlx_types)
+    if as_tensor(mlx_types.mx) is None:
         import types
 
         mock_mlx = types.ModuleType("mlx")
@@ -107,7 +109,7 @@ def test_mlx_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
         setattr(mock_mlx, "core", mock_mx)
         monkeypatch.setitem(sys.modules, "mlx", mock_mlx)
         monkeypatch.setitem(sys.modules, "mlx.core", mock_mx)
-    importlib.reload(mlx_types)
+        importlib.reload(mlx_types)
     assert as_tensor(mlx_types.mx) is not None
 
     z = mlx_types.zeros(type, (2, 2))
@@ -162,7 +164,8 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # 2. Restore and normal execution
     monkeypatch.undo()
-    if importlib.util.find_spec("keras") is None:
+    importlib.reload(keras_types)
+    if as_tensor(getattr(keras_types, "kops")) is None:
         import types
 
         mock_keras = types.ModuleType("keras")
@@ -173,7 +176,7 @@ def test_keras_types_coverage(monkeypatch: pytest.MonkeyPatch) -> None:
         setattr(mock_keras, "ops", mock_kops)
         monkeypatch.setitem(sys.modules, "keras", mock_keras)
         monkeypatch.setitem(sys.modules, "keras.ops", mock_kops)
-    importlib.reload(keras_types)
+        importlib.reload(keras_types)
     assert as_tensor(getattr(keras_types, "kops")) is not None
 
     z = keras_types.zeros(type, (2, 2))
