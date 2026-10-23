@@ -214,12 +214,13 @@ def test_validate_op_definitions_parameters_synthetic() -> None:
 
 
 def test_main_success(capsys: pytest.CaptureFixture[str]) -> None:
-    """Test main() execution when all checks pass.
+    """Test main() execution when all checks pass and when snapshot dir is missing.
 
     Args:
         capsys: Test parameter `capsys`.
     """
     with (
+        patch("scripts.validate_parameters.os.path.exists", return_value=True),
         patch("scripts.validate_parameters.validate_backend_mappings_parameters", return_value=[]),
         patch("scripts.validate_parameters.validate_op_definitions_parameters", return_value=[]),
         patch("sys.argv", ["validate_parameters.py", "--backend", "pytorch", "--strict"]),
@@ -228,6 +229,19 @@ def test_main_success(capsys: pytest.CaptureFixture[str]) -> None:
         assert ret == 0
         captured = capsys.readouterr()
         assert "Parameter validation PASSED" in captured.out
+
+    mock_engine = MagicMock()
+    mock_engine.snapshot_dir = "/nonexistent/snapshot/dir"
+    mock_engine._fail_on_missing = False
+    with (
+        patch("scripts.validate_parameters.SnapshotGroundingEngine", return_value=mock_engine),
+        patch("scripts.validate_parameters.os.path.exists", return_value=False),
+        patch("sys.argv", ["validate_parameters.py"]),
+    ):
+        ret_skip: int = main()
+        assert ret_skip == 0
+        captured_skip = capsys.readouterr()
+        assert "Skipping validation since snapshot dir is missing." in captured_skip.out
 
 
 def test_main_failure(capsys: pytest.CaptureFixture[str]) -> None:

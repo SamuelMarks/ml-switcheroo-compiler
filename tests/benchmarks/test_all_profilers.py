@@ -534,21 +534,32 @@ def test_orchestrator_isolated_execution() -> None:
 
 
 def test_profiler_linux_memory_branches() -> None:
-    """Test Linux platform memory extraction branches across all backend profilers."""
+    """Test Linux and Darwin platform memory extraction branches across all backend profilers."""
+    from ml_switcheroo_compiler.backends.cupy.profiler import _get_process_memory_mb as cupy_mem
     from ml_switcheroo_compiler.backends.dask.profiler import _get_process_memory_mb as dask_mem
+    from ml_switcheroo_compiler.backends.dpnp.profiler import _get_process_memory_mb as dpnp_mem
     from ml_switcheroo_compiler.backends.edge.profiler import _get_process_memory_mb as edge_mem
+    from ml_switcheroo_compiler.backends.jax.profiler import _get_process_memory_mb as jax_mem
     from ml_switcheroo_compiler.backends.keras.profiler import _get_process_memory_mb as keras_mem
     from ml_switcheroo_compiler.backends.numba.profiler import _get_process_memory_mb as numba_mem
+    from ml_switcheroo_compiler.backends.numpy.profiler import _get_process_memory_mb as np_mem
+    from ml_switcheroo_compiler.backends.pytorch.profiler import _get_process_memory_mb as torch_mem
     from ml_switcheroo_compiler.backends.sparse.profiler import _get_process_memory_mb as sparse_mem
     from ml_switcheroo_compiler.backends.tensorflow.profiler import _get_process_memory_mb as tf_mem
 
-    with patch("sys.platform", "linux"):
-        assert dask_mem() > 0.0
-        assert edge_mem() > 0.0
-        assert keras_mem() > 0.0
-        assert numba_mem() > 0.0
-        assert sparse_mem() > 0.0
-        assert tf_mem() > 0.0
+    for plat in ("linux", "darwin"):
+        with patch("sys.platform", plat):
+            assert cupy_mem() > 0.0
+            assert dask_mem() > 0.0
+            assert dpnp_mem() > 0.0
+            assert edge_mem() > 0.0
+            assert jax_mem() > 0.0
+            assert keras_mem() > 0.0
+            assert numba_mem() > 0.0
+            assert np_mem() > 0.0
+            assert torch_mem() > 0.0
+            assert sparse_mem() > 0.0
+            assert tf_mem() > 0.0
 
 
 def test_numba_and_sparse_profiler_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:

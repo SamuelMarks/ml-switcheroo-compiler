@@ -86,6 +86,14 @@ def f_none_name(x: int) -> None:
         x (int): X val.
     """
     pass
+
+def f_missing_specific_arg(x: int, y: int) -> None:
+    """Docstring.
+
+    Args:
+        x (int): X val.
+    """
+    pass
 '''
     )
     f1 = typing.cast(ast.FunctionDef, tree.body[0])
@@ -107,6 +115,9 @@ def f_none_name(x: int) -> None:
 
     f_none_name = typing.cast(ast.FunctionDef, tree.body[4])
     assert _is_function_doc_complete(f_none_name) is True
+
+    f_missing_specific_arg = typing.cast(ast.FunctionDef, tree.body[5])
+    assert _is_function_doc_complete(f_missing_specific_arg) is False
 
 
 def test_get_test_coverage_success() -> None:

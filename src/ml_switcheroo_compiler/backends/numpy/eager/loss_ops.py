@@ -45,7 +45,7 @@ def _np_ctc_loss_single(probs: EagerValue, b_labels: EagerValue, T: int, L: int)
     blank = 0
     augmented = np.zeros(2 * L + 1, dtype=np.int32)
     if getattr(b_labels, "__len__")() > 0:
-        augmented[1::2] = b_labels
+        augmented[1::2] = np.asarray(b_labels, dtype=np.int32)
     S = len(augmented)
 
     num_classes = getattr(probs, "shape")[-1]

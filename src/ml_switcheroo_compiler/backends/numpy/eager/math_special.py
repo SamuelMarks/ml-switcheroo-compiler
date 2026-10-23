@@ -359,7 +359,7 @@ def _np_bartlett(
     Returns:
         np.ndarray: The triangular Bartlett window.
     """
-    return np.bartlett(M)
+    return as_ndarray(np.bartlett(M))
 
 
 @numpy_eager_registry.register("Digamma")

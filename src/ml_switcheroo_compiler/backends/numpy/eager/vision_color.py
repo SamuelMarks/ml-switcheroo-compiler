@@ -178,7 +178,7 @@ def _np_invert(
     """
     value_range_val = kwargs.get("value_range", (0, 255))
     value_range = value_range_val if isinstance(value_range_val, tuple) else (0, 255)
-    return np.add(np.subtract(value_range[1], images), value_range[0])
+    return as_ndarray(np.add(np.subtract(value_range[1], images), value_range[0]))
 
 
 @numpy_eager_registry.register("Posterize")

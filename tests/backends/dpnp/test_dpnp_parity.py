@@ -366,6 +366,7 @@ def test_dpnp_types_buffer_management() -> None:
     assert as_callable(get_usm_type)(as_callable(AltSyclObj)()) is None
     assert is_sycl_array(np.array([1])) is False
     assert get_device(np.array([1])) == "cpu"
+    assert get_device([1]) == "cpu"
 
     # Item extraction
     assert item(np.array([3.14])) == pytest.approx(3.14)

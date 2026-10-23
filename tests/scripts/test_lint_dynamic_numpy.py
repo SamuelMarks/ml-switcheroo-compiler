@@ -47,6 +47,7 @@ def test_dynamic_numpy_import_detection() -> None:
                 [
                     "import torch",
                     "other_call()",
+                    "other_call(123)",
                     "import_module()",
                     "import_module(123)",
                     'import_module("scipy")',

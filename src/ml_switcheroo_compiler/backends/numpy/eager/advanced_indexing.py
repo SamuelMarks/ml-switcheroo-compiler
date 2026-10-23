@@ -40,7 +40,7 @@ def _scatter_nd(indices: EagerValue, updates: EagerValue, shape: EagerValue, **k
             tuple[int, ...]: Result.
     """
     res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "zeros")(shape, dtype=getattr(updates, "dtype"))
-    res[tuple(getattr(np, "moveaxis")(indices, -1, 0))] = updates
+    res[tuple(getattr(np, "moveaxis")(indices, -1, 0))] = as_ndarray(updates)
     return res
 
 

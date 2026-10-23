@@ -186,7 +186,7 @@ def _apply_conv_dilation(tensor: EagerValue, dilation: Sequence[int], spatial_di
         new_shape[2 + i] = (getattr(tensor, "shape")[2 + i] - 1) * d + 1
     dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "zeros")(new_shape, dtype=getattr(tensor, "dtype"))
     slices: list[SliceType] = [slice(None), slice(None)] + [slice(None, None, d) for d in dilation]
-    dilated[tuple(slices)] = tensor
+    dilated[tuple(slices)] = as_ndarray(tensor)
     return dilated
 
 

@@ -1142,6 +1142,8 @@ def _ensure_onnx_reference_mock() -> dict[str, EagerValue]:
     import numpy as np
 
     if importlib.util.find_spec("onnx") is not None:
+        import onnx.reference  # noqa: F401
+
         return {}
     mock_onnx = types.ModuleType("onnx")
     mock_ref = types.ModuleType("onnx.reference")

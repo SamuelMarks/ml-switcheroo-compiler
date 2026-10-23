@@ -142,7 +142,7 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            chunks[recv_chunk_idx] = self.recv_conns[0].recv() if self.recv_conns else None
+            chunks[recv_chunk_idx] = as_ndarray(self.recv_conns[0].recv() if self.recv_conns else None)
 
         return as_ndarray(getattr(backend_module, "concatenate")(chunks))
 

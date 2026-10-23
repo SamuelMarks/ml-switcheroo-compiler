@@ -557,9 +557,8 @@ def test_onnx_compile_aot_impl() -> None:
     mock_ref.ReferenceEvaluator.return_value = mock_session
     mock_onnx = MagicMock()
     mock_onnx.reference = mock_ref
-    ctx = patch.dict(sys.modules, {"onnx": mock_onnx, "onnx.reference": mock_ref}) if importlib.util.find_spec("onnx") is None else MagicMock()
 
-    with ctx:
+    with patch.dict(sys.modules, {"onnx": mock_onnx, "onnx.reference": mock_ref}):
         with patch("onnx.reference.ReferenceEvaluator", mock_ref.ReferenceEvaluator):
             runner: TypedVariadicCallable[EagerValue] = as_callable(gen._compile_aot_impl(graph, opset_version=18))
             res = runner(inp)

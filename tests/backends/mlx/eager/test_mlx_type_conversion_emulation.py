@@ -173,8 +173,8 @@ def _test_mlx_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     _mlx_slice(mx, t, dim=0, start=0, end=1)
     _mlx_eye(mx, DataMock(), m=DataMock())
     _mlx_eye(mx, 2)
-    t3 = mx.array([[[1.0]]])
-    _mlx_rope(mx, t3, dim=1)
+    t3 = mx.array([[[1.0, 2.0]]])
+    _mlx_rope(mx, t3, dim=2)
     _mlx_variance(mx, t)
     getattr(_state, "update")({"t3": t3})
 

@@ -163,27 +163,36 @@ def test_cuda_and_rocm_argument_marshalling() -> None:
 
 def test_cross_backend_eager_parity_against_numpy_reference() -> None:
     """Verify numerical parity across native backends compared to NumPy references."""
-    pytest.importorskip("mlx.core", exc_type=ImportError)
-    import jax.numpy as jnp
-    import mlx.core as mx
-    import torch
+    import importlib.util
 
-    from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
-    from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
     from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
-    from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
     a_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     b_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[0.5, -0.5], [1.5, 0.0]], dtype=np.float32)
     ref_matmul: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.matmul(a_np, b_np)
     np_res = NumpyGenerator.execute_op("MatMul", a_np, b_np)
     as_callable(np.testing.assert_allclose)(np_res, ref_matmul, rtol=1e-05, atol=1e-05)
-    torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
-    jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
-    as_callable(np.testing.assert_allclose)(as_callable(np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
-    mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
-    as_callable(np.testing.assert_allclose)(as_callable(np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
+    if importlib.util.find_spec("torch") is not None:
+        import torch
+
+        from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+
+        torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
+        as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
+    if importlib.util.find_spec("jax") is not None:
+        import jax.numpy as jnp
+
+        from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
+
+        jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
+        as_callable(np.testing.assert_allclose)(as_callable(np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
+    if importlib.util.find_spec("mlx.core") is not None:
+        import mlx.core as mx
+
+        from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
+
+        mlx_res = MLXCodeGenerator.execute_op("MatMul", mx.array(a_np), mx.array(b_np))
+        as_callable(np.testing.assert_allclose)(as_callable(np.array)(mlx_res), ref_matmul, rtol=1e-05, atol=1e-05)
     x_np: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     ref_sum: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.sum(x_np, axis=-1, keepdims=True)
     ref_mean = as_callable(np.mean)(x_np, axis=-1, keepdims=True)
