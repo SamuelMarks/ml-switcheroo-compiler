@@ -186,7 +186,7 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
 
         jax_res = JAXCodeGenerator.execute_op("MatMul", jnp.array(a_np), jnp.array(b_np))
         as_callable(np.testing.assert_allclose)(as_callable(np.array)(jax_res), ref_matmul, rtol=1e-05, atol=1e-05)
-    if importlib.util.find_spec("mlx.core") is not None:
+    if importlib.util.find_spec("mlx") is not None:
         import mlx.core as mx
 
         from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator

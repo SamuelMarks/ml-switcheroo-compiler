@@ -14,7 +14,7 @@ yaml.safe_load("dummy: 1")
 sys.modules.setdefault("dpnp", np)
 
 for _opt_pkg in ("scipy.linalg", "jax", "dask", "jinja2", "torch", "numba", "sparse"):
-    if importlib.util.find_spec(_opt_pkg) is not None:
+    if importlib.util.find_spec(_opt_pkg.split(".")[0]) is not None:
         __import__(_opt_pkg)
 
 if importlib.util.find_spec("tensorflow") is not None:

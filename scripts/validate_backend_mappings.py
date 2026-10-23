@@ -57,6 +57,10 @@ EAGER_CONFIG: dict[str, AttributeValue] = _load_yaml_config("eager_signatures.ya
 _eager_raw: AttributeValue = EAGER_CONFIG.get("backends")
 EAGER_SIGNATURES: dict[str, dict[str, dict[str, AttributeValue]]] = _eager_raw if isinstance(_eager_raw, dict) else {}
 
+_sparse_kernels_path: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src", "ml_switcheroo_compiler", "backends", "sparse", "kernels.py"))
+with open(_sparse_kernels_path, encoding="utf-8") as _sk_file:
+    SPARSE_KERNEL_NAMES: set[str] = {node.name for node in ast.parse(_sk_file.read()).body if isinstance(node, ast.FunctionDef)}
+
 
 def _resolve_ecosystem_endpoint(
     clean_api: str,
@@ -80,9 +84,7 @@ def _resolve_ecosystem_endpoint(
         expanded_np = f"{ROOT_EXPANSIONS[parts[0]]}.{'.'.join(parts[1:])}" if parts[0] in ROOT_EXPANSIONS else ""
         matched = engine.is_endpoint_valid("numpy", clean_api) or bool(expanded_np and engine.is_endpoint_valid("numpy", expanded_np))
     elif backend_name == "sparse" and clean_api.startswith("ml_switcheroo_compiler.backends.sparse.kernels."):
-        import ml_switcheroo_compiler.backends.sparse.kernels as s_kernels
-
-        matched = hasattr(s_kernels, clean_api.split(".")[-1])
+        matched = clean_api.split(".")[-1] in SPARSE_KERNEL_NAMES
     elif backend_name == "cupy":
         np_equiv: str = clean_api.replace("cupy.", "numpy.").replace("cp.", "numpy.")
         valid_cupy: set[str] = engine.get_valid_endpoints("cupy")
