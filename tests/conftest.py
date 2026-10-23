@@ -44,6 +44,9 @@ def reset_global_tracing_state() -> Iterator[None]:
 
     import copy
 
+    import ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider as ad_prov
+    import ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry as jvp_reg
+    import ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry as vjp_reg
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
     from ml_switcheroo_compiler.utils.generic_utils import get_custom_objects
 
@@ -53,6 +56,13 @@ def reset_global_tracing_state() -> Iterator[None]:
 
     get_custom_objects().clear()
     orig_yaml_registry = copy.deepcopy(_YAML_REGISTRY)
+    orig_vjp_reg, orig_jvp_reg = dict(vjp_reg._VJP_REGISTRY), dict(jvp_reg._JVP_REGISTRY)
+    orig_caches = (
+        vjp_reg.load_primitive_vjp_rules(),
+        jvp_reg.load_primitive_jvp_rules(),
+        ad_prov._get_autodiff_manifest(),
+        ad_prov._get_modular_rules(),
+    )
     config.eager_mode = False
     config.backend = "numpy"
 
@@ -61,6 +71,16 @@ def reset_global_tracing_state() -> Iterator[None]:
     get_custom_objects().clear()
     _YAML_REGISTRY.clear()
     _YAML_REGISTRY.update(orig_yaml_registry)
+    vjp_reg._VJP_REGISTRY.clear()
+    vjp_reg._VJP_REGISTRY.update(orig_vjp_reg)
+    jvp_reg._JVP_REGISTRY.clear()
+    jvp_reg._JVP_REGISTRY.update(orig_jvp_reg)
+    (
+        vjp_reg._DECLARATIVE_VJP_CACHE,
+        jvp_reg._DECLARATIVE_JVP_CACHE,
+        ad_prov._MANIFEST_MODEL_CACHE,
+        ad_prov._MODULAR_RULES_CACHE,
+    ) = orig_caches
     state.global_tracing_state.is_tracing = old_is_tracing
     state.global_tracing_state.active_graph = old_graph
     setattr(state.global_tracing_state, "add_node", old_add_node)

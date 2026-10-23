@@ -49,7 +49,18 @@ jobs:
         radon cc src/ -a --total-average | grep "Average complexity: A"
 
     - name: Duplicate Code Check
-      run: for d in src/ml_switcheroo_compiler/*/; do pylint "$d" --disable=all --enable=duplicate-code --ignore-patterns=".*stubs?\.pyi" || exit 1; done
+      run: |
+        pids=""
+        for d in src/ml_switcheroo_compiler/*/; do
+          pylint "$d" --disable=all --enable=duplicate-code --ignore-patterns=".*stubs?\.pyi" &
+          pids="$pids $!"
+        done
+        for pid in $pids; do
+          if ! wait "$pid"; then
+            kill $pids 2>/dev/null || true
+            exit 1
+          fi
+        done
 
     - name: Validate Backend Mappings
       run: python3 scripts/validate_backend_mappings.py
@@ -63,7 +74,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         python-version: ['3.10', '3.11', '3.12']
         backend: [cupy, dask, jax, keras, mlx, numba, numpy, onnx, sparse, tensorflow, torch]
@@ -98,7 +109,7 @@ jobs:
         if [ "${KERAS_BACKEND}" = "cupy" ] || [ "${KERAS_BACKEND}" = "dask" ] || [ "${KERAS_BACKEND}" = "keras" ] || [ "${KERAS_BACKEND}" = "mlx" ] || [ "${KERAS_BACKEND}" = "numba" ] || [ "${KERAS_BACKEND}" = "onnx" ] || [ "${KERAS_BACKEND}" = "sparse" ]; then
           export KERAS_BACKEND=numpy
         fi
-        pytest --cov=. --cov-report=xml --cov-fail-under=0
+        pytest -n auto --dist loadfile -x --cov=. --cov-report=xml --cov-fail-under=0
 
     - name: Upload Coverage
       uses: actions/upload-artifact@v7

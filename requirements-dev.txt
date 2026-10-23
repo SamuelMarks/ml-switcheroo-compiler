@@ -2,6 +2,7 @@ pytest
 pytest-cov
 pytest-mock
 pytest-asyncio
+pytest-xdist
 mypy
 pre-commit
 radon>=6.0.0

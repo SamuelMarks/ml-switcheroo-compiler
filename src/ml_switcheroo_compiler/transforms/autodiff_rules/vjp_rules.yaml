@@ -180,3 +180,18 @@ Squeeze:
 Reshape:
   vjp:
   - Reshape($cotangent)
+AllReduce:
+  vjp:
+  - AllReduce($cotangent)
+AllGather:
+  vjp:
+  - ReduceScatter($cotangent)
+ReduceScatter:
+  vjp:
+  - AllGather($cotangent)
+Broadcast:
+  vjp:
+  - AllReduce($cotangent)
+AllToAll:
+  vjp:
+  - AllToAll($cotangent)

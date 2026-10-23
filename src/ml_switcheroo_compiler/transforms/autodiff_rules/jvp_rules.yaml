@@ -102,3 +102,13 @@ Squeeze:
   jvp: Squeeze($tangent[0])
 Reshape:
   jvp: Reshape($tangent[0])
+AllReduce:
+  jvp: AllReduce($tangent[0])
+AllGather:
+  jvp: AllGather($tangent[0])
+ReduceScatter:
+  jvp: ReduceScatter($tangent[0])
+Broadcast:
+  jvp: Broadcast($tangent[0])
+AllToAll:
+  jvp: AllToAll($tangent[0])

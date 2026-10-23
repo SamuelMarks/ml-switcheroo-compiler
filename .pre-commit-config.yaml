@@ -43,7 +43,7 @@ repos:
     - python
   repo: local
 - hooks:
-  - entry: pytest -n auto --dist loadfile --cov=src/ml_switcheroo_compiler --cov-branch --cov-fail-under=100
+  - entry: pytest -n auto --dist loadfile -x --cov=src/ml_switcheroo_compiler --cov-branch --cov-fail-under=100
     files: \.py$
     id: pytest-coverage
     language: system
