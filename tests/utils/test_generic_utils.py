@@ -55,9 +55,8 @@ def test_set_random_seed() -> None:
 
     m = types.ModuleType("ml_switcheroo_compiler.backends.numpy.utils")
     setattr(m, "set_numpy_seed", mock.Mock())
-    sys.modules["ml_switcheroo_compiler.backends.numpy.utils"] = m
-    set_random_seed(42)
-    del sys.modules["ml_switcheroo_compiler.backends.numpy.utils"]
+    with mock.patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.numpy.utils": m}):
+        set_random_seed(42)
     with mock.patch("random.seed", side_effect=ImportError):
         set_random_seed(42)
     assert getattr(m, "set_numpy_seed").called

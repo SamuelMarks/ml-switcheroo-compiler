@@ -51,8 +51,7 @@ def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
     import sys
 
     # Force the module to be reloaded without mlx
-    if "ml_switcheroo_compiler.backends.mlx" in sys.modules:
-        del sys.modules["ml_switcheroo_compiler.backends.mlx"]
+    monkeypatch.delitem(sys.modules, "ml_switcheroo_compiler.backends.mlx", raising=False)
 
     def mock_find_spec(name: EagerValue, package: EagerValue = None) -> EagerValue:
         """Test function mock_find_spec.

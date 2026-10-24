@@ -42,20 +42,21 @@ def reset_global_tracing_state() -> Iterator[None]:
     had_active_backend = hasattr(reg, "_ACTIVE_BACKEND")
     old_active_backend = getattr(reg, "_ACTIVE_BACKEND", None)
 
-    import copy
+    import os
 
     import ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider as ad_prov
     import ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry as jvp_reg
     import ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry as vjp_reg
-    from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
+    from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, _YAML_REGISTRY
     from ml_switcheroo_compiler.utils.generic_utils import get_custom_objects
 
     for _tmp_file in ("/tmp/ml_switcheroo_test_file.txt", "/tmp/ml_switcheroo_test_file2.txt"):
-        with open(_tmp_file, "wb") as _f:
-            _f.write(b"content")
+        if not os.path.exists(_tmp_file):
+            with open(_tmp_file, "wb") as _f:
+                _f.write(b"content")
 
     get_custom_objects().clear()
-    orig_yaml_registry = copy.deepcopy(_YAML_REGISTRY)
+    orig_yaml_registry = dict(_YAML_REGISTRY)
     orig_vjp_reg, orig_jvp_reg = dict(vjp_reg._VJP_REGISTRY), dict(jvp_reg._JVP_REGISTRY)
     orig_caches = (
         vjp_reg.load_primitive_vjp_rules(),
@@ -71,6 +72,8 @@ def reset_global_tracing_state() -> Iterator[None]:
     get_custom_objects().clear()
     _YAML_REGISTRY.clear()
     _YAML_REGISTRY.update(orig_yaml_registry)
+    for _cg_key in [k for k in _OP_REGISTRY if k.startswith("CustomGradient_")]:
+        _OP_REGISTRY.pop(_cg_key, None)
     vjp_reg._VJP_REGISTRY.clear()
     vjp_reg._VJP_REGISTRY.update(orig_vjp_reg)
     jvp_reg._JVP_REGISTRY.clear()
