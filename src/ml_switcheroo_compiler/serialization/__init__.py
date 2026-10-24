@@ -399,12 +399,12 @@ def _write_keras_zip(ctx: KerasSerializationContext) -> None:
         ctx (KerasSerializationContext): The ctx parameter.
     """
     with zipfile.ZipFile(ctx.filepath, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr(zipfile.ZipInfo("config.json"), json.dumps(ctx.config_dict, indent=2))
-        zf.writestr(zipfile.ZipInfo("metadata.json"), json.dumps(ctx.metadata, indent=2))
         if ctx.weights_store:
             _write_h5_to_zip(zf, "model.weights.h5", as_tensor(ctx.weights_store))
         if ctx.state_store:
             _write_h5_to_zip(zf, "optimizer.weights.h5", as_tensor(ctx.state_store))
+        zf.writestr(zipfile.ZipInfo("config.json"), json.dumps(ctx.config_dict, indent=2))
+        zf.writestr(zipfile.ZipInfo("metadata.json"), json.dumps(ctx.metadata, indent=2))
 
 
 def save_model(model: TensorOrScalar, filepath: str, overwrite: bool = True, zipped: TensorOrScalar = None, **kwargs: AttrValue) -> None:
@@ -992,8 +992,8 @@ def read_fingerprint(path: str) -> str:
     if fp_path and os.path.exists(fp_path):
         with open(fp_path, encoding="utf-8") as f:
             content = f.read().strip()
-            if content:
-                return content
+        if content:
+            return content
 
     # Compute deterministic SHA-256 over checkpoint / model files
     hasher = hashlib.sha256()
@@ -1006,12 +1006,12 @@ def read_fingerprint(path: str) -> str:
                 rel_path = os.path.relpath(file_path, path)
                 hasher.update(rel_path.encode("utf-8"))
                 with open(file_path, "rb") as f:
-                    while chunk := f.read(65536):
-                        hasher.update(chunk)
+                    data = f.read()
+                hasher.update(data)
     else:
         with open(path, "rb") as f:
-            while chunk := f.read(65536):
-                hasher.update(chunk)
+            data = f.read()
+        hasher.update(data)
 
     return hasher.hexdigest()
 

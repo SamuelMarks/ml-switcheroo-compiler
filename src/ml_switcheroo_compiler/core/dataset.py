@@ -437,6 +437,7 @@ class Dataset:
                     from ml_switcheroo_compiler.ops.shape.indexing import take
 
                     batch_tensors.append(as_tensor_obj(take(t, batch_idx_tensor, axis=0)))
+                batch_tuple: tuple[Tensor, ...] = tuple(batch_tensors)
 
             if hasattr(self, "_map_func"):
                 from ml_switcheroo_compiler.core.shape import invoke_callable
@@ -445,7 +446,7 @@ class Dataset:
                 assert _is_tensor_tuple(mapped)
                 yield mapped
             else:
-                yield tuple(batch_tensors)
+                yield batch_tuple
 
 
 class NumpyIterator:
@@ -626,7 +627,8 @@ class ImageDataset(Dataset):
                     if self.normalize:
                         t = true_divide(t, 255.0)
                     processed_batch.append(t)
-            yield tuple(processed_batch)
+                batch_out = tuple(processed_batch)
+            yield batch_out
 
 
 class AudioDataset(Dataset):

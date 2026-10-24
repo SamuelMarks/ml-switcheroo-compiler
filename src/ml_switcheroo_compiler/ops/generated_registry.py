@@ -121,10 +121,10 @@ def load_backend_mappings(backends_dir: str = "src/ml_switcheroo_compiler/backen
                     try:
                         with open(os.path.join(map_dir, y), encoding="utf-8") as fp:
                             d = yaml.load(fp, Loader=_YAML_LOADER)
-                            if isinstance(d, dict):
-                                for k, v in d.items():
-                                    if isinstance(v, dict) and "target_api" in v:
-                                        mappings[b][str(k)] = str(v["target_api"])
+                        if isinstance(d, dict):
+                            for k, v in d.items():
+                                if isinstance(v, dict) and "target_api" in v:
+                                    mappings[b][str(k)] = str(v["target_api"])
                     except (OSError, yaml.YAMLError):
                         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return mappings
@@ -219,17 +219,17 @@ def _build_ops_registry() -> dict[str, dict[str, OpRegistryValue]]:
     for filename in sorted(f for f in os.listdir(defs_dir) if f.endswith(".yaml")):
         with open(os.path.join(defs_dir, filename), encoding="utf-8") as f:
             data = yaml.load(f, Loader=_YAML_LOADER)
-            if "operation" in data:
-                op_name = str(data["operation"])
-                normalized_op = _normalize_and_validate_op(op_name, data, backend_mappings, validate=False)
-                ops_data[op_name] = normalized_op
-                if "aliases" in data and isinstance(data["aliases"], list):
-                    for alias in data["aliases"]:
-                        ops_data[str(alias)] = normalized_op
-            else:
-                for op_name_inner, op_info in data.items():
-                    normalized_op = _normalize_and_validate_op(op_name_inner, op_info, backend_mappings, validate=False)
-                    ops_data[op_name_inner] = normalized_op
+        if "operation" in data:
+            op_name = str(data["operation"])
+            normalized_op = _normalize_and_validate_op(op_name, data, backend_mappings, validate=False)
+            ops_data[op_name] = normalized_op
+            if "aliases" in data and isinstance(data["aliases"], list):
+                for alias in data["aliases"]:
+                    ops_data[str(alias)] = normalized_op
+        else:
+            for op_name_inner, op_info in data.items():
+                normalized_op = _normalize_and_validate_op(op_name_inner, op_info, backend_mappings, validate=False)
+                ops_data[op_name_inner] = normalized_op
     return ops_data
 
 

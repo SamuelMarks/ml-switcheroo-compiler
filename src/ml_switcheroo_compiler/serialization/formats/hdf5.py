@@ -89,3 +89,4 @@ class HDF5WeightSaver(WeightSaver):
         with h5py.File(filepath, "w") as f:
             for key, value in validated.data.items():
                 f.create_dataset(key, data=value)
+            del validated

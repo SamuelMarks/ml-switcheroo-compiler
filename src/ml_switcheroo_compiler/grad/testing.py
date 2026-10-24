@@ -114,6 +114,7 @@ def check_numerical_grads(
                     ]
                 )
                 raise SwitcherooError(msg)
+        del args_seq
 
 
 def check_jvp_vjp_duality(
@@ -195,13 +196,13 @@ def check_jvp_vjp_duality(
 
         diff = abs(lhs - rhs)
         tol = atol + rtol * max(abs(lhs), abs(rhs))
-        if diff > tol:
-            msg = chr(10).join(
-                [
-                    "JVP/VJP duality check failed:",
-                    f"⟨J(x) · v, w⟩ = {lhs}",
-                    f"⟨v, J*(x) · w⟩ = {rhs}",
-                    f"Absolute difference: {diff} (tolerance: {tol})",
-                ]
-            )
-            raise SwitcherooError(msg)
+    if diff > tol:
+        msg = chr(10).join(
+            [
+                "JVP/VJP duality check failed:",
+                f"⟨J(x) · v, w⟩ = {lhs}",
+                f"⟨v, J*(x) · w⟩ = {rhs}",
+                f"Absolute difference: {diff} (tolerance: {tol})",
+            ]
+        )
+        raise SwitcherooError(msg)

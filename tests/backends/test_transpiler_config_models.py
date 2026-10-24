@@ -236,6 +236,7 @@ def test_cst_rewrite_rules_models_and_loader() -> None:
         ASTPatternMatchSpec,
         ASTRewriteReplacementSpec,
         CSTRewriteRuleEntry,
+        load_argument_rewrites,
         load_cst_rewrite_rules,
     )
 
@@ -253,6 +254,13 @@ def test_cst_rewrite_rules_models_and_loader() -> None:
     if os.path.exists(explicit_path):
         config_explicit = load_cst_rewrite_rules(path=explicit_path)
         assert len(config_explicit.method_substitutions) >= 1
+
+    arg_rewrites_default = load_argument_rewrites()
+    assert arg_rewrites_default is not None
+    explicit_arg_path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "ml_switcheroo_compiler", "backends", "argument_rewrites.yaml")
+    if os.path.exists(explicit_arg_path):
+        arg_rewrites_explicit = load_argument_rewrites(path=explicit_arg_path)
+        assert arg_rewrites_explicit is not None
 
     # 2. Test model validation
     match_spec = ASTPatternMatchSpec(pattern="test_pat", source_framework="pytorch")

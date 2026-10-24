@@ -103,5 +103,4 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         with open(filepath, "wb") as f:
             f.write(struct.pack("<Q", header_length))
             f.write(header_bytes)
-            for buffer in buffers:
-                f.write(buffer)
+            f.writelines(buffers)

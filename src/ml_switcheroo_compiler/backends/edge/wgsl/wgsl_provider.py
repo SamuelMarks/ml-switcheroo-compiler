@@ -119,8 +119,8 @@ def _load_templates() -> None:
         if os.path.exists(base_path):
             with open(base_path) as f:
                 base_data = yaml.safe_load(f)
-                if isinstance(base_data, dict):
-                    loaded = WgslTemplatesConfig(**base_data).model_dump()
+            if isinstance(base_data, dict):
+                loaded = WgslTemplatesConfig(**base_data).model_dump()
 
         _merge_modular_templates(loaded)
         kernels = _load_kernels()

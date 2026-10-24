@@ -21,8 +21,8 @@ def _load_scan_rules() -> dict[str, AttributeValue]:
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
-            if isinstance(data, dict):
-                return data
+        if isinstance(data, dict):
+            return data
     return {}
 
 

@@ -230,7 +230,8 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
         for k, v in getattr(weights, "items")():
             name = k if getattr(k, "endswith")(".npy") else f"{k}.npy"
             zf.writestr(name, _tensor_to_npy_bytes(v))
-    return buf.getvalue()
+        zf_out = buf
+    return zf_out.getvalue()
 
 
 def parse_npz(file_obj: str | bytes | TensorLike) -> dict[str, TensorLike]:

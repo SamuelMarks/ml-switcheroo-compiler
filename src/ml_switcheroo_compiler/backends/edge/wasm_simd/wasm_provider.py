@@ -47,15 +47,15 @@ def load_yaml_dir(dir_name: str) -> dict[str, dict[str, dict[str, str]] | dict[s
         for filename in glob.glob(str(dir_path / "*.yaml")):
             with open(filename) as f:
                 data = yaml.safe_load(f)
-                if isinstance(data, dict):
-                    source = data.get("templates", data)
-                    for k, v in source.items():
-                        if isinstance(v, dict) and "body" in v:
-                            res[k] = v
-                        elif isinstance(v, str):
-                            res[k] = {"body": v}
-                        else:
-                            res[k] = v
+            if isinstance(data, dict):
+                source = data.get("templates", data)
+                for k, v in source.items():
+                    if isinstance(v, dict) and "body" in v:
+                        res[k] = v
+                    elif isinstance(v, str):
+                        res[k] = {"body": v}
+                    else:
+                        res[k] = v
     return {"templates": res}
 
 
@@ -132,8 +132,8 @@ def get_wasm_simd_ops() -> dict[str, EagerValue]:
         if simd_path.is_file():
             with open(simd_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-                if isinstance(data, dict):
-                    _WASM_SIMD_OPS = data
+            if isinstance(data, dict):
+                _WASM_SIMD_OPS = data
     return _WASM_SIMD_OPS
 
 

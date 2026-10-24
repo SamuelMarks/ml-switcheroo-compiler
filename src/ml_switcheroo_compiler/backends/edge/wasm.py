@@ -131,23 +131,23 @@ class WasmCodeGenerator(BaseGenerator):
             with open(yaml_path) as f:
                 data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
 
-                # Load scalar helpers
-                scalars: dict[str, str] = data.get("scalars") or {}
-                for name, body in scalars.items():
-                    helpers.append(f"inline float _scalar_{name.lower()}(float a, float b) {{ {body} }}")
+            # Load scalar helpers
+            scalars: dict[str, str] = data.get("scalars") or {}
+            for name, body in scalars.items():
+                helpers.append(f"inline float _scalar_{name.lower()}(float a, float b) {{ {body} }}")
 
-                helpers.append("// --- SIMD Fast Math Approximations from YAML ---")
+            helpers.append("// --- SIMD Fast Math Approximations from YAML ---")
 
-                intrinsics: dict[str, dict[str, str]] = data.get("intrinsics", {})
-                for _op, intrinsic_data in intrinsics.items():
-                    if intrinsic_data.get("macro_name") and intrinsic_data.get("simd_expr"):
-                        is_binary: bool = "b" in intrinsic_data["simd_expr"]
-                        arg_sig: str = "v128_t a, v128_t b" if is_binary else "v128_t x"
-                        helpers.append(f"inline v128_t {intrinsic_data['macro_name']}({arg_sig}) {{")
-                        for line in intrinsic_data["simd_expr"].split("\n"):
-                            if line.strip():
-                                helpers.append(f"    {line}")
-                        helpers.append("}")
+            intrinsics: dict[str, dict[str, str]] = data.get("intrinsics", {})
+            for _op, intrinsic_data in intrinsics.items():
+                if intrinsic_data.get("macro_name") and intrinsic_data.get("simd_expr"):
+                    is_binary: bool = "b" in intrinsic_data["simd_expr"]
+                    arg_sig: str = "v128_t a, v128_t b" if is_binary else "v128_t x"
+                    helpers.append(f"inline v128_t {intrinsic_data['macro_name']}({arg_sig}) {{")
+                    for line in intrinsic_data["simd_expr"].split("\n"):
+                        if line.strip():
+                            helpers.append(f"    {line}")
+                    helpers.append("}")
 
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers
 
@@ -1170,16 +1170,16 @@ class WasmCodeGenerator(BaseGenerator):
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-                intrinsics_dict = data.get("intrinsics", {})
-                intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
-                if intr:
-                    simd_macro = intr.get("macro_name", "")
-                    if intr.get("scalar_fallback"):
-                        scalar_expr = intr["scalar_fallback"].format(f"buf_{in0}[i_{clean_id}]", f"buf_{in1}[i_{clean_id}]")
-                if not scalar_expr:
-                    scalars_dict = data.get("scalars", {})
-                    if op_type.lower() in scalars_dict:
-                        scalar_expr = f"_scalar_{op_type.lower()}(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])"
+            intrinsics_dict = data.get("intrinsics", {})
+            intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
+            if intr:
+                simd_macro = intr.get("macro_name", "")
+                if intr.get("scalar_fallback"):
+                    scalar_expr = intr["scalar_fallback"].format(f"buf_{in0}[i_{clean_id}]", f"buf_{in1}[i_{clean_id}]")
+            if not scalar_expr:
+                scalars_dict = data.get("scalars", {})
+                if op_type.lower() in scalars_dict:
+                    scalar_expr = f"_scalar_{op_type.lower()}(buf_{in0}[i_{clean_id}], buf_{in1}[i_{clean_id}])"
         if not scalar_expr:
             binary_scalars: dict[str, str] = {
                 "add": f"buf_{in0}[i_{clean_id}] + buf_{in1}[i_{clean_id}]",
@@ -1238,18 +1238,18 @@ class WasmCodeGenerator(BaseGenerator):
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 data = WasmIntrinsicsConfig(**yaml.safe_load(f)).model_dump()
-                intrinsics_dict = data.get("intrinsics", {})
-                intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
-                if intr:
-                    simd_macro = intr.get("macro_name", "")
-                    if intr.get("scalar_fallback"):
-                        scalar_expr = intr["scalar_fallback"].format(f"buf_{in_id}[i_{clean_id}]")
-                if not scalar_expr:
-                    scalars_dict = data.get("scalars", {})
-                    scalar_def = scalars_dict.get(op_type.lower())
-                    if scalar_def:
-                        body_str = scalar_def.replace("return ", "").rstrip(";")
-                        scalar_expr = body_str.replace("a", f"buf_{in_id}[i_{clean_id}]")
+            intrinsics_dict = data.get("intrinsics", {})
+            intr = intrinsics_dict.get(op_type) or next((v for k, v in intrinsics_dict.items() if k.lower() == op_type.lower()), None)
+            if intr:
+                simd_macro = intr.get("macro_name", "")
+                if intr.get("scalar_fallback"):
+                    scalar_expr = intr["scalar_fallback"].format(f"buf_{in_id}[i_{clean_id}]")
+            if not scalar_expr:
+                scalars_dict = data.get("scalars", {})
+                scalar_def = scalars_dict.get(op_type.lower())
+                if scalar_def:
+                    body_str = scalar_def.replace("return ", "").rstrip(";")
+                    scalar_expr = body_str.replace("a", f"buf_{in_id}[i_{clean_id}]")
         else:
             builtins = {
                 "sin": "std::sin({0})",
@@ -1712,8 +1712,8 @@ class WasmCodeGenerator(BaseGenerator):
         if os.path.exists(yaml_path):
             with open(yaml_path, encoding="utf-8") as f:
                 raw = yaml.safe_load(f)
-                if isinstance(raw, dict) and "opcodes" in raw and isinstance(raw["opcodes"], dict):
-                    op_map = raw["opcodes"]
+            if isinstance(raw, dict) and "opcodes" in raw and isinstance(raw["opcodes"], dict):
+                op_map = raw["opcodes"]
 
         nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") != "Input"]
         wat_lines: list[str] = [

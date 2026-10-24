@@ -1751,6 +1751,27 @@ def _test_snapshot_grounding_complete_branches_part_7(_state: dict[str, EagerTen
         assert engine_fallback.suggest_closest_endpoint("pytorch", "xyz_completely_different", max_distance=1) is None
     with mock.patch.object(engine_fallback, "get_valid_endpoints", return_value=set()):
         assert engine_fallback.suggest_closest_endpoint("pytorch", "torch.ad") is None
+
+    from ml_switcheroo_compiler.backends.snapshot_grounding import (
+        BackendSnapshotTargetModel,
+        _populate_from_framework_ast,
+        _resolve_env_or_package_snapshot_dir,
+    )
+
+    with (
+        mock.patch.dict(os.environ, {}, clear=True),
+        mock.patch("importlib.util.find_spec", return_value=mock.MagicMock(origin="/nonexistent/pkg/__init__.py")),
+    ):
+        assert _resolve_env_or_package_snapshot_dir() is None
+
+    with (
+        mock.patch("os.path.isdir", return_value=True),
+        mock.patch("os.path.isfile", return_value=True),
+        mock.patch("ml_switcheroo_compiler.backends.snapshot_grounding._extract_ast_canonical_ops", return_value={}),
+    ):
+        ep_empty: set[str] = set()
+        _populate_from_framework_ast("/dummy", BackendSnapshotTargetModel(framework="pytorch", snapshot_glob="*.json", canonical_roots=["torch"]), ep_empty, {}, {})
+        assert ep_empty == set()
     getattr(_state, "update")({"MockGEWithExc": MockGEWithExc, "engine_fallback": engine_fallback, "engine_no_sug_fn": engine_no_sug_fn, "engine_sug_exc": engine_sug_exc})
 
 

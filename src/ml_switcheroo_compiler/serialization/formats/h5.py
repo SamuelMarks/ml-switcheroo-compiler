@@ -92,3 +92,4 @@ class H5WeightFormat(WeightLoader, WeightSaver):
                 elif hasattr(v, "tolist"):
                     val_data = v.tolist()
                 f.create_dataset(k, data=val_data)
+            del weights_np

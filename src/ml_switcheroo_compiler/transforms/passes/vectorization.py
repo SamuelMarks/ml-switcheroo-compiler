@@ -22,8 +22,8 @@ def _load_vmap_rules() -> dict[str, dict[str, AttributeValue]]:
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             data = yaml.safe_load(f)
-            if isinstance(data, dict) and isinstance(data.get("rules"), dict):
-                return {str(k): dict(v) for k, v in data["rules"].items() if isinstance(v, dict)}
+        if isinstance(data, dict) and isinstance(data.get("rules"), dict):
+            return {str(k): dict(v) for k, v in data["rules"].items() if isinstance(v, dict)}
     return {}
 
 

@@ -290,11 +290,12 @@ def _test_ipc_worker_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
 
     orig_time = time.time
 
-    # fast forward time to hit timeout
+    # fast forward time after one retry to hit both retry sleep and timeout
     def mock_time() -> EagerValue:
         """Test function mock_time."""
         setattr(mock_time, "count", getattr(mock_time, "count") + 1)
-        return as_tensor(orig_time() + getattr(mock_time, "count") * 10)
+        offset = 0.0 if getattr(mock_time, "count") <= 2 else 10.0
+        return as_tensor(orig_time() + offset)
 
     setattr(mock_time, "count", 0)
     monkeypatch.setattr(time, "time", mock_time)

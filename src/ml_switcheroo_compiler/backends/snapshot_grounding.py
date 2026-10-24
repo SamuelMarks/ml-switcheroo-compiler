@@ -301,12 +301,13 @@ def _extract_stub_endpoints(backend_name: str, endpoints: set[str]) -> None:
     stub_path: str = os.path.join(os.path.dirname(__file__), backend_name, "snapshot_stubs.pyi")
     if os.path.exists(stub_path):
         with open(stub_path, encoding="utf-8") as f:
-            for line in f:
-                sline: str = line.strip()
-                if sline.startswith("def "):
-                    func_name: str = sline[4:].split("(")[0].strip()
-                    if func_name and func_name.isidentifier():
-                        endpoints.add(func_name)
+            lines = f.readlines()
+        for line in lines:
+            sline: str = line.strip()
+            if sline.startswith("def "):
+                func_name: str = sline[4:].split("(")[0].strip()
+                if func_name and func_name.isidentifier():
+                    endpoints.add(func_name)
 
 
 def _resolve_env_or_package_snapshot_dir() -> str | None:
@@ -320,14 +321,13 @@ def _resolve_env_or_package_snapshot_dir() -> str | None:
         if env_dir and os.path.exists(env_dir):
             return os.path.abspath(env_dir)
 
-    for pkg_name in ("ml_ecosystem_snapshots",):
-        import importlib.util
+    import importlib.util
 
-        spec = importlib.util.find_spec(pkg_name)
-        if spec is not None and spec.origin is not None:
-            cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
-            if os.path.exists(cand) and any(f.endswith(".json") or f.endswith(".json.gz") for f in os.listdir(cand)):
-                return os.path.abspath(cand)
+    spec = importlib.util.find_spec("ml_ecosystem_snapshots")
+    if spec is not None and spec.origin is not None:
+        cand: str = os.path.join(os.path.dirname(spec.origin), "snapshots")
+        if os.path.exists(cand) and any(f.endswith(".json") or f.endswith(".json.gz") for f in os.listdir(cand)):
+            return os.path.abspath(cand)
 
     return None
 

@@ -533,6 +533,7 @@ class Server:
                 self._handle_pull_action(conn, tensor_id, np)
             elif action in ("push", "send"):
                 self._handle_push_or_send_action(conn, action, tensor_id, np)
+            del header
 
     def _run_server(self) -> None:
         """Run the server."""

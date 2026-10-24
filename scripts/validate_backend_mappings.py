@@ -31,8 +31,8 @@ def _load_yaml_config(filename: str) -> dict[str, AttributeValue]:
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             data: AttributeValue = yaml.safe_load(f)
-            if isinstance(data, dict):
-                return data
+        if isinstance(data, dict):
+            return data
     return {}
 
 

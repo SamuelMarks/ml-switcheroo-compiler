@@ -41,10 +41,10 @@ def _exchange_ipc_data_coordinator(size: int, tensor_data: IpcPayload, timeout: 
             for _ in range(size - 1):
                 with listener.accept() as conn:
                     other_rank, other_data = conn.recv()
-                    gathered.append((other_rank, other_data))
+                gathered.append((other_rank, other_data))
+            gathered_sorted: list[IpcPayload] = [tensor_data] * size
 
         # Sort by rank
-        gathered_sorted: list[IpcPayload] = [tensor_data] * size
         for item in gathered:
             if isinstance(item, tuple):
                 r, d = item
@@ -108,7 +108,8 @@ def _exchange_ipc_data_worker(rank: int, size: int, tensor_data: IpcPayload, tim
             # Receive broadcasted data
             with listener.accept() as conn:
                 res: list[IpcPayload] = conn.recv()
-        return res
+            out_res = res
+        return out_res
     except Exception:
         # Fallback if connection fails
         return [tensor_data] * size

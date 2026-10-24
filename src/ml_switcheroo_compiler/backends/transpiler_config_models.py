@@ -102,11 +102,11 @@ def _load_domain_manifests(
         try:
             with open(fpath, encoding="utf-8") as rf:
                 rdata: dict[str, AttributeValue] = yaml.safe_load(rf) or {}
-                if isinstance(rdata, dict):
-                    if "ast_to_ir_ops" in rdata and isinstance(rdata["ast_to_ir_ops"], dict):
-                        ast_to_ir_ops.update(rdata["ast_to_ir_ops"])
-                    if "ir_to_ast_ops" in rdata and isinstance(rdata["ir_to_ast_ops"], dict):
-                        ir_to_ast_ops.update(rdata["ir_to_ast_ops"])
+            if isinstance(rdata, dict):
+                if "ast_to_ir_ops" in rdata and isinstance(rdata["ast_to_ir_ops"], dict):
+                    ast_to_ir_ops.update(rdata["ast_to_ir_ops"])
+                if "ir_to_ast_ops" in rdata and isinstance(rdata["ir_to_ast_ops"], dict):
+                    ir_to_ast_ops.update(rdata["ir_to_ast_ops"])
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError, yaml.YAMLError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -129,10 +129,10 @@ def _load_framework_configs(frameworks: dict[str, FrameworkConfig]) -> None:
         try:
             with open(fpath, encoding="utf-8") as rf:
                 fw_data: AttributeValue = yaml.safe_load(rf) or {}
-                if isinstance(fw_data, dict) and fw_name not in frameworks:
-                    fw_cfg = TranspilationFrameworkConfig.model_validate(fw_data)
-                    fw_cfg.framework_name = fw_name
-                    frameworks[fw_name] = fw_cfg
+            if isinstance(fw_data, dict) and fw_name not in frameworks:
+                fw_cfg = TranspilationFrameworkConfig.model_validate(fw_data)
+                fw_cfg.framework_name = fw_name
+                frameworks[fw_name] = fw_cfg
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError, yaml.YAMLError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -150,9 +150,9 @@ def _load_method_rewrites(syntactic_patterns: SyntacticPatternsConfig) -> None:
     try:
         with open(method_rewrites_path, encoding="utf-8") as rf:
             mdata: AttributeValue = yaml.safe_load(rf) or {}
-            if isinstance(mdata, dict) and "method_to_function_rewrites" in mdata and isinstance(mdata["method_to_function_rewrites"], list):
-                for item in mdata["method_to_function_rewrites"]:
-                    syntactic_patterns.method_to_function_rewrites.append(ASTPatternRule.model_validate(item))
+        if isinstance(mdata, dict) and "method_to_function_rewrites" in mdata and isinstance(mdata["method_to_function_rewrites"], list):
+            for item in mdata["method_to_function_rewrites"]:
+                syntactic_patterns.method_to_function_rewrites.append(ASTPatternRule.model_validate(item))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

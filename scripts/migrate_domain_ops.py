@@ -330,8 +330,8 @@ def _load_base_op(op_name: str) -> dict[str, AttributeValue]:
         if os.path.exists(p):
             with open(p, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-                if isinstance(data, dict):
-                    return data
+            if isinstance(data, dict):
+                return data
     return {
         "operation": op_name,
         "description": f"Declarative {op_name} operation.",

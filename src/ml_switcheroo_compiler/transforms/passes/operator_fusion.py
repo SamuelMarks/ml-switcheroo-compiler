@@ -278,8 +278,8 @@ def _load_pass_config() -> PassConfig:
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
             res = yaml.safe_load(f)
-            if isinstance(res, dict):
-                return PassConfig(**res)
+        if isinstance(res, dict):
+            return PassConfig(**res)
     return PassConfig(
         execution_order=[],
         cost_model=CostModelConfig(

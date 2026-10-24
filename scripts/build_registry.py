@@ -39,19 +39,19 @@ def build(
         if filename.endswith(".yaml"):
             with open(os.path.join(definitions_dir, filename), encoding="utf-8") as f:
                 data: dict[str, OpRegistryValue] = yaml.safe_load(f)
-                if isinstance(data, dict):
-                    if "operation" in data:
-                        op_name: str = str(data["operation"])
-                        normalized_op = _normalize_and_validate_op(op_name, data, backend_mappings)
-                        ops_data[op_name] = normalized_op
-                        if "aliases" in data and isinstance(data["aliases"], list):
-                            for alias in data["aliases"]:
-                                ops_data[str(alias)] = normalized_op
-                    else:
-                        for op_name_inner, op_info in data.items():
-                            if isinstance(op_info, dict):
-                                normalized_op = _normalize_and_validate_op(op_name_inner, op_info, backend_mappings)
-                                ops_data[op_name_inner] = normalized_op
+            if isinstance(data, dict):
+                if "operation" in data:
+                    op_name: str = str(data["operation"])
+                    normalized_op = _normalize_and_validate_op(op_name, data, backend_mappings)
+                    ops_data[op_name] = normalized_op
+                    if "aliases" in data and isinstance(data["aliases"], list):
+                        for alias in data["aliases"]:
+                            ops_data[str(alias)] = normalized_op
+                else:
+                    for op_name_inner, op_info in data.items():
+                        if isinstance(op_info, dict):
+                            normalized_op = _normalize_and_validate_op(op_name_inner, op_info, backend_mappings)
+                            ops_data[op_name_inner] = normalized_op
 
     # Generate the python file
     with open(out_file, "w", encoding="utf-8") as f:

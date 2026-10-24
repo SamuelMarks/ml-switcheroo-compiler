@@ -185,8 +185,8 @@ def _get_spmd_rules() -> dict[str, AttributeValue]:
                 if filename.endswith(".yaml"):
                     with open(yaml_dir / filename) as f:
                         op_data = yaml.safe_load(f)
-                        if isinstance(op_data, dict):
-                            _SPMD_RULES.update(op_data)
+                    if isinstance(op_data, dict):
+                        _SPMD_RULES.update(op_data)
         else:
             yaml_path = Path(__file__).parent / "spmd_mappings.yaml"
             if yaml_path.exists():

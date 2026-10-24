@@ -18,16 +18,17 @@ def _scan_file_for_np_refs(filepath: str) -> list[str]:
     """
     hits: list[str] = []
     with open(filepath, encoding="utf-8") as f:
-        for i, line in enumerate(f):
-            if line.strip().startswith("#"):
+        lines = f.readlines()
+    for i, line in enumerate(lines):
+        if line.strip().startswith("#"):
+            continue
+        code_line = line.split("#")[0].strip()
+        if re.search(r"\bnp\.", code_line):
+            if re.search(r"\w+\.numpy\(\)", code_line) or ("np.gradient" in code_line and "torch.gradient" in line):
                 continue
-            code_line = line.split("#")[0].strip()
-            if re.search(r"\bnp\.", code_line):
-                if re.search(r"\w+\.numpy\(\)", code_line) or ("np.gradient" in code_line and "torch.gradient" in line):
-                    continue
-                hits.append(f"{filepath}:{i + 1}: {code_line}")
-            if re.search(r"\b(_np_mod|_scipy_mod|numpy_mod)\b", code_line):
-                hits.append(f"{filepath}:{i + 1}: {code_line}")
+            hits.append(f"{filepath}:{i + 1}: {code_line}")
+        if re.search(r"\b(_np_mod|_scipy_mod|numpy_mod)\b", code_line):
+            hits.append(f"{filepath}:{i + 1}: {code_line}")
     return hits
 
 
@@ -49,10 +50,11 @@ def check_for_numpy_leaks(directory: str) -> list[str]:
         if "backends/numpy" in filepath:
             continue
         with open(filepath, encoding="utf-8") as f:
-            for i, line in enumerate(f):
-                code_line: str = line.split("#")[0].strip()
-                if import_pattern.search(code_line):
-                    violations.append(f"{filepath}:{i + 1}: {code_line}")
+            lines = f.readlines()
+        for i, line in enumerate(lines):
+            code_line: str = line.split("#")[0].strip()
+            if import_pattern.search(code_line):
+                violations.append(f"{filepath}:{i + 1}: {code_line}")
 
     exempt_dirs = ("backends/numpy",)
     for filepath in sorted(set(all_files)):
@@ -81,21 +83,22 @@ def check_for_architectural_imports(directory: str) -> list[str]:
 
     for filepath in sorted(set(files_to_check)):
         with open(filepath, encoding="utf-8") as f:
-            for i, line in enumerate(f):
-                if line.strip().startswith("#"):
+            lines = f.readlines()
+        for i, line in enumerate(lines):
+            if line.strip().startswith("#"):
+                continue
+            code_line: str = line.split("#")[0].strip()
+
+            # Check if it imports from ml_switcheroo_compiler.backends
+            if import_stmt_pattern.search(code_line):
+                # Allow registry
+                if "ml_switcheroo_compiler.backends.registry" in code_line:
                     continue
-                code_line: str = line.split("#")[0].strip()
+                # Allow linker source_ast_ref?
+                if "ml_switcheroo_compiler.backends.linker" in code_line:
+                    continue
 
-                # Check if it imports from ml_switcheroo_compiler.backends
-                if import_stmt_pattern.search(code_line):
-                    # Allow registry
-                    if "ml_switcheroo_compiler.backends.registry" in code_line:
-                        continue
-                    # Allow linker source_ast_ref?
-                    if "ml_switcheroo_compiler.backends.linker" in code_line:
-                        continue
-
-                    violations.append(f"{filepath}:{i + 1}: {code_line}")
+                violations.append(f"{filepath}:{i + 1}: {code_line}")
 
     return violations
 
