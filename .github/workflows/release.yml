@@ -1,0 +1,196 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release version tag (e.g., v0.0.1) for manual workflow dispatch"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  UV_DYNAMIC_VERSIONING_BYPASS: "2.2.0"
+  PDM_BUILD_SCM_VERSION: "2.2.0"
+
+jobs:
+  build-wheels:
+    name: Build Wheel and Source Distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip build hatchling hatch-requirements-txt
+
+      - name: Sync version with git tag
+        shell: bash
+        run: |
+          RAW_TAG="${{ inputs.tag || github.ref_name }}"
+          if [[ "$RAW_TAG" == v* ]]; then
+            VERSION="${RAW_TAG#v}"
+            python -c "
+          from pathlib import Path
+          p = Path('src/ml_switcheroo_compiler/__init__.py')
+          text = p.read_text(encoding='utf-8')
+          old_line = [line for line in text.splitlines() if line.startswith('__version__')][0]
+          p.write_text(text.replace(old_line, f'__version__ = \"{VERSION}\"'), encoding='utf-8')
+          "
+          fi
+
+      - name: Build wheel and sdist
+        run: python -m build --outdir dist
+
+      - name: Verify built distributions
+        run: ls -la dist/
+
+      - name: Upload Python distributions artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-dist
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+
+  build-binaries:
+    name: Build Binary (${{ matrix.os_name }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            os_name: linux
+            arch: x86_64
+            ext: ""
+          - runner: ubuntu-24.04-arm
+            os_name: linux
+            arch: aarch64
+            ext: ""
+          - runner: macos-13
+            os_name: macos
+            arch: x86_64
+            ext: ""
+          - runner: macos-14
+            os_name: macos
+            arch: arm64
+            ext: ""
+          - runner: windows-latest
+            os_name: windows
+            arch: x86_64
+            ext: ".exe"
+          - runner: windows-11-arm
+            os_name: windows
+            arch: arm64
+            ext: ".exe"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Sync version with git tag
+        shell: bash
+        run: |
+          RAW_TAG="${{ inputs.tag || github.ref_name }}"
+          if [[ "$RAW_TAG" == v* ]]; then
+            VERSION="${RAW_TAG#v}"
+            python -c "
+          from pathlib import Path
+          p = Path('src/ml_switcheroo_compiler/__init__.py')
+          text = p.read_text(encoding='utf-8')
+          old_line = [line for line in text.splitlines() if line.startswith('__version__')][0]
+          p.write_text(text.replace(old_line, f'__version__ = \"{VERSION}\"'), encoding='utf-8')
+          "
+          fi
+
+      - name: Install dependencies and PyInstaller
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip wheel pyinstaller
+          python -m pip install -r requirements.txt
+          python -m pip install --no-deps .
+
+      - name: Build standalone OS+arch binary
+        shell: bash
+        run: |
+          BIN_NAME="ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}"
+          pyinstaller --onefile --clean --name "${BIN_NAME}" --paths src --collect-all ml_switcheroo_compiler --collect-all ml_switcheroo_ir src/ml_switcheroo_compiler/__main__.py
+
+      - name: Smoke test binary
+        shell: bash
+        run: |
+          BIN_PATH="dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+          chmod +x "$BIN_PATH" || true
+          "$BIN_PATH" --version
+          "$BIN_PATH" backends
+
+      - name: Package binary archive
+        shell: bash
+        run: |
+          BIN_FILE="ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+          cd dist
+          if [ "${{ matrix.os_name }}" = "windows" ]; then
+            7z a "ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.zip" "$BIN_FILE"
+          else
+            tar -czvf "ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.tar.gz" "$BIN_FILE"
+          fi
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: binary-${{ matrix.os_name }}-${{ matrix.arch }}
+          path: |
+            dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}
+            dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.tar.gz
+            dist/ml-switcheroo-compiler-${{ matrix.os_name }}-${{ matrix.arch }}.zip
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub Release
+    needs:
+      - build-wheels
+      - build-binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate SHA256 checksums
+        shell: bash
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.tag != ''
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release-assets/*

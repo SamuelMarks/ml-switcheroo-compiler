@@ -22,6 +22,10 @@ classifiers = [
 ]
 dynamic = ["version", "dependencies", "optional-dependencies"]
 
+[project.scripts]
+ml-switcheroo-compiler = "ml_switcheroo_compiler.cli:main"
+ml_switcheroo_compiler = "ml_switcheroo_compiler.cli:main"
+
 [tool.hatch.version]
 path = "src/ml_switcheroo_compiler/__init__.py"
 
