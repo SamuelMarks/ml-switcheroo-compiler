@@ -4,7 +4,6 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ml-switcheroo-compiler"
-version = "0.1.0"
 description = "Abstract ML Machine Compiler for Reverse-Mode AD, Optimization, and Graph Functionalization."
 authors = [{ name = "Samuel Marks" }]
 readme = "README.md"
@@ -21,7 +20,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-dynamic = ["dependencies", "optional-dependencies"]
+dynamic = ["version", "dependencies", "optional-dependencies"]
+
+[tool.hatch.version]
+path = "src/ml_switcheroo_compiler/__init__.py"
 
 [tool.hatch.metadata]
 allow-direct-references = true

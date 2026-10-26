@@ -1,8 +1,8 @@
 {
   "wheels": [
-    "ml_ecosystem_snapshots-0.0.4-py3-none-any.whl",
+    "ml_ecosystem_snapshots-0.0.5-py3-none-any.whl",
     "ml_switcheroo_compiler-0.1.0-py3-none-any.whl",
-    "ml_switcheroo_ir-0.0.3-py3-none-any.whl",
+    "ml_switcheroo_ir-0.0.4-py3-none-any.whl",
     "zero_chex-0.1.90-py3-none-any.whl",
     "zero_flax-0.8.5-py3-none-any.whl",
     "zero_grain-0.2.16.dev20260112-py2.py3-none-any.whl",
