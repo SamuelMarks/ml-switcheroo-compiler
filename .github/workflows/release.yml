@@ -37,17 +37,20 @@ jobs:
 
       - name: Sync version with git tag
         shell: bash
+        env:
+          RAW_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          RAW_TAG="${{ inputs.tag || github.ref_name }}"
           if [[ "$RAW_TAG" == v* ]]; then
-            VERSION="${RAW_TAG#v}"
-            python -c "
+            export VERSION="${RAW_TAG#v}"
+            python -c '
+          import os
           from pathlib import Path
-          p = Path('src/ml_switcheroo_compiler/__init__.py')
-          text = p.read_text(encoding='utf-8')
-          old_line = [line for line in text.splitlines() if line.startswith('__version__')][0]
-          p.write_text(text.replace(old_line, f'__version__ = \"{VERSION}\"'), encoding='utf-8')
-          "
+          version = os.environ["VERSION"]
+          p = Path("src/ml_switcheroo_compiler/__init__.py")
+          text = p.read_text(encoding="utf-8")
+          old_line = [line for line in text.splitlines() if line.startswith("__version__")][0]
+          p.write_text(text.replace(old_line, f"__version__ = \"{version}\""), encoding="utf-8")
+          '
           fi
 
       - name: Build wheel and sdist
@@ -80,10 +83,6 @@ jobs:
             os_name: linux
             arch: aarch64
             ext: ""
-          - runner: macos-13
-            os_name: macos
-            arch: x86_64
-            ext: ""
           - runner: macos-14
             os_name: macos
             arch: arm64
@@ -108,17 +107,20 @@ jobs:
 
       - name: Sync version with git tag
         shell: bash
+        env:
+          RAW_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          RAW_TAG="${{ inputs.tag || github.ref_name }}"
           if [[ "$RAW_TAG" == v* ]]; then
-            VERSION="${RAW_TAG#v}"
-            python -c "
+            export VERSION="${RAW_TAG#v}"
+            python -c '
+          import os
           from pathlib import Path
-          p = Path('src/ml_switcheroo_compiler/__init__.py')
-          text = p.read_text(encoding='utf-8')
-          old_line = [line for line in text.splitlines() if line.startswith('__version__')][0]
-          p.write_text(text.replace(old_line, f'__version__ = \"{VERSION}\"'), encoding='utf-8')
-          "
+          version = os.environ["VERSION"]
+          p = Path("src/ml_switcheroo_compiler/__init__.py")
+          text = p.read_text(encoding="utf-8")
+          old_line = [line for line in text.splitlines() if line.startswith("__version__")][0]
+          p.write_text(text.replace(old_line, f"__version__ = \"{version}\""), encoding="utf-8")
+          '
           fi
 
       - name: Install dependencies and PyInstaller
