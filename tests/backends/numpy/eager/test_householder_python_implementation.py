@@ -6,6 +6,8 @@ import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.core.shape import _set_attr
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
@@ -34,6 +36,6 @@ def test_householder_product_fallback() -> None:
 
         householder_product = MockTorch.householder_product
 
-    setattr(MockTorch, "linalg", MockTorchLinalg)
+    _set_attr(MockTorch, "linalg", MockTorchLinalg)
 
     assert tau.shape == (2,)

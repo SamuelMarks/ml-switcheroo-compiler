@@ -5,12 +5,11 @@ from __future__ import annotations
 import resource
 import sys
 import time
-import typing
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -52,7 +51,7 @@ class NumpyProfiler:
         """
         del device
 
-        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
         np_inputs_dict: dict[str, np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = {}
         for k, val in inputs.items():
@@ -73,7 +72,8 @@ class NumpyProfiler:
                 from ml_switcheroo_compiler.backends.numpy.generator import NumpyGenerator
                 from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-                return typing.cast(EagerValue, evaluate_graph(graph, typing.cast("dict[str, EvalValue]", np_inputs_dict), backend=NumpyGenerator))
+                _typed_ret_1: EagerValue = _cast_val(EagerValue, evaluate_graph(graph, _cast_val("dict[str, EvalValue]", np_inputs_dict), backend=NumpyGenerator))
+                return _typed_ret_1
             if not np_input_list:
                 return np.zeros((1,), dtype=np.float32)
             accum = np.zeros_like(np_input_list[0])

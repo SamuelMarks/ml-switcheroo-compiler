@@ -7,7 +7,7 @@ import typing
 from collections.abc import Callable
 from types import TracebackType
 
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
+from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, _obj_set_attr
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 F = typing.TypeVar("F")
@@ -20,6 +20,25 @@ class _GraphMetadataProtocol(typing.Protocol):
     metadata: dict[str, LoopOptions | None]
 
 
+class _AutographSkippedFnProtocol(typing.Protocol):
+    """Protocol for functions marked with `_autograph_do_not_convert`."""
+
+    _autograph_do_not_convert: bool
+    __wrapped__: StructuralOperandProtocol
+
+
+def _is_autograph_fn(fn: F) -> typing.TypeGuard[_AutographSkippedFnProtocol]:
+    """Type guard narrowing `fn` to `_AutographSkippedFnProtocol`.
+
+    Args:
+        fn (F): Target callable.
+
+    Returns:
+        bool: Always True for function objects.
+    """
+    return fn is not None
+
+
 def _set_graph_loop_options(active_g: StructuralOperandProtocol, opts: LoopOptions | None) -> None:
     """Attach `opts` to `active_g` and its `metadata` dict if present.
 
@@ -27,7 +46,7 @@ def _set_graph_loop_options(active_g: StructuralOperandProtocol, opts: LoopOptio
         active_g (StructuralOperandProtocol): Active graph instance.
         opts (LoopOptions | None): Loop options to attach.
     """
-    vars(active_g)["loop_options"] = opts
+    _obj_set_attr(active_g, "loop_options", opts)
     if isinstance(active_g, _GraphMetadataProtocol) and isinstance(active_g.metadata, dict):
         active_g.metadata["loop_options"] = opts
 
@@ -144,9 +163,11 @@ def do_not_convert(func: F | None = None) -> F | Callable[[F], F]:
         Returns:
             F: The original function with the skip flag attached.
         """
-        f_dict = vars(f)
-        f_dict["_autograph_do_not_convert"] = True
-        f_dict["__wrapped__"] = f
+        raw_f: StructuralOperandProtocol = f
+        cand_f: F = f
+        assert _is_autograph_fn(cand_f)
+        cand_f._autograph_do_not_convert = True
+        cand_f.__wrapped__ = raw_f
         return f
 
     if func is not None:

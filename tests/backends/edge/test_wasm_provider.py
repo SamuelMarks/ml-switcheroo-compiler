@@ -12,6 +12,7 @@ import yaml
 
 import ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider as provider
 from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_cpp_helpers, get_js_orchestration_template, get_wasm_simd_op, get_wasm_simd_ops, get_wasm_template, load_yaml, load_yaml_dir
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -77,7 +78,7 @@ def test_load_yaml() -> None:
     yaml_data = {"templates": {"test": {"body": "code"}}, "js_orchestration": {}, "cpp_helpers": []}
     with patch("builtins.open", mock_open(read_data=yaml.dump(yaml_data))):
         res = load_yaml("test.yaml")
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res, "__getitem__")("templates")), "__getitem__")("test")), "__getitem__")("body")) == "code"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")("templates")), "__getitem__")("test")), "__getitem__")("body")) == "code"
 
 
 def test_load_yaml_dir(monkeypatch: EagerTensorProtocol) -> None:
@@ -118,11 +119,11 @@ def test_load_yaml_dir(monkeypatch: EagerTensorProtocol) -> None:
             with patch("builtins.open", side_effect=mock_open_impl):
                 res = load_yaml_dir("mock_dir")
                 assert "t1" in res["templates"]
-                assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")("templates")), "__getitem__")("t1")) == {"body": "string body"}
+                assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")("templates")), "__getitem__")("t1")) == {"body": "string body"}
                 assert "t2" in res["templates"]
-                assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")("templates")), "__getitem__")("t2")) == {"body": "dict body"}
+                assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")("templates")), "__getitem__")("t2")) == {"body": "dict body"}
                 assert "t3" in res["templates"]
-                assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")("templates")), "__getitem__")("t3")) == ["list", "body"]
+                assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")("templates")), "__getitem__")("t3")) == ["list", "body"]
 
 
 def test_load_yaml_dir_not_dir() -> None:
@@ -147,7 +148,7 @@ def test_get_wasm_template_empty_global(monkeypatch: EagerTensorProtocol) -> Non
 
 def test_get_wasm_template_not_dict() -> None:
     """Test function test_get_wasm_template_not_dict."""
-    setattr(provider, "_WASM_TEMPLATES", {"templates": {"my_tpl": ["not", "dict"]}})
+    _set_attr(provider, "_WASM_TEMPLATES", {"templates": {"my_tpl": ["not", "dict"]}})
     assert get_wasm_template("my_tpl") == {}
 
 

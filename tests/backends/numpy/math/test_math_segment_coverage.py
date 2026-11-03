@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_segment as math_segment
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -21,17 +22,17 @@ def test_math_segment() -> None:
 
     # Branch 1: num_segments is None
     res_none = math_segment._np_segment_sum(np, data, segment_ids, num_segments=None)
-    assert as_tensor(getattr(res_none, "shape")) == (2, 2)
-    assert as_callable(np.allclose)(as_tensor(getattr(res_none, "__getitem__")(0)), [4.0, 6.0])
-    assert as_callable(np.allclose)(as_tensor(getattr(res_none, "__getitem__")(1)), [5.0, 6.0])
+    assert as_tensor(_get_attr(res_none, "shape")) == (2, 2)
+    assert as_callable(np.allclose)(as_tensor(_get_attr(res_none, "__getitem__")(0)), [4.0, 6.0])
+    assert as_callable(np.allclose)(as_tensor(_get_attr(res_none, "__getitem__")(1)), [5.0, 6.0])
 
     # Branch 2: num_segments is provided
     res_num = math_segment._np_segment_sum(np, data, segment_ids, num_segments=4)
-    assert as_tensor(getattr(res_num, "shape")) == (4, 2)
-    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(0)), [4.0, 6.0])
-    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(1)), [5.0, 6.0])
-    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(2)), [0.0, 0.0])
-    assert as_callable(np.allclose)(as_tensor(getattr(res_num, "__getitem__")(3)), [0.0, 0.0])
+    assert as_tensor(_get_attr(res_num, "shape")) == (4, 2)
+    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(0)), [4.0, 6.0])
+    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(1)), [5.0, 6.0])
+    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(2)), [0.0, 0.0])
+    assert as_callable(np.allclose)(as_tensor(_get_attr(res_num, "__getitem__")(3)), [0.0, 0.0])
 
     # Registry SegmentSum
     reg_seg = numpy_eager_registry.get("SegmentSum")

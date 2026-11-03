@@ -6,6 +6,7 @@ import importlib
 import typing
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, ClassBasedGenerator, EmitUtilsMixin, FormatterProxyMixin, PythonStringGenerator
+from ml_switcheroo_compiler.core.shape import _caller_locals, _del_attr, _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_str, as_tensor, as_tensor_dict, as_tensor_list
 
@@ -56,7 +57,7 @@ class DummyGenerator(BaseGenerator):
 def test_formatter_proxy_mixin() -> None:
     """Test function test_formatter_proxy_mixin."""
     proxy = FormatterProxyMixin()
-    setattr(proxy, "formatter", DummyFormatter())
+    _set_attr(proxy, "formatter", DummyFormatter())
     proxy.var_names = {"a": "b"}
     assert proxy.var_names == {"a": "b"}
     proxy.header = "head"
@@ -102,14 +103,14 @@ def test_emit_utils_mixin() -> None:
     eu._emit_body_return([])
     assert eu.code == ["return None"]
 
-    setattr(eu, "graph", IRGraph())
-    setattr(eu, "formatter", DummyFormatter())
-    setattr(as_tensor(getattr(eu, "graph")), "outputs", ["out1"])
+    _set_attr(eu, "graph", IRGraph())
+    _set_attr(eu, "formatter", DummyFormatter())
+    _set_attr(as_tensor(_get_attr(eu, "graph")), "outputs", ["out1"])
     eu.code = []
     eu._emit_body_return([])
     assert eu.code == ["return out1"]
 
-    setattr(as_tensor(getattr(eu, "graph")), "outputs", ["out1", "out2"])
+    _set_attr(as_tensor(_get_attr(eu, "graph")), "outputs", ["out1", "out2"])
     eu.code = []
     eu._emit_body_return([])
     assert eu.code == ["return (out1, out2)"]
@@ -137,7 +138,7 @@ def test_base_generator_methods() -> None:
         """
         return {"TestOp": "test_prefix.testop({0}, {1}, kw={kw})"}
 
-    setattr(gen, "get_ops_map", get_ops_map)
+    _set_attr(gen, "get_ops_map", get_ops_map)
     res = as_callable(gen.generic_visit)(IRNode("id", "TestOp"), ["a", "b"], kw=42)
     assert res == "test_prefix.testop(a, b, kw=42)"
 
@@ -150,7 +151,7 @@ def test_base_generator_methods() -> None:
         """
         return {"TestOp2": "test_prefix.testop({0}, {1}, kw={kw})"}
 
-    setattr(gen, "get_ops_map", get_ops_map2)
+    _set_attr(gen, "get_ops_map", get_ops_map2)
     res2 = as_callable(gen.generic_visit)(IRNode("id", "TestOp2"), ["a", "b"], kw=42, unrelated="{not_fmt}")
     # unrelated should be cleaned up by regex
     assert "test_prefix.testop" in as_str(res2)
@@ -186,11 +187,11 @@ def test_python_string_generator() -> None:
     assert "import dummy" in code
 
     gen2 = DummyPyGen(IRGraph())
-    setattr(gen2, "_import_header", ["import a", "import b"])
+    _set_attr(gen2, "_import_header", ["import a", "import b"])
     assert "import a\nimport b" in gen2.generate()
 
     gen3 = DummyPyGen(IRGraph())
-    setattr(gen3, "_import_header", 42)  # something else to test branch
+    _set_attr(gen3, "_import_header", 42)  # something else to test branch
     gen3.generate()
 
 
@@ -219,11 +220,11 @@ def _test_code_generator_visitor_missing_lines_part_1(_state: dict[str, EagerTen
     Args:
         _state: Shared test state dictionary.
     """
-    CodeGeneratorVisitor = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "CodeGeneratorVisitor"))
+    CodeGeneratorVisitor = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "CodeGeneratorVisitor"))
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-    getattr(_state, "update")({"CodeGeneratorVisitor": CodeGeneratorVisitor, "IRGraph": IRGraph, "IRNode": IRNode})
-    _state.update(locals())
+    _get_attr(_state, "update")({"CodeGeneratorVisitor": CodeGeneratorVisitor, "IRGraph": IRGraph, "IRNode": IRNode})
+    _state.update(_caller_locals())
 
 
 def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -241,8 +242,8 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
             """Test function __init__."""
             self.code = as_tensor_list([])
             self.graph = IRGraph()
-            object.__setattr__(self.graph, "inputs", [IRNode("in1", "Input", "in1")])
-            object.__setattr__(self.graph, "outputs", [IRNode("out1", "Output", "out1")])
+            _obj_set_attr(self.graph, "inputs", [IRNode("in1", "Input", "in1")])
+            _obj_set_attr(self.graph, "outputs", [IRNode("out1", "Output", "out1")])
             self.sorted_nodes = self.graph.inputs + self.graph.outputs
             self.var_names = as_tensor_dict({})
 
@@ -263,7 +264,7 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
                 inputs: Test parameter `inputs`.
                 kwargs: Test parameter `kwargs`.
             """
-            return f"generic({getattr(node, 'op_type')})"
+            return f"generic({_get_attr(node, 'op_type')})"
 
         def _emit_input_assignment(self, var: EagerValue, node: EagerValue, prefix: EagerValue, i: EagerValue) -> None:
             """Test function _emit_input_assignment.
@@ -320,8 +321,8 @@ def _test_code_generator_visitor_missing_lines_part_2(_state: dict[str, EagerTen
             """
             pass
 
-    getattr(_state, "update")({"MockGenerator": MockGenerator})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockGenerator": MockGenerator})
+    _state.update(_caller_locals())
 
 
 def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -352,7 +353,7 @@ def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTen
             """
             return "visited_TestOp"
 
-    setattr(gen, "visitors", [MockSpecificVisitor()])
+    _set_attr(gen, "visitors", [MockSpecificVisitor()])
 
     # Test visit method routing
     node = IRNode("node1", "TestOp")
@@ -370,14 +371,14 @@ def _test_code_generator_visitor_missing_lines_part_3(_state: dict[str, EagerTen
             """
             return "visited_TestOp"
 
-    setattr(gen, "visitors", [MockSpecificVisitor2()])
+    _set_attr(gen, "visitors", [MockSpecificVisitor2()])
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
     res = as_callable(BaseGenerator.visit)(gen, node, [])
     assert res == "visited_TestOp"
-    getattr(_state, "update")({"BaseGenerator": BaseGenerator, "MockSpecificVisitor2": MockSpecificVisitor2, "gen": gen, "node": node})
-    getattr(_state, "update")({"res": res, "visitor": visitor})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BaseGenerator": BaseGenerator, "MockSpecificVisitor2": MockSpecificVisitor2, "gen": gen, "node": node})
+    _get_attr(_state, "update")({"res": res, "visitor": visitor})
+    _state.update(_caller_locals())
 
 
 def _test_code_generator_visitor_missing_lines_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -402,7 +403,7 @@ def _test_code_generator_visitor_missing_lines_part_4(_state: dict[str, EagerTen
             """
             return "visited_OtherOp"
 
-    setattr(gen, "visitors", [MockSpecificVisitor2()])
+    _set_attr(gen, "visitors", [MockSpecificVisitor2()])
     res2 = BaseGenerator.visit(gen, node, [])
     assert "generic" in res2
 
@@ -410,7 +411,7 @@ def _test_code_generator_visitor_missing_lines_part_4(_state: dict[str, EagerTen
 
     node2 = IRNode("node2", "UnknownOp")
     res2 = visitor.generator.generic_visit(node2, [])
-    getattr(_state, "update")({"MockSpecificVisitor2": MockSpecificVisitor2, "node2": node2, "res2": res2})
+    _get_attr(_state, "update")({"MockSpecificVisitor2": MockSpecificVisitor2, "node2": node2, "res2": res2})
 
 
 def test_code_generator_visitor_missing_lines() -> None:
@@ -448,7 +449,7 @@ def test_base_generator_maps() -> None:
 
     gen = MinimalGen(IRGraph())
     ops = gen.get_ops_map({})
-    assert as_tensor(getattr(ops, "__getitem__")("Add")) == "m.add"
+    assert as_tensor(_get_attr(ops, "__getitem__")("Add")) == "m.add"
 
 
 def test_class_based_generator_full() -> None:
@@ -544,25 +545,25 @@ def test_ir_graph_walker() -> None:
             Args:
                 p: Test parameter `p`.
             """
-            setattr(self.g, "called", p)
+            _set_attr(self.g, "called", p)
 
     gen = BaseGenerator(IRGraph())
-    setattr(gen, "called", None)
+    _set_attr(gen, "called", None)
     import sys
 
     try:
-        setattr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", DummyVisitor)
+        _set_attr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", DummyVisitor)
         import ml_switcheroo_compiler.backends.base_generator as bg
 
-        setattr(bg, "CodeGeneratorVisitor", DummyVisitor)
+        _set_attr(bg, "CodeGeneratorVisitor", DummyVisitor)
         walker = bg.IRGraphWalker(gen)
         walker.walk("args")
-        assert as_tensor(getattr(gen, "called")) == "args"
+        assert as_tensor(_get_attr(gen, "called")) == "args"
         assert walker.generator is gen
     finally:
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 
-        setattr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", CodeGeneratorVisitor)
+        _set_attr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", CodeGeneratorVisitor)
 
 
 def test_ast_walker_missing_lines() -> None:
@@ -597,15 +598,15 @@ def test_ast_walker_missing_lines() -> None:
     import sys
 
     try:
-        setattr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", DummyVisitor)
+        _set_attr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", DummyVisitor)
         import ml_switcheroo_compiler.backends.base_generator as bg
 
-        setattr(bg, "CodeGeneratorVisitor", DummyVisitor)
+        _set_attr(bg, "CodeGeneratorVisitor", DummyVisitor)
         walker = bg.IRGraphWalker(gen)
         walker.walk("args")
         assert walker.generator is gen
     finally:
-        setattr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", CodeGeneratorVisitor)
+        _set_attr(sys.modules["ml_switcheroo_compiler.backends.base_generator"], "CodeGeneratorVisitor", CodeGeneratorVisitor)
 
 
 def test_class_based_generator_has_base_no_params() -> None:
@@ -686,7 +687,7 @@ def test_ast_walker_proper() -> None:
 
     g = IRGraph()
     n = IRNode("in", "Input")
-    object.__setattr__(g, "inputs", [n])
+    _obj_set_attr(g, "inputs", [n])
     g.outputs = []
 
     class MyGen(BaseGenerator):
@@ -872,15 +873,15 @@ def test_graph_walker_lines() -> None:
 
     import ml_switcheroo_compiler.backends.base_generator as bg
 
-    old = as_tensor(getattr(bg, "CodeGeneratorVisitor"))
-    setattr(bg, "CodeGeneratorVisitor", DummyVisitor)
+    old = as_tensor(_get_attr(bg, "CodeGeneratorVisitor"))
+    _set_attr(bg, "CodeGeneratorVisitor", DummyVisitor)
     try:
         gen = BaseGenerator(IRGraph())
         w = IRGraphWalker(gen)
         w.walk()
     finally:
-        setattr(bg, "CodeGeneratorVisitor", old)
-    assert getattr(bg, "CodeGeneratorVisitor") is old
+        _set_attr(bg, "CodeGeneratorVisitor", old)
+    assert _get_attr(bg, "CodeGeneratorVisitor") is old
 
 
 def test_base_generator_coverage_extras() -> None:
@@ -903,7 +904,7 @@ def test_base_generator_coverage_extras() -> None:
 
     # Hit line 304-312 by forcing _format_operation with no format string
     node = IRNode(id="n1", op_type="UnknownCovOp", inputs=[])
-    setattr(gen, "ops_map", {})
+    _set_attr(gen, "ops_map", {})
     res = gen.generic_visit(node, ["in1"], **{})
     assert "unknowncovop" in res
 
@@ -1002,7 +1003,7 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
 
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
-    IRNode = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "IRNode"))
+    IRNode = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.base_generator"), "IRNode"))
     from ml_switcheroo_compiler.ir.core import IRGraph
 
     g = IRGraph()
@@ -1010,7 +1011,7 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
 
     # 1. target_api call string path with kwarg translations (e.g. Argmin in cupy: dim -> axis)
     cupy_bg = BaseGenerator(g)
-    setattr(cupy_bg, "backend_name", "cupy")
+    _set_attr(cupy_bg, "backend_name", "cupy")
     argmin_node = IRNode(
         id="n1",
         op_type="Argmin",
@@ -1025,7 +1026,7 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
 
     # 2. ast_template substitution path (e.g. Atan2 in pytorch)
     torch_bg = BaseGenerator(g)
-    setattr(torch_bg, "backend_name", "pytorch")
+    _set_attr(torch_bg, "backend_name", "pytorch")
     atan2_node = IRNode(id="n2", op_type="Atan2", attributes={"out_var": "out_val"})
     atan2_res = as_callable(torch_bg.visit_OpNode)(atan2_node, ["in_x", "in_y"])
     assert "out_val = torch.atan2(in_x, in_y)" in atan2_res
@@ -1034,11 +1035,11 @@ def _test_base_generator_visit_and_visit_opnode_part_1(_state: dict[str, EagerTe
     atan2_node_default_out = IRNode(id="atan2_id", op_type="Atan2")
     atan2_res_default = as_callable(torch_bg.visit_OpNode)(atan2_node_default_out, ["in_x", "in_y"])
     assert "tensor_0 = torch.atan2(in_x, in_y)" in atan2_res_default
-    getattr(_state, "update")({"BaseGenerator": BaseGenerator, "IRGraph": IRGraph, "IRNode": IRNode, "MagicMock": MagicMock})
-    getattr(_state, "update")({"argmin_node": argmin_node, "argmin_res": argmin_res, "atan2_node": atan2_node, "atan2_node_default_out": atan2_node_default_out})
-    getattr(_state, "update")({"atan2_res": atan2_res, "atan2_res_default": atan2_res_default, "bg": bg, "cupy_bg": cupy_bg})
-    getattr(_state, "update")({"g": g, "patch": patch, "torch_bg": torch_bg})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BaseGenerator": BaseGenerator, "IRGraph": IRGraph, "IRNode": IRNode, "MagicMock": MagicMock})
+    _get_attr(_state, "update")({"argmin_node": argmin_node, "argmin_res": argmin_res, "atan2_node": atan2_node, "atan2_node_default_out": atan2_node_default_out})
+    _get_attr(_state, "update")({"atan2_res": atan2_res, "atan2_res_default": atan2_res_default, "bg": bg, "cupy_bg": cupy_bg})
+    _get_attr(_state, "update")({"g": g, "patch": patch, "torch_bg": torch_bg})
+    _state.update(_caller_locals())
 
 
 def _test_base_generator_visit_and_visit_opnode_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1050,11 +1051,11 @@ def _test_base_generator_visit_and_visit_opnode_part_2(_state: dict[str, EagerTe
     BaseGenerator, IRNode, MagicMock, bg = _state["BaseGenerator"], _state["IRNode"], _state["MagicMock"], _state["bg"]
     g, patch = _state["g"], _state["patch"]
     mock_op = MagicMock()
-    setattr(mock_op, "ast_template", None)
-    setattr(mock_op, "kwarg_map", {"drop_me": None})
-    setattr(mock_op, "target_api", "np.dropped")
+    _set_attr(mock_op, "ast_template", None)
+    _set_attr(mock_op, "kwarg_map", {"drop_me": None})
+    _set_attr(mock_op, "target_api", "np.dropped")
     mock_schema = MagicMock()
-    setattr(mock_schema, "operations", {"DroppedOp": mock_op})
+    _set_attr(mock_schema, "operations", {"DroppedOp": mock_op})
 
     with patch(
         "ml_switcheroo_compiler.backends.mapping_loader.load_backend_mappings",
@@ -1078,10 +1079,10 @@ def _test_base_generator_visit_and_visit_opnode_part_2(_state: dict[str, EagerTe
     unmapped_node = IRNode(id="n4", op_type="CustomOpNotInSchema")
     unmapped_res = bg.visit_OpNode(unmapped_node, ["arg0"])
     assert "customopnotinschema" in unmapped_res.lower()
-    getattr(_state, "update")({"bad_bg": bad_bg, "drop_node": drop_node, "drop_res": drop_res, "fallback_res": fallback_res})
-    getattr(_state, "update")({"mock_op": mock_op, "mock_schema": mock_schema, "unknown_node": unknown_node, "unmapped_node": unmapped_node})
-    getattr(_state, "update")({"unmapped_res": unmapped_res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"bad_bg": bad_bg, "drop_node": drop_node, "drop_res": drop_res, "fallback_res": fallback_res})
+    _get_attr(_state, "update")({"mock_op": mock_op, "mock_schema": mock_schema, "unknown_node": unknown_node, "unmapped_node": unmapped_node})
+    _get_attr(_state, "update")({"unmapped_res": unmapped_res})
+    _state.update(_caller_locals())
 
 
 def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1107,7 +1108,7 @@ def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTe
             """
             return f"visitor_handled({', '.join(input_vars)})"
 
-    setattr(bg, "visitors", [CustomVisitor()])
+    _set_attr(bg, "visitors", [CustomVisitor()])
     v_node = IRNode(id="n5", op_type="VisitorOp")
     assert bg.visit(v_node, ["v1", "v2"]) == "visitor_handled(v1, v2)"
 
@@ -1125,18 +1126,18 @@ def _test_base_generator_visit_and_visit_opnode_part_3(_state: dict[str, EagerTe
             return f"subclass_handled({', '.join(input_vars)})"
 
     cg = as_callable(CustomGenerator)(g)
-    setattr(cg, "visitors", [])
+    _set_attr(cg, "visitors", [])
     s_node = IRNode(id="n6", op_type="SubclassOp")
     assert cg.visit(s_node, ["s1"]) == "subclass_handled(s1)"
 
     # 8. visit dispatch: generic_visit fallback and visit_OpNode dispatch
     bg_clean = BaseGenerator(g)
-    setattr(bg_clean, "visitors", [])
+    _set_attr(bg_clean, "visitors", [])
     fallback_node = IRNode(id="n_fallback", op_type="NonexistentOpFallback")
     assert bg_clean.visit(fallback_node, ["x"]) == "np.nonexistentopfallback(x)"
-    getattr(_state, "update")({"CustomGenerator": CustomGenerator, "CustomVisitor": CustomVisitor, "bg_clean": bg_clean, "cg": cg})
-    getattr(_state, "update")({"fallback_node": fallback_node, "s_node": s_node, "v_node": v_node})
-    _state.update(locals())
+    _get_attr(_state, "update")({"CustomGenerator": CustomGenerator, "CustomVisitor": CustomVisitor, "bg_clean": bg_clean, "cg": cg})
+    _get_attr(_state, "update")({"fallback_node": fallback_node, "s_node": s_node, "v_node": v_node})
+    _state.update(_caller_locals())
 
 
 def _test_base_generator_visit_and_visit_opnode_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1155,14 +1156,14 @@ def _test_base_generator_visit_and_visit_opnode_part_4(_state: dict[str, EagerTe
         pass
 
     saved_opnode = BaseGenerator.visit_OpNode
-    delattr(BaseGenerator, "visit_OpNode")
+    _del_attr(BaseGenerator, "visit_OpNode")
     try:
         nog = as_callable(NoOpNodeGenerator)(g)
         g_node = IRNode(id="n7", op_type="GenericOp")
         assert nog.visit(g_node, ["g1"]) == "np.genericop(g1)"
     finally:
-        setattr(BaseGenerator, "visit_OpNode", saved_opnode)
-    getattr(_state, "update")({"NoOpNodeGenerator": NoOpNodeGenerator, "saved_opnode": saved_opnode})
+        _set_attr(BaseGenerator, "visit_OpNode", saved_opnode)
+    _get_attr(_state, "update")({"NoOpNodeGenerator": NoOpNodeGenerator, "saved_opnode": saved_opnode})
 
 
 def test_base_generator_visit_and_visit_opnode() -> None:

@@ -12,6 +12,7 @@ from ml_switcheroo_ir import LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner, _calculate_node_bytes, _extract_kernel_name
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_node_dict, as_tensor, as_tensor_list
 
@@ -159,7 +160,7 @@ def test_rocm_compile_hip_to_code() -> None:
             prog: Test parameter `prog`.
             size_ptr: Test parameter `size_ptr`.
         """
-        setattr(getattr(size_ptr, "_obj"), "value", len(expected_code))
+        _set_attr(_get_attr(size_ptr, "_obj"), "value", len(expected_code))
         return 0
 
     mock_hiprtc.hiprtcGetCodeSize.side_effect = get_code_size_side_effect
@@ -171,7 +172,7 @@ def test_rocm_compile_hip_to_code() -> None:
             prog: Test parameter `prog`.
             buf: Test parameter `buf`.
         """
-        setattr(buf, "raw", expected_code)
+        _set_attr(buf, "raw", expected_code)
         return 0
 
     mock_hiprtc.hiprtcGetCode.side_effect = get_code_side_effect
@@ -194,7 +195,7 @@ def test_rocm_compile_hip_to_code() -> None:
             prog: Test parameter `prog`.
             size_ptr: Test parameter `size_ptr`.
         """
-        setattr(getattr(size_ptr, "_obj"), "value", 64)
+        _set_attr(_get_attr(size_ptr, "_obj"), "value", 64)
         return 0
 
     mock_hiprtc.hiprtcGetProgramLogSize.side_effect = get_log_size_side_effect
@@ -206,7 +207,7 @@ def test_rocm_compile_hip_to_code() -> None:
             prog: Test parameter `prog`.
             buf: Test parameter `buf`.
         """
-        setattr(buf, "value", b"syntax error in hip kernel")
+        _set_attr(buf, "value", b"syntax error in hip kernel")
         return 0
 
     mock_hiprtc.hiprtcGetProgramLog.side_effect = get_log_side_effect
@@ -266,11 +267,11 @@ def _test_rocm_additional_coverage_part_1(_state: dict[str, EagerTensorProtocol]
     mock_hip.hipFree.return_value = 0
     mock_hip.hipDeviceSynchronize.return_value = 0
     runner.rocm_lib = mock_hip
-    setattr(runner, "is_available", lambda: True)
-    setattr(runner, "compile_hip_to_code", lambda src: None)
-    getattr(_state, "update")({"code": code, "g": g, "g_empty": g_empty, "gen": gen})
-    getattr(_state, "update")({"mock_hip": mock_hip, "n": n, "n_empty": n_empty, "runner": runner})
-    _state.update(locals())
+    _set_attr(runner, "is_available", lambda: True)
+    _set_attr(runner, "compile_hip_to_code", lambda src: None)
+    _get_attr(_state, "update")({"code": code, "g": g, "g_empty": g_empty, "gen": gen})
+    _get_attr(_state, "update")({"mock_hip": mock_hip, "n": n, "n_empty": n_empty, "runner": runner})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_additional_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -283,15 +284,15 @@ def _test_rocm_additional_coverage_part_2(_state: dict[str, EagerTensorProtocol]
     g_out = IRGraph()
     g_out.outputs = ["missing_output"]
     runner.execute_graph(g_out, {"raw": b"\x00\x00\x00\x00", "mem": memoryview(b"\x00\x00\x00\x00"), "barr": bytearray(b"\x00\x00\x00\x00")})
-    setattr(runner, "allocate_buffer", lambda size: None)
+    _set_attr(runner, "allocate_buffer", lambda size: None)
     g_none = IRGraph()
     g_none.outputs = ["out_0"]
     runner.execute_graph(g_none, {"raw": b"\x00\x00\x00\x00"})
     runner_avail = ROCmRunner()
     mock_cupy = MagicMock()
     type(mock_cupy.cuda).is_hip = property(lambda self: (_ for _ in ()).throw(RuntimeError("CuPy err")))
-    getattr(_state, "update")({"g_none": g_none, "g_out": g_out, "mock_cupy": mock_cupy, "runner_avail": runner_avail})
-    _state.update(locals())
+    _get_attr(_state, "update")({"g_none": g_none, "g_out": g_out, "mock_cupy": mock_cupy, "runner_avail": runner_avail})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_additional_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -316,11 +317,11 @@ def _test_rocm_additional_coverage_part_3(_state: dict[str, EagerTensorProtocol]
                 assert bool(runner_avail.is_available()) is False
             mock_dev_zero = MagicMock()
             mock_dev_zero.hipInit.return_value = 0
-            mock_dev_zero.hipGetDeviceCount.side_effect = lambda ptr: (as_callable(setattr)(getattr(ptr, "_obj"), "value", 0), 0)[1]
+            mock_dev_zero.hipGetDeviceCount.side_effect = lambda ptr: (as_callable(setattr)(_get_attr(ptr, "_obj"), "value", 0), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_dev_zero):
                 assert bool(runner_avail.is_available()) is False
-    getattr(_state, "update")({"mock_dev_lib": mock_dev_lib, "mock_dev_zero": mock_dev_zero, "mock_init_fail": mock_init_fail})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_dev_lib": mock_dev_lib, "mock_dev_zero": mock_dev_zero, "mock_init_fail": mock_init_fail})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_additional_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -333,14 +334,14 @@ def _test_rocm_additional_coverage_part_4(_state: dict[str, EagerTensorProtocol]
     mock_hiprtc = MagicMock(spec=["hiprtcCreateProgram", "hiprtcCompileProgram", "hiprtcGetProgramLogSize", "hiprtcGetProgramLog", "hiprtcDestroyProgram"])
     mock_hiprtc.hiprtcCreateProgram.return_value = 0
     mock_hiprtc.hiprtcCompileProgram.return_value = 2
-    mock_hiprtc.hiprtcGetProgramLogSize.side_effect = lambda prog, size_ptr: (as_callable(setattr)(getattr(size_ptr, "_obj"), "value", 16), 0)[1]
+    mock_hiprtc.hiprtcGetProgramLogSize.side_effect = lambda prog, size_ptr: (as_callable(setattr)(_get_attr(size_ptr, "_obj"), "value", 16), 0)[1]
     mock_hiprtc.hiprtcGetProgramLog.side_effect = lambda prog, buf: (as_callable(setattr)(buf, "value", b"err"), 0)[1]
     with patch("ctypes.cdll.LoadLibrary", return_value=mock_hiprtc):
         with pytest.raises(RuntimeError, match="HIPRTC compilation failed"):
             runner_compile.compile_hip_to_code("src")
     del mock_hiprtc.hiprtcDestroyProgram
-    getattr(_state, "update")({"mock_hiprtc": mock_hiprtc, "runner_compile": runner_compile})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_hiprtc": mock_hiprtc, "runner_compile": runner_compile})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_additional_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -356,14 +357,14 @@ def _test_rocm_additional_coverage_part_5(_state: dict[str, EagerTensorProtocol]
     mock_hiprtc_ok = MagicMock(spec=["hiprtcCreateProgram", "hiprtcCompileProgram", "hiprtcGetCodeSize", "hiprtcGetCode"])
     mock_hiprtc_ok.hiprtcCreateProgram.return_value = 0
     mock_hiprtc_ok.hiprtcCompileProgram.return_value = 0
-    mock_hiprtc_ok.hiprtcGetCodeSize.side_effect = lambda prog, size_ptr: (as_callable(setattr)(getattr(size_ptr, "_obj"), "value", 8), 0)[1]
+    mock_hiprtc_ok.hiprtcGetCodeSize.side_effect = lambda prog, size_ptr: (as_callable(setattr)(_get_attr(size_ptr, "_obj"), "value", 8), 0)[1]
     mock_hiprtc_ok.hiprtcGetCode.side_effect = lambda prog, buf: (as_callable(setattr)(buf, "raw", b"code_bin"), 0)[1]
     with patch("ctypes.cdll.LoadLibrary", return_value=mock_hiprtc_ok):
         assert runner_compile.compile_hip_to_code("src") == b"code_bin"
     runner_sync = ROCmRunner()
     mock_cupy = MagicMock()
-    getattr(_state, "update")({"mock_cupy": mock_cupy, "mock_hiprtc_ok": mock_hiprtc_ok, "runner_sync": runner_sync})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_cupy": mock_cupy, "mock_hiprtc_ok": mock_hiprtc_ok, "runner_sync": runner_sync})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_additional_coverage_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -374,17 +375,17 @@ def _test_rocm_additional_coverage_part_6(_state: dict[str, EagerTensorProtocol]
     """
     (mock_cupy, runner_sync) = (_state["mock_cupy"], _state["runner_sync"])
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
-        setattr(runner_sync, "mode", "cupy")
+        _set_attr(runner_sync, "mode", "cupy")
         runner_sync.synchronize()
         mock_cupy.cuda.Stream.null.synchronize.assert_called_once()
-        setattr(mock_cupy.cuda.Stream.null.synchronize, "side_effect", RuntimeError("sync err"))
+        _set_attr(mock_cupy.cuda.Stream.null.synchronize, "side_effect", RuntimeError("sync err"))
         runner_sync.synchronize()
-    setattr(runner_sync, "mode", "ctypes")
-    setattr(runner_sync, "rocm_lib", None)
+    _set_attr(runner_sync, "mode", "ctypes")
+    _set_attr(runner_sync, "rocm_lib", None)
     runner_sync.synchronize()
     mock_hip_lib = MagicMock()
     mock_hip_lib.hipDeviceSynchronize.return_value = 0
-    setattr(runner_sync, "rocm_lib", mock_hip_lib)
+    _set_attr(runner_sync, "rocm_lib", mock_hip_lib)
     runner_sync.synchronize()
     mock_hip_lib.hipDeviceSynchronize.return_value = 1
     with pytest.raises(RuntimeError, match="hipDeviceSynchronize failed"):
@@ -395,8 +396,8 @@ def _test_rocm_additional_coverage_part_6(_state: dict[str, EagerTensorProtocol]
     mock_hip_lib.hipModuleGetFunction.return_value = 0
     mock_hip_lib.hipModuleLaunchKernel.return_value = 0
     unmapped_node = IRNode("unmapped", "UnsupportedUnknownOp")
-    getattr(_state, "update")({"mock_hip_lib": mock_hip_lib, "unmapped_node": unmapped_node})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_hip_lib": mock_hip_lib, "unmapped_node": unmapped_node})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_additional_coverage_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -409,7 +410,7 @@ def _test_rocm_additional_coverage_part_7(_state: dict[str, EagerTensorProtocol]
     gen_rocm = RocmCodeGenerator(IRGraph())
     as_callable(runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_rocm, None, {})
     mapped_node = IRNode("mapped", "Relu", inputs=[])
-    setattr(getattr(getattr(gen_rocm.config, "templates"), "__getitem__")("relu"), "workgroup_size", [16, 16, 2])
+    _set_attr(_get_attr(_get_attr(gen_rocm.config, "templates"), "__getitem__")("relu"), "workgroup_size", [16, 16, 2])
     as_callable(runner_sync._dispatch_compute_node)(mapped_node, 0, gen_rocm, "/tmp/mock.co", {})
     fused_node = IRNode("fused", "FusedElementwise", inputs=[], attributes={"scalar_expr": "1.0f"})
     as_callable(runner_sync._dispatch_compute_node)(fused_node, 0, gen_rocm, "/tmp/mock.co", {})
@@ -418,7 +419,7 @@ def _test_rocm_additional_coverage_part_7(_state: dict[str, EagerTensorProtocol]
     with patch.object(runner_sync, "compile_hip_to_code", return_value=b"CO"):
         with pytest.raises(BackendNotSupportedError, match="not supported"):
             runner_sync.execute_graph(g_unmapped, {})
-    getattr(_state, "update")({"fused_node": fused_node, "g_unmapped": g_unmapped, "gen_rocm": gen_rocm, "mapped_node": mapped_node})
+    _get_attr(_state, "update")({"fused_node": fused_node, "g_unmapped": g_unmapped, "gen_rocm": gen_rocm, "mapped_node": mapped_node})
 
 
 def test_rocm_additional_coverage() -> None:
@@ -451,20 +452,20 @@ def _test_rocm_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
     assert any("hipFree(d_a)" in line for line in lines)
     runner = ROCmRunner()
     runner.mode = "ctypes"
-    setattr(runner, "rocm_lib", object())
+    _set_attr(runner, "rocm_lib", object())
     runner.synchronize()
-    setattr(runner, "allocate_buffer", lambda size: ctypes.c_void_p(12345))
+    _set_attr(runner, "allocate_buffer", lambda size: ctypes.c_void_p(12345))
     written = []
-    setattr(runner, "write_buffer", lambda ptr, raw: written.append((ptr, raw)))
+    _set_attr(runner, "write_buffer", lambda ptr, raw: written.append((ptr, raw)))
     bufs = runner._prepare_device_buffers({"b": b"raw_bytes", "m": memoryview(b"mem_bytes"), "l": [1.0, 2.0, 3.0]})
     assert len(bufs) == 3
     assert len(written) == 3
-    setattr(runner, "allocate_buffer", lambda size: None)
+    _set_attr(runner, "allocate_buffer", lambda size: None)
     runner._dispatch_compute_node(fused_node, 0, gen, None, {})
     runner._dispatch_compute_node(relu_node, 0, gen, "/tmp/mock.co", {})
-    getattr(_state, "update")({"bufs": bufs, "fused_node": fused_node, "gen": gen, "lines": lines})
-    getattr(_state, "update")({"relu_node": relu_node, "runner": runner, "written": written})
-    _state.update(locals())
+    _get_attr(_state, "update")({"bufs": bufs, "fused_node": fused_node, "gen": gen, "lines": lines})
+    _get_attr(_state, "update")({"relu_node": relu_node, "runner": runner, "written": written})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_full_coverage_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -476,28 +477,28 @@ def _test_rocm_full_coverage_branches_part_2(_state: dict[str, EagerTensorProtoc
     runner_unavail = ROCmRunner()
     runner_unavail.mode = "ctypes"
     runner_unavail.rocm_lib = None
-    setattr(runner_unavail, "is_available", lambda: False)
+    _set_attr(runner_unavail, "is_available", lambda: False)
     with pytest.raises(BackendNotSupportedError, match="ROCm HIP accelerator hardware or driver is not available"):
         runner_unavail.execute_graph(IRGraph(), {})
     runner_valid = ROCmRunner()
     runner_valid.mode = "ctypes"
     runner_valid.rocm_lib = MagicMock()
-    setattr(runner_valid, "is_available", lambda: True)
-    setattr(runner_valid, "compile_hip_to_code", lambda code: b"CO_BYTES")
-    setattr(runner_valid, "allocate_buffer", lambda size: ctypes.c_void_p(999))
-    setattr(runner_valid, "write_buffer", lambda ptr, raw: None)
-    setattr(runner_valid, "load_and_dispatch", lambda *args, **kwargs: None)
-    setattr(runner_valid, "synchronize", lambda: None)
-    setattr(runner_valid, "read_buffer", lambda ptr, size: b"result_bytes")
+    _set_attr(runner_valid, "is_available", lambda: True)
+    _set_attr(runner_valid, "compile_hip_to_code", lambda code: b"CO_BYTES")
+    _set_attr(runner_valid, "allocate_buffer", lambda size: ctypes.c_void_p(999))
+    _set_attr(runner_valid, "write_buffer", lambda ptr, raw: None)
+    _set_attr(runner_valid, "load_and_dispatch", lambda *args, **kwargs: None)
+    _set_attr(runner_valid, "synchronize", lambda: None)
+    _set_attr(runner_valid, "read_buffer", lambda ptr, size: b"result_bytes")
     freed = []
-    setattr(runner_valid, "free_buffer", lambda ptr: freed.append(ptr))
+    _set_attr(runner_valid, "free_buffer", lambda ptr: freed.append(ptr))
     g_exec = IRGraph()
     inp_node = IRNode("inp", "Input")
     inp_node.shape_metadata = (4,)
     calc_node = IRNode("calc", "Relu", inputs=["inp"])
-    getattr(_state, "update")({"calc_node": calc_node, "freed": freed, "g_exec": g_exec, "inp_node": inp_node})
-    getattr(_state, "update")({"runner_unavail": runner_unavail, "runner_valid": runner_valid})
-    _state.update(locals())
+    _get_attr(_state, "update")({"calc_node": calc_node, "freed": freed, "g_exec": g_exec, "inp_node": inp_node})
+    _get_attr(_state, "update")({"runner_unavail": runner_unavail, "runner_valid": runner_valid})
+    _state.update(_caller_locals())
 
 
 def _test_rocm_full_coverage_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -508,17 +509,17 @@ def _test_rocm_full_coverage_branches_part_3(_state: dict[str, EagerTensorProtoc
     """
     (calc_node, freed, g_exec, inp_node) = (_state["calc_node"], _state["freed"], _state["g_exec"], _state["inp_node"])
     runner_valid = _state["runner_valid"]
-    setattr(calc_node, "shape_metadata", [4])
-    setattr(calc_node, "attributes", {"buffer_offset": 0})
-    setattr(g_exec, "nodes", {"inp": inp_node, "calc": calc_node})
-    setattr(g_exec, "inputs", ["inp"])
-    setattr(g_exec, "outputs", ["calc"])
+    _set_attr(calc_node, "shape_metadata", [4])
+    _set_attr(calc_node, "attributes", {"buffer_offset": 0})
+    _set_attr(g_exec, "nodes", {"inp": inp_node, "calc": calc_node})
+    _set_attr(g_exec, "inputs", ["inp"])
+    _set_attr(g_exec, "outputs", ["calc"])
     with patch.object(runner_valid, "_prepare_device_buffers", return_value={"inp": ctypes.c_void_p(500), "dummy": None}):
         res = runner_valid.execute_graph(g_exec, {"inp": b"\x00" * 16})
         assert "calc" in res
         assert res["calc"] == b"result_bytes"
         assert len(freed) > 0
-    getattr(_state, "update")({"res": res})
+    _get_attr(_state, "update")({"res": res})
 
 
 def test_rocm_full_coverage_branches() -> None:
@@ -585,13 +586,13 @@ def test_rocm_synthesized_kernels_and_fused_elementwise() -> None:
     gen = RocmCodeGenerator(g)
     tpl_unary = gen._ensure_template(n_unary, 0)
     assert tpl_unary is not None
-    assert "customsynthunary_kernel" in as_tensor(getattr(tpl_unary, "body"))
+    assert "customsynthunary_kernel" in as_tensor(_get_attr(tpl_unary, "body"))
     tpl_bin = gen._ensure_template(n_bin, 1)
     assert tpl_bin is not None
-    assert "customsynthbinary_kernel" in as_tensor(getattr(tpl_bin, "body"))
+    assert "customsynthbinary_kernel" in as_tensor(_get_attr(tpl_bin, "body"))
     tpl_tri = gen._ensure_template(n_tri, 2)
     assert tpl_tri is not None
-    assert "customsynthternary_kernel" in as_tensor(getattr(tpl_tri, "body"))
+    assert "customsynthternary_kernel" in as_tensor(_get_attr(tpl_tri, "body"))
     n_unsup = IRNode(id="n_unsup", op_type="UnsupportedCustomOp", inputs=["in0"])
     with pytest.raises(BackendNotSupportedError, match="not supported"):
         gen._ensure_template(n_unsup, 3)
@@ -713,7 +714,7 @@ def test_rocm_compile_and_runner_dispatch() -> None:
         artifact = gen.compile_aot(graph, compile_options=["-O3"])
         assert isinstance(artifact, CompiledArtifact)
         assert artifact.binary_bytes == b"hsaco code object"
-        assert as_tensor(getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "hipcc"
+        assert as_tensor(_get_attr(artifact.metadata, "__getitem__")("compiler_cli")) == "hipcc"
     mock_comp_empty = HardwareCompilationResult(success=False, assembly_or_ptx="", compiler_cli="hipcc")
     with patch("ml_switcheroo_compiler.backends.hardware_compilers.HIPCompiler.compile", return_value=mock_comp_empty):
         artifact_empty = gen.compile_aot(graph, compile_options="not-a-list")

@@ -7,6 +7,7 @@ from ml_switcheroo_compiler.core.constants import (
     CONV_3D_TENSOR_RANK,
     MIN_CONV_RANK,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.nn.conv import (
@@ -76,7 +77,7 @@ def _apply_conv_lstm_gates(
         gates = add(gates, weights.bias)
 
     axis_val = -1 if data_format == "channels_last" else 1
-    i, f, c, o = getattr(split(gates, 4, axis=axis_val), "__iter__")()
+    i, f, c, o = _get_attr(split(gates, 4, axis=axis_val), "__iter__")()
 
     i = _sigmoid(i)
     f = _sigmoid(f)

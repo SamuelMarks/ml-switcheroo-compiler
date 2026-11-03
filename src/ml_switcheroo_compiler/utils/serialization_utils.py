@@ -8,6 +8,8 @@ from types import TracebackType
 
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
+
 T = typing.TypeVar("T")
 
 
@@ -135,7 +137,7 @@ def get_registered_name(obj: SerializableType | None = None) -> str:
         return ""
     if obj in _REGISTERED_NAMES:
         return _REGISTERED_NAMES[obj]
-    if hasattr(obj, "__name__"):
+    if _has_attr(obj, "__name__"):
         return str(obj.__name__)
     return str(type(obj).__name__)
 
@@ -185,9 +187,9 @@ def register_serializable(
         Returns:
             T: The original class or function.
         """
-        registered_name = str(name or getattr(cls_or_fn, "__name__", str(cls_or_fn)))
+        registered_name = str(name or _get_attr(cls_or_fn, "__name__", str(cls_or_fn)))
         full_name = f"{package}>{registered_name}" if package else registered_name
-        serializable_obj = typing.cast(SerializableType, cls_or_fn)
+        serializable_obj = _cast_val(SerializableType, cls_or_fn)
         _GLOBAL_CUSTOM_OBJECTS[registered_name] = serializable_obj
         _GLOBAL_CUSTOM_OBJECTS[full_name] = serializable_obj
         _REGISTERED_NAMES[serializable_obj] = registered_name
@@ -209,12 +211,12 @@ def serialize_object(
     """
     if obj is None:
         return None
-    cls_name = get_registered_name(obj.__class__)
-    cfg: dict[str, AttributeValue] = obj.get_config() if hasattr(obj, "get_config") else {}
+    cls_name = get_registered_name(type(obj))
+    cfg: dict[str, AttributeValue] = obj.get_config() if _has_attr(obj, "get_config") else {}
     return {
         "class_name": cls_name,
         "config": cfg,
-        "module": getattr(obj.__class__, "__module__", ""),
+        "module": _get_attr(type(obj), "__module__", ""),
         "registered_name": cls_name,
     }
 
@@ -242,8 +244,10 @@ def deserialize_object(
     config_dict = identifier.get("config", {})
     cls_obj = get_registered_object(class_name, custom_objects)
     if cls_obj is not None and isinstance(cls_obj, type):
-        if hasattr(cls_obj, "from_config") and isinstance(config_dict, dict):
-            return typing.cast("ConfigurableProtocol | AttributeValue | None", cls_obj.from_config(config_dict))
+        if _has_attr(cls_obj, "from_config") and isinstance(config_dict, dict):
+            _typed_ret_1: ConfigurableProtocol | AttributeValue | None = _cast_val("ConfigurableProtocol | AttributeValue | None", cls_obj.from_config(config_dict))
+            return _typed_ret_1
         if isinstance(config_dict, dict):
-            return typing.cast("ConfigurableProtocol | AttributeValue | None", cls_obj(**config_dict))
+            _typed_ret_2: ConfigurableProtocol | AttributeValue | None = _cast_val("ConfigurableProtocol | AttributeValue | None", cls_obj(**config_dict))
+            return _typed_ret_2
     return identifier

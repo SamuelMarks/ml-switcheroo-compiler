@@ -21,6 +21,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 )
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray as _src_as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import as_attr_val as _src_as_attr_val
 from ml_switcheroo_compiler.ir.core import as_attrs as _src_as_attrs
@@ -402,7 +403,7 @@ class _MockTorchDevice:
         Args:
             dev_type (EagerValue): Device type string or object.
         """
-        self.type = str(getattr(dev_type, "type", dev_type)).split(":")[0]
+        self.type = str(_get_attr(dev_type, "type", dev_type)).split(":")[0]
 
     if not typing.TYPE_CHECKING:
 
@@ -415,7 +416,7 @@ class _MockTorchDevice:
             Returns:
                 bool: True if equal.
             """
-            return self.type == str(getattr(other, "type", other)).split(":")[0]
+            return self.type == str(_get_attr(other, "type", other)).split(":")[0]
 
 
 class _MockTorchTensor(np.ndarray[tuple[int, ...], np.dtype[np.generic]]):
@@ -522,7 +523,7 @@ class _MockNNModule:
             name (str): Parameter name.
             param (EagerValue): Parameter tensor.
         """
-        setattr(self, name, param)
+        _set_attr(self, name, param)
 
     def __call__(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Invoke forward method.
@@ -534,7 +535,7 @@ class _MockNNModule:
         Returns:
             EagerValue: Forward output.
         """
-        return as_callable(getattr(self, "forward"))(*args, **kwargs)
+        return as_callable(_get_attr(self, "forward"))(*args, **kwargs)
 
 
 class _MockNNLinear(_MockNNModule):
@@ -781,8 +782,8 @@ def install_profiler_backend_stubs(monkeypatch: _TestValT) -> None:
     """
     import importlib.util
 
-    mp_setitem = as_callable(getattr(monkeypatch, "setitem"))
-    mp_setattr = as_callable(getattr(monkeypatch, "setattr"))
+    mp_setitem = as_callable(_get_attr(monkeypatch, "setitem"))
+    mp_setattr = as_callable(_get_attr(monkeypatch, "setattr"))
 
     if importlib.util.find_spec("torch") is None:
         _install_torch_stub(mp_setitem, mp_setattr)

@@ -11,6 +11,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.reductions.frontend as rd
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from tests.testing_utils import as_tensor_dict
 
@@ -48,7 +49,7 @@ def test_reductions_coverage() -> None:
                 """
                 pass
 
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
 
         import ml_switcheroo_compiler.ops.shape.utils as shape_utils
 
@@ -75,7 +76,7 @@ def test_reductions_coverage() -> None:
                 """
                 return ()
 
-        setattr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
+        _set_attr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
         try:
             assert rd.sum(t) is not None
             assert rd.max(t) is not None

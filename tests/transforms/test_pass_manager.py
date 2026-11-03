@@ -11,6 +11,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.core.shape import _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter, IRValidator, PassManager, _graph_hash
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
@@ -295,7 +296,7 @@ def test_pass_manager_coverage_branches() -> None:
 
     g_list = IRGraph()
     n_item = IRNode(id="n1", op_type="Input")
-    object.__setattr__(g_list, "nodes", [n_item])
+    _obj_set_attr(g_list, "nodes", [n_item])
     snap = _snapshot_graph(g_list)
     assert "n1" in snap["nodes"]
     _restore_graph(g_list, snap)
@@ -339,7 +340,7 @@ def test_pass_manager_coverage_branches() -> None:
 
         max_iterations = 2
 
-    setattr(pm_conv, "convergence_criteria", MockConvergence())
+    _set_attr(pm_conv, "convergence_criteria", MockConvergence())
     g_conv = IRGraph()
     g_conv.nodes["n"] = IRNode(id="n", op_type="Input", shape_metadata=())
     res_conv = pm_conv.run_until_converged(g_conv)

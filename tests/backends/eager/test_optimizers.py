@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.eager.optimizers import (
     apply_ftrl,
     apply_rmsprop,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -76,9 +77,9 @@ def test_apply_adam() -> None:
     lr = 0.01
 
     p_new, m_new, v_new = as_callable(apply_adam)(backend, param, m, v, grad, lr)
-    assert as_tensor(getattr(p_new, "shape")) == (2,)
-    assert as_tensor(getattr(m_new, "shape")) == (2,)
-    assert as_tensor(getattr(v_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(p_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(m_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(v_new, "shape")) == (2,)
 
 
 def test_apply_adagrad() -> None:
@@ -90,8 +91,8 @@ def test_apply_adagrad() -> None:
     lr = 0.01
 
     p_new, accum_new = as_callable(apply_adagrad)(backend, param, accum, grad, lr)
-    assert as_tensor(getattr(p_new, "shape")) == (2,)
-    assert as_tensor(getattr(accum_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(p_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(accum_new, "shape")) == (2,)
 
 
 def test_apply_ftrl() -> None:
@@ -104,9 +105,9 @@ def test_apply_ftrl() -> None:
     lr = 0.01
 
     p_new, accum_new, linear_new = as_callable(apply_ftrl)(backend, param, accum, linear, grad, lr)
-    assert as_tensor(getattr(p_new, "shape")) == (2,)
-    assert as_tensor(getattr(accum_new, "shape")) == (2,)
-    assert as_tensor(getattr(linear_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(p_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(accum_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(linear_new, "shape")) == (2,)
 
 
 def test_apply_rmsprop() -> None:
@@ -119,6 +120,6 @@ def test_apply_rmsprop() -> None:
     lr = 0.01
 
     p_new, ms_new, mom_new = as_callable(apply_rmsprop)(backend, param, ms, mom, grad, lr)
-    assert as_tensor(getattr(p_new, "shape")) == (2,)
-    assert as_tensor(getattr(ms_new, "shape")) == (2,)
-    assert as_tensor(getattr(mom_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(p_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(ms_new, "shape")) == (2,)
+    assert as_tensor(_get_attr(mom_new, "shape")) == (2,)

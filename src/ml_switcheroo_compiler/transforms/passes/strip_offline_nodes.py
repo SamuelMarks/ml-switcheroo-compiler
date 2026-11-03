@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_set_attr
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -32,11 +33,11 @@ def export_graph_to_dot_string(graph: IRGraph) -> str:
     lines.append("  rankdir=LR;")
     lines.append('  node [shape=box, fontname="Courier"];')
 
-    for node_id, node in getattr(graph, "nodes", {}).items():
-        op = getattr(node, "op_type", "Unknown")
+    for node_id, node in _get_attr(graph, "nodes", {}).items():
+        op = _get_attr(node, "op_type", "Unknown")
         label_text = f"{node_id}\\n({op})"
         lines.append(f'  "{node_id}" [label="{label_text}"];')
-        for inp in getattr(node, "inputs", []):
+        for inp in _get_attr(node, "inputs", []):
             lines.append(f'  "{inp}" -> "{node_id}";')
 
     lines.append("}")
@@ -57,16 +58,16 @@ def _find_offline_nodes_and_rewires(graph: IRGraph) -> tuple[list[str], dict[str
     rewire_map: dict[str, str] = {}
 
     for node_id, node in list(graph.nodes.items()):
-        op_type = getattr(node, "op_type", "")
+        op_type = _get_attr(node, "op_type", "")
         if op_type not in OFFLINE_DIAGNOSTIC_OPS:
             continue
         nodes_to_remove.append(node_id)
-        inputs: list[str] = getattr(node, "inputs", [])
+        inputs: list[str] = _get_attr(node, "inputs", [])
         primary_input = inputs[0] if inputs else ""
         if primary_input:
             rewire_map[node_id] = primary_input
 
-        attrs = getattr(node, "attributes", {})
+        attrs = _get_attr(node, "attributes", {})
         if op_type == "ExportToDot" and attrs.get("execute_offline", False):
             attrs["dot_output"] = export_graph_to_dot_string(graph)
 
@@ -93,11 +94,11 @@ def _rewire_graph_edges_and_outputs(
         nodes_to_remove (list[str]): Node IDs marked for removal.
     """
     for node in graph.nodes.values():
-        if getattr(node, "id", "") in nodes_to_remove:
+        if _get_attr(node, "id", "") in nodes_to_remove:
             continue
-        node.inputs = [rewire_map.get(inp, inp) for inp in getattr(node, "inputs", [])]
+        node.inputs = [rewire_map.get(inp, inp) for inp in _get_attr(node, "inputs", [])]
 
-    if hasattr(graph, "outputs") and graph.outputs:
+    if _has_attr(graph, "outputs") and graph.outputs:
         graph.outputs = [rewire_map.get(out_id, out_id) for out_id in graph.outputs if rewire_map.get(out_id, out_id) not in nodes_to_remove]
 
 
@@ -115,12 +116,13 @@ def strip_offline_diagnostic_nodes_pass(graph: IRGraph) -> IRGraph:
     Returns:
         IRGraph: Sanitized graph with offline diagnostic nodes removed.
     """
-    if not hasattr(graph, "nodes") or not graph.nodes:
+    if not _has_attr(graph, "nodes") or not graph.nodes:
         return graph
 
     nodes_to_remove, rewire_map = _find_offline_nodes_and_rewires(graph)
     if not nodes_to_remove:
-        return graph
+        _typed_ret_2: IRGraph = graph
+        return _typed_ret_2
 
     _rewire_graph_edges_and_outputs(graph, rewire_map, nodes_to_remove)
 
@@ -128,8 +130,9 @@ def strip_offline_diagnostic_nodes_pass(graph: IRGraph) -> IRGraph:
         graph.nodes.pop(node_id, None)
 
     try:
-        object.__setattr__(graph, "sorted_nodes", topological_sort(graph))
+        _obj_set_attr(graph, "sorted_nodes", topological_sort(graph))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
-    return graph
+    _typed_ret_1: IRGraph = graph
+    return _typed_ret_1

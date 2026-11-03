@@ -23,6 +23,7 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
     validate_identifier,
     validate_workgroup_size,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -192,4 +193,4 @@ def test_wgsl_ast_string_statements_validation() -> None:
 
     func = as_callable(WGSLFunction)("my_func", [], ["return;"])
     func.validate()
-    assert getattr(func, "name") == "my_func"
+    assert _get_attr(func, "name") == "my_func"

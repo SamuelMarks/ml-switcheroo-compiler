@@ -545,8 +545,7 @@ def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> tuple[_CollectiveDr
             NCCL_SUM,
         )
 
-        drv_cls = vars(nccl_collectives).get("NCCLDriver")
-        drv_raw: StructuralOperandProtocol = as_callable(drv_cls)()
+        drv_raw: StructuralOperandProtocol = as_callable(nccl_collectives.NCCLDriver)()
         if not isinstance(drv_raw, _CollectiveDriverProtocol) or not drv_raw.is_available():
             return None
         dt_map = {
@@ -587,8 +586,7 @@ def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> tuple[_CollectiveDr
             RCCL_SUM,
         )
 
-        drv_cls = vars(rccl_collectives).get("RCCLDriver")
-        drv_raw: StructuralOperandProtocol = as_callable(drv_cls)()
+        drv_raw: StructuralOperandProtocol = as_callable(rccl_collectives.RCCLDriver)()
         if not isinstance(drv_raw, _CollectiveDriverProtocol) or not drv_raw.is_available():
             return None
         dt_map = {

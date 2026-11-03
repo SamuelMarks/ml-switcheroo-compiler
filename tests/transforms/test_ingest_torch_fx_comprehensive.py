@@ -6,6 +6,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.transforms.foreign import ingest_torch_fx
 from tests.testing_utils import as_callable, as_str, as_tensor
 
@@ -67,7 +68,7 @@ class MockGraphModule:
 
     def named_modules(self) -> EagerValue:
         """Named modules."""
-        return as_tensor(getattr(self.modules, "items")())
+        return as_tensor(_get_attr(self.modules, "items")())
 
 
 def test_ingest_torch_fx_empty() -> None:

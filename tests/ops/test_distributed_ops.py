@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.distributed_ops import (
     AllGather,
@@ -96,9 +97,9 @@ def _test_distributed_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtoc
     op7 = AllReduce()
     assert as_callable(op7.infer_shape)(as_callable(MockArray)((2, 2))) == (2, 2)
     assert as_callable(op7.infer_shape)(None) == ()
-    getattr(_state, "update")({"op1": op1, "op2": op2, "op3": op3, "op4": op4})
-    getattr(_state, "update")({"op5": op5, "op6": op6, "op7": op7})
-    _state.update(locals())
+    _get_attr(_state, "update")({"op1": op1, "op2": op2, "op3": op3, "op4": op4})
+    _get_attr(_state, "update")({"op5": op5, "op6": op6, "op7": op7})
+    _state.update(_caller_locals())
 
 
 def _test_distributed_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -135,9 +136,9 @@ def _test_distributed_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtoc
     op14 = Pbroadcast()
     assert as_callable(op14.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (2, 2)
     assert op14.infer_shape() == ()
-    getattr(_state, "update")({"op10": op10, "op11": op11, "op12": op12, "op13": op13})
-    getattr(_state, "update")({"op14": op14, "op8": op8, "op9": op9})
-    _state.update(locals())
+    _get_attr(_state, "update")({"op10": op10, "op11": op11, "op12": op12, "op13": op13})
+    _get_attr(_state, "update")({"op14": op14, "op8": op8, "op9": op9})
+    _state.update(_caller_locals())
 
 
 def _test_distributed_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -170,8 +171,8 @@ def _test_distributed_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtoc
 
     op21 = PsumScatter()
     assert as_callable(op21.infer_shape)(as_callable(MockArray)((2, 2)), as_callable(MockArray)((2, 1))) == (None, 2)
-    getattr(_state, "update")({"op15": op15, "op16": op16, "op17": op17, "op18": op18})
-    getattr(_state, "update")({"op19": op19, "op20": op20, "op21": op21})
+    _get_attr(_state, "update")({"op15": op15, "op16": op16, "op17": op17, "op18": op18})
+    _get_attr(_state, "update")({"op19": op19, "op20": op20, "op21": op21})
 
 
 def test_distributed_ops_infer_shape() -> None:

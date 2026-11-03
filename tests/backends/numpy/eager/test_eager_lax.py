@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -39,8 +40,8 @@ def test_numpy_lax_mocks() -> None:
         assert as_callable(np.array_equal)(a, as_callable(np.array)([2]))
         assert as_callable(np.array_equal)(b, as_callable(np.array)([1]))
         (a, b) = as_callable(execute)("ApproxMaxK", as_callable(np.array)([]))
-        assert as_tensor(getattr(a, "size")) == 0
-        assert as_tensor(getattr(b, "size")) == 0
+        assert as_tensor(_get_attr(a, "size")) == 0
+        assert as_tensor(_get_attr(b, "size")) == 0
         c = execute("ForiLoop", None, None, np.array([3]))
         assert as_callable(np.array_equal)(c, as_callable(np.array)([3]))
         c = execute("ForiLoop", None)

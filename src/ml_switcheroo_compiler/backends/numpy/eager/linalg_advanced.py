@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing
-
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -18,6 +16,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 )
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 
 
 def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[int]) -> list[int]:
@@ -63,8 +62,8 @@ def _dot_general(a: EagerValue, b: EagerValue, dimension_numbers: EagerValue) ->
     Returns:
             tuple[int, ...]: Result.
     """
-    (a_dims, b_dims, out_dims) = _build_einsum_equation(getattr(a, "ndim"), getattr(b, "ndim"), dimension_numbers)
-    return as_tensor(getattr(np, "einsum")(a, a_dims, b, b_dims, out_dims))
+    (a_dims, b_dims, out_dims) = _build_einsum_equation(_get_attr(a, "ndim"), _get_attr(b, "ndim"), dimension_numbers)
+    return as_tensor(_get_attr(np, "einsum")(a, a_dims, b, b_dims, out_dims))
 
 
 def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: EagerValue) -> tuple[list[int], list[int], list[int]]:
@@ -78,7 +77,7 @@ def _build_einsum_equation(a_ndim: int, b_ndim: int, dimension_numbers: EagerVal
     Returns:
             tuple[int, ...]: Result.
     """
-    (a_contracting, b_contracting, a_batch, b_batch) = _parse_dot_dimension_numbers(typing.cast("tuple[tuple[list[int], list[int]], tuple[list[int], list[int]]]", dimension_numbers))
+    (a_contracting, b_contracting, a_batch, b_batch) = _parse_dot_dimension_numbers(_cast_val("tuple[tuple[list[int], list[int]], tuple[list[int], list[int]]]", dimension_numbers))
     a_dims: list[int] = list(range(a_ndim))
     b_dims: list[int] = list(range(a_ndim, a_ndim + b_ndim))
     for i, a_b in enumerate(a_batch):
@@ -103,7 +102,7 @@ def _np_trace(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np, "trace")(args[0], **kwargs))
+    return as_tensor(_get_attr(np, "trace")(args[0], **kwargs))
 
 
 @numpy_eager_registry.register("MatrixRank")
@@ -118,7 +117,7 @@ def _np_matrix_rank(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np.linalg, "matrix_rank")(args[0], **kwargs))
+    return as_tensor(_get_attr(np.linalg, "matrix_rank")(args[0], **kwargs))
 
 
 @numpy_eager_registry.register("MatrixTranspose")
@@ -133,7 +132,7 @@ def _np_matrix_transpose(backend_module: BackendModuleProtocol, *args: EagerValu
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np, "swapaxes")(args[0], -1, -2))
+    return as_tensor(_get_attr(np, "swapaxes")(args[0], -1, -2))
 
 
 @numpy_eager_registry.register("Sqrtm")
@@ -161,7 +160,7 @@ def _np_adjoint(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(np.conj(getattr(np, "swapaxes")(args[0], -1, -2)))
+    return as_tensor(np.conj(_get_attr(np, "swapaxes")(args[0], -1, -2)))
 
 
 @numpy_eager_registry.register("CholeskySolve")
@@ -239,7 +238,7 @@ def _np_cross(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     """
     axes: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = as_ndarray(kwargs.pop("axes", None))
     if axes:
-        kwargs.update({k: v for k, v in getattr(axes, "items")() if v is not None})
+        kwargs.update({k: v for k, v in _get_attr(axes, "items")() if v is not None})
     if "axis" in kwargs and kwargs["axis"] is None:
         kwargs.pop("axis")
     return backend_module.cross(*args, **kwargs)
@@ -259,7 +258,7 @@ def _np_slogdet(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     import numpy as np
 
-    return as_tensor(getattr(np.linalg, "slogdet")(*args, **kwargs))
+    return as_tensor(_get_attr(np.linalg, "slogdet")(*args, **kwargs))
 
 
 for op_name in [
@@ -299,12 +298,12 @@ for op_name in [
             """
             import numpy as np
 
-            func = getattr(np.linalg, name.lower() if name.lower() != "multidot" else "multi_dot")
+            func = _get_attr(np.linalg, name.lower() if name.lower() != "multidot" else "multi_dot")
             return as_tensor(func(*args, **kwargs))
 
         return _wrapper
 
-    getattr(numpy_eager_registry, "register")(op_name)(as_callable(make_linalg_wrapper)(op_name))
+    _get_attr(numpy_eager_registry, "register")(op_name)(as_callable(make_linalg_wrapper)(op_name))
 
 
 @numpy_eager_registry.register("Lu")
@@ -450,7 +449,7 @@ def _np_tridiagonal_solve(backend_module: BackendModuleProtocol, *args: EagerVal
     import scipy.linalg
 
     dl, d, du, b = args[0], args[1], args[2], args[3]
-    return as_tensor(scipy.linalg.solve_banded((1, 1), [getattr(np, "concatenate")(([0], du)), d, getattr(np, "concatenate")((dl, [0]))], b))
+    return as_tensor(scipy.linalg.solve_banded((1, 1), [_get_attr(np, "concatenate")(([0], du)), d, _get_attr(np, "concatenate")((dl, [0]))], b))
 
 
 @numpy_eager_registry.register("CholeskyEx")
@@ -468,9 +467,9 @@ def _np_cholesky_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **
     import numpy as np
 
     try:
-        return getattr(np.linalg, "cholesky")(args[0]), np.zeros(getattr(args[0], "shape")[:-2], dtype=np.int32)
+        return _get_attr(np.linalg, "cholesky")(args[0]), np.zeros(_get_attr(args[0], "shape")[:-2], dtype=np.int32)
     except np.linalg.LinAlgError:
-        return np.zeros_like(args[0]), np.ones(getattr(args[0], "shape")[:-2], dtype=np.int32)
+        return np.zeros_like(args[0]), np.ones(_get_attr(args[0], "shape")[:-2], dtype=np.int32)
 
 
 @numpy_eager_registry.register("InvEx")
@@ -488,9 +487,9 @@ def _np_inv_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     import numpy as np
 
     try:
-        return getattr(np.linalg, "inv")(args[0]), np.zeros(getattr(args[0], "shape")[:-2], dtype=np.int32)
+        return _get_attr(np.linalg, "inv")(args[0]), np.zeros(_get_attr(args[0], "shape")[:-2], dtype=np.int32)
     except np.linalg.LinAlgError:
-        return np.zeros_like(args[0]), np.ones(getattr(args[0], "shape")[:-2], dtype=np.int32)
+        return np.zeros_like(args[0]), np.ones(_get_attr(args[0], "shape")[:-2], dtype=np.int32)
 
 
 @numpy_eager_registry.register("Pinv")
@@ -507,7 +506,7 @@ def _np_pinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     """
     import numpy as np
 
-    return as_tensor(getattr(np.linalg, "pinv")(args[0], **kwargs))
+    return as_tensor(_get_attr(np.linalg, "pinv")(args[0], **kwargs))
 
 
 @numpy_eager_registry.register("Polar")
@@ -562,9 +561,9 @@ def _np_solve_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     import numpy as np
 
     try:
-        return getattr(np.linalg, "solve")(args[0], args[1]), np.zeros(getattr(args[0], "shape")[:-2], dtype=np.int32)
+        return _get_attr(np.linalg, "solve")(args[0], args[1]), np.zeros(_get_attr(args[0], "shape")[:-2], dtype=np.int32)
     except np.linalg.LinAlgError:
-        return np.zeros_like(args[1]), np.ones(getattr(args[0], "shape")[:-2], dtype=np.int32)
+        return np.zeros_like(args[1]), np.ones(_get_attr(args[0], "shape")[:-2], dtype=np.int32)
 
 
 @numpy_eager_registry.register("Svd")
@@ -583,7 +582,7 @@ def _np_svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
 
     full_matrices: bool = bool(kwargs.get("full_matrices", True))
     compute_uv: bool = bool(kwargs.get("compute_uv", True))
-    return as_tensor(getattr(np.linalg, "svd")(args[0], full_matrices=full_matrices, compute_uv=compute_uv))
+    return as_tensor(_get_attr(np.linalg, "svd")(args[0], full_matrices=full_matrices, compute_uv=compute_uv))
 
 
 @numpy_eager_registry.register("Schur")

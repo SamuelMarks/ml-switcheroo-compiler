@@ -7,6 +7,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _top_k
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("SortKeyVal")
@@ -44,7 +45,7 @@ def _np_partition(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np, "partition")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return as_tensor(_get_attr(np, "partition")(_get_attr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Percentile")
@@ -59,7 +60,7 @@ def _np_percentile(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np, "percentile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return as_tensor(_get_attr(np, "percentile")(_get_attr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Quantile")
@@ -74,7 +75,7 @@ def _np_quantile(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np, "quantile")(getattr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
+    return as_tensor(_get_attr(np, "quantile")(_get_attr(np, "asarray")(args[0]), args[1], *args[2:], **kwargs))
 
 
 @numpy_eager_registry.register("Unique")
@@ -89,7 +90,7 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np, "unique")(getattr(np, "asarray")(args[0]), *args[1:], **kwargs))
+    return as_tensor(_get_attr(np, "unique")(_get_attr(np, "asarray")(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("ArgSort")

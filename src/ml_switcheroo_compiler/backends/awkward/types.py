@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import importlib
 import logging
-import typing
 from collections.abc import Iterable, Mapping, Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_eager_list, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_eager_list, as_float, as_int, as_tensor
 
 
 def _get_ak_module() -> EagerValue:
@@ -48,12 +47,12 @@ def zeros(shape: tuple[int, ...] | int) -> EagerValue:
     """
     nested = _build_nested_zeros(shape)
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "Array"):
-        return as_tensor(getattr(ak_mod, "Array")(nested))
+    if _has_attr(ak_mod, "Array"):
+        return as_tensor(as_callable(_get_attr(ak_mod, "Array"))(nested))
     return nested
 
 
-def array(data: EagerValue, dtype: str | None = None) -> EagerValue:
+def array(data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
     """Create an Awkward ragged or regular array from data.
 
     Args:
@@ -65,9 +64,9 @@ def array(data: EagerValue, dtype: str | None = None) -> EagerValue:
     """
     del dtype
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "Array"):
+    if _has_attr(ak_mod, "Array"):
         try:
-            return as_tensor(getattr(ak_mod, "Array")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "Array"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return list(data) if isinstance(data, (list, tuple)) else [data]
@@ -83,9 +82,9 @@ def asarray(data: EagerValue) -> EagerValue:
         EagerValue: Awkward array or list fallback.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "Array"):
+    if _has_attr(ak_mod, "Array"):
         try:
-            return as_tensor(getattr(ak_mod, "Array")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "Array"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return list(data) if isinstance(data, (list, tuple)) else [data]
@@ -106,9 +105,9 @@ def ragged_array(
     """
     del dtype
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "Array"):
+    if _has_attr(ak_mod, "Array"):
         try:
-            return as_tensor(getattr(ak_mod, "Array")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "Array"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return list(data) if isinstance(data, (list, tuple)) else [data]
@@ -128,10 +127,10 @@ def record_array(
         EagerValue: Awkward record array.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "zip") and isinstance(data, Mapping):
-        return as_tensor(getattr(ak_mod, "zip")(dict(data), with_name=with_name))
-    if hasattr(ak_mod, "Array"):
-        return as_tensor(getattr(ak_mod, "Array")(data))
+    if _has_attr(ak_mod, "zip") and isinstance(data, Mapping):
+        return as_tensor(as_callable(_get_attr(ak_mod, "zip"))(dict(data), with_name=with_name))
+    if _has_attr(ak_mod, "Array"):
+        return as_tensor(as_callable(_get_attr(ak_mod, "Array"))(data))
     return data
 
 
@@ -149,9 +148,9 @@ def flatten(
         EagerValue: Flattened array.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "flatten"):
-        return as_tensor(getattr(ak_mod, "flatten")(data, axis=axis))
-    return as_tensor(getattr(data, "flatten")())
+    if _has_attr(ak_mod, "flatten"):
+        return as_tensor(as_callable(_get_attr(ak_mod, "flatten"))(data, axis=axis))
+    return as_tensor(as_callable(_get_attr(data, "flatten"))())
 
 
 def unflatten(
@@ -170,8 +169,8 @@ def unflatten(
         EagerValue: Ragged partitioned Awkward array.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "unflatten") and counts is not None:
-        return as_tensor(getattr(ak_mod, "unflatten")(data, counts, axis=axis))
+    if _has_attr(ak_mod, "unflatten") and counts is not None:
+        return as_tensor(as_callable(_get_attr(ak_mod, "unflatten"))(data, counts, axis=axis))
     return data
 
 
@@ -191,8 +190,8 @@ def with_field(
         EagerValue: Updated Awkward record array.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "with_field"):
-        return as_tensor(getattr(ak_mod, "with_field")(base, what, where))
+    if _has_attr(ak_mod, "with_field"):
+        return as_tensor(as_callable(_get_attr(ak_mod, "with_field"))(base, what, where))
     if isinstance(base, dict):
         res = dict(base)
         res[where] = what
@@ -212,9 +211,9 @@ def unzip(
         tuple[EagerValue, ...]: Tuple of individual field arrays.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "unzip"):
-        unzipped = getattr(ak_mod, "unzip")(data)
-        return tuple(unzipped)
+    if _has_attr(ak_mod, "unzip"):
+        unzipped = as_callable(_get_attr(ak_mod, "unzip"))(data)
+        return tuple(as_eager_list(unzipped))
     if isinstance(data, dict):
         return tuple(data.values())
     return (data,)
@@ -229,18 +228,18 @@ def item(data: EagerValue) -> float:
     Returns:
         float: Extracted scalar value.
     """
-    if hasattr(data, "to_list"):
-        val = getattr(data, "to_list")()
+    if _has_attr(data, "to_list"):
+        val: EagerValue = as_callable(_get_attr(data, "to_list"))()
         if isinstance(val, (list, tuple)) and val:
             first = val[0]
             if isinstance(first, (list, tuple)) and first:
-                return float(first[0])
-            return float(first)
-        return float(val)
-    if hasattr(data, "item"):
-        return float(getattr(data, "item")())
-    arr = getattr(data, "__array__")()
-    return float(getattr(arr, "item")())
+                return float(as_float(first[0]))
+            return float(as_float(first))
+        return float(as_float(val))
+    if _has_attr(data, "item"):
+        return float(as_float(as_callable(_get_attr(data, "item"))()))
+    arr = as_callable(_get_attr(data, "__array__"))()
+    return float(as_float(as_callable(_get_attr(arr, "item"))()))
 
 
 def broadcast_ragged(
@@ -257,9 +256,9 @@ def broadcast_ragged(
         tuple[EagerValue, EagerValue]: Broadcast pair of Awkward or nested array structures.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "broadcast_arrays"):
+    if _has_attr(ak_mod, "broadcast_arrays"):
         try:
-            res = getattr(ak_mod, "broadcast_arrays")(a, b)
+            res = as_eager_list(as_callable(_get_attr(ak_mod, "broadcast_arrays"))(a, b))
             return (res[0], res[1])
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -283,8 +282,9 @@ def ragged_shape(data: EagerValue) -> tuple[int | None, ...]:
     Returns:
         tuple[int | None, ...]: Inferred shape with None for ragged variable dimensions.
     """
-    if hasattr(data, "shape"):
-        return tuple(int(d) for d in typing.cast(Iterable[int], getattr(data, "shape")))
+    if _has_attr(data, "shape"):
+        raw_sh = _get_attr(data, "shape")
+        return tuple(int(as_int(d)) for d in (raw_sh if isinstance(raw_sh, Iterable) else ()))
     if isinstance(data, (list, tuple)):
         outer_len = len(data)
         if outer_len == 0:
@@ -328,9 +328,9 @@ def to_regular(
         EagerValue: Regular dense array or padded nested list.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "to_regular"):
+    if _has_attr(ak_mod, "to_regular"):
         try:
-            return as_tensor(getattr(ak_mod, "to_regular")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "to_regular"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -361,9 +361,9 @@ def from_regular(data: EagerValue) -> EagerValue:
         EagerValue: Awkward array representation.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "from_regular"):
+    if _has_attr(ak_mod, "from_regular"):
         try:
-            return as_tensor(getattr(ak_mod, "from_regular")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "from_regular"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return array(data)
@@ -379,9 +379,9 @@ def to_numpy(data: EagerValue) -> EagerValue:
         EagerValue: Host buffer converted by Awkward.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "to_numpy"):
+    if _has_attr(ak_mod, "to_numpy"):
         try:
-            return as_tensor(getattr(ak_mod, "to_numpy")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "to_numpy"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     import awkward as ak
@@ -399,9 +399,9 @@ def from_numpy(data: EagerValue) -> EagerValue:
         EagerValue: Awkward array.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "from_numpy"):
+    if _has_attr(ak_mod, "from_numpy"):
         try:
-            return as_tensor(getattr(ak_mod, "from_numpy")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "from_numpy"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return array(data)
@@ -416,10 +416,10 @@ def to_list(data: EagerValue) -> list[EagerValue]:
     Returns:
         list[EagerValue]: Python nested list.
     """
-    if hasattr(data, "to_list"):
-        return as_eager_list(getattr(data, "to_list")())
-    if hasattr(data, "tolist"):
-        return as_eager_list(getattr(data, "tolist")())
+    if _has_attr(data, "to_list"):
+        return as_eager_list(as_callable(_get_attr(data, "to_list"))())
+    if _has_attr(data, "tolist"):
+        return as_eager_list(as_callable(_get_attr(data, "tolist"))())
     if isinstance(data, (list, tuple)):
         return list(data)
     return [data]
@@ -435,9 +435,9 @@ def from_iter(data: EagerValue) -> EagerValue:
         EagerValue: Constructed Awkward array.
     """
     ak_mod = _get_ak_module()
-    if hasattr(ak_mod, "from_iter"):
+    if _has_attr(ak_mod, "from_iter"):
         try:
-            return as_tensor(getattr(ak_mod, "from_iter")(data))
+            return as_tensor(as_callable(_get_attr(ak_mod, "from_iter"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return array(data)
@@ -452,7 +452,7 @@ def get_layout(data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Layout object or shape layout description.
     """
-    if hasattr(data, "layout"):
-        return as_tensor(getattr(data, "layout"))
+    if _has_attr(data, "layout"):
+        return as_tensor(_get_attr(data, "layout"))
     res_layout: dict[str, EagerValue] = {"shape": ragged_shape(data), "is_ragged": is_ragged(data)}
     return res_layout

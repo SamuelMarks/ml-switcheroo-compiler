@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .base import UnaryMathOp
@@ -105,13 +105,14 @@ class Packbits(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_1: TensorOrScalar = res
+        return _typed_ret_1
 
 
 @register_op("Unpackbits")
@@ -132,13 +133,14 @@ class Unpackbits(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_2: TensorOrScalar = res
+        return _typed_ret_2
 
 
 @register_op("Clz")
@@ -264,7 +266,7 @@ class Isin(OpDef):
             tuple[int, ...]: Result shape matching element.
         """
         element = args[0] if len(args) > 0 else kwargs.get("element")
-        return tuple(getattr(element, "shape", getattr(element, "shape_metadata", element if isinstance(element, (list, tuple)) else ())))
+        return tuple(_get_attr(element, "shape", _get_attr(element, "shape_metadata", element if isinstance(element, (list, tuple)) else ())))
 
 
 def _get_size_from_shape(obj: TensorOrScalar) -> int | None:
@@ -280,7 +282,7 @@ def _get_size_from_shape(obj: TensorOrScalar) -> int | None:
         return 0
     if isinstance(obj, (list, tuple)):
         return len(obj)
-    shape = getattr(obj, "shape", getattr(obj, "shape_metadata", ()))
+    shape = _get_attr(obj, "shape", _get_attr(obj, "shape_metadata", ()))
     if not shape:
         return 1
     size = 1

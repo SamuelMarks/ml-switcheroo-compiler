@@ -10,7 +10,7 @@ from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.ir.core import as_attrs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -603,8 +603,8 @@ def sparse_categorical_crossentropy(
 
     if ignore_class is not None:
         valid_mask = not_equal(y_true, ignore_class)
-        loss_dtype = getattr(loss, "dtype", None) or DType("float32")
-        zero_loss = zeros(getattr(loss, "shape", ()), dtype=loss_dtype)
+        loss_dtype = _get_attr(loss, "dtype", None) or DType("float32")
+        zero_loss = zeros(_get_attr(loss, "shape", ()), dtype=loss_dtype)
         loss = where(valid_mask, as_tensor_obj(loss), zero_loss)
 
     return loss
@@ -685,7 +685,7 @@ def _emit_adaptive_log_softmax_with_loss_node(
     node = LogicalNode(
         id=out_id,
         op_type="AdaptiveLogSoftmaxWithLoss",
-        inputs=[getattr(input_tensor.data, "id"), getattr(target.data, "id")],
+        inputs=[_get_attr(input_tensor.data, "id"), _get_attr(target.data, "id")],
         shape_metadata=target.shape,
         attributes=as_attrs({"cutoffs": cutoffs, "add_cluster_prob": add_cluster_prob}),
     )
@@ -754,7 +754,7 @@ class LogPoissonLoss(OpDef):
             tuple[int, ...]: Inferred output shape.
         """
         _ = kwargs
-        return getattr(args[0], "shape", ()) if args else ()
+        return _get_attr(args[0], "shape", ()) if args else ()
 
 
 def log_poisson_loss(
@@ -806,7 +806,7 @@ class InTopK(OpDef):
             tuple[int, ...]: Inferred shape tuple.
         """
         _ = kwargs
-        return getattr(args[0], "shape", ()) if args else ()
+        return _get_attr(args[0], "shape", ()) if args else ()
 
 
 def in_top_k(
@@ -826,13 +826,13 @@ def in_top_k(
     Returns:
         TensorOrScalar: Boolean tensor of shape (batch_size,) indicating top-k membership.
     """
-    target_shape = getattr(targets, "shape", ())
+    target_shape = _get_attr(targets, "shape", ())
     if config.eager_mode:
         backend = get_active_backend()
-        t_data = getattr(targets, "data", targets)
-        p_data = getattr(predictions, "data", predictions)
+        t_data = _get_attr(targets, "data", targets)
+        p_data = _get_attr(predictions, "data", predictions)
         data = backend.execute_op("InTopK", t_data, p_data, k=k, name=name)
-        return Tensor(data, TensorConfig(target_shape, "bool", getattr(targets, "device", "cpu")))
+        return Tensor(data, TensorConfig(target_shape, "bool", _get_attr(targets, "device", "cpu")))
     return _emit_shape_node("InTopK", [targets, predictions], {"k": k, "name": name}, target_shape, "bool")
 
 

@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 class RandomDistributionConfig(typing.Protocol):
@@ -53,9 +54,9 @@ def _np_normal(
     """
     dtype = kwargs.get("dtype", "float32")
     config = kwargs.get("config")
-    mean = getattr(config, "mean", 0.0) if config else 0.0
-    stddev = getattr(config, "stddev", 1.0) if config else 1.0
-    return as_ndarray(getattr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
+    mean = _get_attr(config, "mean", 0.0) if config else 0.0
+    stddev = _get_attr(config, "stddev", 1.0) if config else 1.0
+    return as_ndarray(_get_attr(np.random.normal(loc=mean, scale=stddev, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("Uniform")
@@ -76,13 +77,13 @@ def _np_uniform(
     """
     dtype = kwargs.get("dtype", "float32")
     config = kwargs.get("config")
-    minval = getattr(config, "minval", 0.0) if config else 0.0
+    minval = _get_attr(config, "minval", 0.0) if config else 0.0
     if minval is None:
         minval = 0.0
-    maxval = getattr(config, "maxval", 1.0) if config else 1.0
+    maxval = _get_attr(config, "maxval", 1.0) if config else 1.0
     if maxval is None:
         maxval = 1.0
-    return as_ndarray(getattr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
+    return as_ndarray(_get_attr(np.random.uniform(low=minval, high=maxval, size=shape), "astype")(dtype))
 
 
 @numpy_eager_registry.register("StatelessSplit")
@@ -141,6 +142,7 @@ def _np_lookup(
     default_value = kwargs.get("default_value", 0)
     if isinstance(table, dict):
         return as_ndarray(np.vectorize(lambda k: table.get(k, default_value))(arr))
-    if hasattr(table, "lookup"):
-        return table.lookup(arr)
+    if _has_attr(table, "lookup"):
+        _typed_ret_1: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = table.lookup(arr)
+        return _typed_ret_1
     return np.full_like(arr, default_value, dtype=np.int32)

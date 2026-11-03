@@ -26,6 +26,7 @@ from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerat
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, register_backend
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_str, as_tensor, as_tensor_list
 
@@ -52,11 +53,11 @@ def test_backends_coverage() -> None:
     g.inputs = ["n2"]
     g.outputs = ["n3"]
     for gen_cls in [
-        as_tensor(getattr(jax, "JAXCodeGenerator")),
-        as_tensor(getattr(keras, "KerasCodeGenerator")),
+        as_tensor(_get_attr(jax, "JAXCodeGenerator")),
+        as_tensor(_get_attr(keras, "KerasCodeGenerator")),
         mlx.MLXCodeGenerator,
-        as_tensor(getattr(pytorch, "PyTorchCodeGenerator")),
-        as_tensor(getattr(tensorflow, "TensorFlowCodeGenerator")),
+        as_tensor(_get_attr(pytorch, "PyTorchCodeGenerator")),
+        as_tensor(_get_attr(tensorflow, "TensorFlowCodeGenerator")),
     ]:
         res = as_callable(as_callable(gen_cls)(g).generate)()
         assert isinstance(as_tensor(res), str)
@@ -97,20 +98,20 @@ def test_truncate_ops_generation() -> None:
         node_mod = IRNode(id="n2", op_type="TruncateMod", inputs=["x", "y"])
         assert TensorFlowCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "tf.math.truncatediv(x, y)"
         assert TensorFlowCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "tf.math.truncatemod(x, y)"
-        assert as_tensor(getattr(NumpyASTVisitor, "visit_TruncateDiv"))(node_div, ["x", "y"]) == "np.trunc(np.divide(x, y))"
+        assert as_tensor(_get_attr(NumpyASTVisitor, "visit_TruncateDiv"))(node_div, ["x", "y"]) == "np.trunc(np.divide(x, y))"
         assert PyTorchCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "torch.trunc(x / y)"
         assert JAXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "jnp.trunc(jnp.divide(x, y))"
         assert MLXCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "mx.trunc(mx.divide(x, y))"
         assert KerasCodeGenerator(MagicMock()).generic_visit(node_div, ["x", "y"]) == "keras.ops.trunc(keras.ops.divide(x, y))"
-        assert as_tensor(getattr(CupyGenerator(MagicMock()), "visit_TruncateDiv"))(node_div, ["x", "y"]) == "cp.trunc(cp.divide(x, y))"
-        assert as_tensor(getattr(DaskGenerator(MagicMock()), "visit_TruncateDiv"))(node_div, ["x", "y"]) == "da.trunc(da.divide(x, y))"
-        assert as_tensor(getattr(NumpyASTVisitor, "visit_TruncateMod"))(node_mod, ["x", "y"]) == "np.fmod(x, y)"
+        assert as_tensor(_get_attr(CupyGenerator(MagicMock()), "visit_TruncateDiv"))(node_div, ["x", "y"]) == "cp.trunc(cp.divide(x, y))"
+        assert as_tensor(_get_attr(DaskGenerator(MagicMock()), "visit_TruncateDiv"))(node_div, ["x", "y"]) == "da.trunc(da.divide(x, y))"
+        assert as_tensor(_get_attr(NumpyASTVisitor, "visit_TruncateMod"))(node_mod, ["x", "y"]) == "np.fmod(x, y)"
         assert PyTorchCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "torch.fmod(x, y)"
         assert JAXCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "jnp.fmod(x, y)"
         assert MLXCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "mx.remainder(x, y)"
         assert KerasCodeGenerator(MagicMock()).generic_visit(node_mod, ["x", "y"]) == "keras.ops.mod(x, y)"
-        assert as_tensor(getattr(CupyGenerator(MagicMock()), "visit_TruncateMod"))(node_mod, ["x", "y"]) == "cp.fmod(x, y)"
-        assert as_tensor(getattr(DaskGenerator(MagicMock()), "visit_TruncateMod"))(node_mod, ["x", "y"]) == "da.fmod(x, y)"
+        assert as_tensor(_get_attr(CupyGenerator(MagicMock()), "visit_TruncateMod"))(node_mod, ["x", "y"]) == "cp.fmod(x, y)"
+        assert as_tensor(_get_attr(DaskGenerator(MagicMock()), "visit_TruncateMod"))(node_mod, ["x", "y"]) == "da.fmod(x, y)"
 
 
 def test_coverage_brute() -> None:
@@ -212,14 +213,14 @@ def test_add_n_accumulate_n_generation() -> None:
                 Returns:
                     str: The evaluated or processed output.
                 """
-                return as_str(getattr(self, f"visit_{getattr(node, 'op_type')}")(node, input_vars, **kwargs))
+                return as_str(_get_attr(self, f"visit_{_get_attr(node, 'op_type')}")(node, input_vars, **kwargs))
 
         gen = as_callable(MockGenerator)()
         node1 = IRNode(id="n1", op_type="AddN", inputs=["a", "b", "c"], attributes={}, shape_metadata=None)
-        assert as_tensor(getattr(gen, "visit_AddN"))(node1, ["a", "b", "c"]) == "a + b + c"
-        assert as_tensor(getattr(gen, "visit_AddN"))(node1, []) == "0.0"
+        assert as_tensor(_get_attr(gen, "visit_AddN"))(node1, ["a", "b", "c"]) == "a + b + c"
+        assert as_tensor(_get_attr(gen, "visit_AddN"))(node1, []) == "0.0"
         node2 = IRNode(id="n2", op_type="AccumulateN", inputs=["x", "y"], attributes={}, shape_metadata=None)
-        assert as_tensor(getattr(gen, "visit_AccumulateN"))(node2, ["x", "y"]) == "x + y"
+        assert as_tensor(_get_attr(gen, "visit_AccumulateN"))(node2, ["x", "y"]) == "x + y"
 
 
 class DummyGenerator(GeneratorLifecycleMixin):
@@ -644,7 +645,7 @@ def test_pytorch_generator_generate() -> None:
     n2 = LogicalNode("n2", "Relu", inputs=["n1"], attributes={}, shape_metadata=None)
     graph2.nodes = NodeDict({"n1": n1, "n2": n2})
     gen2 = PyTorchCodeGenerator(graph2)
-    setattr(gen2, "emit_constant", lambda node: "42.0")
+    _set_attr(gen2, "emit_constant", lambda node: "42.0")
     code2 = gen2.generate()
     assert "self.register_parameter" in code2
     assert "pass" not in code2
@@ -733,16 +734,16 @@ def test_base_generator_import_header() -> None:
 
     gen = PythonStringGenerator(MagicMock())
     gen._import_header = "import something"
-    setattr(gen, "add_line", MagicMock())
-    setattr(gen, "_generate_body", MagicMock())
+    _set_attr(gen, "add_line", MagicMock())
+    _set_attr(gen, "_generate_body", MagicMock())
     gen.generate()
-    as_tensor(getattr(gen.add_line, "assert_any_call"))("import something")
+    as_tensor(_get_attr(gen.add_line, "assert_any_call"))("import something")
     gen2 = PythonStringGenerator(MagicMock())
-    setattr(gen2, "_import_header", ["import something"])
-    setattr(gen2, "add_line", MagicMock())
-    setattr(gen2, "_generate_body", MagicMock())
+    _set_attr(gen2, "_import_header", ["import something"])
+    _set_attr(gen2, "add_line", MagicMock())
+    _set_attr(gen2, "_generate_body", MagicMock())
     gen2.generate()
-    as_tensor(getattr(gen2.add_line, "assert_any_call"))("import something")
+    as_tensor(_get_attr(gen2.add_line, "assert_any_call"))("import something")
     assert gen is not None
 
 
@@ -807,11 +808,11 @@ def test_base_generator_properties() -> None:
     """Test function test_base_generator_properties."""
     graph = DummyGraph()
     gen = as_callable(MyGen)(graph)
-    setattr(gen, "var_names", {"test": "val"})
+    _set_attr(gen, "var_names", {"test": "val"})
     assert gen.var_names == {"test": "val"}
-    setattr(gen, "header", "my_header")
+    _set_attr(gen, "header", "my_header")
     assert gen.header == "my_header"
-    setattr(gen, "indent_level", 2)
+    _set_attr(gen, "indent_level", 2)
     assert gen.get_indent() == "        "
 
 
@@ -824,8 +825,8 @@ def test_base_generator_fallbacks() -> None:
     assert gen.get_fallback_keepdims_kwarg() == "keepdims"
     node = IRNode("Op", op_type="Op")
     gen._emit_output_assignment(node, [], "ret_val")
-    assert getattr(gen, "_output_returns", []) == ["ret_val"]
-    setattr(gen, "code", [])
+    assert _get_attr(gen, "_output_returns", []) == ["ret_val"]
+    _set_attr(gen, "code", [])
     gen._emit_input_assignment("var_a", node, "inputs", 0)
     assert "var_a = inputs[0]" in gen.code[0]
 
@@ -837,7 +838,7 @@ def test_python_string_generator_tuple_import() -> None:
     code = gen.generate()
     assert "import sys\nimport os" in code
     gen2 = as_callable(MyPyGen)(graph)
-    setattr(gen2, "_import_header", "import sys")
+    _set_attr(gen2, "_import_header", "import sys")
     code2 = gen2.generate()
     assert "import sys" in code2
 
@@ -854,14 +855,14 @@ def test_python_string_generator_string_and_list_import() -> None:
     """Test function test_python_string_generator_string_and_list_import."""
     graph = DummyGraph()
     gen1 = as_callable(MyPyGen)(graph)
-    setattr(gen1, "_import_header", "import something")
+    _set_attr(gen1, "_import_header", "import something")
     assert "import something" in gen1.generate()
     gen2 = as_callable(MyPyGen)(graph)
-    setattr(gen2, "_import_header", ["import a", "import b"])
+    _set_attr(gen2, "_import_header", ["import a", "import b"])
     code2 = gen2.generate()
     assert "import a\nimport b" in code2
     gen3 = as_callable(MyPyGen)(graph)
-    setattr(gen3, "_import_header", 42)
+    _set_attr(gen3, "_import_header", 42)
     gen3.generate()
 
 

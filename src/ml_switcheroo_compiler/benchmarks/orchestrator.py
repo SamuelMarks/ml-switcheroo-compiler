@@ -17,6 +17,7 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
 )
 from ml_switcheroo_compiler.benchmarks.metrics import compute_statistical_metrics
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -72,7 +73,7 @@ def _isolated_worker(
     """
     try:
         mod = importlib.import_module(profiler_cls_tuple[0])
-        profiler_cls = getattr(mod, profiler_cls_tuple[1])
+        profiler_cls = _get_attr(mod, profiler_cls_tuple[1])
         profiler = profiler_cls()
         metrics: ProfilerMetrics = profiler.profile_graph(
             graph=graph,
@@ -136,8 +137,9 @@ class BenchmarkOrchestrator:
         if profile is not None and profile.profiler_module and profile.profiler_class:
             try:
                 mod = importlib.import_module(profile.profiler_module)
-                profiler_cls = getattr(mod, profile.profiler_class)
-                return typing.cast(_ProfilerProtocol, profiler_cls())
+                profiler_cls = _get_attr(mod, profile.profiler_class)
+                _typed_ret_2: _ProfilerProtocol = _cast_val(_ProfilerProtocol, profiler_cls())
+                return _typed_ret_2
             except ImportError as err:
                 raise BackendNotSupportedError(f"Profiler for backend '{backend_name}' could not be imported: {err}") from err
 
@@ -195,7 +197,8 @@ class BenchmarkOrchestrator:
         status, payload = queue.get()
         if status != "ok":
             raise RuntimeError(f"Isolated execution failed: {payload}")
-        return typing.cast(ProfilerMetrics, payload)
+        _typed_ret_1: ProfilerMetrics = _cast_val(ProfilerMetrics, payload)
+        return _typed_ret_1
 
     def _run_single(
         self,
@@ -232,14 +235,14 @@ class BenchmarkOrchestrator:
 
         # Construct inputs from plan or graph declarations
         inputs_dict: dict[str, EvalValue] = {}
-        input_names: list[str] = list(getattr(graph, "inputs", []))
+        input_names: list[str] = list(_get_attr(graph, "inputs", []))
         if not input_names:
             input_names = ["in_0"]
 
         np_backend = BackendRegistry.get("numpy")
         for inp in input_names:
-            node = graph.nodes.get(inp) if getattr(graph, "nodes", None) else None
-            node_attrs = getattr(node, "attributes", {}) or {}
+            node = graph.nodes.get(inp) if _get_attr(graph, "nodes", None) else None
+            node_attrs = _get_attr(node, "attributes", {}) or {}
             node_shape = node_attrs.get("shape")
             is_weight = bool(node_attrs.get("is_weight", False))
 
@@ -248,12 +251,12 @@ class BenchmarkOrchestrator:
             else:
                 extra_dims: list[int] = self.plan.input_shapes.get(inp, node_shape if node_shape else [10])
                 full_shape = (batch_size, *extra_dims)
-            if hasattr(np_backend, "execute_op"):
+            if _has_attr(np_backend, "execute_op"):
                 inputs_dict[inp] = np_backend.execute_op("Cast", np_backend.execute_op("Randn", *full_shape), dtype="float32")
             else:
                 inputs_dict[inp] = [0.0]
 
-        should_isolate: bool = isolate if isolate is not None else getattr(self.plan, "isolate_process", False)
+        should_isolate: bool = isolate if isolate is not None else _get_attr(self.plan, "isolate_process", False)
         if should_isolate:
             return self._run_isolated(
                 graph=graph,

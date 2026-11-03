@@ -16,6 +16,7 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable
 
@@ -127,7 +128,7 @@ def _mock_device_count(ptr: EagerValue) -> int:
     Returns:
         int: Return code 0.
     """
-    setattr(getattr(ptr, "_obj", ptr), "value", 1)
+    _set_attr(_get_attr(ptr, "_obj", ptr), "value", 1)
     return 0
 
 

@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 @global_eager_registry.register("ActivityRegularization")
@@ -72,7 +73,7 @@ def _batch_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
         mean = as_tensor(args[3])
         var = as_tensor(args[4])
     else:
-        axes = tuple(i for i in range(x.ndim) if i != 1) if getattr(x, "ndim", 0) > 1 else (0,)
+        axes = tuple(i for i in range(x.ndim) if i != 1) if _get_attr(x, "ndim", 0) > 1 else (0,)
         mean = mod.mean(x, axis=axes, keepdims=True)
         var = mod.var(x, axis=axes, keepdims=True)
     norm = (x - mean) / mod.sqrt(var + eps)
@@ -135,7 +136,7 @@ def _bce_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     pred = as_tensor(args[0])
     tgt = as_tensor(args[1])
     eps = 1e-7
-    pred_c = mod.clip(pred, eps, 1.0 - eps) if hasattr(mod, "clip") else pred
+    pred_c = mod.clip(pred, eps, 1.0 - eps) if _has_attr(mod, "clip") else pred
     return -mod.mean(tgt * mod.log(pred_c) + (1.0 - tgt) * mod.log(1.0 - pred_c))
 
 
@@ -373,14 +374,15 @@ def _global_adaptive_pool(backend_module: BackendModuleProtocol, operand: EagerV
         EagerValue: Result.
     """
     del kwargs
-    if not hasattr(operand, "shape"):
+    if not _has_attr(operand, "shape"):
         return operand
 
     out_spatial = [output_size] if isinstance(output_size, int) else list(as_shape(output_size))
     spatial_dims = len(out_spatial)
     in_shape = as_tensor(operand).shape
     if len(in_shape) < spatial_dims:
-        return operand
+        _typed_ret_2: EagerValue = operand
+        return _typed_ret_2
     in_spatial = in_shape[-spatial_dims:]
 
     if spatial_dims == 1:
@@ -389,7 +391,8 @@ def _global_adaptive_pool(backend_module: BackendModuleProtocol, operand: EagerV
         return _adaptive_pool_2d(backend_module, operand, (in_spatial[0], in_spatial[1]), out_spatial)
     if spatial_dims == 3:
         return _adaptive_pool_3d(backend_module, operand, (in_spatial[0], in_spatial[1], in_spatial[2]), out_spatial)
-    return operand
+    _typed_ret_1: EagerValue = operand
+    return _typed_ret_1
 
 
 @global_eager_registry.register("AdaptiveAvgPool2D")
@@ -451,7 +454,7 @@ def _np_fractionalavgpool(backend_module: BackendModuleProtocol, *args: EagerVal
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "fractionalavgpool", getattr(backend_module, "fractionalavgpool", None))
+    func = _get_attr(backend_module, "fractionalavgpool", _get_attr(backend_module, "fractionalavgpool", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return args[0]

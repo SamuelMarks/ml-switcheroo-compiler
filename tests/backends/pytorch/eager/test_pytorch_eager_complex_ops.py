@@ -7,6 +7,7 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.backends.pytorch.eager as pytorch_eager
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -47,9 +48,9 @@ def _test_pytorch_eager_additional_sub_1(_state: dict[str, EagerTensorProtocol])
 
         value = "bfloat16"
 
-    getattr(_state, "update")({"DummyDtype": DummyDtype, "DummyDtypeBfloat16": DummyDtypeBfloat16, "indices": indices, "tensor": tensor})
-    getattr(_state, "update")({"updates": updates, "w": w})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyDtype": DummyDtype, "DummyDtypeBfloat16": DummyDtypeBfloat16, "indices": indices, "tensor": tensor})
+    _get_attr(_state, "update")({"updates": updates, "w": w})
+    _state.update(_caller_locals())
 
 
 def _test_pytorch_eager_additional_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -81,8 +82,8 @@ def _test_pytorch_eager_additional_sub_2(_state: dict[str, EagerTensorProtocol])
     pytorch_eager._torch_variance(torch.tensor([1.0, 2.0]))
     pytorch_eager._torch_tensordot(torch.tensor([1.0]), torch.tensor([1.0]), dims=1)
     pytorch_eager._torch_tensordot(torch.tensor([1.0]), torch.tensor([1.0]), axes=1)
-    getattr(_state, "update")({"DummyDtypeFloat16": DummyDtypeFloat16, "DummyDtypeFloat8_e4m3fn": DummyDtypeFloat8_e4m3fn})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyDtypeFloat16": DummyDtypeFloat16, "DummyDtypeFloat8_e4m3fn": DummyDtypeFloat8_e4m3fn})
+    _state.update(_caller_locals())
 
 
 def _test_pytorch_eager_additional_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -93,10 +94,10 @@ def _test_pytorch_eager_additional_sub_3(_state: dict[str, EagerTensorProtocol])
     """
     for op in ["HardSilu", "HardSwish", "Squareplus", "Fftnd", "Ifftnd", "Irfftnd", "Rfftnd"]:
         with pytest.raises(AttributeError):
-            as_tensor(getattr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](torch.tensor([1.0]))
+            as_tensor(_get_attr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](torch.tensor([1.0]))
     for op in ["Fftfreq", "Rfftfreq"]:
         with pytest.raises(AttributeError):
-            as_tensor(getattr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](2)
+            as_tensor(_get_attr(pytorch_eager, "_TORCH_EAGER_OP_MAP"))[op](2)
 
     class DummyDtypeFloat8_e5m2:
         """Test class DummyDtypeFloat8_e5m2."""
@@ -111,8 +112,8 @@ def _test_pytorch_eager_additional_sub_3(_state: dict[str, EagerTensorProtocol])
         value = "int32"
 
     as_callable(pytorch_eager._execute_cast)(as_callable(torch.tensor)([1.0]), as_callable(DummyDtypeInt32)())
-    getattr(_state, "update")({"DummyDtypeFloat8_e5m2": DummyDtypeFloat8_e5m2, "DummyDtypeInt32": DummyDtypeInt32})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyDtypeFloat8_e5m2": DummyDtypeFloat8_e5m2, "DummyDtypeInt32": DummyDtypeInt32})
+    _state.update(_caller_locals())
 
 
 def _test_pytorch_eager_additional_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -139,15 +140,15 @@ def _test_pytorch_eager_additional_sub_4(_state: dict[str, EagerTensorProtocol])
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     pass
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_pytorch_eager_additional() -> None:
     """Test function test_pytorch_eager_additional."""
     import pytest
 
-    _state: dict[str, EagerTensorProtocol] = dict(locals())
-    getattr(_state, "update")({"pytest": pytest})
+    _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+    _get_attr(_state, "update")({"pytest": pytest})
     for _sub_fn in (_test_pytorch_eager_additional_sub_1, _test_pytorch_eager_additional_sub_2, _test_pytorch_eager_additional_sub_3, _test_pytorch_eager_additional_sub_4):
         _sub_fn(_state)
     assert len(_state) > 0

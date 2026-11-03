@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import logging
-import typing
 from collections.abc import Callable, Sequence  # noqa: F401
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 
 
 @numpy_eager_registry.register("TruncateDiv")
@@ -26,7 +25,7 @@ def _np_truncate_div(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
             EagerValue: Result.
     """
     (x, y) = args[0], args[1]
-    return as_tensor(getattr(np, "trunc")(getattr(np, "divide")(x, y)))
+    return as_tensor(_get_attr(np, "trunc")(_get_attr(np, "divide")(x, y)))
 
 
 @numpy_eager_registry.register("TruncateMod")
@@ -42,7 +41,7 @@ def _np_truncate_mod(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
             EagerValue: Result.
     """
     (x, y) = args[0], args[1]
-    return as_tensor(getattr(np, "fmod")(x, y))
+    return as_tensor(_get_attr(np, "fmod")(x, y))
 
 
 @numpy_eager_registry.register("Betainc")
@@ -60,7 +59,7 @@ def _np_betainc(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     try:
         import scipy.special
 
-        return as_tensor(getattr(backend_module, "array")(scipy.special.betainc(*args, **kwargs)))
+        return as_tensor(_get_attr(backend_module, "array")(scipy.special.betainc(*args, **kwargs)))
     except ImportError as e:
         raise ImportError("scipy is required for Betainc in numpy eager backend") from e
 
@@ -76,7 +75,7 @@ def _np_trapz(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    trapz_fn = as_callable(getattr(np, "trapezoid", getattr(np, "trapz", None)))
+    trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
     return trapz_fn(np.asarray(args[0]), *args[1:], **kwargs)
 
 
@@ -91,7 +90,7 @@ def _np_uint(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(np, "array")(args[0], dtype=np.uint, **kwargs))
+    return as_tensor(_get_attr(np, "array")(args[0], dtype=np.uint, **kwargs))
 
 
 @numpy_eager_registry.register("Uint8")
@@ -105,7 +104,7 @@ def _np_uint8(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(np, "array")(args[0], dtype=np.uint8, **kwargs))
+    return as_tensor(_get_attr(np, "array")(args[0], dtype=np.uint8, **kwargs))
 
 
 @numpy_eager_registry.register("UnravelIndex")
@@ -119,7 +118,7 @@ def _np_unravelindex(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(np, "unravel_index")(np.asarray(args[0]), *args[1:], **kwargs))
+    return as_tensor(_get_attr(np, "unravel_index")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("Unwrap")
@@ -133,7 +132,7 @@ def _np_unwrap(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(np, "unwrap")(np.asarray(args[0]), *args[1:], **kwargs))
+    return as_tensor(_get_attr(np, "unwrap")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("Vectorize")
@@ -147,7 +146,7 @@ def _np_vectorize(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(np, "vectorize")(args[0], **kwargs)(*args[1:]))
+    return as_tensor(_get_attr(np, "vectorize")(args[0], **kwargs)(*args[1:]))
 
 
 @numpy_eager_registry.register("Average")
@@ -162,7 +161,7 @@ def _np_average(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "average")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "average")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Block")
@@ -176,7 +175,7 @@ def _np_block(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "block")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "block")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Atleast1d")
@@ -190,7 +189,7 @@ def _np_atleast_1d(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "atleast_1d")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "atleast_1d")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Atleast2d")
@@ -204,7 +203,7 @@ def _np_atleast_2d(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "atleast_2d")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "atleast_2d")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Atleast3d")
@@ -218,7 +217,7 @@ def _np_atleast_3d(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "atleast_3d")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "atleast_3d")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ApplyOverAxes")
@@ -232,7 +231,7 @@ def _np_apply_over_axes(backend_module: EagerValue, *args: EagerValue, **kwargs:
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "apply_over_axes")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "apply_over_axes")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("CorrCoef")
@@ -246,7 +245,7 @@ def _np_corrcoef(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "corrcoef")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "corrcoef")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Cov")
@@ -260,7 +259,7 @@ def _np_cov(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue)
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "cov")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "cov")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ArrayRepr")
@@ -274,7 +273,7 @@ def _np_array_repr_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "array_repr")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "array_repr")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("ArrayStr")
@@ -288,7 +287,7 @@ def _np_array_str_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "array_str")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "array_str")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Diff")
@@ -302,7 +301,7 @@ def _np_diff_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "diff")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "diff")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Digitize")
@@ -316,7 +315,7 @@ def _np_digitize_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "digitize")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "digitize")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Ediff1d")
@@ -330,7 +329,7 @@ def _np_ediff1d_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerV
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "ediff1d")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "ediff1d")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("EinsumPath")
@@ -344,7 +343,7 @@ def _np_einsum_path_(backend_module: EagerValue, *args: EagerValue, **kwargs: Ea
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "einsum_path")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "einsum_path")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Fabs")
@@ -358,7 +357,7 @@ def _np_fabs_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "fabs")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "fabs")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Interp")
@@ -372,7 +371,7 @@ def _np_interp_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "interp")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "interp")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Iterable")
@@ -386,7 +385,7 @@ def _np_iterable_(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "iterable")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "iterable")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Ix")
@@ -400,7 +399,7 @@ def _np_ix__(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "ix_")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "ix_")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Kron")
@@ -414,7 +413,7 @@ def _np_kron_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "kron")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "kron")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Load")
@@ -428,7 +427,7 @@ def _np_load_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "load")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "load")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Modf")
@@ -442,7 +441,7 @@ def _np_modf_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "modf")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "modf")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("RavelMultiIndex")
@@ -456,7 +455,7 @@ def _np_ravel_multi_index_(backend_module: EagerValue, *args: EagerValue, **kwar
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(backend_module, "ravel_multi_index")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "ravel_multi_index")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Trapezoid")
@@ -470,10 +469,10 @@ def _np_trapz_(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
 
     Returns: np.ndarray: The computed result.
     """
-    trapz_fn = getattr(backend_module, "trapezoid", getattr(backend_module, "trapz", None))
+    trapz_fn = _get_attr(backend_module, "trapezoid", _get_attr(backend_module, "trapz", None))
     if trapz_fn is not None:
         return as_tensor(trapz_fn(*args, **kwargs))
-    trapz_fn = as_callable(getattr(np, "trapezoid", getattr(np, "trapz", None)))
+    trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
     return trapz_fn(*args, **kwargs)
 
 
@@ -510,7 +509,7 @@ def _np_debuginfs(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         ValueError: An exception.
     """
     x = args[0]
-    if getattr(backend_module, "any")(getattr(backend_module, "isinf")(x)):
+    if _get_attr(backend_module, "any")(_get_attr(backend_module, "isinf")(x)):
         raise ValueError("Infinity found in tensor.")
     return x
 
@@ -531,7 +530,7 @@ def _np_debugnans(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
         ValueError: An exception.
     """
     x = args[0]
-    if getattr(backend_module, "any")(getattr(backend_module, "isnan")(x)):
+    if _get_attr(backend_module, "any")(_get_attr(backend_module, "isnan")(x)):
         raise ValueError("NaN found in tensor.")
     return x
 
@@ -585,8 +584,8 @@ def _np_dotgeneral(backend_module: EagerValue, *args: EagerValue, **kwargs: Eage
             EagerValue: Result.
     """
     (lhs, rhs) = (np.asarray(args[0]), np.asarray(args[1]))
-    dimension_numbers = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ()))) if hasattr(kwargs, "get") else (((-1,), (0,)), ((), ()))
-    einsum_str = typing.cast("TypedVariadicCallable[str]", _build_dot_general_einsum_str)(lhs.ndim, rhs.ndim, dimension_numbers)
+    dimension_numbers = kwargs.get("dimension_numbers", (((-1,), (0,)), ((), ()))) if _has_attr(kwargs, "get") else (((-1,), (0,)), ((), ()))
+    einsum_str = _cast_val("TypedVariadicCallable[str]", _build_dot_general_einsum_str)(lhs.ndim, rhs.ndim, dimension_numbers)
     return as_tensor(np.einsum(einsum_str, lhs, rhs))
 
 
@@ -602,7 +601,7 @@ def _np_raggeddot(backend_module: EagerValue, *args: EagerValue, **kwargs: Eager
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "matmul")(args[0], args[1]))
+    return as_tensor(_get_attr(backend_module, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("Tensor")
@@ -618,8 +617,8 @@ def _np_tensor(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVal
             EagerValue: Result.
     """
     if not args and (not kwargs):
-        return as_tensor(getattr(backend_module, "array")([]))
-    return as_tensor(getattr(backend_module, "array")(*args, **kwargs))
+        return as_tensor(_get_attr(backend_module, "array")([]))
+    return as_tensor(_get_attr(backend_module, "array")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("serialize_tensor")
@@ -696,9 +695,9 @@ def _np_clip(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValue
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    a_min = kwargs.get("a_min", _get_np_arg(args, 1)) if hasattr(kwargs, "get") else _get_np_arg(args, 1)
-    a_max = kwargs.get("a_max", _get_np_arg(args, 2)) if hasattr(kwargs, "get") else _get_np_arg(args, 2)
-    return as_tensor(getattr(np, "clip")(a, a_min, a_max))
+    a_min = kwargs.get("a_min", _get_np_arg(args, 1)) if _has_attr(kwargs, "get") else _get_np_arg(args, 1)
+    a_max = kwargs.get("a_max", _get_np_arg(args, 2)) if _has_attr(kwargs, "get") else _get_np_arg(args, 2)
+    return as_tensor(_get_attr(np, "clip")(a, a_min, a_max))
 
 
 @numpy_eager_registry.register("OneHot")
@@ -714,17 +713,17 @@ def _np_one_hot(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
             EagerValue: Result.
     """
     indices = _get_np_arg(args, 0)
-    depth = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None) if hasattr(kwargs, "get") else None
+    depth = _get_np_arg(args, 1) if len(args) > 1 else kwargs.get("depth", None) if _has_attr(kwargs, "get") else None
     if indices is None or depth is None:
         return None
-    on_value = float(as_float(kwargs.get("on_value", 1))) if hasattr(kwargs, "get") else 1.0
-    off_value = float(as_float(kwargs.get("off_value", 0))) if hasattr(kwargs, "get") else 0.0
-    axis = kwargs.get("axis", -1) if hasattr(kwargs, "get") else -1
-    dtype = kwargs.get("dtype", float) if hasattr(kwargs, "get") else float
+    on_value = float(as_float(kwargs.get("on_value", 1))) if _has_attr(kwargs, "get") else 1.0
+    off_value = float(as_float(kwargs.get("off_value", 0))) if _has_attr(kwargs, "get") else 0.0
+    axis = kwargs.get("axis", -1) if _has_attr(kwargs, "get") else -1
+    dtype = kwargs.get("dtype", float) if _has_attr(kwargs, "get") else float
     depth_int = int(np.asarray(depth).item())
-    out = getattr(np, "eye")(depth_int, dtype=dtype)[indices]
+    out = _get_attr(np, "eye")(depth_int, dtype=dtype)[indices]
     if axis != -1:
-        out = getattr(np, "moveaxis")(out, -1, axis)
+        out = _get_attr(np, "moveaxis")(out, -1, axis)
     out = out * (on_value - off_value) + off_value
     out = out.astype(dtype)
     return as_tensor(out)
@@ -777,16 +776,16 @@ def _np_rem_2(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerValu
     try:
         import ml_switcheroo_compiler.ops as _ops
 
-        if hasattr(_ops, "rem"):
-            cls_or_func = getattr(_ops, "rem")
-            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
+        if _has_attr(_ops, "rem"):
+            cls_or_func = _get_attr(_ops, "rem")
+            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _get_attr(_ops, "OpDef", type))):
                 return as_callable(cls_or_func)(*args, **kwargs)
     except Exception:
         # Ignore errors and fallback
         logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
-    if hasattr(backend_module, "rem"):
-        return as_tensor(getattr(backend_module, "rem")(*args, **kwargs))
-    return as_tensor(getattr(np, "remainder")(args[0], args[1])) if len(args) > 1 else None
+    if _has_attr(backend_module, "rem"):
+        return as_tensor(_get_attr(backend_module, "rem")(*args, **kwargs))
+    return as_tensor(_get_attr(np, "remainder")(args[0], args[1])) if len(args) > 1 else None
 
 
 @numpy_eager_registry.register("descriptive")
@@ -807,15 +806,15 @@ def _np_descriptive_2(backend_module: EagerValue, *args: EagerValue, **kwargs: E
     try:
         import ml_switcheroo_compiler.ops as _ops
 
-        if hasattr(_ops, "descriptive"):
-            cls_or_func = getattr(_ops, "descriptive")
-            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, getattr(_ops, "OpDef", type))):
+        if _has_attr(_ops, "descriptive"):
+            cls_or_func = _get_attr(_ops, "descriptive")
+            if isinstance(cls_or_func, type) and (not issubclass(cls_or_func, _get_attr(_ops, "OpDef", type))):
                 return as_callable(cls_or_func)(*args, **kwargs)
     except Exception:
         # Ignore errors and fallback
         logging.getLogger(__name__).debug("Failed to import ops", exc_info=True)
-    if hasattr(backend_module, "descriptive"):
-        return as_tensor(getattr(backend_module, "descriptive")(*args, **kwargs))
+    if _has_attr(backend_module, "descriptive"):
+        return as_tensor(_get_attr(backend_module, "descriptive")(*args, **kwargs))
     arr = np.asarray(args[0]) if args else np.zeros((1,))
     return np.array([np.mean(arr), np.var(arr), np.std(arr)])
 

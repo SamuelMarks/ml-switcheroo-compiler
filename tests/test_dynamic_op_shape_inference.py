@@ -7,6 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.registry import get_op
 from ml_switcheroo_compiler.ops.shape_inference import (
@@ -254,7 +255,7 @@ def test_dynamic_op_def_declarative_inference() -> None:
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY, _load_yaml_registry
 
     _load_yaml_registry()
-    getattr(_YAML_REGISTRY, "__setitem__")("CustomDynamicTestOp", {"category": "elementwise"})
+    _get_attr(_YAML_REGISTRY, "__setitem__")("CustomDynamicTestOp", {"category": "elementwise"})
     op_cls = get_op("CustomDynamicTestOp")
     op = op_cls()
 
@@ -271,11 +272,11 @@ def test_dynamic_op_def_declarative_inference() -> None:
 
 def test_shape_inference_pass_with_strides_and_symbolic() -> None:
     """Test that shape_inference_pass correctly attaches shape_metadata and contiguous strides."""
-    sym_shape = typing.cast("tuple[int | str, ...]", (S("batch"), 4))
+    sym_shape = _cast_val("tuple[int | str, ...]", (S("batch"), 4))
     node_in1 = IRNode(id="in1", op_type="Input", inputs=[], attributes={})
-    object.__setattr__(node_in1, "shape_metadata", sym_shape)
+    _obj_set_attr(node_in1, "shape_metadata", sym_shape)
     node_in2 = IRNode(id="in2", op_type="Input", inputs=[], attributes={})
-    object.__setattr__(node_in2, "shape_metadata", sym_shape)
+    _obj_set_attr(node_in2, "shape_metadata", sym_shape)
     node_add = IRNode(id="add", op_type="Add", inputs=["in1", "in2"], attributes={}, shape_metadata=None)
 
     graph = IRGraph(name="test_graph", outputs=["add"])

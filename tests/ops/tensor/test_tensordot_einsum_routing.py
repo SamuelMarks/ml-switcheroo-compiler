@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.linalg.einsum_frontend import _generate_tensordot_einsum_strings, _tensordot_einsum_routing, _validate_tensordot_axes
 
@@ -48,7 +49,7 @@ def test_tensordot_einsum_routing(mock_einsum: EagerTensorProtocol) -> None:
     a.shape = (2, 3, 4)
     b = MagicMock(spec=Tensor)
     b.shape = (3, 4, 5)
-    setattr(mock_einsum, "return_value", "fake_tensor")
+    _set_attr(mock_einsum, "return_value", "fake_tensor")
     res = _tensordot_einsum_routing(a, b, ([1, 2], [0, 1]))
     assert res == "fake_tensor"
     mock_einsum.assert_called_once_with("abc,bcf->af", a, b)

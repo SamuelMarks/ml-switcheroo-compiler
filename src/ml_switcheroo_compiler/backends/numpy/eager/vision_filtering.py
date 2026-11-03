@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager import median_filter_eager
 from ml_switcheroo_compiler.backends.eager.signal import gaussian_blur_eager
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int_list, as_opt_str, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.configs import BlurConfig
@@ -97,7 +97,7 @@ def _np_gaussian_blur(
 
     config_obj = kwargs.get("config", kwargs)
     if isinstance(config_obj, dict):
-        config_obj = typing.cast("TypedVariadicCallable[BlurConfig]", BlurConfig)(kernel_size=config_obj.get("kernel_size", (3, 3)), sigma=config_obj.get("sigma", (1.0, 1.0)), data_format=as_opt_str(config_obj.get("data_format", None)))
+        config_obj = _cast_val("TypedVariadicCallable[BlurConfig]", BlurConfig)(kernel_size=config_obj.get("kernel_size", (3, 3)), sigma=config_obj.get("sigma", (1.0, 1.0)), data_format=as_opt_str(config_obj.get("data_format", None)))
     return np.asarray(as_callable(gaussian_blur_eager)(backend_module, images, config_obj))
 
 

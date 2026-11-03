@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerOpRegistry
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -83,15 +84,15 @@ def test_decode_image_eager() -> None:
 
     # Default channels
     res = _np_decode_image_camel(as_mod(None), png_bytes)
-    assert as_tensor(getattr(res, "shape")) == (10, 10, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (10, 10, 3)
 
     # Channels = 1
     res1 = _np_decode_image_camel(as_mod(None), png_bytes, channels=1)
-    assert as_tensor(getattr(res1, "shape")) == (10, 10, 1)
+    assert as_tensor(_get_attr(res1, "shape")) == (10, 10, 1)
 
     # Channels = 4
     res4 = _np_decode_image_camel(as_mod(None), png_bytes, channels=4)
-    assert as_tensor(getattr(res4, "shape")) == (10, 10, 4)
+    assert as_tensor(_get_attr(res4, "shape")) == (10, 10, 4)
 
 
 def test_encode_image_eager() -> None:
@@ -100,7 +101,7 @@ def test_encode_image_eager() -> None:
 
     # Test empty args
     res = _np_encode_image_camel(as_mod(None))
-    assert as_tensor(getattr(res, "item"))() == b""
+    assert as_tensor(_get_attr(res, "item"))() == b""
 
     # Shape with 1 channel
     arr = np.ones((10, 10, 1), dtype=np.uint8)

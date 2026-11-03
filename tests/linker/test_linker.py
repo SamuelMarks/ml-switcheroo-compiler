@@ -13,6 +13,7 @@ import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.linker import get_source_ast_ref
+from ml_switcheroo_compiler.core.shape import _set_attr
 
 if typing.TYPE_CHECKING:
     import pytest
@@ -44,7 +45,7 @@ def test_linker_edge_cases() -> None:
     """Test edge cases for `get_source_ast_ref` when frame retrieval fails or overflows."""
     old_currentframe = sys._getframe
     try:
-        setattr(sys, "_getframe", lambda *_args, **_kwargs: None)
+        _set_attr(sys, "_getframe", lambda *_args, **_kwargs: None)
         assert get_source_ast_ref() is None
     finally:
         sys._getframe = old_currentframe

@@ -8,6 +8,7 @@ import sys
 from ml_switcheroo_compiler.backends import mapping_loader
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_shape, as_tensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _set_attr
 
 try:
     import cupy as cp
@@ -27,12 +28,12 @@ def _verify_gpu_residency(res: EagerValue) -> None:
     if cp is None:
         return
 
-    cp_ndarray = getattr(cp, "ndarray", None)
-    is_arr = isinstance(res, cp_ndarray) if isinstance(cp_ndarray, type) else hasattr(res, "data")
+    cp_ndarray = _get_attr(cp, "ndarray", None)
+    is_arr = isinstance(res, cp_ndarray) if isinstance(cp_ndarray, type) else _has_attr(res, "data")
     if is_arr:
-        data_buf = getattr(res, "data", None)
-        if data_buf is not None and hasattr(data_buf, "device"):
-            if getattr(data_buf, "device", None) is None:
+        data_buf = _get_attr(res, "data", None)
+        if data_buf is not None and _has_attr(data_buf, "device"):
+            if _get_attr(data_buf, "device", None) is None:
                 msg = "CuPy array is not residing on GPU device memory."
                 raise RuntimeError(msg)
 
@@ -54,9 +55,9 @@ def cupy_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
     if cp is None:
         return x
 
-    if getattr(x, "ndim", 0) == 4 and getattr(w, "ndim", 0) == 4:
-        n, _, _, _ = as_shape(getattr(x, "shape"))
-        out_c, _, kh, kw = as_shape(getattr(w, "shape"))
+    if _get_attr(x, "ndim", 0) == 4 and _get_attr(w, "ndim", 0) == 4:
+        n, _, _, _ = as_shape(_get_attr(x, "shape"))
+        out_c, _, kh, kw = as_shape(_get_attr(w, "shape"))
         stride_seq = as_shape(stride)
         stride_h, stride_w = (stride, stride) if isinstance(stride, int) else (int(stride_seq[0]), int(stride_seq[1]))
         pad_h = kh // 2 if padding == "SAME" else 0
@@ -67,22 +68,22 @@ def cupy_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
             x_pad = x
         out_h = (int(x_pad.shape[2]) - kh) // stride_h + 1
         out_w = (int(x_pad.shape[3]) - kw) // stride_w + 1
-        out = cp.zeros((n, out_c, out_h, out_w), dtype=getattr(x, "dtype"))
+        out = cp.zeros((n, out_c, out_h, out_w), dtype=_get_attr(x, "dtype"))
         for i in range(kh):
             for j in range(kw):
                 patch = as_tensor(x_pad)[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
                 out += cp.tensordot(patch, as_tensor(w)[:, :, i, j], axes=([1], [1])).transpose(0, 3, 1, 2)
         return as_tensor(out)
 
-    if getattr(x, "ndim", 0) == 2 and getattr(w, "ndim", 0) == 2:
-        kh, kw = as_shape(getattr(w, "shape"))
+    if _get_attr(x, "ndim", 0) == 2 and _get_attr(w, "ndim", 0) == 2:
+        kh, kw = as_shape(_get_attr(w, "shape"))
         pad_h = kh // 2 if padding == "SAME" else 0
         pad_w = kw // 2 if padding == "SAME" else 0
         x_pad = cp.pad(x, ((pad_h, pad_h), (pad_w, pad_w)), mode="constant") if (pad_h > 0 or pad_w > 0) else x
-        x_pad_shape = as_shape(getattr(x_pad, "shape"))
+        x_pad_shape = as_shape(_get_attr(x_pad, "shape"))
         out_h = int(x_pad_shape[0]) - kh + 1
         out_w = int(x_pad_shape[1]) - kw + 1
-        out = cp.zeros((out_h, out_w), dtype=getattr(x, "dtype"))
+        out = cp.zeros((out_h, out_w), dtype=_get_attr(x, "dtype"))
         for i in range(kh):
             for j in range(kw):
                 out += as_tensor(x_pad)[i : i + out_h, j : j + out_w] * as_tensor(w)[i, j]
@@ -105,12 +106,12 @@ def cupy_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
         EagerValue: Pooled CuPy GPU array.
     """
     del padding, kwargs
-    if cp is None or getattr(x, "ndim", 0) != 4:
+    if cp is None or _get_attr(x, "ndim", 0) != 4:
         return x
 
     k_seq = as_shape(kernel_size)
     s_seq = as_shape(stride)
-    x_shape = as_shape(getattr(x, "shape"))
+    x_shape = as_shape(_get_attr(x, "shape"))
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
@@ -140,18 +141,18 @@ def cupy_avgpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
         EagerValue: Average-pooled CuPy GPU array.
     """
     del padding, kwargs
-    if cp is None or getattr(x, "ndim", 0) != 4:
+    if cp is None or _get_attr(x, "ndim", 0) != 4:
         return x
 
     k_seq = as_shape(kernel_size)
     s_seq = as_shape(stride)
-    x_shape = as_shape(getattr(x, "shape"))
+    x_shape = as_shape(_get_attr(x, "shape"))
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
     out_w = (int(x_shape[3]) - kw) // sw + 1
     x_arr = as_tensor(x)
-    out = cp.zeros((x_shape[0], x_shape[1], out_h, out_w), dtype=getattr(x, "dtype"))
+    out = cp.zeros((x_shape[0], x_shape[1], out_h, out_w), dtype=_get_attr(x, "dtype"))
     for i in range(kh):
         for j in range(kw):
             patch = x_arr[:, :, i : i + out_h * sh : sh, j : j + out_w * sw : sw]
@@ -171,14 +172,14 @@ def cupy_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
         EagerValue: Resized CuPy GPU array.
     """
     del kwargs
-    if cp is None or getattr(x, "ndim", 0) != 4 or size is None:
+    if cp is None or _get_attr(x, "ndim", 0) != 4 or size is None:
         return x
 
     size_seq = as_shape(size)
     new_h, new_w = (size_seq[0], size_seq[1])
-    _, _, h, w = as_shape(getattr(x, "shape"))
+    _, _, h, w = as_shape(_get_attr(x, "shape"))
     if (new_h, new_w) == (h, w):
-        return as_tensor(getattr(x, "copy")())
+        return as_tensor(_get_attr(x, "copy")())
 
     y_coords = cp.linspace(0, h - 1, new_h, dtype=cp.float32)
     x_coords = cp.linspace(0, w - 1, new_w, dtype=cp.float32)
@@ -218,8 +219,8 @@ def _attach_vision_ops(backend_mod: EagerValue | None) -> None:
         ("avgpool2d", cupy_avgpool2d),
         ("resize_bilinear", cupy_resize_bilinear),
     ):
-        if not hasattr(backend_mod, name):
-            setattr(backend_mod, name, fn)
+        if not _has_attr(backend_mod, name):
+            _set_attr(backend_mod, name, fn)
 
 
 def _prepare_cupy_args(args: tuple[EagerValue, ...], backend_mod: EagerValue | None) -> list[EagerValue]:
@@ -233,11 +234,11 @@ def _prepare_cupy_args(args: tuple[EagerValue, ...], backend_mod: EagerValue | N
         list[object]: Processed arguments list.
     """
     processed: list[EagerValue] = []
-    has_asarray = backend_mod is not None and hasattr(backend_mod, "asarray")
+    has_asarray = backend_mod is not None and _has_attr(backend_mod, "asarray")
     for arg in args:
         if isinstance(arg, (list, tuple)) and has_asarray:
             try:
-                processed.append(getattr(backend_mod, "asarray")(arg))
+                processed.append(_get_attr(backend_mod, "asarray")(arg))
             except Exception:
                 processed.append(arg)
         else:
@@ -271,13 +272,13 @@ def execute_op(
 
     if op_type in schema.operations:
         op_spec = schema.operations[op_type]
-        is_custom = getattr(op_spec, "target_api", None) == "custom_op" and getattr(op_spec, "custom_code", None)
+        is_custom = _get_attr(op_spec, "target_api", None) == "custom_op" and _get_attr(op_spec, "custom_code", None)
 
         if not is_custom and backend_mod is None:
             mock_mod = sys.modules.get(__name__)
-            target_api = getattr(op_spec, "target_api", "") or ""
+            target_api = _get_attr(op_spec, "target_api", "") or ""
             target_name = target_api.split(".")[-1]
-            if mock_mod is not None and hasattr(mock_mod, target_name):
+            if mock_mod is not None and _has_attr(mock_mod, target_name):
                 backend_mod = mock_mod
             else:
                 raise BackendNotSupportedError("CuPy is not installed or available in this environment.")

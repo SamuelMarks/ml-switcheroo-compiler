@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -45,5 +46,5 @@ def test_checkpoint_grad() -> None:
     v1, g1 = jitted_std(x)
     v2, g2 = jitted_cp(x)
 
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(v1, "numpy")))(), as_callable(as_tensor(getattr(v2, "numpy")))())
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(g1, "numpy")))(), as_callable(as_tensor(getattr(g2, "numpy")))())
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(v1, "numpy")))(), as_callable(as_tensor(_get_attr(v2, "numpy")))())
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(g1, "numpy")))(), as_callable(as_tensor(_get_attr(g2, "numpy")))())

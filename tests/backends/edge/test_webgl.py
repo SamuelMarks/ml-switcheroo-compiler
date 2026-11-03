@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.webgl import WebGLCodeGenerator
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable
 
@@ -334,7 +335,7 @@ def test_webgl_new_operator_templates() -> None:
         out = gen.generate()
         assert f"shader_{nid}" in out
         bundle = gen._compile_aot_impl(graph)
-        assert nid in getattr(bundle, "__getitem__")("shaders")
+        assert nid in _get_attr(bundle, "__getitem__")("shaders")
 
 
 def test_webgl_aot_runner_execution() -> None:

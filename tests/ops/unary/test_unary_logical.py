@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ml_switcheroo_compiler.ops.unary.logical as unary_logical
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def test_unary_logical_functions() -> None:
@@ -16,7 +17,7 @@ def test_unary_logical_functions() -> None:
     a = DummyNode()
     for attr in dir(unary_logical):
         if attr.startswith("_infer_shape_") or attr.startswith("_infer_dtype_"):
-            val = getattr(unary_logical, attr)
+            val = _get_attr(unary_logical, attr)
             if callable(val):
                 try:
                     val(a)

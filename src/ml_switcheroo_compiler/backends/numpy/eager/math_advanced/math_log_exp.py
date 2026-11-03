@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 from .math_general import _get_np_arg, _get_sc  # noqa: F401
 
@@ -45,12 +46,12 @@ def _np_logsumexp(backend_module: BackendModuleProtocol, a: EagerValue, axis: Ea
     import numpy as np
 
     a = np.array(a)
-    a_max = getattr(np, "amax")(a, axis=axis, keepdims=True)
+    a_max = _get_attr(np, "amax")(a, axis=axis, keepdims=True)
     if not keepdims:
-        a_max_s = getattr(np, "squeeze")(a_max, axis=axis)
+        a_max_s = _get_attr(np, "squeeze")(a_max, axis=axis)
     else:
         a_max_s = a_max
-    out = np.log(getattr(np, "sum")(np.exp(a - a_max), axis=axis, keepdims=keepdims))
+    out = np.log(_get_attr(np, "sum")(np.exp(a - a_max), axis=axis, keepdims=keepdims))
     out += a_max_s
     return as_tensor(out)
 
@@ -100,5 +101,5 @@ def _np_log_softmax(backend_module: BackendModuleProtocol, *args: EagerValue, **
     if a is None:
         return None
     axis = kwargs.get("axis", -1)
-    c = getattr(np, "max")(a, axis=axis, keepdims=True)
-    return as_tensor(a - c - np.log(getattr(np, "sum")(np.exp(a - c), axis=axis, keepdims=True)))
+    c = _get_attr(np, "max")(a, axis=axis, keepdims=True)
+    return as_tensor(a - c - np.log(_get_attr(np, "sum")(np.exp(a - c), axis=axis, keepdims=True)))

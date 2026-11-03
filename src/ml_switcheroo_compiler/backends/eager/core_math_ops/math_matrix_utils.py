@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def _apply_causal_mask(backend_module: BackendModuleProtocol, scores: EagerValue) -> EagerValue:
@@ -24,9 +25,9 @@ def _apply_causal_mask(backend_module: BackendModuleProtocol, scores: EagerValue
     Returns:
             EagerValue: Result.
     """
-    if hasattr(backend_module, "triu") and hasattr(backend_module, "ones") and hasattr(backend_module, "where"):
-        causal_mask = getattr(backend_module, "triu")(getattr(backend_module, "ones")(as_tensor(scores).shape[-2:]), 1)
-        return as_tensor(getattr(backend_module, "where")(causal_mask > 0, float("-inf"), scores))
+    if _has_attr(backend_module, "triu") and _has_attr(backend_module, "ones") and _has_attr(backend_module, "where"):
+        causal_mask = _get_attr(backend_module, "triu")(_get_attr(backend_module, "ones")(as_tensor(scores).shape[-2:]), 1)
+        return as_tensor(_get_attr(backend_module, "where")(causal_mask > 0, float("-inf"), scores))
     return scores
 
 
@@ -42,7 +43,7 @@ def _geometric(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(getattr(backend_module, "random", backend_module), "geometric")(*args, **kwargs))
+    return as_tensor(_get_attr(_get_attr(backend_module, "random", backend_module), "geometric")(*args, **kwargs))
 
 
 @global_eager_registry.register("Indices")
@@ -57,7 +58,7 @@ def _indices(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "indices")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "indices")(*args, **kwargs))
 
 
 @global_eager_registry.register("MaskIndices")
@@ -72,7 +73,7 @@ def _maskindices(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    return as_callable(getattr(backend_module, "mask_indices"))(*args, **kwargs)
+    return as_callable(_get_attr(backend_module, "mask_indices"))(*args, **kwargs)
 
 
 @global_eager_registry.register("Tri")
@@ -87,7 +88,7 @@ def _tri(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "tri")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "tri")(*args, **kwargs))
 
 
 @global_eager_registry.register("Tril")
@@ -102,7 +103,7 @@ def _tril(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "tril")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "tril")(*args, **kwargs))
 
 
 @global_eager_registry.register("TrimZeros")
@@ -117,7 +118,7 @@ def _trimzeros(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "trim_zeros")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "trim_zeros")(*args, **kwargs))
 
 
 @global_eager_registry.register("Triu")
@@ -132,7 +133,7 @@ def _triu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "triu")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "triu")(*args, **kwargs))
 
 
 @global_eager_registry.register("FillDiagonal")
@@ -147,14 +148,14 @@ def _fill_diagonal(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "fill_diagonal", None)
+    func = _get_attr(backend_module, "fill_diagonal", None)
     if func:
         return as_tensor(func(*args, **kwargs))
     (x, val) = (args[0], args[1])
     mod = _resolve_eager_mod(backend_module)
     x_np = mod.array(x, copy=True)
     mod.fill_diagonal(x_np, val, **kwargs)
-    return getattr(backend_module, "array")(x_np) if hasattr(backend_module, "array") else x_np
+    return _get_attr(backend_module, "array")(x_np) if _has_attr(backend_module, "array") else x_np
 
 
 @global_eager_registry.register("BandPart")
@@ -172,11 +173,11 @@ def _np_bandpart(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Raises:
         ValueError: An exception.
     """
-    func = getattr(backend_module, "bandpart", getattr(backend_module, "bandpart", None))
+    func = _get_attr(backend_module, "bandpart", _get_attr(backend_module, "bandpart", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
-    return mod.triu(mod.tril(args[0], getattr(kwargs.get("num_lower", -1), "__int__", lambda: -1)()), -getattr(kwargs.get("num_upper", -1), "__int__", lambda: -1)())
+    return mod.triu(mod.tril(args[0], _get_attr(kwargs.get("num_lower", -1), "__int__", lambda: -1)()), -_get_attr(kwargs.get("num_upper", -1), "__int__", lambda: -1)())
 
 
 @global_eager_registry.register("Geometric")
@@ -191,7 +192,7 @@ def _np_geometric(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "geometric", getattr(backend_module, "geometric", None))
+    func = _get_attr(backend_module, "geometric", _get_attr(backend_module, "geometric", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.geometric(*args, **kwargs)
@@ -209,7 +210,7 @@ def _np_triangular(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "triangular", getattr(backend_module, "triangular", None))
+    func = _get_attr(backend_module, "triangular", _get_attr(backend_module, "triangular", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).random.triangular(*args, **kwargs)
@@ -227,7 +228,7 @@ def _np_tridiagonal(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "tridiagonal", getattr(backend_module, "tridiagonal", None))
+    func = _get_attr(backend_module, "tridiagonal", _get_attr(backend_module, "tridiagonal", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).diag(args[0])
@@ -245,7 +246,7 @@ def _np_trilindices(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "trilindices", getattr(backend_module, "trilindices", None))
+    func = _get_attr(backend_module, "trilindices", _get_attr(backend_module, "trilindices", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).tril_indices(*args, **kwargs)
@@ -263,7 +264,7 @@ def _np_trilindicesfrom(backend_module: BackendModuleProtocol, *args: EagerValue
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "trilindicesfrom", getattr(backend_module, "trilindicesfrom", None))
+    func = _get_attr(backend_module, "trilindicesfrom", _get_attr(backend_module, "trilindicesfrom", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).tril_indices_from(*args, **kwargs)
@@ -281,7 +282,7 @@ def _np_trimzeros(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "trimzeros", getattr(backend_module, "trimzeros", None))
+    func = _get_attr(backend_module, "trimzeros", _get_attr(backend_module, "trimzeros", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).trim_zeros(*args, **kwargs)
@@ -299,7 +300,7 @@ def _np_triuindices(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "triuindices", getattr(backend_module, "triuindices", None))
+    func = _get_attr(backend_module, "triuindices", _get_attr(backend_module, "triuindices", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).triu_indices(*args, **kwargs)
@@ -317,7 +318,7 @@ def _np_triuindicesfrom(backend_module: BackendModuleProtocol, *args: EagerValue
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "triuindicesfrom", getattr(backend_module, "triuindicesfrom", None))
+    func = _get_attr(backend_module, "triuindicesfrom", _get_attr(backend_module, "triuindicesfrom", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).triu_indices_from(*args, **kwargs)

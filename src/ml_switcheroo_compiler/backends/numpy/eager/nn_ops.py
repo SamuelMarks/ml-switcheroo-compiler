@@ -7,6 +7,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("Dropout2d")
@@ -32,11 +33,11 @@ def _np_dropout2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
 
     # dropout2d zeros out entire channels (axis 1) for each sample in batch (axis 0)
     # Shape of x: (N, C, H, W)
-    if getattr(x, "ndim") != 4:
+    if _get_attr(x, "ndim") != 4:
         raise ValueError("Dropout2d requires a 4D tensor (N, C, H, W)")
 
-    N, C, _, _ = getattr(x, "shape")
-    mask = getattr(getattr(np.random, "binomial")(1, 1.0 - as_tensor(p), size=(N, C, 1, 1)), "astype")(getattr(x, "dtype"))
+    N, C, _, _ = _get_attr(x, "shape")
+    mask = _get_attr(_get_attr(np.random, "binomial")(1, 1.0 - as_tensor(p), size=(N, C, 1, 1)), "astype")(_get_attr(x, "dtype"))
     return as_tensor(as_tensor(x) * mask / (1.0 - as_tensor(p)))
 
 
@@ -57,7 +58,7 @@ def _np_block_masked_mm(backend_module: BackendModuleProtocol, *args: EagerValue
     a, b = args[0], args[1]
     # BlockMaskedMm is just batched matmul where some blocks are skipped.
     # In eager mode without a provided mask, we just return a @ b
-    return as_tensor(getattr(np, "matmul")(a, b))
+    return as_tensor(_get_attr(np, "matmul")(a, b))
 
 
 @numpy_eager_registry.register("Mul")
@@ -72,7 +73,7 @@ def _np_mul(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
         np.ndarray: Multiplied product array.
     """
-    return as_ndarray(getattr(np, "multiply")(args[0], args[1]))
+    return as_ndarray(_get_attr(np, "multiply")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("MaxPool2DWithArgmax")
@@ -89,9 +90,9 @@ def _np_max_pool2d_with_argmax_forward(backend_module: BackendModuleProtocol, *a
     """
     x = np.asarray(args[0])
     k = kwargs.get("kernel_size", kwargs.get("pool_size", (2, 2)))
-    k_h, k_w = (k, k) if isinstance(k, int) else (getattr(k, "__getitem__")(0), getattr(k, "__getitem__")(1))
+    k_h, k_w = (k, k) if isinstance(k, int) else (_get_attr(k, "__getitem__")(0), _get_attr(k, "__getitem__")(1))
     s = kwargs.get("stride", kwargs.get("strides", (k_h, k_w)))
-    s_h, s_w = (s, s) if isinstance(s, int) else (getattr(s, "__getitem__")(0), getattr(s, "__getitem__")(1))
+    s_h, s_w = (s, s) if isinstance(s, int) else (_get_attr(s, "__getitem__")(0), _get_attr(s, "__getitem__")(1))
     n, c, h, w = x.shape
     out_h = (h - k_h) // s_h + 1
     out_w = (w - k_w) // s_w + 1
@@ -100,7 +101,7 @@ def _np_max_pool2d_with_argmax_forward(backend_module: BackendModuleProtocol, *a
         for j in range(out_w):
             h_start, h_end = i * s_h, i * s_h + k_h
             w_start, w_end = j * s_w, j * s_w + k_w
-            out[:, :, i, j] = getattr(np, "max")(x[:, :, h_start:h_end, w_start:w_end], axis=(-2, -1))
+            out[:, :, i, j] = _get_attr(np, "max")(x[:, :, h_start:h_end, w_start:w_end], axis=(-2, -1))
     return out
 
 
@@ -235,8 +236,8 @@ def _np_layer_norm(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     eps = float(as_float(kwargs.get("eps", kwargs.get("epsilon", 1e-5))))
     axis = kwargs.get("axis", -1)
 
-    mean = getattr(np, "mean")(x, axis=axis, keepdims=True)
-    var = getattr(np, "var")(x, axis=axis, keepdims=True)
+    mean = _get_attr(np, "mean")(x, axis=axis, keepdims=True)
+    var = _get_attr(np, "var")(x, axis=axis, keepdims=True)
     x_hat = (x - mean) / np.sqrt(var + eps)
     return as_ndarray(gamma * x_hat + beta)
 
@@ -259,16 +260,16 @@ def _np_layer_norm_input_grad(backend_module: BackendModuleProtocol, *args: Eage
     eps = float(as_float(kwargs.get("eps", kwargs.get("epsilon", 1e-5))))
     axis = kwargs.get("axis", -1)
 
-    d = float(getattr(x.shape, "__getitem__")(axis))
-    mean = getattr(np, "mean")(x, axis=axis, keepdims=True)
-    var = getattr(np, "var")(x, axis=axis, keepdims=True)
+    d = float(_get_attr(x.shape, "__getitem__")(axis))
+    mean = _get_attr(np, "mean")(x, axis=axis, keepdims=True)
+    var = _get_attr(np, "var")(x, axis=axis, keepdims=True)
     inv_std = 1.0 / np.sqrt(var + eps)
     x_hat = (x - mean) * inv_std
 
     d_y = d_out * gamma
     term1 = d * d_y
-    term2 = getattr(np, "sum")(d_y, axis=axis, keepdims=True)
-    term3 = x_hat * getattr(np, "sum")(d_y * x_hat, axis=axis, keepdims=True)
+    term2 = _get_attr(np, "sum")(d_y, axis=axis, keepdims=True)
+    term3 = x_hat * _get_attr(np, "sum")(d_y * x_hat, axis=axis, keepdims=True)
 
     return as_ndarray((inv_std / d) * (term1 - term2 - term3))
 
@@ -290,8 +291,8 @@ def _np_layer_norm_gamma_grad(backend_module: BackendModuleProtocol, *args: Eage
     eps = float(as_float(kwargs.get("eps", kwargs.get("epsilon", 1e-5))))
     axis = kwargs.get("axis", -1)
 
-    mean = getattr(np, "mean")(x, axis=axis, keepdims=True)
-    var = getattr(np, "var")(x, axis=axis, keepdims=True)
+    mean = _get_attr(np, "mean")(x, axis=axis, keepdims=True)
+    var = _get_attr(np, "var")(x, axis=axis, keepdims=True)
     x_hat = (x - mean) / np.sqrt(var + eps)
     batch_axes = tuple(i for i in range(x.ndim) if i != (x.ndim + int(as_int(axis)) if int(as_int(axis)) < 0 else int(as_int(axis))))
     return as_ndarray(np.sum(d_out * x_hat, axis=batch_axes))
@@ -524,10 +525,10 @@ def _np_avg_pool2d(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     """
     x = np.asarray(args[0])
     k = kwargs.get("kernel_size", kwargs.get("pool_size", (2, 2)))
-    k_h, k_w = (k, k) if isinstance(k, int) else (getattr(k, "__getitem__")(0), getattr(k, "__getitem__")(1))
+    k_h, k_w = (k, k) if isinstance(k, int) else (_get_attr(k, "__getitem__")(0), _get_attr(k, "__getitem__")(1))
 
     s = kwargs.get("stride", kwargs.get("strides", (k_h, k_w)))
-    s_h, s_w = (s, s) if isinstance(s, int) else (getattr(s, "__getitem__")(0), getattr(s, "__getitem__")(1))
+    s_h, s_w = (s, s) if isinstance(s, int) else (_get_attr(s, "__getitem__")(0), _get_attr(s, "__getitem__")(1))
 
     n, c, h, w = x.shape
     out_h = (h - k_h) // s_h + 1
@@ -538,7 +539,7 @@ def _np_avg_pool2d(backend_module: BackendModuleProtocol, *args: EagerValue, **k
         for j in range(out_w):
             h_start, h_end = i * s_h, i * s_h + k_h
             w_start, w_end = j * s_w, j * s_w + k_w
-            out[:, :, i, j] = getattr(np, "mean")(x[:, :, h_start:h_end, w_start:w_end], axis=(-2, -1))
+            out[:, :, i, j] = _get_attr(np, "mean")(x[:, :, h_start:h_end, w_start:w_end], axis=(-2, -1))
     return out
 
 
@@ -557,10 +558,10 @@ def _np_avg_pool2d_grad(backend_module: BackendModuleProtocol, *args: EagerValue
     d_out = np.asarray(args[0])
     x = np.asarray(args[1])
     k = kwargs.get("kernel_size", kwargs.get("pool_size", (2, 2)))
-    k_h, k_w = (k, k) if isinstance(k, int) else (getattr(k, "__getitem__")(0), getattr(k, "__getitem__")(1))
+    k_h, k_w = (k, k) if isinstance(k, int) else (_get_attr(k, "__getitem__")(0), _get_attr(k, "__getitem__")(1))
 
     s = kwargs.get("stride", kwargs.get("strides", (k_h, k_w)))
-    s_h, s_w = (s, s) if isinstance(s, int) else (getattr(s, "__getitem__")(0), getattr(s, "__getitem__")(1))
+    s_h, s_w = (s, s) if isinstance(s, int) else (_get_attr(s, "__getitem__")(0), _get_attr(s, "__getitem__")(1))
 
     dx = np.zeros_like(x)
     out_h, out_w = d_out.shape[2], d_out.shape[3]
@@ -589,10 +590,10 @@ def _np_max_pool2d_with_argmax_grad(backend_module: BackendModuleProtocol, *args
     d_out = np.asarray(args[0])
     x = np.asarray(args[1])
     k = kwargs.get("kernel_size", kwargs.get("pool_size", (2, 2)))
-    k_h, k_w = (k, k) if isinstance(k, int) else (getattr(k, "__getitem__")(0), getattr(k, "__getitem__")(1))
+    k_h, k_w = (k, k) if isinstance(k, int) else (_get_attr(k, "__getitem__")(0), _get_attr(k, "__getitem__")(1))
 
     s = kwargs.get("stride", kwargs.get("strides", (k_h, k_w)))
-    s_h, s_w = (s, s) if isinstance(s, int) else (getattr(s, "__getitem__")(0), getattr(s, "__getitem__")(1))
+    s_h, s_w = (s, s) if isinstance(s, int) else (_get_attr(s, "__getitem__")(0), _get_attr(s, "__getitem__")(1))
 
     dx = np.zeros_like(x)
     out_h, out_w = d_out.shape[2], d_out.shape[3]
@@ -602,7 +603,7 @@ def _np_max_pool2d_with_argmax_grad(backend_module: BackendModuleProtocol, *args
             h_start, h_end = i * s_h, i * s_h + k_h
             w_start, w_end = j * s_w, j * s_w + k_w
             window = x[:, :, h_start:h_end, w_start:w_end]
-            max_val = getattr(np, "max")(window, axis=(-2, -1), keepdims=True)
+            max_val = _get_attr(np, "max")(window, axis=(-2, -1), keepdims=True)
             mask = (window == max_val).astype(x.dtype)
             mask_sum = np.sum(mask, axis=(-2, -1), keepdims=True)
             mask = mask / np.maximum(mask_sum, 1.0)

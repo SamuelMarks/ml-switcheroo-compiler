@@ -8,7 +8,7 @@ import resource
 import sys
 import time
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -35,8 +35,8 @@ def _get_dpnp_peak_memory_mb() -> float:
     """
     try:
         dpnp_mod = importlib.import_module("dpnp")
-        if hasattr(dpnp_mod, "get_device_memory_info"):
-            info = dpnp_mod.get_device_memory_info()
+        if _has_attr(dpnp_mod, "get_device_memory_info"):
+            info: EagerValue = as_callable(_get_attr(dpnp_mod, "get_device_memory_info"))()
             if isinstance(info, (tuple, list)) and len(info) >= 2:
                 total, free = info[0], info[1]
                 if isinstance(total, (int, float)) and isinstance(free, (int, float)):
@@ -52,9 +52,9 @@ def _safe_wait(waitable: EagerValue) -> None:
     Args:
         waitable (EagerValue): Object potentially exposing a wait() method.
     """
-    if waitable is not None and hasattr(waitable, "wait"):
+    if waitable is not None and _has_attr(waitable, "wait"):
         try:
-            waitable.wait()
+            as_callable(_get_attr(waitable, "wait"))()
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -68,9 +68,9 @@ def _sync_dpnp_result(result: EagerValue, sycl_queue: EagerValue | None = None) 
     """
     _safe_wait(sycl_queue)
 
-    if hasattr(result, "sycl_queue") and hasattr(getattr(result, "sycl_queue"), "wait"):
-        _safe_wait(getattr(result, "sycl_queue"))
-    elif hasattr(result, "wait"):
+    if _has_attr(result, "sycl_queue") and _has_attr(_get_attr(result, "sycl_queue"), "wait"):
+        _safe_wait(_get_attr(result, "sycl_queue"))
+    elif _has_attr(result, "wait"):
         _safe_wait(result)
     elif isinstance(result, (list, tuple)):
         for item in result:
@@ -107,9 +107,9 @@ class DpnpProfiler:
         """
         dpnp_inputs: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            if type(val).__name__ == "Tensor" and hasattr(val, "data"):
-                dpnp_inputs[k] = getattr(val, "data")
-            elif type(val).__name__ == "ndarray" or hasattr(val, "ndim"):
+            if type(val).__name__ == "Tensor" and _has_attr(val, "data"):
+                dpnp_inputs[k] = _get_attr(val, "data")
+            elif type(val).__name__ == "ndarray" or _has_attr(val, "ndim"):
                 dpnp_inputs[k] = val
             elif isinstance(val, (list, tuple)):
                 from ml_switcheroo_compiler.backends.dpnp.types import asarray
@@ -118,8 +118,8 @@ class DpnpProfiler:
             else:
                 dpnp_inputs[k] = val
 
-        sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
+        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
         if input_keys and all(k in dpnp_inputs for k in input_keys):
             return [dpnp_inputs[k] for k in input_keys]
         return list(dpnp_inputs.values())

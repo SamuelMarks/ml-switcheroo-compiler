@@ -13,6 +13,7 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.hardware_config_models import HardwareTemplatesConfig
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor
 
@@ -34,23 +35,23 @@ def test_msl_templates_consolidation() -> None:
     # Unary ops
     for op in ("abs", "cos", "exp", "gelu", "log", "neg", "relu", "sigmoid", "silu", "sin", "sqrt", "tanh"):
         assert op in templates
-        assert "kernel void" in as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")(op)), "body"))
-        assert len(as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")(op)), "workgroup_size"))) == 3
+        assert "kernel void" in as_tensor(_get_attr(as_tensor(_get_attr(templates, "__getitem__")(op)), "body"))
+        assert len(as_tensor(_get_attr(as_tensor(_get_attr(templates, "__getitem__")(op)), "workgroup_size"))) == 3
 
     # Binary ops
     for op in ("add", "sub", "mul", "div", "pow", "maximum", "minimum"):
         assert op in templates
-        assert "kernel void" in as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")(op)), "body"))
+        assert "kernel void" in as_tensor(_get_attr(as_tensor(_get_attr(templates, "__getitem__")(op)), "body"))
 
     # Reductions
     for op in ("reducesum", "reducemean", "reducemax", "reducemin", "sum"):
         assert op in templates
-        assert "kernel void" in as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")(op)), "body"))
+        assert "kernel void" in as_tensor(_get_attr(as_tensor(_get_attr(templates, "__getitem__")(op)), "body"))
 
     # Matrix multiplication and vision
     for op in ("matmul", "batchmatmul", "conv2d", "depthwise_conv2d", "maxpool2d", "avgpool2d", "multihead_attention"):
         assert op in templates
-        assert "kernel void" in as_tensor(getattr(as_tensor(getattr(templates, "__getitem__")(op)), "body"))
+        assert "kernel void" in as_tensor(_get_attr(as_tensor(_get_attr(templates, "__getitem__")(op)), "body"))
 
 
 def test_metal_code_generator_comprehensive() -> None:

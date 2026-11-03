@@ -7,6 +7,7 @@ from unittest.mock import mock_open, patch
 
 import yaml
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff_rules import autodiff_provider
 from ml_switcheroo_compiler.transforms.autodiff_rules.autodiff_provider import (
@@ -144,7 +145,7 @@ def test_fallback_finite_difference_jvp() -> None:
 def test_get_autodiff_manifest_branches() -> None:
     """Test _get_autodiff_manifest caching, missing file, and exception handling."""
     # 1. Cache hit
-    setattr(autodiff_provider, "_MANIFEST_MODEL_CACHE", "cached_manifest")
+    _set_attr(autodiff_provider, "_MANIFEST_MODEL_CACHE", "cached_manifest")
     assert as_tensor(_get_autodiff_manifest()) == as_tensor("cached_manifest")
     autodiff_provider._MANIFEST_MODEL_CACHE = None
 

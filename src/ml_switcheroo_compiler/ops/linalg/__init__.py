@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.conv_ops import ConvGeneralDilated, ConvTranspose
 from ml_switcheroo_compiler.ops.linalg.dot import (
@@ -125,10 +125,10 @@ class Vecdot(OpDef):
         Returns:
             tuple[int, ...]: Resulting shape after contracting vector dimension.
         """
-        if not args or len(args) < 2 or not getattr(args[0], "shape", ()) or not getattr(args[1], "shape", ()):
+        if not args or len(args) < 2 or not _get_attr(args[0], "shape", ()) or not _get_attr(args[1], "shape", ()):
             return ()
-        x_shape = getattr(args[0], "shape", ())
-        y_shape = getattr(args[1], "shape", ())
+        x_shape = _get_attr(args[0], "shape", ())
+        y_shape = _get_attr(args[1], "shape", ())
         axis = int(as_int(kwargs.get("axis", -1)))
         x_norm = axis if axis >= 0 else len(x_shape) + axis
         y_norm = axis if axis >= 0 else len(y_shape) + axis
@@ -155,10 +155,10 @@ class CustomLinearSolve(OpDef):
         Returns:
             tuple[int, ...]: Resulting shape matching broadcasted solution X.
         """
-        if not args or len(args) < 2 or len(getattr(args[0], "shape", ())) < 2 or len(getattr(args[1], "shape", ())) < 1:
+        if not args or len(args) < 2 or len(_get_attr(args[0], "shape", ())) < 2 or len(_get_attr(args[1], "shape", ())) < 1:
             return ()
-        a_shape: tuple[int, ...] = getattr(args[0], "shape", ())
-        b_shape: tuple[int, ...] = getattr(args[1], "shape", ())
+        a_shape: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        b_shape: tuple[int, ...] = _get_attr(args[1], "shape", ())
         m = a_shape[-1]
         batch_a = a_shape[:-2]
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
@@ -187,9 +187,9 @@ class CustomRoot(OpDef):
         Returns:
             tuple[int, ...]: Shape matching initial guess x0.
         """
-        if len(args) > 1 and hasattr(args[1], "shape"):
+        if len(args) > 1 and _has_attr(args[1], "shape"):
             return tuple(args[1].shape)
-        if args and hasattr(args[0], "shape"):
+        if args and _has_attr(args[0], "shape"):
             return tuple(args[0].shape)
         return ()
 

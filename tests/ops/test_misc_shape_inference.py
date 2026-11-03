@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.foreign import ForeignCall
 from ml_switcheroo_compiler.ir.shape_system import SymVar
@@ -80,10 +81,10 @@ def test_pad_and_tile_shapes() -> None:
     t2 = _make_tensor((4, 8))
 
     # Flatnonzero and Nonzero
-    assert isinstance(as_tensor(getattr(as_callable(op_fnz.infer_shape)(t2), "__getitem__")(0)), SymVar)
+    assert isinstance(as_tensor(_get_attr(as_callable(op_fnz.infer_shape)(t2), "__getitem__")(0)), SymVar)
     nz_shapes = as_callable(op_nz.infer_shape)(t2)
     assert as_callable(len)(nz_shapes) == 2
-    assert isinstance(as_tensor(getattr(as_tensor(getattr(nz_shapes, "__getitem__")(0)), "__getitem__")(0)), SymVar)
+    assert isinstance(as_tensor(_get_attr(as_tensor(_get_attr(nz_shapes, "__getitem__")(0)), "__getitem__")(0)), SymVar)
 
     # Lexsort
     assert as_callable(op_lex.infer_shape)([t2, t2]) == (4, 8)
@@ -114,8 +115,8 @@ def test_pad_and_tile_shapes() -> None:
 
     # Unique
     unq_out = as_callable(op_unique.infer_shape)(t2, axis=0)
-    assert isinstance(as_tensor(getattr(unq_out, "__getitem__")(0)), SymVar)
-    assert as_tensor(getattr(unq_out, "__getitem__")(1)) == 8
+    assert isinstance(as_tensor(_get_attr(unq_out, "__getitem__")(0)), SymVar)
+    assert as_tensor(_get_attr(unq_out, "__getitem__")(1)) == 8
 
 
 def test_slicing_shapes() -> None:

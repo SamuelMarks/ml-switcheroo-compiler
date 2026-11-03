@@ -7,12 +7,12 @@ import json
 import logging
 import struct
 import sys
-import typing
 import zlib
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_eager_list, as_int, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_eager_list, as_int, as_tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr, _set_attr
 
 DEFAULT_CHUNK_SIZE: int = 16384
 HIGH_WATERMARK_BYTES: int = 65536
@@ -55,20 +55,20 @@ class WebRTCDataChannelStream:
 
     def _setup_event_handlers(self) -> None:
         """Attach onmessage and onbufferedamountlow handlers if supported by channel."""
-        if hasattr(self.channel, "onmessage"):
-            setattr(self.channel, "onmessage", self._on_message)
-        elif hasattr(self.channel, "on_message"):
-            setattr(self.channel, "on_message", self._on_message)
+        if _has_attr(self.channel, "onmessage"):
+            _set_attr(self.channel, "onmessage", self._on_message)
+        elif _has_attr(self.channel, "on_message"):
+            _set_attr(self.channel, "on_message", self._on_message)
 
-        if hasattr(self.channel, "bufferedAmountLowThreshold"):
-            setattr(self.channel, "bufferedAmountLowThreshold", self.low_watermark)
-        elif hasattr(self.channel, "buffered_amount_low_threshold"):
-            setattr(self.channel, "buffered_amount_low_threshold", self.low_watermark)
+        if _has_attr(self.channel, "bufferedAmountLowThreshold"):
+            _set_attr(self.channel, "bufferedAmountLowThreshold", self.low_watermark)
+        elif _has_attr(self.channel, "buffered_amount_low_threshold"):
+            _set_attr(self.channel, "buffered_amount_low_threshold", self.low_watermark)
 
-        if hasattr(self.channel, "onbufferedamountlow"):
-            setattr(self.channel, "onbufferedamountlow", self._on_buffered_amount_low)
-        elif hasattr(self.channel, "on_buffered_amount_low"):
-            setattr(self.channel, "on_buffered_amount_low", self._on_buffered_amount_low)
+        if _has_attr(self.channel, "onbufferedamountlow"):
+            _set_attr(self.channel, "onbufferedamountlow", self._on_buffered_amount_low)
+        elif _has_attr(self.channel, "on_buffered_amount_low"):
+            _set_attr(self.channel, "on_buffered_amount_low", self._on_buffered_amount_low)
 
     def _on_message(self, event_or_data: EagerValue) -> None:
         """Event listener for incoming RTCDataChannel binary and text messages.
@@ -76,13 +76,13 @@ class WebRTCDataChannelStream:
         Args:
             event_or_data (EagerValue): RTCDataChannel message event or raw byte payload.
         """
-        payload = getattr(event_or_data, "data", event_or_data)
+        payload = _get_attr(event_or_data, "data", event_or_data)
         if isinstance(payload, bytes):
             self._recv_queue.put_nowait(payload)
         elif isinstance(payload, str):
             self._recv_queue.put_nowait(payload.encode("utf-8"))
-        elif hasattr(payload, "tobytes"):
-            self._recv_queue.put_nowait(bytes(getattr(payload, "tobytes")()))
+        elif _has_attr(payload, "tobytes"):
+            self._recv_queue.put_nowait(bytes(_get_attr(payload, "tobytes")()))
         else:
             from ml_switcheroo_compiler.backends.eager_registry import as_bytes
 
@@ -102,7 +102,7 @@ class WebRTCDataChannelStream:
         Returns:
             int: Number of queued bytes.
         """
-        amt = getattr(self.channel, "bufferedAmount", getattr(self.channel, "buffered_amount", 0))
+        amt = _get_attr(self.channel, "bufferedAmount", _get_attr(self.channel, "buffered_amount", 0))
         if callable(amt):
             return int(amt())
         return int(amt)
@@ -111,7 +111,7 @@ class WebRTCDataChannelStream:
         """Pause execution when bufferedAmount exceeds high watermark until drained."""
         if self.get_buffered_amount() > self.high_watermark:
             self._drain_event.clear()
-            drain_fn = getattr(self.channel, "wait_drain", None)
+            drain_fn = _get_attr(self.channel, "wait_drain", None)
             if callable(drain_fn):
                 if asyncio.iscoroutinefunction(drain_fn):
                     await drain_fn()
@@ -133,16 +133,16 @@ class WebRTCDataChannelStream:
         Args:
             data (bytes): Byte payload to transmit.
         """
-        if hasattr(self.channel, "send"):
-            send_fn = getattr(self.channel, "send")
+        if _has_attr(self.channel, "send"):
+            send_fn = _get_attr(self.channel, "send")
             if asyncio.iscoroutinefunction(send_fn):
                 await send_fn(data)
             else:
                 res = send_fn(data)
                 if asyncio.iscoroutine(res):
                     await res
-        elif hasattr(self.channel, "sendMessage"):
-            send_fn = getattr(self.channel, "sendMessage")
+        elif _has_attr(self.channel, "sendMessage"):
+            send_fn = _get_attr(self.channel, "sendMessage")
             if asyncio.iscoroutinefunction(send_fn):
                 await send_fn(data)
             else:
@@ -158,7 +158,7 @@ class WebRTCDataChannelStream:
         """
         if not self._recv_queue.empty():
             return await self._recv_queue.get()
-        recv_fn = getattr(self.channel, "recv", None)
+        recv_fn = _get_attr(self.channel, "recv", None)
         if callable(recv_fn):
             if asyncio.iscoroutinefunction(recv_fn):
                 res = await recv_fn()
@@ -181,7 +181,7 @@ async def _send_data(conn: EagerValue | WebRTCDataChannelStream, data: EagerValu
     stream = conn if isinstance(conn, WebRTCDataChannelStream) else WebRTCDataChannelStream(conn, chunk_size=chunk_size)
     arr = as_tensor(data)
     dtype_obj = arr.dtype
-    arr_byteorder = str(getattr(dtype_obj, "byteorder", "="))
+    arr_byteorder = str(_get_attr(dtype_obj, "byteorder", "="))
 
     native_order = "<" if sys.byteorder == "little" else ">"
     byteorder = native_order if arr_byteorder in ("=", "|") else arr_byteorder
@@ -193,7 +193,7 @@ async def _send_data(conn: EagerValue | WebRTCDataChannelStream, data: EagerValu
     meta = {
         "protocol": "webrtc_stream_v1",
         "shape": list(arr.shape),
-        "dtype": str(getattr(dtype_obj, "str", dtype_obj)),
+        "dtype": str(_get_attr(dtype_obj, "str", dtype_obj)),
         "byteorder": byteorder,
         "total_bytes": total_bytes,
         "num_chunks": num_chunks,
@@ -262,7 +262,7 @@ async def _recv_data(conn: EagerValue | WebRTCDataChannelStream) -> EagerValue:
 
     native_order = "<" if sys.byteorder == "little" else ">"
     if expected_byteorder in ("<", ">") and expected_byteorder != native_order:
-        arr = arr.astype(getattr(arr.dtype, "newbyteorder")("="))
+        arr = arr.astype(_get_attr(arr.dtype, "newbyteorder")("="))
 
     return as_tensor(arr.copy())
 
@@ -337,7 +337,7 @@ async def ring_all_reduce(
         raise ValueError(f"Ring topology requires connections to neighbors ({prev_rank}, {next_rank})")
 
     backend = get_active_backend()
-    split_chunks = typing.cast("Sequence[EagerTensorProtocol]", backend.execute_op("array_split", tensor, world_size, axis=0))
+    split_chunks = _cast_val("Sequence[EagerTensorProtocol]", backend.execute_op("array_split", tensor, world_size, axis=0))
     chunks: list[EagerValue] = [c.copy() for c in split_chunks]
 
     def _apply_op(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -581,7 +581,7 @@ async def ring_reduce_scatter(
         raise ValueError(f"Ring topology requires connections to neighbors ({prev_rank}, {next_rank})")
 
     backend = get_active_backend()
-    split_chunks = typing.cast("Sequence[EagerTensorProtocol]", backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
+    split_chunks = _cast_val("Sequence[EagerTensorProtocol]", backend.execute_op("array_split", tensor, world_size, axis=scatter_dim))
     chunks: list[EagerValue] = [c.copy() for c in split_chunks]
 
     def _apply_op(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -787,13 +787,13 @@ def _dispatch_pytorch_collective(op: str, tensor: EagerValue, kwargs: dict[str, 
         pt_backend = BackendRegistry.get("pytorch")
         group = kwargs.get("group")
         if op == "AllReduce":
-            return as_tensor(getattr(pt_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), group=group))
+            return as_tensor(_get_attr(pt_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), group=group))
         if op == "AllGather":
-            return as_tensor(getattr(pt_backend, "all_gather")(tensor, axis=int(as_int(kwargs.get("axis", 0))), group=group))
+            return as_tensor(_get_attr(pt_backend, "all_gather")(tensor, axis=int(as_int(kwargs.get("axis", 0))), group=group))
         if op == "ReduceScatter":
-            return as_tensor(getattr(pt_backend, "reduce_scatter")(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(as_int(kwargs.get("scatter_dim", 0))), group=group))
+            return as_tensor(_get_attr(pt_backend, "reduce_scatter")(tensor, op=str(kwargs.get("op_type", "SUM")), scatter_dim=int(as_int(kwargs.get("scatter_dim", 0))), group=group))
         if op == "Broadcast":
-            return as_tensor(getattr(pt_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0))), group=group))
+            return as_tensor(_get_attr(pt_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0))), group=group))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None
@@ -816,11 +816,11 @@ def _dispatch_jax_collective(op: str, tensor: EagerValue, kwargs: dict[str, Eage
         jax_backend = BackendRegistry.get("jax")
         axis_name = str(kwargs.get("axis_name", "data"))
         if op == "AllReduce":
-            return as_tensor(getattr(jax_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name))
+            return as_tensor(_get_attr(jax_backend, "all_reduce")(tensor, op=str(kwargs.get("op_type", "SUM")), axis_name=axis_name))
         if op == "AllGather":
-            return as_tensor(getattr(jax_backend, "all_gather")(tensor, axis_name=axis_name, axis=int(as_int(kwargs.get("axis", 0)))))
+            return as_tensor(_get_attr(jax_backend, "all_gather")(tensor, axis_name=axis_name, axis=int(as_int(kwargs.get("axis", 0)))))
         if op == "Broadcast":
-            return as_tensor(getattr(jax_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0)))))
+            return as_tensor(_get_attr(jax_backend, "broadcast")(tensor, src=int(as_int(kwargs.get("root", 0)))))
     except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return None

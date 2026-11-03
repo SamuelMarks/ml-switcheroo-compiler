@@ -37,6 +37,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _np_tridiagonal_solve,
     _parse_dot_dimension_numbers,
 )
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -108,7 +109,7 @@ def _test_linalg_extras_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     a = np.ones((2, 3, 4))
     b = np.ones((2, 4, 5))
     res = _dot_general(a, b, dn)
-    assert as_tensor(getattr(res, "shape")) == (2, 3, 5)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 3, 5)
     a = np.array([[1, 2], [3, 4]])
     assert _np_trace(as_mod(DummyBackend()), a) == 5
     assert _np_matrix_rank(as_mod(DummyBackend()), a) == 2
@@ -124,10 +125,10 @@ def _test_linalg_extras_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     alpha = np.array([2, 2, 2], dtype=float)
     beta = np.array([-1, -1], dtype=float)
     (vals, vecs) = as_callable(_np_eigh_tridiagonal)(as_callable(DummyBackend)(), alpha, beta)
-    getattr(_state, "update")({"A": A, "L": L, "a": a, "alpha": alpha})
-    getattr(_state, "update")({"b": b, "beta": beta, "dn": dn, "res": res})
-    getattr(_state, "update")({"vals": vals, "vecs": vecs})
-    _state.update(locals())
+    _get_attr(_state, "update")({"A": A, "L": L, "a": a, "alpha": alpha})
+    _get_attr(_state, "update")({"b": b, "beta": beta, "dn": dn, "res": res})
+    _get_attr(_state, "update")({"vals": vals, "vecs": vecs})
+    _state.update(_caller_locals())
 
 
 def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -138,7 +139,7 @@ def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     """
     (A, b, vals) = (_state["A"], _state["b"], _state["vals"])
     assert vals.shape == (3,)
-    assert as_tensor(getattr(as_tensor(getattr(_np_qr(as_mod(DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(_np_qr(as_mod(DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
     v1 = np.array([1, 0, 0])
     v2 = np.array([0, 1, 0])
     assert as_callable(np.array_equal)(as_callable(_np_cross)(as_callable(DummyBackend)(), v1, v2, axes={"axis": None}), [0, 0, 1])
@@ -147,11 +148,11 @@ def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     for op in ["Qr", "Solve", "Tensorinv", "Tensorsolve", "Eig", "Eigh", "Eigvals", "Eigvalsh", "Norm", "Cond", "MultiDot"]:
         func = numpy_eager_registry._registry[op]
         if op == "Solve":
-            assert as_tensor(getattr(func(DummyBackend(), A, b), "shape")) == (2,)
+            assert as_tensor(_get_attr(func(DummyBackend(), A, b), "shape")) == (2,)
         elif op == "MultiDot":
-            assert as_tensor(getattr(func(DummyBackend(), [A, A]), "shape")) == (2, 2)
+            assert as_tensor(_get_attr(func(DummyBackend(), [A, A]), "shape")) == (2, 2)
         elif op in ["Eigvals", "Eigvalsh", "Norm", "Cond", "Eigh", "Eig"]:
-            res = func(DummyBackend(), A)
+            func(DummyBackend(), A)
         else:
             try:
                 func(DummyBackend(), A)
@@ -159,11 +160,11 @@ def _test_linalg_extras_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
                 _caught_err = True
     (p, _lower, u) = as_callable(_np_lu)(as_callable(DummyBackend)(), A)
     (lu, piv) = as_callable(_np_lu_factor)(as_callable(DummyBackend)(), A)
-    assert as_tensor(getattr(_np_lu_solve(as_mod(DummyBackend()), lu, piv, b), "shape")) == (2,)
-    assert as_tensor(getattr(_np_lu_pivots(as_mod(DummyBackend()), [1, 1], 2), "shape")) == (2,)
-    getattr(_state, "update")({"_lower": _lower, "lu": lu, "p": p, "piv": piv})
-    getattr(_state, "update")({"u": u, "v1": v1, "v2": v2})
-    _state.update(locals())
+    assert as_tensor(_get_attr(_np_lu_solve(as_mod(DummyBackend()), lu, piv, b), "shape")) == (2,)
+    assert as_tensor(_get_attr(_np_lu_pivots(as_mod(DummyBackend()), [1, 1], 2), "shape")) == (2,)
+    _get_attr(_state, "update")({"_lower": _lower, "lu": lu, "p": p, "piv": piv})
+    _get_attr(_state, "update")({"u": u, "v1": v1, "v2": v2})
+    _state.update(_caller_locals())
 
 
 def _test_linalg_extras_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -173,33 +174,33 @@ def _test_linalg_extras_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     A = _state["A"]
-    assert as_tensor(getattr(_np_matrix_exponential(as_mod(DummyBackend()), A), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(_np_matrix_exponential(as_mod(DummyBackend()), A), "shape")) == (2, 2)
     (h, q) = as_callable(_np_hessenberg)(as_callable(DummyBackend)(), A)
-    assert as_tensor(getattr(h, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(h, "shape")) == (2, 2)
     (d, od, q) = as_callable(_np_tridiagonal)(as_callable(DummyBackend)(), A)
-    assert as_tensor(getattr(d, "shape")) == (2,)
-    assert as_tensor(getattr(od, "shape")) == (1,)
+    assert as_tensor(_get_attr(d, "shape")) == (2,)
+    assert as_tensor(_get_attr(od, "shape")) == (1,)
     dl = np.array([-1], dtype=float)
     d = as_tensor(np.array([2, 2], dtype=float))
     du = np.array([-1], dtype=float)
     b_tri = np.array([1, 0], dtype=float)
-    assert as_tensor(getattr(_np_tridiagonal_solve(as_mod(DummyBackend()), dl, d, du, b_tri), "shape")) == (2,)
+    assert as_tensor(_get_attr(_np_tridiagonal_solve(as_mod(DummyBackend()), dl, d, du, b_tri), "shape")) == (2,)
     (c, i) = as_callable(_np_cholesky_ex)(as_callable(DummyBackend)(), A)
     assert i == 0
     (c_fail, i_fail) = as_callable(_np_cholesky_ex)(as_callable(DummyBackend)(), as_callable(np.array)([[0, 0], [0, 0]]))
-    assert as_tensor(getattr(i_fail, "all"))() == 1
+    assert as_tensor(_get_attr(i_fail, "all"))() == 1
     (i1, e1) = as_callable(_np_inv_ex)(as_callable(DummyBackend)(), A)
     assert e1 == 0
     (i2, e2) = as_callable(_np_inv_ex)(as_callable(DummyBackend)(), as_callable(np.array)([[0, 0], [0, 0]]))
-    assert as_tensor(getattr(e2, "all"))() == 1
-    assert as_tensor(getattr(_np_pinv(as_mod(DummyBackend()), A), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(_np_polar(as_mod(DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(_np_qdwh(as_mod(DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
-    getattr(_state, "update")({"b_tri": b_tri, "c": c, "c_fail": c_fail, "d": d})
-    getattr(_state, "update")({"dl": dl, "du": du, "e1": e1, "e2": e2})
-    getattr(_state, "update")({"h": h, "i": i, "i1": i1, "i2": i2})
-    getattr(_state, "update")({"i_fail": i_fail, "od": od, "q": q})
-    _state.update(locals())
+    assert as_tensor(_get_attr(e2, "all"))() == 1
+    assert as_tensor(_get_attr(_np_pinv(as_mod(DummyBackend()), A), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(_np_polar(as_mod(DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(_np_qdwh(as_mod(DummyBackend()), A), "__getitem__")(0)), "shape")) == (2, 2)
+    _get_attr(_state, "update")({"b_tri": b_tri, "c": c, "c_fail": c_fail, "d": d})
+    _get_attr(_state, "update")({"dl": dl, "du": du, "e1": e1, "e2": e2})
+    _get_attr(_state, "update")({"h": h, "i": i, "i1": i1, "i2": i2})
+    _get_attr(_state, "update")({"i_fail": i_fail, "od": od, "q": q})
+    _state.update(_caller_locals())
 
 
 def _test_linalg_extras_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -212,11 +213,11 @@ def _test_linalg_extras_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     (s, e) = as_callable(_np_solve_ex)(as_callable(DummyBackend)(), A, b)
     assert e == 0
     (s_fail, e_fail) = as_callable(_np_solve_ex)(as_callable(DummyBackend)(), as_callable(np.array)([[0, 0], [0, 0]]), b)
-    assert as_tensor(getattr(e_fail, "all"))() == 1
+    assert as_tensor(_get_attr(e_fail, "all"))() == 1
     (u, s, vh) = as_callable(_np_svd)(as_callable(DummyBackend)(), A)
-    assert as_tensor(getattr(u, "shape")) == (2, 2)
-    getattr(_state, "update")({"e": e, "e_fail": e_fail, "s": s, "s_fail": s_fail})
-    getattr(_state, "update")({"u": u, "vh": vh})
+    assert as_tensor(_get_attr(u, "shape")) == (2, 2)
+    _get_attr(_state, "update")({"e": e, "e_fail": e_fail, "s": s, "s_fail": s_fail})
+    _get_attr(_state, "update")({"u": u, "vh": vh})
 
 
 def test_linalg_extras() -> None:
@@ -244,7 +245,7 @@ def test_dot_general() -> None:
     a = np.ones((2, 3, 4))
     b = np.ones((2, 4, 5))
     res = _dot_general(a, b, (([2], [1]), ([0], [0])))
-    assert as_tensor(getattr(res, "shape")) == (2, 3, 5)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 3, 5)
 
 
 def test_np_trace() -> None:
@@ -262,7 +263,7 @@ def test_np_matrix_rank() -> None:
 def test_np_matrix_transpose() -> None:
     """Test function test_np_matrix_transpose."""
     a = np.ones((2, 3))
-    assert as_tensor(getattr(_np_matrix_transpose(as_mod(None), a), "shape")) == (3, 2)
+    assert as_tensor(_get_attr(_np_matrix_transpose(as_mod(None), a), "shape")) == (3, 2)
 
 
 def test_np_sqrtm() -> None:
@@ -275,8 +276,8 @@ def test_np_adjoint() -> None:
     """Test function test_np_adjoint."""
     a = np.array([[1 + 1j, 2], [3, 4]])
     res = _np_adjoint(as_mod(None), a)
-    assert as_tensor(getattr(res, "__getitem__")((0, 0))) == 1 - 1j
-    assert as_tensor(getattr(res, "__getitem__")((0, 1))) == 3
+    assert as_tensor(_get_attr(res, "__getitem__")((0, 0))) == 1 - 1j
+    assert as_tensor(_get_attr(res, "__getitem__")((0, 1))) == 3
 
 
 def test_np_cholesky_solve() -> None:
@@ -303,7 +304,7 @@ def test_np_qr() -> None:
     """Test function test_np_qr."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (q, r) = as_callable(_np_qr)(np, a)
-    assert as_tensor(getattr(q, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(q, "shape")) == (2, 2)
 
 
 def test_np_cross() -> None:
@@ -328,23 +329,23 @@ def test_linalg_wrappers() -> None:
     """Test function test_linalg_wrappers."""
     a = np.eye(3)
     res = as_callable(numpy_eager_registry.get)("Solve")(np, a, as_callable(np.ones)(3))
-    assert as_tensor(getattr(res, "shape")) == (3,)
+    assert as_tensor(_get_attr(res, "shape")) == (3,)
     res = as_callable(numpy_eager_registry.get)("MultiDot")(np, [a, a])
-    assert as_tensor(getattr(res, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 3)
 
 
 def test_np_lu() -> None:
     """Test function test_np_lu."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (p, _lower, _u) = as_callable(_np_lu)(None, a)
-    assert as_tensor(getattr(p, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(p, "shape")) == (2, 2)
 
 
 def test_np_lu_factor() -> None:
     """Test function test_np_lu_factor."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (lu, piv) = as_callable(_np_lu_factor)(None, a)
-    assert as_tensor(getattr(lu, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(lu, "shape")) == (2, 2)
 
 
 def test_np_lu_solve() -> None:
@@ -353,28 +354,28 @@ def test_np_lu_solve() -> None:
     (lu, piv) = as_callable(_np_lu_factor)(None, a)
     b = np.array([1.0, 2.0])
     res = _np_lu_solve(as_mod(None), lu, piv, b)
-    assert as_tensor(getattr(res, "shape")) == (2,)
+    assert as_tensor(_get_attr(res, "shape")) == (2,)
 
 
 def test_np_lu_pivots() -> None:
     """Test function test_np_lu_pivots."""
     pivots = np.array([1, 1])
     perm = _np_lu_pivots(as_mod(None), pivots, 2)
-    assert as_tensor(getattr(perm, "shape")) == (2,)
+    assert as_tensor(_get_attr(perm, "shape")) == (2,)
 
 
 def test_np_matrix_exponential() -> None:
     """Test function test_np_matrix_exponential."""
     a = np.eye(2)
     res = _np_matrix_exponential(as_mod(None), a)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
 
 def test_np_hessenberg() -> None:
     """Test function test_np_hessenberg."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (h, q) = as_callable(_np_hessenberg)(None, a)
-    assert as_tensor(getattr(h, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(h, "shape")) == (2, 2)
 
 
 def test_np_tridiagonal() -> None:
@@ -392,7 +393,7 @@ def test_np_tridiagonal_solve() -> None:
     du = np.array([1.0])
     b = np.array([1.0, 2.0])
     res = _np_tridiagonal_solve(as_mod(None), dl, d, du, b)
-    assert as_tensor(getattr(res, "shape")) == (2,)
+    assert as_tensor(_get_attr(res, "shape")) == (2,)
 
 
 def test_np_cholesky_ex() -> None:
@@ -419,21 +420,21 @@ def test_np_pinv() -> None:
     """Test function test_np_pinv."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     res = _np_pinv(as_mod(None), a)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
 
 def test_np_polar() -> None:
     """Test function test_np_polar."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (u, p) = as_callable(_np_polar)(None, a)
-    assert as_tensor(getattr(u, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(u, "shape")) == (2, 2)
 
 
 def test_np_qdwh() -> None:
     """Test function test_np_qdwh."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (u, p, iters, conv) = as_callable(_np_qdwh)(None, a)
-    assert as_tensor(getattr(u, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(u, "shape")) == (2, 2)
     assert conv
 
 
@@ -452,4 +453,4 @@ def test_np_svd() -> None:
     """Test function test_np_svd."""
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (u, s, vh) = as_callable(_np_svd)(None, a)
-    assert as_tensor(getattr(s, "shape")) == (2,)
+    assert as_tensor(_get_attr(s, "shape")) == (2,)

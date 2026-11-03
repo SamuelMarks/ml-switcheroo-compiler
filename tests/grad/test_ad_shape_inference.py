@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.jvp_vjp import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
@@ -47,12 +48,12 @@ def test_vjp_shape_dtype_inference() -> None:
 
     out, vjp_fn = as_callable(vjp)(f, x, y)
 
-    assert as_tensor(getattr(out, "shape")) == (2, 3)
-    assert as_tensor(getattr(out, "dtype")).value == "float32"
+    assert as_tensor(_get_attr(out, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(out, "dtype")).value == "float32"
 
     cot = make_tensor(np.ones((2, 3), dtype=np.float32))
     grads = as_callable(vjp_fn)(cot)
 
     assert as_callable(len)(grads) == 2
-    assert as_tensor(getattr(as_tensor(getattr(grads, "__getitem__")(0)), "shape")) == (2, 3)
-    assert as_tensor(getattr(as_tensor(getattr(grads, "__getitem__")(1)), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(grads, "__getitem__")(0)), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(grads, "__getitem__")(1)), "shape")) == (2, 3)

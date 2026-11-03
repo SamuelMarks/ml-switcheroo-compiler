@@ -8,7 +8,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.ir.core import as_attrs
 
 if typing.TYPE_CHECKING:
@@ -77,7 +77,7 @@ def _emit_linalg_node(
     out_ids = [str(uuid.uuid4()) for _ in out_shapes]
     shape_meta = tuple("?" if d is None else d for d in out_shapes[0]) if out_shapes else ()
     input_ids, _, _ = TracingNodeBuilder.extract_proxy_inputs(tuple(inputs))
-    node = typing.cast("TypedVariadicCallable[LogicalNode]", LogicalNode)(
+    node = _cast_val("TypedVariadicCallable[LogicalNode]", LogicalNode)(
         id=out_ids[0],
         op_type=op_type,
         inputs=input_ids,
@@ -85,6 +85,6 @@ def _emit_linalg_node(
         shape_metadata=shape_meta,
     )
     global_tracing_state.add_node(node)
-    device = getattr(inputs[0], "device", "cpu") if inputs else "cpu"
+    device = _get_attr(inputs[0], "device", "cpu") if inputs else "cpu"
     tensors = _build_linalg_output_tensors(out_ids, out_shapes, out_dtypes, device)
     return tensors[0] if len(tensors) == 1 else tuple(tensors)

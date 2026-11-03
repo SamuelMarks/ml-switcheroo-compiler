@@ -6,7 +6,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import as_str
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.type_promotion import promote_types
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
@@ -21,8 +21,8 @@ def _get_value_dtype(val: TensorOrScalar) -> DType | None:
     Returns:
         Optional[DType]: Inferred `DType` or None.
     """
-    if hasattr(val, "dtype"):
-        return DType(str(getattr(val, "dtype")))
+    if _has_attr(val, "dtype"):
+        return DType(str(_get_attr(val, "dtype")))
     if isinstance(val, bool):
         return DType.Bool
     if isinstance(val, int):
@@ -175,7 +175,7 @@ def _get_node_valid_dtypes(node: LogicalNode, dtypes: dict[str, str]) -> list[st
         list[str]: Known input dtype strings.
     """
     valid = []
-    for inp in getattr(node, "inputs"):
+    for inp in _get_attr(node, "inputs"):
         dt = dtypes.get(inp)
         if dt is not None:
             valid.append(dt)

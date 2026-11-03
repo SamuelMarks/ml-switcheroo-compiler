@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
 from ml_switcheroo_compiler.ops.text import ops
 from ml_switcheroo_compiler.ops.text.frontend import (
     AsStringConfig,
@@ -50,7 +50,7 @@ class CreateToken(OpDef):
             tuple: Shape tuple.
         """
         a = args[0]
-        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        shape = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
         max_length = kwargs.get("max_length")
         if max_length is not None:
             return shape + (max_length,)
@@ -72,7 +72,8 @@ def create_token(
     """
     from ml_switcheroo_compiler.ops.base import get_op
 
-    return typing.cast("IRNode", get_op("CreateToken")()(*args, **kwargs))
+    _typed_ret_1: IRNode = _cast_val("IRNode", get_op("CreateToken")()(*args, **kwargs))
+    return _typed_ret_1
 
 
 __all__ = [

@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_opt_tensor_obj
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -36,10 +36,10 @@ def matmul(input: Tensor, other: Tensor) -> TensorOrScalar:
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), getattr(input, "dtype", None), getattr(input, "device", None)),
+            TensorConfig(_get_attr(backend.array(data), "shape"), _get_attr(input, "dtype", None), _get_attr(input, "device", None)),
         )
     out_shape = matmul_shape(input.shape, other.shape)
-    return _emit_linalg_node("Matmul", [input, other], {}, [out_shape], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Matmul", [input, other], {}, [out_shape], [_get_attr(input, "dtype", None)])
 
 
 def dot(input: Tensor, other: Tensor) -> TensorOrScalar:
@@ -62,12 +62,12 @@ def dot(input: Tensor, other: Tensor) -> TensorOrScalar:
         return Tensor(
             backend.array(data),
             TensorConfig(
-                getattr(backend.array(data), "shape"),
-                getattr(input, "dtype", "float32"),
-                getattr(input, "device", None),
+                _get_attr(backend.array(data), "shape"),
+                _get_attr(input, "dtype", "float32"),
+                _get_attr(input, "device", None),
             ),
         )
-    return _emit_linalg_node("Dot", [input, other], {}, [()], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Dot", [input, other], {}, [()], [_get_attr(input, "dtype", None)])
 
 
 def vdot(input: Tensor, other: Tensor) -> TensorOrScalar:
@@ -90,12 +90,12 @@ def vdot(input: Tensor, other: Tensor) -> TensorOrScalar:
         return Tensor(
             backend.array(data),
             TensorConfig(
-                getattr(backend.array(data), "shape"),
-                getattr(input, "dtype", "float32"),
-                getattr(input, "device", None),
+                _get_attr(backend.array(data), "shape"),
+                _get_attr(input, "dtype", "float32"),
+                _get_attr(input, "device", None),
             ),
         )
-    return _emit_linalg_node("Vdot", [input, other], {}, [()], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Vdot", [input, other], {}, [()], [_get_attr(input, "dtype", None)])
 
 
 def inner(input: Tensor, other: Tensor) -> TensorOrScalar:
@@ -118,12 +118,12 @@ def inner(input: Tensor, other: Tensor) -> TensorOrScalar:
         return Tensor(
             backend.array(data),
             TensorConfig(
-                getattr(backend.array(data), "shape"),
-                getattr(input, "dtype", "float32"),
-                getattr(input, "device", None),
+                _get_attr(backend.array(data), "shape"),
+                _get_attr(input, "dtype", "float32"),
+                _get_attr(input, "device", None),
             ),
         )
-    return _emit_linalg_node("Inner", [input, other], {}, [()], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Inner", [input, other], {}, [()], [_get_attr(input, "dtype", None)])
 
 
 def outer(input: Tensor, other: Tensor) -> TensorOrScalar:
@@ -146,12 +146,12 @@ def outer(input: Tensor, other: Tensor) -> TensorOrScalar:
         return Tensor(
             backend.array(data),
             TensorConfig(
-                getattr(backend.array(data), "shape"),
-                getattr(input, "dtype", "float32"),
-                getattr(input, "device", None),
+                _get_attr(backend.array(data), "shape"),
+                _get_attr(input, "dtype", "float32"),
+                _get_attr(input, "device", None),
             ),
         )
-    return _emit_linalg_node("Outer", [input, other], {}, [()], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Outer", [input, other], {}, [()], [_get_attr(input, "dtype", None)])
 
 
 def dot_general(
@@ -179,13 +179,13 @@ def dot_general(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), getattr(lhs, "dtype", None), getattr(lhs, "device", None)),
+            TensorConfig(_get_attr(backend.array(data), "shape"), _get_attr(lhs, "dtype", None), _get_attr(lhs, "device", None)),
         )
     attributes = {"dimension_numbers": dimension_numbers}
     out_shape = []
     if lhs.shape and rhs.shape:
         out_shape = list(_infer_dot_general_shape(lhs.shape, rhs.shape, dimension_numbers))
-    return as_tensor(as_callable(_emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [getattr(lhs, "dtype", None)]))
+    return as_tensor(as_callable(_emit_linalg_node)("DotGeneral", [lhs, rhs], attributes, [tuple(out_shape)], [_get_attr(lhs, "dtype", None)]))
 
 
 def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> TensorOrScalar:
@@ -202,15 +202,15 @@ def convolve(a: TensorOrScalar, v: TensorOrScalar, mode: str = "full") -> Tensor
     if config.eager_mode:
         data = get_active_backend().execute_op(
             "Convolve",
-            (getattr(a, "data") if type(a).__name__ == "Tensor" else a),
-            (getattr(v, "data") if type(v).__name__ == "Tensor" else v),
+            (_get_attr(a, "data") if type(a).__name__ == "Tensor" else a),
+            (_get_attr(v, "data") if type(v).__name__ == "Tensor" else v),
             mode=mode,
         )
         return Tensor(
             data,
-            TensorConfig(getattr(data, "shape"), getattr(a, "dtype", "float32"), getattr(a, "device", None)),
+            TensorConfig(_get_attr(data, "shape"), _get_attr(a, "dtype", "float32"), _get_attr(a, "device", None)),
         )
-    return _emit_linalg_node("Convolve", [a, v], {"mode": mode}, [(None,)], [getattr(a, "dtype", "float32")])
+    return _emit_linalg_node("Convolve", [a, v], {"mode": mode}, [(None,)], [_get_attr(a, "dtype", "float32")])
 
 
 def matvec(a: TensorOrScalar, b: TensorOrScalar, transpose_a: TensorOrScalar = False, adjoint_a: TensorOrScalar = False, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -241,9 +241,9 @@ def multi_dot(arrays: TensorOrScalar, name: TensorOrScalar = None) -> TensorOrSc
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("MultiDot", [(getattr(a, "data") if type(a).__name__ == "Tensor" else a) for a in getattr(arrays, "__iter__")()])
-        return Tensor(data, TensorConfig(getattr(data, "shape"), getattr(getattr(arrays, "__getitem__")(0), "dtype"), getattr(getattr(arrays, "__getitem__")(0), "device")))
-    return as_tensor(as_callable(_emit_linalg_node)("MultiDot", arrays, {}, [()], [getattr(getattr(arrays, "__getitem__")(0), "dtype")]))
+        data = backend.execute_op("MultiDot", [(_get_attr(a, "data") if type(a).__name__ == "Tensor" else a) for a in _get_attr(arrays, "__iter__")()])
+        return Tensor(data, TensorConfig(_get_attr(data, "shape"), _get_attr(_get_attr(arrays, "__getitem__")(0), "dtype"), _get_attr(_get_attr(arrays, "__getitem__")(0), "device")))
+    return as_tensor(as_callable(_emit_linalg_node)("MultiDot", arrays, {}, [()], [_get_attr(_get_attr(arrays, "__getitem__")(0), "dtype")]))
 
 
 def vecdot(x: TensorOrScalar, y: TensorOrScalar, axis: TensorOrScalar = -1, name: TensorOrScalar = None) -> TensorOrScalar:
@@ -262,12 +262,12 @@ def vecdot(x: TensorOrScalar, y: TensorOrScalar, axis: TensorOrScalar = -1, name
         backend = get_active_backend()
         data = backend.execute_op(
             "Vecdot",
-            (getattr(x, "data") if type(x).__name__ == "Tensor" else x),
-            (getattr(y, "data") if type(y).__name__ == "Tensor" else y),
+            (_get_attr(x, "data") if type(x).__name__ == "Tensor" else x),
+            (_get_attr(y, "data") if type(y).__name__ == "Tensor" else y),
             axis=axis,
         )
-        return Tensor(data, TensorConfig(getattr(data, "shape"), getattr(x, "dtype", None), getattr(x, "device", None)))
-    return _emit_linalg_node("Vecdot", [x, y], {"axis": axis}, [()], [getattr(x, "dtype", None)])
+        return Tensor(data, TensorConfig(_get_attr(data, "shape"), _get_attr(x, "dtype", None), _get_attr(x, "device", None)))
+    return _emit_linalg_node("Vecdot", [x, y], {"axis": axis}, [()], [_get_attr(x, "dtype", None)])
 
 
 def addmm(
@@ -322,7 +322,8 @@ class BlockMaskedMm(OpDef):
                 return matmul_shape(a, b)
             except (ValueError, TypeError, Exception):
                 return None
-        return getattr(a, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(a, "shape", ())
+        return _typed_ret_1
 
 
 def _unwrap(x: Tensor | None) -> TensorOrScalar | None:
@@ -333,7 +334,7 @@ def _unwrap(x: Tensor | None) -> TensorOrScalar | None:
 
     Returns: Tensor: The unwrapped data.
     """
-    return getattr(x, "data") if type(x).__name__ == "Tensor" else x
+    return _get_attr(x, "data") if type(x).__name__ == "Tensor" else x
 
 
 def block_masked_mm(
@@ -364,15 +365,15 @@ def block_masked_mm(
         data = backend.execute_op("BlockMaskedMm", _unwrap(a), _unwrap(b), **kwargs)
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), getattr(a, "dtype", None), getattr(a, "device", None)),
+            TensorConfig(_get_attr(backend.array(data), "shape"), _get_attr(a, "dtype", None), _get_attr(a, "device", None)),
         )
     out_shape = matmul_shape(a.shape, b.shape)
     inputs = [a, b]
     for k in ("mask_out", "mask_lhs", "mask_rhs"):
         if masks.get(k) is not None:
             kwargs[k] = len(inputs)
-            getattr(inputs, "append")(masks[k])
-    return _emit_shape_node("BlockMaskedMm", inputs, kwargs, out_shape, getattr(a, "dtype", None))
+            _get_attr(inputs, "append")(masks[k])
+    return _emit_shape_node("BlockMaskedMm", inputs, kwargs, out_shape, _get_attr(a, "dtype", None))
 
 
 @register_op("GatherMm")
@@ -402,7 +403,8 @@ class GatherMm(OpDef):
             tuple[int, ...]: Result.
         """
         if not (isinstance(a, tuple) and isinstance(b, tuple)):
-            return getattr(a, "shape", ())
+            _typed_ret_3: TensorOrScalar = _get_attr(a, "shape", ())
+            return _typed_ret_3
         try:
             mm_shape = matmul_shape(a, b)
         except (ValueError, TypeError, Exception):
@@ -426,12 +428,12 @@ def _gather_mm_infer_shape(a: Tensor, b: Tensor, lhs_indices: TensorOrScalar = N
     Returns:
         tuple: Result.
     """
-    out_shape = list(getattr(a, "shape", (1, 1, 1)))
+    out_shape = list(_get_attr(a, "shape", (1, 1, 1)))
     if lhs_indices is not None:
-        out_shape[0] = getattr(lhs_indices, "shape", (1,))[0]
+        out_shape[0] = _get_attr(lhs_indices, "shape", (1,))[0]
     elif rhs_indices is not None:
-        out_shape[0] = getattr(rhs_indices, "shape", (1,))[0]
-    return tuple(out_shape[:-2] + [getattr(a, "shape", (1, 1))[-2], getattr(b, "shape", (1, 1))[-1]])
+        out_shape[0] = _get_attr(rhs_indices, "shape", (1,))[0]
+    return tuple(out_shape[:-2] + [_get_attr(a, "shape", (1, 1))[-2], _get_attr(b, "shape", (1, 1))[-1]])
 
 
 def gather_mm(
@@ -462,15 +464,15 @@ def gather_mm(
         data = backend.execute_op("GatherMm", _unwrap(a), _unwrap(b), **kwargs)
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), getattr(a, "dtype", None), getattr(a, "device", None)),
+            TensorConfig(_get_attr(backend.array(data), "shape"), _get_attr(a, "dtype", None), _get_attr(a, "device", None)),
         )
     out_shape = _gather_mm_infer_shape(a, b, lhs_indices, rhs_indices)
     inputs = [a, b]
     for k, v in (("lhs_indices", lhs_indices), ("rhs_indices", rhs_indices)):
         if v is not None:
             kwargs[k] = len(inputs)
-            getattr(inputs, "append")(v)
-    return _emit_shape_node("GatherMm", inputs, kwargs, out_shape, getattr(a, "dtype", None))
+            _get_attr(inputs, "append")(v)
+    return _emit_shape_node("GatherMm", inputs, kwargs, out_shape, _get_attr(a, "dtype", None))
 
 
 @register_op("SegmentedMm")
@@ -495,7 +497,8 @@ class SegmentedMm(OpDef):
             if segments is not None and isinstance(segments, tuple):
                 return segments[0] - 1, a[-2], b[-1]
             return 1, a[-2], b[-1]
-        return getattr(a, "shape", ())
+        _typed_ret_2: TensorOrScalar = _get_attr(a, "shape", ())
+        return _typed_ret_2
 
 
 def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> TensorOrScalar:
@@ -519,11 +522,11 @@ def segmented_mm(a: Tensor, b: Tensor, segments: Tensor) -> TensorOrScalar:
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), getattr(a, "dtype", None), getattr(a, "device", None)),
+            TensorConfig(_get_attr(backend.array(data), "shape"), _get_attr(a, "dtype", None), _get_attr(a, "device", None)),
         )
     out_shape = (
-        getattr(segments, "shape", (2,))[0] - 1,
-        getattr(a, "shape", (1, 1))[-2],
-        getattr(b, "shape", (1, 1))[-1],
+        _get_attr(segments, "shape", (2,))[0] - 1,
+        _get_attr(a, "shape", (1, 1))[-2],
+        _get_attr(b, "shape", (1, 1))[-1],
     )
-    return _emit_shape_node("SegmentedMm", [a, b, segments], {"segments": 2}, out_shape, getattr(a, "dtype", None))
+    return _emit_shape_node("SegmentedMm", [a, b, segments], {"segments": 2}, out_shape, _get_attr(a, "dtype", None))

@@ -14,6 +14,7 @@ import yaml
 from ml_switcheroo_ir import AttributeValue, LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_str
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.grad.config_models import (
     AutodiffRuleModel,
     AutodiffRulesManifestModel,
@@ -183,14 +184,14 @@ class SymbolicExpressionCompiler:
                 op_type="Constant",
                 inputs=[],
                 attributes={"value": val_f},
-                shape_metadata=getattr(node, "shape_metadata", ()),
+                shape_metadata=_get_attr(node, "shape_metadata", ()),
             )
             graph.nodes[node_id] = cst_node
             return node_id
 
         if canonical_op in ("BroadcastAlign", "BroadcastReduce"):
             cot_id, tgt_id = parsed_inputs[0], parsed_inputs[1]
-            shape_meta = getattr(graph.nodes.get(tgt_id), "shape_metadata", None) if hasattr(graph, "nodes") and tgt_id in graph.nodes else None
+            shape_meta = _get_attr(graph.nodes.get(tgt_id), "shape_metadata", None) if _has_attr(graph, "nodes") and tgt_id in graph.nodes else None
             return emit_ir_node(
                 graph,
                 "BroadcastReduce",
@@ -201,7 +202,7 @@ class SymbolicExpressionCompiler:
 
         if canonical_op == "BroadcastLike":
             src_id, tgt_id = parsed_inputs[0], parsed_inputs[1]
-            shape_meta = getattr(graph.nodes.get(tgt_id), "shape_metadata", None) if hasattr(graph, "nodes") and tgt_id in graph.nodes else None
+            shape_meta = _get_attr(graph.nodes.get(tgt_id), "shape_metadata", None) if _has_attr(graph, "nodes") and tgt_id in graph.nodes else None
             return emit_ir_node(
                 graph,
                 "BroadcastLike",
@@ -211,11 +212,11 @@ class SymbolicExpressionCompiler:
             )
 
         attrs: dict[str, AttrPrimitive] = {}
-        if hasattr(node, "attributes") and node.attributes and canonical_op == getattr(node, "op_type", ""):
-            attrs.update(typing.cast("dict[str, str | int | float | None]", dict(node.attributes)))
+        if _has_attr(node, "attributes") and node.attributes and canonical_op == _get_attr(node, "op_type", ""):
+            attrs.update(_cast_val("dict[str, str | int | float | None]", dict(node.attributes)))
         attrs.update(parsed_attrs)
 
-        shape_meta = getattr(node, "shape_metadata", None)
+        shape_meta = _get_attr(node, "shape_metadata", None)
         return as_str(as_callable(emit_ir_node)(graph, canonical_op, parsed_inputs, shape_meta, attributes=attrs))
 
     def _resolve_symbolic_variable(
@@ -239,12 +240,13 @@ class SymbolicExpressionCompiler:
         if clean_expr == "$cotangent":
             return cotangent or ""
         if clean_expr == "$output":
-            return getattr(node, "id", "")
+            _typed_ret_1: str | None = _get_attr(node, "id", "")
+            return _typed_ret_1
 
         inp_match: re.Match[str] | None = re.match(r"^\$input\[(\d+)\]$", clean_expr)
         if inp_match:
             idx: int = int(inp_match.group(1))
-            return node.inputs[idx] if hasattr(node, "inputs") and idx < len(node.inputs) else ""
+            return node.inputs[idx] if _has_attr(node, "inputs") and idx < len(node.inputs) else ""
 
         tan_match: re.Match[str] | None = re.match(r"^\$tangent\[(\d+)\]$", clean_expr)
         if tan_match:
@@ -289,9 +291,9 @@ class SymbolicExpressionCompiler:
             zero_node = LogicalNode(
                 id=zero_id,
                 op_type="ZerosLike",
-                inputs=list(node.inputs[:1]) if getattr(node, "inputs", None) else [],
+                inputs=list(node.inputs[:1]) if _get_attr(node, "inputs", None) else [],
                 attributes={"value": 0.0},
-                shape_metadata=getattr(node, "shape_metadata", ()),
+                shape_metadata=_get_attr(node, "shape_metadata", ()),
             )
             graph.nodes[zero_id] = zero_node
             return zero_id
@@ -299,7 +301,7 @@ class SymbolicExpressionCompiler:
         if clean_expr.startswith("- ") or (clean_expr.startswith("-") and not clean_expr.startswith("-=")):
             inner_str: str = clean_expr[2:].strip() if clean_expr.startswith("- ") else clean_expr[1:].strip()
             inner_id: str = self.compile_expression(graph, inner_str, node, cotangent, tangents)
-            return emit_ir_node(graph, "Negative", [inner_id], getattr(node, "shape_metadata", None))
+            return emit_ir_node(graph, "Negative", [inner_id], _get_attr(node, "shape_metadata", None))
 
         call_match: re.Match[str] | None = re.match(r"^([A-Za-z0-9_]+)\((.*)\)$", clean_expr)
         if call_match:

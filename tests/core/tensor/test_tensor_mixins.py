@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor_mixins import TensorConversionMixin, TensorIndexingMixin, TensorPropertiesMixin
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_obj
 
@@ -30,10 +31,10 @@ class DummyTensor(TensorIndexingMixin, TensorConversionMixin, TensorPropertiesMi
             requires_grad: Test parameter `requires_grad`.
             data: Test parameter `data`.
         """
-        setattr(self, "_shape", shape)
-        setattr(self, "_dtype", dtype)
-        setattr(self, "_device", device)
-        setattr(self, "_requires_grad", requires_grad)
+        _set_attr(self, "_shape", shape)
+        _set_attr(self, "_dtype", dtype)
+        _set_attr(self, "_device", device)
+        _set_attr(self, "_requires_grad", requires_grad)
         self._data = data
         self.config = self
 
@@ -44,12 +45,12 @@ def test_tensor_properties() -> None:
 
     config.eager_mode = True
     t = DummyTensor((2, 3), DType.Float32, "cpu", True)
-    assert as_tensor(getattr(t, "ndim")) == 2
-    assert as_tensor(getattr(t, "size")) == 6
-    assert as_tensor(getattr(t, "shape")) == (2, 3)
-    assert as_tensor(getattr(t, "dtype")) == DType.Float32
-    assert as_tensor(getattr(t, "device")) == "cpu"
-    assert bool(as_tensor(getattr(t, "requires_grad"))) is True
+    assert as_tensor(_get_attr(t, "ndim")) == 2
+    assert as_tensor(_get_attr(t, "size")) == 6
+    assert as_tensor(_get_attr(t, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(t, "dtype")) == DType.Float32
+    assert as_tensor(_get_attr(t, "device")) == "cpu"
+    assert bool(as_tensor(_get_attr(t, "requires_grad"))) is True
 
     DummyTensor((2, "None"), DType.Float32, "cpu", True)
     pass
@@ -95,7 +96,7 @@ def test_tensor_conversion() -> None:
             """
             return 42.0
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBk())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBk())
 
     pass
     pass
@@ -104,7 +105,7 @@ def test_tensor_conversion() -> None:
     # Eager mode
     config.eager_mode = True
     t2 = DummyTensor((2, 3), DType.Float32, "cpu", True, data=[1, 2])
-    assert as_tensor(getattr(t2, "numpy"))().tolist() == [1, 2]
+    assert as_tensor(_get_attr(t2, "numpy"))().tolist() == [1, 2]
 
     # Exception path
     class BadData:
@@ -121,10 +122,10 @@ def test_tensor_conversion() -> None:
     t3 = as_callable(DummyTensor)((1,), DType.Float32, "cpu", True, data=as_callable(BadData)())
     pass
 
-    setattr(t3, "_data", as_callable(np.array)([42.0]))
-    setattr(t3, "eval", lambda: t3)
-    t3.__class__.__name__ = "Tensor"
-    assert as_tensor(getattr(t3, "item"))() == 42.0
+    _set_attr(t3, "_data", as_callable(np.array)([42.0]))
+    _set_attr(t3, "eval", lambda: t3)
+    type(t3).__name__ = "Tensor"
+    assert as_tensor(_get_attr(t3, "item"))() == 42.0
 
 
 def test_tensor_indexing() -> None:
@@ -150,18 +151,18 @@ def test_tensor_indexing() -> None:
 
     from ml_switcheroo_compiler.ops.registry import _FRONTEND_REGISTRY
 
-    getattr(_FRONTEND_REGISTRY, "__setitem__")("getitem", DummyFrontend())
+    _get_attr(_FRONTEND_REGISTRY, "__setitem__")("getitem", DummyFrontend())
 
     config.eager_mode = True
-    setattr(t, "__array__", lambda: np.zeros((2, 3)))
-    assert as_tensor(getattr(t, "__getitem__")(0)).shape == (3,)
+    _set_attr(t, "__array__", lambda: np.zeros((2, 3)))
+    assert as_tensor(_get_attr(t, "__getitem__")(0)).shape == (3,)
 
     import pytest
 
     with pytest.raises(IndexError):
-        as_tensor(getattr(t, "__getitem__")(10))
+        as_tensor(_get_attr(t, "__getitem__")(10))
 
-    at = as_tensor(getattr(t, "at"))
+    at = as_tensor(_get_attr(t, "at"))
     assert id(at.tensor) == id(t)
 
 
@@ -196,7 +197,7 @@ def test_tensor_conversion_tracing() -> None:
 
             return as_callable(np.zeros)(s)
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBk())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBk())
 
     assert t.shape == (2, 3)
 
@@ -220,7 +221,7 @@ def test_tensor_indexing_tracing() -> None:
             Args:
                 node: Test parameter `node`.
             """
-            getattr(getattr(self, "nodes"), "__setitem__")(getattr(node, "id"), node)
+            _get_attr(_get_attr(self, "nodes"), "__setitem__")(_get_attr(node, "id"), node)
 
         def __init__(self) -> None:
             """Test function __init__."""
@@ -232,16 +233,16 @@ def test_tensor_indexing_tracing() -> None:
     config.eager_mode = False
 
     t = DummyTensor((2, 3), DType.Float32, "cpu", True)
-    setattr(t, "__array__", lambda: np.zeros((2, 3)))
+    _set_attr(t, "__array__", lambda: np.zeros((2, 3)))
 
     class DummyData:
         """Test class DummyData."""
 
         id = "data_id"
 
-    setattr(t, "_data", DummyData())
+    _set_attr(t, "_data", DummyData())
 
-    assert getattr(t, "__getitem__")(0) is not None
+    assert _get_attr(t, "__getitem__")(0) is not None
 
 
 def test_tensor_conversion_mixin_missing(monkeypatch: EagerTensorProtocol) -> None:
@@ -293,7 +294,7 @@ def test_tensor_mixins_missing_index() -> None:
     t = Tensor(data=[1], config=config)
 
     with patch.object(t, "item", return_value=7):
-        res_index = t.__index__()
+        res_index = _get_attr(t, "__index__")()
         assert res_index == 7
 
 
@@ -322,7 +323,7 @@ def test_tensor_mixins_array_with_id() -> None:
         mock_backend.array.return_value = np.zeros((1,))
         mock_get_backend.return_value = mock_backend
 
-        arr = t.__array__()
+        arr = t.to_backend_array()
         assert arr is not None
 
 
@@ -402,11 +403,11 @@ def test_tensor_mixins_setitem() -> None:
     config.eager_mode = True
 
     t[0] = 5
-    assert as_tensor(getattr(t.data, "__getitem__")(0)) == 5
+    assert as_tensor(_get_attr(t.data, "__getitem__")(0)) == 5
 
     t_val = Tensor(data=np.array(7), config=TensorConfig(dtype="int32", shape=(), device=None))
     t[1] = t_val
-    assert as_tensor(getattr(t.data, "__getitem__")(1)) == 7
+    assert as_tensor(_get_attr(t.data, "__getitem__")(1)) == 7
 
     config.eager_mode = False
     with pytest.raises(TypeError, match="does not support item assignment in tracing mode"):
@@ -433,7 +434,7 @@ def test_tensor_mixins_add_node_error() -> None:
         pass
 
     with pytest.raises(RuntimeError, match="not currently tracing"):
-        as_tensor(getattr(t, "__getitem__")(FakeKey()))
+        as_tensor(_get_attr(t, "__getitem__")(FakeKey()))
 
     # Force IndexError with "too many indices for array"
     t_0d = Tensor(data=np.array(5), config=TensorConfig(dtype="int32", shape=(), device=None))
@@ -480,7 +481,7 @@ def test_tensor_mixins_array_exceptions() -> None:
         mock_backend.array.return_value = np.array([1, 2])
         mock_get_backend.return_value = mock_backend
 
-        arr = t.__array__()
+        arr = t.to_backend_array()
         assert arr is not None
 
 

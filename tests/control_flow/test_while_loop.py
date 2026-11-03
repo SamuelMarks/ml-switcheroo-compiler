@@ -10,6 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import while_loop
 from ml_switcheroo_compiler.tracing import ProxyTensor
@@ -112,7 +113,7 @@ def test_while_loop_tuple_init() -> None:
             EagerValue: The resulting output.
             """
             (v1, _v2) = as_tensor(state)
-            return Tensor(as_tensor(getattr(v1, "data")) < 2, TensorConfig((), DType.Bool, device))
+            return Tensor(as_tensor(_get_attr(v1, "data")) < 2, TensorConfig((), DType.Bool, device))
 
         def body_fn(state: EagerValue) -> EagerValue:
             """Body fn.
@@ -124,7 +125,7 @@ def test_while_loop_tuple_init() -> None:
             EagerValue: The resulting output.
             """
             (v1, v2) = as_tensor(state)
-            return (Tensor(as_tensor(getattr(v1, "data")) + 1, TensorConfig((), DType.Int32, device)), v2)
+            return (Tensor(as_tensor(_get_attr(v1, "data")) + 1, TensorConfig((), DType.Int32, device)), v2)
 
         (res1, _res2) = as_callable(while_loop)(cond_fn, body_fn, (t1, t2))
         assert res1.data == 2

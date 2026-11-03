@@ -9,6 +9,7 @@ import pytest
 from ml_switcheroo_ir import LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import CppGenerator
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_attrs, as_callable, as_node_dict, as_tensor
 
@@ -35,11 +36,11 @@ def test_llvm_cpp_helpers() -> None:
     assert gen._get_strides([5]) == [1]
 
     node = IRNode("Add", "add_1", inputs=[])
-    object.__setattr__(node, "shape_metadata", [2, 3])
+    _obj_set_attr(node, "shape_metadata", [2, 3])
     assert as_callable(gen._get_shape)(node) == [2, 3]
-    object.__setattr__(node, "shape_metadata", 5)
+    _obj_set_attr(node, "shape_metadata", 5)
     assert as_callable(gen._get_shape)(node) == [5]
-    object.__setattr__(node, "shape_metadata", None)
+    _obj_set_attr(node, "shape_metadata", None)
     assert as_callable(gen._get_shape)(node) == [1]
 
 
@@ -47,26 +48,26 @@ def test_llvm_cpp_generate() -> None:
     """Test function test_llvm_cpp_generate."""
     g = IRGraph()
     n_in = IRNode("Input", "in_1", inputs=[])
-    setattr(n_in, "op_type", "Input")
-    object.__setattr__(n_in, "shape_metadata", [2, 2])
-    setattr(n_in, "attributes", {"buffer_offset": 0, "buffer_size": 16})
+    _set_attr(n_in, "op_type", "Input")
+    _obj_set_attr(n_in, "shape_metadata", [2, 2])
+    _set_attr(n_in, "attributes", {"buffer_offset": 0, "buffer_size": 16})
 
     n_const = IRNode("Constant", "c_1", inputs=[])
-    setattr(n_const, "op_type", "Constant")
-    setattr(n_const, "attributes", {"value": 5.0})
+    _set_attr(n_const, "op_type", "Constant")
+    _set_attr(n_const, "attributes", {"value": 5.0})
 
     n_add = IRNode("Add", "add_1", inputs=["in_1", "c_1"])
-    setattr(n_add, "op_type", "Add")
-    setattr(n_add, "attributes", {"buffer_offset": 16, "buffer_size": 16})
+    _set_attr(n_add, "op_type", "Add")
+    _set_attr(n_add, "attributes", {"buffer_offset": 16, "buffer_size": 16})
 
     n_out = IRNode("Output", "out_1", inputs=["add_1"])
-    setattr(n_out, "inputs", ["add_1"])
-    setattr(n_out, "op_type", "Output")
+    _set_attr(n_out, "inputs", ["add_1"])
+    _set_attr(n_out, "op_type", "Output")
 
     g.nodes = NodeDict(as_node_dict({"in_1": n_in, "c_1": n_const, "add_1": n_add, "out_1": n_out}))
     g.inputs = ["in_1"]
     g.outputs = ["out_1"]
-    object.__setattr__(g, "sorted_nodes", [n_in, n_const, n_add, n_out])
+    _obj_set_attr(g, "sorted_nodes", [n_in, n_const, n_add, n_out])
 
     gen = CppGenerator(g)
 
@@ -83,7 +84,7 @@ def test_llvm_cpp_generate_missing_mapping() -> None:
     g = IRGraph()
     n_add = IRNode("MissingOp", "miss_1", inputs=[])
     g.nodes = NodeDict(as_node_dict({"miss_1": n_add}))
-    object.__setattr__(g, "sorted_nodes", [n_add])
+    _obj_set_attr(g, "sorted_nodes", [n_add])
 
     gen = CppGenerator(g)
     out = gen.generate()
@@ -94,29 +95,29 @@ def test_llvm_cpp_generate_visit_methods() -> None:
     """Test function test_llvm_cpp_generate_visit_methods."""
     g = IRGraph()
     n_cond = IRNode("Cond", "cond_1", inputs=["cond"])
-    setattr(n_cond, "inputs", ["cond"])
-    setattr(n_cond, "op_type", "Cond")
+    _set_attr(n_cond, "inputs", ["cond"])
+    _set_attr(n_cond, "op_type", "Cond")
     sg = IRGraph()
     sn = IRNode("Add", "a_1", inputs=[])
     sg.nodes = NodeDict(as_node_dict({"a_1": sn}))
-    object.__setattr__(n_cond, "attributes", {"then_branch": sg, "else_branch": sg})
+    _obj_set_attr(n_cond, "attributes", {"then_branch": sg, "else_branch": sg})
 
     n_loop = IRNode("WhileLoop", "loop_1", inputs=[])
-    setattr(n_loop, "op_type", "WhileLoop")
-    object.__setattr__(n_loop, "attributes", {"cond": sg, "body": sg})
+    _set_attr(n_loop, "op_type", "WhileLoop")
+    _obj_set_attr(n_loop, "attributes", {"cond": sg, "body": sg})
 
     n_conv = IRNode("Conv2D", "conv_1", inputs=["in_1", "in_2"])
-    setattr(n_conv, "inputs", ["in_1", "in_2"])
-    setattr(n_conv, "op_type", "Conv2D")
-    setattr(n_conv, "attributes", {"stride": [1, 1]})
+    _set_attr(n_conv, "inputs", ["in_1", "in_2"])
+    _set_attr(n_conv, "op_type", "Conv2D")
+    _set_attr(n_conv, "attributes", {"stride": [1, 1]})
 
     n_conv2 = IRNode("Conv2D", "conv_2", inputs=["in_1", "in_2"])
-    setattr(n_conv2, "inputs", ["in_1", "in_2"])
-    setattr(n_conv2, "op_type", "Conv2D")
-    setattr(n_conv2, "attributes", {"stride": 1})
+    _set_attr(n_conv2, "inputs", ["in_1", "in_2"])
+    _set_attr(n_conv2, "op_type", "Conv2D")
+    _set_attr(n_conv2, "attributes", {"stride": 1})
 
     g.nodes = NodeDict(as_node_dict({"cond_1": n_cond, "loop_1": n_loop, "conv_1": n_conv, "conv_2": n_conv2}))
-    object.__setattr__(g, "sorted_nodes", [n_cond, n_loop, n_conv, n_conv2])
+    _obj_set_attr(g, "sorted_nodes", [n_cond, n_loop, n_conv, n_conv2])
 
     gen = CppGenerator(g)
 
@@ -185,29 +186,29 @@ def test_llvm_cpp_generate_missing_branches() -> None:
 
     g = IRGraph()
     n_conv = IRNode("Conv2D", "conv_3", inputs=["in_1", "in_2"])
-    setattr(n_conv, "inputs", ["in_1", "in_2"])
-    setattr(n_conv, "op_type", "Conv2D")
+    _set_attr(n_conv, "inputs", ["in_1", "in_2"])
+    _set_attr(n_conv, "op_type", "Conv2D")
 
     n_in1 = IRNode("Input", "in_1", inputs=[])
-    object.__setattr__(n_in1, "shape_metadata", [2, 3])  # len < 4
+    _obj_set_attr(n_in1, "shape_metadata", [2, 3])  # len < 4
 
     n_in2 = IRNode("Input", "in_2", inputs=[])
-    object.__setattr__(n_in2, "shape_metadata", [3, 3])  # len < 4
+    _obj_set_attr(n_in2, "shape_metadata", [3, 3])  # len < 4
 
-    object.__setattr__(n_conv, "shape_metadata", [2, 2])  # len < 4
+    _obj_set_attr(n_conv, "shape_metadata", [2, 2])  # len < 4
 
     g.nodes = NodeDict(as_node_dict({"in_1": n_in1, "in_2": n_in2, "conv_3": n_conv}))
-    object.__setattr__(g, "sorted_nodes", [n_in1, n_in2, n_conv])
+    _obj_set_attr(g, "sorted_nodes", [n_in1, n_in2, n_conv])
     gen2 = CppGenerator(g)
     with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "body"}):
         out2 = gen2.generate()
         assert "body" in out2
 
     n_add = IRNode("Add", "add_1", inputs=["in_1"])
-    setattr(n_add, "inputs", ["in_1"])
-    setattr(n_add, "op_type", "Add")
+    _set_attr(n_add, "inputs", ["in_1"])
+    _set_attr(n_add, "op_type", "Add")
     g.nodes["add_1"] = n_add
-    as_tensor(getattr(g, "sorted_nodes")).append(n_add)
+    as_tensor(_get_attr(g, "sorted_nodes")).append(n_add)
     with patch.dict("ml_switcheroo_compiler.ops.registry._YAML_REGISTRY", {"Add": {"variants": {"llvm_cpp": {"template": "elem"}}}}):
         with patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "elem_body"}):
             out3 = gen2.generate()
@@ -218,7 +219,7 @@ def test_llvm_cpp_generate_missing_branches_2() -> None:
     # Trigger graph_to_use = IRGraph()
     """Test function test_llvm_cpp_generate_missing_branches_2."""
     gen = CppGenerator(IRGraph())
-    setattr(gen, "graph", None)
+    _set_attr(gen, "graph", None)
     gen.generate(None)
     assert gen is not None
 
@@ -504,7 +505,7 @@ def test_cpp_generator_conv2d_shape_4() -> None:
 def test_cpp_generate_no_graph() -> None:
     """Test function test_cpp_generate_no_graph."""
     gen = CppGenerator(IRGraph())
-    setattr(gen, "graph", None)
+    _set_attr(gen, "graph", None)
     res = gen.generate(None)
     assert 'extern "C" void compute_graph(' in res
 
@@ -517,7 +518,7 @@ def test_cpp_compile_load_failure(mock_run: EagerTensorProtocol) -> None:
         mock_run: Test parameter `mock_run`.
     """
     gen = CppGenerator(IRGraph())
-    setattr(mock_run, "return_value", MagicMock())
+    _set_attr(mock_run, "return_value", MagicMock())
 
     with patch("ctypes.CDLL", side_effect=Exception("mocked cdld error")):
         with pytest.raises(RuntimeError, match="Compilation or load failed: mocked cdld error"):
@@ -558,10 +559,10 @@ def test_cpp_generator_strict_and_genuine_math() -> None:
 
     g = IRGraph()
     n_sin = IRNode("Sin", "s_1", inputs=["in1"])
-    setattr(n_sin, "inputs", ["in1"])
-    setattr(n_sin, "op_type", "Sin")
+    _set_attr(n_sin, "inputs", ["in1"])
+    _set_attr(n_sin, "op_type", "Sin")
     g.nodes = NodeDict(as_node_dict({"s_1": n_sin}))
-    object.__setattr__(g, "sorted_nodes", [n_sin])
+    _obj_set_attr(g, "sorted_nodes", [n_sin])
 
     gen = CppGenerator(g)
     code = gen.generate()
@@ -569,10 +570,10 @@ def test_cpp_generator_strict_and_genuine_math() -> None:
 
     g_unk = IRGraph()
     n_unk = IRNode("UnsupportedMathOp", "u_1", inputs=["in1"])
-    setattr(n_unk, "inputs", ["in1"])
-    setattr(n_unk, "op_type", "UnsupportedMathOp")
+    _set_attr(n_unk, "inputs", ["in1"])
+    _set_attr(n_unk, "op_type", "UnsupportedMathOp")
     g_unk.nodes = NodeDict(as_node_dict({"u_1": n_unk}))
-    object.__setattr__(g_unk, "sorted_nodes", [n_unk])
+    _obj_set_attr(g_unk, "sorted_nodes", [n_unk])
 
     gen_strict = CppGenerator(g_unk, strict=True)
     with pytest.raises(UnimplementedMathError, match="does not support operation: UnsupportedMathOp"):
@@ -584,10 +585,10 @@ def test_cpp_generator_genuine_expr_override() -> None:
     g = IRGraph()
     gen = CppGenerator(g)
     node = IRNode("Relu", "relu_1", inputs=["in_1"])
-    setattr(node, "op_type", "Relu")
-    setattr(node, "inputs", ["in_1"])
-    object.__setattr__(node, "shape_metadata", [2, 2])
-    setattr(node, "attributes", {"buffer_offset": 0, "buffer_size": 16})
+    _set_attr(node, "op_type", "Relu")
+    _set_attr(node, "inputs", ["in_1"])
+    _obj_set_attr(node, "shape_metadata", [2, 2])
+    _set_attr(node, "attributes", {"buffer_offset": 0, "buffer_size": 16})
     g.nodes = NodeDict(as_node_dict({"relu_1": node}))
 
     mock_registry = {
@@ -618,7 +619,7 @@ def test_cpp_generator_missing_output_and_executable_arg_counts() -> None:
     # 1. Output in graph.nodes followed by output not in graph.nodes (branch 138->137)
     g = IRGraph()
     n = IRNode("in1", "Input", inputs=[])
-    object.__setattr__(n, "shape_metadata", [2, 2])
+    _obj_set_attr(n, "shape_metadata", [2, 2])
     g.nodes["in1"] = n
     g.outputs = ["in1", "missing_node"]
     gen = CppGenerator(g)
@@ -766,7 +767,7 @@ def _test_llvm_cpp_execution_verification_part_1(_state: dict[str, EagerTensorPr
     g_ln.nodes = NodeDict({"in0": in_ln, "out0": node_ln})
     g_ln.inputs = ["in0"]
     g_ln.outputs = ["out0"]
-    object.__setattr__(g_ln, "sorted_nodes", [in_ln, node_ln])
+    _obj_set_attr(g_ln, "sorted_nodes", [in_ln, node_ln])
 
     code_ln = CppGenerator(g_ln).generate(g_ln)
     fn_ln = runner.compile_and_load(code_ln)
@@ -775,11 +776,11 @@ def _test_llvm_cpp_execution_verification_part_1(_state: dict[str, EagerTensorPr
     as_callable(fn_ln)(as_callable(ctypes.c_void_p * 1)(x_ln.ctypes.data), as_callable(ctypes.c_void_p * 1)(y_ln.ctypes.data))
     mean = x_ln.mean(axis=-1, keepdims=True)
     var = x_ln.var(axis=-1, keepdims=True)
-    getattr(_state, "update")({"LLVMCPPRunner": LLVMCPPRunner, "code_ln": code_ln, "compiler": compiler, "ctypes": ctypes})
-    getattr(_state, "update")({"fn_ln": fn_ln, "g_ln": g_ln, "in_ln": in_ln, "mean": mean})
-    getattr(_state, "update")({"node_ln": node_ln, "np": np, "runner": runner, "shutil": shutil})
-    getattr(_state, "update")({"var": var, "x_ln": x_ln, "y_ln": y_ln})
-    _state.update(locals())
+    _get_attr(_state, "update")({"LLVMCPPRunner": LLVMCPPRunner, "code_ln": code_ln, "compiler": compiler, "ctypes": ctypes})
+    _get_attr(_state, "update")({"fn_ln": fn_ln, "g_ln": g_ln, "in_ln": in_ln, "mean": mean})
+    _get_attr(_state, "update")({"node_ln": node_ln, "np": np, "runner": runner, "shutil": shutil})
+    _get_attr(_state, "update")({"var": var, "x_ln": x_ln, "y_ln": y_ln})
+    _state.update(_caller_locals())
 
 
 def _test_llvm_cpp_execution_verification_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -799,7 +800,7 @@ def _test_llvm_cpp_execution_verification_part_2(_state: dict[str, EagerTensorPr
     g_rms.nodes = NodeDict({"in0": in_rms, "out0": node_rms})
     g_rms.inputs = ["in0"]
     g_rms.outputs = ["out0"]
-    object.__setattr__(g_rms, "sorted_nodes", [in_rms, node_rms])
+    _obj_set_attr(g_rms, "sorted_nodes", [in_rms, node_rms])
 
     code_rms = CppGenerator(g_rms).generate(g_rms)
     fn_rms = runner.compile_and_load(code_rms)
@@ -815,10 +816,10 @@ def _test_llvm_cpp_execution_verification_part_2(_state: dict[str, EagerTensorPr
     in_w3d = IRNode(id="in1", op_type="Input", shape_metadata=(1, 1, 2, 2, 2))
     node_c3d = IRNode(id="out0", op_type="Conv3D", inputs=["in0", "in1"], shape_metadata=(1, 1, 2, 2, 2))
     g_conv3d.nodes = NodeDict({"in0": in_x3d, "in1": in_w3d, "out0": node_c3d})
-    getattr(_state, "update")({"code_rms": code_rms, "fn_rms": fn_rms, "g_conv3d": g_conv3d, "g_rms": g_rms})
-    getattr(_state, "update")({"in_rms": in_rms, "in_w3d": in_w3d, "in_x3d": in_x3d, "node_c3d": node_c3d})
-    getattr(_state, "update")({"node_rms": node_rms, "ref_ln": ref_ln, "ref_rms": ref_rms, "y_rms": y_rms})
-    _state.update(locals())
+    _get_attr(_state, "update")({"code_rms": code_rms, "fn_rms": fn_rms, "g_conv3d": g_conv3d, "g_rms": g_rms})
+    _get_attr(_state, "update")({"in_rms": in_rms, "in_w3d": in_w3d, "in_x3d": in_x3d, "node_c3d": node_c3d})
+    _get_attr(_state, "update")({"node_rms": node_rms, "ref_ln": ref_ln, "ref_rms": ref_rms, "y_rms": y_rms})
+    _state.update(_caller_locals())
 
 
 def _test_llvm_cpp_execution_verification_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -829,9 +830,9 @@ def _test_llvm_cpp_execution_verification_part_3(_state: dict[str, EagerTensorPr
     """
     ctypes, g_conv3d, in_w3d, in_x3d = _state["ctypes"], _state["g_conv3d"], _state["in_w3d"], _state["in_x3d"]
     node_c3d, np, runner = _state["node_c3d"], _state["np"], _state["runner"]
-    setattr(g_conv3d, "inputs", ["in0", "in1"])
-    setattr(g_conv3d, "outputs", ["out0"])
-    object.__setattr__(g_conv3d, "sorted_nodes", [in_x3d, in_w3d, node_c3d])
+    _set_attr(g_conv3d, "inputs", ["in0", "in1"])
+    _set_attr(g_conv3d, "outputs", ["out0"])
+    _obj_set_attr(g_conv3d, "sorted_nodes", [in_x3d, in_w3d, node_c3d])
 
     code_c3d = as_callable(CppGenerator)(g_conv3d).generate(g_conv3d)
     fn_c3d = runner.compile_and_load(code_c3d)
@@ -850,15 +851,15 @@ def _test_llvm_cpp_execution_verification_part_3(_state: dict[str, EagerTensorPr
     g_sl.nodes = NodeDict({"in0": in_sl, "out0": node_sl})
     g_sl.inputs = ["in0"]
     g_sl.outputs = ["out0"]
-    object.__setattr__(g_sl, "sorted_nodes", [in_sl, node_sl])
+    _obj_set_attr(g_sl, "sorted_nodes", [in_sl, node_sl])
 
     code_sl = CppGenerator(g_sl).generate(g_sl)
     fn_sl = runner.compile_and_load(code_sl)
     x_sl = np.arange(16, dtype=np.float32).reshape(4, 4)
-    getattr(_state, "update")({"code_c3d": code_c3d, "code_sl": code_sl, "fn_c3d": fn_c3d, "fn_sl": fn_sl})
-    getattr(_state, "update")({"g_sl": g_sl, "in_3d_ptrs": in_3d_ptrs, "in_sl": in_sl, "node_sl": node_sl})
-    getattr(_state, "update")({"w_3d": w_3d, "x_3d": x_3d, "x_sl": x_sl, "y_3d": y_3d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"code_c3d": code_c3d, "code_sl": code_sl, "fn_c3d": fn_c3d, "fn_sl": fn_sl})
+    _get_attr(_state, "update")({"g_sl": g_sl, "in_3d_ptrs": in_3d_ptrs, "in_sl": in_sl, "node_sl": node_sl})
+    _get_attr(_state, "update")({"w_3d": w_3d, "x_3d": x_3d, "x_sl": x_sl, "y_3d": y_3d})
+    _state.update(_caller_locals())
 
 
 def _test_llvm_cpp_execution_verification_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -881,7 +882,7 @@ def _test_llvm_cpp_execution_verification_part_4(_state: dict[str, EagerTensorPr
     g_pad.nodes = NodeDict({"in0": in_pad, "out0": node_pad})
     g_pad.inputs = ["in0"]
     g_pad.outputs = ["out0"]
-    object.__setattr__(g_pad, "sorted_nodes", [in_pad, node_pad])
+    _obj_set_attr(g_pad, "sorted_nodes", [in_pad, node_pad])
 
     code_pad = CppGenerator(g_pad).generate(g_pad)
     fn_pad = runner.compile_and_load(code_pad)
@@ -892,9 +893,9 @@ def _test_llvm_cpp_execution_verification_part_4(_state: dict[str, EagerTensorPr
     ref_pad[1:3, 1:3] = x_pad
     assert np.allclose(y_pad, ref_pad, atol=1e-4)
     assert not np.all(y_pad == 0.0)
-    getattr(_state, "update")({"code_pad": code_pad, "fn_pad": fn_pad, "g_pad": g_pad, "in_pad": in_pad})
-    getattr(_state, "update")({"node_pad": node_pad, "ref_pad": ref_pad, "x_pad": x_pad, "y_pad": y_pad})
-    getattr(_state, "update")({"y_sl": y_sl})
+    _get_attr(_state, "update")({"code_pad": code_pad, "fn_pad": fn_pad, "g_pad": g_pad, "in_pad": in_pad})
+    _get_attr(_state, "update")({"node_pad": node_pad, "ref_pad": ref_pad, "x_pad": x_pad, "y_pad": y_pad})
+    _get_attr(_state, "update")({"y_sl": y_sl})
 
 
 def test_llvm_cpp_execution_verification() -> None:
@@ -942,10 +943,10 @@ def _test_cpp_generator_additional_coverage_part_1(_state: dict[str, EagerTensor
     gen_maxpool.visit_MaxPool3D(node_mp_2elem, graph_to_use=None)
 
     node_mp_5d = IRNode(id="mp_5d", op_type="MaxPool3D", inputs=["in0"], shape_metadata=(1, 1, 4, 4, 4), attributes={"kernel_size": [2, 2, 2]})
-    getattr(_state, "update")({"g_3d": g_3d, "gen": gen, "gen_maxpool": gen_maxpool, "gen_stride1": gen_stride1})
-    getattr(_state, "update")({"in_3d_0": in_3d_0, "in_3d_1": in_3d_1, "node_conv_3d": node_conv_3d, "node_conv_stride1": node_conv_stride1})
-    getattr(_state, "update")({"node_mp": node_mp, "node_mp_2elem": node_mp_2elem, "node_mp_5d": node_mp_5d, "node_mp_scalar": node_mp_scalar})
-    _state.update(locals())
+    _get_attr(_state, "update")({"g_3d": g_3d, "gen": gen, "gen_maxpool": gen_maxpool, "gen_stride1": gen_stride1})
+    _get_attr(_state, "update")({"in_3d_0": in_3d_0, "in_3d_1": in_3d_1, "node_conv_3d": node_conv_3d, "node_conv_stride1": node_conv_stride1})
+    _get_attr(_state, "update")({"node_mp": node_mp, "node_mp_2elem": node_mp_2elem, "node_mp_5d": node_mp_5d, "node_mp_scalar": node_mp_scalar})
+    _state.update(_caller_locals())
 
 
 def _test_cpp_generator_additional_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -987,10 +988,10 @@ def _test_cpp_generator_additional_coverage_part_2(_state: dict[str, EagerTensor
 
     gen_pad_list = CppGenerator(empty_g)
     node_pad_list = IRNode(id="pad_out", op_type="Pad", inputs=["in0"], shape_metadata=(4, 4), attributes={"paddings": [1]})
-    getattr(_state, "update")({"empty_g": empty_g, "gen_avgpool": gen_avgpool, "gen_bn": gen_bn, "gen_pad_int": gen_pad_int})
-    getattr(_state, "update")({"gen_pad_list": gen_pad_list, "node_ap": node_ap, "node_ap_2elem": node_ap_2elem, "node_ap_5d": node_ap_5d})
-    getattr(_state, "update")({"node_ap_scalar": node_ap_scalar, "node_bn": node_bn, "node_pad_int": node_pad_int, "node_pad_list": node_pad_list})
-    _state.update(locals())
+    _get_attr(_state, "update")({"empty_g": empty_g, "gen_avgpool": gen_avgpool, "gen_bn": gen_bn, "gen_pad_int": gen_pad_int})
+    _get_attr(_state, "update")({"gen_pad_list": gen_pad_list, "node_ap": node_ap, "node_ap_2elem": node_ap_2elem, "node_ap_5d": node_ap_5d})
+    _get_attr(_state, "update")({"node_ap_scalar": node_ap_scalar, "node_bn": node_bn, "node_pad_int": node_pad_int, "node_pad_list": node_pad_list})
+    _state.update(_caller_locals())
 
 
 def _test_cpp_generator_additional_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1024,9 +1025,9 @@ def _test_cpp_generator_additional_coverage_part_3(_state: dict[str, EagerTensor
         patch("ml_switcheroo_compiler.backends.llvm_cpp.cpp_provider.get_cpp_template", return_value={"body": "float val = {init_val};"}),
     ):
         as_callable(gen_init._visit_node)(node_init, empty_g)
-    getattr(_state, "update")({"g": g, "gen_gs": gen_gs, "gen_init": gen_init, "in_data": in_data})
-    getattr(_state, "update")({"in_idx": in_idx, "in_updates": in_updates, "node_gather": node_gather, "node_init": node_init})
-    getattr(_state, "update")({"node_scatter": node_scatter})
+    _get_attr(_state, "update")({"g": g, "gen_gs": gen_gs, "gen_init": gen_init, "in_data": in_data})
+    _get_attr(_state, "update")({"in_idx": in_idx, "in_updates": in_updates, "node_gather": node_gather, "node_init": node_init})
+    _get_attr(_state, "update")({"node_scatter": node_scatter})
 
 
 def test_cpp_generator_additional_coverage() -> None:
@@ -1080,10 +1081,10 @@ def _test_cpp_generator_new_visitors_and_providers_part_1(_state: dict[str, Eage
 
     op_synth_disallowed = get_cpp_operation("unmapped_op_no_synth", num_inputs=1, allow_synth=False)
     assert op_synth_disallowed is None
-    getattr(_state, "update")({"get_cpp_operation": get_cpp_operation, "get_cpp_template": get_cpp_template, "op_known": op_known, "op_synth_allowed": op_synth_allowed})
-    getattr(_state, "update")({"op_synth_disallowed": op_synth_disallowed, "s_binary": s_binary, "s_custom_expr": s_custom_expr, "s_mse": s_mse})
-    getattr(_state, "update")({"s_ternary": s_ternary, "s_unary": s_unary, "s_where": s_where, "synthesize_cpp_operation": synthesize_cpp_operation})
-    _state.update(locals())
+    _get_attr(_state, "update")({"get_cpp_operation": get_cpp_operation, "get_cpp_template": get_cpp_template, "op_known": op_known, "op_synth_allowed": op_synth_allowed})
+    _get_attr(_state, "update")({"op_synth_disallowed": op_synth_disallowed, "s_binary": s_binary, "s_custom_expr": s_custom_expr, "s_mse": s_mse})
+    _get_attr(_state, "update")({"s_ternary": s_ternary, "s_unary": s_unary, "s_where": s_where, "synthesize_cpp_operation": synthesize_cpp_operation})
+    _state.update(_caller_locals())
 
 
 def _test_cpp_generator_new_visitors_and_providers_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1124,10 +1125,10 @@ def _test_cpp_generator_new_visitors_and_providers_part_2(_state: dict[str, Eage
     node_gn_nogamma = IRNode(id="gn_no_gamma", op_type="groupnorm", inputs=["in0"], shape_metadata=(2, 4), attributes={"num_groups": 0})
     gen.visit_GroupNorm(node_gn_nogamma, None)
     gen._visit_node(node_gn_nogamma, None)
-    getattr(_state, "update")({"g": g, "gen": gen, "in_node": in_node, "node_ap_int": node_ap_int})
-    getattr(_state, "update")({"node_ap_list": node_ap_list, "node_gn_full": node_gn_full, "node_gn_nogamma": node_gn_nogamma, "node_mp_int": node_mp_int})
-    getattr(_state, "update")({"node_mp_list": node_mp_list})
-    _state.update(locals())
+    _get_attr(_state, "update")({"g": g, "gen": gen, "in_node": in_node, "node_ap_int": node_ap_int})
+    _get_attr(_state, "update")({"node_ap_list": node_ap_list, "node_gn_full": node_gn_full, "node_gn_nogamma": node_gn_nogamma, "node_mp_int": node_mp_int})
+    _get_attr(_state, "update")({"node_mp_list": node_mp_list})
+    _state.update(_caller_locals())
 
 
 def _test_cpp_generator_new_visitors_and_providers_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1165,9 +1166,9 @@ def _test_cpp_generator_new_visitors_and_providers_part_3(_state: dict[str, Eage
     gen._visit_node(node_mp_dyn, g)
 
     node_ap_dyn = IRNode(id="ap_dyn", op_type="avgpool2d_dynamic", inputs=["in0"], shape_metadata=(1, 3, 4, 4), attributes={"kernel_size": 2, "stride": 2, "dilation_h": 1, "dilation_w": 1, "pad_h": 0, "pad_w": 0})
-    getattr(_state, "update")({"node_ap_dyn": node_ap_dyn, "node_c2d_halo": node_c2d_halo, "node_lsm": node_lsm, "node_mp_dyn": node_mp_dyn})
-    getattr(_state, "update")({"node_sm": node_sm, "node_smtr": node_smtr, "node_tmm": node_tmm, "node_wsr": node_wsr})
-    _state.update(locals())
+    _get_attr(_state, "update")({"node_ap_dyn": node_ap_dyn, "node_c2d_halo": node_c2d_halo, "node_lsm": node_lsm, "node_mp_dyn": node_mp_dyn})
+    _get_attr(_state, "update")({"node_sm": node_sm, "node_smtr": node_smtr, "node_tmm": node_tmm, "node_wsr": node_wsr})
+    _state.update(_caller_locals())
 
 
 def _test_cpp_generator_new_visitors_and_providers_part_4(_state: dict[str, EagerTensorProtocol]) -> None:

@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.eager.core_group_ops as group_ops_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
 from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -285,7 +285,7 @@ class SignalBackendWrapper:
         Returns:
             EagerCallableProtocol: Resolved callable attribute.
         """
-        return as_callable(getattr(np, name))
+        return as_callable(_get_attr(np, name))
 
     def pad(
         self,
@@ -512,38 +512,38 @@ def test_core_group_ops_coverage() -> None:
     x_test = np.ones((2, 4, 8, 8))
 
     mean_res = as_callable(group_ops_mod._invoke_grouped_op)(failing_backend, "mean", x_test, (2, 3))
-    assert as_tensor(getattr(mean_res, "shape")) == (2, 4, 1, 1)
+    assert as_tensor(_get_attr(mean_res, "shape")) == (2, 4, 1, 1)
 
     var_res = as_callable(group_ops_mod._invoke_grouped_op)(failing_backend, "variance", x_test, (2, 3))
-    assert as_tensor(getattr(var_res, "shape")) == (2, 4, 1, 1)
+    assert as_tensor(_get_attr(var_res, "shape")) == (2, 4, 1, 1)
 
     # 4. _group_mean and _group_variance with positional groups vs kwarg groups
     x = np.ones((2, 4, 8, 8), dtype=np.float32)
 
     # kwarg groups and negative axis
     mean_kw = group_ops_mod._group_mean(np, x, groups=2, axis=-1)
-    assert as_tensor(getattr(mean_kw, "shape")) == (2, 1, 1, 2, 1)
+    assert as_tensor(_get_attr(mean_kw, "shape")) == (2, 1, 1, 2, 1)
 
     # positional groups and non-negative axis
     mean_pos = group_ops_mod._group_mean(np, x, 2, axis=1)
-    assert as_tensor(getattr(mean_pos, "shape")) == (2, 2, 1, 1, 1)
+    assert as_tensor(_get_attr(mean_pos, "shape")) == (2, 2, 1, 1, 1)
 
     # positional groups with string conversion fallback
     str_group = MockStringConvertibleGroup("2")
     mean_str = group_ops_mod._group_mean(np, x, as_tensor(str_group), axis=1)
-    assert as_tensor(getattr(mean_str, "shape")) == (2, 2, 1, 1, 1)
+    assert as_tensor(_get_attr(mean_str, "shape")) == (2, 2, 1, 1, 1)
 
     # variance kwarg groups and negative axis
     var_kw = group_ops_mod._group_variance(np, x, groups=2, axis=-1)
-    assert as_tensor(getattr(var_kw, "shape")) == (2, 1, 1, 2, 1)
+    assert as_tensor(_get_attr(var_kw, "shape")) == (2, 1, 1, 2, 1)
 
     # variance positional groups
     var_pos = group_ops_mod._group_variance(np, x, 2, axis=1)
-    assert as_tensor(getattr(var_pos, "shape")) == (2, 2, 1, 1, 1)
+    assert as_tensor(_get_attr(var_pos, "shape")) == (2, 2, 1, 1, 1)
 
     # variance with string group
     var_str = group_ops_mod._group_variance(np, x, as_tensor(str_group), axis=1)
-    assert as_tensor(getattr(var_str, "shape")) == (2, 2, 1, 1, 1)
+    assert as_tensor(_get_attr(var_str, "shape")) == (2, 2, 1, 1, 1)
 
     # 5. _apply_affine_transform with weight and bias combinations
     out = np.ones((2, 4, 8, 8), dtype=np.float32)
@@ -564,11 +564,11 @@ def test_core_group_ops_coverage() -> None:
 
     # 6. _group_norm with negative axis and with positive axis
     gn_neg = group_ops_mod._group_norm(np, x, groups=2, axis=-1, weight=np.ones(8), bias=np.zeros(8))
-    assert as_tensor(getattr(gn_neg, "shape")) == as_tensor(getattr(x, "shape"))
+    assert as_tensor(_get_attr(gn_neg, "shape")) == as_tensor(_get_attr(x, "shape"))
 
     gn_pos = group_ops_mod._group_norm(np, x, 2, axis=1)
-    assert as_tensor(getattr(gn_pos, "shape")) == as_tensor(getattr(x, "shape"))
+    assert as_tensor(_get_attr(gn_pos, "shape")) == as_tensor(_get_attr(x, "shape"))
 
     # group norm with string group positional
     gn_str = group_ops_mod._group_norm(np, x, as_tensor(str_group), axis=1)
-    assert as_tensor(getattr(gn_str, "shape")) == as_tensor(getattr(x, "shape"))
+    assert as_tensor(_get_attr(gn_str, "shape")) == as_tensor(_get_attr(x, "shape"))

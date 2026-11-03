@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import as_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef
 from ml_switcheroo_compiler.ops.registry import register_op
@@ -19,12 +19,12 @@ def eval(*args: TensorOrScalar) -> None:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    if hasattr(backend, "eval"):
+    if _has_attr(backend, "eval"):
         backend.eval(*args)
     else:
         # Fallback for backends that evaluate eagerly
         for arg in args:
-            getattr(arg, "data", arg)
+            _get_attr(arg, "data", arg)
 
 
 def synchronize() -> None:
@@ -32,7 +32,7 @@ def synchronize() -> None:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    if hasattr(backend, "synchronize"):
+    if _has_attr(backend, "synchronize"):
         backend.synchronize()
 
 
@@ -45,7 +45,7 @@ def get_peak_memory() -> int:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    if hasattr(backend, "get_peak_memory"):
+    if _has_attr(backend, "get_peak_memory"):
         return as_int(backend.get_peak_memory())
     return 0
 
@@ -71,7 +71,8 @@ class DeviceContextOp(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_1
 
 
 @register_op("DeviceTransfer")
@@ -88,7 +89,8 @@ class DeviceTransferOp(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_2: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_2
 
 
 def device_transfer(input: Tensor, target_device: str, stream: TensorOrScalar = None) -> TensorOrScalar:

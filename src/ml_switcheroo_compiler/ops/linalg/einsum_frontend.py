@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 from .utils import _emit_linalg_node
@@ -117,7 +117,7 @@ def tensordot(a: Tensor, b: Tensor, axes: (int | tuple[Sequence[int], Sequence[i
 
         backend = get_active_backend()
         data = backend.execute_op("Tensordot", a.data, b.data, axes=axes)
-        return Tensor(data, TensorConfig(getattr(data, "shape"), a.dtype, a.device))
+        return Tensor(data, TensorConfig(_get_attr(data, "shape"), a.dtype, a.device))
     return _emit_linalg_node("Tensordot", [a, b], {"axes": axes}, [()], [a.dtype])
 
 
@@ -137,15 +137,15 @@ def einsum(equation: str, *operands: Tensor) -> TensorOrScalar:
         backend = get_active_backend()
 
         # Extract raw data from operands if they are Tensors
-        raw_operands = [getattr(op, "data", op) for op in operands]
+        raw_operands = [_get_attr(op, "data", op) for op in operands]
         data = backend.execute_op("Einsum", equation, *raw_operands)
 
         # Infer dtype and device safely
         first_op = operands[0]
-        dtype = getattr(first_op, "dtype", getattr(raw_operands[0], "dtype", "float32"))
-        device = getattr(first_op, "device", "cpu")
+        dtype = _get_attr(first_op, "dtype", _get_attr(raw_operands[0], "dtype", "float32"))
+        device = _get_attr(first_op, "device", "cpu")
 
-        return Tensor(data, TensorConfig(getattr(data, "shape"), dtype, device))
+        return Tensor(data, TensorConfig(_get_attr(data, "shape"), dtype, device))
     return _emit_linalg_node("Einsum", operands, {"equation": equation}, [()], [operands[0].dtype])
 
 

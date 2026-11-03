@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -63,7 +64,7 @@ def test_h5_branches() -> None:
 
         pass
 
-    setattr(reg, "get_active_backend", lambda: FakeBackend())
+    _set_attr(reg, "get_active_backend", lambda: FakeBackend())
     as_callable(ser.save)(weights, test_file)
     loaded = ser.load(test_file)
     assert as_callable(np.array_equal)(loaded["t1"], [1, 2])
@@ -103,7 +104,7 @@ def test_h5_backend_branches() -> None:
     import ml_switcheroo_compiler.backends.registry as reg
 
     old = reg.get_active_backend
-    setattr(reg, "get_active_backend", lambda: FakeBackend())
+    _set_attr(reg, "get_active_backend", lambda: FakeBackend())
     assert as_tensor(ser.load("dummy.h5")) == as_tensor({"a": 1})
     as_callable(ser.save)({"a": 1}, "dummy.h5")
     reg.get_active_backend = old

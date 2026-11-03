@@ -11,7 +11,7 @@ import pytest
 import ml_switcheroo_compiler.backends.edge.profiler as edge_prof_mod
 import ml_switcheroo_compiler.benchmarks.config_models as cfg_models_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable
 
@@ -229,7 +229,7 @@ def test_edge_profiler_coverage() -> None:
     inputs = {"x": np.ones((1, 10), dtype=np.float32)}
     res = as_callable(profiler.profile_graph)(graph, inputs, num_iters=2, warmup_iters=1)
     assert "latency_ms" in res
-    assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
+    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
 
     # Evaluation exception fallback branch
     failing_graph = IRGraph(name="failing")

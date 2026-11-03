@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if typing.TYPE_CHECKING:
@@ -38,8 +39,8 @@ class BaseLinearOperator(OpDef):
         """
         # Default shape inference attempts to find a shape or operand
         operand = args[0] if len(args) > 0 else kwargs.get("operand", kwargs.get("operator"))
-        if hasattr(operand, "shape"):
-            shape_val = getattr(operand, "shape", ())
+        if _has_attr(operand, "shape"):
+            shape_val = _get_attr(operand, "shape", ())
             if isinstance(shape_val, tuple):
                 return shape_val
             return tuple(shape_val)

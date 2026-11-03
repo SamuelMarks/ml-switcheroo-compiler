@@ -11,6 +11,7 @@ from ml_switcheroo_ir import LogicalNode
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import hvp, jvp, vjp
 from ml_switcheroo_compiler.grad.symbolic_compiler import SymbolicExpressionCompiler
@@ -185,7 +186,7 @@ def test_numerical_gradient_unary_functions() -> None:
             cot = _create_tensor([1.0] * len(vals), (len(vals),))
             (sym_grad,) = as_callable(vjp_fn)(cot)
 
-        sym_arr = np.array(as_tensor(getattr(sym_grad, "data")), dtype=np.float32)
+        sym_arr = np.array(as_tensor(_get_attr(sym_grad, "data")), dtype=np.float32)
         diff = as_callable(np.max)(as_callable(np.abs)(as_tensor(sym_arr) - as_tensor(num_grad)))
         assert diff < 5e-3, f"Gradient mismatch for {func}: max diff {diff}"
 
@@ -231,7 +232,7 @@ def test_numerical_gradient_binary_functions() -> None:
             cot = _create_tensor([1.0, 1.0, 1.0], (3,))
             (sym_grad,) = as_callable(vjp_fn)(cot)
 
-        sym_arr = np.array(as_tensor(getattr(sym_grad, "data")), dtype=np.float32)
+        sym_arr = np.array(as_tensor(_get_attr(sym_grad, "data")), dtype=np.float32)
         diff = as_callable(np.max)(as_callable(np.abs)(as_tensor(sym_arr) - as_tensor(num_grad)))
         assert diff < 1e-3
 
@@ -260,7 +261,7 @@ def test_numerical_jvp_verification() -> None:
 
         _, sym_jvp = as_callable(jvp)(func, (x,), (v,))
 
-    sym_arr = np.array(as_tensor(getattr(sym_jvp, "data")), dtype=np.float32)
+    sym_arr = np.array(as_tensor(_get_attr(sym_jvp, "data")), dtype=np.float32)
     assert np.allclose(sym_arr, num_jvp, atol=1e-3, rtol=1e-3)
 
 
@@ -283,5 +284,5 @@ def test_numerical_hvp_verification() -> None:
     with ConfigContext(eager_mode=True):
         val, sym_hvp = as_callable(hvp)(func, x, v)
 
-    sym_arr = np.array(as_tensor(getattr(sym_hvp, "data")), dtype=np.float32)
+    sym_arr = np.array(as_tensor(_get_attr(sym_hvp, "data")), dtype=np.float32)
     assert np.allclose(sym_arr, num_hvp, atol=5e-2, rtol=5e-2)

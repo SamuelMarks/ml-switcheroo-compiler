@@ -15,6 +15,7 @@ import ml_switcheroo_compiler.ops.text as text_mod
 from ml_switcheroo_compiler.backends.awkward.generator import AwkwardGenerator
 from ml_switcheroo_compiler.backends.numpy import distributed as bnp_dist_mod
 from ml_switcheroo_compiler.backends.pyarrow_compute.generator import PyArrowComputeGenerator
+from ml_switcheroo_compiler.core.shape import _has_attr
 
 
 class _DummyGenerator:
@@ -188,15 +189,15 @@ def test_package_inits() -> None:
         None
     """
     assert awk_mod.AwkwardGenerator is AwkwardGenerator
-    assert hasattr(awk_mod.AwkwardGenerator, "zeros")
-    assert hasattr(awk_mod.AwkwardGenerator, "array")
-    assert hasattr(awk_mod.AwkwardGenerator, "get_layout")
+    assert _has_attr(awk_mod.AwkwardGenerator, "zeros")
+    assert _has_attr(awk_mod.AwkwardGenerator, "array")
+    assert _has_attr(awk_mod.AwkwardGenerator, "get_layout")
     assert "AwkwardGenerator" in awk_mod.__all__
 
     assert pa_mod.PyArrowComputeGenerator is PyArrowComputeGenerator
-    assert hasattr(pa_mod.PyArrowComputeGenerator, "zeros")
-    assert hasattr(pa_mod.PyArrowComputeGenerator, "to_table")
-    assert hasattr(pa_mod.PyArrowComputeGenerator, "from_arrow")
+    assert _has_attr(pa_mod.PyArrowComputeGenerator, "zeros")
+    assert _has_attr(pa_mod.PyArrowComputeGenerator, "to_table")
+    assert _has_attr(pa_mod.PyArrowComputeGenerator, "from_arrow")
     assert "PyArrowComputeGenerator" in pa_mod.__all__
 
     assert cmo_mod._accumulate_n is not None

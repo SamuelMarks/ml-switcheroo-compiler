@@ -7,6 +7,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -17,8 +18,8 @@ def test_distributed_init() -> None:
     """Test function test_distributed_init."""
     import ml_switcheroo_compiler.distributed as dist
 
-    DeviceMesh = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.distributed"), "DeviceMesh"))
-    LayoutMap = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.distributed"), "LayoutMap"))
+    DeviceMesh = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.distributed"), "DeviceMesh"))
+    LayoutMap = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.distributed"), "LayoutMap"))
 
     mesh = DeviceMesh((1,), ("x",))
     d = dist.Distribution(device_mesh=mesh)
@@ -35,10 +36,10 @@ def test_distributed_init() -> None:
     assert mp.layout_map == lm
 
     tl = dist.TensorLayout(axes=("batch", "features"))
-    assert as_tensor(getattr(tl, "axes")) == ("batch", "features")
+    assert as_tensor(_get_attr(tl, "axes")) == ("batch", "features")
 
     tl2 = dist.TensorLayout(axes=("batch",))
-    assert as_tensor(getattr(tl2, "axes")) == ("batch",)
+    assert as_tensor(_get_attr(tl2, "axes")) == ("batch",)
 
     import unittest.mock
 

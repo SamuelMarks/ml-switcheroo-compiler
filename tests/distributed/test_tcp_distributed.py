@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import _np_all_gather, _np_all_reduce, _np_all_to_all, _np_reduce_scatter, set_np_distributed_context
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -32,10 +33,10 @@ def _worker_process(rank: EagerValue, world_size: EagerValue, port_queue: EagerV
             s.bind(("", 0))
             port = s.getsockname()[1]
             s.close()
-            as_tensor(getattr(port_queue, "put"))(port)
+            as_tensor(_get_attr(port_queue, "put"))(port)
         else:
-            port = as_callable(as_tensor(getattr(port_queue, "get")))()
-            as_tensor(getattr(port_queue, "put"))(port)
+            port = as_callable(as_tensor(_get_attr(port_queue, "get")))()
+            as_tensor(_get_attr(port_queue, "put"))(port)
         as_callable(set_np_distributed_context)(world_size, rank, "127.0.0.1", port)
         import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
 
@@ -47,9 +48,9 @@ def _worker_process(rank: EagerValue, world_size: EagerValue, port_queue: EagerV
         scattered = _np_reduce_scatter(np, tensor_rs, op_type="sum", axis=0)
         a2a = _np_all_to_all(np, tensor)
         dmod._tcp_dist_ctx.shutdown()
-        as_callable(as_tensor(getattr(queue, "put")))({"rank": rank, "gathered": gathered, "reduced_sum": reduced_sum, "reduced_max": reduced_max, "scattered": scattered, "a2a_len": as_callable(len)(a2a)})
+        as_callable(as_tensor(_get_attr(queue, "put")))({"rank": rank, "gathered": gathered, "reduced_sum": reduced_sum, "reduced_max": reduced_max, "scattered": scattered, "a2a_len": as_callable(len)(a2a)})
     except Exception as e:
-        as_tensor(getattr(queue, "put"))({"rank": rank, "error": str(e)})
+        as_tensor(_get_attr(queue, "put"))({"rank": rank, "error": str(e)})
 
 
 def test_tcp_distributed_collectives() -> None:
@@ -93,9 +94,9 @@ def test_tcp_distributed_single_node() -> None:
     """Test function test_tcp_distributed_single_node."""
     set_np_distributed_context(1, 0, "127.0.0.1", 29506)
     tensor = np.array([5.0])
-    assert as_tensor(getattr(_np_all_reduce(np, tensor), "item"))() == 5.0
-    assert as_tensor(getattr(_np_all_gather(np, tensor), "item"))() == 5.0
-    assert as_tensor(getattr(_np_reduce_scatter(np, tensor), "item"))() == 5.0
+    assert as_tensor(_get_attr(_np_all_reduce(np, tensor), "item"))() == 5.0
+    assert as_tensor(_get_attr(_np_all_gather(np, tensor), "item"))() == 5.0
+    assert as_tensor(_get_attr(_np_reduce_scatter(np, tensor), "item"))() == 5.0
 
 
 def test_tcp_distributed_missing_funcs() -> None:
@@ -120,24 +121,24 @@ def test_tcp_distributed_missing_funcs() -> None:
         """
         return [t, np.array([3.0])]
 
-    setattr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
-    setattr(_tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: as_callable(np.array)([6.0]) if op == "prod" else as_callable(np.array)([5.0]) if op == "unknown" else t)
+    _set_attr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
+    _set_attr(_tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: as_callable(np.array)([6.0]) if op == "prod" else as_callable(np.array)([5.0]) if op == "unknown" else t)
     _tcp_dist_ctx.world_size = 2
     _tcp_dist_ctx.world_size = 2
-    assert as_tensor(getattr(_np_all_reduce(np, tensor, op_type="prod"), "item"))() == 6.0
-    assert as_tensor(getattr(_np_all_reduce(np, tensor, op_type="min"), "item"))() == 2.0
-    assert as_tensor(getattr(_np_all_reduce(np, tensor, op_type="unknown"), "item"))() == 5.0
-    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="prod", axis=0), "item"))() == 6.0
-    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="max", axis=0), "item"))() == 3.0
-    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="min", axis=0), "item"))() == 2.0
-    assert as_tensor(getattr(_np_reduce_scatter(np, tensor, op_type="unknown", axis=0), "item"))() == 5.0
-    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="prod"), "item"))() == 6.0
-    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="max"), "item"))() == 3.0
-    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="min"), "item"))() == 2.0
-    assert as_tensor(getattr(_np_reduce(np, tensor, root_rank=0, op_type="unknown"), "item"))() == 5.0
+    assert as_tensor(_get_attr(_np_all_reduce(np, tensor, op_type="prod"), "item"))() == 6.0
+    assert as_tensor(_get_attr(_np_all_reduce(np, tensor, op_type="min"), "item"))() == 2.0
+    assert as_tensor(_get_attr(_np_all_reduce(np, tensor, op_type="unknown"), "item"))() == 5.0
+    assert as_tensor(_get_attr(_np_reduce_scatter(np, tensor, op_type="prod", axis=0), "item"))() == 6.0
+    assert as_tensor(_get_attr(_np_reduce_scatter(np, tensor, op_type="max", axis=0), "item"))() == 3.0
+    assert as_tensor(_get_attr(_np_reduce_scatter(np, tensor, op_type="min", axis=0), "item"))() == 2.0
+    assert as_tensor(_get_attr(_np_reduce_scatter(np, tensor, op_type="unknown", axis=0), "item"))() == 5.0
+    assert as_tensor(_get_attr(_np_reduce(np, tensor, root_rank=0, op_type="prod"), "item"))() == 6.0
+    assert as_tensor(_get_attr(_np_reduce(np, tensor, root_rank=0, op_type="max"), "item"))() == 3.0
+    assert as_tensor(_get_attr(_np_reduce(np, tensor, root_rank=0, op_type="min"), "item"))() == 2.0
+    assert as_tensor(_get_attr(_np_reduce(np, tensor, root_rank=0, op_type="unknown"), "item"))() == 5.0
     _tcp_dist_ctx.rank = 1
     assert _np_reduce(np, tensor, root_rank=0, op_type="prod") is None
-    assert as_tensor(getattr(_np_broadcast(np, tensor, root_rank=0), "item"))() == 2.0
+    assert as_tensor(_get_attr(_np_broadcast(np, tensor, root_rank=0), "item"))() == 2.0
 
 
 def test_tcp_distributed_context_none_connections() -> None:
@@ -154,8 +155,8 @@ def test_tcp_distributed_context_none_connections() -> None:
             with patch("ml_switcheroo_compiler.backends.numpy.eager.distributed.Client", side_effect=ConnectionRefusedError):
                 ctx = TCPDistributedContext(world_size=2, rank=0)
                 ctx.listener = None
-                setattr(ctx, "send_conn", None)
-                setattr(ctx, "recv_conn", None)
+                _set_attr(ctx, "send_conn", None)
+                _set_attr(ctx, "recv_conn", None)
                 tensor = np.array([1, 2])
                 with pytest.raises(TypeError):
                     ctx.all_reduce_ring(tensor)
@@ -185,8 +186,8 @@ def test_tcp_distributed_context_none_connections_all_reduce() -> None:
 
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.listener = None
-    setattr(ctx, "send_conns", [as_callable(DummyConn)()])
-    setattr(ctx, "recv_conns", [as_callable(DummyConn)()])
+    _set_attr(ctx, "send_conns", [as_callable(DummyConn)()])
+    _set_attr(ctx, "recv_conns", [as_callable(DummyConn)()])
     tensor = np.array([1, 2])
     ctx.all_reduce_ring(tensor)
     assert tensor is not None

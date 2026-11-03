@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.tensor_array import TensorArray
 from tests.testing_utils import as_tensor
@@ -46,7 +47,7 @@ def test_tensor_array() -> None:
             return np.array(self.val)
 
     t_idx = Tensor(data="test", config=TensorConfig((1,), "int32", "cpu"))
-    setattr(t_idx, "_data", DummyData(0))
+    _set_attr(t_idx, "_data", DummyData(0))
 
     t_val = Tensor(data="val", config=TensorConfig((2, 2), "float32", "cpu"))
     t_val._data = np.ones((2, 2), dtype="float32")
@@ -78,5 +79,5 @@ def test_tensor_array() -> None:
     ta.write(t_idx_proxy, t_val_proxy)
     s = ta.stack()
 
-    assert len(as_tensor(getattr(state.global_tracing_state.active_graph, "nodes"))) >= 3
+    assert len(as_tensor(_get_attr(state.global_tracing_state.active_graph, "nodes"))) >= 3
     state.global_tracing_state.is_tracing = False

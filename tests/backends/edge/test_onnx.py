@@ -9,6 +9,7 @@ from ml_switcheroo_ir import LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.onnx import ONNXCodeGenerator
+from ml_switcheroo_compiler.core.shape import _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_attrs, as_callable, as_node_dict, as_tensor
 
@@ -28,7 +29,7 @@ def test_onnx_generate_mocked() -> None:
     graph = IRGraph()
     node = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
     graph.nodes["add_1"] = node
-    object.__setattr__(graph, "sorted_nodes", [node])
+    _obj_set_attr(graph, "sorted_nodes", [node])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
@@ -70,21 +71,21 @@ def test_onnx_build_methods() -> None:
     node1 = IRNode("in1", "Input", inputs=[], shape_metadata=[2, 2])
     node2 = IRNode("in2", "Input", inputs=[], shape_metadata=[2, 2])
     node3 = IRNode("add_1", "Add", inputs=["in1", "in2"], shape_metadata=[2, 2])
-    setattr(node3, "attributes", {"axis": 1})
+    _set_attr(node3, "attributes", {"axis": 1})
 
     # Let's add nodes for constant and control flow
     node4 = IRNode("c_1", "Constant", inputs=[], shape_metadata=[1])
-    setattr(node4, "attributes", {"value": 1.0})
+    _set_attr(node4, "attributes", {"value": 1.0})
 
     node5 = IRNode("if_1", "If", inputs=[], shape_metadata=[1])
     subgraph = IRGraph()
-    object.__setattr__(node5, "attributes", {"then_branch": subgraph, "else_branch": subgraph})
+    _obj_set_attr(node5, "attributes", {"then_branch": subgraph, "else_branch": subgraph})
 
     node6 = IRNode("loop_1", "Loop", inputs=[], shape_metadata=[1])
-    object.__setattr__(node6, "attributes", {"body": subgraph})
+    _obj_set_attr(node6, "attributes", {"body": subgraph})
 
     graph.nodes = NodeDict(as_node_dict({"in1": node1, "in2": node2, "add_1": node3, "c_1": node4, "if_1": node5, "loop_1": node6}))
-    object.__setattr__(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
+    _obj_set_attr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = ONNXCodeGenerator(graph, [])
@@ -198,7 +199,7 @@ def test_onnx_build_methods() -> None:
             v1 = as_callable(generator._build_single_value_info)(node1, None, MockTensorProto, False)
             assert v1 is not None
 
-            setattr(node1, "id", "in1")
+            _set_attr(node1, "id", "in1")
             dyn_axes = {"in1": {0: "batch"}}
             as_callable(generator._build_single_value_info)(node1, dyn_axes, MockTensorProto, False)
 
@@ -374,10 +375,10 @@ def test_onnx_generate_text_fallback() -> None:
     """Test function test_onnx_generate_text_fallback."""
     graph = IRGraph()
     node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
-    setattr(node, "dtype", "float32")
+    _set_attr(node, "dtype", "float32")
     node2 = IRNode("Add", "add_1", inputs=["in_1", "in_1"])
     graph.nodes = NodeDict(as_node_dict({"in_1": node, "add_1": node2}))
-    object.__setattr__(graph, "sorted_nodes", [node, node2])
+    _obj_set_attr(graph, "sorted_nodes", [node, node2])
     graph.outputs = ["add_1"]
 
     generator = ONNXCodeGenerator(graph, [])
@@ -391,15 +392,15 @@ def test_onnx_node_attributes() -> None:
     graph = IRGraph()
     # Test all branches of attributes conversion in _build_onnx_nodes
     node_const = IRNode("Constant", "c_1", inputs=[], shape_metadata=[1])
-    setattr(node_const, "attributes", {"value": 5.0})
+    _set_attr(node_const, "attributes", {"value": 5.0})
 
     node_if = IRNode("If", "if_1", inputs=[])
-    object.__setattr__(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
+    _obj_set_attr(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
 
     node_loop = IRNode("Loop", "loop_1", inputs=[])
-    object.__setattr__(node_loop, "attributes", {"body": IRGraph()})
+    _obj_set_attr(node_loop, "attributes", {"body": IRGraph()})
 
-    object.__setattr__(graph, "sorted_nodes", [node_const, node_if, node_loop])
+    _obj_set_attr(graph, "sorted_nodes", [node_const, node_if, node_loop])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -475,7 +476,7 @@ def test_onnx_value_infos() -> None:
     """Test function test_onnx_value_infos."""
     graph = IRGraph()
     node_a = IRNode("A", "a_1", inputs=[])
-    setattr(node_a, "dtype", "bool")
+    _set_attr(node_a, "dtype", "bool")
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -518,28 +519,28 @@ def test_onnx_node_attributes_2() -> None:
     graph = IRGraph()
     # Test op specific logic
     node1 = IRNode("BatchNorm", "bn_1", inputs=[])
-    setattr(node1, "attributes", {"epsilon": 1e-5, "momentum": 0.9})
+    _set_attr(node1, "attributes", {"epsilon": 1e-5, "momentum": 0.9})
 
     node2 = IRNode("RandomUniform", "ru_1", inputs=[])
-    object.__setattr__(node2, "shape_metadata", [2, 2])
-    setattr(node2, "dtype", "float32")
+    _obj_set_attr(node2, "shape_metadata", [2, 2])
+    _set_attr(node2, "dtype", "float32")
 
     node3 = IRNode("Split", "split_1", inputs=[])
-    setattr(node3, "attributes", {"axis": 1, "split": [1, 1]})
+    _set_attr(node3, "attributes", {"axis": 1, "split": [1, 1]})
 
     node4 = IRNode("Cast", "cast_1", inputs=[])
-    setattr(node4, "attributes", {"to": "int32"})
+    _set_attr(node4, "attributes", {"to": "int32"})
 
     node5 = IRNode("MaxPool2D", "max_1", inputs=[])
-    setattr(node5, "attributes", {"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
+    _set_attr(node5, "attributes", {"padding": "SAME", "window_size": (2, 2), "stride": (2, 2)})
 
     node6 = IRNode("Reshape", "res_1", inputs=[])
-    object.__setattr__(node6, "shape_metadata", [4])
+    _obj_set_attr(node6, "shape_metadata", [4])
 
     node7 = IRNode("BroadcastTo", "br_1", inputs=[])
-    object.__setattr__(node7, "shape_metadata", [2, 2])
+    _obj_set_attr(node7, "shape_metadata", [2, 2])
 
-    object.__setattr__(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6, node7])
+    _obj_set_attr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6, node7])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -592,24 +593,24 @@ def test_onnx_node_attributes_3() -> None:
     graph = IRGraph()
     # Test more ops
     node1 = IRNode("Dropout", "dr_1", inputs=[])
-    setattr(node1, "attributes", {"rate": 0.5})
+    _set_attr(node1, "attributes", {"rate": 0.5})
 
     node2 = IRNode("LayerNorm", "ln_1", inputs=[])
-    setattr(node2, "attributes", {"epsilon": 1e-5, "axis": -1})
+    _set_attr(node2, "attributes", {"epsilon": 1e-5, "axis": -1})
 
     node3 = IRNode("Transpose", "tr_1", inputs=[])
-    setattr(node3, "attributes", {"axes": [1, 0]})
+    _set_attr(node3, "attributes", {"axes": [1, 0]})
 
     node4 = IRNode("Slice", "sl_1", inputs=[])
-    setattr(node4, "attributes", {"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
+    _set_attr(node4, "attributes", {"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
 
     node5 = IRNode("Gather", "ga_1", inputs=[])
-    setattr(node5, "attributes", {"axis": 0})
+    _set_attr(node5, "attributes", {"axis": 0})
 
     node6 = IRNode("Conv2D", "conv_1", inputs=[])
-    setattr(node6, "attributes", {"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
+    _set_attr(node6, "attributes", {"strides": [1, 1], "padding": "VALID", "dilations": [1, 1], "group": 1})
 
-    object.__setattr__(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
+    _obj_set_attr(graph, "sorted_nodes", [node1, node2, node3, node4, node5, node6])
     generator = ONNXCodeGenerator(graph, [])
 
     class MockTensorProto:
@@ -661,14 +662,14 @@ def test_onnx_full_build_nodes() -> None:
     """Test function test_onnx_full_build_nodes."""
     graph = IRGraph()
     node_const = IRNode("c_1", "Constant", inputs=[])
-    object.__setattr__(node_const, "shape_metadata", [2])
-    setattr(node_const, "attributes", {"value": 3.14})
+    _obj_set_attr(node_const, "shape_metadata", [2])
+    _set_attr(node_const, "attributes", {"value": 3.14})
     node_if = IRNode("if_1", "If", inputs=[])
-    object.__setattr__(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
+    _obj_set_attr(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
     node_loop = IRNode("loop_1", "Loop", inputs=[])
-    object.__setattr__(node_loop, "attributes", {"body": IRGraph()})
+    _obj_set_attr(node_loop, "attributes", {"body": IRGraph()})
     graph.nodes = NodeDict(as_node_dict({"c_1": node_const, "if_1": node_if, "loop_1": node_loop}))
-    object.__setattr__(graph, "sorted_nodes", [node_const, node_if, node_loop])
+    _obj_set_attr(graph, "sorted_nodes", [node_const, node_if, node_loop])
 
     generator = ONNXCodeGenerator(graph, [])
     generator.schema = {"operations": {"Constant": "Constant", "If": "If", "Loop": "Loop"}}
@@ -767,11 +768,11 @@ def test_onnx_text_fallback_input() -> None:
     graph = IRGraph()
     # The problem was that IRNode assigns name to node.id usually, but let's be explicit
     node = IRNode("Input", "in_1", inputs=[], shape_metadata=[2, 2])
-    setattr(node, "id", "in_1")
-    setattr(node, "dtype", "float32")
-    setattr(node, "op_type", "Input")
+    _set_attr(node, "id", "in_1")
+    _set_attr(node, "dtype", "float32")
+    _set_attr(node, "op_type", "Input")
     gen = ONNXCodeGenerator(graph, [])
-    setattr(gen, "sorted_nodes", [node])
+    _set_attr(gen, "sorted_nodes", [node])
     out = gen._generate_text_fallback()
     assert 'input: "in_1"' in out
 
@@ -788,7 +789,7 @@ def test_onnx_generator_edge_onnx_fallback() -> None:
     node = IRNode("test_1", "TestOp", inputs=[])
 
     gen = ONNXCodeGenerator(graph, [])
-    setattr(gen, "sorted_nodes", [node])
+    _set_attr(gen, "sorted_nodes", [node])
     gen.schema = {"operations": {"TestOp": "TestOpMapped"}}
 
     class MockTensorProto:
@@ -837,34 +838,34 @@ def test_onnx_build_onnx_nodes_branches() -> None:
     graph = IRGraph()
 
     node_input = IRNode("Input", "in_1", inputs=[])
-    setattr(node_input, "op_type", "Input")
+    _set_attr(node_input, "op_type", "Input")
 
     node_constant = IRNode("Constant", "c_1", inputs=[])
-    setattr(node_constant, "op_type", "Constant")
-    object.__setattr__(node_constant, "shape_metadata", [2, 2])
-    setattr(node_constant, "attributes", {"value": 1.0})
+    _set_attr(node_constant, "op_type", "Constant")
+    _obj_set_attr(node_constant, "shape_metadata", [2, 2])
+    _set_attr(node_constant, "attributes", {"value": 1.0})
 
     # If without then_branch
     node_if_no_then = IRNode("If", "if_1", inputs=[])
-    setattr(node_if_no_then, "op_type", "If")
-    object.__setattr__(node_if_no_then, "attributes", {"else_branch": IRGraph()})
+    _set_attr(node_if_no_then, "op_type", "If")
+    _obj_set_attr(node_if_no_then, "attributes", {"else_branch": IRGraph()})
 
     # If without else_branch
     node_if_no_else = IRNode("If", "if_2", inputs=[])
-    setattr(node_if_no_else, "op_type", "If")
-    object.__setattr__(node_if_no_else, "attributes", {"then_branch": IRGraph()})
+    _set_attr(node_if_no_else, "op_type", "If")
+    _obj_set_attr(node_if_no_else, "attributes", {"then_branch": IRGraph()})
 
     # Loop without body
     node_loop_no_body = IRNode("Loop", "loop_1", inputs=[])
-    setattr(node_loop_no_body, "op_type", "Loop")
-    setattr(node_loop_no_body, "attributes", {})
+    _set_attr(node_loop_no_body, "op_type", "Loop")
+    _set_attr(node_loop_no_body, "attributes", {})
 
     node_loop_with_body = IRNode("Loop", "loop_2", inputs=[])
-    setattr(node_loop_with_body, "op_type", "Loop")
-    object.__setattr__(node_loop_with_body, "attributes", {"body": IRGraph()})
+    _set_attr(node_loop_with_body, "op_type", "Loop")
+    _obj_set_attr(node_loop_with_body, "attributes", {"body": IRGraph()})
 
     gen = ONNXCodeGenerator(graph, [])
-    setattr(gen, "sorted_nodes", [node_input, node_constant, node_if_no_then, node_if_no_else, node_loop_no_body, node_loop_with_body])
+    _set_attr(gen, "sorted_nodes", [node_input, node_constant, node_if_no_then, node_if_no_else, node_loop_no_body, node_loop_with_body])
 
     class MockTensorProto:
         """Test class MockTensorProto."""
@@ -1022,11 +1023,11 @@ def test_onnx_generator_edge_onnx_truthy() -> None:
 
     graph = IRGraph()
     node = IRNode("TestOp2", "test_2", inputs=[])
-    setattr(node, "id", "test_2")
-    setattr(node, "op_type", "TestOp2")
+    _set_attr(node, "id", "test_2")
+    _set_attr(node, "op_type", "TestOp2")
 
     gen = ONNXCodeGenerator(graph, [])
-    setattr(gen, "sorted_nodes", [node])
+    _set_attr(gen, "sorted_nodes", [node])
 
     class MockTensorProto:
         """Test class MockTensorProto."""
@@ -1171,8 +1172,8 @@ def _ensure_onnx_reference_mock() -> dict[str, EagerValue]:
             """
             return [as_tensor(np.maximum(np.asarray(v), 0.0)) for v in feed.values()]
 
-    setattr(mock_ref, "ReferenceEvaluator", _MockRefEval)
-    setattr(mock_onnx, "reference", mock_ref)
+    _set_attr(mock_ref, "ReferenceEvaluator", _MockRefEval)
+    _set_attr(mock_onnx, "reference", mock_ref)
     return {"onnx": as_tensor(mock_onnx), "onnx.reference": as_tensor(mock_ref)}
 
 

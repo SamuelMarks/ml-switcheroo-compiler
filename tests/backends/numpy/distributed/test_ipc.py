@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.distributed.ipc import _exchange_ipc_data, _exchange_ipc_data_coordinator, _exchange_ipc_data_worker, _ipc_all_gather, _ipc_all_reduce, _ipc_reduce_scatter
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -52,8 +53,8 @@ def _test_ipc_coordinator_part_1(_state: dict[str, EagerTensorProtocol]) -> None
             """
             pass
 
-    getattr(_state, "update")({"MockConnection": MockConnection})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockConnection": MockConnection})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_coordinator_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -107,8 +108,8 @@ def _test_ipc_coordinator_part_2(_state: dict[str, EagerTensorProtocol]) -> None
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client)
-    getattr(_state, "update")({"MockListener": MockListener, "mock_client": mock_client})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockListener": MockListener, "mock_client": mock_client})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_coordinator_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -153,7 +154,7 @@ def _test_ipc_coordinator_part_3(_state: dict[str, EagerTensorProtocol]) -> None
     assert len(res_err) == 2
     assert as_callable(np.array_equal)(res_err[0], as_callable(np.array)([1]))
     assert as_callable(np.array_equal)(res_err[1], as_callable(np.array)([1]))
-    getattr(_state, "update")({"ErrorListener": ErrorListener, "res": res, "res_err": res_err})
+    _get_attr(_state, "update")({"ErrorListener": ErrorListener, "res": res, "res_err": res_err})
 
 
 def test_ipc_coordinator(monkeypatch: EagerTensorProtocol) -> None:
@@ -207,8 +208,8 @@ def _test_ipc_worker_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
             """
             pass
 
-    getattr(_state, "update")({"MockConnection": MockConnection})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockConnection": MockConnection})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_worker_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -262,8 +263,8 @@ def _test_ipc_worker_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client)
-    getattr(_state, "update")({"MockListener": MockListener, "mock_client": mock_client})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockListener": MockListener, "mock_client": mock_client})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_worker_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -293,19 +294,19 @@ def _test_ipc_worker_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     # fast forward time after one retry to hit both retry sleep and timeout
     def mock_time() -> EagerValue:
         """Test function mock_time."""
-        setattr(mock_time, "count", getattr(mock_time, "count") + 1)
-        offset = 0.0 if getattr(mock_time, "count") <= 2 else 10.0
+        _set_attr(mock_time, "count", _get_attr(mock_time, "count") + 1)
+        offset = 0.0 if _get_attr(mock_time, "count") <= 2 else 10.0
         return as_tensor(orig_time() + offset)
 
-    setattr(mock_time, "count", 0)
+    _set_attr(mock_time, "count", 0)
     monkeypatch.setattr(time, "time", mock_time)
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client_err)
 
     res_err = _exchange_ipc_data_worker(1, 2, np.array([2]), 0.1, 0.01)
     assert len(res_err) == 2
     assert as_callable(np.array_equal)(res_err[0], as_callable(np.array)([2]))
-    getattr(_state, "update")({"mock_client_err": mock_client_err, "mock_time": mock_time, "orig_time": orig_time, "res": res})
-    getattr(_state, "update")({"res_err": res_err, "time": time})
+    _get_attr(_state, "update")({"mock_client_err": mock_client_err, "mock_time": mock_time, "orig_time": orig_time, "res": res})
+    _get_attr(_state, "update")({"res_err": res_err, "time": time})
 
 
 def test_ipc_worker(monkeypatch: EagerTensorProtocol) -> None:
@@ -452,8 +453,8 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_1(_state: dict
             """
             pass
 
-    getattr(_state, "update")({"MockConnection": MockConnection, "_exchange_ipc_data_coordinator": _exchange_ipc_data_coordinator, "time": time})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockConnection": MockConnection, "_exchange_ipc_data_coordinator": _exchange_ipc_data_coordinator, "time": time})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -508,8 +509,8 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_2(_state: dict
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client_err)
-    getattr(_state, "update")({"MockListener": MockListener, "mock_client_err": mock_client_err})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockListener": MockListener, "mock_client_err": mock_client_err})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -523,10 +524,10 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_3(_state: dict
 
     def mock_time() -> EagerValue:
         """Test function mock_time."""
-        setattr(mock_time, "count", getattr(mock_time, "count") + 1)
-        return as_tensor(orig_time() + getattr(mock_time, "count") * 10)
+        _set_attr(mock_time, "count", _get_attr(mock_time, "count") + 1)
+        return as_tensor(orig_time() + _get_attr(mock_time, "count") * 10)
 
-    setattr(mock_time, "count", 0)
+    _set_attr(mock_time, "count", 0)
     monkeypatch.setattr(time, "time", mock_time)
 
     res = _exchange_ipc_data_coordinator(2, np.array([1]), 0.1, 0.01)
@@ -534,7 +535,7 @@ def _test_ipc_exchange_ipc_data_coordinator_timeout_fallback_part_3(_state: dict
     assert len(res) == 2
     assert as_callable(np.array_equal)(res[0], as_callable(np.array)([1]))
     assert as_callable(np.array_equal)(res[1], as_callable(np.array)([2]))
-    getattr(_state, "update")({"mock_time": mock_time, "orig_time": orig_time, "res": res})
+    _get_attr(_state, "update")({"mock_time": mock_time, "orig_time": orig_time, "res": res})
 
 
 def test_ipc_exchange_ipc_data_coordinator_timeout_fallback(monkeypatch: EagerTensorProtocol) -> None:
@@ -591,8 +592,8 @@ def _test_ipc_coordinator_sleep_part_1(_state: dict[str, EagerTensorProtocol]) -
             """
             pass
 
-    getattr(_state, "update")({"MockConnection": MockConnection, "_exchange_ipc_data_coordinator": _exchange_ipc_data_coordinator, "time": time})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockConnection": MockConnection, "_exchange_ipc_data_coordinator": _exchange_ipc_data_coordinator, "time": time})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_coordinator_sleep_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -647,8 +648,8 @@ def _test_ipc_coordinator_sleep_part_2(_state: dict[str, EagerTensorProtocol]) -
 
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Listener", MockListener)
     monkeypatch.setattr("ml_switcheroo_compiler.backends.numpy.distributed.ipc.Client", mock_client_err)
-    getattr(_state, "update")({"MockListener": MockListener, "mock_client_err": mock_client_err})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockListener": MockListener, "mock_client_err": mock_client_err})
+    _state.update(_caller_locals())
 
 
 def _test_ipc_coordinator_sleep_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -662,10 +663,10 @@ def _test_ipc_coordinator_sleep_part_3(_state: dict[str, EagerTensorProtocol]) -
 
     def mock_time() -> EagerValue:
         """Test function mock_time."""
-        setattr(mock_time, "count", getattr(mock_time, "count") + 1)
-        return as_tensor(orig_time() + getattr(mock_time, "count") * 0.001)
+        _set_attr(mock_time, "count", _get_attr(mock_time, "count") + 1)
+        return as_tensor(orig_time() + _get_attr(mock_time, "count") * 0.001)
 
-    setattr(mock_time, "count", 0)
+    _set_attr(mock_time, "count", 0)
     monkeypatch.setattr(time, "time", mock_time)
 
     mock_sleep = MagicMock()
@@ -674,7 +675,7 @@ def _test_ipc_coordinator_sleep_part_3(_state: dict[str, EagerTensorProtocol]) -
     # timeout=0.01, retry_interval=0.001
     _exchange_ipc_data_coordinator(2, np.array([1]), 0.01, 0.001)
     assert mock_sleep.call_count > 0
-    getattr(_state, "update")({"mock_sleep": mock_sleep, "mock_time": mock_time, "orig_time": orig_time})
+    _get_attr(_state, "update")({"mock_sleep": mock_sleep, "mock_time": mock_time, "orig_time": orig_time})
 
 
 def test_ipc_coordinator_sleep(monkeypatch: EagerTensorProtocol) -> None:

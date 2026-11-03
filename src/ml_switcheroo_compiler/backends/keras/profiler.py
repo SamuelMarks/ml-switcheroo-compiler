@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_opt_callable, as_tensor
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr
 
 try:
     import keras
@@ -39,16 +39,16 @@ def _get_keras_peak_memory_mb() -> float:
     Returns:
         float: Peak memory allocation in megabytes.
     """
-    if keras is not None and hasattr(keras, "backend"):
+    if keras is not None and _has_attr(keras, "backend"):
         try:
             torch_mod = sys.modules.get("torch")
-            if torch_mod is not None and hasattr(torch_mod, "cuda") and torch_mod.cuda.is_available():
+            if torch_mod is not None and _has_attr(torch_mod, "cuda") and torch_mod.cuda.is_available():
                 return float(torch_mod.cuda.max_memory_allocated() / (1024.0 * 1024.0))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         try:
             tf_mod = sys.modules.get("tensorflow")
-            if tf_mod is not None and hasattr(tf_mod, "config"):
+            if tf_mod is not None and _has_attr(tf_mod, "config"):
                 mem_info = tf_mod.config.experimental.get_memory_info("GPU:0")
                 if "peak" in mem_info and mem_info["peak"] > 0:
                     return float(mem_info["peak"]) / (1024.0 * 1024.0)
@@ -71,14 +71,14 @@ def _sync_keras_result(result: EagerValue | list[EagerValue] | tuple[EagerValue,
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_keras_result(item)
-    elif hasattr(keras, "ops") and hasattr(keras.ops, "convert_to_numpy") and callable(keras.ops.convert_to_numpy):
+    elif _has_attr(keras, "ops") and _has_attr(keras.ops, "convert_to_numpy") and callable(keras.ops.convert_to_numpy):
         try:
             _ = keras.ops.convert_to_numpy(result)
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-    elif hasattr(result, "numpy") and callable(getattr(result, "numpy")):
+    elif _has_attr(result, "numpy") and callable(_get_attr(result, "numpy")):
         try:
-            _ = getattr(result, "numpy")()
+            _ = _get_attr(result, "numpy")()
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -137,13 +137,13 @@ class KerasProfiler:
 
         keras_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            if hasattr(keras, "ops") and hasattr(keras.ops, "convert_to_tensor"):
+            if _has_attr(keras, "ops") and _has_attr(keras.ops, "convert_to_tensor"):
                 keras_inputs_dict[k] = keras.ops.convert_to_tensor(val, dtype="float32")
             else:
                 keras_inputs_dict[k] = val
 
-        sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
+        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
         if input_keys and all(k in keras_inputs_dict for k in input_keys):
             return [keras_inputs_dict[k] for k in input_keys]
         return list(keras_inputs_dict.values())
@@ -203,12 +203,12 @@ class KerasProfiler:
                 return res
 
             if not keras_inputs:
-                if hasattr(keras, "ops") and hasattr(keras.ops, "zeros"):
+                if _has_attr(keras, "ops") and _has_attr(keras.ops, "zeros"):
                     return as_tensor(keras.ops.zeros((1,), dtype="float32"))
                 return 0.0
 
             accum = keras_inputs[0]
-            if hasattr(keras, "ops") and hasattr(keras.ops, "add"):
+            if _has_attr(keras, "ops") and _has_attr(keras.ops, "add"):
                 accum = keras.ops.zeros_like(keras_inputs[0])
                 for t in keras_inputs:
                     accum = keras.ops.add(accum, t)
@@ -243,7 +243,7 @@ class KerasProfiler:
             return _compute_metrics([0.0] * num_iters, _get_process_memory_mb(), warmup_iters)
 
         keras_inputs = self._prepare_inputs(graph, inputs)
-        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
         compiled_model: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:

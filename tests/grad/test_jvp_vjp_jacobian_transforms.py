@@ -10,13 +10,14 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.jvp_vjp import hvp, jacfwd, jacrev, jvp, vjp
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-GradOptions = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.grad.jvp_vjp"), "GradOptions"))
+GradOptions = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.grad.jvp_vjp"), "GradOptions"))
 
 
 def _make_tensor(val: EagerValue, shape: tuple[int, ...] | None = None) -> Tensor:
@@ -49,8 +50,8 @@ def test_jvp_has_aux_and_backend_execution() -> None:
 
     (val, aux), out_tan = as_callable(jvp)(f_aux, as_callable(_make_tensor)([2.0]), as_callable(_make_tensor)([1.0]), has_aux=True)
     assert aux == "aux_info"
-    assert as_tensor(getattr(val, "item"))() == 4.0
-    assert as_tensor(getattr(out_tan, "item"))() == 4.0
+    assert as_tensor(_get_attr(val, "item"))() == 4.0
+    assert as_tensor(_get_attr(out_tan, "item"))() == 4.0
 
     # 2. backend with execute_graph
     mock_backend_exec = MagicMock()
@@ -108,8 +109,8 @@ def test_hvp_has_aux_and_projected_tangents() -> None:
 
     (val, aux), out_tan = as_callable(hvp)(f_aux, as_callable(_make_tensor)([2.0]), as_callable(_make_tensor)([1.0]), has_aux=True)
     assert aux == "aux_meta"
-    assert as_tensor(getattr(val, "item"))() == 8.0
-    assert as_tensor(getattr(out_tan, "item"))() == 12.0
+    assert as_tensor(_get_attr(val, "item"))() == 8.0
+    assert as_tensor(_get_attr(out_tan, "item"))() == 12.0
 
     # 2. projected_tangents as a single Tensor
     def f_cube(x: Tensor) -> Tensor:
@@ -126,7 +127,7 @@ def test_hvp_has_aux_and_projected_tangents() -> None:
         _make_tensor([1.0]),
         projected_tangents=_make_tensor([1.0]),
     )
-    assert as_tensor(getattr(val_pt, "item"))() == 8.0
+    assert as_tensor(_get_attr(val_pt, "item"))() == 8.0
     assert out_tan_pt is not None
 
     # 3. projected_tangents as a tuple of Tensors
@@ -136,7 +137,7 @@ def test_hvp_has_aux_and_projected_tangents() -> None:
         _make_tensor([1.0]),
         projected_tangents=(_make_tensor([1.0]),),
     )
-    assert as_tensor(getattr(val_pt2, "item"))() == 8.0
+    assert as_tensor(_get_attr(val_pt2, "item"))() == 8.0
     assert out_tan_pt2 is not None
 
 
@@ -153,7 +154,7 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
         return x[0]
 
     j_fwd = as_callable(jacfwd)(f_scalar)(as_callable(_make_tensor)([2.0, 3.0]))
-    assert as_tensor(getattr(j_fwd, "shape")) == (1, 2)
+    assert as_tensor(_get_attr(j_fwd, "shape")) == (1, 2)
 
     # 2. jacfwd with has_aux=True
     def f_aux_fwd(x: Tensor) -> tuple[Tensor, str]:
@@ -166,7 +167,7 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
 
     opts_fwd = GradOptions(has_aux=True)
     j_fwd_aux = as_callable(jacfwd)(f_aux_fwd, options=opts_fwd)(as_callable(_make_tensor)([2.0, 3.0]))
-    assert as_tensor(getattr(j_fwd_aux, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(j_fwd_aux, "shape")) == (2, 2)
 
     # 3. jacrev with has_aux=True
     def f_aux_rev(x: Tensor) -> tuple[Tensor, str]:
@@ -179,7 +180,7 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
 
     opts_rev = GradOptions(has_aux=True)
     j_rev_aux = as_callable(jacrev)(f_aux_rev, options=opts_rev)(as_callable(_make_tensor)([2.0, 3.0]))
-    assert as_tensor(getattr(j_rev_aux, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(j_rev_aux, "shape")) == (2, 2)
 
     # 4. jacrev with multi-output
     def f_multi(x: Tensor) -> tuple[Tensor, Tensor]:
@@ -191,8 +192,8 @@ def test_jacfwd_and_jacrev_shapes_and_aux() -> None:
         return x * 2.0, x * 3.0
 
     j_multi = as_callable(jacrev)(f_multi)(as_callable(_make_tensor)([2.0, 3.0]))
-    assert as_tensor(getattr(j_multi, "shape")) == (4, 2)
+    assert as_tensor(_get_attr(j_multi, "shape")) == (4, 2)
 
     # 5. jacrev with scalar output
     j_rev_scalar = as_callable(jacrev)(f_scalar)(as_callable(_make_tensor)([2.0, 3.0]))
-    assert as_tensor(getattr(j_rev_scalar, "shape")) == (2,)
+    assert as_tensor(_get_attr(j_rev_scalar, "shape")) == (2,)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
@@ -24,7 +25,7 @@ def test_base_format() -> None:
             Args:
                 filepath: Test parameter `filepath`.
             """
-            return as_tensor_dict(as_callable(as_tensor(getattr(super(), "load")))(filepath))
+            return as_tensor_dict(as_callable(as_tensor(_get_attr(super(), "load")))(filepath))
 
     class DummySaver(WeightSaver):
         """Test class DummySaver."""
@@ -36,7 +37,8 @@ def test_base_format() -> None:
                 weights_np: Test parameter `weights_np`.
                 filepath: Test parameter `filepath`.
             """
-            return typing.cast("None", as_callable(as_tensor(getattr(super(), "save")))(weights_np, filepath))
+            _typed_ret_1: None = _cast_val("None", as_callable(as_tensor(_get_attr(super(), "save")))(weights_np, filepath))
+            return _typed_ret_1
 
     assert DummyLoader().load("dummy") is None
     assert as_callable(DummySaver)().save({}, "dummy") is None
@@ -54,7 +56,7 @@ def test_base_format_coverage() -> None:
             Args:
                 filepath: Test parameter `filepath`.
             """
-            return as_tensor_dict(as_callable(as_tensor(getattr(super(), "load")))(filepath))
+            return as_tensor_dict(as_callable(as_tensor(_get_attr(super(), "load")))(filepath))
 
     class DummySaver(WeightSaver):
         """Test class DummySaver."""
@@ -66,7 +68,8 @@ def test_base_format_coverage() -> None:
                 weights_np: Test parameter `weights_np`.
                 filepath: Test parameter `filepath`.
             """
-            return typing.cast("None", as_callable(as_tensor(getattr(super(), "save")))(weights_np, filepath))
+            _typed_ret_2: None = _cast_val("None", as_callable(as_tensor(_get_attr(super(), "save")))(weights_np, filepath))
+            return _typed_ret_2
 
     assert as_callable(DummySaver)().save({}, "test.txt") is None
     assert DummyLoader().load("test.txt") is None

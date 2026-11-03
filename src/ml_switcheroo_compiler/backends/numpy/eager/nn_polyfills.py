@@ -7,6 +7,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def _stirling_gammaln(x: np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -80,7 +81,7 @@ def _np_all_candidate_sampler(backend_module: BackendModuleProtocol, true_classe
     unique = bool(kwargs.get("unique", True))
     seed = kwargs.get("seed")
 
-    rng = getattr(np.random, "default_rng")(seed)
+    rng = _get_attr(np.random, "default_rng")(seed)
     replace = not unique
     sampled = rng.choice(num_classes, size=num_sampled, replace=replace)
 
@@ -183,7 +184,7 @@ def _np_ctc_beam_search_decoder(backend_module: BackendModuleProtocol, inputs: E
         best_paths_by_batch.append(best_paths)
 
     sparse_list: list[tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]] = []
-    log_probs_matrix = getattr(np, "zeros")((batch_size, top_paths), dtype=np.float32)
+    log_probs_matrix = _get_attr(np, "zeros")((batch_size, top_paths), dtype=np.float32)
 
     for p in range(as_int(top_paths)):
         indices_p: list[list[int]] = []
@@ -273,10 +274,10 @@ def _np_sufficient_statistics(
     keepdims = bool(kwargs.get("keepdims", False))
     divisor = np.prod([arr.shape[i] for i in range(arr.ndim) if i not in (axes_tup or ())]) if axes_tup else 1
     counts = np.array(arr.size / divisor, dtype=np.float32)
-    counts = np.broadcast_to(counts, getattr(np, "mean")(arr, axis=axes_tup, keepdims=keepdims).shape)
-    shift = getattr(np, "mean")(arr, axis=axes_tup, keepdims=True)
-    m_ss = getattr(np, "sum")(arr - shift, axis=axes_tup, keepdims=keepdims)
-    v_ss = getattr(np, "sum")(np.square(arr - shift), axis=axes_tup, keepdims=keepdims)
+    counts = np.broadcast_to(counts, _get_attr(np, "mean")(arr, axis=axes_tup, keepdims=keepdims).shape)
+    shift = _get_attr(np, "mean")(arr, axis=axes_tup, keepdims=True)
+    m_ss = _get_attr(np, "sum")(arr - shift, axis=axes_tup, keepdims=keepdims)
+    v_ss = _get_attr(np, "sum")(np.square(arr - shift), axis=axes_tup, keepdims=keepdims)
     return as_ndarray(counts), as_ndarray(m_ss), as_ndarray(v_ss), as_ndarray(np.squeeze(shift)) if not keepdims else as_ndarray(shift)
 
 
@@ -298,9 +299,9 @@ def _np_weighted_moments(backend_module: BackendModuleProtocol, x: EagerValue, a
     fw = np.asarray(frequency_weights)
     axes_tup: tuple[int, ...] | None = tuple(np.asarray(axes).tolist()) if axes is not None else None
     keepdims = bool(kwargs.get("keepdims", False))
-    sum_w = getattr(np, "sum")(fw, axis=axes_tup, keepdims=keepdims)
-    mean = getattr(np, "sum")(arr * fw, axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
-    var = getattr(np, "sum")(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes_tup or 0)), axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    sum_w = _get_attr(np, "sum")(fw, axis=axes_tup, keepdims=keepdims)
+    mean = _get_attr(np, "sum")(arr * fw, axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
+    var = _get_attr(np, "sum")(fw * np.square(arr - mean if keepdims else np.expand_dims(mean, axes_tup or 0)), axis=axes_tup, keepdims=keepdims) / np.maximum(sum_w, 1e-10)
     return as_ndarray(mean), as_ndarray(var)
 
 
@@ -382,8 +383,8 @@ def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue,
     from ml_switcheroo_compiler.ops.configs import ConvConfig
 
     spatial_dims = w_float.ndim - 2
-    strides_tuple = (stride,) * spatial_dims if isinstance(stride, int) else tuple(getattr(stride, "__iter__")())
-    dilation_tuple = (dilation,) * spatial_dims if isinstance(dilation, int) else tuple(getattr(dilation, "__iter__")())
+    strides_tuple = (stride,) * spatial_dims if isinstance(stride, int) else tuple(_get_attr(stride, "__iter__")())
+    dilation_tuple = (dilation,) * spatial_dims if isinstance(dilation, int) else tuple(_get_attr(dilation, "__iter__")())
 
     pad_arg = padding
     if isinstance(padding, int):
@@ -396,7 +397,7 @@ def _np_quantized_conv(backend_module: BackendModuleProtocol, *args: EagerValue,
     rhs_spec = (spatial_dims + 1, spatial_dims) + tuple(range(0, spatial_dims))
     out_spec = lhs_spec
 
-    pad_val: str | list[tuple[int, int]] = pad_arg if isinstance(pad_arg, str) else [(int(p[0]), int(p[1])) for p in getattr(pad_arg, "__iter__")()]
+    pad_val: str | list[tuple[int, int]] = pad_arg if isinstance(pad_arg, str) else [(int(p[0]), int(p[1])) for p in _get_attr(pad_arg, "__iter__")()]
     config_obj = ConvConfig(
         window_strides=strides_tuple,
         padding=pad_val,

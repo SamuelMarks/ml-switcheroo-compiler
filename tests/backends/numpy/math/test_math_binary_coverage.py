@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_binary as bin_module
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -52,8 +53,8 @@ def _test_math_binary_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
 
     assert as_callable(np.array_equal)(as_callable(bin_module._np_bitwise_xor)(np, i_a, i_b), [3, 0])
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("BitwiseXor")(np, i_a, i_b), [3, 0])
-    getattr(_state, "update")({"a": a, "b": b, "i_a": i_a, "i_b": i_b})
-    _state.update(locals())
+    _get_attr(_state, "update")({"a": a, "b": b, "i_a": i_a, "i_b": i_b})
+    _state.update(_caller_locals())
 
 
 def _test_math_binary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -94,9 +95,9 @@ def _test_math_binary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     assert as_callable(numpy_eager_registry.get)("Amin")(np, a) == 2.0
 
     prob = np.array([0.5, 0.8])
-    getattr(_state, "update")({"_": _, "exp": exp, "mant": mant, "nan_arr": nan_arr})
-    getattr(_state, "update")({"prob": prob, "r_mant": r_mant})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "exp": exp, "mant": mant, "nan_arr": nan_arr})
+    _get_attr(_state, "update")({"prob": prob, "r_mant": r_mant})
+    _state.update(_caller_locals())
 
 
 def _test_math_binary_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:

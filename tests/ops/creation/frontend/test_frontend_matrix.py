@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _del_attr, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.ops.creation.frontend_matrix import _diag_eager, diag, eye, identity
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
@@ -41,19 +42,19 @@ def test_frontend_matrix() -> None:
 
     import ml_switcheroo_compiler.backends.registry as reg
 
-    orig_reg_backend = getattr(reg, "_ACTIVE_BACKEND", None)
-    has_reg_backend = hasattr(reg, "_ACTIVE_BACKEND")
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    orig_reg_backend = _get_attr(reg, "_ACTIVE_BACKEND", None)
+    has_reg_backend = _has_attr(reg, "_ACTIVE_BACKEND")
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
     import ml_switcheroo_compiler.ops.creation.frontend_matrix
 
-    orig_frontend_matrix_backend = as_tensor(getattr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend"))
-    setattr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend", lambda: DummyBackend())
+    orig_frontend_matrix_backend = as_tensor(_get_attr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend"))
+    _set_attr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend", lambda: DummyBackend())
 
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
-    assert as_tensor(getattr(eye(1), "shape")) == (1, 1)
-    assert as_tensor(getattr(identity(1), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(eye(1), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(identity(1), "shape")) == (1, 1)
 
     class DummyInput:
         """Test class DummyInput."""
@@ -71,10 +72,10 @@ def test_frontend_matrix() -> None:
         dtype = None
         shape = (1,)
 
-    assert as_tensor(getattr(as_callable(_diag_eager)(as_callable(DummyInput)(), 0, "cpu", "float32"), "shape")) == (1, 1)
-    assert as_tensor(getattr(as_callable(_diag_eager)(as_callable(DummyInputNoDtype)(), 0, "cpu", None), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(as_callable(_diag_eager)(as_callable(DummyInput)(), 0, "cpu", "float32"), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(as_callable(_diag_eager)(as_callable(DummyInputNoDtype)(), 0, "cpu", None), "shape")) == (1, 1)
 
-    assert as_tensor(getattr(as_callable(diag)(as_callable(DummyInput)()), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(as_callable(diag)(as_callable(DummyInput)()), "shape")) == (1, 1)
 
     class DummyInput2:
         """Test class DummyInput2."""
@@ -106,10 +107,10 @@ def test_frontend_matrix() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
 
-    assert as_tensor(getattr(as_callable(diag)(as_callable(DummyInput2)()), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_callable(diag)(as_callable(DummyInput2)()), "shape")) == (2,)
 
     with patch("ml_switcheroo_compiler.ops.creation.frontend_matrix._emit_creation_node", return_value="emitted"):
         assert eye(1) == "emitted"
@@ -129,7 +130,7 @@ def test_frontend_matrix() -> None:
         as_callable(diag)(as_callable(DummyInput3)())
 
     if has_reg_backend:
-        setattr(reg, "_ACTIVE_BACKEND", orig_reg_backend)
+        _set_attr(reg, "_ACTIVE_BACKEND", orig_reg_backend)
     else:
-        delattr(reg, "_ACTIVE_BACKEND")
-    setattr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend", orig_frontend_matrix_backend)
+        _del_attr(reg, "_ACTIVE_BACKEND")
+    _set_attr(ml_switcheroo_compiler.ops.creation.frontend_matrix, "get_active_backend", orig_frontend_matrix_backend)

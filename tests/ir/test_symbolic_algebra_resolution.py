@@ -6,6 +6,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.shape_system import (
     SymBinaryOp,
     SymConst,
@@ -141,7 +142,7 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return as_tensor(getattr(env, "__getitem__")("x") > 10)
+        return as_tensor(_get_attr(env, "__getitem__")("x") > 10)
 
     def cond_2(env: EagerValue) -> EagerValue:
         """Check if x > 0.
@@ -149,7 +150,7 @@ def test_unary_operations_and_piecewise() -> None:
         Args:
             env: Test parameter `env`.
         """
-        return as_tensor(getattr(env, "__getitem__")("x") > 0)
+        return as_tensor(_get_attr(env, "__getitem__")("x") > 0)
 
     piecewise = as_callable(SymPiecewise)(
         cases=[

@@ -7,6 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.mixins import TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -23,7 +24,8 @@ class DummyTensor(TensorArithmeticMixin, TensorBitwiseMixin, TensorLogicalMixin)
         Args:
             name: Test parameter `name`.
         """
-        return typing.cast("OpDef", lambda *args, **kwargs: (name, args))
+        _typed_ret_1: OpDef = _cast_val("OpDef", lambda *args, **kwargs: (name, args))
+        return _typed_ret_1
 
 
 def test_mixins() -> None:
@@ -65,8 +67,8 @@ def test_mixins() -> None:
     assert as_tensor((t > 1)[0]) == "Greater"
     assert as_tensor((t <= 1)[0]) == "LessEqual"
     assert as_tensor((t >= 1)[0]) == "GreaterEqual"
-    assert as_tensor(getattr((as_tensor(t) == as_tensor(1)), "__getitem__")(0)) == as_tensor("Equal")
-    assert as_tensor(getattr((as_tensor(t) != as_tensor(1)), "__getitem__")(0)) == as_tensor("NotEqual")
+    assert as_tensor(_get_attr((as_tensor(t) == as_tensor(1)), "__getitem__")(0)) == as_tensor("Equal")
+    assert as_tensor(_get_attr((as_tensor(t) != as_tensor(1)), "__getitem__")(0)) == as_tensor("NotEqual")
 
     assert hash(t) == id(t)
 

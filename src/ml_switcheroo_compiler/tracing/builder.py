@@ -22,6 +22,7 @@ from ml_switcheroo_compiler.core.shape import (
     is_traced_data,
 )
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.ir.core import as_attr_val
 from ml_switcheroo_compiler.ops.shape_inference import infer_shape
 from ml_switcheroo_compiler.ops.type_inference import resolve_output_dtype_and_device
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -33,24 +34,6 @@ class _ConstantCacheStateProtocol(typing.Protocol):
     """Protocol for tracing state objects exposing `constant_cache`."""
 
     constant_cache: dict[int, str]
-
-
-def _to_attr_value(val: TensorOrScalar) -> AttributeValue:
-    """Normalize a runtime value into an IR AttributeValue.
-
-    Args:
-        val (TensorOrScalar): Raw attribute value.
-
-    Returns:
-        AttributeValue: Normalized attribute value.
-    """
-    if isinstance(val, (int, float, str, bool, bytes)) or val is None:
-        return val
-    if isinstance(val, (list, tuple)):
-        return [_to_attr_value(x) for x in val]
-    if isinstance(val, dict):
-        return {str(k): _to_attr_value(v) for k, v in val.items()}
-    return str(val)
 
 
 class TracingNodeBuilder:
@@ -68,7 +51,7 @@ class TracingNodeBuilder:
             str: The unique identifier of the created node.
         """
         out_id = str(uuid.uuid4())
-        attrs: dict[str, AttributeValue] = {"value": _to_attr_value(val)}
+        attrs: dict[str, AttributeValue] = {"value": as_attr_val(val)}
         node = LogicalNode(
             id=out_id,
             op_type="Constant",
@@ -184,7 +167,7 @@ class TracingNodeBuilder:
             str: The unique identifier of the created node.
         """
         out_id = str(uuid.uuid4())
-        attrs: dict[str, AttributeValue] = {str(k): _to_attr_value(v) for k, v in kwargs.items()}
+        attrs: dict[str, AttributeValue] = {str(k): as_attr_val(v) for k, v in kwargs.items()}
         from ml_switcheroo_ir import SymInt, SymNode
 
         raw_inputs: Sequence[AttrValue] = input_ids

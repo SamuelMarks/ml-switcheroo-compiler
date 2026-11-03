@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
 
@@ -30,13 +31,13 @@ def test_numpy_conversion_fallback() -> None:
     """Test function test_numpy_conversion_fallback."""
     t = make_tensor(1.0)
     original_numpy = sys.modules.get("numpy")
-    getattr(sys.modules, "__setitem__")("numpy", None)
+    _get_attr(sys.modules, "__setitem__")("numpy", None)
     try:
-        as_tensor(getattr(t, "numpy"))()
+        as_tensor(_get_attr(t, "numpy"))()
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
-        getattr(sys.modules, "__setitem__")("numpy", original_numpy)
+        _get_attr(sys.modules, "__setitem__")("numpy", original_numpy)
     assert callable(test_numpy_conversion_fallback)
 
 
@@ -60,7 +61,7 @@ def test_exception_in_asarray() -> None:
             raise RuntimeError("boom")
 
     t = as_callable(make_tensor)(as_callable(BadData)())
-    res = as_tensor(getattr(t, "__array__"))()
+    res = as_tensor(_get_attr(t, "__array__"))()
     assert res.shape == (1,)
 
 
@@ -100,7 +101,7 @@ def test_getitem_indexerror() -> None:
     """Test function test_getitem_indexerror."""
     t = make_tensor([1, 2])
     with pytest.raises(IndexError):
-        as_tensor(getattr(t, "__getitem__")((1, 2)))
+        as_tensor(_get_attr(t, "__getitem__")((1, 2)))
     from ml_switcheroo_compiler.core import config
 
     orig = config.eager_mode
@@ -118,11 +119,11 @@ def test_getitem_indexerror() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    setattr(state.global_tracing_state, "add_node", lambda node: None)
+    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        res = as_tensor(getattr(t, "__getitem__")(as_callable(FakeProxy)()))
+        res = as_tensor(_get_attr(t, "__getitem__")(as_callable(FakeProxy)()))
         assert res is not None
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)

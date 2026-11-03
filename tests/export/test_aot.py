@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.export.aot import compile_function
 from tests.testing_utils import as_callable, as_tensor
@@ -501,9 +502,9 @@ def _test_aot_all_remaining_branches_part_1(_state: dict[str, EagerTensorProtoco
 
     ns = _get_namespace("numpy", GeneratorNoGetModule)
     assert as_tensor("numpy") in as_tensor(ns)
-    getattr(_state, "update")({"BackendRegistry": BackendRegistry, "CompilationError": CompilationError, "GeneratorNoGetModule": GeneratorNoGetModule, "_get_namespace": _get_namespace})
-    getattr(_state, "update")({"ns": ns, "pytest": pytest, "simple_identity": simple_identity, "t1": t1})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendRegistry": BackendRegistry, "CompilationError": CompilationError, "GeneratorNoGetModule": GeneratorNoGetModule, "_get_namespace": _get_namespace})
+    _get_attr(_state, "update")({"ns": ns, "pytest": pytest, "simple_identity": simple_identity, "t1": t1})
+    _state.update(_caller_locals())
 
 
 def _test_aot_all_remaining_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -542,8 +543,8 @@ def _test_aot_all_remaining_branches_part_2(_state: dict[str, EagerTensorProtoco
     BackendRegistry.register("backend_static_non_callable", BackendStaticNonCallable)
     c_non_call = compile_function(simple_identity, backend="backend_static_non_callable")
     assert as_callable(c_non_call)(t1) is not None
-    getattr(_state, "update")({"BackendStaticNonCallable": BackendStaticNonCallable, "c_non_call": c_non_call})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendStaticNonCallable": BackendStaticNonCallable, "c_non_call": c_non_call})
+    _state.update(_caller_locals())
 
 
 def _test_aot_all_remaining_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -599,8 +600,8 @@ def _test_aot_all_remaining_branches_part_3(_state: dict[str, EagerTensorProtoco
     BackendRegistry.register("backend_init_fails", BackendInitFails)
     with pytest.raises(CompilationError, match="Failed to instantiate generator"):
         as_callable(compile_function)(simple_identity, backend="backend_init_fails", strict=True)(t1)
-    getattr(_state, "update")({"BackendInitFails": BackendInitFails, "BackendStaticRaises": BackendStaticRaises, "c_raises": c_raises})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendInitFails": BackendInitFails, "BackendStaticRaises": BackendStaticRaises, "c_raises": c_raises})
+    _state.update(_caller_locals())
 
 
 def _test_aot_all_remaining_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -647,8 +648,8 @@ def _test_aot_all_remaining_branches_part_4(_state: dict[str, EagerTensorProtoco
     # 232->244: returns non-callable
     c_inst_noncall = compile_function(simple_identity, backend="backend_instance_aot")
     assert as_callable(c_inst_noncall)(t1) is not None
-    getattr(_state, "update")({"BackendInstanceAot": BackendInstanceAot, "c_fallback_init": c_fallback_init, "c_inst_noncall": c_inst_noncall})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendInstanceAot": BackendInstanceAot, "c_fallback_init": c_fallback_init, "c_inst_noncall": c_inst_noncall})
+    _state.update(_caller_locals())
 
 
 def _test_aot_all_remaining_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -681,7 +682,8 @@ def _test_aot_all_remaining_branches_part_5(_state: dict[str, EagerTensorProtoco
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("CompiledArtifact", as_callable(getattr(BackendInstanceAot_cls, "compile_aot"))(self, *args, **kwargs))
+            _typed_ret_1: CompiledArtifact = _cast_val("CompiledArtifact", as_callable(_get_attr(BackendInstanceAot_cls, "compile_aot"))(self, *args, **kwargs))
+            return _typed_ret_1
 
     BackendRegistry.register("backend_inst_not_impl", BackendInstNotImpl)
     c_inst_notimpl = compile_function(simple_identity, backend="backend_inst_not_impl")
@@ -707,7 +709,8 @@ def _test_aot_all_remaining_branches_part_5(_state: dict[str, EagerTensorProtoco
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("CompiledArtifact", as_callable(getattr(BackendInstanceAot_cls, "compile_aot"))(self, *args, **kwargs))
+            _typed_ret_2: CompiledArtifact = _cast_val("CompiledArtifact", as_callable(_get_attr(BackendInstanceAot_cls, "compile_aot"))(self, *args, **kwargs))
+            return _typed_ret_2
 
     BackendRegistry.register("backend_inst_error", BackendInstError)
     with pytest.raises(CompilationError, match="AOT compilation failed"):
@@ -715,8 +718,8 @@ def _test_aot_all_remaining_branches_part_5(_state: dict[str, EagerTensorProtoco
 
     c_inst_err_fallback = compile_function(simple_identity, backend="backend_inst_error", strict=False)
     assert as_callable(c_inst_err_fallback)(t1) is t1
-    getattr(_state, "update")({"BackendInstError": BackendInstError, "BackendInstNotImpl": BackendInstNotImpl, "c_inst_err_fallback": c_inst_err_fallback, "c_inst_notimpl": c_inst_notimpl})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendInstError": BackendInstError, "BackendInstNotImpl": BackendInstNotImpl, "c_inst_err_fallback": c_inst_err_fallback, "c_inst_notimpl": c_inst_notimpl})
+    _state.update(_caller_locals())
 
 
 def _test_aot_all_remaining_branches_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -765,8 +768,8 @@ def _test_aot_all_remaining_branches_part_6(_state: dict[str, EagerTensorProtoco
     BackendRegistry.register("backend_exec_fails", BackendExecFails)
     with pytest.raises(CompilationError, match="Execution of compiled code failed"):
         as_callable(compile_function)(simple_identity, backend="backend_exec_fails", strict=True)(t1)
-    getattr(_state, "update")({"BackendExecFails": BackendExecFails, "BackendNoEntrypoint": BackendNoEntrypoint})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendExecFails": BackendExecFails, "BackendNoEntrypoint": BackendNoEntrypoint})
+    _state.update(_caller_locals())
 
 
 def _test_aot_all_remaining_branches_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -778,7 +781,7 @@ def _test_aot_all_remaining_branches_part_7(_state: dict[str, EagerTensorProtoco
     simple_identity, t1 = _state["simple_identity"], _state["t1"]
     c_exec_fallback = compile_function(simple_identity, backend="backend_exec_fails", strict=False)
     assert as_callable(c_exec_fallback)(t1) is t1
-    getattr(_state, "update")({"c_exec_fallback": c_exec_fallback})
+    _get_attr(_state, "update")({"c_exec_fallback": c_exec_fallback})
 
 
 def test_aot_all_remaining_branches() -> None:

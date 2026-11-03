@@ -7,11 +7,11 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-    from ml_switcheroo_compiler.core.tensor import Tensor
 
 
 def test_init_classes_serialization() -> None:
@@ -89,7 +89,8 @@ def test_init_classes_serialization() -> None:
                 path: Test parameter `path`.
             """
             pass
-            return typing.cast("SavedModel", None)
+            _typed_ret_1: SavedModel = _cast_val("SavedModel", None)
+            return _typed_ret_1
 
     assert callable(test_init_classes_serialization)
 
@@ -209,8 +210,8 @@ def test_extract_model_state_submodules() -> None:
         filepath=tf,
         config_dict={},
         metadata={},
-        weights_store=typing.cast("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"w": 1}),
-        state_store=typing.cast("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"s": 1}),
+        weights_store=_cast_val("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"w": 1}),
+        state_store=_cast_val("dict[str, Tensor | list[EagerValue] | dict[str, EagerValue]]", {"s": 1}),
     )
     with patch.object(H5WeightFormat, "save"):
         _write_keras_zip(ctx)
@@ -402,12 +403,12 @@ def test_init_exports_mocked() -> None:
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
     with (
-        as_callable(patch.object)(as_tensor(getattr(s, "H5WeightFormat")), "save"),
-        as_callable(patch.object)(as_tensor(getattr(s, "H5WeightFormat")), "load"),
-        as_callable(patch.object)(as_tensor(getattr(s, "SafetensorsWeightFormat")), "save"),
-        as_callable(patch.object)(as_tensor(getattr(s, "SafetensorsWeightFormat")), "load"),
-        as_callable(patch.object)(as_tensor(getattr(s, "PickleWeightFormat")), "load"),
-        as_callable(patch.object)(as_tensor(getattr(s, "NpzWeightFormat")), "load"),
+        as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "save"),
+        as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "load"),
+        as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "save"),
+        as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "load"),
+        as_callable(patch.object)(as_tensor(_get_attr(s, "PickleWeightFormat")), "load"),
+        as_callable(patch.object)(as_tensor(_get_attr(s, "NpzWeightFormat")), "load"),
     ):
         _save_as_h5({}, "test.h5")
         _save_as_safetensors({}, "test.st")
@@ -444,17 +445,17 @@ def test_init_module_exports() -> None:
     import ml_switcheroo_compiler.serialization as s
     from ml_switcheroo_compiler.serialization import _load_h5_weights, _load_npz_weights, _load_pickle_weights, _load_safetensors_weights, _save_as_h5, _save_as_safetensors
 
-    with as_callable(patch.object)(as_tensor(getattr(s, "H5WeightFormat")), "save"):
+    with as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "save"):
         _save_as_h5({}, "test.h5")
-    with as_callable(patch.object)(as_tensor(getattr(s, "SafetensorsWeightFormat")), "save"):
+    with as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "save"):
         _save_as_safetensors({}, "test.st")
-    with as_callable(patch.object)(as_tensor(getattr(s, "H5WeightFormat")), "load"):
+    with as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "load"):
         _load_h5_weights("test.h5")
-    with as_callable(patch.object)(as_tensor(getattr(s, "SafetensorsWeightFormat")), "load"):
+    with as_callable(patch.object)(as_tensor(_get_attr(s, "SafetensorsWeightFormat")), "load"):
         _load_safetensors_weights("test.st")
-    with as_callable(patch.object)(as_tensor(getattr(s, "NpzWeightFormat")), "load"):
+    with as_callable(patch.object)(as_tensor(_get_attr(s, "NpzWeightFormat")), "load"):
         _load_npz_weights("test.npz")
-    with as_callable(patch.object)(as_tensor(getattr(s, "PickleWeightFormat")), "load"):
+    with as_callable(patch.object)(as_tensor(_get_attr(s, "PickleWeightFormat")), "load"):
         _load_pickle_weights("test.pk")
     assert callable(test_init_module_exports)
 

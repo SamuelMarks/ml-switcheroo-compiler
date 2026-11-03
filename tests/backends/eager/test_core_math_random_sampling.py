@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_random_sampling im
     _pshuffle,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -72,7 +73,7 @@ def test_math_random_sampling_coverage() -> None:
 
     # Case B: backend lacks gumbel -> fallback to np.random.gumbel
     g_res = _np_gumbel(as_mod(EmptyBackend()), 0.0, 1.0, size=(2, 2))
-    assert as_tensor(getattr(g_res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(g_res, "shape")) == (2, 2)
 
     # 3. _np_rnguniform
     # Case A: backend has rnguniform
@@ -92,7 +93,7 @@ def test_math_random_sampling_coverage() -> None:
 
     # Case B: backend lacks rnguniform -> fallback to np.random.uniform
     u_res = _np_rnguniform(as_mod(EmptyBackend()), 0.0, 1.0, size=(3,))
-    assert as_tensor(getattr(u_res, "shape")) == (3,)
+    assert as_tensor(_get_attr(u_res, "shape")) == (3,)
 
     # 4. _np_wald
     # Case A: backend has wald
@@ -112,7 +113,7 @@ def test_math_random_sampling_coverage() -> None:
 
     # Case B: backend lacks wald -> fallback to np.random.wald
     w_res = _np_wald(as_mod(EmptyBackend()), 1.0, 1.0, size=(2,))
-    assert as_tensor(getattr(w_res, "shape")) == (2,)
+    assert as_tensor(_get_attr(w_res, "shape")) == (2,)
 
     # Registry verification
     assert global_eager_registry.get("Pshuffle") is not None

@@ -31,6 +31,7 @@ from ml_switcheroo_compiler.backends.awkward.types import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor
@@ -132,7 +133,7 @@ def test_ragged_shape_and_broadcasting() -> None:
     assert to_list(b_rev_b) == [[20, 20, 20], [20], [20, 20]]
 
     # Classmethod invocation
-    res_pair = as_tensor(getattr(AwkwardGenerator, "broadcast_ragged"))(5, [[1], [2, 3]])
+    res_pair = as_tensor(_get_attr(AwkwardGenerator, "broadcast_ragged"))(5, [[1], [2, 3]])
     assert to_list(res_pair[0]) == [[5], [5, 5]]
 
 
@@ -166,15 +167,15 @@ def test_layout_conversions() -> None:
     assert layout_info["is_ragged"] is True
 
     # Classmethods on AwkwardGenerator
-    assert bool(as_tensor(getattr(AwkwardGenerator, "is_ragged"))([[1], [2, 3]])) is True
-    assert as_tensor(getattr(AwkwardGenerator, "ragged_shape"))([[1], [2]]) == (2, 1)
-    assert as_tensor(getattr(AwkwardGenerator, "to_regular"))([[1, 2], [3]]) is not None
-    assert as_tensor(getattr(AwkwardGenerator, "from_regular"))([[1, 2]]) is not None
-    assert as_tensor(getattr(AwkwardGenerator, "to_numpy"))(np.array([1])) is not None
-    assert as_tensor(getattr(AwkwardGenerator, "from_numpy"))(np.array([1])) is not None
-    assert as_tensor(getattr(AwkwardGenerator, "to_list"))([1, 2]) == [1, 2]
-    assert as_tensor(getattr(AwkwardGenerator, "from_iter"))([1, 2]) is not None
-    assert as_tensor(getattr(AwkwardGenerator, "get_layout"))([[1]]) is not None
+    assert bool(as_tensor(_get_attr(AwkwardGenerator, "is_ragged"))([[1], [2, 3]])) is True
+    assert as_tensor(_get_attr(AwkwardGenerator, "ragged_shape"))([[1], [2]]) == (2, 1)
+    assert as_tensor(_get_attr(AwkwardGenerator, "to_regular"))([[1, 2], [3]]) is not None
+    assert as_tensor(_get_attr(AwkwardGenerator, "from_regular"))([[1, 2]]) is not None
+    assert as_tensor(_get_attr(AwkwardGenerator, "to_numpy"))(np.array([1])) is not None
+    assert as_tensor(_get_attr(AwkwardGenerator, "from_numpy"))(np.array([1])) is not None
+    assert as_tensor(_get_attr(AwkwardGenerator, "to_list"))([1, 2]) == [1, 2]
+    assert as_tensor(_get_attr(AwkwardGenerator, "from_iter"))([1, 2]) is not None
+    assert as_tensor(_get_attr(AwkwardGenerator, "get_layout"))([[1]]) is not None
 
 
 def test_generator_dedicated_visitors() -> None:
@@ -305,8 +306,8 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_1(_state: dict[str, 
     assert _eval_ragged_fallback("prod", ([[2, 3], 4],), {"axis": 1})[1] == [6, 4]
     assert _eval_ragged_fallback("prod", ([[2, 3], 4],), {})[1] == 24
     assert _eval_ragged_fallback("prod", ([],), {})[1] == 1
-    getattr(_state, "update")({"code_non_ragged": code_non_ragged, "g": g, "gen_non_ragged": gen_non_ragged})
-    _state.update(locals())
+    _get_attr(_state, "update")({"code_non_ragged": code_non_ragged, "g": g, "gen_non_ragged": gen_non_ragged})
+    _state.update(_caller_locals())
 
 
 def _test_awkward_fallbacks_and_comprehensive_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -347,9 +348,9 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_2(_state: dict[str, 
             """
             raise RuntimeError("to_regular error")
 
-    getattr(_state, "update")({"FakeNoBroadcastAk": FakeNoBroadcastAk, "FakeNoToRegularAk": FakeNoToRegularAk, "b1": b1, "b2": b2})
-    getattr(_state, "update")({"b3": b3, "b4": b4, "b5": b5, "b6": b6})
-    _state.update(locals())
+    _get_attr(_state, "update")({"FakeNoBroadcastAk": FakeNoBroadcastAk, "FakeNoToRegularAk": FakeNoToRegularAk, "b1": b1, "b2": b2})
+    _get_attr(_state, "update")({"b3": b3, "b4": b4, "b5": b5, "b6": b6})
+    _state.update(_caller_locals())
 
 
 def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -361,10 +362,10 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
     FakeNoToRegularAk = _state["FakeNoToRegularAk"]
     with mock.patch("ml_switcheroo_compiler.backends.awkward.types._get_ak_module", return_value=FakeNoToRegularAk):
         res_reg = to_regular([[1, 2], 3], fill_value=9)
-        assert as_tensor(getattr(res_reg, "shape")) == (2, 2)
+        assert as_tensor(_get_attr(res_reg, "shape")) == (2, 2)
         assert (
             as_tensor(
-                getattr(res_reg, "__getitem__")(
+                _get_attr(res_reg, "__getitem__")(
                     (
                         1,
                         1,
@@ -416,8 +417,8 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_3(_state: dict[str, 
             """
             raise RuntimeError("from_iter error")
 
-    getattr(_state, "update")({"FakeBrokenConversionsAk": FakeBrokenConversionsAk, "res_non_list": res_non_list, "res_reg": res_reg})
-    _state.update(locals())
+    _get_attr(_state, "update")({"FakeBrokenConversionsAk": FakeBrokenConversionsAk, "res_non_list": res_non_list, "res_reg": res_reg})
+    _state.update(_caller_locals())
 
 
 def _test_awkward_fallbacks_and_comprehensive_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -449,7 +450,7 @@ def _test_awkward_fallbacks_and_comprehensive_coverage_part_4(_state: dict[str, 
         layout = "dummy_layout"
 
     assert as_callable(get_layout)(as_callable(ObjectWithLayout)()) == "dummy_layout"
-    getattr(_state, "update")({"ObjectWithLayout": ObjectWithLayout, "ObjectWithToList": ObjectWithToList})
+    _get_attr(_state, "update")({"ObjectWithLayout": ObjectWithLayout, "ObjectWithToList": ObjectWithToList})
 
 
 def test_awkward_fallbacks_and_comprehensive_coverage() -> None:

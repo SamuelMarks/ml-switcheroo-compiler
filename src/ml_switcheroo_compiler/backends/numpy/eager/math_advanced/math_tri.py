@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general import _get_np_arg
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.linalg.linear_operator import (
@@ -41,7 +42,7 @@ def _np_tri(
     Returns:
         np.ndarray: Triangular array with ones at and below diagonal.
     """
-    return as_ndarray(getattr(np, "tri")(*args, **kwargs))
+    return as_ndarray(_get_attr(np, "tri")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("TrilIndices")
@@ -60,7 +61,7 @@ def _np_trilindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    res = getattr(np, "tril_indices")(*args, **kwargs)
+    res = _get_attr(np, "tril_indices")(*args, **kwargs)
     return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
@@ -80,7 +81,7 @@ def _np_trilindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for lower triangle of input array.
     """
-    res = getattr(np, "tril_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
+    res = _get_attr(np, "tril_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
     return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
@@ -100,7 +101,7 @@ def _np_trimzeros(
     Returns:
         np.ndarray: Trimmed array without leading/trailing zeros.
     """
-    return as_ndarray(getattr(np, "trim_zeros")(np.asarray(args[0]), *args[1:], **kwargs))
+    return as_ndarray(_get_attr(np, "trim_zeros")(np.asarray(args[0]), *args[1:], **kwargs))
 
 
 @numpy_eager_registry.register("TriuIndices")
@@ -119,7 +120,7 @@ def _np_triuindices(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of row and column index arrays.
     """
-    res = getattr(np, "triu_indices")(*args, **kwargs)
+    res = _get_attr(np, "triu_indices")(*args, **kwargs)
     return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
@@ -139,7 +140,7 @@ def _np_triuindicesfrom(
     Returns:
         tuple[np.ndarray, np.ndarray]: Indices for upper triangle of input array.
     """
-    res = getattr(np, "triu_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
+    res = _get_attr(np, "triu_indices_from")(np.asarray(args[0]), *args[1:], **kwargs)
     return (as_ndarray(res[0]), as_ndarray(res[1]))
 
 
@@ -159,7 +160,7 @@ def _np_fromstring_(
     Returns:
         np.ndarray: 1-D array created from string.
     """
-    return as_ndarray(getattr(backend_module, "frombuffer" if "sep" not in kwargs and hasattr(backend_module, "frombuffer") else "fromstring")(*args, **kwargs))
+    return as_ndarray(_get_attr(backend_module, "frombuffer" if "sep" not in kwargs and _has_attr(backend_module, "frombuffer") else "fromstring")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("MatrixPower")

@@ -10,6 +10,7 @@ from unittest import mock
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.export.export_api import ExportArchive
 from tests.testing_utils import as_callable
 
@@ -86,10 +87,10 @@ def test_build_signature_def_with_graph() -> None:
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
-    setattr(input_node, "dtype", "float32")
+    _set_attr(input_node, "dtype", "float32")
 
     output_node = LogicalNode(id="n2", op_type="Add")
-    setattr(output_node, "dtype", "float32")
+    _set_attr(output_node, "dtype", "float32")
 
     graph.nodes = NodeDict({"n1": input_node, "n2": output_node})
     graph.outputs = ["n2"]
@@ -103,7 +104,7 @@ def test_build_signature_def_with_graph_no_outputs() -> None:
     archive = ExportArchive()
     graph = LogicalGraph()
     input_node = LogicalNode(id="n1", op_type="Input")
-    setattr(input_node, "dtype", "float32")
+    _set_attr(input_node, "dtype", "float32")
     graph.nodes = NodeDict({"n1": input_node})
     graph.outputs = []
 

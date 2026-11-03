@@ -10,6 +10,7 @@ import pytest
 import ml_switcheroo_compiler.backends.sparse as sp_pkg
 from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -56,10 +57,10 @@ def _test_sparse_conversions_and_kernels_part_1(_state: dict[str, EagerTensorPro
     empty_coo = COOTensor(indices=np.empty((2, 0), dtype=np.int64), values=np.empty((0,), dtype=np.float32), shape=(3, 3))
     empty_csr = sp_pkg.coo_to_csr(empty_coo)
     assert empty_csr.nnz == 0
-    getattr(_state, "update")({"coo": coo, "coo_1d": coo_1d, "coo_from_csc": coo_from_csc, "coo_from_csr": coo_from_csr})
-    getattr(_state, "update")({"csc": csc, "csc_from_csr": csc_from_csr, "csr": csr, "csr_from_csc": csr_from_csc})
-    getattr(_state, "update")({"dense_mat": dense_mat, "empty_coo": empty_coo, "empty_csr": empty_csr})
-    _state.update(locals())
+    _get_attr(_state, "update")({"coo": coo, "coo_1d": coo_1d, "coo_from_csc": coo_from_csc, "coo_from_csr": coo_from_csr})
+    _get_attr(_state, "update")({"csc": csc, "csc_from_csr": csc_from_csr, "csr": csr, "csr_from_csc": csr_from_csc})
+    _get_attr(_state, "update")({"dense_mat": dense_mat, "empty_coo": empty_coo, "empty_csr": empty_csr})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_conversions_and_kernels_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -101,11 +102,11 @@ def _test_sparse_conversions_and_kernels_part_2(_state: dict[str, EagerTensorPro
     # Elementwise addition (CSR and CSC)
     expected_add = dense_mat + dense_b
     csr_add_res = as_callable(sp_pkg.csr_add)(csr, csr_b)
-    getattr(_state, "update")({"bad_b": bad_b, "csr_add_res": csr_add_res, "csr_b": csr_b, "dense_b": dense_b})
-    getattr(_state, "update")({"dense_lhs": dense_lhs, "dense_rhs": dense_rhs, "dense_spmm_res": dense_spmm_res, "empty_csc": empty_csc})
-    getattr(_state, "update")({"expected_add": expected_add, "expected_dense_spmm": expected_dense_spmm, "expected_prod": expected_prod, "expected_spgemm": expected_spgemm})
-    getattr(_state, "update")({"spgemm_res": spgemm_res, "spmm_csc_res": spmm_csc_res, "spmm_res": spmm_res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"bad_b": bad_b, "csr_add_res": csr_add_res, "csr_b": csr_b, "dense_b": dense_b})
+    _get_attr(_state, "update")({"dense_lhs": dense_lhs, "dense_rhs": dense_rhs, "dense_spmm_res": dense_spmm_res, "empty_csc": empty_csc})
+    _get_attr(_state, "update")({"expected_add": expected_add, "expected_dense_spmm": expected_dense_spmm, "expected_prod": expected_prod, "expected_spgemm": expected_spgemm})
+    _get_attr(_state, "update")({"spgemm_res": spgemm_res, "spmm_csc_res": spmm_csc_res, "spmm_res": spmm_res})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_conversions_and_kernels_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -146,10 +147,10 @@ def _test_sparse_conversions_and_kernels_part_3(_state: dict[str, EagerTensorPro
     x_3d = np.ones((1, 4, 4), dtype=np.float32)
     w_3d = np.ones((1, 3, 3), dtype=np.float32)
     mask_3d = np.ones((2, 2), dtype=np.int64)
-    getattr(_state, "update")({"conv_2d_res": conv_2d_res, "csc_add_res": csc_add_res, "csc_b": csc_b, "empty_csc_zero": empty_csc_zero})
-    getattr(_state, "update")({"empty_csr_zero": empty_csr_zero, "mask_3d": mask_3d, "mask_pad": mask_pad, "w_2d": w_2d})
-    getattr(_state, "update")({"w_3d": w_3d, "x_2d": x_2d, "x_3d": x_3d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"conv_2d_res": conv_2d_res, "csc_add_res": csc_add_res, "csc_b": csc_b, "empty_csc_zero": empty_csc_zero})
+    _get_attr(_state, "update")({"empty_csr_zero": empty_csr_zero, "mask_3d": mask_3d, "mask_pad": mask_pad, "w_2d": w_2d})
+    _get_attr(_state, "update")({"w_3d": w_3d, "x_2d": x_2d, "x_3d": x_3d})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_conversions_and_kernels_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -180,10 +181,10 @@ def _test_sparse_conversions_and_kernels_part_4(_state: dict[str, EagerTensorPro
     res_eager_spmm = sp_pkg.execute_op(SparseGenerator, "spmm", csr, dense_rhs)
     as_callable(np.testing.assert_allclose)(res_eager_spmm, expected_prod)
     res_eager_spgemm = sp_pkg.execute_op(SparseGenerator, "spgemm", csr, csr_b)
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_eager_spgemm, "to_dense")))(), expected_spgemm)
-    getattr(_state, "update")({"conv_3d_res": conv_3d_res, "conv_mask_res": conv_mask_res, "mask": mask, "res_eager_spgemm": res_eager_spgemm})
-    getattr(_state, "update")({"res_eager_spmm": res_eager_spmm, "s_mask_res": s_mask_res, "tensor_to_mask": tensor_to_mask, "weight": weight})
-    getattr(_state, "update")({"x": x})
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_eager_spgemm, "to_dense")))(), expected_spgemm)
+    _get_attr(_state, "update")({"conv_3d_res": conv_3d_res, "conv_mask_res": conv_mask_res, "mask": mask, "res_eager_spgemm": res_eager_spgemm})
+    _get_attr(_state, "update")({"res_eager_spmm": res_eager_spmm, "s_mask_res": s_mask_res, "tensor_to_mask": tensor_to_mask, "weight": weight})
+    _get_attr(_state, "update")({"x": x})
 
 
 def test_sparse_conversions_and_kernels() -> None:

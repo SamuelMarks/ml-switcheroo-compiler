@@ -9,6 +9,7 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import check_numerical_grads, hvp
 from tests.testing_utils import as_callable, as_tensor
@@ -32,8 +33,8 @@ def test_hvp_robustness() -> None:
     v = Tensor(np.array([1.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
 
     val, out_tan = as_callable(hvp)(f, x, v)
-    assert as_tensor(getattr(val, "item"))() == 8.0
-    assert as_tensor(getattr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
+    assert as_tensor(_get_attr(val, "item"))() == 8.0
+    assert as_tensor(_get_attr(out_tan, "item"))() == 12.0  # 6 * x * v = 6 * 2 * 1 = 12
 
 
 def test_hessian() -> None:
@@ -87,7 +88,7 @@ def test_grad_of_grad() -> None:
     grad_g = grad(g, ["x"], "mul2")
     # Take grad of grad with respect to x again
     grad_grad_g = grad(grad_g, ["x"], grad_g.outputs[0])
-    assert "x" in [n.id for n in grad_grad_g.nodes.values() if getattr(n, "op_type", "") == "Input"]
+    assert "x" in [n.id for n in grad_grad_g.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
     assert len(grad_grad_g.outputs) == 1
 
 

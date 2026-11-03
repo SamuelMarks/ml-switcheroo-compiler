@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.search_sort_ops import _np_argsort, _np_partition, _np_percentile, _np_quantile, _np_search_sorted, _np_setdiff1d, _np_setxor1d, _np_sort, _np_sort_complex, _np_sort_key_val, _np_top_k, _np_unique
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -26,7 +27,7 @@ def test_partition() -> None:
     """Test function test_partition."""
     a = np.array([3, 4, 2, 1])
     res = _np_partition(np, a, 2)
-    assert as_tensor(getattr(res, "__getitem__")(2)) == 3
+    assert as_tensor(_get_attr(res, "__getitem__")(2)) == 3
 
 
 def test_percentile() -> None:

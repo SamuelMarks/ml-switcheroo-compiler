@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.registry import as_shape
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpArgValue, OpDef, register_op
@@ -22,9 +21,9 @@ def _infer_broadcast_shape(shapes: tuple[OpArgValue, ...]) -> tuple[int, ...]:
         tuple[int, ...]: Broadcasted output shape tuple.
     """
     if all(isinstance(s, tuple) for s in shapes):
-        return _bs(*typing.cast("tuple[tuple[int, ...], ...]", shapes))
+        return _bs(*_cast_val("tuple[tuple[int, ...], ...]", shapes))
 
-    return as_shape(getattr(shapes[0], "shape", shapes[0]))
+    return as_shape(_get_attr(shapes[0], "shape", shapes[0]))
 
 
 @register_op("Atan2")

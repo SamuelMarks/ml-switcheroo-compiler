@@ -14,6 +14,7 @@ import yaml
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
 T = typing.TypeVar("T")
@@ -245,7 +246,7 @@ def serialize_attribute(name: str, val: EagerValue, graph_serializer: Callable[[
         return attr_bytes + encode_length_delimited(4, raw_str) + encode_int(20, 3)  # STRING
     if isinstance(val, (list, tuple)):
         return _serialize_sequence_attribute(attr_bytes, val)
-    if hasattr(val, "nodes") and graph_serializer is not None:
+    if _has_attr(val, "nodes") and graph_serializer is not None:
         subgraph_bytes: bytes = graph_serializer(as_graph(val), f"{name}_subgraph")
         return attr_bytes + encode_length_delimited(6, subgraph_bytes) + encode_int(20, 5)  # GRAPH
     return attr_bytes + encode_string(4, str(val)) + encode_int(20, 3)
@@ -363,12 +364,12 @@ def validate_topological_sort(nodes: Sequence[IRNode], graph_inputs: Sequence[st
     """
     defined: set[str] = set(graph_inputs)
     for node in nodes:
-        nid: str = getattr(node, "id", "")
-        op_type: str = getattr(node, "op_type", "")
+        nid: str = _get_attr(node, "id", "")
+        op_type: str = _get_attr(node, "op_type", "")
         if op_type == "Input":
             defined.add(nid)
             continue
-        for inp in getattr(node, "inputs", []):
+        for inp in _get_attr(node, "inputs", []):
             if inp not in defined:
                 raise ValueError(f"Graph nodes are not topologically sorted: input '{inp}' is referenced before definition.")
         defined.add(nid)
@@ -520,7 +521,7 @@ class ONNXCodeGenerator(BaseGenerator):
             graph (IRGraph): The IR graph to process.
             delegates (Optional[T], optional): Visitor delegates.
         """
-        super().__init__(graph, typing.cast("list[BaseGenerator] | None", delegates))
+        super().__init__(graph, _cast_val("list[BaseGenerator] | None", delegates))
         self.var_map: dict[str, str] = {}
 
         yaml_path: str = os.path.join(os.path.dirname(__file__), "onnx_schema.yaml")
@@ -544,7 +545,7 @@ class ONNXCodeGenerator(BaseGenerator):
         if node is None:
             return "onnx_op"
 
-        nid: str = getattr(node, "id", str(uuid.uuid4()))
+        nid: str = _get_attr(node, "id", str(uuid.uuid4()))
         self.var_map[nid] = nid
         return nid
 
@@ -571,20 +572,20 @@ class ONNXCodeGenerator(BaseGenerator):
         lines: list[str] = ["ir_version: 7", 'producer_name: "ml-switcheroo-compiler"', "graph ml_switcheroo_graph {"]
 
         for node in self.sorted_nodes:
-            if getattr(node, "op_type", "") == "Input":
-                nid: str = getattr(node, "id", "")
-                shape: str = "x".join(str(s) for s in (getattr(node, "shape_metadata", ()) or ()))
-                dtype: str = getattr(node, "dtype", "float32")
+            if _get_attr(node, "op_type", "") == "Input":
+                nid: str = _get_attr(node, "id", "")
+                shape: str = "x".join(str(s) for s in (_get_attr(node, "shape_metadata", ()) or ()))
+                dtype: str = _get_attr(node, "dtype", "float32")
                 lines.append(f'  input: "{nid}" [shape: {shape}, dtype: {dtype}]')
 
         for node in self.sorted_nodes:
-            op_type: str = getattr(node, "op_type", "")
+            op_type: str = _get_attr(node, "op_type", "")
             if op_type != "Input":
-                nid = getattr(node, "id", "")
-                inps: str = ", ".join(f'"{i}"' for i in getattr(node, "inputs", []))
+                nid = _get_attr(node, "id", "")
+                inps: str = ", ".join(f'"{i}"' for i in _get_attr(node, "inputs", []))
                 lines.append(f'  "{nid}" = {op_type}({inps})')
 
-        for out_id in getattr(self.graph, "outputs", []) or []:
+        for out_id in _get_attr(self.graph, "outputs", []) or []:
             lines.append(f'  output: "{out_id}"')
 
         lines.append("}")
@@ -602,11 +603,11 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         if is_output:
             out_id: str = str(item)
-            node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_id), None)
             return node, out_id
         if isinstance(item, IRNode):
-            return item, str(getattr(item, "id", ""))
-        node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == str(item)), None)
+            return item, str(_get_attr(item, "id", ""))
+        node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == str(item)), None)
         return node, str(item)
 
     def _build_single_value_info(
@@ -630,8 +631,8 @@ class ONNXCodeGenerator(BaseGenerator):
         from onnx import helper
 
         node, name = self._get_node_and_name(item, is_output)
-        shape: tuple[int, ...] = getattr(node, "shape_metadata", ()) or () if node else ()
-        dt: str = getattr(node, "dtype", "float32") if node else "float32"
+        shape: tuple[int, ...] = _get_attr(node, "shape_metadata", ()) or () if node else ()
+        dt: str = _get_attr(node, "dtype", "float32") if node else "float32"
         proto_type: int = self._get_proto_type(dt, TensorProto)
         shape_list: list[int | str] = list(shape)
 
@@ -726,17 +727,17 @@ class ONNXCodeGenerator(BaseGenerator):
         onnx_nodes: list[NodeProtoType] = []
 
         for node in self.sorted_nodes:
-            op_type: str = getattr(node, "op_type", "")
+            op_type: str = _get_attr(node, "op_type", "")
             if op_type == "Input":
                 continue
 
-            nid: str = getattr(node, "id", "")
-            inputs: list[str] = getattr(node, "inputs", [])
+            nid: str = _get_attr(node, "id", "")
+            inputs: list[str] = _get_attr(node, "inputs", [])
 
             if op_type == "Constant":
                 val = float(as_float(node.attributes.get("value", 0.0)))
-                dt: str = getattr(node, "dtype", "float32")
-                shape: tuple[int, ...] = getattr(node, "shape_metadata", ()) or ()
+                dt: str = _get_attr(node, "dtype", "float32")
+                shape: tuple[int, ...] = _get_attr(node, "shape_metadata", ()) or ()
                 proto_type: int = self._get_proto_type(dt, TensorProto)
                 num_elements: int = math.prod(shape) if shape else 1
                 tensor_proto = helper.make_tensor(
@@ -749,7 +750,7 @@ class ONNXCodeGenerator(BaseGenerator):
             else:
                 onnx_op: str = self._resolve_onnx_op_name(op_type)
                 kwargs = self._build_subgraph_node_kwargs(node, nid, op_type)
-                onnx_nodes.append(getattr(helper, "make_node")(onnx_op, inputs=inputs, outputs=[nid], name=nid, **kwargs))
+                onnx_nodes.append(_get_attr(helper, "make_node")(onnx_op, inputs=inputs, outputs=[nid], name=nid, **kwargs))
         return onnx_nodes
 
     def _build_onnx_graph(self, dynamic_axes: dict[str, dict[int, str]] | None = None) -> GraphProtoType:
@@ -763,14 +764,15 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         from onnx import TensorProto, helper
 
-        input_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        onnx_inputs = getattr(self, "_build_onnx_value_infos")(input_nodes, dynamic_axes, TensorProto, is_output=False)
+        input_nodes = [n for n in self.sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+        onnx_inputs = _get_attr(self, "_build_onnx_value_infos")(input_nodes, dynamic_axes, TensorProto, is_output=False)
 
-        output_ids: list[str] = getattr(self.graph, "outputs", []) or []
-        onnx_outputs = getattr(self, "_build_onnx_value_infos")(output_ids, dynamic_axes, TensorProto, is_output=True)
+        output_ids: list[str] = _get_attr(self.graph, "outputs", []) or []
+        onnx_outputs = _get_attr(self, "_build_onnx_value_infos")(output_ids, dynamic_axes, TensorProto, is_output=True)
 
         onnx_nodes = self._build_onnx_nodes(TensorProto)
-        return typing.cast(GraphProtoType, getattr(helper, "make_graph")(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs))
+        _typed_ret_1: GraphProtoType = _cast_val(GraphProtoType, _get_attr(helper, "make_graph")(onnx_nodes, "ml_switcheroo_graph", onnx_inputs, onnx_outputs))
+        return _typed_ret_1
 
     @staticmethod
     def _apply_dynamic_axes_to_shape(
@@ -808,19 +810,19 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         inputs_bytes: list[bytes] = []
         for n in self.sorted_nodes:
-            if getattr(n, "op_type", "") == "Input":
-                name: str = getattr(n, "id", "")
-                dt: str = getattr(n, "dtype", "float32")
-                shape: list[int | str | None] = list(getattr(n, "shape_metadata", ()) or ())
+            if _get_attr(n, "op_type", "") == "Input":
+                name: str = _get_attr(n, "id", "")
+                dt: str = _get_attr(n, "dtype", "float32")
+                shape: list[int | str | None] = list(_get_attr(n, "shape_metadata", ()) or ())
                 self._apply_dynamic_axes_to_shape(name, shape, dynamic_axes)
                 inputs_bytes.append(serialize_value_info(name, self._get_proto_type(dt), shape))
 
         outputs_bytes: list[bytes] = []
-        for out_id in getattr(self.graph, "outputs", []) or []:
+        for out_id in _get_attr(self.graph, "outputs", []) or []:
             out_name = str(out_id)
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_name), None)
-            dt = getattr(out_node, "dtype", "float32") if out_node else "float32"
-            shape = list(getattr(out_node, "shape_metadata", ()) or ()) if out_node else []
+            out_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_name), None)
+            dt = _get_attr(out_node, "dtype", "float32") if out_node else "float32"
+            shape = list(_get_attr(out_node, "shape_metadata", ()) or ()) if out_node else []
             self._apply_dynamic_axes_to_shape(out_name, shape, dynamic_axes)
             outputs_bytes.append(serialize_value_info(out_name, self._get_proto_type(dt), shape))
 
@@ -840,17 +842,17 @@ class ONNXCodeGenerator(BaseGenerator):
         Returns:
             bytes: Serialized NodeProto wire bytes.
         """
-        op_type: str = getattr(node, "op_type", "")
-        nid: str = getattr(node, "id", "")
-        inputs: list[str] = list(getattr(node, "inputs", []))
+        op_type: str = _get_attr(node, "op_type", "")
+        nid: str = _get_attr(node, "id", "")
+        inputs: list[str] = list(_get_attr(node, "inputs", []))
         outputs: list[str] = [nid]
-        attrs_dict: dict[str, EagerValue] = getattr(node, "attributes", {})
+        attrs_dict: dict[str, EagerValue] = _get_attr(node, "attributes", {})
         attributes: list[bytes] = []
 
         if op_type == "Constant":
             c_val = attrs_dict.get("value", 0.0)
-            dt = getattr(node, "dtype", "float32")
-            shape_c = [int(x) for x in (getattr(node, "shape_metadata", ()) or ())]
+            dt = _get_attr(node, "dtype", "float32")
+            shape_c = [int(x) for x in (_get_attr(node, "shape_metadata", ()) or ())]
             p_type = self._get_proto_type(dt)
             num_elem: int = math.prod(shape_c) if shape_c else 1
             raw_data: bytes = struct.pack(f"<{num_elem}f", *([float(as_float(c_val))] * num_elem))
@@ -897,7 +899,7 @@ class ONNXCodeGenerator(BaseGenerator):
         if not (14 <= opset_version <= 20):
             raise ValueError(f"Unsupported ONNX opset_version {opset_version}: must be between 14 and 20.")
 
-        validate_topological_sort(self.sorted_nodes, getattr(self.graph, "inputs", []) or [])
+        validate_topological_sort(self.sorted_nodes, _get_attr(self.graph, "inputs", []) or [])
         inputs_bytes, outputs_bytes = self._serialize_io_value_infos(dynamic_axes)
 
         def sub_serializer(subgraph: IRGraph, sub_name: str) -> bytes:
@@ -913,7 +915,7 @@ class ONNXCodeGenerator(BaseGenerator):
             subgen = ONNXCodeGenerator(subgraph)
             return subgen._serialize_graph_internal(sub_name, None)
 
-        nodes_bytes: list[bytes] = [self._serialize_single_ir_node(node, sub_serializer) for node in self.sorted_nodes if getattr(node, "op_type", "") != "Input"]
+        nodes_bytes: list[bytes] = [self._serialize_single_ir_node(node, sub_serializer) for node in self.sorted_nodes if _get_attr(node, "op_type", "") != "Input"]
 
         graph_payload: bytes = serialize_graph("ml_switcheroo_graph", nodes_bytes, inputs_bytes, outputs_bytes)
         return serialize_model(graph_payload, producer_name="ml-switcheroo-compiler", opset_version=opset_version, ir_version=8)
@@ -930,31 +932,31 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         inputs_bytes: list[bytes] = []
         for n in self.sorted_nodes:
-            if getattr(n, "op_type", "") == "Input":
-                name: str = getattr(n, "id", "")
-                dt: str = getattr(n, "dtype", "float32")
-                shape: list[int | str | None] = list(getattr(n, "shape_metadata", ()) or ())
+            if _get_attr(n, "op_type", "") == "Input":
+                name: str = _get_attr(n, "id", "")
+                dt: str = _get_attr(n, "dtype", "float32")
+                shape: list[int | str | None] = list(_get_attr(n, "shape_metadata", ()) or ())
                 p_type: int = self._get_proto_type(dt)
                 inputs_bytes.append(serialize_value_info(name, p_type, shape))
 
         outputs_bytes: list[bytes] = []
-        for out_id in getattr(self.graph, "outputs", []) or []:
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == str(out_id)), None)
-            dt = getattr(out_node, "dtype", "float32") if out_node else "float32"
-            shape = list(getattr(out_node, "shape_metadata", ()) or ()) if out_node else []
+        for out_id in _get_attr(self.graph, "outputs", []) or []:
+            out_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == str(out_id)), None)
+            dt = _get_attr(out_node, "dtype", "float32") if out_node else "float32"
+            shape = list(_get_attr(out_node, "shape_metadata", ()) or ()) if out_node else []
             p_type = self._get_proto_type(dt)
             outputs_bytes.append(serialize_value_info(str(out_id), p_type, shape))
 
         nodes_bytes: list[bytes] = []
         for node in self.sorted_nodes:
-            op_type: str = getattr(node, "op_type", "")
+            op_type: str = _get_attr(node, "op_type", "")
             if op_type == "Input":
                 continue
-            nid: str = getattr(node, "id", "")
-            inputs: list[str] = list(getattr(node, "inputs", []))
+            nid: str = _get_attr(node, "id", "")
+            inputs: list[str] = list(_get_attr(node, "inputs", []))
             outputs: list[str] = [nid]
             attributes: list[bytes] = []
-            for k, v in getattr(node, "attributes", {}).items():
+            for k, v in _get_attr(node, "attributes", {}).items():
                 if k in ("dtype", "shape", "is_state", "is_state_update", "param_name", "variable_name", "name"):
                     continue
                 attributes.append(serialize_attribute(k, v))
@@ -978,10 +980,10 @@ class ONNXCodeGenerator(BaseGenerator):
             try:
                 from onnx import printer
 
-                res = getattr(printer, "to_text")(graph_def)
+                res = _get_attr(printer, "to_text")(graph_def)
                 return res if isinstance(res, str) else str(res)
             except (ImportError, AttributeError):
-                return str(getattr(helper, "printable_graph")(graph_def))
+                return str(_get_attr(helper, "printable_graph")(graph_def))
         except (ImportError, AttributeError):
             return self._generate_text_fallback()
 
@@ -1046,7 +1048,7 @@ class ONNXCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.core.tensor import Tensor
 
-        input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+        input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
         input_feed: dict[str, EagerValue] = {}
         for i, inp_node in enumerate(input_nodes):
             if i < len(w_args):
@@ -1104,7 +1106,7 @@ class ONNXCodeGenerator(BaseGenerator):
                     EagerValue: Evaluated output tensors.
                 """
                 evaluated = evaluate_graph(graph, inputs=self._prepare_runner_input_feed(graph, w_args, w_kwargs))
-                outputs = getattr(graph, "outputs", None)
+                outputs = _get_attr(graph, "outputs", None)
                 if outputs:
                     return evaluated.get(outputs[0]) if len(outputs) == 1 else tuple(evaluated.get(out_id) for out_id in outputs)
                 return evaluated

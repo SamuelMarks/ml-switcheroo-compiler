@@ -13,6 +13,7 @@ import ml_switcheroo_compiler.ops.shape.dynamic_slicing as dynamic_slicing_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from tests.testing_utils import as_callable, as_tensor
 
@@ -54,8 +55,8 @@ def test_shape_dynamic_slicing_coverage() -> None:
         start_1 = 2  # integer without .data
 
         res = as_callable(dynamic_slicing_mod.dynamic_slice)(t_arr, [start_0, start_1], [2, 2])
-        assert as_tensor(getattr(res, "shape")) == (2, 2)
-        assert as_callable(np.array_equal)(as_tensor(getattr(res, "data")), as_callable(np.array)([[6, 7], [10, 11]]))
+        assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+        assert as_callable(np.array_equal)(as_tensor(_get_attr(res, "data")), as_callable(np.array)([[6, 7], [10, 11]]))
 
         # dynamic_slice non-eager mode
         config.eager_mode = False

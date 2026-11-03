@@ -27,6 +27,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_stats import (
     _np_randomtruncatednormal,
     _np_randomuniform,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -43,20 +44,20 @@ def test_corrcoef() -> None:
     """Test function test_corrcoef."""
     x = np.array([[0.1, 0.32, 0.2, 0.4, 0.8], [0.23, 0.18, 0.56, 0.61, 0.12], [0.9, 0.3, 0.6, 0.5, 0.3], [0.34, 0.75, 0.91, 0.19, 0.21]])
     res = _np_corrcoef(np, x)
-    assert as_tensor(getattr(res, "shape")) == (4, 4)
+    assert as_tensor(_get_attr(res, "shape")) == (4, 4)
 
 
 def test_correlate() -> None:
     """Test function test_correlate."""
     res = _np_correlate(np, [1, 2, 3], [0, 1, 0.5])
-    assert as_tensor(getattr(res, "shape")) == (1,)
+    assert as_tensor(_get_attr(res, "shape")) == (1,)
 
 
 def test_cov() -> None:
     """Test function test_cov."""
     x = np.array([[0.1, 0.32, 0.2, 0.4, 0.8], [0.23, 0.18, 0.56, 0.61, 0.12], [0.9, 0.3, 0.6, 0.5, 0.3], [0.34, 0.75, 0.91, 0.19, 0.21]])
     res = _np_cov(np, x)
-    assert as_tensor(getattr(res, "shape")) == (4, 4)
+    assert as_tensor(_get_attr(res, "shape")) == (4, 4)
 
 
 def test_histogram() -> None:
@@ -68,7 +69,7 @@ def test_histogram() -> None:
 def test_histogram2d() -> None:
     """Test function test_histogram2d."""
     (res, xedges, yedges) = as_callable(_np_histogram2d_)(np, [1, 2, 1], [1, 2, 1], bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
-    assert as_tensor(getattr(res, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 3)
 
 
 def test_histogram_bin_edges() -> None:
@@ -80,7 +81,7 @@ def test_histogram_bin_edges() -> None:
 def test_histogramdd() -> None:
     """Test function test_histogramdd."""
     (res, edges) = as_callable(_np_histogramdd_)(np, ([1, 2, 1], [1, 2, 1]), bins=[[0, 1, 2, 3], [0, 1, 2, 3]])
-    assert as_tensor(getattr(res, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 3)
 
 
 def test_median() -> None:
@@ -94,10 +95,10 @@ def test_confusion_matrix() -> None:
     y_true = np.array([0, 1, 2, 0, 1, 2])
     y_pred = np.array([0, 2, 1, 0, 0, 1])
     res = _np_confusion_matrix(np, y_true, y_pred)
-    assert as_tensor(getattr(res, "shape")) == (3, 3)
-    assert as_tensor(getattr(res, "__getitem__")((0, 0))) == 2
+    assert as_tensor(_get_attr(res, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res, "__getitem__")((0, 0))) == 2
     res_kwargs = _np_confusion_matrix(np, labels=y_true, predictions=y_pred, num_classes=3)
-    assert as_tensor(getattr(res_kwargs, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (3, 3)
     with pytest.raises(ValueError, match="Expected labels and predictions"):
         _np_confusion_matrix(np)
 
@@ -113,19 +114,19 @@ def test_confusion_matrix() -> None:
             self.data = data
 
     res_mock = _np_confusion_matrix(np, as_tensor(MockData(y_true)), as_tensor(MockData(y_pred)))
-    assert as_tensor(getattr(res_mock, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res_mock, "shape")) == (3, 3)
 
 
 def test_descriptive() -> None:
     """Test function test_descriptive."""
     a = np.array([1, 2, 3, 4, 5])
     res = _np_descriptive(np, a)
-    assert as_tensor(getattr(res, "__getitem__")("mean")) == 3.0
-    assert as_tensor(getattr(res, "__getitem__")("std")) == as_callable(pytest.approx)(1.41421356)
-    assert as_tensor(getattr(res, "__getitem__")("min")) == 1
-    assert as_tensor(getattr(res, "__getitem__")("max")) == 5
+    assert as_tensor(_get_attr(res, "__getitem__")("mean")) == 3.0
+    assert as_tensor(_get_attr(res, "__getitem__")("std")) == as_callable(pytest.approx)(1.41421356)
+    assert as_tensor(_get_attr(res, "__getitem__")("min")) == 1
+    assert as_tensor(_get_attr(res, "__getitem__")("max")) == 5
     res_kwargs = _np_descriptive(np, a=a)
-    assert as_tensor(getattr(res_kwargs, "__getitem__")("mean")) == 3.0
+    assert as_tensor(_get_attr(res_kwargs, "__getitem__")("mean")) == 3.0
     with pytest.raises(ValueError, match="Expected 1 argument"):
         _np_descriptive(np)
 
@@ -141,13 +142,13 @@ def test_descriptive() -> None:
             self.data = data
 
     res_mock = _np_descriptive(np, as_tensor(MockData(a)))
-    assert as_tensor(getattr(res_mock, "__getitem__")("mean")) == 3.0
+    assert as_tensor(_get_attr(res_mock, "__getitem__")("mean")) == 3.0
 
 
 def test_distributions() -> None:
     """Test function test_distributions."""
     res = _np_distributions(np)
-    assert as_tensor(getattr(res, "tolist"))() == [0.0]
+    assert as_tensor(_get_attr(res, "tolist"))() == [0.0]
 
 
 def test_randomcategorical() -> None:
@@ -165,22 +166,22 @@ def test_randompermutation() -> None:
 def test_randomtruncatednormal() -> None:
     """Test function test_randomtruncatednormal."""
     res = _np_randomtruncatednormal(np, (2, 2))
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res_kwargs = _np_randomtruncatednormal(np, shape=(2, 2))
-    assert as_tensor(getattr(res_kwargs, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (2, 2)
 
 
 def test_randombernoulli() -> None:
     """Test function test_randombernoulli."""
     res = _np_randombernoulli(np, (2, 2), 0.5)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res_kwargs = _np_randombernoulli(np, shape=(2, 2), p=0.5)
-    assert as_tensor(getattr(res_kwargs, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (2, 2)
 
 
 def test_randomuniform() -> None:
     """Test function test_randomuniform."""
     res = _np_randomuniform(np, (2, 2), 0.0, 1.0)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res_kwargs = _np_randomuniform(np, shape=(2, 2), minval=0.0, maxval=1.0)
-    assert as_tensor(getattr(res_kwargs, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (2, 2)

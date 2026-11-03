@@ -29,23 +29,29 @@ class Sub:
     def __init__(self) -> None:
         """Initialize."""
         super().__init__()
+        super().__add__(1)
+        self.normal_method()
         self.x = getattr(self, "x", 1)
         self.y = typing.cast(int, 2)
         self.z = self.__add__(3)
 ''',
         encoding="utf-8",
     )
+    exact_file = tmp_path / "src" / "ml_switcheroo_compiler" / "foreign.py"
+    exact_file.write_text('"""Foreign."""\n', encoding="utf-8")
 
     violations = lt.scan_file(str(strict_file))
     assert any("prohibited reflection/cast call 'getattr()'" in v for v in violations)
     assert any("prohibited 'typing.cast()' call" in v for v in violations)
     assert any("prohibited direct dunder call '.__add__()'" in v for v in violations)
+    assert lt.scan_file(str(exact_file)) == []
 
-    assert lt.main([str(strict_file)]) == 1
+    assert lt.main([str(tmp_path)]) == 1
     assert lt.scan_directory(str(tmp_path / "nonexistent")) == []
     txt_file = tmp_path / "notes.txt"
     txt_file.write_text("hi", encoding="utf-8")
     assert lt.scan_directory(str(txt_file)) == []
+    assert len(lt.scan_directory(str(tmp_path))) >= 3
 
     bad_syn = strict_dir / "bad.py"
     bad_syn.write_text("def broken(:", encoding="utf-8")
@@ -84,7 +90,7 @@ def incomplete_doc_fn(x: int, *args: int, y: int = 1, **kwargs: int) -> int:
     return x
 
 
-def missing_single_arg(a: int, b: int) -> None:
+def missing_single_arg(a: int, b: int):
     """Doc.
 
     Args:
@@ -109,6 +115,7 @@ def missing_single_arg(a: int, b: int) -> None:
     txt_file = tmp_path / "notes.txt"
     txt_file.write_text("hi", encoding="utf-8")
     assert cd.check_directory(str(txt_file)) == []
+    assert len(cd.check_directory(str(tmp_path))) >= 1
 
     clean_doc_file = tmp_path / "clean_docs.py"
     clean_doc_file.write_text(

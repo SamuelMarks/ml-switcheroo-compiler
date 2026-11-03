@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import vision_filtering as vision_filtering_module
+from ml_switcheroo_compiler.core.shape import _has_attr
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 from tests.testing_utils import as_callable
 
@@ -26,7 +27,7 @@ def test_vision_filtering_ops(monkeypatch: pytest.MonkeyPatch) -> None:
         None
     """
     for item in vision_filtering_module.__all__:
-        assert hasattr(vision_filtering_module, item)
+        assert _has_attr(vision_filtering_module, item)
 
     imgs = np.ones((1, 8, 8, 3), dtype=np.float32)
     assert as_callable(np.array_equal)(as_callable(vision_filtering_module._np_degeneration)(np, imgs), imgs)

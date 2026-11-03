@@ -1,6 +1,7 @@
 """Tests for test_foreign."""
 
 from __future__ import annotations
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
@@ -248,13 +249,13 @@ def test_generic_utils_stubs() -> None:
     """Test generic utils stubs."""
     from ml_switcheroo_compiler.utils.generic_utils import disable_interactive_logging, enable_interactive_logging, is_interactive_logging_enabled, is_symbolic_tensor, standardize_dtype
 
-    CustomObjectScope = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
-    deserialize_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-    get_custom_objects = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
-    get_registered_name = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
-    get_registered_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
-    register_serializable = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
-    serialize_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+    CustomObjectScope = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
+    deserialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
+    get_custom_objects = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
+    get_registered_name = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
+    get_registered_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
+    register_serializable = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
+    serialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
 
     with CustomObjectScope():
         pass
@@ -476,7 +477,7 @@ def test_foreign_coverage() -> None:
             pass
 
     mock_callable = as_callable(CallableWithSignature)(tuple[int, int, int])
-    setattr(mock_callable, "__signature__", inspect.Signature(return_annotation=tuple[int, int, int]))
+    _set_attr(mock_callable, "__signature__", inspect.Signature(return_annotation=tuple[int, int, int]))
     assert as_tensor(op.infer_shape(mock_callable)) == as_tensor((int, int, int))
 
     # 7e. Callable with signature raising TypeError

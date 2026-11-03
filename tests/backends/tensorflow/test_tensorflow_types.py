@@ -6,6 +6,7 @@ import sys
 import typing
 from unittest.mock import MagicMock, patch
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -20,10 +21,10 @@ def test_tf_types() -> None:
     import ml_switcheroo_compiler.backends.tensorflow.types as mod
 
     _ = (zeros, array, asarray, item)
-    setattr(mod, "generic_zeros", MagicMock(return_value="zeros"))
-    setattr(mod, "generic_array", MagicMock(return_value="array"))
-    setattr(mod, "generic_asarray", MagicMock(return_value="asarray"))
-    setattr(mod, "generic_item", MagicMock(return_value="item"))
+    _set_attr(mod, "generic_zeros", MagicMock(return_value="zeros"))
+    _set_attr(mod, "generic_array", MagicMock(return_value="array"))
+    _set_attr(mod, "generic_asarray", MagicMock(return_value="asarray"))
+    _set_attr(mod, "generic_item", MagicMock(return_value="item"))
 
     assert as_callable(mod.zeros)(None, (2, 2)) == "zeros"
     assert as_callable(mod.array)(None, [1]) == "array"

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator
+from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
     _get_scalar_expression_snippet,
@@ -36,7 +35,7 @@ def test_elementwise_cluster_fusion_chain() -> None:
     fused = graph.nodes["relu1"]
     assert fused.op_type == "FusedElementwise"
     assert fused.inputs == ["in_a", "in_b"]
-    fused_ops = typing.cast("list[str]", fused.attributes["fused_ops"])
+    fused_ops = _cast_val("list[str]", fused.attributes["fused_ops"])
     scalar_expr = as_str(fused.attributes["scalar_expr"])
     assert "Add" in fused_ops
     assert "Mul" in fused_ops

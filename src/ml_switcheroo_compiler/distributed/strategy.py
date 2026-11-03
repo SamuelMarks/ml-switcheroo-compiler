@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import logging
 import os
 import typing
@@ -9,7 +10,7 @@ from contextlib import AbstractContextManager
 from types import ModuleType
 
 import yaml
-from ml_switcheroo_ir import NodeDict
+from ml_switcheroo_ir import AttributeValue, NodeDict
 
 import ml_switcheroo_compiler.backends.registry as registry
 from ml_switcheroo_compiler.backends.dpnp.types import _get_attr, _has_attr
@@ -18,8 +19,9 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     as_bool,
     as_callable,
 )
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _obj_set_attr
 from ml_switcheroo_compiler.distributed import Distribution
+from ml_switcheroo_compiler.distributed.config_models import TopologyConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
 
 AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
@@ -473,9 +475,8 @@ class PreemptionCheckpointHandler:
         import signal
 
         try:
-            sig_fn = vars(signal).get("signal")
-            as_callable(sig_fn)(signal.SIGTERM, self._handle_preemption_signal)
-            as_callable(sig_fn)(signal.SIGINT, self._handle_preemption_signal)
+            as_callable(signal.signal)(signal.SIGTERM, self._handle_preemption_signal)
+            as_callable(signal.signal)(signal.SIGINT, self._handle_preemption_signal)
         except (ValueError, AttributeError, TypeError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -701,6 +702,49 @@ class RemoteValue:
     def __init__(self) -> None:
         """Initialize."""
         self.value = None
+
+
+@typing.runtime_checkable
+class _HasTargetEnvProtocol(typing.Protocol):
+    """Protocol for strategy instances carrying a `target_env` attribute."""
+
+    target_env: str
+
+
+@typing.runtime_checkable
+class _HasTopologyConfigProtocol(typing.Protocol):
+    """Protocol for strategy instances carrying a `config` attribute."""
+
+    config: TopologyConfig
+
+
+@typing.runtime_checkable
+class _GraphAttributesProtocol(typing.Protocol):
+    """Protocol for graphs carrying an `attributes` dictionary."""
+
+    attributes: dict[str, AttributeValue]
+
+
+def _eval_schedule_count_ast(node: ast.AST, env: dict[str, int]) -> int:
+    """Recursively evaluate a simple arithmetic AST node for schedule phase counts.
+
+    Args:
+        node (ast.AST): Parsed AST node.
+        env (dict[str, int]): Mapping of variable names to integer values.
+
+    Returns:
+        int: Evaluated integer value.
+    """
+    if isinstance(node, ast.Expression):
+        return _eval_schedule_count_ast(node.body, env)
+    if isinstance(node, ast.Constant) and isinstance(node.value, int):
+        return int(node.value)
+    if isinstance(node, ast.Name):
+        return env[node.id]
+    assert isinstance(node, ast.BinOp)
+    left = _eval_schedule_count_ast(node.left, env)
+    right = _eval_schedule_count_ast(node.right, env)
+    return left + right if isinstance(node.op, ast.Add) else left - right
 
 
 class PipelineParallelStrategy(Distribution):
@@ -1002,12 +1046,14 @@ class PipelineParallelStrategy(Distribution):
         """
         num_stages = max(2, len(graph.nodes) // 10) if graph.nodes else 2
 
-        if "config" not in vars(self) or self.config.schedule is None:
+        raw_self: StructuralOperandProtocol = self
+        if not isinstance(raw_self, _HasTopologyConfigProtocol) or raw_self.config.schedule is None:
             return self._build_fallback_schedule(num_stages)
 
         schedule: list[tuple[str, int]] = []
-        for phase in self.config.schedule.phases:
-            count = int(eval(phase.count_expression, {"num_stages": num_stages, "num_microbatches": self.num_microbatches}))
+        env = {"num_stages": num_stages, "num_microbatches": self.num_microbatches}
+        for phase in raw_self.config.schedule.phases:
+            count = _eval_schedule_count_ast(ast.parse(phase.count_expression, mode="eval"), env)
             self._append_phase_steps(schedule, phase.type, count, list(phase.operations), num_stages)
 
         return schedule
@@ -1039,13 +1085,12 @@ class PipelineParallelStrategy(Distribution):
         schedule = self.generate_schedule(graph)
 
         # Emit schedule metadata into graph attributes for the executor
-        graph_vars = vars(graph)
-        if "attributes" not in graph_vars or not isinstance(graph_vars["attributes"], dict):
-            graph_vars["attributes"] = {}
-        attrs_dict = graph_vars["attributes"]
-        assert isinstance(attrs_dict, dict)
-        attrs_dict["pipeline_schedule"] = schedule
-        attrs_dict["num_pipeline_stages"] = num_stages
+        raw_g: StructuralOperandProtocol = graph
+        if not isinstance(raw_g, _GraphAttributesProtocol):
+            _obj_set_attr(raw_g, "attributes", {})
+        assert isinstance(raw_g, _GraphAttributesProtocol)
+        raw_g.attributes["pipeline_schedule"] = as_attrs({"s": schedule})["s"]
+        raw_g.attributes["num_pipeline_stages"] = num_stages
 
         return True
 
@@ -1055,7 +1100,8 @@ class PipelineParallelStrategy(Distribution):
         Returns:
             str: Computed result.
         """
-        if vars(self).get("target_env", "host") == "browser":
+        raw_self: StructuralOperandProtocol = self
+        if isinstance(raw_self, _HasTargetEnvProtocol) and raw_self.target_env == "browser":
             return "webrtc"
         return "tcp"
 
@@ -1111,13 +1157,13 @@ class SPMDShardingStrategy(Distribution):
             for inp_id in node.inputs:
                 inp_node = graph.nodes.get(inp_id)
                 if inp_node is not None and inp_node.sharding is not None:
-                    vars(node)["sharding"] = inp_node.sharding
+                    _obj_set_attr(node, "sharding", inp_node.sharding)
                     break
 
             if self.layout_map:
                 spec = self.layout_map.get(node.id)
                 if spec:
-                    vars(node)["sharding"] = spec
+                    _obj_set_attr(node, "sharding", spec)
 
     def lower_sharding(self, graph: IRGraph) -> bool:
         """Execute SPMD graph partitioning, lowering 1D/2D mesh sharding to explicit collectives.

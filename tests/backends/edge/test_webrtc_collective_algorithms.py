@@ -29,6 +29,7 @@ from ml_switcheroo_compiler.backends.edge.distributed_webrtc.collectives import 
     ring_all_reduce,
     ring_reduce_scatter,
 )
+from ml_switcheroo_compiler.core.shape import _caller_locals, _del_attr, _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_ndarray, as_tensor, as_tensor_list
 
 if typing.TYPE_CHECKING:
@@ -163,9 +164,9 @@ async def _test_stream_event_handlers_and_messages_part_1(_state: dict[str, Eage
 
     await stream_snake.send_bytes(b"hello")
     assert mock_snake.sent == [b"hello"]
-    getattr(_state, "update")({"ToBytesObj": ToBytesObj, "mock": mock, "mock_snake": mock_snake, "stream": stream})
-    getattr(_state, "update")({"stream_snake": stream_snake})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ToBytesObj": ToBytesObj, "mock": mock, "mock_snake": mock_snake, "stream": stream})
+    _get_attr(_state, "update")({"stream_snake": stream_snake})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_event_handlers_and_messages_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -205,9 +206,9 @@ async def _test_stream_event_handlers_and_messages_part_2(_state: dict[str, Eage
     st_async_sendmsg = as_callable(WebRTCDataChannelStream)(ch_async_sendmsg)
     await st_async_sendmsg.send_bytes(b"async_sendmsg")
     assert ch_async_sendmsg.msgs == [b"async_sendmsg"]
-    getattr(_state, "update")({"AsyncSendMessageChannel": AsyncSendMessageChannel, "CallableAmount": CallableAmount, "ch_async_sendmsg": ch_async_sendmsg, "st_async_sendmsg": st_async_sendmsg})
-    getattr(_state, "update")({"stream_cb": stream_cb})
-    _state.update(locals())
+    _get_attr(_state, "update")({"AsyncSendMessageChannel": AsyncSendMessageChannel, "CallableAmount": CallableAmount, "ch_async_sendmsg": ch_async_sendmsg, "st_async_sendmsg": st_async_sendmsg})
+    _get_attr(_state, "update")({"stream_cb": stream_cb})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_event_handlers_and_messages_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -241,8 +242,8 @@ async def _test_stream_event_handlers_and_messages_part_3(_state: dict[str, Eage
     st_sync_coro = as_callable(WebRTCDataChannelStream)(ch_sync_coro)
     await st_sync_coro.send_bytes(b"coro_msg")
     assert ch_sync_coro.msgs == [b"coro_msg"]
-    getattr(_state, "update")({"SyncSendCoroutineChannel": SyncSendCoroutineChannel, "ch_sync_coro": ch_sync_coro, "st_sync_coro": st_sync_coro})
-    _state.update(locals())
+    _get_attr(_state, "update")({"SyncSendCoroutineChannel": SyncSendCoroutineChannel, "ch_sync_coro": ch_sync_coro, "st_sync_coro": st_sync_coro})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_event_handlers_and_messages_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -287,9 +288,9 @@ async def _test_stream_event_handlers_and_messages_part_4(_state: dict[str, Eage
 
     st_recv = as_callable(WebRTCDataChannelStream)(as_callable(SyncRecvChannel)())
     assert await st_recv.recv_bytes() == b"from_recv"
-    getattr(_state, "update")({"SyncRecvChannel": SyncRecvChannel, "SyncSendNoneChannel": SyncSendNoneChannel, "ch_sync_none": ch_sync_none, "st_recv": st_recv})
-    getattr(_state, "update")({"st_sync_none": st_sync_none})
-    _state.update(locals())
+    _get_attr(_state, "update")({"SyncRecvChannel": SyncRecvChannel, "SyncSendNoneChannel": SyncSendNoneChannel, "ch_sync_none": ch_sync_none, "st_recv": st_recv})
+    _get_attr(_state, "update")({"st_sync_none": st_sync_none})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_event_handlers_and_messages_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -329,9 +330,9 @@ async def _test_stream_event_handlers_and_messages_part_5(_state: dict[str, Eage
     st_prop = as_callable(WebRTCDataChannelStream)(as_callable(PropAmount)())
     assert st_prop.get_buffered_amount() == 99
     await st_prop.send_bytes(b"ignored")
-    getattr(_state, "update")({"BytearrayRecvChannel": BytearrayRecvChannel, "NonCoroRecvChannel": NonCoroRecvChannel, "PropAmount": PropAmount, "st_ba": st_ba})
-    getattr(_state, "update")({"st_noncoro": st_noncoro, "st_prop": st_prop})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BytearrayRecvChannel": BytearrayRecvChannel, "NonCoroRecvChannel": NonCoroRecvChannel, "PropAmount": PropAmount, "st_ba": st_ba})
+    _get_attr(_state, "update")({"st_noncoro": st_noncoro, "st_prop": st_prop})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_event_handlers_and_messages_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -363,8 +364,8 @@ async def _test_stream_event_handlers_and_messages_part_6(_state: dict[str, Eage
 
     st_sync_sendmsg = as_callable(WebRTCDataChannelStream)(as_callable(SyncSendMessageCoroChannel)())
     await st_sync_sendmsg.send_bytes(b"sync_sendmsg_coro")
-    assert len(as_tensor(getattr(st_sync_sendmsg.channel, "msgs"))) == 1
-    getattr(_state, "update")({"SyncSendMessageCoroChannel": SyncSendMessageCoroChannel, "st_sync_sendmsg": st_sync_sendmsg})
+    assert len(as_tensor(_get_attr(st_sync_sendmsg.channel, "msgs"))) == 1
+    _get_attr(_state, "update")({"SyncSendMessageCoroChannel": SyncSendMessageCoroChannel, "st_sync_sendmsg": st_sync_sendmsg})
 
 
 @pytest.mark.asyncio
@@ -398,7 +399,7 @@ async def test_stream_backpressure() -> None:
         mock.bufferedAmount = 5
 
     mock.bufferedAmount = 100
-    setattr(mock, "wait_drain", mock_wait_drain)
+    _set_attr(mock, "wait_drain", mock_wait_drain)
     await stream.wait_backpressure()
     assert drain_called is True
 
@@ -408,10 +409,10 @@ async def test_stream_backpressure() -> None:
         """Test function mock_sync_drain."""
         mock.bufferedAmount = 5
 
-    setattr(mock, "wait_drain", mock_sync_drain)
+    _set_attr(mock, "wait_drain", mock_sync_drain)
     await stream.wait_backpressure()
 
-    delattr(mock, "wait_drain")
+    _del_attr(mock, "wait_drain")
     mock.bufferedAmount = 100
 
     async def trigger_drain() -> None:
@@ -806,9 +807,9 @@ def _test_dispatch_collective_and_registry_part_1(_state: dict[str, EagerTensorP
     assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="SUM", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t0 + t1, 2, axis=0)[0])
     assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="ADD", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t0 + t1, 2, axis=0)[0])
     assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="PROD", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t0 * t1, 2, axis=0)[0])
-    getattr(_state, "update")({"all_data": all_data, "arr": arr, "custom_disp": custom_disp, "gathered": gathered})
-    getattr(_state, "update")({"res_custom": res_custom, "t0": t0, "t1": t1})
-    _state.update(locals())
+    _get_attr(_state, "update")({"all_data": all_data, "arr": arr, "custom_disp": custom_disp, "gathered": gathered})
+    _get_attr(_state, "update")({"res_custom": res_custom, "t0": t0, "t1": t1})
+    _state.update(_caller_locals())
 
 
 def _test_dispatch_collective_and_registry_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -820,15 +821,15 @@ def _test_dispatch_collective_and_registry_part_2(_state: dict[str, EagerTensorP
     all_data, t0, t1 = _state["all_data"], _state["t0"], _state["t1"]
     assert as_callable(np.allclose)(
         as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="PRODUCT", scatter_dim=0, rank=0, all_ranks_data=all_data),
-        as_tensor(getattr(as_callable(np.array_split)(t0 * t1, 2, axis=0), "__getitem__")(0)),
+        as_tensor(_get_attr(as_callable(np.array_split)(t0 * t1, 2, axis=0), "__getitem__")(0)),
     )
     assert as_callable(np.allclose)(
         as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="MAX", scatter_dim=0, rank=0, all_ranks_data=all_data),
-        as_tensor(getattr(as_callable(np.array_split)(as_callable(np.maximum)(t0, t1), 2, axis=0), "__getitem__")(0)),
+        as_tensor(_get_attr(as_callable(np.array_split)(as_callable(np.maximum)(t0, t1), 2, axis=0), "__getitem__")(0)),
     )
     assert as_callable(np.allclose)(
         as_callable(dispatch_collective)("ReduceScatter", t0, backend="numpy", op_type="MIN", scatter_dim=0, rank=0, all_ranks_data=all_data),
-        as_tensor(getattr(as_callable(np.array_split)(as_callable(np.minimum)(t0, t1), 2, axis=0), "__getitem__")(0)),
+        as_tensor(_get_attr(as_callable(np.array_split)(as_callable(np.minimum)(t0, t1), 2, axis=0), "__getitem__")(0)),
     )
     a2a = dispatch_collective("AllToAll", t0, backend="numpy", scatter_dim=0, gather_dim=0, rank=0, all_ranks_data=all_data)
     assert a2a is not None
@@ -851,9 +852,9 @@ def _test_dispatch_collective_and_registry_part_2(_state: dict[str, EagerTensorP
 
     # PyTorch backend mock dispatch
     mock_pt = MagicMock()
-    getattr(_state, "update")({"a2a": a2a, "bcast": bcast, "fallback": fallback, "fb_jax": fb_jax})
-    getattr(_state, "update")({"fb_pt": fb_pt, "mock_pt": mock_pt})
-    _state.update(locals())
+    _get_attr(_state, "update")({"a2a": a2a, "bcast": bcast, "fallback": fallback, "fb_jax": fb_jax})
+    _get_attr(_state, "update")({"fb_pt": fb_pt, "mock_pt": mock_pt})
+    _state.update(_caller_locals())
 
 
 def _test_dispatch_collective_and_registry_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -864,10 +865,10 @@ def _test_dispatch_collective_and_registry_part_3(_state: dict[str, EagerTensorP
     """
     mock_pt, t0 = _state["mock_pt"], _state["t0"]
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.pytorch.distributed_collectives": mock_pt}):
-        setattr(mock_pt.pytorch_all_reduce, "return_value", t0 + 1)
-        setattr(mock_pt.pytorch_all_gather, "return_value", t0 + 2)
-        setattr(mock_pt.pytorch_reduce_scatter, "return_value", t0 + 3)
-        setattr(mock_pt.pytorch_broadcast, "return_value", t0 + 4)
+        _set_attr(mock_pt.pytorch_all_reduce, "return_value", t0 + 1)
+        _set_attr(mock_pt.pytorch_all_gather, "return_value", t0 + 2)
+        _set_attr(mock_pt.pytorch_reduce_scatter, "return_value", t0 + 3)
+        _set_attr(mock_pt.pytorch_broadcast, "return_value", t0 + 4)
 
         res_ar = dispatch_collective("AllReduce", t0, backend="pytorch")
         assert as_callable(np.allclose)(res_ar, t0 + 1)
@@ -883,9 +884,9 @@ def _test_dispatch_collective_and_registry_part_3(_state: dict[str, EagerTensorP
 
     # JAX backend mock dispatch
     mock_jax = MagicMock()
-    getattr(_state, "update")({"mock_jax": mock_jax, "res_ag": res_ag, "res_ar": res_ar, "res_bc": res_bc})
-    getattr(_state, "update")({"res_rs": res_rs})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_jax": mock_jax, "res_ag": res_ag, "res_ar": res_ar, "res_bc": res_bc})
+    _get_attr(_state, "update")({"res_rs": res_rs})
+    _state.update(_caller_locals())
 
 
 def _test_dispatch_collective_and_registry_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -896,9 +897,9 @@ def _test_dispatch_collective_and_registry_part_4(_state: dict[str, EagerTensorP
     """
     mock_jax, t0 = _state["mock_jax"], _state["t0"]
     with patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.jax.distributed_collectives": mock_jax}):
-        setattr(mock_jax.jax_all_reduce, "return_value", t0 + 10)
-        setattr(mock_jax.jax_all_gather, "return_value", t0 + 20)
-        setattr(mock_jax.jax_broadcast, "return_value", t0 + 30)
+        _set_attr(mock_jax.jax_all_reduce, "return_value", t0 + 10)
+        _set_attr(mock_jax.jax_all_gather, "return_value", t0 + 20)
+        _set_attr(mock_jax.jax_broadcast, "return_value", t0 + 30)
 
         res_jar = dispatch_collective("AllReduce", t0, backend="jax")
         assert as_callable(np.allclose)(res_jar, t0 + 10)
@@ -908,7 +909,7 @@ def _test_dispatch_collective_and_registry_part_4(_state: dict[str, EagerTensorP
 
         res_jbc = dispatch_collective("Broadcast", t0, backend="jax")
         assert as_callable(np.allclose)(res_jbc, t0 + 30)
-    getattr(_state, "update")({"res_jag": res_jag, "res_jar": res_jar, "res_jbc": res_jbc})
+    _get_attr(_state, "update")({"res_jag": res_jag, "res_jar": res_jar, "res_jbc": res_jbc})
 
 
 def test_dispatch_collective_and_registry() -> None:
@@ -973,12 +974,12 @@ async def _test_webrtc_collectives_error_handling_part_1(_state: dict[str, Eager
         "num_chunks": 1,
         "chunk_size": 8,
     }
-    getattr(_state, "update")({"_": _, "arr_eq": arr_eq, "b_none": b_none, "ch_eq1": ch_eq1})
-    getattr(_state, "update")({"ch_eq2": ch_eq2, "ch_f1": ch_f1, "ch_f2": ch_f2, "ch_raw1": ch_raw1})
-    getattr(_state, "update")({"ch_raw2": ch_raw2, "f_meta": f_meta, "foreign_order": foreign_order, "header_f": header_f})
-    getattr(_state, "update")({"json": json, "meta_raw": meta_raw, "raw_f": raw_f, "recv_task": recv_task})
-    getattr(_state, "update")({"res_eq": res_eq, "res_f": res_f, "res_rd_none": res_rd_none, "send_task": send_task})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "arr_eq": arr_eq, "b_none": b_none, "ch_eq1": ch_eq1})
+    _get_attr(_state, "update")({"ch_eq2": ch_eq2, "ch_f1": ch_f1, "ch_f2": ch_f2, "ch_raw1": ch_raw1})
+    _get_attr(_state, "update")({"ch_raw2": ch_raw2, "f_meta": f_meta, "foreign_order": foreign_order, "header_f": header_f})
+    _get_attr(_state, "update")({"json": json, "meta_raw": meta_raw, "raw_f": raw_f, "recv_task": recv_task})
+    _get_attr(_state, "update")({"res_eq": res_eq, "res_f": res_f, "res_rd_none": res_rd_none, "send_task": send_task})
+    _state.update(_caller_locals())
 
 
 async def _test_webrtc_collectives_error_handling_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1031,9 +1032,9 @@ async def _test_webrtc_collectives_error_handling_part_2(_state: dict[str, Eager
     asyncio.create_task(event_later())
     await st_ev.wait_backpressure()
 
-    getattr(_state, "update")({"NoRecvChannel": NoRecvChannel, "drain_later": drain_later, "mock_to": mock_to, "put_msg": put_msg})
-    getattr(_state, "update")({"res_raw": res_raw, "st_empty": st_empty, "st_to": st_to})
-    _state.update(locals())
+    _get_attr(_state, "update")({"NoRecvChannel": NoRecvChannel, "drain_later": drain_later, "mock_to": mock_to, "put_msg": put_msg})
+    _get_attr(_state, "update")({"res_raw": res_raw, "st_empty": st_empty, "st_to": st_to})
+    _state.update(_caller_locals())
 
 
 async def _test_webrtc_collectives_error_handling_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1064,8 +1065,8 @@ async def _test_webrtc_collectives_error_handling_part_3(_state: dict[str, Eager
     # Unknown op_type in AllReduce and ReduceScatter with all_ranks_data
     assert as_callable(np.allclose)(as_callable(dispatch_collective)("AllReduce", t, backend="numpy", op_type="UNKNOWN", all_ranks_data=all_data), t)
     assert as_callable(np.allclose)(as_callable(dispatch_collective)("ReduceScatter", t, backend="numpy", op_type="UNKNOWN", scatter_dim=0, rank=0, all_ranks_data=all_data), as_callable(np.array_split)(t, 2, axis=0)[0])
-    getattr(_state, "update")({"all_data": all_data, "res_bcast_none": res_bcast_none, "res_jax_un": res_jax_un, "res_pt_un": res_pt_un})
-    getattr(_state, "update")({"t": t})
+    _get_attr(_state, "update")({"all_data": all_data, "res_bcast_none": res_bcast_none, "res_jax_un": res_jax_un, "res_pt_un": res_pt_un})
+    _get_attr(_state, "update")({"t": t})
 
 
 @pytest.mark.asyncio

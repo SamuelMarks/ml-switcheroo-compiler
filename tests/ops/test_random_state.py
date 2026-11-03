@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_tensor, as_tensor_obj
 
 if typing.TYPE_CHECKING:
@@ -33,7 +34,7 @@ def test_random_state() -> None:
             config.eager_mode = True
 
             res = _emit_random_node("SomeRandom", [Tensor(ProxyTensor(id="id", shape=(2,), dtype="float32"), TensorConfig((2,), "float32", "cpu"))], (2,), "float32")
-            assert getattr(res, "data", res) == "mock_val"
+            assert _get_attr(res, "data", res) == "mock_val"
 
             res = as_tensor_obj(_dispatch_random_eager("some_func", "SomeRandom", t))
             assert as_tensor(res) == as_tensor("mock_val")
@@ -94,6 +95,6 @@ def test_random_state_eager_with_attrs() -> None:
             config.eager_mode = True
 
             res = _emit_random_node("SomeRandom", [t], (2,), "float32", attributes={"shape": (2,), "dtype": "float32"})
-            assert getattr(res, "data", res) == "mock_val"
+            assert _get_attr(res, "data", res) == "mock_val"
     finally:
         config.eager_mode = orig_eager

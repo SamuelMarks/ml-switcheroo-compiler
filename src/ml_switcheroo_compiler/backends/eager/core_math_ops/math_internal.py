@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 
 
 @global_eager_registry.register("Copysign")
@@ -28,12 +29,12 @@ def _copysign(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "copysign", None)
+    func = _get_attr(backend_module, "copysign", None)
     if func:
         return as_tensor(func(*args, **kwargs))
     x = args[0]
     y = args[1]
-    return as_tensor(getattr(backend_module, "abs")(x) * getattr(backend_module, "sign")(y))
+    return as_tensor(_get_attr(backend_module, "abs")(x) * _get_attr(backend_module, "sign")(y))
 
 
 @global_eager_registry.register("GetPrintoptions")
@@ -48,7 +49,7 @@ def _getprintoptions(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "get_printoptions")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "get_printoptions")(*args, **kwargs))
 
 
 @global_eager_registry.register("NpTensorarrayread")
@@ -77,7 +78,7 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
             raise IndexError(f"TensorArray index {index} out of bounds for list of length {len(arr)}")
         return as_tensor(arr[index])
 
-    if hasattr(arr, "shape") and hasattr(arr, "__getitem__"):
+    if _has_attr(arr, "shape") and _has_attr(arr, "__getitem__"):
         arr_t = as_tensor(arr)
         if index < 0 or index >= arr_t.shape[0]:
             raise IndexError(f"TensorArray index {index} out of bounds for axis 0 of size {arr_t.shape[0]}")
@@ -124,12 +125,13 @@ def _np_tensorarraywrite(backend_module: BackendModuleProtocol, *args: EagerValu
         return res
 
     mod = _resolve_eager_mod(backend_module)
-    ndarray_cls = typing.cast(type[EagerTensorProtocol], mod.ndarray)
+    ndarray_cls = _cast_val(type[EagerTensorProtocol], mod.ndarray)
     if isinstance(arr, ndarray_cls):
         if index < arr.shape[0]:
             res_arr = arr.copy()
             res_arr[index] = value
-            return res_arr
+            _typed_ret_1: EagerValue = res_arr
+            return _typed_ret_1
         pad_shape = list(arr.shape)
         pad_shape[0] = index - arr.shape[0] + 1
         pad = mod.zeros(pad_shape, dtype=arr.dtype)
@@ -160,7 +162,7 @@ def _np_topk(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     arr = args[0]
     k = int(as_int(args[1])) if len(args) > 1 else 1
     mod = _resolve_eager_mod(backend_module)
-    ndarray_cls = typing.cast(type[EagerTensorProtocol], mod.ndarray)
+    ndarray_cls = _cast_val(type[EagerTensorProtocol], mod.ndarray)
     if isinstance(arr, (list, ndarray_cls)):
         arr_np = mod.array(arr)
         idx = mod.argsort(arr_np)[-k:][::-1]

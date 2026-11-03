@@ -24,6 +24,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_arithmetic import 
     _true_divide,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -93,8 +94,8 @@ def _test_math_arithmetic_all_branches_part_1(_state: dict[str, EagerTensorProto
             return math.fmod(a, b)
 
     assert _fmod(as_mod(BackendFmod()), 5.0, 3.0) == 2.0
-    getattr(_state, "update")({"BackendDivide": BackendDivide, "BackendFmod": BackendFmod, "BackendTrueDivide": BackendTrueDivide, "empty_backend": empty_backend})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendDivide": BackendDivide, "BackendFmod": BackendFmod, "BackendTrueDivide": BackendTrueDivide, "empty_backend": empty_backend})
+    _state.update(_caller_locals())
 
 
 def _test_math_arithmetic_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -148,17 +149,17 @@ def _test_math_arithmetic_all_branches_part_2(_state: dict[str, EagerTensorProto
 
     # Case C: empty list in args
     empty_acc = _accumulate_n(empty_backend, [])
-    assert as_tensor(getattr(empty_acc, "shape")) == ()
+    assert as_tensor(_get_attr(empty_acc, "shape")) == ()
 
     # Case D: empty list in kwargs / no args
     empty_acc_kw = _accumulate_n(empty_backend)
-    assert as_tensor(getattr(empty_acc_kw, "shape")) == ()
+    assert as_tensor(_get_attr(empty_acc_kw, "shape")) == ()
 
     # 4. _assign_add and _assign_sub
     assert _assign_add(empty_backend, 10, 5) == 15
-    getattr(_state, "update")({"BackendMod": BackendMod, "BackendRemainder": BackendRemainder, "empty_acc": empty_acc, "empty_acc_kw": empty_acc_kw})
-    getattr(_state, "update")({"res_acc": res_acc, "res_acc_kw": res_acc_kw})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendMod": BackendMod, "BackendRemainder": BackendRemainder, "empty_acc": empty_acc, "empty_acc_kw": empty_acc_kw})
+    _get_attr(_state, "update")({"res_acc": res_acc, "res_acc_kw": res_acc_kw})
+    _state.update(_caller_locals())
 
 
 def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -181,11 +182,11 @@ def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProto
 
     # Case C: empty list in args
     empty_add_n = _add_n(empty_backend, [])
-    assert as_tensor(getattr(empty_add_n, "shape")) == ()
+    assert as_tensor(_get_attr(empty_add_n, "shape")) == ()
 
     # Case D: empty list in kwargs / no args
     empty_add_n_kw = _add_n(empty_backend)
-    assert as_tensor(getattr(empty_add_n_kw, "shape")) == ()
+    assert as_tensor(_get_attr(empty_add_n_kw, "shape")) == ()
 
     # 6. _modf
     class BackendModf:
@@ -216,9 +217,9 @@ def _test_math_arithmetic_all_branches_part_3(_state: dict[str, EagerTensorProto
             """
             return as_callable(np.ravel_multi_index)(multi_index, dims)
 
-    getattr(_state, "update")({"BackendModf": BackendModf, "BackendRavel": BackendRavel, "empty_add_n": empty_add_n, "empty_add_n_kw": empty_add_n_kw})
-    getattr(_state, "update")({"fract": fract, "integral": integral, "res_add_n": res_add_n, "res_add_n_kw": res_add_n_kw})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendModf": BackendModf, "BackendRavel": BackendRavel, "empty_add_n": empty_add_n, "empty_add_n_kw": empty_add_n_kw})
+    _get_attr(_state, "update")({"fract": fract, "integral": integral, "res_add_n": res_add_n, "res_add_n_kw": res_add_n_kw})
+    _state.update(_caller_locals())
 
 
 def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -276,8 +277,8 @@ def _test_math_arithmetic_all_branches_part_4(_state: dict[str, EagerTensorProto
             return "scattersub_result"
 
     assert _np_tensorscattersub(as_mod(BackendTensorScatterSub()), "target") == "scattersub_result"
-    getattr(_state, "update")({"BackendScattermul": BackendScattermul, "BackendStringSubstr": BackendStringSubstr, "BackendTensorScatterSub": BackendTensorScatterSub, "substr_fb": substr_fb})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendScattermul": BackendScattermul, "BackendStringSubstr": BackendStringSubstr, "BackendTensorScatterSub": BackendTensorScatterSub, "substr_fb": substr_fb})
+    _state.update(_caller_locals())
 
 
 def _test_math_arithmetic_all_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -335,9 +336,9 @@ def _test_math_arithmetic_all_branches_part_5(_state: dict[str, EagerTensorProto
             """
             return "xdivy_result"
 
-    getattr(_state, "update")({"BackendTruncatediv": BackendTruncatediv, "BackendTruncatemod": BackendTruncatemod, "BackendXdivy": BackendXdivy, "mod_fb": mod_fb})
-    getattr(_state, "update")({"trunc_fb": trunc_fb})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendTruncatediv": BackendTruncatediv, "BackendTruncatemod": BackendTruncatemod, "BackendXdivy": BackendXdivy, "mod_fb": mod_fb})
+    _get_attr(_state, "update")({"trunc_fb": trunc_fb})
+    _state.update(_caller_locals())
 
 
 def _test_math_arithmetic_all_branches_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -369,7 +370,7 @@ def _test_math_arithmetic_all_branches_part_6(_state: dict[str, EagerTensorProto
         "Xdivy",
     ]:
         assert global_eager_registry.get(op_name) is not None
-    getattr(_state, "update")({"xdivy_fb": xdivy_fb})
+    _get_attr(_state, "update")({"xdivy_fb": xdivy_fb})
 
 
 def test_math_arithmetic_all_branches() -> None:

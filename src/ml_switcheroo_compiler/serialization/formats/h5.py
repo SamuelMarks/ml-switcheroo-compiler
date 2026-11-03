@@ -6,6 +6,7 @@ import typing
 from types import ModuleType
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
+from ml_switcheroo_compiler.core.shape import _cast_val, _has_attr
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
@@ -39,8 +40,9 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        if hasattr(backend, "load_h5"):
-            return typing.cast(dict[str, TensorLike], backend.load_h5(filepath))
+        if _has_attr(backend, "load_h5"):
+            _typed_ret_1: dict[str, TensorLike] = _cast_val(dict[str, TensorLike], backend.load_h5(filepath))
+            return _typed_ret_1
 
         if h5py is None:
             raise ImportError("h5py is required for H5 weight loading. Please install h5py.")
@@ -75,7 +77,7 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        if hasattr(backend, "save_h5"):
+        if _has_attr(backend, "save_h5"):
             backend.save_h5(weights_np, filepath)
             return
 
@@ -85,11 +87,11 @@ class H5WeightFormat(WeightLoader, WeightSaver):
         with h5py.File(filepath, "w") as f:
             for k, v in weights_np.items():
                 val_data: TensorLike | list[int] = v
-                if hasattr(v, "numpy"):
+                if _has_attr(v, "numpy"):
                     val_data = v.numpy()
-                elif hasattr(v, "data") and hasattr(v.data, "numpy"):
+                elif _has_attr(v, "data") and _has_attr(v.data, "numpy"):
                     val_data = v.data.numpy()
-                elif hasattr(v, "tolist"):
+                elif _has_attr(v, "tolist"):
                     val_data = v.tolist()
                 f.create_dataset(k, data=val_data)
             del weights_np

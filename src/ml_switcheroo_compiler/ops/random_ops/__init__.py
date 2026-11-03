@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 from .frontend import sobol_sample
@@ -669,7 +669,8 @@ class categorical(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_1
 
 
 @register_op("dirichlet")
@@ -689,7 +690,8 @@ class dirichlet(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_2: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_2
 
 
 @register_op("binomial")
@@ -709,7 +711,8 @@ class binomial(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_3: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_3
 
 
 @register_op("truncated_normal")
@@ -729,7 +732,8 @@ class truncated_normal(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_4: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_4
 
 
 @register_op("permutation")
@@ -749,7 +753,8 @@ class permutation(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_5: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_5
 
 
 @register_op("choice")
@@ -769,4 +774,5 @@ class choice(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_6: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_6

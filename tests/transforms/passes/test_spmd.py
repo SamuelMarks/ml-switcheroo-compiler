@@ -8,6 +8,7 @@ import pytest
 from ml_switcheroo_ir import NodeDict, PartitionSpec
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _cast_val, _del_attr, _get_attr, _has_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import (
     _create_all_gather_node,
@@ -51,7 +52,7 @@ class DummySharding(PartitionSpec):
             mapping: Test parameter `mapping`.
         """
         super().__init__(axes=tuple(str(m) if m is not None else None for m in mapping))
-        object.__setattr__(self, "mesh_mapping", mapping)
+        _obj_set_attr(self, "mesh_mapping", mapping)
 
 
 def test_get_spmd_rules_yaml_fallback() -> None:
@@ -68,9 +69,9 @@ def test_get_spmd_rules_yaml_fallback() -> None:
 
     def mock_exists(self: EagerValue) -> EagerValue:
         """Test function mock_exists."""
-        if as_tensor(getattr(self, "name")) == "spmd_mappings":
+        if as_tensor(_get_attr(self, "name")) == "spmd_mappings":
             return False
-        if as_tensor(getattr(self, "name")) == "spmd_mappings.yaml":
+        if as_tensor(_get_attr(self, "name")) == "spmd_mappings.yaml":
             return True
         return False
 
@@ -190,9 +191,9 @@ def test_process_spmd_node() -> None:
     (mod, inj) = _process_spmd_node(node1, graph)
     assert not mod and not inj
 
-    setattr(node1, "sharding", DummySharding([None]))
-    graph.nodes["in1"].sharding = typing.cast("PartitionSpec", DummySharding(["x"]))
-    graph.nodes["in2"].sharding = typing.cast("PartitionSpec", DummySharding([None]))
+    _set_attr(node1, "sharding", DummySharding([None]))
+    graph.nodes["in1"].sharding = _cast_val("PartitionSpec", DummySharding(["x"]))
+    graph.nodes["in2"].sharding = _cast_val("PartitionSpec", DummySharding([None]))
     (mod, inj) = _process_spmd_node(node1, graph)
     assert mod is True
     assert len(inj) == 1
@@ -339,7 +340,7 @@ def test_propagate_sharding_matmul_row_and_col_parallel() -> None:
 
     modified = propagate_sharding(g)
     assert modified is True
-    assert as_tensor(getattr(mm.sharding, "mesh_mapping")) == ("x", None)
+    assert as_tensor(_get_attr(mm.sharding, "mesh_mapping")) == ("x", None)
 
     # Col parallel: LHS replicated, RHS col-sharded
     g2 = IRGraph()
@@ -349,7 +350,7 @@ def test_propagate_sharding_matmul_row_and_col_parallel() -> None:
     g2.nodes = NodeDict(as_node_dict({"lhs2": lhs2, "rhs2": rhs2, "mm2": mm2}))
 
     assert propagate_sharding(g2) is True
-    assert as_tensor(getattr(mm2.sharding, "mesh_mapping")) == (None, "y")
+    assert as_tensor(_get_attr(mm2.sharding, "mesh_mapping")) == (None, "y")
 
 
 def test_propagate_sharding_matmul_contracting_parallel() -> None:
@@ -368,7 +369,7 @@ def test_propagate_sharding_matmul_contracting_parallel() -> None:
     g.outputs = ["out"]
 
     assert spmd_partitioning_pass(g) is True
-    assert as_tensor(getattr(mm.sharding, "mesh_mapping")) == (None, None)
+    assert as_tensor(_get_attr(mm.sharding, "mesh_mapping")) == (None, None)
     assert "mm_all_reduce" in g.nodes
     assert g.nodes["out"].inputs == ["mm_all_reduce"]
 
@@ -402,7 +403,7 @@ def test_propagate_sharding_reductions() -> None:
     g1.outputs = ["red1"]
 
     assert spmd_partitioning_pass(g1) is True
-    assert as_tensor(getattr(red1.sharding, "mesh_mapping")) == (None,)
+    assert as_tensor(_get_attr(red1.sharding, "mesh_mapping")) == (None,)
     assert "red1_all_reduce" in g1.nodes
     assert g1.outputs == ["red1_all_reduce"]
 
@@ -413,7 +414,7 @@ def test_propagate_sharding_reductions() -> None:
     g2.nodes = NodeDict(as_node_dict({"inp2": inp2, "red2": red2}))
 
     assert propagate_sharding(g2) is True
-    assert as_tensor(getattr(red2.sharding, "mesh_mapping")) == ("x",)
+    assert as_tensor(_get_attr(red2.sharding, "mesh_mapping")) == ("x",)
     assert red2.attributes.get("inject_collective") is None
 
 
@@ -434,8 +435,8 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
     g.nodes = NodeDict(as_node_dict({"inp": inp, "conv": conv, "add": add}))
 
     assert propagate_sharding(g) is True
-    assert as_tensor(tuple(as_tensor(getattr(conv.sharding, "mesh_mapping")))) == as_tensor(("x", None, None, None))
-    assert as_tensor(tuple(as_tensor(getattr(add.sharding, "mesh_mapping")))) == as_tensor(("x", None, None, None))
+    assert as_tensor(tuple(as_tensor(_get_attr(conv.sharding, "mesh_mapping")))) == as_tensor(("x", None, None, None))
+    assert as_tensor(tuple(as_tensor(_get_attr(add.sharding, "mesh_mapping")))) == as_tensor(("x", None, None, None))
 
     # SPMDShardingAnnotation repr
     annot = SPMDShardingAnnotation("mesh1", ["x", None])
@@ -481,7 +482,7 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
     red_all = IRNode(id="red_all", op_type="ReduceSum", inputs=["inp_all"], attributes={"axis": 0})
     g_red_all.nodes = NodeDict(as_node_dict({"inp_all": inp_all, "red_all": red_all}))
     assert propagate_sharding(g_red_all) is True
-    assert as_tensor(getattr(red_all.sharding, "mesh_mapping")) == (None,)
+    assert as_tensor(_get_attr(red_all.sharding, "mesh_mapping")) == (None,)
 
     # 5. Spatial conv with no inputs or unsharded input
     g_cv_empty = IRGraph()
@@ -502,8 +503,8 @@ def test_propagate_sharding_convolutions_and_elementwise() -> None:
             }
         )
     )
-    if hasattr(g_no_out, "outputs"):
-        delattr(g_no_out, "outputs")
+    if _has_attr(g_no_out, "outputs"):
+        _del_attr(g_no_out, "outputs")
     assert spmd_partitioning_pass(g_no_out) is True
 
 

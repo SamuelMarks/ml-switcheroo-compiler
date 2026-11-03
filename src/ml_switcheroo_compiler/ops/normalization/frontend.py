@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pydantic
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.binary import divide
@@ -103,5 +104,5 @@ def spectral_normalization(
     Returns:
         tuple[Tensor, Tensor]: Normalized weight and new u.
     """
-    _, u_new, sigma = getattr(power_iteration(w, num_iters=num_iters, u=u), "__iter__")()
+    _, u_new, sigma = _get_attr(power_iteration(w, num_iters=num_iters, u=u), "__iter__")()
     return divide(w, sigma), u_new

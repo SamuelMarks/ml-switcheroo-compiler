@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.core.shape import _get_attr
+
 
 def test_reductions_init() -> None:
     """Test function test_reductions_init."""
@@ -19,6 +21,6 @@ def test_reductions_init_missing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.base.get_op", side_effect=KeyError("mock")):
         importlib.reload(ml_switcheroo_compiler.ops.reductions)
-        assert getattr(ml_switcheroo_compiler.ops.reductions, "sum", None) is None
+        assert _get_attr(ml_switcheroo_compiler.ops.reductions, "sum", None) is None
 
     importlib.reload(ml_switcheroo_compiler.ops.reductions)

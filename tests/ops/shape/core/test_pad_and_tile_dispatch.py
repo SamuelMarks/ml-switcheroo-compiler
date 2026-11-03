@@ -8,6 +8,7 @@ import pytest
 
 import ml_switcheroo_compiler.ops.shape.pad_and_tile as sm
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.shape_system import SymVar
 from ml_switcheroo_compiler.ops.loss import CategoricalGeneralizedCrossEntropy, CircleLoss
 from ml_switcheroo_compiler.ops.nn.nlp import CtcLoss as NlpCtcLoss
@@ -93,8 +94,8 @@ def _test_misc_infer_shapes_part_1(_state: dict[str, EagerTensorProtocol]) -> No
     assert as_callable(op3.infer_shape)(as_callable(Dummy)((2, 3))) == (2, 3)
     assert as_callable(op3.infer_shape)(None) == ()
     op4 = Repeat()
-    getattr(_state, "update")({"op1": op1, "op3": op3, "op4": op4})
-    _state.update(locals())
+    _get_attr(_state, "update")({"op1": op1, "op3": op3, "op4": op4})
+    _state.update(_caller_locals())
 
 
 def _test_misc_infer_shapes_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -106,10 +107,10 @@ def _test_misc_infer_shapes_part_2(_state: dict[str, EagerTensorProtocol]) -> No
     op4 = _state["op4"]
     assert as_callable(op4.infer_shape)(as_callable(Dummy)((2, 3)), 2, axis=None) == (12,)
     res_none_dim = as_callable(op4.infer_shape)(as_callable(Dummy)((2, None)), 2, axis=None)
-    assert as_tensor(res_none_dim[0]) is None or hasattr(res_none_dim[0], "name")
+    assert as_tensor(res_none_dim[0]) is None or _has_attr(res_none_dim[0], "name")
     assert as_callable(op4.infer_shape)(as_callable(Dummy)((2, 3)), [1, 2], axis=None) == (3,)
     res_none_rep = as_callable(op4.infer_shape)(as_callable(Dummy)((2, 3)), None, axis=None)
-    assert as_tensor(res_none_rep[0]) is None or hasattr(res_none_rep[0], "name")
+    assert as_tensor(res_none_rep[0]) is None or _has_attr(res_none_rep[0], "name")
     assert as_callable(op4.infer_shape)(as_callable(Dummy)((2, 3)), 2, axis=0) == (4, 3)
     assert as_callable(op4.infer_shape)(as_callable(Dummy)((None, 3)), 2, axis=0) == (None, 3)
     assert as_callable(op4.infer_shape)(as_callable(Dummy)((2, 3)), [1, 2], axis=0) == (3, 3)
@@ -125,10 +126,10 @@ def _test_misc_infer_shapes_part_2(_state: dict[str, EagerTensorProtocol]) -> No
     assert as_callable(op7.infer_shape)(as_callable(Dummy)((2, 3)), (2,)) == (2, 6)
     assert as_callable(op7.infer_shape)(as_callable(Dummy)((None, 3)), (2, None)) == (None, None)
     op8 = Unique()
-    assert as_callable(getattr(as_callable(op8.infer_shape)(as_callable(Dummy)((2, 3)), axis=None), "__getitem__"))(0) in (None, as_callable(SymVar)("unique_count"))
-    getattr(_state, "update")({"op5": op5, "op6": op6, "op7": op7, "op8": op8})
-    getattr(_state, "update")({"res_none_dim": res_none_dim, "res_none_rep": res_none_rep})
-    _state.update(locals())
+    assert as_callable(_get_attr(as_callable(op8.infer_shape)(as_callable(Dummy)((2, 3)), axis=None), "__getitem__"))(0) in (None, as_callable(SymVar)("unique_count"))
+    _get_attr(_state, "update")({"op5": op5, "op6": op6, "op7": op7, "op8": op8})
+    _get_attr(_state, "update")({"res_none_dim": res_none_dim, "res_none_rep": res_none_rep})
+    _state.update(_caller_locals())
 
 
 def _test_misc_infer_shapes_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -147,9 +148,9 @@ def _test_misc_infer_shapes_part_3(_state: dict[str, EagerTensorProtocol]) -> No
     res_inv_none = as_callable(op8.infer_shape)(as_callable(Dummy)((2, 3)), return_inverse=True, axis=None)
     assert res_inv_none[0][0] in (None, SymVar("unique_count")) and res_inv_none[1] == (6,)
     res_inv_none_none = as_callable(op8.infer_shape)(as_callable(Dummy)((None, 3)), return_inverse=True, axis=None)
-    getattr(_state, "update")({"res_idx_0": res_idx_0, "res_idx_none": res_idx_none, "res_inv_none": res_inv_none, "res_inv_none_none": res_inv_none_none})
-    getattr(_state, "update")({"res_u0": res_u0})
-    _state.update(locals())
+    _get_attr(_state, "update")({"res_idx_0": res_idx_0, "res_idx_none": res_idx_none, "res_inv_none": res_inv_none, "res_inv_none_none": res_inv_none_none})
+    _get_attr(_state, "update")({"res_u0": res_u0})
+    _state.update(_caller_locals())
 
 
 def _test_misc_infer_shapes_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -164,7 +165,7 @@ def _test_misc_infer_shapes_part_4(_state: dict[str, EagerTensorProtocol]) -> No
     assert res_inv_0[0][0] in (None, SymVar("unique_count")) and res_inv_0[0][1] == 3 and (res_inv_0[1] == (2,))
     res_cnt_none = as_callable(op8.infer_shape)(as_callable(Dummy)((2, 3)), return_counts=True, axis=None)
     assert res_cnt_none[0][0] in (None, SymVar("unique_count")) and res_cnt_none[1][0] in (None, SymVar("unique_count"))
-    getattr(_state, "update")({"res_cnt_none": res_cnt_none, "res_inv_0": res_inv_0})
+    _get_attr(_state, "update")({"res_cnt_none": res_cnt_none, "res_inv_0": res_inv_0})
 
 
 def test_misc_infer_shapes() -> None:
@@ -233,8 +234,8 @@ def test_shape_misc_coverage() -> None:
         "TrimZeros",
     ]
     for op_name in ops:
-        if hasattr(sm, op_name):
-            cls = getattr(sm, op_name)
+        if _has_attr(sm, op_name):
+            cls = _get_attr(sm, op_name)
             inst = cls()
             inst.infer_shape()
 

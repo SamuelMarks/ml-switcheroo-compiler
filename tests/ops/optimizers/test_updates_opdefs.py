@@ -8,6 +8,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.optimizers.updates import ApplyAdagrad, ApplyAdam, ApplyFtrl, ApplyRMSProp, apply_adagrad, apply_adam, apply_ftrl, apply_rmsprop
 from tests.testing_utils import as_callable, as_tensor
@@ -78,8 +79,8 @@ def _test_updates_extras_full_sub_1(_state: dict[str, EagerTensorProtocol]) -> N
     updates.adamax_update(t, t, updates.AdamaxHyperparams(lr=0.1, weight_decay=0.01), state={"m": t, "u": t})
     updates.adamax_update(t, t, updates.AdamaxHyperparams(lr=0.1))
     updates.lion_update(t, t, updates.LionConfig(lr=0.1, weight_decay=0.01), state={"m": t})
-    getattr(_state, "update")({"t": t})
-    _state.update(locals())
+    _get_attr(_state, "update")({"t": t})
+    _state.update(_caller_locals())
 
 
 def _test_updates_extras_full_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -98,12 +99,12 @@ def _test_updates_extras_full_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
     updates.apply_adagrad(t, t, t, 0.1)
     updates.apply_ftrl(t, t, t, t, 0.1)
     updates.apply_rmsprop(t, t, t, t, 0.1)
-    setattr(config, "eager_mode", True)
+    _set_attr(config, "eager_mode", True)
     updates.apply_adam(t, t, t, t, 0.1)
     updates.apply_adagrad(t, t, t, 0.1)
     updates.apply_ftrl(t, t, t, t, 0.1)
     updates.apply_rmsprop(t, t, t, t, 0.1)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_updates_extras_full_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -128,17 +129,17 @@ def _test_updates_extras_full_sub_3(_state: dict[str, EagerTensorProtocol]) -> N
 
     import ml_switcheroo_compiler.ops.optimizers.updates as updates
 
-    orig_get = as_tensor(getattr(updates, "get_active_backend"))
-    setattr(updates, "get_active_backend", lambda: MockBackend())
+    orig_get = as_tensor(_get_attr(updates, "get_active_backend"))
+    _set_attr(updates, "get_active_backend", lambda: MockBackend())
     try:
         as_callable(updates.apply_adam)(t, t, t, t, 0.1)
         as_callable(updates.apply_adagrad)(t, t, t, 0.1)
         as_callable(updates.apply_ftrl)(t, t, t, t, 0.1)
         as_callable(updates.apply_rmsprop)(t, t, t, t, 0.1)
     finally:
-        setattr(updates, "get_active_backend", orig_get)
-    getattr(_state, "update")({"MockBackend": MockBackend, "orig_get": orig_get, "updates": updates})
-    _state.update(locals())
+        _set_attr(updates, "get_active_backend", orig_get)
+    _get_attr(_state, "update")({"MockBackend": MockBackend, "orig_get": orig_get, "updates": updates})
+    _state.update(_caller_locals())
 
 
 def test_updates_extras_full() -> None:
@@ -157,19 +158,19 @@ def test_updates_extras_full() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    setattr(state.global_tracing_state, "add_node", lambda node: None)
+    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"DType": DType, "Device": Device, "Tensor": Tensor, "TensorConfig": TensorConfig})
-        getattr(_state, "update")({"config": config, "np": np, "orig": orig, "orig_add_node": orig_add_node})
-        getattr(_state, "update")({"orig_tracing": orig_tracing, "state": state, "updates": updates})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"DType": DType, "Device": Device, "Tensor": Tensor, "TensorConfig": TensorConfig})
+        _get_attr(_state, "update")({"config": config, "np": np, "orig": orig, "orig_add_node": orig_add_node})
+        _get_attr(_state, "update")({"orig_tracing": orig_tracing, "state": state, "updates": updates})
         for _sub_fn in (_test_updates_extras_full_sub_1, _test_updates_extras_full_sub_2, _test_updates_extras_full_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
 
 
 def test_apply_tracing() -> None:
@@ -188,7 +189,7 @@ def test_apply_tracing() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    setattr(state.global_tracing_state, "add_node", lambda node: None)
+    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
     try:
         t = Tensor(np.array([[[1.0, 2.0]]]), TensorConfig((2, 1, 2), DType("float32"), Device("cpu")))
         updates.apply_adam(t, t, t, t, 0.1)
@@ -198,5 +199,5 @@ def test_apply_tracing() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
-    assert getattr(state.global_tracing_state, "add_node") == orig_add_node
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+    assert _get_attr(state.global_tracing_state, "add_node") == orig_add_node

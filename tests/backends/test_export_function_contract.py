@@ -8,6 +8,7 @@ from ml_switcheroo_compiler.backends.dask.generator import DaskGenerator
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
+from ml_switcheroo_compiler.core.shape import _has_attr
 from ml_switcheroo_compiler.export.aot import compile_function
 
 if typing.TYPE_CHECKING:
@@ -28,7 +29,7 @@ def test_export_function_contract() -> None:
     """Test that all backends implement export_function without error."""
     backends = [PyTorchCodeGenerator, JAXCodeGenerator, DaskGenerator, WebGPUCodeGenerator]
     for backend_cls in backends:
-        assert hasattr(backend_cls, "export_function")
+        assert _has_attr(backend_cls, "export_function")
         backend_cls.export_function(format="onnx")
 
 

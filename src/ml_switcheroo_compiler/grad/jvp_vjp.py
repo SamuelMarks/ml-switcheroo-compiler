@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_tenso
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, invoke_callable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode, as_attrs, as_node_list
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
@@ -30,7 +30,7 @@ def _unpack_pair(val: GradValue) -> tuple[GradValue, GradValue]:
     Returns:
         tuple[GradValue, GradValue]: Unpacked pair of elements.
     """
-    seq = list(getattr(val, "__iter__")())
+    seq = list(_get_attr(val, "__iter__")())
     return seq[0], seq[1]
 
 
@@ -67,8 +67,8 @@ class CustomJVPFunction:
             self.jvp_subgraph = jvp_subgraph
         elif isinstance(jvp_rule, LogicalGraph):
             self.jvp_subgraph = jvp_rule
-        elif hasattr(jvp_rule, "graph") and isinstance(getattr(jvp_rule, "graph", None), LogicalGraph):
-            self.jvp_subgraph = getattr(jvp_rule, "graph")
+        elif _has_attr(jvp_rule, "graph") and isinstance(_get_attr(jvp_rule, "graph", None), LogicalGraph):
+            self.jvp_subgraph = _get_attr(jvp_rule, "graph")
         else:
             self.jvp_subgraph = None
         return rule_fn
@@ -114,23 +114,23 @@ class CustomJVPFunction:
         with ConfigContext(eager_mode=True):
             sample_out = self.fun(*args, **kwargs)
 
-        out_shape = getattr(sample_out, "shape", ())
-        out_dtype = getattr(getattr(sample_out, "dtype", None), "value", "float32")
-        device = getattr(tensor_args[0], "device", "cpu")
+        out_shape = _get_attr(sample_out, "shape", ())
+        out_dtype = _get_attr(_get_attr(sample_out, "dtype", None), "value", "float32")
+        device = _get_attr(tensor_args[0], "device", "cpu")
 
         in_ids: list[str] = []
         for a in tensor_args:
-            if hasattr(a, "data") and hasattr(a.data, "id"):
-                in_ids.append(getattr(a.data, "id"))
+            if _has_attr(a, "data") and _has_attr(a.data, "id"):
+                in_ids.append(_get_attr(a.data, "id"))
             else:
                 cid = str(uuid.uuid4())
-                arr = getattr(a, "data", a)
+                arr = _get_attr(a, "data", a)
                 c_node = LogicalNode(
                     id=cid,
                     op_type="Constant",
                     inputs=[],
                     attributes=as_attrs({"value": arr}),
-                    shape_metadata=getattr(arr, "shape", ()),
+                    shape_metadata=_get_attr(arr, "shape", ()),
                 )
                 global_tracing_state.add_node(c_node)
                 in_ids.append(cid)
@@ -217,8 +217,8 @@ def _build_traced_logical_graph(
         LogicalGraph: Populated forward logical graph.
     """
     block = _trace_function(fun_primal, tuple(tensor_primals), f"{prefix}_{uuid.uuid4().hex[:6]}")
-    forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", prefix)))
-    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if hasattr(block.nodes, "values") else as_node_list(block.nodes)
+    forward_graph = LogicalGraph(name=_get_attr(block, "id", _get_attr(block, "name", prefix)))
+    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if _has_attr(block.nodes, "values") else as_node_list(block.nodes)
     for node in nodes_iter:
         forward_graph.nodes[node.id] = node
     forward_graph.inputs = block.inputs
@@ -239,10 +239,10 @@ def _execute_autodiff_graph(graph: LogicalGraph, inputs_dict: dict[str, GradValu
     from ml_switcheroo_compiler.interpreter import evaluate_graph
 
     backend = get_active_backend()
-    if hasattr(backend, "execute_graph"):
+    if _has_attr(backend, "execute_graph"):
         raw_out = backend.execute_graph(graph, inputs_dict)
         return dict(raw_out) if isinstance(raw_out, Mapping) else {}
-    if hasattr(backend, "compile_graph"):
+    if _has_attr(backend, "compile_graph"):
         compiled_fn = backend.compile_graph(graph)
         raw_comp = compiled_fn(inputs_dict)
         return dict(raw_comp) if isinstance(raw_comp, Mapping) else {}
@@ -287,7 +287,7 @@ def jvp(
     for t, p_id in zip(tangents_seq, forward_graph.inputs):
         t_id = f"tangent_{uuid.uuid4().hex[:6]}"
         raw_t = t.data if isinstance(t, Tensor) else t
-        t_val = getattr(raw_t, "tolist", lambda raw_t=raw_t: raw_t)()
+        t_val = _get_attr(raw_t, "tolist", lambda raw_t=raw_t: raw_t)()
         t_node = LogicalNode(
             id=t_id,
             op_type="Constant",
@@ -300,7 +300,7 @@ def jvp(
     jvp_graph = graph_jvp(forward_graph, forward_graph.inputs, tangent_ids, forward_graph.outputs)
 
     backend = get_active_backend()
-    inputs_dict = {inp_id: backend.asarray(getattr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs, tensor_primals)}
+    inputs_dict = {inp_id: backend.asarray(_get_attr(p, "data", p)) for inp_id, p in zip(forward_graph.inputs, tensor_primals)}
     outputs_dict = _execute_autodiff_graph(jvp_graph, inputs_dict)
 
     out_tangent_values = [outputs_dict[out_id] for out_id in jvp_graph.outputs]
@@ -361,23 +361,23 @@ def _inline_vjp_into_active_trace(
 
     id_map: dict[str, str] = {}
     for inp_id, p in zip(primal_input_ids, tensor_primals):
-        p_data = getattr(p, "data", p)
-        id_map[inp_id] = getattr(p_data, "id", str(p_data))
+        p_data = _get_attr(p, "data", p)
+        id_map[inp_id] = _get_attr(p_data, "id", str(p_data))
 
     for cot_id, cot_val in zip(cotangent_ids_list, flat_cot):
-        c_data = getattr(cot_val, "data", cot_val)
-        id_map[cot_id] = getattr(c_data, "id", str(c_data))
+        c_data = _get_attr(cot_val, "data", cot_val)
+        id_map[cot_id] = _get_attr(c_data, "id", str(c_data))
 
     for nid, n in grad_graph.nodes.items():
-        if getattr(n, "op_type", "") != "Input":
+        if _get_attr(n, "op_type", "") != "Input":
             new_id = f"vjp_{uuid.uuid4().hex[:6]}_{nid}"
             id_map[nid] = new_id
             cloned = LogicalNode(
                 id=new_id,
                 op_type=n.op_type,
                 inputs=[id_map.get(inp, inp) for inp in n.inputs],
-                attributes=dict(getattr(n, "attributes", {})),
-                shape_metadata=getattr(n, "shape_metadata", ()),
+                attributes=dict(_get_attr(n, "attributes", {})),
+                shape_metadata=_get_attr(n, "shape_metadata", ()),
             )
             global_tracing_state.add_node(cloned)
 
@@ -385,7 +385,7 @@ def _inline_vjp_into_active_trace(
     for out_id in grad_graph.outputs:
         mapped_id = id_map.get(out_id, out_id)
         out_node = grad_graph.nodes.get(out_id)
-        out_shape = getattr(out_node, "shape_metadata", ())
+        out_shape = _get_attr(out_node, "shape_metadata", ())
         proxy = ProxyTensor(id=mapped_id, shape=out_shape, dtype="float32")
         flat_grads.append(Tensor(proxy, TensorConfig(out_shape, DType.Float32, Device("cpu"))))
     return flat_grads
@@ -466,9 +466,9 @@ def vjp(
             return tuple(unflat) if isinstance(unflat, Iterable) else (unflat,)
 
         backend = get_active_backend()
-        inputs_dict = {inp_id: backend.asarray(getattr(p, "data", p)) for inp_id, p in zip(primal_input_ids, tensor_primals)}
+        inputs_dict = {inp_id: backend.asarray(_get_attr(p, "data", p)) for inp_id, p in zip(primal_input_ids, tensor_primals)}
         for cot_id, cot_val in zip(cotangent_ids_list, flat_cot):
-            inputs_dict[cot_id] = backend.asarray(getattr(cot_val, "data", cot_val))
+            inputs_dict[cot_id] = backend.asarray(_get_attr(cot_val, "data", cot_val))
 
         outputs_dict = _execute_autodiff_graph(grad_graph, inputs_dict)
         flat_grads = [outputs_dict[out_id] for out_id in grad_graph.outputs]
@@ -516,8 +516,8 @@ def hvp(
     tensor_primals = _convert_to_tensors(primals_seq)
 
     block = _trace_function(fun_primal, tuple(tensor_primals), f"hvp_{uuid.uuid4().hex[:6]}")
-    forward_graph = LogicalGraph(name=getattr(block, "id", getattr(block, "name", "hvp")))
-    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if hasattr(block.nodes, "values") else as_node_list(block.nodes)
+    forward_graph = LogicalGraph(name=_get_attr(block, "id", _get_attr(block, "name", "hvp")))
+    nodes_iter: Iterable[LogicalNode] = block.nodes.values() if _has_attr(block.nodes, "values") else as_node_list(block.nodes)
     for node in nodes_iter:
         forward_graph.nodes[node.id] = node
     forward_graph.inputs = block.inputs
@@ -527,7 +527,7 @@ def hvp(
     for t, p_id in zip(tangents_seq, forward_graph.inputs):
         t_id = f"tangent_{uuid.uuid4().hex[:6]}"
         raw_t = t.data if isinstance(t, Tensor) else t
-        t_val = getattr(raw_t, "tolist", lambda raw_t=raw_t: raw_t)()
+        t_val = _get_attr(raw_t, "tolist", lambda raw_t=raw_t: raw_t)()
         t_node = LogicalNode(
             id=t_id,
             op_type="Constant",
@@ -544,7 +544,7 @@ def hvp(
         for pt, o_id in zip(proj_seq, forward_graph.outputs):
             pt_id = f"proj_tangent_{uuid.uuid4().hex[:6]}"
             raw_pt = pt.data if isinstance(pt, Tensor) else pt
-            pt_val = getattr(raw_pt, "tolist", lambda raw_pt=raw_pt: raw_pt)()
+            pt_val = _get_attr(raw_pt, "tolist", lambda raw_pt=raw_pt: raw_pt)()
             pt_node = LogicalNode(
                 id=pt_id,
                 op_type="Constant",
@@ -563,7 +563,7 @@ def hvp(
         projected_tangents=proj_tangent_ids,
     )
 
-    inputs_dict = {inputs_id: get_active_backend().asarray(getattr(p, "data", p)) for inputs_id, p in zip(forward_graph.inputs, tensor_primals)}
+    inputs_dict = {inputs_id: get_active_backend().asarray(_get_attr(p, "data", p)) for inputs_id, p in zip(forward_graph.inputs, tensor_primals)}
     outputs_dict = evaluate_graph(hvp_graph, inputs_dict)
 
     out_tangent_values = [outputs_dict[out_id] for out_id in hvp_graph.outputs]
@@ -599,11 +599,11 @@ def jacfwd(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
         """
         with ConfigContext(eager_mode=True):
             out = invoke_callable(fn_callable, *args, **kwargs)
-            out_val = _unpack_pair(out)[0] if getattr(opts, "has_aux") else out
-        out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
+            out_val = _unpack_pair(out)[0] if _get_attr(opts, "has_aux") else out
+        out_arr = get_active_backend().asarray(_get_attr(out_val, "data", out_val))
 
-        arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
-        flat_arg0 = getattr(arg0, "flatten")()
+        arg0 = get_active_backend().asarray(_get_attr(args[0], "data", args[0]))
+        flat_arg0 = _get_attr(arg0, "flatten")()
 
         jacobian_rows = []
         for i in range(len(flat_arg0)):
@@ -616,17 +616,17 @@ def jacfwd(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
                 axis=-1,
                 dtype="float32",
             )
-            tangent = getattr(tangent_flat, "reshape")(getattr(arg0, "shape"))
+            tangent = _get_attr(tangent_flat, "reshape")(_get_attr(arg0, "shape"))
 
-            _, out_tangent = _unpack_pair(jvp(fn_callable, args, (tangent,), has_aux=getattr(opts, "has_aux")))
-            jacobian_rows.append(getattr(get_active_backend().asarray(out_tangent), "flatten")())
+            _, out_tangent = _unpack_pair(jvp(fn_callable, args, (tangent,), has_aux=_get_attr(opts, "has_aux")))
+            jacobian_rows.append(_get_attr(get_active_backend().asarray(out_tangent), "flatten")())
 
         res = get_active_backend().execute_op("Stack", jacobian_rows, axis=-1)
-        if getattr(out_arr, "ndim") > 0:
+        if _get_attr(out_arr, "ndim") > 0:
             return get_active_backend().execute_op(
                 "Reshape",
                 res,
-                tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape")),
+                tuple(_get_attr(out_arr, "shape")) + tuple(_get_attr(arg0, "shape")),
             )
         return res
 
@@ -658,16 +658,16 @@ def jacrev(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
         _ = kwargs
         from ml_switcheroo_compiler.tree_util import tree_flatten, tree_unflatten
 
-        out, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=getattr(opts, "has_aux")))
+        out, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=_get_attr(opts, "has_aux")))
         vjp_fn = vjp_fn_raw
-        out_val = _unpack_pair(out)[0] if getattr(opts, "has_aux") else out
+        out_val = _unpack_pair(out)[0] if _get_attr(opts, "has_aux") else out
 
         flat_out, out_tree_def = tree_flatten(out_val)
-        flat_shapes = [getattr(get_active_backend().asarray(getattr(o, "data", o)), "shape") for o in flat_out]
-        flat_sizes = [int(math.prod(getattr(get_active_backend().asarray(getattr(o, "data", o)), "shape"))) for o in flat_out]
+        flat_shapes = [_get_attr(get_active_backend().asarray(_get_attr(o, "data", o)), "shape") for o in flat_out]
+        flat_sizes = [int(math.prod(_get_attr(get_active_backend().asarray(_get_attr(o, "data", o)), "shape"))) for o in flat_out]
         total_size = sum(flat_sizes)
 
-        arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
+        arg0 = get_active_backend().asarray(_get_attr(args[0], "data", args[0]))
         jacobian_rows = []
 
         for i in range(total_size):
@@ -692,19 +692,19 @@ def jacrev(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVari
             cotangent = tree_unflatten(out_tree_def, flat_cots)
             grads = invoke_callable(vjp_fn, cotangent)
             first_grad = grads[0] if isinstance(grads, (list, tuple)) else grads
-            jacobian_rows.append(getattr(get_active_backend().asarray(first_grad), "flatten")())
+            jacobian_rows.append(_get_attr(get_active_backend().asarray(first_grad), "flatten")())
 
         res = get_active_backend().execute_op("Stack", jacobian_rows, axis=0)
         if len(flat_sizes) > 1:
-            return get_active_backend().execute_op("Reshape", res, (total_size,) + tuple(getattr(arg0, "shape")))
-        out_arr = get_active_backend().asarray(getattr(out_val, "data", out_val))
-        if getattr(out_arr, "ndim") > 0:
+            return get_active_backend().execute_op("Reshape", res, (total_size,) + tuple(_get_attr(arg0, "shape")))
+        out_arr = get_active_backend().asarray(_get_attr(out_val, "data", out_val))
+        if _get_attr(out_arr, "ndim") > 0:
             return get_active_backend().execute_op(
                 "Reshape",
                 res,
-                tuple(getattr(out_arr, "shape")) + tuple(getattr(arg0, "shape")),
+                tuple(_get_attr(out_arr, "shape")) + tuple(_get_attr(arg0, "shape")),
             )
-        return get_active_backend().execute_op("Reshape", res, getattr(arg0, "shape"))
+        return get_active_backend().execute_op("Reshape", res, _get_attr(arg0, "shape"))
 
     return wrapped
 
@@ -732,8 +732,8 @@ def hessian(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVar
             GradValue: Evaluated Hessian matrix tensor.
         """
         _ = kwargs
-        arg0 = get_active_backend().asarray(getattr(args[0], "data", args[0]))
-        flat_arg0 = getattr(arg0, "flatten")()
+        arg0 = get_active_backend().asarray(_get_attr(args[0], "data", args[0]))
+        flat_arg0 = _get_attr(arg0, "flatten")()
 
         hessian_rows = []
         for i in range(len(flat_arg0)):
@@ -746,16 +746,16 @@ def hessian(fun: GradValue, options: GradOptions | GradValue = None) -> TypedVar
                 axis=-1,
                 dtype="float32",
             )
-            tangent = getattr(tangent_flat, "reshape")(getattr(arg0, "shape"))
+            tangent = _get_attr(tangent_flat, "reshape")(_get_attr(arg0, "shape"))
 
-            _, out_tangent = _unpack_pair(hvp(fun, args, (tangent,), has_aux=getattr(opts, "has_aux")))
-            hessian_rows.append(getattr(get_active_backend().asarray(out_tangent), "flatten")())
+            _, out_tangent = _unpack_pair(hvp(fun, args, (tangent,), has_aux=_get_attr(opts, "has_aux")))
+            hessian_rows.append(_get_attr(get_active_backend().asarray(out_tangent), "flatten")())
 
         res = get_active_backend().execute_op("Stack", hessian_rows, axis=0)
         return get_active_backend().execute_op(
             "Reshape",
             res,
-            tuple(getattr(arg0, "shape")) + tuple(getattr(arg0, "shape")),
+            tuple(_get_attr(arg0, "shape")) + tuple(_get_attr(arg0, "shape")),
         )
 
     return wrapped

@@ -8,6 +8,8 @@ from multiprocessing.connection import Client, Listener
 
 import numpy as np
 
+from ml_switcheroo_compiler.core.shape import _get_attr
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
 import numpy.typing as npt
@@ -150,9 +152,9 @@ def _ipc_all_gather(tensor: IpcPayload, axis: int | None, mesh: DeviceMesh | Non
         return tensor
 
     t: npt.NDArray[np.float64] = np.asarray(tensor)
-    if mesh is not None and getattr(mesh, "size", 1) > 1:
+    if mesh is not None and _get_attr(mesh, "size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
-        size: int = getattr(mesh, "size", 1)
+        size: int = _get_attr(mesh, "size", 1)
 
         # Execute real IPC data exchange
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
@@ -177,22 +179,22 @@ def _ipc_reduce_scatter(tensor: IpcPayload, op: str, axis: int | None, mesh: Dev
         return tensor
 
     t: npt.NDArray[np.float64] = np.asarray(tensor)
-    if mesh is not None and getattr(mesh, "size", 1) > 1:
+    if mesh is not None and _get_attr(mesh, "size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
-        size: int = getattr(mesh, "size", 1)
+        size: int = _get_attr(mesh, "size", 1)
 
         # Gather all tensors via IPC
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
 
         # Perform reduction
         if op == "sum":
-            reduced = sum(getattr(exchanged, "__iter__")())
+            reduced = sum(_get_attr(exchanged, "__iter__")())
         elif op == "max":
-            reduced = getattr(np.maximum, "reduce")(exchanged)
+            reduced = _get_attr(np.maximum, "reduce")(exchanged)
         elif op == "min":
-            reduced = getattr(np.minimum, "reduce")(exchanged)
+            reduced = _get_attr(np.minimum, "reduce")(exchanged)
         else:
-            reduced = sum(getattr(exchanged, "__iter__")())
+            reduced = sum(_get_attr(exchanged, "__iter__")())
 
         # Scatter (slice and return own chunk)
         sub_arrays: list[npt.NDArray[np.float64]] = np.array_split(reduced, size, axis=axis if axis is not None else 0)
@@ -216,9 +218,9 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
         return tensor
 
     t: npt.NDArray[np.float64] = np.asarray(tensor)
-    if mesh is not None and getattr(mesh, "size", 1) > 1:
+    if mesh is not None and _get_attr(mesh, "size", 1) > 1:
         rank: int = int(os.environ.get("RANK", "0"))
-        size: int = getattr(mesh, "size", 1)
+        size: int = _get_attr(mesh, "size", 1)
 
         # Gather all tensors via IPC
         exchanged: list[IpcPayload] = _exchange_ipc_data(rank, size, t)
@@ -226,12 +228,12 @@ def _ipc_all_reduce(tensor: IpcPayload, op: str, mesh: DeviceMesh | None = None)
 
         # Perform reduction and return same result on all workers
         if op == "sum":
-            return np.asarray(getattr(np.add, "reduce")(arrs))
+            return np.asarray(_get_attr(np.add, "reduce")(arrs))
         elif op == "max":
-            return np.asarray(getattr(np.maximum, "reduce")(arrs))
+            return np.asarray(_get_attr(np.maximum, "reduce")(arrs))
         elif op == "min":
-            return np.asarray(getattr(np.minimum, "reduce")(arrs))
+            return np.asarray(_get_attr(np.minimum, "reduce")(arrs))
         else:
-            return np.asarray(getattr(np.add, "reduce")(arrs))
+            return np.asarray(_get_attr(np.add, "reduce")(arrs))
 
     return t

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.shape_system import SymInt
 from ml_switcheroo_compiler.ops.raw_ops import RawConv2D, RawMatMul, RawMerge, RawOp, RawSwitch
 from tests.testing_utils import as_callable, as_tensor
@@ -61,7 +62,7 @@ def test_raw_conv2d_shape() -> None:
     # With symbolic dimension
     sym_n = SymInt("N")
     inp_sym = MockTensor((sym_n, 32, 32, 3))
-    assert id(as_tensor(getattr(as_callable(op.infer_shape)(inp_sym, filters, padding="SAME"), "__getitem__")(0))) == id(sym_n)
+    assert id(as_tensor(_get_attr(as_callable(op.infer_shape)(inp_sym, filters, padding="SAME"), "__getitem__")(0))) == id(sym_n)
 
 
 def test_raw_matmul_shape() -> None:

@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
 from tests.testing_utils import as_callable, as_tensor
@@ -171,7 +172,7 @@ def test_vmap_eager_execute() -> None:
             return R()
 
     old = reg.get_active_backend
-    setattr(reg, "get_active_backend", lambda: FakeBackend())
+    _set_attr(reg, "get_active_backend", lambda: FakeBackend())
     t = Tensor(MockData(), TensorConfig((2, 3), DType.Float32, "cpu"))
 
     def my_func(x: EagerValue) -> EagerValue:
@@ -183,7 +184,7 @@ def test_vmap_eager_execute() -> None:
         return x
 
     res = _eager_vmap(my_func, 0, 0, (t,))
-    assert as_tensor(getattr(res, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 3)
     reg.get_active_backend = old
 
 
@@ -218,8 +219,8 @@ def test_vmap_trace() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
 
     def my_func(x: EagerValue) -> EagerValue:
         """Test function my_func.
@@ -242,7 +243,7 @@ def test_vmap_trace() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value="graph"):
         res = _trace_vmap(my_func, 0, 0, (t,))
-        assert as_tensor(getattr(res, "shape")) == (2,)
+        assert as_tensor(_get_attr(res, "shape")) == (2,)
 
 
 def test_vmap_non_tensor_arg() -> None:

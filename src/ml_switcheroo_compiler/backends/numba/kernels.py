@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def _resolve_dense_backend() -> EagerValue:
@@ -28,8 +29,8 @@ def asarray(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     """
     backend = _resolve_dense_backend()
     if dtype is not None:
-        return as_tensor(getattr(backend, "asarray")(data, dtype=dtype))
-    return as_tensor(getattr(backend, "asarray")(data))
+        return as_tensor(_get_attr(backend, "asarray")(data, dtype=dtype))
+    return as_tensor(_get_attr(backend, "asarray")(data))
 
 
 def array(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
@@ -44,8 +45,8 @@ def array(data: EagerValue, dtype: EagerValue = None) -> EagerValue:
     """
     backend = _resolve_dense_backend()
     if dtype is not None:
-        return as_tensor(getattr(backend, "array")(data, dtype=dtype))
-    return as_tensor(getattr(backend, "array")(data))
+        return as_tensor(_get_attr(backend, "array")(data, dtype=dtype))
+    return as_tensor(_get_attr(backend, "array")(data))
 
 
 def zeros(shape: tuple[int, ...] | int, dtype: EagerValue = "float32") -> EagerValue:
@@ -59,7 +60,7 @@ def zeros(shape: tuple[int, ...] | int, dtype: EagerValue = "float32") -> EagerV
         EagerValue: Zero-initialized array buffer.
     """
     backend = _resolve_dense_backend()
-    return as_tensor(getattr(backend, "zeros")(shape, dtype=dtype))
+    return as_tensor(_get_attr(backend, "zeros")(shape, dtype=dtype))
 
 
 def zeros_like(arr: EagerValue) -> EagerValue:
@@ -72,7 +73,7 @@ def zeros_like(arr: EagerValue) -> EagerValue:
         EagerValue: Zero-initialized array buffer.
     """
     backend = _resolve_dense_backend()
-    return as_tensor(getattr(backend, "zeros_like")(arr))
+    return as_tensor(_get_attr(backend, "zeros_like")(arr))
 
 
 def add(a: EagerValue, b: EagerValue) -> EagerValue:
@@ -86,7 +87,7 @@ def add(a: EagerValue, b: EagerValue) -> EagerValue:
         EagerValue: Elementwise sum.
     """
     backend = _resolve_dense_backend()
-    return as_tensor(getattr(backend, "add")(a, b))
+    return as_tensor(_get_attr(backend, "add")(a, b))
 
 
 def __getattr__(name: str) -> EagerValue:
@@ -102,6 +103,6 @@ def __getattr__(name: str) -> EagerValue:
         AttributeError: If the attribute does not exist on the backend.
     """
     backend = _resolve_dense_backend()
-    if hasattr(backend, name):
-        return as_tensor(getattr(backend, name))
+    if _has_attr(backend, name):
+        return as_tensor(_get_attr(backend, name))
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

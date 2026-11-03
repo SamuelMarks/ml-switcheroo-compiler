@@ -9,7 +9,7 @@ import pydantic
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_float, as_opt_str, as_str, as_tensor
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -32,7 +32,7 @@ class ExtractPatchesOptions(pydantic.BaseModel):
             *args (TensorOrScalar): Positional field values.
             **kwargs (TensorOrScalar): Keyword field values.
         """
-        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
 
 
 def crop_and_resize(
@@ -70,7 +70,7 @@ def crop_and_resize(
             method=method,
             extrapolation_value=extrapolation_value,
         )
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "CropAndResize",
         [images, boxes, box_indices],
@@ -107,7 +107,7 @@ def _extract_bounding_boxes_eager(
         box_indices.data,
         config=config_obj,
     )
-    return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+    return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
 
 
 def extract_bounding_boxes(
@@ -184,7 +184,7 @@ def crop(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "Crop",
@@ -233,7 +233,7 @@ def pad_to_bounding_box(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "PadToBoundingBox",
@@ -274,7 +274,7 @@ def draw_bounding_boxes(
         data = backend.execute_op("DrawBoundingBoxes", images.data, boxes.data, colors=colors_data, texts=texts)
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "DrawBoundingBoxes",
@@ -315,7 +315,7 @@ def crop_images(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "CropImages",
@@ -365,7 +365,7 @@ def extract_patches(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "ExtractPatches",
@@ -416,7 +416,7 @@ def pad_images(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "PadImages",
@@ -452,7 +452,8 @@ class ExtractBoundingBoxes(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_1
 
 
 @register_op("Iou")
@@ -472,7 +473,8 @@ class Iou(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_2: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_2
 
 
 @register_op("Nms")
@@ -492,4 +494,5 @@ class Nms(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(inputs, "shape", ())
+        _typed_ret_3: TensorOrScalar = _get_attr(inputs, "shape", ())
+        return _typed_ret_3

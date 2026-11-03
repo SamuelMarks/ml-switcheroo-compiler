@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _set_attr
+
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.stats.distributions import BetaCdf, BetaPdf, BinomCdf, BinomPmf, GammaCdf, GammaPdf, NormCdf, NormPdf, PoissonCdf, PoissonPmf, beta_cdf, beta_pdf, binom_cdf, binom_pmf, gamma_cdf, gamma_pdf, norm_cdf, norm_pdf, poisson_cdf, poisson_pmf
@@ -52,7 +54,7 @@ def test_distributions_funcs(mocker: EagerTensorProtocol) -> None:
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.stats.distributions.get_op")
     mock_op = mocker.MagicMock()
-    setattr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
+    _set_attr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
     assert norm_pdf(t) == mock_op()
     assert norm_cdf(t) == mock_op()
     assert gamma_pdf(t, t) == mock_op()

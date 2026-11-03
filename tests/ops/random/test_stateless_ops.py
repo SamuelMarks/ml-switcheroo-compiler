@@ -9,6 +9,7 @@ import numpy as np
 import ml_switcheroo_compiler.ops.random as ops_random
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.random_stateless import (
     Algorithm,
@@ -38,12 +39,12 @@ if typing.TYPE_CHECKING:
 
 def test_ops_random_unified_package() -> None:
     """Verify `ml_switcheroo_compiler.ops.random` exports all unified stateless PRNG functions."""
-    assert hasattr(ops_random, "stateless_random_uniform")
-    assert hasattr(ops_random, "stateless_split")
-    assert hasattr(ops_random, "sobol_sample")
-    assert hasattr(ops_random, "rademacher")
-    assert hasattr(ops_random, "uniform")
-    assert hasattr(ops_random, "normal")
+    assert _has_attr(ops_random, "stateless_random_uniform")
+    assert _has_attr(ops_random, "stateless_split")
+    assert _has_attr(ops_random, "sobol_sample")
+    assert _has_attr(ops_random, "rademacher")
+    assert _has_attr(ops_random, "uniform")
+    assert _has_attr(ops_random, "normal")
 
 
 def test_stateless_random_uniform(mocker: EagerTensorProtocol) -> None:
@@ -257,7 +258,7 @@ def test_stateless_split() -> None:
     config.eager_mode = True
     try:
         res = stateless_split("seed", 3)
-        assert as_tensor(getattr(res, "shape")) == (3, 2)
+        assert as_tensor(_get_attr(res, "shape")) == (3, 2)
     finally:
         config.eager_mode = orig
 

@@ -7,7 +7,7 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.optimizers as opt_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
 from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -284,7 +284,7 @@ class SignalBackendWrapper:
         Returns:
             EagerCallableProtocol: Resolved callable attribute.
         """
-        return as_callable(getattr(np, name))
+        return as_callable(_get_attr(np, name))
 
     def pad(
         self,
@@ -505,27 +505,27 @@ def test_optimizers_coverage() -> None:
 
     # 1. Adam
     p_new, m_new, v_new = as_callable(opt_mod.apply_adam)(backend, param, m, v, grad, 0.001)
-    assert as_tensor(getattr(p_new, "shape")) == (2, 2)
-    assert as_tensor(getattr(m_new, "shape")) == (2, 2)
-    assert as_tensor(getattr(v_new, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(p_new, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(m_new, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(v_new, "shape")) == (2, 2)
 
     # 2. Adagrad
     accum = np.zeros((2, 2), dtype=np.float64)
     p_new_ada, accum_new_ada = as_callable(opt_mod.apply_adagrad)(backend, param, accum, grad, 0.01)
-    assert as_tensor(getattr(p_new_ada, "shape")) == (2, 2)
-    assert as_tensor(getattr(accum_new_ada, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(p_new_ada, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(accum_new_ada, "shape")) == (2, 2)
 
     # 3. Ftrl
     linear = np.zeros((2, 2), dtype=np.float64)
     p_new_ftrl, accum_new_ftrl, linear_new_ftrl = as_callable(opt_mod.apply_ftrl)(backend, param, accum, linear, grad, 0.01)
-    assert as_tensor(getattr(p_new_ftrl, "shape")) == (2, 2)
-    assert as_tensor(getattr(accum_new_ftrl, "shape")) == (2, 2)
-    assert as_tensor(getattr(linear_new_ftrl, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(p_new_ftrl, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(accum_new_ftrl, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(linear_new_ftrl, "shape")) == (2, 2)
 
     # 4. RMSProp
     ms = np.ones((2, 2), dtype=np.float64)
     mom = np.zeros((2, 2), dtype=np.float64)
     p_new_rms, ms_new_rms, mom_new_rms = as_callable(opt_mod.apply_rmsprop)(backend, param, ms, mom, grad, 0.001)
-    assert as_tensor(getattr(p_new_rms, "shape")) == (2, 2)
-    assert as_tensor(getattr(ms_new_rms, "shape")) == (2, 2)
-    assert as_tensor(getattr(mom_new_rms, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(p_new_rms, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(ms_new_rms, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(mom_new_rms, "shape")) == (2, 2)

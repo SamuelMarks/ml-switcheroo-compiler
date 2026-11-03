@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import typing
-
 import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 # Base logic implementation
@@ -75,17 +73,17 @@ def all_candidate_sampler(true_classes: TensorOrScalar, config: NLPOpsConfig) ->
     """
     from ml_switcheroo_compiler.core.config import config as core_config
 
-    true_shape = getattr(true_classes, "shape", (1,))
+    true_shape = _get_attr(true_classes, "shape", (1,))
     sampled_shape = (config.sampling.num_sampled,)
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        sampled, true_exp, sampled_exp = typing.cast(
+        sampled, true_exp, sampled_exp = _cast_val(
             "tuple[TensorOrScalar, TensorOrScalar, TensorOrScalar]",
             backend.execute_op(
                 "AllCandidateSampler",
-                getattr(true_classes, "data", true_classes),
+                _get_attr(true_classes, "data", true_classes),
                 num_sampled=config.sampling.num_sampled,
                 num_classes=max(config.sampling.num_sampled, config.sampling.num_true),
                 unique=config.sampling.unique,
@@ -359,18 +357,18 @@ def ctc_beam_search_decoder(
         decoded, log_probs = as_tensor_pair(
             backend.execute_op(
                 "CtcBeamSearchDecoder",
-                getattr(inputs, "data", inputs),
-                getattr(sequence_length, "data", sequence_length),
+                _get_attr(inputs, "data", inputs),
+                _get_attr(sequence_length, "data", sequence_length),
                 beam_width=beam_width,
                 top_paths=top_paths,
                 merge_repeated=merge_repeated,
             )
         )
-        return [decoded], Tensor(log_probs, TensorConfig(getattr(log_probs, "shape", (1,)), "float32", "cpu"))
+        return [decoded], Tensor(log_probs, TensorConfig(_get_attr(log_probs, "shape", (1,)), "float32", "cpu"))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     attrs = {"beam_width": beam_width, "top_paths": top_paths, "merge_repeated": merge_repeated}
-    path_node = _emit_shape_node("CtcBeamSearchDecoder", [inputs, sequence_length], attrs, getattr(inputs, "shape", (1,)), "int64")
+    path_node = _emit_shape_node("CtcBeamSearchDecoder", [inputs, sequence_length], attrs, _get_attr(inputs, "shape", (1,)), "int64")
     log_prob_node = _emit_shape_node("CtcBeamSearchDecoderLogProb", [inputs, sequence_length], attrs, (1,), "float32")
     return [path_node], log_prob_node
 
@@ -440,7 +438,7 @@ def ctc_loss(
 
         backend = get_active_backend()
         data = backend.execute_op("CtcLoss", labels.data, logits.data, label_length.data, logit_length.data)
-        return CoreTensor(data, TensorConfig(getattr(data, "shape", (1,)), logits.dtype, logits.device))
+        return CoreTensor(data, TensorConfig(_get_attr(data, "shape", (1,)), logits.dtype, logits.device))
     from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
     return _emit_linalg_node(
@@ -467,15 +465,15 @@ def ctc_unique_labels(labels: TensorOrScalar, name: TensorOrScalar = None) -> Te
     """
     from ml_switcheroo_compiler.core.config import config as core_config
 
-    lbl_shape = getattr(labels, "shape", (1,))
+    lbl_shape = _get_attr(labels, "shape", (1,))
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        unique, indices = as_tensor_pair(backend.execute_op("CtcUniqueLabels", getattr(labels, "data", labels), name=name))
+        unique, indices = as_tensor_pair(backend.execute_op("CtcUniqueLabels", _get_attr(labels, "data", labels), name=name))
         return (
-            Tensor(unique, TensorConfig(getattr(unique, "shape", lbl_shape), "int32", "cpu")),
-            Tensor(indices, TensorConfig(getattr(indices, "shape", lbl_shape), "int32", "cpu")),
+            Tensor(unique, TensorConfig(_get_attr(unique, "shape", lbl_shape), "int32", "cpu")),
+            Tensor(indices, TensorConfig(_get_attr(indices, "shape", lbl_shape), "int32", "cpu")),
         )
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -531,7 +529,7 @@ class CtcLoss(OpDef):
         """
         # logits: (T, N, C) if time_major else (N, T, C)
         time_major = kwargs.get("logits_time_major", True)
-        if hasattr(logits, "shape"):
+        if _has_attr(logits, "shape"):
             if len(logits.shape) == 3:
                 batch = logits.shape[1] if time_major else logits.shape[0]
                 return (batch,)

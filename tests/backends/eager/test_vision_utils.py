@@ -30,6 +30,7 @@ from ml_switcheroo_compiler.backends.eager.vision_utils import (
     _np_map_coordinates,
     _prepare_eager_transform,
 )
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -41,7 +42,7 @@ def test_prepare_eager_transform() -> None:
     # None images returns safe zero-dimension context
     ctx_none = _prepare_eager_transform(None, None, seed=42, data_format=None)
     assert ctx_none.B == 0
-    assert as_tensor(getattr(ctx_none.imgs, "shape")) == (0, 0, 0, 0)
+    assert as_tensor(_get_attr(ctx_none.imgs, "shape")) == (0, 0, 0, 0)
     assert ctx_none.rng is not None
 
     # 2D image (H, W)
@@ -91,7 +92,7 @@ def test_collinear_check_and_perspective_matrix() -> None:
     dst_pts = np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]], dtype=np.float32)
 
     h_mat = _compute_perspective_matrix(np, src_pts, dst_pts)
-    assert as_tensor(getattr(h_mat, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(h_mat, "shape")) == (3, 3)
 
     # Validate projective mapping: p_dst ~ H @ p_src
     for s_pt, d_pt in zip(src_pts, dst_pts):
@@ -104,7 +105,7 @@ def test_collinear_check_and_perspective_matrix() -> None:
     src_batch = np.stack([src_pts, src_pts], axis=0)
     dst_batch = np.stack([dst_pts, dst_pts], axis=0)
     h_batch = _compute_perspective_matrix(np, src_batch, dst_batch)
-    assert as_tensor(getattr(h_batch, "shape")) == (2, 3, 3)
+    assert as_tensor(_get_attr(h_batch, "shape")) == (2, 3, 3)
 
     # Collinear points rejection
     collinear_src = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0], [0.0, 1.0]], dtype=np.float32)
@@ -151,10 +152,10 @@ def test_perspective_grid_and_coords() -> None:
     assert _generate_perspective_grid(np, -2, 5) == 0
 
     grid = _generate_perspective_grid(np, 4, 6)
-    assert as_tensor(getattr(grid, "shape")) == (4, 6, 3)
+    assert as_tensor(_get_attr(grid, "shape")) == (4, 6, 3)
     assert as_callable(np.all)(
         as_tensor(
-            getattr(grid, "__getitem__")(
+            _get_attr(grid, "__getitem__")(
                 (
                     ...,
                     2,
@@ -165,7 +166,7 @@ def test_perspective_grid_and_coords() -> None:
     )
     assert (
         as_tensor(
-            getattr(grid, "__getitem__")(
+            _get_attr(grid, "__getitem__")(
                 (
                     0,
                     0,
@@ -175,7 +176,7 @@ def test_perspective_grid_and_coords() -> None:
         )
         == 0.0
         and as_tensor(
-            getattr(grid, "__getitem__")(
+            _get_attr(grid, "__getitem__")(
                 (
                     0,
                     0,
@@ -187,7 +188,7 @@ def test_perspective_grid_and_coords() -> None:
     )
     assert (
         as_tensor(
-            getattr(grid, "__getitem__")(
+            _get_attr(grid, "__getitem__")(
                 (
                     3,
                     5,
@@ -197,7 +198,7 @@ def test_perspective_grid_and_coords() -> None:
         )
         == 5.0
         and as_tensor(
-            getattr(grid, "__getitem__")(
+            _get_attr(grid, "__getitem__")(
                 (
                     3,
                     5,
@@ -214,12 +215,12 @@ def test_perspective_grid_and_coords() -> None:
     # Identity 2D homography
     h_eye = np.eye(3, dtype=np.float32)
     ys, xs = as_callable(_generate_perspective_coords)(np, h_eye, grid)
-    assert as_tensor(getattr(ys, "shape")) == (4, 6)
-    assert as_tensor(getattr(xs, "shape")) == (4, 6)
+    assert as_tensor(_get_attr(ys, "shape")) == (4, 6)
+    assert as_tensor(_get_attr(xs, "shape")) == (4, 6)
     assert as_callable(np.allclose)(
         ys,
         as_tensor(
-            getattr(grid, "__getitem__")(
+            _get_attr(grid, "__getitem__")(
                 (
                     ...,
                     1,
@@ -230,7 +231,7 @@ def test_perspective_grid_and_coords() -> None:
     assert as_callable(np.allclose)(
         xs,
         as_tensor(
-            getattr(grid, "__getitem__")(
+            _get_attr(grid, "__getitem__")(
                 (
                     ...,
                     0,
@@ -242,8 +243,8 @@ def test_perspective_grid_and_coords() -> None:
     # Batched homography
     h_batch = np.stack([h_eye, h_eye], axis=0)
     ys_b, xs_b = as_callable(_generate_perspective_coords)(np, h_batch, grid)
-    assert as_tensor(getattr(ys_b, "shape")) == (2, 4, 6)
-    assert as_tensor(getattr(xs_b, "shape")) == (2, 4, 6)
+    assert as_tensor(_get_attr(ys_b, "shape")) == (2, 4, 6)
+    assert as_tensor(_get_attr(xs_b, "shape")) == (2, 4, 6)
 
 
 def test_map_coordinates_and_cubic_kernel() -> None:
@@ -257,9 +258,9 @@ def test_map_coordinates_and_cubic_kernel() -> None:
     # Cubic kernel evaluation
     t_vals = np.array([0.0, 0.5, 1.0, 1.5, 2.5])
     w = _cubic_kernel(t_vals, a=-0.5)
-    assert as_callable(np.isclose)(as_tensor(getattr(w, "__getitem__")(0)), 1.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(w, "__getitem__")(2)), 0.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(w, "__getitem__")(4)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w, "__getitem__")(0)), 1.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w, "__getitem__")(2)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w, "__getitem__")(4)), 0.0)
 
     # 4x4 image
     img = np.arange(16, dtype=np.float32).reshape(4, 4)
@@ -270,19 +271,19 @@ def test_map_coordinates_and_cubic_kernel() -> None:
 
     # Nearest neighbor (order=0)
     res_nearest = _np_map_coordinates(np, img, (y_coords, x_coords), order=0, fill_value=-1.0)
-    assert as_tensor(getattr(res_nearest, "__getitem__")(0)) == img[0, 0]
-    assert as_tensor(getattr(res_nearest, "__getitem__")(2)) == -1.0
+    assert as_tensor(_get_attr(res_nearest, "__getitem__")(0)) == img[0, 0]
+    assert as_tensor(_get_attr(res_nearest, "__getitem__")(2)) == -1.0
 
     # Bilinear (order=1)
     res_bilinear = _np_map_coordinates(np, img, (y_coords, x_coords), order=1, fill_value=99.0)
     expected_mid = (img[1, 1] + img[1, 2] + img[2, 1] + img[2, 2]) / 4.0
-    assert as_callable(np.isclose)(as_tensor(getattr(res_bilinear, "__getitem__")(1)), expected_mid)
-    assert as_tensor(getattr(res_bilinear, "__getitem__")(2)) == 99.0
+    assert as_callable(np.isclose)(as_tensor(_get_attr(res_bilinear, "__getitem__")(1)), expected_mid)
+    assert as_tensor(_get_attr(res_bilinear, "__getitem__")(2)) == 99.0
 
     # Bicubic (order=3)
     res_bicubic = _np_map_coordinates(np, img, (y_coords, x_coords), order=3, fill_value=0.0)
-    assert as_tensor(getattr(res_bicubic, "shape")) == (3,)
-    assert as_callable(np.isclose)(as_tensor(getattr(res_bicubic, "__getitem__")(0)), img[0, 0], atol=1e-4)
+    assert as_tensor(_get_attr(res_bicubic, "shape")) == (3,)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(res_bicubic, "__getitem__")(0)), img[0, 0], atol=1e-4)
 
 
 def test_perspective_apply_batch() -> None:
@@ -295,7 +296,7 @@ def test_perspective_apply_batch() -> None:
     cfg = PerspectiveConfig(interpolation="bilinear", fill_value=0.0)
 
     out = _apply_perspective_batch(np, imgs, h_eye, cfg)
-    assert as_tensor(getattr(out, "shape")) == (2, 8, 8, 3)
+    assert as_tensor(_get_attr(out, "shape")) == (2, 8, 8, 3)
     assert as_callable(np.allclose)(out, imgs)
 
 
@@ -347,13 +348,13 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     ctx_no_valid = MapCoordsContext(np_mod=np, image=img_2d, y=y_coords, x=x_coords, valid=None)
 
     out_nearest = _map_coords_nearest(ctx_no_valid)
-    assert as_tensor(getattr(out_nearest, "shape")) == (2,)
+    assert as_tensor(_get_attr(out_nearest, "shape")) == (2,)
 
     out_bilinear = _map_coords_bilinear(ctx_no_valid)
-    assert as_tensor(getattr(out_bilinear, "shape")) == (2,)
+    assert as_tensor(_get_attr(out_bilinear, "shape")) == (2,)
 
     out_bicubic = _map_coords_bicubic(ctx_no_valid)
-    assert as_tensor(getattr(out_bicubic, "shape")) == (2,)
+    assert as_tensor(_get_attr(out_bicubic, "shape")) == (2,)
 
     # 3. Homography estimation when abs(h[-1]) <= 1e-12
     orig_svd = np.linalg.svd
@@ -367,10 +368,11 @@ def test_vision_utils_edge_branches(monkeypatch: pytest.MonkeyPatch) -> None:
         u, s, vh = as_callable(orig_svd)(a)
         vh_mod = vh.copy()
         vh_mod[-1, -1] = 0.0
-        return typing.cast("tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]]", (u, s, vh_mod))
+        _typed_ret_1: tuple[np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]], np.ndarray[tuple[int, ...], np.dtype[np.generic]]] = _cast_val("tuple", (u, s, vh_mod))
+        return _typed_ret_1
 
     monkeypatch.setattr(np.linalg, "svd", mock_svd)
     src_pts = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], dtype=np.float32)
     dst_pts = np.array([[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]], dtype=np.float32)
     h_out = _compute_perspective_matrix(np, src_pts, dst_pts)
-    assert as_tensor(getattr(h_out, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(h_out, "shape")) == (3, 3)

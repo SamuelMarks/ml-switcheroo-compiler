@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.creation.frontend_basic import _create_backend_array, _get_dtype_val, _infer_dtype, _try_create_array, array, asarray, convert_to_numpy, convert_to_tensor, empty, empty_like, frombuffer, full, full_like, ones, ones_like, zeros, zeros_like
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
@@ -72,8 +73,8 @@ def test_frontend_basic() -> None:
 
             return T()
 
-    assert as_tensor(getattr(as_callable(_try_create_array)(as_callable(DummyBackend)(), [1], "int32"), "dtype")) == "float32"
-    assert as_tensor(getattr(as_callable(_try_create_array)(as_callable(DummyBackend)(), [1], None), "dtype")) == "float32"
+    assert as_tensor(_get_attr(as_callable(_try_create_array)(as_callable(DummyBackend)(), [1], "int32"), "dtype")) == "float32"
+    assert as_tensor(_get_attr(as_callable(_try_create_array)(as_callable(DummyBackend)(), [1], None), "dtype")) == "float32"
 
     class DummyBackendThrow:
         """Test class DummyBackendThrow."""
@@ -90,7 +91,7 @@ def test_frontend_basic() -> None:
     with pytest.raises((RuntimeError, ValueError, TypeError, KeyError, Exception)):
         as_callable(_try_create_array)(as_callable(DummyBackendThrow)(), [1], None)
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic.get_active_backend", return_value=DummyBackend()):
-        assert as_tensor(getattr(_create_backend_array([1], None), "dtype")) == "float32"
+        assert as_tensor(_get_attr(_create_backend_array([1], None), "dtype")) == "float32"
         from ml_switcheroo_compiler.core.config import config
 
         config.eager_mode = True
@@ -122,8 +123,8 @@ def test_frontend_basic() -> None:
                 pass
 
         state.global_tracing_state.is_tracing = True
-        setattr(state.global_tracing_state, "active_graph", DummyGraph())
-        setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+        _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
         config.eager_mode = False
         array([1])
         asarray([1])
@@ -261,7 +262,7 @@ def test_frontend_basic_functions() -> None:
 
             return T()
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -291,8 +292,8 @@ def test_frontend_basic_functions() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = True
@@ -378,7 +379,7 @@ def test_frontend_basic_missing_branches() -> None:
 
             return T()
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend4())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend4())
     empty((1,))
 
 
@@ -496,7 +497,7 @@ def test_frontend_basic_kwargs() -> None:
 
             return T()
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
     import ml_switcheroo_compiler.tracing.state as state
 
     class DummyGraph:
@@ -515,8 +516,8 @@ def test_frontend_basic_kwargs() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted"):
         zeros((1,), dtype=DType.Float32)
         ones((1,), dtype=DType.Float32)
@@ -567,7 +568,7 @@ def test_frontend_basic_coverage() -> None:
             """
             return op
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
     pass
     from ml_switcheroo_compiler.core.config import config
 
@@ -590,8 +591,8 @@ def test_frontend_basic_coverage() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.creation.frontend_basic._emit_creation_node", return_value="emitted"):

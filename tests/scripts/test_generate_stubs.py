@@ -14,7 +14,7 @@ from unittest.mock import patch
 from pytest import CaptureFixture
 
 import scripts.generate_stubs as gs
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_module_type
 
 if typing.TYPE_CHECKING:
@@ -127,9 +127,9 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
 
     # 2. Fake module with inspectable functions and signature failure
     fake_mod = types.ModuleType("fake_fw")
-    setattr(fake_mod, "_priv", 1)
-    setattr(fake_mod, "Tensor", 2)
-    setattr(fake_mod, "non_callable", 42)
+    _set_attr(fake_mod, "_priv", 1)
+    _set_attr(fake_mod, "Tensor", 2)
+    _set_attr(fake_mod, "non_callable", 42)
 
     def f_normal(x: EagerValue, y: EagerValue = 10) -> None:
         """Test function f_normal.
@@ -177,11 +177,11 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
             pass
 
     bad_obj = BadSig()
-    setattr(fake_mod, "f_normal", f_normal)
-    setattr(fake_mod, "f_varargs", f_varargs)
-    setattr(fake_mod, "f_kwonly", f_kwonly)
-    setattr(fake_mod, "f_varpos_kw", f_varpos_kw)
-    setattr(fake_mod, "bad_sig", bad_obj)
+    _set_attr(fake_mod, "f_normal", f_normal)
+    _set_attr(fake_mod, "f_varargs", f_varargs)
+    _set_attr(fake_mod, "f_kwonly", f_kwonly)
+    _set_attr(fake_mod, "f_varpos_kw", f_varpos_kw)
+    _set_attr(fake_mod, "bad_sig", bad_obj)
 
     real_sig = inspect.signature
 
@@ -191,7 +191,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         Args:
             obj: Test parameter `obj`.
         """
-        if getattr(obj, "fail_sig", False):
+        if _get_attr(obj, "fail_sig", False):
             raise ValueError("Signature failed")
         return real_sig(obj)
 

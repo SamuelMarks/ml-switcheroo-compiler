@@ -9,7 +9,7 @@ from collections.abc import Callable  # noqa: F401
 import pydantic
 
 from ml_switcheroo_compiler.backends.registry import as_tensor, as_tensor_pair
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 
 if typing.TYPE_CHECKING:
     pass
@@ -43,7 +43,7 @@ class AsStringConfig(pydantic.BaseModel):
             *args (TensorOrScalar): Positional field values.
             **kwargs (TensorOrScalar): Keyword field values.
         """
-        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
 
 
 def string_to_hash(input_tensor: Tensor, num_buckets: int) -> TensorOrScalar:
@@ -62,7 +62,7 @@ def string_to_hash(input_tensor: Tensor, num_buckets: int) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "StringToHash",
@@ -90,7 +90,7 @@ def regex_replace(input_tensor: Tensor, pattern: str, rewrite: str) -> TensorOrS
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "RegexReplace",
@@ -117,7 +117,7 @@ def regex_full_match(input_tensor: Tensor, pattern: str) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.Bool, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Bool, input_tensor.device),
         )
     return _emit_shape_node(
         "RegexFullMatch",
@@ -144,7 +144,7 @@ def string_join(inputs: list[Tensor], separator: str = "") -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.String, inputs[0].device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, inputs[0].device),
         )
     return _emit_shape_node(
         "StringJoin",
@@ -170,7 +170,7 @@ def string_length(input_tensor: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "StringLength",
@@ -198,7 +198,7 @@ def string_substr(input_tensor: Tensor, pos: int, len: int) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringSubstr",
@@ -307,7 +307,7 @@ def lookup(input_tensor: Tensor, vocabulary: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "Lookup",
@@ -334,7 +334,7 @@ def text_vectorization(input_tensor: Tensor, **kwargs: TensorOrScalar) -> Tensor
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.Int32, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Int32, input_tensor.device),
         )
     return _emit_shape_node(
         "TextVectorization",
@@ -361,7 +361,7 @@ def string_to_number(input_tensor: Tensor, dtype: DType = DType.Float32) -> Tens
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), dtype, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), dtype, input_tensor.device),
         )
     return _emit_shape_node(
         "StringToNumber",
@@ -387,7 +387,7 @@ def string_lower(input_tensor: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringLower",
@@ -413,7 +413,7 @@ def string_upper(input_tensor: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "StringUpper",
@@ -441,7 +441,7 @@ def edit_distance(hypothesis: Tensor, truth: Tensor, normalize: bool = True) -> 
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.Float32, hypothesis.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.Float32, hypothesis.device),
         )
     return _emit_shape_node(
         "EditDistance",
@@ -491,7 +491,7 @@ def as_string(
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), DType.String, input_tensor.device),
+            TensorConfig(tuple(_get_attr(arr, "shape")), DType.String, input_tensor.device),
         )
     return _emit_shape_node(
         "AsString",

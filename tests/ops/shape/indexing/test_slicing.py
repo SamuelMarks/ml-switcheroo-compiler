@@ -8,6 +8,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.slicing import Choose, IndexInDim, Slice, StridedSlice, UpdateSlice, slice, strided_slice
 from tests.testing_utils import as_callable, as_tensor
@@ -43,7 +44,7 @@ def test_slice(mocker: EagerTensorProtocol) -> None:
     assert slice(t, 0, 1, 3, 1) == "sliced"
     config.eager_mode = True
     res = slice(t, 0, 1, 3, 1)
-    assert as_tensor(getattr(res, "config")).shape == (2, 5)
+    assert as_tensor(_get_attr(res, "config")).shape == (2, 5)
 
 
 def test_strided_slice(mocker: EagerTensorProtocol) -> None:
@@ -58,7 +59,7 @@ def test_strided_slice(mocker: EagerTensorProtocol) -> None:
     assert strided_slice(t, [1, 1], [3, 3], [1, 1]) == "strided"
     config.eager_mode = True
     res = strided_slice(t, [1, 1], [3, 3], [1, 1])
-    assert as_tensor(getattr(res, "config")).shape == (2, 2)
+    assert as_tensor(_get_attr(res, "config")).shape == (2, 2)
 
 
 def test_slice_class() -> None:

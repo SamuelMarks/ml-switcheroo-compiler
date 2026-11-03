@@ -8,7 +8,7 @@ from collections.abc import Sequence
 import pydantic
 
 from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import dispatch_eager
 from ml_switcheroo_compiler.ops.configs import ConvConfig
@@ -94,7 +94,7 @@ def conv_general_dilated_local(
         **kwargs,
     }
 
-    out_shape = getattr(ConvGeneralDilatedLocal(), "infer_shape")(lhs, rhs, **attributes)
+    out_shape = _get_attr(ConvGeneralDilatedLocal(), "infer_shape")(lhs, rhs, **attributes)
     return _emit_linalg_node("ConvGeneralDilatedLocal", inputs, attributes, [out_shape], [lhs.dtype])
 
 
@@ -120,7 +120,7 @@ def conv_general_dilated_patches(lhs: Tensor, filter_shape: TensorOrScalar, wind
         **kwargs,
     }
 
-    out_shape = getattr(ConvGeneralDilatedPatches(), "infer_shape")(lhs, **attributes)
+    out_shape = _get_attr(ConvGeneralDilatedPatches(), "infer_shape")(lhs, **attributes)
     return _emit_linalg_node("ConvGeneralDilatedPatches", inputs, attributes, [out_shape], [lhs.dtype])
 
 
@@ -141,5 +141,5 @@ def conv_with_general_padding(lhs: Tensor, rhs: Tensor, window_strides: TensorOr
     inputs = [lhs, rhs]
     attributes = {"window_strides": window_strides, "padding": padding, **kwargs}
 
-    out_shape = getattr(ConvWithGeneralPadding(), "infer_shape")(lhs, rhs, **attributes)
+    out_shape = _get_attr(ConvWithGeneralPadding(), "infer_shape")(lhs, rhs, **attributes)
     return _emit_linalg_node("ConvWithGeneralPadding", inputs, attributes, [out_shape], [lhs.dtype])

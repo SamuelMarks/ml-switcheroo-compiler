@@ -17,6 +17,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import dispatch_eager, emit_ir_node
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY, OpDef, get_op, register_op
@@ -36,8 +37,8 @@ def _test_register_and_get_op_sub_1(_state: dict[str, EagerTensorProtocol]) -> N
     """
     original_registry = _OP_REGISTRY.copy()
     _OP_REGISTRY.clear()
-    getattr(_state, "update")({"original_registry": original_registry})
-    _state.update(locals())
+    _get_attr(_state, "update")({"original_registry": original_registry})
+    _state.update(_caller_locals())
 
 
 def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -176,7 +177,7 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
     finally:
         _OP_REGISTRY.clear()
         as_callable(_OP_REGISTRY.update)(original_registry)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_register_and_get_op() -> None:
@@ -185,7 +186,7 @@ def test_register_and_get_op() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
     for _sub_fn in (_test_register_and_get_op_sub_1, _test_register_and_get_op_sub_2):
         _sub_fn(_state)
     assert len(_state) > 0
@@ -198,8 +199,8 @@ def _test_opdef_call_eager_sub_1(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     original_registry = _OP_REGISTRY.copy()
-    getattr(_state, "update")({"original_registry": original_registry})
-    _state.update(locals())
+    _get_attr(_state, "update")({"original_registry": original_registry})
+    _state.update(_caller_locals())
 
 
 def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -338,7 +339,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
         config.eager_mode = False
         _OP_REGISTRY.clear()
         as_callable(_OP_REGISTRY.update)(original_registry)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_opdef_call_eager() -> None:
@@ -347,7 +348,7 @@ def test_opdef_call_eager() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
     for _sub_fn in (_test_opdef_call_eager_sub_1, _test_opdef_call_eager_sub_2):
         _sub_fn(_state)
     assert len(_state) > 0
@@ -360,8 +361,8 @@ def _test_opdef_call_tracing_sub_1(_state: dict[str, EagerTensorProtocol]) -> No
         _state: Shared test state dictionary.
     """
     original_registry = _OP_REGISTRY.copy()
-    getattr(_state, "update")({"original_registry": original_registry})
-    _state.update(locals())
+    _get_attr(_state, "update")({"original_registry": original_registry})
+    _state.update(_caller_locals())
 
 
 def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -500,7 +501,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
             assert t_out.device is dev
             assert t_out.shape == (3,)
             assert t_out.dtype == DType.Float32
-            nodes = list(as_tensor(getattr(global_tracing_state.active_graph, "nodes")).values())
+            nodes = list(as_tensor(_get_attr(global_tracing_state.active_graph, "nodes")).values())
             assert len(nodes) == 1
             assert nodes[0].op_type == "TestTraceOp"
             assert nodes[0].inputs == ["in1"]
@@ -511,7 +512,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
     finally:
         _OP_REGISTRY.clear()
         as_callable(_OP_REGISTRY.update)(original_registry)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_opdef_call_tracing() -> None:
@@ -520,7 +521,7 @@ def test_opdef_call_tracing() -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
     for _sub_fn in (_test_opdef_call_tracing_sub_1, _test_opdef_call_tracing_sub_2):
         _sub_fn(_state)
     assert len(_state) > 0

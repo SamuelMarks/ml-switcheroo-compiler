@@ -9,6 +9,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.grad.options import GradOptions
 from ml_switcheroo_compiler.grad.utils import (
@@ -37,7 +38,7 @@ def test_grad_utils_find_wrt_tensors_branches() -> None:
 
     proxy2 = ProxyTensor(id="node_2", shape=(), dtype="float32")
     t2 = Tensor(proxy2, TensorConfig((), DType.Float32, Device("cpu")))
-    setattr(t2, "trainable", True)
+    _set_attr(t2, "trainable", True)
 
     proxy3 = ProxyTensor(id="node_3", shape=(), dtype="float32")
     t3 = Variable(proxy3, TensorConfig((), DType.Float32, Device("cpu")))

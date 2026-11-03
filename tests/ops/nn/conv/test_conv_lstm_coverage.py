@@ -14,6 +14,7 @@ import ml_switcheroo_compiler.ops.nn.rnn_utils as rnn_utils_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from tests.testing_utils import as_callable, as_tensor
 
@@ -61,10 +62,10 @@ def _test_nn_conv_lstm_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) ->
 
     weights1d = rnn_utils_mod.RNNWeights(kernel=w1d, recurrent_kernel=rw1d, bias=b1d)
     weights1d_nobias = rnn_utils_mod.RNNWeights(kernel=w1d, recurrent_kernel=rw1d, bias=None)
-    getattr(_state, "update")({"b1d": b1d, "c1d": c1d, "h1d": h1d, "mock_gate_1d": mock_gate_1d})
-    getattr(_state, "update")({"rw1d": rw1d, "w1d": w1d, "weights1d": weights1d, "weights1d_nobias": weights1d_nobias})
-    getattr(_state, "update")({"x1d": x1d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"b1d": b1d, "c1d": c1d, "h1d": h1d, "mock_gate_1d": mock_gate_1d})
+    _get_attr(_state, "update")({"rw1d": rw1d, "w1d": w1d, "weights1d": weights1d, "weights1d_nobias": weights1d_nobias})
+    _get_attr(_state, "update")({"x1d": x1d})
+    _state.update(_caller_locals())
 
 
 def _test_nn_conv_lstm_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -107,11 +108,11 @@ def _test_nn_conv_lstm_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) ->
 
     # Test conv2d_lstm_cell with channels_first
     b_cf = Tensor(np.ones((1, 16, 1, 1)), TensorConfig((1, 16, 1, 1), DType.Float32, Device("cpu")))
-    getattr(_state, "update")({"_": _, "b_cf": b_cf, "c2d": c2d, "h2d": h2d})
-    getattr(_state, "update")({"mock_gate_2d": mock_gate_2d, "mock_gate_2d_cf": mock_gate_2d_cf, "next_c1d": next_c1d, "next_h1d": next_h1d})
-    getattr(_state, "update")({"res_disp1d": res_disp1d, "res_h1d": res_h1d, "res_h1d_nb": res_h1d_nb, "rw2d": rw2d})
-    getattr(_state, "update")({"w2d": w2d, "weights2d": weights2d, "x2d": x2d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "b_cf": b_cf, "c2d": c2d, "h2d": h2d})
+    _get_attr(_state, "update")({"mock_gate_2d": mock_gate_2d, "mock_gate_2d_cf": mock_gate_2d_cf, "next_c1d": next_c1d, "next_h1d": next_h1d})
+    _get_attr(_state, "update")({"res_disp1d": res_disp1d, "res_h1d": res_h1d, "res_h1d_nb": res_h1d_nb, "rw2d": rw2d})
+    _get_attr(_state, "update")({"w2d": w2d, "weights2d": weights2d, "x2d": x2d})
+    _state.update(_caller_locals())
 
 
 def _test_nn_conv_lstm_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -152,11 +153,11 @@ def _test_nn_conv_lstm_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) ->
     w3d = Tensor(np.ones((1, 1, 1, 2, 16)), TensorConfig((1, 1, 1, 2, 16), DType.Float32, Device("cpu")))
     rw3d = Tensor(np.ones((1, 1, 1, 4, 16)), TensorConfig((1, 1, 1, 4, 16), DType.Float32, Device("cpu")))
     weights3d = as_callable(rnn_utils_mod.RNNWeights)(kernel=w3d, recurrent_kernel=rw3d, bias=b1d)
-    getattr(_state, "update")({"_": _, "c2d_cf": c2d_cf, "c3d": c3d, "h2d_cf": h2d_cf})
-    getattr(_state, "update")({"h3d": h3d, "mock_gate_3d": mock_gate_3d, "res_disp2d": res_disp2d, "res_h2d": res_h2d})
-    getattr(_state, "update")({"res_h2d_cf": res_h2d_cf, "rw3d": rw3d, "w3d": w3d, "weights2d_cf": weights2d_cf})
-    getattr(_state, "update")({"weights3d": weights3d, "x3d": x3d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "c2d_cf": c2d_cf, "c3d": c3d, "h2d_cf": h2d_cf})
+    _get_attr(_state, "update")({"h3d": h3d, "mock_gate_3d": mock_gate_3d, "res_disp2d": res_disp2d, "res_h2d": res_h2d})
+    _get_attr(_state, "update")({"res_h2d_cf": res_h2d_cf, "rw3d": rw3d, "w3d": w3d, "weights2d_cf": weights2d_cf})
+    _get_attr(_state, "update")({"weights3d": weights3d, "x3d": x3d})
+    _state.update(_caller_locals())
 
 
 def _test_nn_conv_lstm_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -194,17 +195,17 @@ def _test_nn_conv_lstm_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) ->
     # Directly test conv_lstm _sigmoid
     sig_out = as_callable(conv_lstm_mod._sigmoid)(x1d)
     assert sig_out is not None
-    getattr(_state, "update")({"_": _, "res_disp3d": res_disp3d, "res_h3d": res_h3d, "res_h3d_conf": res_h3d_conf})
-    getattr(_state, "update")({"sig_out": sig_out, "x_bad": x_bad})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "res_disp3d": res_disp3d, "res_h3d": res_h3d, "res_h3d_conf": res_h3d_conf})
+    _get_attr(_state, "update")({"sig_out": sig_out, "x_bad": x_bad})
+    _state.update(_caller_locals())
 
 
 def test_nn_conv_lstm_coverage() -> None:
     """Verify 100% line and branch coverage for conv_lstm operations."""
     orig_eager = config.eager_mode
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"orig_eager": orig_eager})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"orig_eager": orig_eager})
         for _sub_fn in (
             _test_nn_conv_lstm_coverage_sub_1,
             _test_nn_conv_lstm_coverage_sub_2,

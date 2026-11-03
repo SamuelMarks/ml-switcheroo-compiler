@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -24,8 +24,8 @@ class Histogram(OpDef):
             tuple[int, ...]: Result.
         """
         bins = kwargs.get("bins", 10)
-        if hasattr(bins, "shape") and len(getattr(bins, "shape")) > 0:
-            return (getattr(bins, "shape")[0] - 1,)
+        if _has_attr(bins, "shape") and len(_get_attr(bins, "shape")) > 0:
+            return (_get_attr(bins, "shape")[0] - 1,)
         if isinstance(bins, int):
             return (bins,)
         return (10,)
@@ -51,8 +51,8 @@ class Histogram2d(OpDef):
         if isinstance(bins, (list, tuple)):
             if len(bins) == 2:
                 b1, b2 = bins
-                b1_len = b1 if isinstance(b1, int) else (int(getattr(b1, "shape")[0]) - 1 if hasattr(b1, "shape") else 10)
-                b2_len = b2 if isinstance(b2, int) else (int(getattr(b2, "shape")[0]) - 1 if hasattr(b2, "shape") else 10)
+                b1_len = b1 if isinstance(b1, int) else (int(_get_attr(b1, "shape")[0]) - 1 if _has_attr(b1, "shape") else 10)
+                b2_len = b2 if isinstance(b2, int) else (int(_get_attr(b2, "shape")[0]) - 1 if _has_attr(b2, "shape") else 10)
                 return (b1_len, b2_len)
         return (10, 10)
 
@@ -74,8 +74,8 @@ class HistogramBinEdges(OpDef):
             tuple[int, ...]: Result.
         """
         bins = kwargs.get("bins", 10)
-        if hasattr(bins, "shape") and len(getattr(bins, "shape")) > 0:
-            return as_tensor(getattr(bins, "shape"))
+        if _has_attr(bins, "shape") and len(_get_attr(bins, "shape")) > 0:
+            return as_tensor(_get_attr(bins, "shape"))
         if isinstance(bins, int):
             return (bins + 1,)
         return (11,)
@@ -100,7 +100,7 @@ class Histogramdd(OpDef):
         if not args:
             return ()
         sample = args[0]
-        n_dim = sample.shape[1] if (hasattr(sample, "shape") and len(sample.shape) == 2) else 1
+        n_dim = sample.shape[1] if (_has_attr(sample, "shape") and len(sample.shape) == 2) else 1
         return tuple(10 for _ in range(n_dim))
 
 

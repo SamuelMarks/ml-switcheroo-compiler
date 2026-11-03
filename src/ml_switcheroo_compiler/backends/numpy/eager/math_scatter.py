@@ -10,6 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.numpy.eager.indexing import _dynamic_update_slice
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("TensorScatterUpdate")
@@ -156,7 +157,7 @@ def _np_scatter(
     dim_val = kwargs.get("dim", 0)
     dim = int(dim_val) if dim_val is not None else 0
     out = np.copy(input_data)
-    getattr(np, "put_along_axis")(out, index, src, axis=dim)
+    _get_attr(np, "put_along_axis")(out, index, src, axis=dim)
     return out
 
 

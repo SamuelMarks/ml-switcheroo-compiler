@@ -7,6 +7,7 @@ import os
 
 import yaml
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 from ml_switcheroo_compiler.transforms.passes.config_models import OptimizationHeuristicsConfig
@@ -258,7 +259,7 @@ class InterferenceGraphColoringAllocator:
                     last_use[inp] = max(last_use[inp], i)
 
         end_time = len(sorted_nodes)
-        for out_id in getattr(graph, "outputs", []):
+        for out_id in _get_attr(graph, "outputs", []):
             if out_id in last_use:
                 last_use[out_id] = end_time
 
@@ -408,7 +409,7 @@ class BufferAllocationPass:
             if isinstance(size_val, str):
                 # Handle symbolic/dynamic batch dimensions using stride multipliers
                 stride_mult = 1
-                shape = getattr(node, "shape_metadata", None) or getattr(node, "shape", None) or node.attributes.get("shape")
+                shape = _get_attr(node, "shape_metadata", None) or _get_attr(node, "shape", None) or node.attributes.get("shape")
                 if shape and isinstance(shape, (list, tuple)) and len(shape) > 1:
                     dims = [int(d) for d in shape[1:] if isinstance(d, (int, float))]
                     mult = 1
@@ -528,9 +529,9 @@ class BufferAllocationPass:
         """
         expire_t = last_use.get(node.id, i)
         if isinstance(size, str):
-            var_name = getattr(node, "id", f"node_{i}")
+            var_name = _get_attr(node, "id", f"node_{i}")
             assigned_offset = allocator.allocate_dynamic(size, i, expire_t, var_name)
-            getattr(graph, "attributes")["dynamic_memory_schema"]["dynamic_offsets"].append(
+            _get_attr(graph, "attributes")["dynamic_memory_schema"]["dynamic_offsets"].append(
                 {
                     "var_name": var_name,
                     "symbolic_math": size,
@@ -571,10 +572,10 @@ class BufferAllocationPass:
         if not sorted_nodes:
             return False
 
-        graph_attrs = getattr(graph, "attributes", None)
+        graph_attrs = _get_attr(graph, "attributes", None)
         if graph_attrs is None:
             graph_attrs = {}
-            object.__setattr__(graph, "attributes", graph_attrs)
+            _obj_set_attr(graph, "attributes", graph_attrs)
 
         node_sizes: dict[str, int | str] = {node.id: _get_node_byte_size(node) for node in sorted_nodes}
 
@@ -585,8 +586,8 @@ class BufferAllocationPass:
         allocator = GreedyOffsetAllocator()
         modified = False
 
-        object.__setattr__(graph, "attributes", getattr(graph, "attributes", {}))
-        getattr(graph, "attributes")["dynamic_memory_schema"] = {"dynamic_offsets": []}
+        _obj_set_attr(graph, "attributes", _get_attr(graph, "attributes", {}))
+        _get_attr(graph, "attributes")["dynamic_memory_schema"] = {"dynamic_offsets": []}
 
         for i, node in enumerate(sorted_nodes):
             if self._allocate_node_buffer(node, i, node_sizes[node.id], graph, last_use, allocator):

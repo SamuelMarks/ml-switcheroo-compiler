@@ -6,6 +6,8 @@ import importlib.util
 import sys
 import typing  # noqa: F401
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+
 if typing.TYPE_CHECKING:
     import torch
 
@@ -37,9 +39,9 @@ def _execute_accumulate_n(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     inputs = args[0] if len(args) > 0 else kwargs.get("inputs", [])
     if not inputs:
         raise ValueError("inputs must not be empty")
-    res = getattr(inputs, "__getitem__")(0)
-    for i in range(1, getattr(inputs, "__len__")()):
-        res = res + getattr(inputs, "__getitem__")(i)
+    res = _get_attr(inputs, "__getitem__")(0)
+    for i in range(1, _get_attr(inputs, "__len__")()):
+        res = res + _get_attr(inputs, "__getitem__")(i)
     return as_tensor(res)
 
 
@@ -58,10 +60,10 @@ def _execute_tensor_scatter_max(*args: EagerValue, **kwargs: EagerValue) -> Eage
         args[1],
         args[2],
     )
-    flat_idx = sum(as_tensor(indices)[..., i] * getattr(tensor, "stride")(i) for i in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
-    res = getattr(getattr(tensor, "clone")(), "flatten")()
-    res.scatter_reduce_(0, getattr(flat_idx, "flatten")(), getattr(updates, "flatten")(), reduce="amax", include_self=True)
-    return as_tensor(res.reshape(getattr(tensor, "shape")))
+    flat_idx = sum(as_tensor(indices)[..., i] * _get_attr(tensor, "stride")(i) for i in range(_get_attr(_get_attr(indices, "shape"), "__getitem__")(-1)))
+    res = _get_attr(_get_attr(tensor, "clone")(), "flatten")()
+    res.scatter_reduce_(0, _get_attr(flat_idx, "flatten")(), _get_attr(updates, "flatten")(), reduce="amax", include_self=True)
+    return as_tensor(res.reshape(_get_attr(tensor, "shape")))
 
 
 def _execute_tensor_scatter_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -79,10 +81,10 @@ def _execute_tensor_scatter_min(*args: EagerValue, **kwargs: EagerValue) -> Eage
         args[1],
         args[2],
     )
-    flat_idx = sum(as_tensor(indices)[..., i] * getattr(tensor, "stride")(i) for i in range(getattr(getattr(indices, "shape"), "__getitem__")(-1)))
-    res = getattr(getattr(tensor, "clone")(), "flatten")()
-    res.scatter_reduce_(0, getattr(flat_idx, "flatten")(), getattr(updates, "flatten")(), reduce="amin", include_self=True)
-    return as_tensor(res.reshape(getattr(tensor, "shape")))
+    flat_idx = sum(as_tensor(indices)[..., i] * _get_attr(tensor, "stride")(i) for i in range(_get_attr(_get_attr(indices, "shape"), "__getitem__")(-1)))
+    res = _get_attr(_get_attr(tensor, "clone")(), "flatten")()
+    res.scatter_reduce_(0, _get_attr(flat_idx, "flatten")(), _get_attr(updates, "flatten")(), reduce="amin", include_self=True)
+    return as_tensor(res.reshape(_get_attr(tensor, "shape")))
 
 
 def _execute_tensor_scatter_update(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -95,7 +97,7 @@ def _execute_tensor_scatter_update(*args: EagerValue, **kwargs: EagerValue) -> E
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(getattr(args[0], "clone")(), "index_put_")(tuple(getattr(args[1], "unbind")(-1)), args[2]))
+    return as_tensor(_get_attr(_get_attr(args[0], "clone")(), "index_put_")(tuple(_get_attr(args[1], "unbind")(-1)), args[2]))
 
 
 def _execute_tensor_scatter_add(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -108,7 +110,7 @@ def _execute_tensor_scatter_add(*args: EagerValue, **kwargs: EagerValue) -> Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(getattr(args[0], "clone")(), "index_put_")(tuple(getattr(args[1], "unbind")(-1)), args[2], accumulate=True))
+    return as_tensor(_get_attr(_get_attr(args[0], "clone")(), "index_put_")(tuple(_get_attr(args[1], "unbind")(-1)), args[2], accumulate=True))
 
 
 def _execute_power_iteration(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -125,15 +127,15 @@ def _execute_power_iteration(*args: EagerValue, **kwargs: EagerValue) -> EagerVa
     num_iters = kwargs.get("num_iters", 1)
     u = kwargs.get("u", None)
     if u is None:
-        u = torch.ones(getattr(w, "shape")[:-2] + (getattr(w, "shape")[-2], 1), dtype=getattr(w, "dtype"), device=getattr(w, "device"))
+        u = torch.ones(_get_attr(w, "shape")[:-2] + (_get_attr(w, "shape")[-2], 1), dtype=_get_attr(w, "dtype"), device=_get_attr(w, "device"))
     for _ in range(as_int(num_iters)):
-        w_t = getattr(w, "transpose")(-1, -2)
-        v = getattr(torch, "matmul")(w_t, u)
+        w_t = _get_attr(w, "transpose")(-1, -2)
+        v = _get_attr(torch, "matmul")(w_t, u)
         v = v / (torch.linalg.norm(v, dim=-2, keepdim=True) + 1e-12)
-        u = getattr(torch, "matmul")(w, v)
+        u = _get_attr(torch, "matmul")(w, v)
         u = u / (torch.linalg.norm(u, dim=-2, keepdim=True) + 1e-12)
-    sigma = getattr(torch, "matmul")(getattr(u, "transpose")(-1, -2), getattr(torch, "matmul")(w, v))
-    return (getattr(v, "squeeze")(-1), getattr(u, "squeeze")(-1), getattr(getattr(sigma, "squeeze")(-1), "squeeze")(-1))
+    sigma = _get_attr(torch, "matmul")(_get_attr(u, "transpose")(-1, -2), _get_attr(torch, "matmul")(w, v))
+    return (_get_attr(v, "squeeze")(-1), _get_attr(u, "squeeze")(-1), _get_attr(_get_attr(sigma, "squeeze")(-1), "squeeze")(-1))
 
 
 def _execute_broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -146,7 +148,7 @@ def _execute_broadcast_to(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(args[0], "expand")(kwargs["shape"]))
+    return as_tensor(_get_attr(args[0], "expand")(kwargs["shape"]))
 
 
 def _execute_one_hot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -168,9 +170,9 @@ def _execute_one_hot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     on_value = kwargs.get("on_value", 1.0)
     off_value = kwargs.get("off_value", 0.0)
     dtype_str = kwargs.get("dtype", "float32")
-    res = getattr(F, "one_hot")(getattr(inputs, "long")(), num_classes=depth)
+    res = _get_attr(F, "one_hot")(_get_attr(inputs, "long")(), num_classes=depth)
     dtype_map = {"float32": torch.float32, "float64": torch.float64, "int32": torch.int32, "int64": torch.int64}
-    res = getattr(res, "to")(getattr(dtype_map, "get")(dtype_str, torch.float32))
+    res = _get_attr(res, "to")(_get_attr(dtype_map, "get")(dtype_str, torch.float32))
     if on_value != 1.0 or off_value != 0.0:
         res = res * (as_tensor(on_value) - as_tensor(off_value)) + as_tensor(off_value)
     if axis != -1 and axis != res.ndim - 1:
@@ -190,11 +192,11 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """
     tensor = args[0]
     dtype = kwargs.get("dtype") if "dtype" in kwargs else args[1]
-    dt_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
+    dt_str = str(_get_attr(dtype, "value", dtype)).split(".")[-1]
     if dt_str == "float8_e4m3fn":
-        dt = getattr(torch, "float8_e4m3fn", torch.float32)
+        dt = _get_attr(torch, "float8_e4m3fn", torch.float32)
     elif dt_str == "float8_e5m2":
-        dt = getattr(torch, "float8_e5m2", torch.float32)
+        dt = _get_attr(torch, "float8_e5m2", torch.float32)
     elif "int4" in dt_str:
         dt = torch.int8
     elif "bfloat16" in dt_str:
@@ -202,8 +204,8 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     elif "float16" in dt_str:
         dt = torch.float16
     else:
-        dt = getattr(torch, dt_str, None)
-    return as_tensor(getattr(tensor, "to")(dt))
+        dt = _get_attr(torch, dt_str, None)
+    return as_tensor(_get_attr(tensor, "to")(dt))
 
 
 def _execute_cummax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -216,7 +218,7 @@ def _execute_cummax(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(torch, "cummax")(*args, **kwargs)[0])
+    return as_tensor(_get_attr(torch, "cummax")(*args, **kwargs)[0])
 
 
 def _execute_cummin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -229,7 +231,7 @@ def _execute_cummin(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(torch, "cummin")(*args, **kwargs)[0])
+    return as_tensor(_get_attr(torch, "cummin")(*args, **kwargs)[0])
 
 
 def _execute_cumlogsumexp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -242,7 +244,7 @@ def _execute_cumlogsumexp(*args: EagerValue, **kwargs: EagerValue) -> EagerValue
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(torch, "logcumsumexp")(*args, **kwargs))
+    return as_tensor(_get_attr(torch, "logcumsumexp")(*args, **kwargs))
 
 
 def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -261,9 +263,9 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     default_value = kwargs.get("default_value") if kwargs.get("default_value") is not None else (args[1] if len(args) > 1 and args[1] is not None else 0.0)
 
     # 1. If it's a NestedTensor
-    if getattr(rt, "is_nested", False):
+    if _get_attr(rt, "is_nested", False):
         # Nested tensors have a built-in to_padded_tensor
-        return as_tensor(getattr(rt, "to_padded_tensor")(padding=default_value))
+        return as_tensor(_get_attr(rt, "to_padded_tensor")(padding=default_value))
 
     # 2. If it's a list of tensors (e.g., from unbind or raw input)
     if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], torch.Tensor):
@@ -277,9 +279,9 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     if isinstance(rt, dict) and "values" in rt and "row_splits" in rt:
         values = rt["values"]
         row_splits = rt["row_splits"]
-    elif hasattr(rt, "values") and hasattr(rt, "row_splits"):
-        values = getattr(rt, "values")
-        row_splits = getattr(rt, "row_splits")
+    elif _has_attr(rt, "values") and _has_attr(rt, "row_splits"):
+        values = _get_attr(rt, "values")
+        row_splits = _get_attr(rt, "row_splits")
 
     if values is not None and row_splits is not None:
         # Proper index tracking and shape padding
@@ -341,7 +343,7 @@ def _torch_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
             tuple[int, ...]: Result.
     """
     kwargs.setdefault("correction", kwargs.pop("ddof", 0))
-    return as_tensor(getattr(torch, "var")(*args, **kwargs))
+    return as_tensor(_get_attr(torch, "var")(*args, **kwargs))
 
 
 def _torch_tensordot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -356,7 +358,7 @@ def _torch_tensordot(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """
     if "axes" in kwargs:
         kwargs["dims"] = kwargs.pop("axes")
-    return as_tensor(getattr(torch, "tensordot")(*args, **kwargs))
+    return as_tensor(_get_attr(torch, "tensordot")(*args, **kwargs))
 
 
 def _get_torch_reduce_op(op_type: str) -> EagerValue:
@@ -371,16 +373,16 @@ def _get_torch_reduce_op(op_type: str) -> EagerValue:
 
     op_type = op_type.lower()
     if op_type == "sum":
-        return as_tensor(getattr(dist.ReduceOp, "SUM"))
+        return as_tensor(_get_attr(dist.ReduceOp, "SUM"))
     elif op_type == "prod":
-        return as_tensor(getattr(dist.ReduceOp, "PRODUCT"))
+        return as_tensor(_get_attr(dist.ReduceOp, "PRODUCT"))
     elif op_type == "min":
-        return as_tensor(getattr(dist.ReduceOp, "MIN"))
+        return as_tensor(_get_attr(dist.ReduceOp, "MIN"))
     elif op_type == "max":
-        return as_tensor(getattr(dist.ReduceOp, "MAX"))
+        return as_tensor(_get_attr(dist.ReduceOp, "MAX"))
     elif op_type == "avg" or op_type == "mean":
-        return as_tensor(getattr(dist.ReduceOp, "AVG"))
-    return as_tensor(getattr(dist.ReduceOp, "SUM"))
+        return as_tensor(_get_attr(dist.ReduceOp, "AVG"))
+    return as_tensor(_get_attr(dist.ReduceOp, "SUM"))
 
 
 def _torch_all_gather(*args: EagerValue, **kwargs: EagerValue) -> torch.Tensor:
@@ -442,7 +444,7 @@ def _torch_reduce_scatter(*args: EagerValue, **kwargs: EagerValue) -> torch.Tens
         return tensor
     op_type = kwargs.get("op_type", "sum")
     axis = int(as_int(kwargs.get("axis", 0)))
-    tensor_list = list(getattr(torch, "tensor_split")(tensor, dist.get_world_size(), dim=axis))
+    tensor_list = list(_get_attr(torch, "tensor_split")(tensor, dist.get_world_size(), dim=axis))
     res = torch.empty_like(tensor_list[0])
     dist.reduce_scatter(res, tensor_list, op=_get_torch_reduce_op(as_str(op_type)))
     return res
@@ -466,7 +468,7 @@ def _torch_all_to_all(*args: EagerValue, **kwargs: EagerValue) -> torch.Tensor:
     # Assuming input is pre-split along axis 0
     split_dim = int(as_int(kwargs.get("split_axis", 0)))
     concat_dim = int(as_int(kwargs.get("concat_axis", 0)))
-    input_tensor_list = list(getattr(torch, "tensor_split")(tensor, dist.get_world_size(), dim=split_dim))
+    input_tensor_list = list(_get_attr(torch, "tensor_split")(tensor, dist.get_world_size(), dim=split_dim))
     output_tensor_list = [torch.empty_like(input_tensor_list[0]) for _ in range(dist.get_world_size())]
     dist.all_to_all(output_tensor_list, input_tensor_list)
     return torch.cat(output_tensor_list, dim=concat_dim)
@@ -500,7 +502,7 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
     if op_type in custom_op_map:
         return custom_op_map[op_type](*args, **kwargs)
     try:
-        func = getattr(torch, op_type.lower())
+        func = _get_attr(torch, op_type.lower())
         return as_tensor(func(*args, **kwargs))
     except AttributeError:
         from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
@@ -514,9 +516,9 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
         func = None
-        for mod in [torch, F, getattr(torch, "linalg", None), getattr(torch, "fft", None)]:
-            if mod is not None and hasattr(mod, snake):
-                func = getattr(mod, snake)
+        for mod in [torch, F, _get_attr(torch, "linalg", None), _get_attr(torch, "fft", None)]:
+            if mod is not None and _has_attr(mod, snake):
+                func = _get_attr(mod, snake)
                 break
         if func is not None:
             return as_tensor(func(*args, **kwargs))

@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_general import _ad
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import _np_tensorarraywrite, _np_topk
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_manipulation import _all_gather, _np_updateslice, _updateslice
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_int_list, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -48,7 +49,7 @@ def _test_math_missing_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     assert res == 5
 
     db2 = DummyBackend()
-    setattr(db2, "array", lambda x: ["array", x])
+    _set_attr(db2, "array", lambda x: ["array", x])
     res2 = _all_gather(as_mod(db2), 5)
     assert res2 == ["array", [5]]
 
@@ -60,11 +61,11 @@ def _test_math_missing_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
 
     # math_manipulation.py 156-157 (_updateslice)
     db = DummyBackend()
-    setattr(db, "array", as_tensor(getattr(np, "array")))
-    getattr(_state, "update")({"_pswapaxes": _pswapaxes, "arr": arr, "db": db, "db2": db2})
-    getattr(_state, "update")({"idx": idx, "res": res, "res2": res2, "tensor": tensor})
-    getattr(_state, "update")({"vals": vals})
-    _state.update(locals())
+    _set_attr(db, "array", as_tensor(_get_attr(np, "array")))
+    _get_attr(_state, "update")({"_pswapaxes": _pswapaxes, "arr": arr, "db": db, "db2": db2})
+    _get_attr(_state, "update")({"idx": idx, "res": res, "res2": res2, "tensor": tensor})
+    _get_attr(_state, "update")({"vals": vals})
+    _state.update(_caller_locals())
 
 
 def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -79,7 +80,7 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     res = _updateslice(db, arr, update, [1, 1])
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     1,
                     1,
@@ -102,11 +103,11 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         pass
 
     dba = DbAdjoint()
-    setattr(dba, "asarray", as_tensor(getattr(np, "asarray")))
+    _set_attr(dba, "asarray", as_tensor(_get_attr(np, "asarray")))
     res = _adjoint(as_mod(dba), np.array([[1j]]))
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     0,
                     0,
@@ -118,7 +119,7 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
 
     # math_general.py 736 (_indexindim keepdims=True)
     db = as_tensor(DummyBackend())
-    setattr(db, "array", as_tensor(getattr(np, "array")))
+    _set_attr(db, "array", as_tensor(_get_attr(np, "array")))
     arr = np.array([1, 2, 3])
     res = _indexindim(db, arr, index=1, keepdims=True)
     assert as_callable(list)(res) == [2]
@@ -127,10 +128,10 @@ def _test_math_missing_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_arithmetic import _np_scattermul, _np_truncatediv, _np_truncatemod, _np_xdivy
 
     db = as_tensor(DummyBackend())
-    getattr(_state, "update")({"DbAdjoint": DbAdjoint, "_np_scattermul": _np_scattermul, "_np_truncatediv": _np_truncatediv, "_np_truncatemod": _np_truncatemod})
-    getattr(_state, "update")({"_np_xdivy": _np_xdivy, "arr": arr, "db": db, "dba": dba})
-    getattr(_state, "update")({"res": res, "update": update})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DbAdjoint": DbAdjoint, "_np_scattermul": _np_scattermul, "_np_truncatediv": _np_truncatediv, "_np_truncatemod": _np_truncatemod})
+    _get_attr(_state, "update")({"_np_xdivy": _np_xdivy, "arr": arr, "db": db, "dba": dba})
+    _get_attr(_state, "update")({"res": res, "update": update})
+    _state.update(_caller_locals())
 
 
 def _test_math_missing_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -158,9 +159,9 @@ def _test_math_missing_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     assert _np_fromfunction(db, lambda i, j: i + j, (2, 2)) is not None
     assert _np_fromiter(db, [1, 2, 3], int) is not None
     assert _np_frompyfunc(db, lambda x: x, 1, 1) is not None
-    setattr(db, "fromfunction", as_tensor(getattr(np, "fromfunction")))
+    _set_attr(db, "fromfunction", as_tensor(_get_attr(np, "fromfunction")))
     assert _fromfunction(db, lambda i, j: i + j, (2, 2)) is not None
-    setattr(db, "frompyfunc", as_tensor(getattr(np, "frompyfunc")))
+    _set_attr(db, "frompyfunc", as_tensor(_get_attr(np, "frompyfunc")))
     assert _frompyfunc(db, lambda x: x, 1, 1) is not None
 
     class DummyBackend2:
@@ -170,12 +171,12 @@ def _test_math_missing_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
 
     db2 = DummyBackend2()
     # Mocking fromiter so it doesn't fail
-    setattr(db2, "fromiter", as_tensor(getattr(np, "fromiter")))
+    _set_attr(db2, "fromiter", as_tensor(_get_attr(np, "fromiter")))
     assert _fromiter(as_mod(db2), [1, 2, 3], dtype=int) is not None
-    getattr(_state, "update")({"DummyBackend2": DummyBackend2, "_fromfunction": _fromfunction, "_fromiter": _fromiter, "_frompyfunc": _frompyfunc})
-    getattr(_state, "update")({"_np_fromfunction": _np_fromfunction, "_np_fromiter": _np_fromiter, "_np_frompyfunc": _np_frompyfunc, "_np_packbits": _np_packbits})
-    getattr(_state, "update")({"_np_unpackbits": _np_unpackbits, "db2": db2})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyBackend2": DummyBackend2, "_fromfunction": _fromfunction, "_fromiter": _fromiter, "_frompyfunc": _frompyfunc})
+    _get_attr(_state, "update")({"_np_fromfunction": _np_fromfunction, "_np_fromiter": _np_fromiter, "_np_frompyfunc": _np_frompyfunc, "_np_packbits": _np_packbits})
+    _get_attr(_state, "update")({"_np_unpackbits": _np_unpackbits, "db2": db2})
+    _state.update(_caller_locals())
 
 
 def _test_math_missing_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -222,9 +223,9 @@ def _test_math_missing_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     # math_matrix.py
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_matrix import _scaled_dot_product_attention_eager
 
-    getattr(_state, "update")({"DummyBackend3": DummyBackend3, "MatmulBk": MatmulBk, "_np_hfft": _np_hfft, "_scaled_dot_product_attention_eager": _scaled_dot_product_attention_eager})
-    getattr(_state, "update")({"arr": arr, "db3": db3})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyBackend3": DummyBackend3, "MatmulBk": MatmulBk, "_np_hfft": _np_hfft, "_scaled_dot_product_attention_eager": _scaled_dot_product_attention_eager})
+    _get_attr(_state, "update")({"arr": arr, "db3": db3})
+    _state.update(_caller_locals())
 
 
 def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -296,8 +297,8 @@ def _test_math_missing_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
             return a
 
     assert as_callable(_scaled_dot_product_attention_eager)(as_callable(BkAttn2)(), arr, arr, arr, scale=1.0) is not None
-    getattr(_state, "update")({"BkAttn": BkAttn, "BkAttn2": BkAttn2, "arr": arr})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BkAttn": BkAttn, "BkAttn2": BkAttn2, "arr": arr})
+    _state.update(_caller_locals())
 
 
 def _test_math_missing_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -313,8 +314,8 @@ def _test_math_missing_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
     from ml_switcheroo_compiler.backends.eager.core_math_ops.math_nn import _global_adaptive_pool
 
     db = DummyBackend()
-    setattr(db, "mean", as_tensor(getattr(np, "mean")))
-    setattr(db, "stack", as_tensor(getattr(np, "stack")))
+    _set_attr(db, "mean", as_tensor(_get_attr(np, "mean")))
+    _set_attr(db, "stack", as_tensor(_get_attr(np, "stack")))
     assert as_callable(_global_adaptive_pool)(db, arr, (1, 1)) is not None
     # 1D, 2D, 3D missing branches
     arr1d = np.array([1.0, 2.0, 3.0])
@@ -333,9 +334,9 @@ def _test_math_missing_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
 
         pass
 
-    getattr(_state, "update")({"BkSoftmax1": BkSoftmax1, "_apply_softmax": _apply_softmax, "_global_adaptive_pool": _global_adaptive_pool, "arr1d": arr1d})
-    getattr(_state, "update")({"arr2d": arr2d, "arr3d": arr3d, "db": db})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BkSoftmax1": BkSoftmax1, "_apply_softmax": _apply_softmax, "_global_adaptive_pool": _global_adaptive_pool, "arr1d": arr1d})
+    _get_attr(_state, "update")({"arr2d": arr2d, "arr3d": arr3d, "db": db})
+    _state.update(_caller_locals())
 
 
 def _test_math_missing_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -382,8 +383,8 @@ def _test_math_missing_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
             """Test function tolist."""
             return 5
 
-    getattr(_state, "update")({"BkSoftmax2": BkSoftmax2, "HasItem": HasItem, "HasToList": HasToList, "_allclose": _allclose})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BkSoftmax2": BkSoftmax2, "HasItem": HasItem, "HasToList": HasToList, "_allclose": _allclose})
+    _state.update(_caller_locals())
 
 
 def _test_math_missing_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -406,7 +407,7 @@ def _test_math_missing_part_8(_state: dict[str, EagerTensorProtocol]) -> None:
 
     # math_testing.py (_val returning itself)
     as_callable(_allclose)(db, as_callable(np.array)([1]), as_callable(np.array)([1]), rtol=5.0)
-    getattr(_state, "update")({"db": db})
+    _get_attr(_state, "update")({"db": db})
 
 
 def test_math_missing() -> None:
@@ -454,24 +455,24 @@ def test_math_manipulation_matrix_nn_100cov() -> None:
 
     # math_manipulation.py
     arr = np.ones((2, 3))
-    assert as_tensor(getattr(_np_transpose(np, arr, permutation=(1, 0)), "shape")) == (3, 2)
-    assert as_tensor(getattr(_np_transpose(np, arr), "shape")) == (3, 2)
-    assert as_tensor(getattr(_np_transpose(as_mod(db), arr, permutation=(1, 0)), "shape")) == (3, 2)
+    assert as_tensor(_get_attr(_np_transpose(np, arr, permutation=(1, 0)), "shape")) == (3, 2)
+    assert as_tensor(_get_attr(_np_transpose(np, arr), "shape")) == (3, 2)
+    assert as_tensor(_get_attr(_np_transpose(as_mod(db), arr, permutation=(1, 0)), "shape")) == (3, 2)
 
-    assert as_tensor(getattr(_np_broadcast_to(np, np.ones((1, 2)), shape=(3, 2)), "shape")) == (3, 2)
-    assert as_tensor(getattr(_np_broadcast_to(as_mod(db), np.ones((1, 2)), shape=(3, 2)), "shape")) == (3, 2)
+    assert as_tensor(_get_attr(_np_broadcast_to(np, np.ones((1, 2)), shape=(3, 2)), "shape")) == (3, 2)
+    assert as_tensor(_get_attr(_np_broadcast_to(as_mod(db), np.ones((1, 2)), shape=(3, 2)), "shape")) == (3, 2)
 
     # math_matrix.py
     m1 = np.ones((2, 2))
     m2 = np.ones((2, 2))
-    assert as_tensor(getattr(_matmul(np, m1, m2, transpose_a=True, transpose_b=True), "shape")) == (2, 2)
-    assert as_tensor(getattr(_matmul(np, m1, m2), "shape")) == (2, 2)
-    assert as_tensor(getattr(_matmul(as_mod(db), m1, m2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(_matmul(np, m1, m2, transpose_a=True, transpose_b=True), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(_matmul(np, m1, m2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(_matmul(as_mod(db), m1, m2), "shape")) == (2, 2)
 
     bm1 = np.ones((2, 2, 2))
     bm2 = np.ones((2, 2, 2))
-    assert as_tensor(getattr(_batch_matmul(np, bm1, bm2), "shape")) == (2, 2, 2)
-    assert as_tensor(getattr(_batch_matmul(as_mod(db), bm1, bm2), "shape")) == (2, 2, 2)
+    assert as_tensor(_get_attr(_batch_matmul(np, bm1, bm2), "shape")) == (2, 2, 2)
+    assert as_tensor(_get_attr(_batch_matmul(as_mod(db), bm1, bm2), "shape")) == (2, 2, 2)
 
     v1 = np.ones(3)
     v2 = np.ones(3)
@@ -480,31 +481,31 @@ def test_math_manipulation_matrix_nn_100cov() -> None:
 
     # math_nn.py
     x_2d = np.ones((2, 4))
-    assert as_tensor(getattr(_layer_norm(np, x_2d), "shape")) == (2, 4)
+    assert as_tensor(_get_attr(_layer_norm(np, x_2d), "shape")) == (2, 4)
 
     x_4d = np.ones((2, 4, 3, 3))
-    assert as_tensor(getattr(_batch_norm(np, x_4d), "shape")) == (2, 4, 3, 3)
-    assert as_tensor(getattr(_batch_norm(np, x_4d, 1.0, 0.0, np.zeros((1, 4, 1, 1)), np.ones((1, 4, 1, 1))), "shape")) == (2, 4, 3, 3)
+    assert as_tensor(_get_attr(_batch_norm(np, x_4d), "shape")) == (2, 4, 3, 3)
+    assert as_tensor(_get_attr(_batch_norm(np, x_4d, 1.0, 0.0, np.zeros((1, 4, 1, 1)), np.ones((1, 4, 1, 1))), "shape")) == (2, 4, 3, 3)
 
-    assert as_tensor(getattr(_rms_norm(np, x_2d), "shape")) == (2, 4)
+    assert as_tensor(_get_attr(_rms_norm(np, x_2d), "shape")) == (2, 4)
     assert _mse_loss(np, np.ones((2, 2)), np.zeros((2, 2))) == 1.0
     assert _bce_loss(np, np.array([0.2, 0.8]), np.array([0.0, 1.0])) is not None
 
     # bce_loss fallback without clip on backend
     db_math = DummyBackend()
-    setattr(db_math, "log", as_tensor(getattr(np, "log")))
-    setattr(db_math, "mean", as_tensor(getattr(np, "mean")))
+    _set_attr(db_math, "log", as_tensor(_get_attr(np, "log")))
+    _set_attr(db_math, "mean", as_tensor(_get_attr(np, "mean")))
     assert _bce_loss(as_mod(db_math), np.array([0.2, 0.8]), np.array([0.0, 1.0])) is not None
 
     assert _huber_loss(np, np.array([0.5, 2.0]), np.array([0.0, 0.0])) is not None
     assert _kl_loss(np, np.array([0.2, 0.8]), np.array([0.3, 0.7])) is not None
-    assert as_tensor(getattr(_gelu(np, np.array([0.5, -0.5])), "shape")) == (2,)
-    assert as_tensor(getattr(_silu(np, np.array([0.5, -0.5])), "shape")) == (2,)
-    assert as_tensor(getattr(_elu(np, np.array([0.5, -0.5])), "shape")) == (2,)
-    assert as_tensor(getattr(_leaky_relu(np, np.array([0.5, -0.5])), "shape")) == (2,)
+    assert as_tensor(_get_attr(_gelu(np, np.array([0.5, -0.5])), "shape")) == (2,)
+    assert as_tensor(_get_attr(_silu(np, np.array([0.5, -0.5])), "shape")) == (2,)
+    assert as_tensor(_get_attr(_elu(np, np.array([0.5, -0.5])), "shape")) == (2,)
+    assert as_tensor(_get_attr(_leaky_relu(np, np.array([0.5, -0.5])), "shape")) == (2,)
 
     # Line 323: 4D adaptive pool falling through
-    assert as_tensor(getattr(_global_adaptive_pool(np, np.ones((1, 2, 3, 4, 5)), (1, 1, 1, 1)), "shape")) == (1, 2, 3, 4, 5)
+    assert as_tensor(_get_attr(_global_adaptive_pool(np, np.ones((1, 2, 3, 4, 5)), (1, 1, 1, 1)), "shape")) == (1, 2, 3, 4, 5)
 
 
 def test_math_reduction_full_coverage() -> None:
@@ -526,30 +527,30 @@ def test_math_reduction_full_coverage() -> None:
     arr = np.ones((2, 3))
 
     # _reduce_sum
-    assert as_tensor(getattr(_reduce_sum(np, arr, axis=0), "shape")) == (3,)
+    assert as_tensor(_get_attr(_reduce_sum(np, arr, axis=0), "shape")) == (3,)
     assert _reduce_sum(as_mod(db), arr) is arr
 
     # _reduce_mean
-    assert as_tensor(getattr(_reduce_mean(np, arr, axis=0), "shape")) == (3,)
+    assert as_tensor(_get_attr(_reduce_mean(np, arr, axis=0), "shape")) == (3,)
     assert _reduce_mean(as_mod(db), arr) is arr
 
     # _reduce_prod
-    assert as_tensor(getattr(_reduce_prod(np, arr, axis=0), "shape")) == (3,)
+    assert as_tensor(_get_attr(_reduce_prod(np, arr, axis=0), "shape")) == (3,)
     assert _reduce_prod(as_mod(db), arr) is arr
 
     # _reduce_max
-    assert as_tensor(getattr(_reduce_max(np, arr, axis=0), "shape")) == (3,)
+    assert as_tensor(_get_attr(_reduce_max(np, arr, axis=0), "shape")) == (3,)
     assert _reduce_max(as_mod(db), arr) is arr
 
     # _reduce_min
-    assert as_tensor(getattr(_reduce_min(np, arr, axis=0), "shape")) == (3,)
+    assert as_tensor(_get_attr(_reduce_min(np, arr, axis=0), "shape")) == (3,)
     assert _reduce_min(as_mod(db), arr) is arr
 
     # _norm
     assert _norm(np, arr) == np.linalg.norm(arr)
     db_sqrt = DummyBackend()
-    setattr(db_sqrt, "sqrt", as_tensor(getattr(np, "sqrt")))
-    setattr(db_sqrt, "sum", as_tensor(getattr(np, "sum")))
+    _set_attr(db_sqrt, "sqrt", as_tensor(_get_attr(np, "sqrt")))
+    _set_attr(db_sqrt, "sum", as_tensor(_get_attr(np, "sum")))
     assert _norm(as_mod(db_sqrt), arr) == np.linalg.norm(arr)
 
     # _numel
@@ -576,21 +577,21 @@ def test_math_reduction_full_coverage() -> None:
     # cot_ndim > tgt_ndim
     cot_3d = np.ones((2, 2, 3))
     tgt_2d = np.ones((2, 3))
-    assert as_tensor(getattr(_broadcast_reduce(np, cot_3d, tgt_2d), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(_broadcast_reduce(np, cot_3d, tgt_2d), "shape")) == (2, 3)
     # td == 1 and cd > 1
     tgt_1d = np.ones((1, 3))
-    assert as_tensor(getattr(_broadcast_reduce(np, arr, tgt_1d), "shape")) == (1, 3)
+    assert as_tensor(_get_attr(_broadcast_reduce(np, arr, tgt_1d), "shape")) == (1, 3)
 
     # _broadcast_like
     assert _broadcast_like(np) is None
     assert _broadcast_like(np, arr) is arr
     assert _broadcast_like(np, arr, arr) is arr
-    assert as_tensor(getattr(_broadcast_like(np, np.ones(3), arr), "shape")) == (2, 3)
-    assert as_tensor(getattr(_broadcast_like(as_mod(db), np.ones(3), arr), "shape")) == (3,)
+    assert as_tensor(_get_attr(_broadcast_like(np, np.ones(3), arr), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(_broadcast_like(as_mod(db), np.ones(3), arr), "shape")) == (3,)
 
     # _segment_sum
     assert _segment_sum(np) is None
     data = np.ones((4, 2))
     segments = np.array([0, 0, 1, 1])
     res_seg = _segment_sum(np, data, segments, 2)
-    assert as_tensor(getattr(res_seg, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res_seg, "shape")) == (2, 2)

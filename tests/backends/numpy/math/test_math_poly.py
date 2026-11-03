@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_poly as poly_mod
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -54,9 +55,9 @@ def _test_math_poly_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> 
         poly_mod._np_hermite_polynomial_h(np)
     h_val = poly_mod._np_hermite_polynomial_h(np, 0.5, 2)
     assert as_callable(np.isclose)(as_callable(numpy_eager_registry.get)("hermite_polynomial_h")(np, 0.5, 2), h_val)
-    getattr(_state, "update")({"h_val": h_val, "neg_res": neg_res, "one_res": one_res, "t_val": t_val})
-    getattr(_state, "update")({"two_res": two_res, "u_val": u_val, "zero_res": zero_res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"h_val": h_val, "neg_res": neg_res, "one_res": one_res, "t_val": t_val})
+    _get_attr(_state, "update")({"two_res": two_res, "u_val": u_val, "zero_res": zero_res})
+    _state.update(_caller_locals())
 
 
 def _test_math_poly_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -96,8 +97,8 @@ def _test_math_poly_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> 
 
     assert poly_mod._np_shifted_chebyshev_polynomial_v(np, 2, 0.5) is not None
     assert as_callable(numpy_eager_registry.get)("shifted_chebyshev_polynomial_v")(np, 2, 0.5) is not None
-    getattr(_state, "update")({"he_val": he_val, "l_val": l_val, "p_val": p_val})
-    _state.update(locals())
+    _get_attr(_state, "update")({"he_val": he_val, "l_val": l_val, "p_val": p_val})
+    _state.update(_caller_locals())
 
 
 def _test_math_poly_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:

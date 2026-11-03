@@ -9,6 +9,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import variable_ops as var_module
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -29,36 +30,36 @@ def test_variable_ops() -> None:
     arr = np.array([1, 2], dtype=np.int32)
     # bfloat
     cast_bf = var_module._np_cast(np, arr, "bfloat16")
-    assert as_tensor(getattr(cast_bf, "dtype")) == np.float32
+    assert as_tensor(_get_attr(cast_bf, "dtype")) == np.float32
     # float8
     cast_f8 = var_module._np_cast(np, arr, "float8_e4m3")
-    assert as_tensor(getattr(cast_f8, "dtype")) == np.float32
+    assert as_tensor(_get_attr(cast_f8, "dtype")) == np.float32
     # int4
     cast_i4 = var_module._np_cast(np, arr, "int4")
-    assert as_tensor(getattr(cast_i4, "dtype")) == np.int8
+    assert as_tensor(_get_attr(cast_i4, "dtype")) == np.int8
     # normal string
     cast_f64 = var_module._np_cast(np, arr, "float64")
-    assert as_tensor(getattr(cast_f64, "dtype")) == np.float64
+    assert as_tensor(_get_attr(cast_f64, "dtype")) == np.float64
     # with .value
     dummy_dt = types.SimpleNamespace(value="int64")
     cast_ns = var_module._np_cast(np, arr, dummy_dt)
-    assert as_tensor(getattr(cast_ns, "dtype")) == np.int64
+    assert as_tensor(_get_attr(cast_ns, "dtype")) == np.int64
     # numpy dtype direct
     cast_np_dt = var_module._np_cast(np, arr, np.float32)
-    assert as_tensor(getattr(cast_np_dt, "dtype")) == np.float32
+    assert as_tensor(_get_attr(cast_np_dt, "dtype")) == np.float32
 
     reg_cast = numpy_eager_registry.get("Cast")
-    assert as_tensor(getattr(as_callable(reg_cast)(np, arr, "float64"), "dtype")) == np.float64
+    assert as_tensor(_get_attr(as_callable(reg_cast)(np, arr, "float64"), "dtype")) == np.float64
 
     # Bitcast
     arr_int32 = np.array([1065353216], dtype=np.int32)
     bitcast_f32 = var_module._np_bitcast(np, arr_int32, np.float32)
-    assert as_tensor(getattr(bitcast_f32, "dtype")) == np.float32
+    assert as_tensor(_get_attr(bitcast_f32, "dtype")) == np.float32
     bitcast_ns = var_module._np_bitcast(np, arr_int32, types.SimpleNamespace(value=np.float32))
-    assert as_tensor(getattr(bitcast_ns, "dtype")) == np.float32
+    assert as_tensor(_get_attr(bitcast_ns, "dtype")) == np.float32
 
     reg_bitcast = numpy_eager_registry.get("Bitcast")
-    assert as_tensor(getattr(as_callable(reg_bitcast)(np, arr_int32, np.float32), "dtype")) == np.float32
+    assert as_tensor(_get_attr(as_callable(reg_bitcast)(np, arr_int32, np.float32), "dtype")) == np.float32
 
     # ReadVariable
     assert var_module._np_read_variable(np, 42) == 42

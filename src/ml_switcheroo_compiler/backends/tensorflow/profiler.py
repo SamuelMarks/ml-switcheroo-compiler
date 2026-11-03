@@ -8,7 +8,7 @@ import sys
 import time
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 
 try:
@@ -43,7 +43,7 @@ def _get_tf_peak_memory_mb() -> float:
         return _get_process_memory_mb()
     try:
         gpus = tf.config.list_physical_devices("GPU")
-        if gpus and hasattr(tf.config.experimental, "get_memory_info"):
+        if gpus and _has_attr(tf.config.experimental, "get_memory_info"):
             mem_info = tf.config.experimental.get_memory_info("GPU:0")
             if "peak" in mem_info and mem_info["peak"] > 0:
                 return float(mem_info["peak"]) / (1024.0 * 1024.0)
@@ -68,9 +68,9 @@ def _sync_tf_result(result: EagerValue | list[EagerValue] | tuple[EagerValue, ..
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_tf_result(item)
-    elif hasattr(result, "numpy") and callable(getattr(result, "numpy")):
+    elif _has_attr(result, "numpy") and callable(_get_attr(result, "numpy")):
         try:
-            _ = getattr(result, "numpy")()
+            _ = as_callable(_get_attr(result, "numpy"))()
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -129,13 +129,13 @@ class TensorFlowProfiler:
 
         tf_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            if hasattr(val, "shape") and hasattr(val, "dtype") and not isinstance(val, (list, tuple)):
+            if _has_attr(val, "shape") and _has_attr(val, "dtype") and not isinstance(val, (list, tuple)):
                 tf_inputs_dict[k] = val
             else:
                 tf_inputs_dict[k] = tf.convert_to_tensor(val, dtype=tf.float32)
 
-        sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
+        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
         if input_keys and all(k in tf_inputs_dict for k in input_keys):
             return [tf_inputs_dict[k] for k in input_keys]
         return list(tf_inputs_dict.values())
@@ -232,7 +232,7 @@ class TensorFlowProfiler:
             return _compute_metrics([0.0] * num_iters, _get_process_memory_mb(), warmup_iters)
 
         tf_inputs = self._prepare_inputs(graph, inputs)
-        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
         compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:

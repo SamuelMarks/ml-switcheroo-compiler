@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor, as_tensor_pair, as_tensor_triple
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -33,8 +33,8 @@ class TriangularSolve(OpDef):
         b = args[1] if len(args) > 1 else kwargs.get("rhs", kwargs.get("b"))
         if a is None or b is None:
             return ()
-        shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+        shape_a = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in _get_attr(b, "shape", _get_attr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return shape_b
@@ -71,7 +71,7 @@ class Lu(OpDef):
         inp = args[0] if args else kwargs.get("a", kwargs.get("input"))
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         if len(shape) < 2:
             return (shape, shape, shape)
         m, n = shape[-2], shape[-1]
@@ -109,8 +109,8 @@ class LuSolve(OpDef):
         if lu is None or rhs is None:
             return ()
 
-        shape_a = tuple(int(d) for d in getattr(lu, "shape", getattr(lu, "shape_metadata", lu if isinstance(lu, (list, tuple)) else ())))
-        shape_b = tuple(int(d) for d in getattr(rhs, "shape", getattr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
+        shape_a = tuple(int(d) for d in _get_attr(lu, "shape", _get_attr(lu, "shape_metadata", lu if isinstance(lu, (list, tuple)) else ())))
+        shape_b = tuple(int(d) for d in _get_attr(rhs, "shape", _get_attr(rhs, "shape_metadata", rhs if isinstance(rhs, (list, tuple)) else ())))
 
         if len(shape_a) < 2 or len(shape_b) < 1:
             return shape_b
@@ -163,7 +163,7 @@ class MatrixExponential(OpDef):
             return ()
 
         a = args[0]
-        shape = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
+        shape = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
         if len(shape) < 2:
             raise ValueError("MatrixExponential requires at least 2 dimensions")
         if shape[-1] != shape[-2]:
@@ -189,8 +189,8 @@ class Cross(OpDef):
 
         a = args[0]
         b = args[1]
-        shape_a = tuple(int(d) for d in getattr(a, "shape", getattr(a, "shape_metadata", ())))
-        shape_b = tuple(int(d) for d in getattr(b, "shape", getattr(b, "shape_metadata", ())))
+        shape_a = tuple(int(d) for d in _get_attr(a, "shape", _get_attr(a, "shape_metadata", ())))
+        shape_b = tuple(int(d) for d in _get_attr(b, "shape", _get_attr(b, "shape_metadata", ())))
         axis = int(as_int(kwargs.get("axis", -1)))
         if shape_a[axis] != 3 or shape_b[axis] != 3:
             raise ValueError("Cross requires dimension size 3")

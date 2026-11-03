@@ -10,6 +10,7 @@ from ml_switcheroo_compiler.backends.eager.utils import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_shape, as_tensor, as_tensor_pair, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig, ResizeOptions
 
 from .vision_utils import (
@@ -62,8 +63,8 @@ def _invert_homography(np_mod: BackendModuleProtocol, h_fwd: EagerValue) -> Eage
     """
     h_fwd_t = as_tensor(h_fwd)
     if h_fwd_t.ndim == 2:
-        return as_tensor(getattr(np_mod, "linalg").inv(h_fwd_t))
-    return as_tensor(getattr(np_mod, "stack")([getattr(np_mod, "linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])], axis=0))
+        return as_tensor(_get_attr(np_mod, "linalg").inv(h_fwd_t))
+    return as_tensor(_get_attr(np_mod, "stack")([_get_attr(np_mod, "linalg").inv(h_fwd_t[b]) for b in range(h_fwd_t.shape[0])], axis=0))
 
 
 def perspective_transform_eager(
@@ -89,11 +90,11 @@ def perspective_transform_eager(
         return 0
 
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = getattr(backend_module, "__name__", "numpy")
+    name: str = _get_attr(backend_module, "__name__", "numpy")
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = getattr(config, "data_format", None)
+    data_format = _get_attr(config, "data_format", None)
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     out: EagerTensorProtocol
@@ -127,17 +128,17 @@ def _apply_elastic_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, config
         return 0
 
     np_mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = as_shape(getattr(imgs, "shape"))
-    out = getattr(np_mod, "zeros_like")(imgs)
+    b_count, _, _, c_count = as_shape(_get_attr(imgs, "shape"))
+    out = _get_attr(np_mod, "zeros_like")(imgs)
 
     y_coords = as_tensor(config.new_y)
     x_coords = as_tensor(config.new_x)
 
     for b in range(b_count):
-        y_idx = min(int(b), int(y_coords.shape[0]) - 1) if getattr(y_coords, "ndim", 2) == 3 else 0
-        x_idx = min(int(b), int(x_coords.shape[0]) - 1) if getattr(x_coords, "ndim", 2) == 3 else 0
-        y_b = y_coords[y_idx] if getattr(y_coords, "ndim", 2) == 3 else y_coords
-        x_b = x_coords[x_idx] if getattr(x_coords, "ndim", 2) == 3 else x_coords
+        y_idx = min(int(b), int(y_coords.shape[0]) - 1) if _get_attr(y_coords, "ndim", 2) == 3 else 0
+        x_idx = min(int(b), int(x_coords.shape[0]) - 1) if _get_attr(x_coords, "ndim", 2) == 3 else 0
+        y_b = y_coords[y_idx] if _get_attr(y_coords, "ndim", 2) == 3 else y_coords
+        x_b = x_coords[x_idx] if _get_attr(x_coords, "ndim", 2) == 3 else x_coords
         for c in range(c_count):
             out[b, :, :, c] = _np_map_coordinates(
                 np_mod,
@@ -185,16 +186,16 @@ def _compute_elastic_grid(ctx: ElasticGridContext | None) -> EagerValue:
     h = ctx.H
     w = ctx.W
 
-    y_grid, x_grid = getattr(np_mod, "meshgrid")(
-        getattr(np_mod, "arange")(h, dtype=getattr(np_mod, "float32")),
-        getattr(np_mod, "arange")(w, dtype=getattr(np_mod, "float32")),
+    y_grid, x_grid = _get_attr(np_mod, "meshgrid")(
+        _get_attr(np_mod, "arange")(h, dtype=_get_attr(np_mod, "float32")),
+        _get_attr(np_mod, "arange")(w, dtype=_get_attr(np_mod, "float32")),
         indexing="ij",
     )
 
     if ctx.disp is None or (isinstance(ctx.disp, (int, float)) and ctx.disp == 0):
         return (y_grid, x_grid)
 
-    disp = getattr(np_mod, "asarray")(ctx.disp, dtype=getattr(np_mod, "float32"))
+    disp = _get_attr(np_mod, "asarray")(ctx.disp, dtype=_get_attr(np_mod, "float32"))
     if disp.ndim == 3:
         if disp.shape[0] == 2:
             dy, dx = disp[0], disp[1]
@@ -206,7 +207,7 @@ def _compute_elastic_grid(ctx: ElasticGridContext | None) -> EagerValue:
         else:
             dy, dx = disp[..., 0], disp[..., 1]
     else:
-        dy, dx = getattr(np_mod, "zeros")((h, w), dtype=getattr(np_mod, "float32")), getattr(np_mod, "zeros")((h, w), dtype=getattr(np_mod, "float32"))
+        dy, dx = _get_attr(np_mod, "zeros")((h, w), dtype=_get_attr(np_mod, "float32")), _get_attr(np_mod, "zeros")((h, w), dtype=_get_attr(np_mod, "float32"))
 
     return (y_grid + dy, x_grid + dx)
 
@@ -232,11 +233,11 @@ def elastic_transform_eager(
         return 0
 
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = getattr(backend_module, "__name__", "numpy")
+    name: str = _get_attr(backend_module, "__name__", "numpy")
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = getattr(config, "data_format", None)
+    data_format = _get_attr(config, "data_format", None)
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     b, h, w, _ = arr.shape
@@ -244,9 +245,9 @@ def elastic_transform_eager(
     if displacement is None:
         out = arr.copy()
     else:
-        interp_name = getattr(config, "interpolation", "bilinear")
+        interp_name = _get_attr(config, "interpolation", "bilinear")
         order = _get_resize_interpolation_order(interp_name)
-        fill_val = float(getattr(config, "fill_value", 0.0))
+        fill_val = float(_get_attr(config, "fill_value", 0.0))
 
         ctx = ElasticGridContext(np_mod=np_mod, H=h, W=w, B=b, disp=displacement)
         elastic_grid = as_tensor_pair(_compute_elastic_grid(ctx))
@@ -295,24 +296,24 @@ def _compute_resize_grid(np_mod: BackendModuleProtocol, ctx: ResizeContext | Non
     h, w = ctx.H, ctx.W
     new_h, new_w = ctx.new_H, ctx.new_W
     align_corners = ctx.align_corners
-    half_pixel = getattr(ctx, "half_pixel_centers", False)
+    half_pixel = _get_attr(ctx, "half_pixel_centers", False)
 
     if align_corners:
         scale_y = (h - 1.0) / max(new_h - 1.0, 1.0) if new_h > 1 else 0.0
-        y_coords = getattr(np_mod, "arange")(new_h, dtype=getattr(np_mod, "float32")) * scale_y
+        y_coords = _get_attr(np_mod, "arange")(new_h, dtype=_get_attr(np_mod, "float32")) * scale_y
         scale_x = (w - 1.0) / max(new_w - 1.0, 1.0) if new_w > 1 else 0.0
-        x_coords = getattr(np_mod, "arange")(new_w, dtype=getattr(np_mod, "float32")) * scale_x
+        x_coords = _get_attr(np_mod, "arange")(new_w, dtype=_get_attr(np_mod, "float32")) * scale_x
     else:
         scale_y = float(h) / float(new_h)
         scale_x = float(w) / float(new_w)
         if half_pixel:
-            y_coords = (getattr(np_mod, "arange")(new_h, dtype=getattr(np_mod, "float32")) + 0.5) * scale_y - 0.5
-            x_coords = (getattr(np_mod, "arange")(new_w, dtype=getattr(np_mod, "float32")) + 0.5) * scale_x - 0.5
+            y_coords = (_get_attr(np_mod, "arange")(new_h, dtype=_get_attr(np_mod, "float32")) + 0.5) * scale_y - 0.5
+            x_coords = (_get_attr(np_mod, "arange")(new_w, dtype=_get_attr(np_mod, "float32")) + 0.5) * scale_x - 0.5
         else:
-            y_coords = getattr(np_mod, "arange")(new_h, dtype=getattr(np_mod, "float32")) * scale_y
-            x_coords = getattr(np_mod, "arange")(new_w, dtype=getattr(np_mod, "float32")) * scale_x
+            y_coords = _get_attr(np_mod, "arange")(new_h, dtype=_get_attr(np_mod, "float32")) * scale_y
+            x_coords = _get_attr(np_mod, "arange")(new_w, dtype=_get_attr(np_mod, "float32")) * scale_x
 
-    return as_tensor(getattr(np_mod, "meshgrid")(y_coords, x_coords, indexing="ij"))
+    return as_tensor(_get_attr(np_mod, "meshgrid")(y_coords, x_coords, indexing="ij"))
 
 
 def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: EagerValue, coords: EagerValue, order: int) -> EagerValue:
@@ -332,10 +333,10 @@ def _apply_resize_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, out: Ea
         return 0
 
     mod = _resolve_backend_mod(np_mod)
-    b_count, _, _, c_count = as_shape(getattr(imgs, "shape"))
+    b_count, _, _, c_count = as_shape(_get_attr(imgs, "shape"))
     y_coords, x_coords = as_tensor_pair(coords)
 
-    target_out: EagerTensorProtocol = as_tensor(out) if out is not None and hasattr(out, "__setitem__") else getattr(mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=getattr(imgs, "dtype"))
+    target_out: EagerTensorProtocol = as_tensor(out) if out is not None and _has_attr(out, "__setitem__") else _get_attr(mod, "zeros")((b_count, y_coords.shape[0], y_coords.shape[1], c_count), dtype=_get_attr(imgs, "dtype"))
 
     for b in range(b_count):
         for c in range(c_count):
@@ -368,12 +369,12 @@ def _extract_upsample_size(
     if size is not None:
         if isinstance(size, int):
             return (size,) * dim_count
-        return tuple(getattr(size, "__iter__")())
+        return tuple(_get_attr(size, "__iter__")())
 
     if scale_factor is not None:
         if isinstance(scale_factor, (int, float)):
             return tuple(int(dim * scale_factor) for dim in spatial_shape)
-        return tuple(int(dim * factor) for dim, factor in zip(spatial_shape, getattr(scale_factor, "__iter__")()))
+        return tuple(int(dim * factor) for dim, factor in zip(spatial_shape, _get_attr(scale_factor, "__iter__")()))
 
     return spatial_shape
 
@@ -396,9 +397,9 @@ def _upsample_1d_linear(
         EagerValue: Upsampled 1D array of shape (B, C, target_len).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, orig_len = as_shape(getattr(x, "shape"))
+    b, c, orig_len = as_shape(_get_attr(x, "shape"))
     if orig_len == target_len:
-        return as_tensor(getattr(x, "copy")())
+        return as_tensor(_get_attr(x, "copy")())
 
     if align_corners:
         scale = (orig_len - 1.0) / max(target_len - 1.0, 1.0) if target_len > 1 else 0.0
@@ -411,7 +412,7 @@ def _upsample_1d_linear(
     i1 = mod.clip(i0 + 1, 0, orig_len - 1)
     w = mod.clip(src - i0, 0.0, 1.0)
 
-    out = mod.zeros((b, c, target_len), dtype=getattr(x, "dtype"))
+    out = mod.zeros((b, c, target_len), dtype=_get_attr(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
             out[b_idx, c_idx] = (1.0 - w) * as_tensor(x)[b_idx, c_idx, i0] + w * as_tensor(x)[b_idx, c_idx, i1]
@@ -436,7 +437,7 @@ def _upsample_3d_trilinear(
         EagerValue: Upsampled 3D array of shape (B, C, target_d, target_h, target_w).
     """
     mod = _resolve_backend_mod(np_mod)
-    b, c, d, h, w = as_shape(getattr(x, "shape"))
+    b, c, d, h, w = as_shape(_get_attr(x, "shape"))
     td, th, tw = target_shape
 
     def _get_coords(orig_len: int, target_len: int) -> tuple[EagerTensorProtocol, EagerTensorProtocol, EagerTensorProtocol]:
@@ -464,7 +465,7 @@ def _upsample_3d_trilinear(
     h0, h1, wh = _get_coords(h, th)
     w0, w1, ww = _get_coords(w, tw)
 
-    out = mod.zeros((b, c, td, th, tw), dtype=getattr(x, "dtype"))
+    out = mod.zeros((b, c, td, th, tw), dtype=_get_attr(x, "dtype"))
     for b_idx in range(b):
         for c_idx in range(c):
             vol = as_tensor(x)[b_idx, c_idx]
@@ -508,7 +509,7 @@ def _upsample_nearest_eager(backend_module: BackendModuleProtocol, *args: EagerV
 
     x = args[0]
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = getattr(backend_module, "__name__", "numpy")
+    name: str = _get_attr(backend_module, "__name__", "numpy")
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
 
@@ -578,7 +579,7 @@ def _upsample_linear_eager(backend_module: BackendModuleProtocol, *args: EagerVa
 
     x = args[0]
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = getattr(backend_module, "__name__", "numpy")
+    name: str = _get_attr(backend_module, "__name__", "numpy")
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
 
@@ -639,7 +640,7 @@ def _upsample_bicubic_eager(backend_module: BackendModuleProtocol, *args: EagerV
 
     x = args[0]
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = getattr(backend_module, "__name__", "numpy")
+    name: str = _get_attr(backend_module, "__name__", "numpy")
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, x, name))
 
@@ -689,20 +690,20 @@ def resize_eager(
         return 0
 
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = getattr(backend_module, "__name__", "numpy")
+    name: str = _get_attr(backend_module, "__name__", "numpy")
 
     arr = np_mod.asarray(_to_numpy_array(np_mod, images, name))
 
-    data_format = getattr(config, "data_format", None)
+    data_format = _get_attr(config, "data_format", None)
     arr, was_3d = _standardize_image_input(arr, data_format, np_mod)
 
     b, h, w, c = arr.shape
     new_h, new_w = size
 
-    interp_name = getattr(config, "interpolation", "bilinear")
+    interp_name = _get_attr(config, "interpolation", "bilinear")
     order = _get_resize_interpolation_order(interp_name)
-    align_corners = bool(getattr(config, "align_corners", False))
-    half_pixel = bool(getattr(config, "half_pixel_centers", False))
+    align_corners = bool(_get_attr(config, "align_corners", False))
+    half_pixel = bool(_get_attr(config, "half_pixel_centers", False))
 
     ctx = ResizeContext(
         H=h,

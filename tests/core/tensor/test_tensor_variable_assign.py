@@ -6,6 +6,7 @@ import typing
 from unittest import mock
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import ArrayAt, ArrayAtIndexer, Parameter, Tensor, TensorConfig, Variable
 from tests.testing_utils import as_callable
 
@@ -107,7 +108,7 @@ def test_parameter_index() -> None:
     param = as_callable(Parameter)(as_callable(MockData)(), t_cfg)
     # The __index__ calls self.numpy(), we need to mock numpy() for Parameter since it inherits from Tensor
     with mock.patch.object(param, "numpy", return_value=42):
-        assert param.__index__() == 42
+        assert _get_attr(param, "__index__")() == 42
 
 
 def test_parameter_init() -> None:

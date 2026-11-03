@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import typing
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 import yaml
 from ml_switcheroo_ir import (
@@ -29,7 +29,7 @@ from ml_switcheroo_compiler.core.errors import ShapeMismatchError
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.ir.core import LogicalGraph, TensorSpec
+    from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode, TensorSpec
 
 MAX_DIMENSIONS: int = 4
 MAX_RANK: int = 5
@@ -467,6 +467,62 @@ else:
     _SymIntBase = IRSymInt
 
 
+@typing.runtime_checkable
+class _BinaryEvalSymNodeProtocol(typing.Protocol):
+    """Protocol for symbolic nodes with binary operator fields."""
+
+    op: str
+    left: SymNode
+    right: SymNode
+
+
+@typing.runtime_checkable
+class _UnaryEvalSymNodeProtocol(typing.Protocol):
+    """Protocol for symbolic nodes with unary operator fields."""
+
+    op: str
+    operand: SymNode
+
+
+@typing.runtime_checkable
+class _ShapedInputNodeProtocol(typing.Protocol):
+    """Protocol for graph input nodes carrying a shape attribute."""
+
+    shape: tuple[int | str | SymNode | SymInt, ...] | None
+
+
+@typing.runtime_checkable
+class _TrackableGraphNodeProtocol(typing.Protocol):
+    """Protocol for graph nodes inspected by SymbolicConstraintTracker.track_graph."""
+
+    op: str
+    inputs: Sequence[_ShapedInputNodeProtocol]
+    shape: tuple[int | str | SymNode | SymInt, ...] | None
+
+
+@typing.runtime_checkable
+class _ShapeMetadataNodeProtocol(typing.Protocol):
+    """Protocol for graph nodes carrying shape_metadata."""
+
+    id: str
+    shape_metadata: tuple[int | str | SymNode | SymInt, ...] | None
+
+
+@typing.runtime_checkable
+class _ShapeAttrNodeProtocol(typing.Protocol):
+    """Protocol for graph nodes carrying a shape attribute."""
+
+    id: str
+    shape: tuple[int | str | SymNode | SymInt, ...] | None
+
+
+@typing.runtime_checkable
+class _GraphNodesProtocol(typing.Protocol):
+    """Protocol for graph containers carrying a nodes collection."""
+
+    nodes: Mapping[str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol]
+
+
 class SymNode(_SymNodeBase):
     """Base class for all symbolic expression tree nodes."""
 
@@ -537,18 +593,14 @@ class SymNode(_SymNodeBase):
         simplified = self.simplify()
         if simplified is not self:
             return simplified.eval(env)
-        left = getattr(self, "left", None)
-        right = getattr(self, "right", None)
-        op = getattr(self, "op", None)
-        if isinstance(left, SymNode) and isinstance(right, SymNode) and op is not None:
-            res = _eval_binary_int_op(str(op), left.eval(env), right.eval(env))
+        if isinstance(self, _BinaryEvalSymNodeProtocol):
+            res = _eval_binary_int_op(str(self.op), self.left.eval(env), self.right.eval(env))
             if res is not None:
                 return res
-        operand = getattr(self, "operand", None)
-        if isinstance(operand, SymNode) and op is not None:
-            u_fn = _UNARY_INT_OPS.get(str(op))
+        if isinstance(self, _UnaryEvalSymNodeProtocol):
+            u_fn = _UNARY_INT_OPS.get(str(self.op))
             if u_fn is not None:
-                return u_fn(operand.eval(env))
+                return u_fn(self.operand.eval(env))
         msg = f"Evaluation not implemented for node of type {type(self).__name__}"
         raise NotImplementedError(msg)
 
@@ -2030,25 +2082,27 @@ class SymbolicConstraintTracker:
             return tuple(self._substitute_dim(d) for d in dim_or_shape)
         return self._substitute_dim(dim_or_shape)
 
-    def track_graph(self, graph: LogicalGraph) -> None:
+    def track_graph(self, graph: LogicalGraph | _GraphNodesProtocol) -> None:
         """Traverse a logical graph to extract and unify dimension equality constraints.
 
         Args:
             graph (LogicalGraph): LogicalGraph or IRGraph instance.
         """
-        nodes = getattr(graph, "nodes", [])
-        for node in nodes:
-            inputs = getattr(node, "inputs", [])
-            output_shape = getattr(node, "shape", None)
-            op = getattr(node, "op", "")
+        raw_nodes: Mapping[str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] = graph.nodes
+        node_iterable = raw_nodes.values() if isinstance(raw_nodes, Mapping) else raw_nodes
+        for node in node_iterable:
+            assert isinstance(node, _TrackableGraphNodeProtocol)
+            inputs = node.inputs
+            output_shape = node.shape
+            op = node.op
             if op == "matmul" and len(inputs) == BINARY_OP_ARITY:
-                s1 = getattr(inputs[0], "shape", None)
-                s2 = getattr(inputs[1], "shape", None)
+                s1 = inputs[0].shape
+                s2 = inputs[1].shape
                 if s1 and s2 and len(s1) >= 1 and len(s2) >= 1:
                     self.record_equality(s1[-1], s2[-2 if len(s2) > 1 else -1])
             elif op in ("add", "sub", "mul", "div") and len(inputs) == BINARY_OP_ARITY:
-                s1 = getattr(inputs[0], "shape", None)
-                s2 = getattr(inputs[1], "shape", None)
+                s1 = inputs[0].shape
+                s2 = inputs[1].shape
                 if s1 and s2:
                     broadcast_shapes(s1, s2, tracker=self)
             if output_shape is not None and inputs:
@@ -2188,7 +2242,7 @@ class ShapeTracker:
 
     @staticmethod
     def resolve_dynamic_bounds(
-        graph: LogicalGraph,
+        graph: LogicalGraph | _GraphNodesProtocol,
         feedback_telemetry: dict[str, list[int] | tuple[int, ...] | dict[str, list[int]]],
         tracker: SymbolicConstraintTracker | None = None,
     ) -> dict[str, int]:
@@ -2206,18 +2260,19 @@ class ShapeTracker:
         concrete_shapes = ShapeTracker.update_from_feedback(feedback_telemetry, tracker)
         resolved_bounds: dict[str, int] = {}
 
-        raw_nodes = getattr(graph, "nodes", {})
-        node_iterable = raw_nodes.values() if isinstance(raw_nodes, dict) else raw_nodes
+        raw_nodes: Mapping[str, LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] | Sequence[LogicalNode | _ShapeMetadataNodeProtocol | _ShapeAttrNodeProtocol | _TrackableGraphNodeProtocol] = graph.nodes
+        node_iterable = raw_nodes.values() if isinstance(raw_nodes, Mapping) else raw_nodes
 
         for node in node_iterable:
-            node_id = str(getattr(node, "id", ""))
+            assert isinstance(node, (_ShapeMetadataNodeProtocol, _ShapeAttrNodeProtocol))
+            node_id = str(node.id)
             if node_id not in concrete_shapes:
                 continue
 
             observed_shape = concrete_shapes[node_id]
-            shape_meta = getattr(node, "shape_metadata", None)
-            if shape_meta is None:
-                shape_meta = getattr(node, "shape", None)
+            shape_meta = node.shape_metadata if isinstance(node, _ShapeMetadataNodeProtocol) else None
+            if shape_meta is None and isinstance(node, _ShapeAttrNodeProtocol):
+                shape_meta = node.shape
 
             new_shape: list[int] = []
             for idx, dim in enumerate(shape_meta or ()):
@@ -2225,9 +2280,9 @@ class ShapeTracker:
                 ShapeTracker._record_symbolic_dim_bound(dim, concrete_val, resolved_bounds, tracker)
                 new_shape.append(concrete_val)
 
-            if hasattr(node, "shape_metadata"):
+            if isinstance(node, _ShapeMetadataNodeProtocol):
                 node.shape_metadata = tuple(new_shape)
-            if hasattr(node, "shape"):
+            if isinstance(node, _ShapeAttrNodeProtocol):
                 node.shape = tuple(new_shape)
 
         return resolved_bounds

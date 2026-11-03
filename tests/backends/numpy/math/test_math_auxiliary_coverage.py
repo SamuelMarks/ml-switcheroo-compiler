@@ -11,6 +11,7 @@ import pytest
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_auxiliary as aux_module
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -32,7 +33,7 @@ def _test_math_auxiliary_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> N
     # ReduceWindow
     monkeypatch.setattr(aux_module, "_reduce_window", lambda *args, **kwargs: np.array([42.0]))
     rw_res = aux_module._np_reduce_window(np, np.ones((4, 4)))
-    assert as_tensor(getattr(rw_res, "__getitem__")(0)) == 42.0
+    assert as_tensor(_get_attr(rw_res, "__getitem__")(0)) == 42.0
     reg_rw = numpy_eager_registry.get("ReduceWindow")
     assert reg_rw is not None
 
@@ -46,25 +47,25 @@ def _test_math_auxiliary_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> N
 
     # Rand with dtype branches
     r_bf = aux_module._np_rand(np, 2, 3, dtype="bfloat16")
-    assert as_tensor(getattr(r_bf, "dtype")) == np.float32
+    assert as_tensor(_get_attr(r_bf, "dtype")) == np.float32
 
     r_f8 = aux_module._np_rand(np, 2, 3, dtype="float8_e4m3")
-    assert as_tensor(getattr(r_f8, "dtype")) == np.float32
+    assert as_tensor(_get_attr(r_f8, "dtype")) == np.float32
 
     r_i4 = aux_module._np_rand(np, 2, 3, dtype="int4")
-    assert as_tensor(getattr(r_i4, "dtype")) == np.int8
+    assert as_tensor(_get_attr(r_i4, "dtype")) == np.int8
 
     r_std = aux_module._np_rand(np, 2, 3, dtype=np.float64)
-    assert as_tensor(getattr(r_std, "dtype")) == np.float64
+    assert as_tensor(_get_attr(r_std, "dtype")) == np.float64
 
     mock_rand_mod = types.SimpleNamespace(
         random=types.SimpleNamespace(rand=lambda *a: np.array([0.5])),
         array=lambda a: a,
     )
-    getattr(_state, "update")({"c_arr": c_arr, "mock_rand_mod": mock_rand_mod, "r_bf": r_bf, "r_f8": r_f8})
-    getattr(_state, "update")({"r_i4": r_i4, "r_std": r_std, "reg_cos": reg_cos, "reg_rw": reg_rw})
-    getattr(_state, "update")({"rw_res": rw_res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"c_arr": c_arr, "mock_rand_mod": mock_rand_mod, "r_bf": r_bf, "r_f8": r_f8})
+    _get_attr(_state, "update")({"r_i4": r_i4, "r_std": r_std, "reg_cos": reg_cos, "reg_rw": reg_rw})
+    _get_attr(_state, "update")({"rw_res": rw_res})
+    _state.update(_caller_locals())
 
 
 def _test_math_auxiliary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -75,10 +76,10 @@ def _test_math_auxiliary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> N
     """
     mock_rand_mod = _state["mock_rand_mod"]
     r_str = aux_module._np_rand(mock_rand_mod, 1, dtype="int64")
-    assert as_tensor(getattr(r_str, "dtype")) == np.int64
+    assert as_tensor(_get_attr(r_str, "dtype")) == np.int64
 
     reg_rand = numpy_eager_registry.get("Rand")
-    assert as_tensor(getattr(as_callable(reg_rand)(np, 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_callable(reg_rand)(np, 2, 2), "shape")) == (2, 2)
 
     # IsNonDecreasing branches
     mock_diff_mod = types.SimpleNamespace(
@@ -110,10 +111,10 @@ def _test_math_auxiliary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> N
     # ReduceEuclideanNorm
     assert as_callable(np.isclose)(as_callable(aux_module._np_reduce_euclidean_norm)(np, as_callable(np.array)([3.0, 4.0])), 5.0)
     reg_ren = numpy_eager_registry.get("ReduceEuclideanNorm")
-    getattr(_state, "update")({"mat": mat, "mock_diff_mod": mock_diff_mod, "normed": normed, "r_str": r_str})
-    getattr(_state, "update")({"reg_ind": reg_ind, "reg_isi": reg_isi, "reg_l2": reg_l2, "reg_rand": reg_rand})
-    getattr(_state, "update")({"reg_ren": reg_ren})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mat": mat, "mock_diff_mod": mock_diff_mod, "normed": normed, "r_str": r_str})
+    _get_attr(_state, "update")({"reg_ind": reg_ind, "reg_isi": reg_isi, "reg_l2": reg_l2, "reg_rand": reg_rand})
+    _get_attr(_state, "update")({"reg_ren": reg_ren})
+    _state.update(_caller_locals())
 
 
 def _test_math_auxiliary_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -153,9 +154,9 @@ def _test_math_auxiliary_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> N
     buf = b"\x00\x00\x80?\x00\x00\x00@"
     fb = aux_module._np_frombuffer(np, buf, dtype="float32")
     assert as_callable(len)(fb) == 2
-    getattr(_state, "update")({"SpaceConfig": SpaceConfig, "buf": buf, "fb": fb, "ls_cfg": ls_cfg})
-    getattr(_state, "update")({"ls_normal": ls_normal, "reg_clamp": reg_clamp, "reg_ls": reg_ls})
-    _state.update(locals())
+    _get_attr(_state, "update")({"SpaceConfig": SpaceConfig, "buf": buf, "fb": fb, "ls_cfg": ls_cfg})
+    _get_attr(_state, "update")({"ls_normal": ls_normal, "reg_clamp": reg_clamp, "reg_ls": reg_ls})
+    _state.update(_caller_locals())
 
 
 def _test_math_auxiliary_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -176,13 +177,13 @@ def _test_math_auxiliary_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> N
     assert isinstance(as_callable(reg_dt)(np, "int32"), DType)
     assert aux_module._eager_Gradient(np, np.array([1.0, 2.0, 4.0])) is not None
     assert aux_module._eager_I0(np, np.array([0.0])) is not None
-    assert as_tensor(getattr(aux_module._eager_BroadcastedIota(np, 3, (2, 3)), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(aux_module._eager_BroadcastedIota(np, 3, (2, 3)), "shape")) == (2, 3)
 
     # Gradient & I0 fallback branch
     no_grad_mod = types.SimpleNamespace()
     assert aux_module._eager_Gradient(as_mod(no_grad_mod), 42) == 42
     assert aux_module._eager_I0(as_mod(no_grad_mod), 42) == 42
-    getattr(_state, "update")({"no_grad_mod": no_grad_mod, "reg_dt": reg_dt, "reg_fb": reg_fb})
+    _get_attr(_state, "update")({"no_grad_mod": no_grad_mod, "reg_dt": reg_dt, "reg_fb": reg_fb})
 
 
 def test_math_auxiliary_ops(monkeypatch: pytest.MonkeyPatch) -> None:

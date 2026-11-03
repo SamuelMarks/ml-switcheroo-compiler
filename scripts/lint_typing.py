@@ -13,43 +13,28 @@ DEFAULT_TARGET_DIRS: tuple[str, ...] = (
     "tests",
 )
 
-STRICT_REFLECTION_SUFFIXES: tuple[str, ...] = (
-    "src/ml_switcheroo_compiler/ir/core.py",
-    "src/ml_switcheroo_compiler/transforms/pass_manager.py",
-    "src/ml_switcheroo_compiler/ops/shape/utils.py",
-    "src/ml_switcheroo_compiler/ops/control_flow_utils.py",
-    "src/ml_switcheroo_compiler/core/",
-    "src/ml_switcheroo_compiler/tracing/",
-    "src/ml_switcheroo_compiler/random/",
-    "src/ml_switcheroo_compiler/nn/initializers.py",
-    "src/ml_switcheroo_compiler/backends/pyarrow_compute/__init__.py",
-    "src/ml_switcheroo_compiler/backends/pyarrow_compute/types.py",
-    "src/ml_switcheroo_compiler/backends/pyarrow_compute/eager.py",
-    "src/ml_switcheroo_compiler/backends/pyarrow_compute/generator.py",
-    "src/ml_switcheroo_compiler/backends/dpnp/__init__.py",
-    "src/ml_switcheroo_compiler/backends/dpnp/types.py",
-    "src/ml_switcheroo_compiler/backends/dpnp/eager.py",
-    "src/ml_switcheroo_compiler/backends/dpnp/generator.py",
-    "src/ml_switcheroo_compiler/backends/mlx/__init__.py",
-    "src/ml_switcheroo_compiler/backends/jax/__init__.py",
-    "src/ml_switcheroo_compiler/backends/jax/eager.py",
-    "src/ml_switcheroo_compiler/backends/eager/core_math_ops/math_logical.py",
-    "src/ml_switcheroo_compiler/backends/eager/core_math_ops/math_general.py",
-    "src/ml_switcheroo_compiler/backends/generator_mixins.py",
-    "src/ml_switcheroo_compiler/backends/cst_transpiler.py",
-    "src/ml_switcheroo_compiler/backends/pure_python/generator.py",
-    "src/ml_switcheroo_compiler/foreign.py",
-    "src/ml_switcheroo_compiler/export/",
-    "src/ml_switcheroo_compiler/distributed/",
-)
-
 _FORBIDDEN_BUILTIN_CALLS: frozenset[str] = frozenset(
     {
         "getattr",
         "setattr",
         "hasattr",
         "delattr",
+        "vars",
+        "globals",
+        "locals",
         "cast",
+    }
+)
+
+_FORBIDDEN_DUNDER_ATTRS: frozenset[str] = frozenset(
+    {
+        "__dict__",
+        "__mro__",
+        "__subclasses__",
+        "__setattr__",
+        "__getattribute__",
+        "__delattr__",
+        "__class__",
     }
 )
 
@@ -88,27 +73,11 @@ _FORBIDDEN_DUNDER_CALLS: frozenset[str] = frozenset(
         "__setattr__",
         "__getattribute__",
         "__delattr__",
+        "__array__",
+        "__index__",
+        "__await__",
     }
 )
-
-
-def _is_strict_reflection_target(file_path: str) -> bool:
-    """Check whether a file path belongs to the strict anti-reflection target set.
-
-    Args:
-        file_path (str): File path to evaluate.
-
-    Returns:
-        bool: True if the file path matches one of `STRICT_REFLECTION_SUFFIXES`.
-    """
-    norm = f"/{file_path}"
-    for suffix in STRICT_REFLECTION_SUFFIXES:
-        if suffix.endswith("/"):
-            if f"/{suffix}" in norm:
-                return True
-        elif norm.endswith(f"/{suffix}"):
-            return True
-    return False
 
 
 def _scan_strict_ast(file_path: str, tree: ast.Module) -> list[str]:
@@ -133,22 +102,22 @@ def _scan_strict_ast(file_path: str, tree: ast.Module) -> list[str]:
                     is_super = isinstance(node.func.value, ast.Call) and isinstance(node.func.value.func, ast.Name) and node.func.value.func.id == "super"
                     if not is_super:
                         violations.append(f"{file_path}:{node.lineno}: prohibited direct dunder call '.{node.func.attr}()'")
+        elif isinstance(node, ast.Attribute) and node.attr in _FORBIDDEN_DUNDER_ATTRS:
+            violations.append(f"{file_path}:{node.lineno}: prohibited dunder attribute '.{node.attr}'")
     return violations
 
 
-def scan_file(file_path: str, force_strict_reflection: bool = False) -> list[str]:
+def scan_file(file_path: str, force_strict_reflection: bool = True) -> list[str]:
     """Scan a single Python source file for typing and reflection violations.
 
     Args:
         file_path (str): Path to the Python file to scan.
-        force_strict_reflection (bool): Whether to enforce anti-reflection rules regardless of path.
+        force_strict_reflection (bool): Retained for CLI compatibility; all files are strictly scanned.
 
     Returns:
         list[str]: Violation messages discovered in the file.
     """
-    if not (force_strict_reflection or _is_strict_reflection_target(file_path)):
-        return []
-
+    del force_strict_reflection
     with open(file_path, encoding="utf-8") as f:
         source = f.read()
 

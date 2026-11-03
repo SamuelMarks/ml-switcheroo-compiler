@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -22,13 +23,13 @@ def test_mlx_types() -> None:
     from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
 
     res = as_callable(zeros)(None, (2, 2))
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
     res = as_callable(array)(None, [1.0, 2.0])
-    assert as_tensor(getattr(res, "shape")) == (2,)
+    assert as_tensor(_get_attr(res, "shape")) == (2,)
 
     res = as_callable(asarray)(None, [1.0, 2.0])
-    assert as_tensor(getattr(res, "shape")) == (2,)
+    assert as_tensor(_get_attr(res, "shape")) == (2,)
 
     res = as_callable(item)(None, as_callable(array)(None, 42.0))
     assert res == 42.0

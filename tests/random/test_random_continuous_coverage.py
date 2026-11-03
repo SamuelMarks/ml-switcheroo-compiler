@@ -7,6 +7,7 @@ import typing
 from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
@@ -45,7 +46,7 @@ def _test_random_continuous_and_transformations_part_1(_state: dict[str, EagerTe
     for name, args in distributions:
         mod = importlib.import_module(f"ml_switcheroo_compiler.random.continuous.{name}")
         with patch.object(mod, "_dispatch_random", return_value=f"mock_{name}") as mock_disp:
-            func = getattr(mod, name)
+            func = _get_attr(mod, name)
             res = func(*args)
             assert res == f"mock_{name}"
             mock_disp.assert_called_once_with(name, *args)
@@ -68,9 +69,9 @@ def _test_random_continuous_and_transformations_part_1(_state: dict[str, EagerTe
         mock_emit.assert_called_with("RandomUniform", ["key"], (3, 3), DType.Float64, {"minval": -1.0, "maxval": 2.0})
 
     trunc_norm_mod = importlib.import_module("ml_switcheroo_compiler.random.continuous.truncated_normal")
-    getattr(_state, "update")({"distributions": distributions, "mock_emit": mock_emit, "normal_mod": normal_mod, "trunc_norm_mod": trunc_norm_mod})
-    getattr(_state, "update")({"uniform_mod": uniform_mod})
-    _state.update(locals())
+    _get_attr(_state, "update")({"distributions": distributions, "mock_emit": mock_emit, "normal_mod": normal_mod, "trunc_norm_mod": trunc_norm_mod})
+    _get_attr(_state, "update")({"uniform_mod": uniform_mod})
+    _state.update(_caller_locals())
 
 
 def _test_random_continuous_and_transformations_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -106,9 +107,9 @@ def _test_random_continuous_and_transformations_part_2(_state: dict[str, EagerTe
         mock_emit.assert_called_with("Dirichlet", ["key", 1.0], (3,), DType.Float64)
 
     mvn_mod = importlib.import_module("ml_switcheroo_compiler.random.continuous.multivariate_normal")
-    getattr(_state, "update")({"beta_mod": beta_mod, "dirichlet_mod": dirichlet_mod, "gamma_mod": gamma_mod, "mock_emit": mock_emit})
-    getattr(_state, "update")({"mvn_mod": mvn_mod})
-    _state.update(locals())
+    _get_attr(_state, "update")({"beta_mod": beta_mod, "dirichlet_mod": dirichlet_mod, "gamma_mod": gamma_mod, "mock_emit": mock_emit})
+    _get_attr(_state, "update")({"mvn_mod": mvn_mod})
+    _state.update(_caller_locals())
 
 
 def _test_random_continuous_and_transformations_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -137,8 +138,8 @@ def _test_random_continuous_and_transformations_part_3(_state: dict[str, EagerTe
         res = trans_mod.shuffle("prng_key", mock_tensor, axis=1)
         assert res == "mock_shuffle"
         mock_emit.assert_called_once_with("RandomShuffle", ["prng_key", mock_tensor], (4, 5), "float32", {"axis": 1})
-    getattr(_state, "update")({"Tensor": Tensor, "cov_t": cov_t, "mean_t": mean_t, "mock_emit": mock_emit})
-    getattr(_state, "update")({"mock_tensor": mock_tensor, "opts": opts, "res": res, "trans_mod": trans_mod})
+    _get_attr(_state, "update")({"Tensor": Tensor, "cov_t": cov_t, "mean_t": mean_t, "mock_emit": mock_emit})
+    _get_attr(_state, "update")({"mock_tensor": mock_tensor, "opts": opts, "res": res, "trans_mod": trans_mod})
 
 
 def test_random_continuous_and_transformations() -> None:

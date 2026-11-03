@@ -6,6 +6,7 @@ import importlib.util
 import sys
 
 from ml_switcheroo_compiler.backends.eager_registry import as_callable
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 
 try:
     _has_pkg = importlib.util.find_spec("cupy") is not None
@@ -20,11 +21,11 @@ from .eager import execute_op
 from .generator import CupyGenerator
 from .types import array, asarray, item, zeros
 
-type.__setattr__(CupyGenerator, "zeros", classmethod(zeros))
-type.__setattr__(CupyGenerator, "array", classmethod(array))
-type.__setattr__(CupyGenerator, "asarray", classmethod(asarray))
-type.__setattr__(CupyGenerator, "item", classmethod(item))
-type.__setattr__(CupyGenerator, "execute_op", as_callable(classmethod)(execute_op))
+_obj_set_attr(CupyGenerator, "zeros", classmethod(zeros))
+_obj_set_attr(CupyGenerator, "array", classmethod(array))
+_obj_set_attr(CupyGenerator, "asarray", classmethod(asarray))
+_obj_set_attr(CupyGenerator, "item", classmethod(item))
+_obj_set_attr(CupyGenerator, "execute_op", as_callable(classmethod)(execute_op))
 
 __all__ = [
     "CupyGenerator",

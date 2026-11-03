@@ -1,6 +1,7 @@
 """Tests for test_mlx_generator."""
 
 from __future__ import annotations
+from ml_switcheroo_compiler.core.shape import _has_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_list
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
@@ -122,7 +123,7 @@ def test_mlx_generator() -> None:
     gen = as_callable(MLXCodeGenerator)(g)
     assert gen.get_fallback_prefix() == "mx"
     assert gen.get_fallback_prefix() == "mx"
-    setattr(gen, "add_line", lambda x: None)
+    _set_attr(gen, "add_line", lambda x: None)
     gen._emit_constant_assignment("var", "42")
     prefix = gen._get_prefix_code()
     assert isinstance(as_tensor(prefix), list)
@@ -200,11 +201,11 @@ def test_mlx_generator_classmethods_no_attr(monkeypatch: EagerTensorProtocol) ->
     """
     import mlx.core as real_mx
 
-    if hasattr(real_mx, "save_gguf"):
+    if _has_attr(real_mx, "save_gguf"):
         monkeypatch.delattr(real_mx, "save_gguf")
-    if hasattr(real_mx, "set_default_stream"):
+    if _has_attr(real_mx, "set_default_stream"):
         monkeypatch.delattr(real_mx, "set_default_stream")
-    if hasattr(real_mx, "metal"):
+    if _has_attr(real_mx, "metal"):
         monkeypatch.delattr(real_mx, "metal")
     MLXCodeGenerator.save_gguf("file", {})
     MLXCodeGenerator.set_default_stream("stream")

@@ -15,7 +15,7 @@ from collections.abc import Callable, Sequence
 import yaml
 from pydantic import BaseModel, ConfigDict
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
 
 
 def _is_opt_int_seq_val(val: int | float | str | Sequence[int | S] | None) -> typing.TypeGuard[Sequence[int] | None]:
@@ -948,7 +948,7 @@ def _dispatch_spatial_and_pooling(
                 valid_shapes[0],
                 valid_shapes[1],
                 stride=_to_int_or_seq(kwargs.get("stride", kwargs.get("strides", 1))),
-                padding=typing.cast("int | Sequence[int] | str", kwargs.get("padding", 0)),
+                padding=_cast_val("int | Sequence[int] | str", kwargs.get("padding", 0)),
                 dilation=_to_int_or_seq(kwargs.get("dilation", kwargs.get("dilations", 1))),
                 spatial_dims=s_dims,
             )
@@ -1035,19 +1035,19 @@ def _normalize_inputs_to_shapes(
     inputs = kwargs.get("inputs")
     if inputs is None:
         if len(args) > 0 and isinstance(args[0], (list, tuple)):
-            if any(hasattr(x, "shape") or hasattr(x, "shape_metadata") or isinstance(x, (list, tuple)) for x in args[0]) or not all(isinstance(x, (int, S)) for x in args[0]):
-                inputs = list(getattr(args[0], "__iter__")())
+            if any(_has_attr(x, "shape") or _has_attr(x, "shape_metadata") or isinstance(x, (list, tuple)) for x in args[0]) or not all(isinstance(x, (int, S)) for x in args[0]):
+                inputs = list(_get_attr(args[0], "__iter__")())
             else:
-                inputs = list(getattr(args, "__iter__")())
+                inputs = list(_get_attr(args, "__iter__")())
         else:
-            inputs = list(getattr(args, "__iter__")())
+            inputs = list(_get_attr(args, "__iter__")())
 
     shapes: list[ShapeType] = []
     if isinstance(inputs, (list, tuple)):
         for item in inputs:
-            if hasattr(item, "shape_metadata") and item.shape_metadata is not None:
+            if _has_attr(item, "shape_metadata") and item.shape_metadata is not None:
                 shapes.append(tuple(item.shape_metadata))
-            elif hasattr(item, "shape") and item.shape is not None:
+            elif _has_attr(item, "shape") and item.shape is not None:
                 shapes.append(tuple(item.shape))
             elif isinstance(item, (list, tuple)):
                 shapes.append(tuple(item))
@@ -1082,11 +1082,11 @@ def infer_shape(
 
         op_cls = get_op(op_type)
         if op_cls is not None:
-            if not hasattr(op_cls, "infer_shape"):
+            if not _has_attr(op_cls, "infer_shape"):
                 return ()
-            if not hasattr(op_cls, "_yaml_data"):
+            if not _has_attr(op_cls, "_yaml_data"):
                 instance = op_cls()
-                infer_fn = getattr(instance, "infer_shape")
+                infer_fn = _get_attr(instance, "infer_shape")
                 try:
                     raw_res = infer_fn(*shapes, **kwargs)
                 except Exception:

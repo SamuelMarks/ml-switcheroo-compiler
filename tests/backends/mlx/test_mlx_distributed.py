@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.mlx.eager import _mlx_reduce_scatter
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -42,7 +43,8 @@ class MockMLXArray:
         Args:
             item: Test parameter `item`.
         """
-        return typing.cast("MockMLXArray", as_callable(MockMLXArray)(as_callable(getattr(self._data, "__getitem__"))(item)))
+        _typed_ret_1: MockMLXArray = _cast_val("MockMLXArray", as_callable(MockMLXArray)(as_callable(_get_attr(self._data, "__getitem__"))(item)))
+        return _typed_ret_1
 
     def __add__(self, other: MockMLXArray) -> MockMLXArray:
         """Elementwise addition.
@@ -50,7 +52,8 @@ class MockMLXArray:
         Args:
             other: Test parameter `other`.
         """
-        return typing.cast("MockMLXArray", as_callable(MockMLXArray)(as_tensor(self._data) + as_tensor(other._data)))
+        _typed_ret_2: MockMLXArray = _cast_val("MockMLXArray", as_callable(MockMLXArray)(as_tensor(self._data) + as_tensor(other._data)))
+        return _typed_ret_2
 
     def __mul__(self, other: MockMLXArray) -> MockMLXArray:
         """Elementwise multiplication.
@@ -58,7 +61,8 @@ class MockMLXArray:
         Args:
             other: Test parameter `other`.
         """
-        return typing.cast("MockMLXArray", as_callable(MockMLXArray)(as_tensor(self._data) * as_tensor(other._data)))
+        _typed_ret_3: MockMLXArray = _cast_val("MockMLXArray", as_callable(MockMLXArray)(as_tensor(self._data) * as_tensor(other._data)))
+        return _typed_ret_3
 
     def to_numpy(self) -> np.ndarray[tuple[int, ...], np.dtype[np.generic]]:
         """Extract NumPy view."""
@@ -140,8 +144,8 @@ def test_mlx_ring_reduce_scatter_sum() -> None:
         op_type="SUM",
         rank=1,
     )
-    assert as_tensor(getattr(res1, "shape")) == (2, 4)
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res1, "to_numpy")))(), 6.0)
+    assert as_tensor(_get_attr(res1, "shape")) == (2, 4)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res1, "to_numpy")))(), 6.0)
 
 
 def test_mlx_ring_reduce_scatter_ops() -> None:
@@ -159,7 +163,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="PROD",
         rank=0,
     )
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_prod, "to_numpy")))(), [[20.0, 60.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_prod, "to_numpy")))(), [[20.0, 60.0]])
 
     # MAX on rank 1 (gets row 1: [max(4, 30), max(5, 40)] = [30, 40])
     res_max = _mlx_reduce_scatter(
@@ -170,7 +174,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="MAX",
         rank=1,
     )
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_max, "to_numpy")))(), [[30.0, 40.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_max, "to_numpy")))(), [[30.0, 40.0]])
 
     # MIN on rank 1 (gets row 1: [min(4, 30), min(5, 40)] = [4, 5])
     res_min = _mlx_reduce_scatter(
@@ -181,7 +185,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="MIN",
         rank=1,
     )
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_min, "to_numpy")))(), [[4.0, 5.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_min, "to_numpy")))(), [[4.0, 5.0]])
 
     # Fallback op (else branch) defaults to SUM
     res_fallback = _mlx_reduce_scatter(
@@ -192,7 +196,7 @@ def test_mlx_ring_reduce_scatter_ops() -> None:
         op_type="UNKNOWN_OP",
         rank=0,
     )
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_fallback, "to_numpy")))(), [[12.0, 23.0]])
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_fallback, "to_numpy")))(), [[12.0, 23.0]])
 
 
 def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
@@ -207,8 +211,8 @@ def test_mlx_reduce_scatter_single_tensor_world_size() -> None:
         rank=1,
         scatter_dim=0,
     )
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res, "to_numpy")))(), [[4.0, 5.0], [6.0, 7.0]])
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res, "to_numpy")))(), [[4.0, 5.0], [6.0, 7.0]])
 
     # World size 1 returns tensor unchanged
     res_1 = _mlx_reduce_scatter(

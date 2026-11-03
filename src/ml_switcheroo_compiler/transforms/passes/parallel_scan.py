@@ -8,6 +8,7 @@ import os
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_vars
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_opt_graph, clone_logical_node
 
 
@@ -39,15 +40,15 @@ def detect_associative_reduction(body_graph: IRGraph | None, rules: dict[str, At
     if not body_graph:
         return None
 
-    nodes = body_graph.nodes if hasattr(body_graph.nodes, "values") else {n.id: n for n in getattr(body_graph, "nodes", [])}
+    nodes = body_graph.nodes if _has_attr(body_graph.nodes, "values") else {n.id: n for n in _get_attr(body_graph, "nodes", [])}
     raw_assoc = rules.get("associative_ops", {})
     assoc_map = raw_assoc if isinstance(raw_assoc, dict) else {}
 
     # Check non-input/output operational nodes
-    compute_nodes = [n for n in nodes.values() if getattr(n, "op_type", "") not in ("Input", "Output")]
+    compute_nodes = [n for n in nodes.values() if _get_attr(n, "op_type", "") not in ("Input", "Output")]
     if len(compute_nodes) == 1:
         op_node = compute_nodes[0]
-        op_type = str(getattr(op_node, "op_type", ""))
+        op_type = str(_get_attr(op_node, "op_type", ""))
         if op_type in assoc_map:
             entry = assoc_map[op_type]
             raw_prim = entry.get("parallel_primitive", "CumSum") if isinstance(entry, dict) else "CumSum"
@@ -71,7 +72,7 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
     transformed = False
 
     for node_id, node in graph.nodes.items():
-        if getattr(node, "op_type", "") == "Scan":
+        if _get_attr(node, "op_type", "") == "Scan":
             body = as_opt_graph(node.attributes.get("body"))
             reduction_info = detect_associative_reduction(body, rules)
 
@@ -90,7 +91,7 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
                     op_type=parallel_prim,
                     inputs=[xs_inp],
                     attributes={"axis": 0},
-                    shape_metadata=getattr(node, "shape_metadata", ()),
+                    shape_metadata=_get_attr(node, "shape_metadata", ()),
                 )
                 new_nodes[prim_id] = prim_node
 
@@ -102,7 +103,7 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
                         op_type=op_type,
                         inputs=[prim_id, init_inp],
                         attributes={},
-                        shape_metadata=getattr(node, "shape_metadata", ()),
+                        shape_metadata=_get_attr(node, "shape_metadata", ()),
                     )
                     new_nodes[combined_id] = combined_node
                     last_id = combined_id
@@ -116,10 +117,10 @@ def parallel_scan_pass(graph: IRGraph) -> IRGraph:
                     op_type="Identity",
                     inputs=[last_id],
                 )
-                new_nodes[node_id] = IRNode(**identity.__dict__)
+                new_nodes[node_id] = IRNode(**_obj_vars(identity))
                 continue
 
-        new_nodes[node_id] = node if type(node) is IRNode else IRNode(**node.__dict__)
+        new_nodes[node_id] = node if type(node) is IRNode else IRNode(**_obj_vars(node))
 
     if transformed:
         graph.nodes.clear()

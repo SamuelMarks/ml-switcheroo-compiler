@@ -15,7 +15,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import as_callable, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, _obj_vars
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import as_attrs, as_node_list
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
@@ -39,15 +39,15 @@ def _eager_vmap(
     Returns:
         Tensor: Vectorized output tensor.
     """
-    first_tensor = next((a for a in getattr(args, "__iter__")() if isinstance(a, Tensor)), None)
+    first_tensor = next((a for a in _get_attr(args, "__iter__")() if isinstance(a, Tensor)), None)
     if first_tensor is None:
-        return as_callable(func)(*getattr(args, "__iter__")())
+        return as_callable(func)(*_get_attr(args, "__iter__")())
 
     in_axis = in_axes if isinstance(in_axes, int) else (in_axes[0] if in_axes else 0)
     batch_size = first_tensor.shape[in_axis] if first_tensor.shape and in_axis < len(first_tensor.shape) else 1
 
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
-    body_block = _trace_function(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
+    body_block = _trace_function(func, tuple(_get_attr(symbolic_args, "__iter__")()), "vmap_body")
 
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -56,15 +56,15 @@ def _eager_vmap(
     body_graph = IRGraph(name="vmap_body")
     body_graph.inputs = list(body_block.inputs)
     body_graph.outputs = list(body_block.outputs)
-    nodes_iter: Iterable[LogicalNode] = body_block.nodes.values() if hasattr(body_block.nodes, "values") else as_node_list(body_block.nodes)
+    nodes_iter: Iterable[LogicalNode] = body_block.nodes.values() if _has_attr(body_block.nodes, "values") else as_node_list(body_block.nodes)
     for n in nodes_iter:
-        body_graph.nodes[n.id] = IRNode(**n.__dict__) if type(n) is not IRNode else n
+        body_graph.nodes[n.id] = IRNode(**_obj_vars(n)) if type(n) is not IRNode else n
 
     vectorized_graph = vectorize_graph(body_graph, in_axes=in_axes, batch_size=batch_size, out_axes=out_axes)
 
     backend = get_active_backend()
     input_map = {}
-    for inp_id, conc_arg in zip(body_block.inputs, getattr(args, "__iter__")()):
+    for inp_id, conc_arg in zip(body_block.inputs, _get_attr(args, "__iter__")()):
         val = conc_arg.data if isinstance(conc_arg, Tensor) else conc_arg
         input_map[inp_id] = val
 
@@ -72,11 +72,11 @@ def _eager_vmap(
     out_node_id = vectorized_graph.outputs[0]
     out_val = out_map[out_node_id]
 
-    if hasattr(backend, "asarray"):
+    if _has_attr(backend, "asarray"):
         out_data = backend.asarray(out_val)
     else:
         out_data = out_val
-    out_shape = tuple(getattr(out_data, "shape")) if hasattr(out_data, "shape") else (batch_size,)
+    out_shape = tuple(_get_attr(out_data, "shape")) if _has_attr(out_data, "shape") else (batch_size,)
     return Tensor(out_data, TensorConfig(out_shape, first_tensor.dtype, first_tensor.device))
 
 
@@ -119,7 +119,7 @@ def _create_vmap_symbolic_args(args: TensorOrScalar, in_axes: int | tuple[int, .
             tuple[int, ...]: Result.
     """
     symbolic_args = []
-    for i, a in enumerate(getattr(args, "__iter__")()):
+    for i, a in enumerate(_get_attr(args, "__iter__")()):
         if isinstance(a, Tensor):
             axis = _resolve_vmap_axis(in_axes, i)
             new_shape = _compute_vmap_shape(a, axis)
@@ -148,20 +148,20 @@ def _trace_vmap(
             tuple[int, ...]: Result.
     """
     symbolic_args = _create_vmap_symbolic_args(args, in_axes)
-    body_graph = _trace_function(func, tuple(getattr(symbolic_args, "__iter__")()), "vmap_body")
+    body_graph = _trace_function(func, tuple(_get_attr(symbolic_args, "__iter__")()), "vmap_body")
     out_id = str(uuid.uuid4())
     node = LogicalNode(
         id=out_id,
         op_type="Vmap",
-        inputs=[getattr(a.data, "id") for a in getattr(args, "__iter__")() if isinstance(a, Tensor)],
+        inputs=[_get_attr(a.data, "id") for a in _get_attr(args, "__iter__")() if isinstance(a, Tensor)],
         attributes=as_attrs({"in_axes": in_axes, "out_axes": out_axes, "body": body_graph}),
         subgraphs={"body": body_graph},
         shape_metadata=(),
     )
     global_tracing_state.add_node(node)
-    arg = getattr(args, "__getitem__")(0)
-    proxy = ProxyTensor(id=out_id, shape=getattr(arg, "shape"), dtype=getattr(getattr(arg, "dtype"), "value"))
-    return Tensor(proxy, TensorConfig(getattr(arg, "shape"), getattr(arg, "dtype"), getattr(arg, "device")))
+    arg = _get_attr(args, "__getitem__")(0)
+    proxy = ProxyTensor(id=out_id, shape=_get_attr(arg, "shape"), dtype=_get_attr(_get_attr(arg, "dtype"), "value"))
+    return Tensor(proxy, TensorConfig(_get_attr(arg, "shape"), _get_attr(arg, "dtype"), _get_attr(arg, "device")))
 
 
 def vmap(

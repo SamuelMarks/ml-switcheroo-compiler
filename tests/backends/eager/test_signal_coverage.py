@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.eager.signal as signal_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
@@ -286,7 +286,7 @@ class SignalBackendWrapper:
         Returns:
             EagerCallableProtocol: Resolved callable attribute.
         """
-        return as_callable(getattr(np, name))
+        return as_callable(_get_attr(np, name))
 
     def pad(
         self,
@@ -503,7 +503,7 @@ def test_signal_coverage() -> None:
 
     # 1. Gaussian kernel calculation
     k = as_callable(signal_mod._generate_gaussian_kernel)(backend, (3, 3), (1.0, 1.0))
-    assert as_tensor(getattr(k, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(k, "shape")) == (3, 3)
     as_callable(np.testing.assert_allclose)(as_callable(float)(as_callable(np.sum)(k)), 1.0, atol=1e-5)
 
     # 2. _apply_conv2d_batch error on non-4D
@@ -534,7 +534,7 @@ def test_signal_coverage() -> None:
     # 4. gaussian_blur_eager full execution
     imgs = np.ones((1, 2, 8, 8), dtype=np.float32)
     blurred = as_callable(signal_mod.gaussian_blur_eager)(backend, imgs, custom_cfg)
-    assert as_tensor(getattr(blurred, "shape")) == (1, 2, 8, 8)
+    assert as_tensor(_get_attr(blurred, "shape")) == (1, 2, 8, 8)
 
     # 5. _apply_median_filter_batch error on non-4D
     with pytest.raises(ValueError, match="Images must be 4D"):
@@ -542,6 +542,6 @@ def test_signal_coverage() -> None:
 
     # 6. median_filter_eager with same padding and reflect padding
     med_same = as_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="same")
-    assert as_tensor(getattr(med_same, "shape")) == (1, 2, 8, 8)
+    assert as_tensor(_get_attr(med_same, "shape")) == (1, 2, 8, 8)
     med_reflect = as_callable(signal_mod.median_filter_eager)(backend, imgs, (3, 3), padding="reflect")
-    assert as_tensor(getattr(med_reflect, "shape")) == (1, 2, 8, 8)
+    assert as_tensor(_get_attr(med_reflect, "shape")) == (1, 2, 8, 8)

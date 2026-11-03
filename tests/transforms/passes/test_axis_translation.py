@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.core.shape import _has_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.axis_translation import axis_translation_pass
 from tests.testing_utils import as_tensor
@@ -92,7 +93,7 @@ def test_axis_translation_conv2d_no_shape() -> None:
 
         return as_tensor(MockUUID())
 
-    setattr(uuid, "uuid4", mock_uuid4)
+    _set_attr(uuid, "uuid4", mock_uuid4)
     try:
         modified = axis_translation_pass(graph)
     finally:
@@ -124,5 +125,5 @@ def test_passes_package_init() -> None:
     """Test passes package __init__ exports."""
     import ml_switcheroo_compiler.transforms.passes as passes
 
-    assert hasattr(passes, "axis_translation_pass")
+    assert _has_attr(passes, "axis_translation_pass")
     assert passes.axis_translation_pass is not None

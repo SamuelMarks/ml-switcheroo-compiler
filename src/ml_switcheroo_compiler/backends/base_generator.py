@@ -12,7 +12,7 @@ from types import ModuleType
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_str, as_tensor
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _cast_val, _get_attr, _has_attr
 
 
 class VisitorProtocol(typing.Protocol):
@@ -77,7 +77,7 @@ class CompiledArtifact(pydantic.BaseModel):
 
     def cleanup(self) -> None:
         """Clean up associated temporary directory resources if active."""
-        if self.temp_dir is not None and hasattr(self.temp_dir, "cleanup"):
+        if self.temp_dir is not None and _has_attr(self.temp_dir, "cleanup"):
             self.temp_dir.cleanup()
             self.temp_dir = None
 
@@ -95,8 +95,8 @@ class CompiledArtifact(pydantic.BaseModel):
         """
         if self.metadata is not None and item in self.metadata:
             return self.metadata[item]
-        if hasattr(self, item):
-            return as_tensor(getattr(self, item))
+        if _has_attr(self, item):
+            return as_tensor(_get_attr(self, item))
         raise KeyError(item)
 
 
@@ -255,7 +255,7 @@ class EmitUtilsMixin:
                 self.add_line(f"return {returns[0]}")
             else:
                 self.add_line(f"return ({', '.join(returns)})")
-        elif hasattr(self, "graph") and getattr(self.graph, "outputs", None):
+        elif _has_attr(self, "graph") and _get_attr(self.graph, "outputs", None):
             out_vars: list[str] = [self.formatter.var_names.get(out_id, out_id) for out_id in self.graph.outputs]
             if len(out_vars) == 1:
                 self.add_line(f"return {out_vars[0]}")
@@ -296,7 +296,7 @@ class class_or_instance_method:
             TypedVariadicCallable[CompiledArtifact]: Bound callable.
         """
         target = obj if obj is not None else cls
-        return lambda *args, **kwargs: typing.cast(TypedVariadicCallable[CompiledArtifact], self.fn)(target, *args, **kwargs)
+        return lambda *args, **kwargs: _cast_val(TypedVariadicCallable[CompiledArtifact], self.fn)(target, *args, **kwargs)
 
 
 class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin, EagerExecutionMixin):
@@ -376,7 +376,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         self.graph = graph
         self.sorted_nodes = topological_sort(graph)
         self.formatter = CodeFormatter()
-        self.visitors: list[VisitorProtocol] = [self] + (list(typing.cast("Sequence[VisitorProtocol]", delegates)) if isinstance(delegates, (list, tuple)) else [])
+        self.visitors: list[VisitorProtocol] = [self] + (list(_cast_val("Sequence[VisitorProtocol]", delegates)) if isinstance(delegates, (list, tuple)) else [])
 
     def get_language(self) -> str:
         """Get the target programming language for code emission.
@@ -473,7 +473,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         """
         out_var = str(all_attrs.get("out_var") or "")
         subs: dict[str, str] = {
-            "out": out_var or self.assign_var_name(getattr(node, "id", "")),
+            "out": out_var or self.assign_var_name(_get_attr(node, "id", "")),
         }
         for i, iv in enumerate(input_vars):
             subs[f"in{i}"] = iv
@@ -497,11 +497,11 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             str: Generated code line or expression.
         """
-        backend_name = getattr(self, "backend_name", None) or self.get_fallback_prefix()
-        op_name = getattr(node, "op_type", "")
+        backend_name = _get_attr(self, "backend_name", None) or self.get_fallback_prefix()
+        op_name = _get_attr(node, "op_type", "")
         ast_template, kwarg_map, target_api = self._load_op_mapping_info(backend_name, op_name)
 
-        all_attrs: dict[str, EagerValue] = dict(getattr(node, "attributes", {}) or {})
+        all_attrs: dict[str, EagerValue] = dict(_get_attr(node, "attributes", {}) or {})
         all_attrs.update(kwargs)
         translated_kwargs = self._translate_node_kwargs(all_attrs, kwarg_map)
 
@@ -527,17 +527,18 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             str: The computed result.
         """
-        op_type = getattr(node, "op_type", "")
+        op_type = _get_attr(node, "op_type", "")
         method_name = f"visit_{op_type}"
-        for visitor in getattr(self, "visitors", []):
-            if hasattr(visitor, method_name):
-                method = getattr(visitor, method_name)
+        for visitor in _get_attr(self, "visitors", []):
+            if _has_attr(visitor, method_name):
+                method = _get_attr(visitor, method_name)
                 return as_str(method(node, input_vars, **kwargs))
-        if hasattr(self, method_name) and method_name != "visit_OpNode":
-            method = getattr(self, method_name)
+        if _has_attr(self, method_name) and method_name != "visit_OpNode":
+            method = _get_attr(self, method_name)
             return as_str(method(node, input_vars, **kwargs))
-        if hasattr(self, "visit_OpNode"):
-            return self.visit_OpNode(node, input_vars, **kwargs)
+        if _has_attr(self, "visit_OpNode"):
+            _typed_ret_1: str = self.visit_OpNode(node, input_vars, **kwargs)
+            return _typed_ret_1
         return self.generic_visit(node, input_vars, **kwargs)
 
     def get_ops_map(self, kwargs: dict[str, EagerValue] | None = None) -> dict[str, str]:
@@ -596,7 +597,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Raises:
             NotImplementedError: If AOT compilation is not implemented for this backend.
         """
-        target_graph = graph if graph is not None else getattr(self, "graph", None)
+        target_graph = graph if graph is not None else _get_attr(self, "graph", None)
         if target_graph is None:
             target_graph = IRGraph()
 
@@ -604,7 +605,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             instance = self(target_graph)
             return as_tensor(instance.compile_aot(target_graph, **kwargs))
 
-        if not hasattr(self, "_aot_cache") or getattr(self, "_aot_cache", None) is None:
+        if not _has_attr(self, "_aot_cache") or _get_attr(self, "_aot_cache", None) is None:
             self._aot_cache: dict[tuple[int, tuple[tuple[str, str], ...]], EagerValue] = {}
 
         cache_key = (id(target_graph), tuple(sorted((str(k), str(v)) for k, v in kwargs.items())))
@@ -625,7 +626,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
         Returns:
             EagerValue: Resulting compiled artifact or callable.
         """
-        msg = f"AOT compilation is not implemented for {self.__class__.__name__}"
+        msg = f"AOT compilation is not implemented for {type(self).__name__}"
         raise NotImplementedError(msg)
 
     def get_fallback_keepdims_kwarg(self) -> str:
@@ -657,7 +658,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
 
         if device_type is not None:
             dtype_lower = str(device_type).lower()
-            return [d for d in devices if getattr(d.device_type, "value") == dtype_lower or (dtype_lower in ("cuda", "rocm", "metal") and d.device_type == DeviceType.GPU)]
+            return [d for d in devices if _get_attr(d.device_type, "value") == dtype_lower or (dtype_lower in ("cuda", "rocm", "metal") and d.device_type == DeviceType.GPU)]
         return devices
 
     @classmethod
@@ -712,7 +713,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             Returns:
                 str: The code string.
             """
-            op_type = getattr(node, "op_type", "")
+            op_type = _get_attr(node, "op_type", "")
             ops_map = self.get_ops_map(kwargs)
             if op_type in ops_map:
                 fmt = ops_map[op_type]
@@ -769,7 +770,7 @@ class BaseGenerator(FormatterProxyMixin, EmitUtilsMixin, GeneratorLifecycleMixin
             input_vars (list[str]): The input_vars parameter for the operation.
             returns (str): The returns parameter for the operation.
         """
-        if not hasattr(self, "_output_returns"):
+        if not _has_attr(self, "_output_returns"):
             self._output_returns = []
         self._output_returns.append(returns)
 

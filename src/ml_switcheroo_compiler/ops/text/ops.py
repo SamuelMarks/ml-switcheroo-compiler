@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import (
     Tensor,
     TensorConfig,
@@ -30,9 +30,9 @@ def _extract_shape(arg: TensorOrScalar) -> tuple[int, ...]:
     """
     if arg is None:
         return ()
-    if hasattr(arg, "shape"):
-        return tuple(int(d) for d in getattr(arg.shape, "__iter__")())
-    if hasattr(arg, "shape_metadata"):
+    if _has_attr(arg, "shape"):
+        return tuple(int(d) for d in _get_attr(arg.shape, "__iter__")())
+    if _has_attr(arg, "shape_metadata"):
         sm = arg.shape_metadata
         if sm:
             return tuple(int(d) for d in sm)
@@ -172,7 +172,7 @@ class IntegerLookup(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return args[0].shape if args and _has_attr(args[0], "shape") else ()
 
 
 @register_op("TextVectorization")
@@ -218,7 +218,7 @@ class StringToNumber(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return args[0].shape if args and _has_attr(args[0], "shape") else ()
 
 
 @register_op("StringLower")
@@ -235,7 +235,7 @@ class StringLower(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return args[0].shape if args and _has_attr(args[0], "shape") else ()
 
 
 @register_op("StringUpper")
@@ -252,7 +252,7 @@ class StringUpper(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return args[0].shape if args and _has_attr(args[0], "shape") else ()
 
 
 @register_op("StringJoin")
@@ -302,7 +302,7 @@ class StringLength(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return args[0].shape if args and _has_attr(args[0], "shape") else ()
 
 
 @register_op("StringSubstr")
@@ -319,7 +319,7 @@ class StringSubstr(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return args[0].shape if args and _has_attr(args[0], "shape") else ()
 
 
 @register_op("RegexFullMatch")
@@ -336,7 +336,7 @@ class RegexFullMatch(OpDef):
         Returns:
             A tuple representing the output shape.
         """
-        return args[0].shape if args and hasattr(args[0], "shape") else ()
+        return args[0].shape if args and _has_attr(args[0], "shape") else ()
 
 
 def string_to_hash(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
@@ -355,7 +355,7 @@ def string_to_hash(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), inputs.dtype, inputs.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), inputs.dtype, inputs.device),
         )
 
     return get_op("Hashing")()(inputs, **kwargs)
@@ -377,7 +377,7 @@ def lookup(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), inputs.dtype, inputs.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), inputs.dtype, inputs.device),
         )
 
     return get_op("StringLookup")()(inputs, **kwargs)
@@ -399,7 +399,7 @@ def text_vectorization(inputs: Tensor, **kwargs: TensorOrScalar) -> Tensor:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), inputs.dtype, inputs.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), inputs.dtype, inputs.device),
         )
 
     return get_op("TextVectorization")()(inputs, **kwargs)

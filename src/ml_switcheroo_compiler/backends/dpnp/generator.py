@@ -203,7 +203,7 @@ class DPNPGenerator(PythonStringGenerator):
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        generator_cls = self.__class__
+        generator_cls = type(self)
 
         def aot_dpnp_runner(*w_args: EagerValue, **w_kw: EagerValue) -> EagerValue:
             """Execute graph targeting DPNP device.

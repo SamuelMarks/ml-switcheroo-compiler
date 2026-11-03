@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.ops.eager_evaluator as eager_eval_mod
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef
 from tests.testing_utils import as_callable, as_tensor
@@ -52,7 +53,8 @@ def test_eager_evaluator_full_coverage() -> None:
             Returns:
                 Tensor | None: Result.
             """
-            return typing.cast("Tensor | None", as_tensor(getattr(super(), "evaluate"))(ctx))
+            _typed_ret_1: Tensor | None = _cast_val("Tensor | None", as_tensor(_get_attr(super(), "evaluate"))(ctx))
+            return _typed_ret_1
 
     dummy_ctx = eager_eval_mod.EvaluationContext(
         op_cls=OpDef,

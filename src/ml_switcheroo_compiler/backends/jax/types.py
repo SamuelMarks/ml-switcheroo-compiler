@@ -6,6 +6,8 @@ import importlib.util
 import sys
 import typing
 
+from ml_switcheroo_compiler.core.shape import _cast_val
+
 if typing.TYPE_CHECKING:
     import jax.numpy as jnp
 else:
@@ -32,7 +34,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    return generic_zeros(typing.cast(ZerosModule, jnp), shape)
+    return generic_zeros(_cast_val(ZerosModule, jnp), shape)
 
 
 def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:

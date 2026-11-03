@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.ops.distributed_ops import (
     AllGather,
     AllReduce,
@@ -80,22 +81,22 @@ def _test_distributed_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None
 
     import ml_switcheroo_compiler.ops.distributed_ops as dist
 
-    orig_dist_backend = as_tensor(getattr(dist, "get_active_backend"))
-    orig_reg_backend = getattr(reg, "_ACTIVE_BACKEND", None)
-    has_reg_backend = hasattr(reg, "_ACTIVE_BACKEND")
-    setattr(dist, "get_active_backend", lambda: DummyBackend())
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    orig_dist_backend = as_tensor(_get_attr(dist, "get_active_backend"))
+    orig_reg_backend = _get_attr(reg, "_ACTIVE_BACKEND", None)
+    has_reg_backend = _has_attr(reg, "_ACTIVE_BACKEND")
+    _set_attr(dist, "get_active_backend", lambda: DummyBackend())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
 
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     t = Tensor(data="data", config=TensorConfig((1,), type("D", (), {"value": "float32"})(), "cpu"))
 
-    assert as_tensor(getattr(shard_tensor(t, None, None), "shape")) == (1,)
-    assert as_tensor(getattr(nccl_all_reduce(t), "shape")) == (1,)
-    getattr(_state, "update")({"DummyBackend": DummyBackend, "Tensor": Tensor, "TensorConfig": TensorConfig, "config": config})
-    getattr(_state, "update")({"dist": dist, "has_reg_backend": has_reg_backend, "orig_dist_backend": orig_dist_backend, "orig_reg_backend": orig_reg_backend})
-    getattr(_state, "update")({"reg": reg, "t": t})
-    _state.update(locals())
+    assert as_tensor(_get_attr(shard_tensor(t, None, None), "shape")) == (1,)
+    assert as_tensor(_get_attr(nccl_all_reduce(t), "shape")) == (1,)
+    _get_attr(_state, "update")({"DummyBackend": DummyBackend, "Tensor": Tensor, "TensorConfig": TensorConfig, "config": config})
+    _get_attr(_state, "update")({"dist": dist, "has_reg_backend": has_reg_backend, "orig_dist_backend": orig_dist_backend, "orig_reg_backend": orig_reg_backend})
+    _get_attr(_state, "update")({"reg": reg, "t": t})
+    _state.update(_caller_locals())
 
 
 def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -105,18 +106,18 @@ def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert as_tensor(getattr(as_callable(hierarchical_copy_all_reduce)(t), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(broadcast)(t), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(all_gather)(t), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(reduce)(t), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(all_reduce)(t), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(reduce_scatter)(t), "shape")) == (1,)
-    assert as_tensor(getattr(all_to_all(t), "shape")) == (1,)
-    assert as_tensor(getattr(broadcast_arrays(t), "shape")) == (1,)
-    assert as_tensor(getattr(broadcast_to(t), "shape")) == (1,)
-    assert as_tensor(getattr(broadcast_to_rank(t), "shape")) == (1,)
-    assert as_tensor(getattr(broadcasted_iota(t), "shape")) == (1,)
-    assert as_tensor(getattr(pbroadcast(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(hierarchical_copy_all_reduce)(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(broadcast)(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(all_gather)(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(reduce)(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(all_reduce)(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(reduce_scatter)(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(all_to_all(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(broadcast_arrays(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(broadcast_to(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(broadcast_to_rank(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(broadcasted_iota(t), "shape")) == (1,)
+    assert as_tensor(_get_attr(pbroadcast(t), "shape")) == (1,)
 
     assert ShardTensor().infer_shape(t) == (1,)
     assert NcclAllReduce().infer_shape(t) == (1,)
@@ -128,7 +129,7 @@ def _test_distributed_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     assert ReduceScatter().infer_shape(t) == (1,)
     assert AllToAll().infer_shape() == ()
     assert BroadcastArrays().infer_shape() == ()
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_distributed_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -150,12 +151,12 @@ def _test_distributed_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None
     assert Ppermute().infer_shape(t) == (1,)
     assert PsumScatter().infer_shape(t) == (None,)
 
-    setattr(config, "eager_mode", False)
+    _set_attr(config, "eager_mode", False)
 
     from unittest.mock import patch
 
-    getattr(_state, "update")({"patch": patch})
-    _state.update(locals())
+    _get_attr(_state, "update")({"patch": patch})
+    _state.update(_caller_locals())
 
 
 def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -182,10 +183,10 @@ def _test_distributed_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None
         assert broadcasted_iota(t) == "emitted"
         assert pbroadcast(t) == "emitted"
 
-    setattr(config, "eager_mode", True)
-    setattr(dist, "get_active_backend", orig_dist_backend)
+    _set_attr(config, "eager_mode", True)
+    _set_attr(dist, "get_active_backend", orig_dist_backend)
     if has_reg_backend:
-        setattr(reg, "_ACTIVE_BACKEND", orig_reg_backend)
+        _set_attr(reg, "_ACTIVE_BACKEND", orig_reg_backend)
     else:
         del reg._ACTIVE_BACKEND
 

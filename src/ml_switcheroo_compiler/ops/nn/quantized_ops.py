@@ -9,7 +9,7 @@ import pydantic
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor
 from ml_switcheroo_compiler.core.config import config as compiler_config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.nn.linear_ops import linear
@@ -30,7 +30,8 @@ class QuantizeOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_1: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_1
 
 
 @register_op("QuantizedMatmul")
@@ -46,7 +47,8 @@ class QuantizedMatmulOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_2: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_2
 
 
 @register_op("GatherQMM")
@@ -62,7 +64,8 @@ class GatherQMMOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_3: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_3
 
 
 @register_op("FakeQuantWithMinMaxVars")
@@ -78,7 +81,8 @@ class FakeQuantWithMinMaxVarsOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_4: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_4
 
 
 @register_op("QuantizeAndDequantize")
@@ -94,7 +98,8 @@ class QuantizeAndDequantizeOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_5: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_5
 
 
 @register_op("AbsMaxQuantize")
@@ -110,7 +115,8 @@ class AbsMaxQuantizeOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_6: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_6
 
 
 @register_op("ComputeFloat8AmaxHistory")
@@ -126,7 +132,8 @@ class ComputeFloat8AmaxHistoryOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_7: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_7
 
 
 @register_op("ComputeFloat8Scale")
@@ -142,7 +149,8 @@ class ComputeFloat8ScaleOp(OpDef):
 
         Returns: tuple[int, ...]: The inferred shape of the output tensor.
         """
-        return getattr(args[0], "shape", ())
+        _typed_ret_8: tuple[int, ...] = _get_attr(args[0], "shape", ())
+        return _typed_ret_8
 
 
 def fake_quant_with_min_max_vars(
@@ -556,11 +564,11 @@ def quantized_linear(
         else:
             zeros_val = 0.0
 
-        w_float_val = getattr(getattr(w_val, "__sub__")(zeros_val), "__mul__")(scales_val)
+        w_float_val = _get_attr(_get_attr(w_val, "__sub__")(zeros_val), "__mul__")(scales_val)
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        weight_float = Tensor(w_float_val, TensorConfig(tuple(getattr(w_float_val, "shape")), DType.Float32, config.weight.device))
+        weight_float = Tensor(w_float_val, TensorConfig(tuple(_get_attr(w_float_val, "shape")), DType.Float32, config.weight.device))
 
         return linear(input, weight_float, bias=config.biases)
     else:
@@ -595,11 +603,11 @@ def quantized_embedding(
         else:
             zeros_val = 0.0
 
-        w_float_val = getattr(getattr(w_val, "__sub__")(zeros_val), "__mul__")(scales_val)
+        w_float_val = _get_attr(_get_attr(w_val, "__sub__")(zeros_val), "__mul__")(scales_val)
 
         from ml_switcheroo_compiler.core.tensor import TensorConfig
 
-        weight_float = Tensor(w_float_val, TensorConfig(tuple(getattr(w_float_val, "shape")), DType.Float32, config.weight.device))
+        weight_float = Tensor(w_float_val, TensorConfig(tuple(_get_attr(w_float_val, "shape")), DType.Float32, config.weight.device))
 
         return gather(weight_float, axis=0, index=input)
     else:
@@ -639,8 +647,8 @@ def dequantize(
         else:
             biases_val = backend.execute_op("Zeros", 1, dtype="float32")
 
-        res_val = getattr(getattr(in_val, "__sub__")(biases_val), "__mul__")(scales_val)
-        return Tensor(res_val, TensorConfig(tuple(getattr(res_val, "shape")), scales.dtype, input.device))
+        res_val = _get_attr(_get_attr(in_val, "__sub__")(biases_val), "__mul__")(scales_val)
+        return Tensor(res_val, TensorConfig(tuple(_get_attr(res_val, "shape")), scales.dtype, input.device))
 
     inputs = [input, scales]
     if biases is not None:

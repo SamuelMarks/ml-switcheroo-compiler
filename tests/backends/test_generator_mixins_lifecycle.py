@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -181,13 +182,13 @@ def test_generator_mixins_lifecycle_and_eager() -> None:
 
     # Eager zeros, array, asarray, item with default numpy fallback
     z_def = _MockEagerBackendDefault.zeros((2, 2))
-    assert as_tensor(getattr(z_def, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(z_def, "shape")) == (2, 2)
 
     arr_def = _MockEagerBackendDefault.array([5, 6])
-    assert as_tensor(getattr(arr_def, "tolist"))() == [5, 6]
+    assert as_tensor(_get_attr(arr_def, "tolist"))() == [5, 6]
 
     as_arr_def = _MockEagerBackendDefault.asarray([7.5, 8.5])
-    assert as_tensor(getattr(as_arr_def, "tolist"))() == [7.5, 8.5]
+    assert as_tensor(_get_attr(as_arr_def, "tolist"))() == [7.5, 8.5]
 
     item_val = as_callable(_MockEagerBackendDefault.item)(as_callable(_MockScalarHolder)())
     assert item_val == 33.3

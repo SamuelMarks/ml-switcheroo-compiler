@@ -226,9 +226,8 @@ def _pa_to_ndarray(raw_data: EagerValue, dtype: str | None = None) -> EagerValue
             return as_tensor(as_callable(_get_attr(raw_data, "astype"))(dtype))
         return raw_data
 
-    raw_op: StructuralOperandProtocol = raw_data
-    if isinstance(raw_op, _DunderArrayProtocol) and _has_attr(raw_data, "__array__"):
-        return as_tensor(raw_op.__array__())
+    if _has_attr(raw_data, "__array__"):
+        return as_tensor(as_callable(_get_attr(raw_data, "__array__"))())
 
     import pyarrow as pa
 

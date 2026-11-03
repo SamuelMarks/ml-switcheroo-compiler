@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_list
 
 if typing.TYPE_CHECKING:
@@ -75,8 +76,8 @@ def test_variable_assign() -> None:
 
         id = "dummy"
 
-    setattr(v, "_data", FakeData())
-    setattr(t, "_data", FakeData())
+    _set_attr(v, "_data", FakeData())
+    _set_attr(t, "_data", FakeData())
 
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value=None):
         with patch("ml_switcheroo_compiler.ops.registry.get_util", return_value=lambda *a, **k: None):
@@ -104,8 +105,8 @@ def test_parameter() -> None:
             """Test function __int__."""
             return 42
 
-    setattr(p, "numpy", lambda: 42)
-    assert p.__index__() == 42
+    _set_attr(p, "numpy", lambda: 42)
+    assert _get_attr(p, "__index__")() == 42
 
 
 def test_tensor_config_list_shape_and_parse_dim() -> None:
@@ -144,7 +145,7 @@ def test_tensor_eval_already_in_graph() -> None:
 
         id = "n1"
 
-    setattr(t, "_data", FakeData())
+    _set_attr(t, "_data", FakeData())
     assert t.eval() is t
     config.eager_mode = True
     global_tracing_state.stop_tracing()
@@ -166,7 +167,7 @@ def test_tensor_eval_not_tracing() -> None:
 
         id = "n1"
 
-    setattr(t, "_data", FakeData())
+    _set_attr(t, "_data", FakeData())
 
     # 190, 194 where global_tracing_state.is_tracing is False
     global_tracing_state.is_tracing = False
@@ -189,13 +190,13 @@ def test_tensor_view_list_shape() -> None:
     with patch("ml_switcheroo_compiler.ops.registry.get_frontend") as mock_get_frontend:
         mock_get_frontend.return_value = lambda x, shape: Tensor(np.zeros(shape), TensorConfig(shape=shape, dtype="float32", device="cpu"))
         res = as_callable(t.view)([4])
-        assert as_tensor(getattr(res, "shape")) == (4,)
+        assert as_tensor(_get_attr(res, "shape")) == (4,)
 
         res2 = t.view(2, 2)
-        assert as_tensor(getattr(res2, "shape")) == (2, 2)
+        assert as_tensor(_get_attr(res2, "shape")) == (2, 2)
 
         res3 = as_callable(t.view)((4,))
-        assert as_tensor(getattr(res3, "shape")) == (4,)
+        assert as_tensor(_get_attr(res3, "shape")) == (4,)
 
 
 def test_tensor_eval_branches() -> None:
@@ -223,7 +224,7 @@ def test_tensor_eval_branches() -> None:
 
     graph_inst = DummyGraph()
     global_tracing_state.is_tracing = True
-    setattr(global_tracing_state, "active_graph", graph_inst)
+    _set_attr(global_tracing_state, "active_graph", graph_inst)
 
     # Create an object with an id
     class DummyData:

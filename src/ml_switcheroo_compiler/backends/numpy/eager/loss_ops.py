@@ -6,6 +6,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def _np_ctc_loss_update_alpha(t: int, S: int, augmented: EagerValue, alpha: EagerValue, probs: EagerValue, num_classes: int, blank: int) -> None:
@@ -21,12 +22,12 @@ def _np_ctc_loss_update_alpha(t: int, S: int, augmented: EagerValue, alpha: Eage
         num_classes (int): Number of classes.
     """
     for s in range(S):
-        prob_term = getattr(probs, "__getitem__")((t, getattr(augmented, "__getitem__")(s) % num_classes))
-        sum_term = getattr(alpha, "__getitem__")((t - 1, s))
+        prob_term = _get_attr(probs, "__getitem__")((t, _get_attr(augmented, "__getitem__")(s) % num_classes))
+        sum_term = _get_attr(alpha, "__getitem__")((t - 1, s))
         if s > 0:
-            sum_term += getattr(alpha, "__getitem__")((t - 1, s - 1))
-        if s >= 2 and getattr(augmented, "__getitem__")(s) != blank and getattr(augmented, "__getitem__")(s) != getattr(augmented, "__getitem__")(s - 2):
-            sum_term += getattr(alpha, "__getitem__")((t - 1, s - 2))
+            sum_term += _get_attr(alpha, "__getitem__")((t - 1, s - 1))
+        if s >= 2 and _get_attr(augmented, "__getitem__")(s) != blank and _get_attr(augmented, "__getitem__")(s) != _get_attr(augmented, "__getitem__")(s - 2):
+            sum_term += _get_attr(alpha, "__getitem__")((t - 1, s - 2))
         as_tensor(alpha)[t, s] = sum_term * prob_term
 
 
@@ -44,16 +45,16 @@ def _np_ctc_loss_single(probs: EagerValue, b_labels: EagerValue, T: int, L: int)
     """
     blank = 0
     augmented = np.zeros(2 * L + 1, dtype=np.int32)
-    if getattr(b_labels, "__len__")() > 0:
+    if _get_attr(b_labels, "__len__")() > 0:
         augmented[1::2] = np.asarray(b_labels, dtype=np.int32)
     S = len(augmented)
 
-    num_classes = getattr(probs, "shape")[-1]
+    num_classes = _get_attr(probs, "shape")[-1]
     alpha = np.zeros((T, S))
     if T > 0:
-        alpha[0, 0] = getattr(probs, "__getitem__")((0, blank % num_classes))
+        alpha[0, 0] = _get_attr(probs, "__getitem__")((0, blank % num_classes))
         if S > 1:
-            alpha[0, 1] = getattr(probs, "__getitem__")((0, getattr(augmented, "__getitem__")(1) % num_classes))
+            alpha[0, 1] = _get_attr(probs, "__getitem__")((0, _get_attr(augmented, "__getitem__")(1) % num_classes))
 
     for t in range(1, T):
         _np_ctc_loss_update_alpha(t, S, augmented, alpha, probs, num_classes, blank)
@@ -141,7 +142,7 @@ def _np_circle_loss(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Delta_p = 1 - as_tensor(margin)
     Delta_n = margin
 
-    alpha_p = getattr(np, "maximum")(0, O_p - y_pred)
+    alpha_p = _get_attr(np, "maximum")(0, O_p - y_pred)
     alpha_n = np.maximum(0, y_pred - O_n)
 
     p_loss = alpha_p * (y_pred - Delta_p)
@@ -184,7 +185,7 @@ def _np_categorical_generalized_cross_entropy(backend_module: BackendModuleProto
     y_pred = np.clip(y_pred, 1e-7, 1.0)
 
     # GCE = (1 - sum(y_true * y_pred^q)) / q
-    res = (1.0 - np.sum(y_true * getattr(np, "power")(y_pred, q), axis=-1)) / q
+    res = (1.0 - np.sum(y_true * _get_attr(np, "power")(y_pred, q), axis=-1)) / q
     return as_tensor(np.mean(res))
 
 

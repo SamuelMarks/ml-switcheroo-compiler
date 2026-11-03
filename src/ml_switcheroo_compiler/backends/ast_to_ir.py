@@ -10,6 +10,7 @@ import libcst as cst
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.transpiler_config_models import load_transpiler_config
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attr_val, as_attrs
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
@@ -46,7 +47,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
         if self.parent_scope and name in self.parent_scope:
             if name not in self.graph.nodes:
                 self.graph.nodes[name] = IRNode(id=name, op_type="Input", inputs=[])
-                if hasattr(self.graph, "inputs") and isinstance(self.graph.inputs, list):
+                if _has_attr(self.graph, "inputs") and isinstance(self.graph.inputs, list):
                     if name not in self.graph.inputs:
                         self.graph.inputs.append(name)
             self.var_table[name] = name
@@ -418,7 +419,7 @@ class ASTToIRVisitor(cst.CSTVisitor):
             id=node_id,
             op_type="Map",
             inputs=inputs,
-            attributes={"target_var": getattr(node.for_in.target, "value", "x")},
+            attributes={"target_var": _get_attr(node.for_in.target, "value", "x")},
         )
         self.graph.nodes[node_id] = ir_node
         self.last_node_id = node_id

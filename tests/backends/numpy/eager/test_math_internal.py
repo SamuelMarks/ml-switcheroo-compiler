@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_internal as mi
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_ndarray, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -72,9 +73,9 @@ def _test_math_internal_operations_part_1(_state: dict[str, EagerTensorProtocol]
     assert mi._np_linearoperatorhouseholder(as_mod(bk)) is not None
     assert mi._np_linearoperatorkronecker(as_mod(bk)) is not None
     assert mi._np_linearoperatorlowrankupdate(as_mod(bk)) is not None
-    getattr(_state, "update")({"bk": bk, "blur": blur, "elastic": elastic, "pop": pop})
-    getattr(_state, "update")({"res_root": res_root, "res_root_no_solve": res_root_no_solve})
-    _state.update(locals())
+    _get_attr(_state, "update")({"bk": bk, "blur": blur, "elastic": elastic, "pop": pop})
+    _get_attr(_state, "update")({"res_root": res_root, "res_root_no_solve": res_root_no_solve})
+    _state.update(_caller_locals())
 
 
 def _test_math_internal_operations_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -104,23 +105,23 @@ def _test_math_internal_operations_part_2(_state: dict[str, EagerTensorProtocol]
 
     # 10. _np_rawmerge
     merge_list = mi._np_rawmerge(bk, [10, 20])
-    assert as_tensor(getattr(merge_list, "__getitem__")(0)) == 10
-    assert as_tensor(getattr(merge_list, "__getitem__")(1)) == 0
+    assert as_tensor(_get_attr(merge_list, "__getitem__")(0)) == 10
+    assert as_tensor(_get_attr(merge_list, "__getitem__")(1)) == 0
 
     merge_args = mi._np_rawmerge(bk, 10, 20)
-    assert as_tensor(getattr(merge_args, "__getitem__")(0)) == 10
+    assert as_tensor(_get_attr(merge_args, "__getitem__")(0)) == 10
 
     merge_empty = mi._np_rawmerge(bk)
-    assert as_tensor(getattr(merge_empty, "__getitem__")(0)) is None
-    assert as_tensor(getattr(merge_empty, "__getitem__")(1)) == -1
+    assert as_tensor(_get_attr(merge_empty, "__getitem__")(0)) is None
+    assert as_tensor(_get_attr(merge_empty, "__getitem__")(1)) == -1
 
     # 11. _np_rawop
     assert mi._np_rawop(bk, 999) == 999
     assert mi._np_rawop(bk) is None
-    getattr(_state, "update")({"EmptyBackend": EmptyBackend, "a": a, "b": b, "merge_args": merge_args})
-    getattr(_state, "update")({"merge_empty": merge_empty, "merge_list": merge_list, "persp": persp, "res_bkm": res_bkm})
-    getattr(_state, "update")({"res_default_mm": res_default_mm})
-    _state.update(locals())
+    _get_attr(_state, "update")({"EmptyBackend": EmptyBackend, "a": a, "b": b, "merge_args": merge_args})
+    _get_attr(_state, "update")({"merge_empty": merge_empty, "merge_list": merge_list, "persp": persp, "res_bkm": res_bkm})
+    _get_attr(_state, "update")({"res_default_mm": res_default_mm})
+    _state.update(_caller_locals())
 
 
 def _test_math_internal_operations_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -145,7 +146,7 @@ def _test_math_internal_operations_part_3(_state: dict[str, EagerTensorProtocol]
     assert scan_invalid == "not_callable"
 
     scan_empty = mi._np_scanop(bk, elems=np.array([]), fn=lambda x, y: x + y)
-    assert as_tensor(getattr(scan_empty, "size")) == 0
+    assert as_tensor(_get_attr(scan_empty, "size")) == 0
 
     scan_no_acc = mi._np_scanop(bk, elems=np.array([1, 2, 3]), fn=lambda x, y: x + y)
     as_callable(np.testing.assert_array_equal)(scan_no_acc, [1, 3, 6])
@@ -158,14 +159,14 @@ def _test_math_internal_operations_part_3(_state: dict[str, EagerTensorProtocol]
     assert mi._np_tensorarrayread(bk, handle, 1) == 20
 
     h_in = mi._np_tensorarraywrite(bk, handle, 0, 99)
-    assert as_tensor(getattr(h_in, "__getitem__")(0)) == 99
+    assert as_tensor(_get_attr(h_in, "__getitem__")(0)) == 99
 
     h_ext = mi._np_tensorarraywrite(bk, handle, 4, 88)
     assert as_callable(len)(h_ext) == 5
-    getattr(_state, "update")({"h_ext": h_ext, "h_in": h_in, "handle": handle, "scan_empty": scan_empty})
-    getattr(_state, "update")({"scan_invalid": scan_invalid, "scan_no_acc": scan_no_acc, "scan_with_acc": scan_with_acc, "sw_false": sw_false})
-    getattr(_state, "update")({"sw_op_false": sw_op_false, "sw_op_true": sw_op_true, "sw_true": sw_true})
-    _state.update(locals())
+    _get_attr(_state, "update")({"h_ext": h_ext, "h_in": h_in, "handle": handle, "scan_empty": scan_empty})
+    _get_attr(_state, "update")({"scan_invalid": scan_invalid, "scan_no_acc": scan_no_acc, "scan_with_acc": scan_with_acc, "sw_false": sw_false})
+    _get_attr(_state, "update")({"sw_op_false": sw_op_false, "sw_op_true": sw_op_true, "sw_true": sw_true})
+    _state.update(_caller_locals())
 
 
 def _test_math_internal_operations_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -180,7 +181,7 @@ def _test_math_internal_operations_part_4(_state: dict[str, EagerTensorProtocol]
     # 15. _np_tensorconfig
     tcfg = mi._np_tensorconfig(bk, shape=(2, 3), dtype="float32", device="cpu")
     assert tcfg is not None
-    getattr(_state, "update")({"tcfg": tcfg})
+    _get_attr(_state, "update")({"tcfg": tcfg})
 
 
 def test_math_internal_operations() -> None:

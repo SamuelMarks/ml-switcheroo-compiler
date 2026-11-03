@@ -21,12 +21,13 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import _band_part
 from ml_switcheroo_compiler.backends.numpy.eager.nn import _gelu, _np_activity_regularization, _np_alpha_dropout, _np_dropout, _np_relu, _np_time_distributed
 from ml_switcheroo_compiler.backends.numpy.eager.vision_color import _np_adjust_brightness, _np_adjust_contrast, _np_adjust_hue, _np_adjust_saturation, _np_auto_contrast, _np_equalization, _np_invert, _np_posterize, _np_rgb_to_grayscale, _np_solarize
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_generator, _np_affine_grid, _np_affine_transform, _np_elastic_transform, _np_extract_bounding_boxes, _np_iou, _np_nms, _np_perspective_transform
+from ml_switcheroo_compiler.core.shape import _del_attr, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.ops.configs import ConvConfig, WindowConfig
 from tests.testing_utils import DummyDimSpecs, as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-_reduce_window = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager.window_reductions"), "_reduce_window"))
+_reduce_window = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager.window_reductions"), "_reduce_window"))
 
 
 def test_segment_sum_coverage() -> None:
@@ -54,7 +55,7 @@ def test_conv_general_dilated_all_coverage() -> None:
     with pytest.raises(TypeError):
         as_callable(_get_transpose)(123, "OIW")
     out1 = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding=None, dimension_numbers=("NCW", "OIW", "NCW")))
-    assert as_tensor(getattr(out1, "shape")) == (1, 4, 3)
+    assert as_tensor(_get_attr(out1, "shape")) == (1, 4, 3)
     out2 = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=as_callable(DummyDimSpecs)()))
     assert out2 is not None
     lhs2 = np.ones((1, 4, 5))
@@ -88,9 +89,9 @@ def test_conv_general_dilated_coverage() -> None:
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="SAME", dimension_numbers=("NCW", "OIW", "NCW")))
-    assert as_tensor(getattr(res, "shape")) == (1, 4, 5)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 4, 5)
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW")))
-    assert as_tensor(getattr(res, "shape")) == (1, 4, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 4, 3)
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="UNKNOWN", dimension_numbers=("NCW", "OIW", "NCW")))
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), lhs_dilation=(2,), rhs_dilation=(2,)))
     lhs_group = np.ones((1, 4, 5))
@@ -380,10 +381,10 @@ def test_numpy_eager_linalg_extra() -> None:
     """
     BandPart = numpy_eager_registry.get("BandPart")
     x = np.ones((2, 2))
-    assert as_tensor(getattr(as_callable(BandPart)(np, x, 0, 0), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_callable(BandPart)(np, x, 0, 0), "shape")) == (2, 2)
     Svd = numpy_eager_registry.get("Svd")
     (u, s, v) = as_callable(Svd)(np, as_callable(np.ones)((2, 2)), full_matrices=False, compute_uv=True)
-    assert as_tensor(getattr(u, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(u, "shape")) == (2, 2)
 
 
 def test_numpy_eager_math_extra() -> None:
@@ -408,7 +409,7 @@ def test_numpy_eager_random_extra() -> None:
     """
     Dropout = numpy_eager_registry.get("Dropout")
     res = as_callable(Dropout)(np, as_callable(np.ones)((2,)), 0.5)
-    assert as_tensor(getattr(res, "shape")) == (2,)
+    assert as_tensor(_get_attr(res, "shape")) == (2,)
 
 
 def test_numpy_eager_shape_extra() -> None:
@@ -419,7 +420,7 @@ def test_numpy_eager_shape_extra() -> None:
     """
     SparseExpandDims = numpy_eager_registry.get("SparseExpandDims")
     x = np.array([1])
-    assert as_tensor(getattr(as_callable(SparseExpandDims)(np, x), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(as_callable(SparseExpandDims)(np, x), "shape")) == (1, 1)
 
 
 def test_numpy_nn_eager_extra() -> None:
@@ -432,19 +433,19 @@ def test_numpy_nn_eager_extra() -> None:
     res = _np_relu(np, np.array([-1.0, 2.0, 5.0]))
     assert as_callable(np.allclose)(res, [0.0, 2.0, 5.0])
     res = _np_alpha_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, training=True)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res = _np_alpha_dropout(np, np.ones((2, 2)), rate=0.0)
     assert as_callable(np.allclose)(res, 1.0)
     res = _np_alpha_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, noise_shape=(2, 1), training=True)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res = _np_activity_regularization(np, np.ones((2, 2)), l1=0.1, l2=0.2)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res = _np_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, training=True)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res = _np_dropout(np, np.ones((2, 2)), rate=0.0)
     assert as_callable(np.allclose)(res, 1.0)
     res = _np_dropout(np, np.ones((2, 2)), rate=0.5, seed=42, noise_shape=(2, 1), training=True)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
 
 def test_np_time_distributed(monkeypatch: EagerTensorProtocol) -> None:
@@ -474,9 +475,9 @@ def test_np_time_distributed(monkeypatch: EagerTensorProtocol) -> None:
 
         monkeypatch.setattr(eager_mod, "execute_generic_op", mock_exec)
         res = _np_time_distributed(np, np.ones((2, 2)), wrapped_op_name="Dummy")
-        assert as_tensor(getattr(res, "shape")) == (2, 2)
+        assert as_tensor(_get_attr(res, "shape")) == (2, 2)
         res = _np_time_distributed(np, np.ones((2, 3, 4)), wrapped_op_name="Dummy")
-        assert as_tensor(getattr(res, "shape")) == (2, 3, 4)
+        assert as_tensor(_get_attr(res, "shape")) == (2, 3, 4)
 
 
 def test_numpy_vision_color_eager() -> None:
@@ -494,7 +495,7 @@ def test_numpy_vision_color_eager() -> None:
     _np_auto_contrast(np, np.ones((2, 2, 3), dtype=np.uint8) * 128)
     img_ac = np.array([[[0, 0, 0], [255, 255, 255]]], dtype=np.uint8)
     _np_auto_contrast(np, img_ac)
-    original_hist = as_tensor(getattr(vc_mod, "np")).histogram
+    original_hist = as_tensor(_get_attr(vc_mod, "np")).histogram
 
     def mock_hist(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate and process the mock hist operation.
@@ -508,11 +509,11 @@ def test_numpy_vision_color_eager() -> None:
         """
         return (np.array([1] * 256), None)
 
-    setattr(as_tensor(getattr(vc_mod, "np")), "histogram", mock_hist)
+    _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", mock_hist)
     try:
         _np_equalization(np, img)
     finally:
-        setattr(as_tensor(getattr(vc_mod, "np")), "histogram", original_hist)
+        _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", original_hist)
 
     def mock_hist2(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate and process the mock hist2 operation.
@@ -528,11 +529,11 @@ def test_numpy_vision_color_eager() -> None:
         a[0] = 100
         return (a, None)
 
-    setattr(as_tensor(getattr(vc_mod, "np")), "histogram", mock_hist2)
+    _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", mock_hist2)
     try:
         _np_equalization(np, img)
     finally:
-        setattr(as_tensor(getattr(vc_mod, "np")), "histogram", original_hist)
+        _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", original_hist)
     _np_invert(np, img)
     _np_posterize(np, img, bits=4)
     _np_rgb_to_grayscale(np, img)
@@ -619,8 +620,8 @@ def test_numpy_lax_mocks() -> None:
         assert as_callable(np.array_equal)(a, as_callable(np.array)([2]))
         assert as_callable(np.array_equal)(b, as_callable(np.array)([1]))
         (a, b) = as_callable(execute)("ApproxMaxK", as_callable(np.array)([]))
-        assert as_tensor(getattr(a, "size")) == 0
-        assert as_tensor(getattr(b, "size")) == 0
+        assert as_tensor(_get_attr(a, "size")) == 0
+        assert as_tensor(_get_attr(b, "size")) == 0
         c = execute("ForiLoop", None, None, np.array([3]))
         assert as_callable(np.array_equal)(c, as_callable(np.array)([3]))
         c = execute("ForiLoop", None)
@@ -652,7 +653,7 @@ def test_conv_general_dilated_all_coverage_2() -> None:
     with pytest.raises(TypeError):
         as_callable(_get_transpose)(123, "OIW")
     out1 = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding=None, dimension_numbers=("NCW", "OIW", "NCW")))
-    assert as_tensor(getattr(out1, "shape")) == (1, 4, 3)
+    assert as_tensor(_get_attr(out1, "shape")) == (1, 4, 3)
     out2 = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=as_callable(DummyDimSpecs)()))
     assert out2 is not None
     lhs2 = np.ones((1, 4, 5))
@@ -927,9 +928,9 @@ def test_conv_general_dilated_coverage_2() -> None:
     lhs = np.ones((1, 2, 5))
     rhs = np.ones((4, 2, 3))
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="SAME", dimension_numbers=("NCW", "OIW", "NCW")))
-    assert as_tensor(getattr(res, "shape")) == (1, 4, 5)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 4, 5)
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW")))
-    assert as_tensor(getattr(res, "shape")) == (1, 4, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 4, 3)
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="UNKNOWN", dimension_numbers=("NCW", "OIW", "NCW")))
     res = as_callable(_conv_general_dilated)(lhs, rhs, as_callable(ConvConfig)(window_strides=(1,), padding="VALID", dimension_numbers=("NCW", "OIW", "NCW"), lhs_dilation=(2,), rhs_dilation=(2,)))
     lhs_group = np.ones((1, 4, 5))
@@ -977,10 +978,10 @@ def test_numpy_eager_linalg_extra_2() -> None:
     """
     BandPart = numpy_eager_registry.get("BandPart")
     x = np.ones((2, 2))
-    assert as_tensor(getattr(as_callable(BandPart)(np, x, 0, 0), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_callable(BandPart)(np, x, 0, 0), "shape")) == (2, 2)
     Svd = numpy_eager_registry.get("Svd")
     (u, s, v) = as_callable(Svd)(np, as_callable(np.ones)((2, 2)), full_matrices=False, compute_uv=True)
-    assert as_tensor(getattr(u, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(u, "shape")) == (2, 2)
 
 
 def test_numpy_eager_math_extra_2() -> None:
@@ -1005,7 +1006,7 @@ def test_numpy_eager_random_extra_2() -> None:
     """
     Dropout = numpy_eager_registry.get("Dropout")
     res = as_callable(Dropout)(np, as_callable(np.ones)((2,)), 0.5)
-    assert as_tensor(getattr(res, "shape")) == (2,)
+    assert as_tensor(_get_attr(res, "shape")) == (2,)
 
 
 def test_numpy_eager_shape_extra_2() -> None:
@@ -1016,7 +1017,7 @@ def test_numpy_eager_shape_extra_2() -> None:
     """
     SparseExpandDims = numpy_eager_registry.get("SparseExpandDims")
     x = np.array([1])
-    assert as_tensor(getattr(as_callable(SparseExpandDims)(np, x), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(as_callable(SparseExpandDims)(np, x), "shape")) == (1, 1)
 
 
 def test_np_polynomial_and_bessel_ops() -> None:
@@ -1063,7 +1064,7 @@ def test_np_polynomial_get_sc() -> None:
     from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _get_sc
 
     sc = _get_sc()
-    assert sc is None or hasattr(sc, "jv")
+    assert sc is None or _has_attr(sc, "jv")
 
 
 def test_np_polynomial_get_sc_fallback() -> None:
@@ -1174,9 +1175,9 @@ def test_np_misc_dummy_ops() -> None:
     assert out is None
     out = backend.execute_op("CtcLoss", np.array([0, 1]), np.array([0, 1]), np.array([2]), np.array([2]))
     out = backend.execute_op("CircleLoss", np.array([[1, 0], [0, 1]]), np.array([[0.9, 0.1], [0.2, 0.8]]))
-    assert np.isscalar(out) or as_tensor(getattr(out, "size")) == 1
+    assert np.isscalar(out) or as_tensor(_get_attr(out, "size")) == 1
     out = backend.execute_op("CategoricalGeneralizedCrossEntropy", np.array([[1, 0], [0, 1]]), np.array([[0.9, 0.1], [0.2, 0.8]]))
-    assert np.isscalar(out) or as_tensor(getattr(out, "size")) == 1
+    assert np.isscalar(out) or as_tensor(_get_attr(out, "size")) == 1
 
 
 def test_np_one_hot_axis_fallback() -> None:
@@ -2931,15 +2932,15 @@ def test_math_misc_brute_coverage() -> None:
                 name: Test parameter `name`.
             """
             if as_callable(hasattr)(np, name):
-                return as_tensor(getattr(np, str(name)))
+                return as_tensor(_get_attr(np, str(name)))
             return lambda *args, **kwargs: np.array([1.0])
 
     dummy = DummyBackend()
     for k, op in list(numpy_eager_registry._registry.items()):
         if k in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
             continue
-        func = getattr(op, "func", op)
-        if getattr(func, "__module__", None) != "ml_switcheroo_compiler.backends.numpy.eager.math_misc":
+        func = _get_attr(op, "func", op)
+        if _get_attr(func, "__module__", None) != "ml_switcheroo_compiler.backends.numpy.eager.math_misc":
             continue
         try:
             op(dummy)
@@ -3290,20 +3291,20 @@ def test_math_misc_np_ops() -> None:
             """
             pass
 
-    orig_attrs = {attr: getattr(ops, attr, None) for attr in ["RawMatMul", "SparseDenseMatMul", "DecodeImage", "ParseExample", "ParseTensor", "ReadFile", "Rem", "SerializeTensor", "WriteFile", "ConfusionMatrix", "DecodeCsv"]}
+    orig_attrs = {attr: _get_attr(ops, attr, None) for attr in ["RawMatMul", "SparseDenseMatMul", "DecodeImage", "ParseExample", "ParseTensor", "ReadFile", "Rem", "SerializeTensor", "WriteFile", "ConfusionMatrix", "DecodeCsv"]}
     try:
-        setattr(ops, "RawMatMul", FakeThrowingClass)
-        setattr(ops, "SparseDenseMatMul", FakeThrowingClass)
-        setattr(ops, "DecodeImage", FakeThrowingClass)
-        setattr(ops, "ParseExample", FakeThrowingClass)
-        setattr(ops, "ParseTensor", FakeThrowingClass)
-        setattr(ops, "ReadFile", FakeThrowingClass)
-        setattr(ops, "Rem", FakeThrowingClass)
-        setattr(ops, "SerializeTensor", FakeThrowingClass)
-        setattr(ops, "WriteFile", FakeThrowingClass)
-        setattr(ops, "ConfusionMatrix", FakeThrowingClass)
-        setattr(ops, "DecodeCsv", FakeThrowingClass)
-        b = math_misc.DummyBackend() if hasattr(math_misc, "DummyBackend") else None
+        _set_attr(ops, "RawMatMul", FakeThrowingClass)
+        _set_attr(ops, "SparseDenseMatMul", FakeThrowingClass)
+        _set_attr(ops, "DecodeImage", FakeThrowingClass)
+        _set_attr(ops, "ParseExample", FakeThrowingClass)
+        _set_attr(ops, "ParseTensor", FakeThrowingClass)
+        _set_attr(ops, "ReadFile", FakeThrowingClass)
+        _set_attr(ops, "Rem", FakeThrowingClass)
+        _set_attr(ops, "SerializeTensor", FakeThrowingClass)
+        _set_attr(ops, "WriteFile", FakeThrowingClass)
+        _set_attr(ops, "ConfusionMatrix", FakeThrowingClass)
+        _set_attr(ops, "DecodeCsv", FakeThrowingClass)
+        b = math_misc.DummyBackend() if _has_attr(math_misc, "DummyBackend") else None
         math_misc._np_rawmatmul(as_mod(b), np.ones((2, 2)), np.ones((2, 2)))
         math_misc._np_sparsedensematmul(as_mod(b), np.ones((2, 2)), np.ones((2, 2)))
         with pytest.raises(RuntimeError):
@@ -3318,23 +3319,23 @@ def test_math_misc_np_ops() -> None:
         as_callable(numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
         as_callable(numpy_eager_registry.get)("confusion_matrix")(b, as_callable(np.array)([0]), as_callable(np.array)([0]))
         as_callable(numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
-        setattr(ops, "RawMatMul", FakeWorkingClass)
-        setattr(ops, "SparseDenseMatMul", FakeWorkingClass)
-        setattr(ops, "DecodeImage", FakeWorkingClass)
-        setattr(ops, "ParseExample", FakeWorkingClass)
-        setattr(ops, "ParseTensor", FakeWorkingClass)
-        setattr(ops, "ReadFile", FakeWorkingClass)
-        setattr(ops, "Rem", FakeWorkingClass)
-        setattr(ops, "SerializeTensor", FakeWorkingClass)
-        setattr(ops, "WriteFile", FakeWorkingClass)
-        setattr(ops, "ConfusionMatrix", FakeWorkingClass)
-        setattr(ops, "DecodeCsv", FakeWorkingClass)
+        _set_attr(ops, "RawMatMul", FakeWorkingClass)
+        _set_attr(ops, "SparseDenseMatMul", FakeWorkingClass)
+        _set_attr(ops, "DecodeImage", FakeWorkingClass)
+        _set_attr(ops, "ParseExample", FakeWorkingClass)
+        _set_attr(ops, "ParseTensor", FakeWorkingClass)
+        _set_attr(ops, "ReadFile", FakeWorkingClass)
+        _set_attr(ops, "Rem", FakeWorkingClass)
+        _set_attr(ops, "SerializeTensor", FakeWorkingClass)
+        _set_attr(ops, "WriteFile", FakeWorkingClass)
+        _set_attr(ops, "ConfusionMatrix", FakeWorkingClass)
+        _set_attr(ops, "DecodeCsv", FakeWorkingClass)
     finally:
         for attr, val in orig_attrs.items():
             if val is not None:
-                setattr(ops, attr, val)
-            elif hasattr(ops, attr):
-                delattr(ops, attr)
+                _set_attr(ops, attr, val)
+            elif _has_attr(ops, attr):
+                _del_attr(ops, attr)
     math_misc._np_rawmatmul(as_mod(b), np.ones((2, 2)), np.ones((2, 2)))
     math_misc._np_sparsedensematmul(as_mod(b), np.ones((2, 2)), np.ones((2, 2)))
     with pytest.raises(RuntimeError):
@@ -3384,18 +3385,18 @@ def test_math_misc_np_ops_lower() -> None:
             """
             pass
 
-    orig_funcs = {k: getattr(ops, k, None) for k in ["decode_image", "parse_example", "parse_tensor", "read_file", "rem", "serialize_tensor", "write_file", "confusion_matrix", "decode_csv"]}
+    orig_funcs = {k: _get_attr(ops, k, None) for k in ["decode_image", "parse_example", "parse_tensor", "read_file", "rem", "serialize_tensor", "write_file", "confusion_matrix", "decode_csv"]}
     try:
-        setattr(ops, "decode_image", FakeThrowingClass)
-        setattr(ops, "parse_example", FakeThrowingClass)
-        setattr(ops, "parse_tensor", FakeThrowingClass)
-        setattr(ops, "read_file", FakeThrowingClass)
-        setattr(ops, "rem", FakeThrowingClass)
-        setattr(ops, "serialize_tensor", FakeThrowingClass)
-        setattr(ops, "write_file", FakeThrowingClass)
-        setattr(ops, "confusion_matrix", FakeThrowingClass)
-        setattr(ops, "decode_csv", FakeThrowingClass)
-        b = math_misc.DummyBackend() if hasattr(math_misc, "DummyBackend") else None
+        _set_attr(ops, "decode_image", FakeThrowingClass)
+        _set_attr(ops, "parse_example", FakeThrowingClass)
+        _set_attr(ops, "parse_tensor", FakeThrowingClass)
+        _set_attr(ops, "read_file", FakeThrowingClass)
+        _set_attr(ops, "rem", FakeThrowingClass)
+        _set_attr(ops, "serialize_tensor", FakeThrowingClass)
+        _set_attr(ops, "write_file", FakeThrowingClass)
+        _set_attr(ops, "confusion_matrix", FakeThrowingClass)
+        _set_attr(ops, "decode_csv", FakeThrowingClass)
+        b = math_misc.DummyBackend() if _has_attr(math_misc, "DummyBackend") else None
         with pytest.raises(RuntimeError):
             as_callable(numpy_eager_registry.get)("decode_image")(b, b"img")
         with pytest.raises(RuntimeError):
@@ -3408,15 +3409,15 @@ def test_math_misc_np_ops_lower() -> None:
         as_callable(numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
         as_callable(numpy_eager_registry.get)("confusion_matrix")(b, as_callable(np.array)([0]), as_callable(np.array)([0]))
         as_callable(numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
-        setattr(ops, "decode_image", FakeWorkingClass)
-        setattr(ops, "parse_example", FakeWorkingClass)
+        _set_attr(ops, "decode_image", FakeWorkingClass)
+        _set_attr(ops, "parse_example", FakeWorkingClass)
         ops.parse_tensor = FakeWorkingClass
         ops.read_file = FakeWorkingClass
-        setattr(ops, "rem", FakeWorkingClass)
+        _set_attr(ops, "rem", FakeWorkingClass)
         ops.serialize_tensor = FakeWorkingClass
-        setattr(ops, "write_file", FakeWorkingClass)
+        _set_attr(ops, "write_file", FakeWorkingClass)
         ops.confusion_matrix = FakeWorkingClass
-        setattr(ops, "decode_csv", FakeWorkingClass)
+        _set_attr(ops, "decode_csv", FakeWorkingClass)
         with pytest.raises(RuntimeError):
             as_callable(numpy_eager_registry.get)("decode_image")(b, b"img")
         with pytest.raises(RuntimeError):
@@ -3432,9 +3433,9 @@ def test_math_misc_np_ops_lower() -> None:
     finally:
         for k, v in orig_funcs.items():
             if v is not None:
-                setattr(ops, k, v)
-            elif hasattr(ops, k):
-                delattr(ops, k)
+                _set_attr(ops, k, v)
+            elif _has_attr(ops, k):
+                _del_attr(ops, k)
 
 
 def test_reductions() -> None:

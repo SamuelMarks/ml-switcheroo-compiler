@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_rem,
     _np_tensorarraywrite,
 )
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -49,7 +50,7 @@ def test_np_rem() -> None:
     a = np.array([5])
     b = np.array([3])
     res = _np_rem(np, a, b)
-    assert as_tensor(getattr(res, "__getitem__")(0)) == 2
+    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 2
 
 
 def test_np_confusion_matrix_fallback() -> None:
@@ -58,7 +59,7 @@ def test_np_confusion_matrix_fallback() -> None:
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("confusion_matrix")
     res = as_callable(fn)(np, a, b)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
 
 def test_np_descriptive() -> None:
@@ -83,7 +84,7 @@ def test_np_confusion_matrix_camel() -> None:
     b = np.array([1, 1])
     fn = numpy_eager_registry.get("ConfusionMatrix")
     res = as_callable(fn)(np, a, b, num_classes=3)
-    assert as_tensor(getattr(res, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 3)
 
 
 def test_np_decode_csv_empty() -> None:
@@ -91,7 +92,7 @@ def test_np_decode_csv_empty() -> None:
     fn = numpy_eager_registry.get("DecodeCsv")
     res = as_callable(fn)(np, "", record_defaults=[1.0, 2.0])
     assert as_callable(len)(res) == 2
-    assert as_tensor(getattr(res, "__getitem__")(0)) == 1.0
+    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 1.0
 
 
 def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
@@ -114,8 +115,9 @@ def test_fallback_snippets_mock(monkeypatch: EagerTensorProtocol) -> None:
                 kwargs: Test parameter `kwargs`.
             """
             obj = super().__new__(cls)
-            setattr(obj, "hit", True)
-            return typing.cast("FakeOp", as_tensor(obj))
+            _set_attr(obj, "hit", True)
+            _typed_ret_1: FakeOp = _cast_val("FakeOp", as_tensor(obj))
+            return _typed_ret_1
 
     # Mocking standard snippet ops to hit the cls_or_func() path
     monkeypatch.setattr(ops, "RawMatMul", FakeOp, raising=False)

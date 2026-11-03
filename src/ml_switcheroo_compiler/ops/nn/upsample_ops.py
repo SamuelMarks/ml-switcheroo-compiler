@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import (
     Callable,  # noqa: F401
     Sequence,
 )
 
 from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops import image
 
@@ -78,7 +77,7 @@ def _upsample_resolve_size(
     spatial_dims = len(input.shape) - 2 if len(input.shape) >= 3 else 1
 
     if has_sf or size is None:
-        return typing.cast("TypedVariadicCallable[tuple[int, ...] | None]", _resolve_scale_factor)(input, scale_factor, spatial_dims) or ()
+        return _cast_val("TypedVariadicCallable[tuple[int, ...] | None]", _resolve_scale_factor)(input, scale_factor, spatial_dims) or ()
 
     if isinstance(size, int):
         return tuple([size] * spatial_dims)
@@ -175,7 +174,7 @@ def pixel_shuffle(input: Tensor, upscale_factor: int) -> TensorOrScalar:
 
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "PixelShuffle",
@@ -213,7 +212,7 @@ def upsample_nearest(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleNearest",
@@ -251,7 +250,7 @@ def upsample_bilinear(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleBilinear",
@@ -289,7 +288,7 @@ def upsample_bicubic(
 
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), input.dtype, input.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), input.dtype, input.device),
         )
     return _emit_shape_node(
         "UpsampleBicubic",

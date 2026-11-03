@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_callable, as_float, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("AugMix")
@@ -189,14 +190,14 @@ def _np_random_flip(images: EagerValue, mode: str, seed: EagerValue = None) -> E
 
     import numpy as np
 
-    rng = getattr(random, "Random")(seed)
+    rng = _get_attr(random, "Random")(seed)
 
     # Check if a single image
     strategy: Callable[[EagerValue, EagerValue], EagerValue] = _NP_FLIP_STRATEGIES.get(mode, lambda img, r: img)
-    if len(getattr(images, "shape")) == 3:
+    if len(_get_attr(images, "shape")) == 3:
         return strategy(images, rng)
 
-    out = getattr(np, "copy")(images)
+    out = _get_attr(np, "copy")(images)
 
     for i in range(out.shape[0]):
         out[i] = strategy(out[i], rng)
@@ -216,7 +217,7 @@ class _PositionalVisionModel(pydantic.BaseModel):
             *args (EagerValue): Positional field values.
             **kwargs (EagerValue): Keyword field values.
         """
-        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
 
 
 class RotationConfig(_PositionalVisionModel):
@@ -365,8 +366,8 @@ def _bilinear_interpolation(
     pixels = _get_interp_pixels(mod, pixel_cfg)
     weights = _get_interp_weights((coords[1], coords[0]), (y0, y1, x0, x1))
 
-    p0, p1, p2, p3 = getattr(pixels, "__iter__")()
-    w0, w1, w2, w3 = getattr(weights, "__iter__")()
+    p0, p1, p2, p3 = _get_attr(pixels, "__iter__")()
+    w0, w1, w2, w3 = _get_attr(weights, "__iter__")()
     return as_tensor(p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3)
 
 
@@ -396,9 +397,9 @@ def _apply_affine_grid(np: BackendModuleProtocol, images: EagerValue, cfg: Affin
         val = as_callable(_bilinear_interpolation)(np, images, cfg.coords, cfg.shape, cfg.b_c)
 
     if fill_mode == "constant":
-        val = getattr(np, "where")(mask, val, fill_value)
+        val = _get_attr(np, "where")(mask, val, fill_value)
 
-    return as_tensor(getattr(val, "astype")(getattr(images, "dtype")))
+    return as_tensor(_get_attr(val, "astype")(_get_attr(images, "dtype")))
 
 
 class BatchRotationConfig(_PositionalVisionModel):
@@ -423,7 +424,7 @@ def _process_batch_item(np: BackendModuleProtocol, cfg: BatchRotationConfig, b: 
         out (EagerValue): The out parameter.
     """
     rot_cfg = RotationConfig(theta=as_float(cfg.angles[b]), H=cfg.H, W=cfg.W, x=cfg.x, y=cfg.y)
-    src_x, src_y = getattr(getattr(_calculate_rotation_matrix(np, rot_cfg), "__iter__")(), "__iter__")()
+    src_x, src_y = _get_attr(_get_attr(_calculate_rotation_matrix(np, rot_cfg), "__iter__")(), "__iter__")()
     mask = (src_x >= 0) & (src_x <= cfg.W - 1) & (src_y >= 0) & (src_y <= cfg.H - 1)
     C = int(tuple(cfg.images.shape)[3])
     for c in range(C):
@@ -495,18 +496,18 @@ def _np_random_rotation(backend_module: BackendModuleProtocol, images: EagerValu
     """
     np = backend_module
     images = np.asarray(images)
-    rank = len(getattr(images, "shape"))
+    rank = len(_get_attr(images, "shape"))
     if rank == 3:
         images = np.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    B, H, W, _ = getattr(images, "shape")
+    B, H, W, _ = _get_attr(images, "shape")
 
     rng = np.random.default_rng(kwargs.get("seed", None))
     angles = rng.uniform(*as_callable(_resolve_rotation_factor)(kwargs.get("factor", 0.0)), size=(B,)) * 2 * np.pi
 
-    y, x = getattr(getattr(_create_rotation_mesh(np, H, W), "__iter__")(), "__iter__")()
+    y, x = _get_attr(_get_attr(_create_rotation_mesh(np, H, W), "__iter__")(), "__iter__")()
 
     options = (
         kwargs.get("interpolation", "bilinear"),
@@ -517,7 +518,7 @@ def _np_random_rotation(backend_module: BackendModuleProtocol, images: EagerValu
     batch_cfg = BatchRotationConfig(images=as_tensor(images), angles=angles, H=H, W=W, x=x, y=y, options=options)
     out = _apply_rotation_batch(np, batch_cfg)
 
-    return getattr(out, "__getitem__")(0) if rank == 3 else out
+    return _get_attr(out, "__getitem__")(0) if rank == 3 else out
 
 
 @numpy_eager_registry.register("RandomTranslation")

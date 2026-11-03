@@ -6,6 +6,7 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 Carry = typing.TypeVar("Carry")
@@ -35,5 +36,7 @@ def scan(
     import ml_switcheroo_compiler.ops.control_flow as cf
 
     if config.eager_mode:
-        return typing.cast(tuple[Carry, Tensor], getattr(cf, "scan_eager")(f, init, xs, length))
-    return typing.cast(tuple[Carry, Tensor], getattr(cf, "scan_tracing")(f, init, xs, length))
+        _typed_ret_2: tuple[Carry, Tensor] = _cast_val(tuple[Carry, Tensor], _get_attr(cf, "scan_eager")(f, init, xs, length))
+        return _typed_ret_2
+    _typed_ret_1: tuple[Carry, Tensor] = _cast_val(tuple[Carry, Tensor], _get_attr(cf, "scan_tracing")(f, init, xs, length))
+    return _typed_ret_1

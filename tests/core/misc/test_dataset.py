@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.core.dataset import ArrayIterator, AudioDataset, Aut
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from tests.testing_utils import as_callable, as_tensor
 
@@ -347,7 +348,7 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
     """
     backend = get_active_backend()
     data = backend.array(data)
-    return as_callable(Tensor)(data, as_callable(TensorConfig)(as_tensor(getattr(data, "shape")), DType.Float32, as_callable(Device)("cpu")))
+    return as_callable(Tensor)(data, as_callable(TensorConfig)(as_tensor(_get_attr(data, "shape")), DType.Float32, as_callable(Device)("cpu")))
 
 
 def test_image_dataset_missing_branches() -> None:

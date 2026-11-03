@@ -10,6 +10,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_testing as test_module
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -47,15 +48,15 @@ def _test_math_testing_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
 
     # BroadcastArrays
     b1, b2 = as_callable(test_module._np_broadcast_arrays_)(np, [1, 2], [[1], [2]])
-    assert as_tensor(getattr(b1, "shape")) == (2, 2)
-    assert as_tensor(getattr(b2, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(b1, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(b2, "shape")) == (2, 2)
     reg_bc = numpy_eager_registry.get("BroadcastArrays")
     rb1, rb2 = as_callable(reg_bc)(np, [1, 2], [[1], [2]])
-    assert as_tensor(getattr(rb1, "shape")) == (2, 2)
-    getattr(_state, "update")({"arr_2d": arr_2d, "b1": b1, "b2": b2, "pw_res": pw_res})
-    getattr(_state, "update")({"pw_x": pw_x, "rb1": rb1, "rb2": rb2, "reg_aaa": reg_aaa})
-    getattr(_state, "update")({"reg_bc": reg_bc, "reg_equiv": reg_equiv, "reg_promo": reg_promo, "reg_pw": reg_pw})
-    _state.update(locals())
+    assert as_tensor(_get_attr(rb1, "shape")) == (2, 2)
+    _get_attr(_state, "update")({"arr_2d": arr_2d, "b1": b1, "b2": b2, "pw_res": pw_res})
+    _get_attr(_state, "update")({"pw_x": pw_x, "rb1": rb1, "rb2": rb2, "reg_aaa": reg_aaa})
+    _get_attr(_state, "update")({"reg_bc": reg_bc, "reg_equiv": reg_equiv, "reg_promo": reg_promo, "reg_pw": reg_pw})
+    _state.update(_caller_locals())
 
 
 def _test_math_testing_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -77,12 +78,12 @@ def _test_math_testing_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
     counts, edges = as_callable(test_module._np_histogram_)(mock_hist_mod, h_data, bins=2)
     assert as_callable(len)(counts) == 2
     reg_hist = numpy_eager_registry.get("Histogram")
-    assert as_callable(len)(as_tensor(getattr(as_callable(reg_hist)(mock_hist_mod, h_data, bins=2), "__getitem__")(0))) == 2
+    assert as_callable(len)(as_tensor(_get_attr(as_callable(reg_hist)(mock_hist_mod, h_data, bins=2), "__getitem__")(0))) == 2
 
     h2_counts, _, _ = as_callable(test_module._np_histogram2d_)(mock_hist_mod, [1, 2], [2, 3], bins=2)
-    assert as_tensor(getattr(h2_counts, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(h2_counts, "shape")) == (2, 2)
     reg_h2d = numpy_eager_registry.get("Histogram2d")
-    assert as_tensor(getattr(as_tensor(getattr(as_callable(reg_h2d)(mock_hist_mod, [1, 2], [2, 3], bins=2), "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(as_callable(reg_h2d)(mock_hist_mod, [1, 2], [2, 3], bins=2), "__getitem__")(0)), "shape")) == (2, 2)
 
     bin_edges = test_module._np_histogram_bin_edges_(as_mod(mock_hist_mod), [1, 2, 3], bins=2)
     assert as_callable(len)(bin_edges) == 3
@@ -90,17 +91,17 @@ def _test_math_testing_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
     assert as_callable(len)(as_callable(reg_edges)(mock_hist_mod, [1, 2, 3], bins=2)) == 3
 
     hdd_counts, _ = as_callable(test_module._np_histogramdd_)(mock_hist_mod, as_callable(np.array)([[1, 2], [3, 4]]), bins=2)
-    assert as_tensor(getattr(hdd_counts, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(hdd_counts, "shape")) == (2, 2)
     reg_hdd = numpy_eager_registry.get("Histogramdd")
-    assert as_tensor(getattr(as_tensor(getattr(as_callable(reg_hdd)(mock_hist_mod, as_callable(np.array)([[1, 2], [3, 4]]), bins=2), "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(as_callable(reg_hdd)(mock_hist_mod, as_callable(np.array)([[1, 2], [3, 4]]), bins=2), "__getitem__")(0)), "shape")) == (2, 2)
 
     # Iscomplex and Iscomplexobj
     assert as_callable(np.array_equal)(as_callable(test_module._np_iscomplex_)(np, [1 + 2j, 3]), [True, False])
-    getattr(_state, "update")({"_": _, "bin_edges": bin_edges, "counts": counts, "edges": edges})
-    getattr(_state, "update")({"h2_counts": h2_counts, "h_data": h_data, "hdd_counts": hdd_counts, "mock_hist_mod": mock_hist_mod})
-    getattr(_state, "update")({"reg_cc": reg_cc, "reg_edges": reg_edges, "reg_h2d": reg_h2d, "reg_hdd": reg_hdd})
-    getattr(_state, "update")({"reg_hist": reg_hist})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "bin_edges": bin_edges, "counts": counts, "edges": edges})
+    _get_attr(_state, "update")({"h2_counts": h2_counts, "h_data": h_data, "hdd_counts": hdd_counts, "mock_hist_mod": mock_hist_mod})
+    _get_attr(_state, "update")({"reg_cc": reg_cc, "reg_edges": reg_edges, "reg_h2d": reg_h2d, "reg_hdd": reg_hdd})
+    _get_attr(_state, "update")({"reg_hist": reg_hist})
+    _state.update(_caller_locals())
 
 
 def _test_math_testing_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -139,9 +140,9 @@ def _test_math_testing_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
 
     # ResultType
     assert test_module._np_result_type_(np, 3, 1.5) == np.dtype(np.float64)
-    getattr(_state, "update")({"reg_is_c": reg_is_c, "reg_is_co": reg_is_co, "reg_is_r": reg_is_r, "reg_is_ro": reg_is_ro})
-    getattr(_state, "update")({"reg_isdt": reg_isdt, "reg_isscalar": reg_isscalar, "reg_issub": reg_issub})
-    _state.update(locals())
+    _get_attr(_state, "update")({"reg_is_c": reg_is_c, "reg_is_co": reg_is_co, "reg_is_r": reg_is_r, "reg_is_ro": reg_is_ro})
+    _get_attr(_state, "update")({"reg_isdt": reg_isdt, "reg_isscalar": reg_isscalar, "reg_issub": reg_issub})
+    _state.update(_caller_locals())
 
 
 def _test_math_testing_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -162,7 +163,7 @@ def _test_math_testing_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> Non
 
     reg_assertop = numpy_eager_registry.get("AssertOp")
     assert as_callable(np.array_equal)(as_callable(reg_assertop)(np, [True]), [0.0])
-    getattr(_state, "update")({"reg_assertop": reg_assertop, "reg_rt": reg_rt})
+    _get_attr(_state, "update")({"reg_assertop": reg_assertop, "reg_rt": reg_rt})
 
 
 def test_math_testing_ops() -> None:

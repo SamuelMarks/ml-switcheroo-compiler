@@ -11,6 +11,7 @@ import pytest
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.stablehlo import StableHLOCodeGenerator
+from ml_switcheroo_compiler.core.shape import _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 from tests.testing_utils import as_attrs, as_callable, as_tensor
 
@@ -28,7 +29,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
 
         self.input_node = LogicalNode(id="in1", op_type="Input")
         self.input_node.shape_metadata = (2, 3)
-        setattr(self.input_node, "dtype", "float32")
+        _set_attr(self.input_node, "dtype", "float32")
 
         self.graph.nodes = NodeDict({"in1": self.input_node})
 
@@ -38,14 +39,14 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         for op in ["Constant", "Add", "Subtract", "Multiply", "TrueDivide", "Div", "Exp", "Log", "Negative", "Neg", "Other"]:
             n = LogicalNode(id="n_" + op, op_type=op, inputs=["in1", "missing_node"])
             n.shape_metadata = (2, 3)
-            setattr(n, "dtype", "float32")
+            _set_attr(n, "dtype", "float32")
             if op == "Constant":
                 n.attributes = {"value": 1.0}
             self.gen.sorted_nodes.append(n)
 
         n_none = LogicalNode(id="n_NoneShape", op_type="Add", inputs=["in1"])
         n_none.shape_metadata = None
-        setattr(n_none, "dtype", "float32")
+        _set_attr(n_none, "dtype", "float32")
         self.gen.sorted_nodes.append(n_none)
 
         n_const_none = LogicalNode(id="n_ConstNoneShape", op_type="Constant", inputs=[])
@@ -144,7 +145,7 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
 
     def test_generate_no_outputs(self) -> None:
         """Test generate no outputs."""
-        object.__setattr__(self.gen.graph, "outputs", None)
+        _obj_set_attr(self.gen.graph, "outputs", None)
         code = self.gen.generate()
         self.assertIn("return", code)
 
@@ -192,14 +193,14 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         t_node = LogicalNode(id="t_add", op_type="Add", inputs=["x", "x"], shape_metadata=(2, 2))
         then_g.nodes = NodeDict({"inp_t": inp_t, "t_add": t_node})
         then_g.outputs = ["t_add"]
-        object.__setattr__(then_g, "sorted_nodes", [inp_t, t_node])
+        _obj_set_attr(then_g, "sorted_nodes", [inp_t, t_node])
 
         else_g = IRGraph()
         inp_e = LogicalNode(id="inp_e", op_type="Input")
         e_node = LogicalNode(id="e_sub", op_type="Subtract", inputs=["x", "x"], shape_metadata=(2, 2))
         else_g.nodes = NodeDict({"inp_e": inp_e, "e_sub": e_node})
         else_g.outputs = ["e_sub"]
-        object.__setattr__(else_g, "sorted_nodes", [inp_e, e_node])
+        _obj_set_attr(else_g, "sorted_nodes", [inp_e, e_node])
 
         if_node = LogicalNode(
             id="if_res",
@@ -229,14 +230,14 @@ class TestStableHLOCodeGenerator(unittest.TestCase):
         c_node = LogicalNode(id="c_lt", op_type="Other", inputs=["x"], shape_metadata=(), attributes={"dtype": "bool"})
         cond_g.nodes = NodeDict({"inp_c": inp_c, "c_lt": c_node})
         cond_g.outputs = ["c_lt"]
-        object.__setattr__(cond_g, "sorted_nodes", [inp_c, c_node])
+        _obj_set_attr(cond_g, "sorted_nodes", [inp_c, c_node])
 
         body_g = IRGraph()
         inp_b = LogicalNode(id="inp_b", op_type="Input")
         b_node = LogicalNode(id="b_add", op_type="Add", inputs=["x", "x"], shape_metadata=(1,))
         body_g.nodes = NodeDict({"inp_b": inp_b, "b_add": b_node})
         body_g.outputs = ["b_add"]
-        object.__setattr__(body_g, "sorted_nodes", [inp_b, b_node])
+        _obj_set_attr(body_g, "sorted_nodes", [inp_b, b_node])
 
         while_node = LogicalNode(
             id="while_res",
@@ -625,7 +626,7 @@ def test_stablehlo_while_extra_block_inputs() -> None:
     c_node = LogicalNode(id="c_op", op_type="Other", inputs=["c1"], shape_metadata=(), attributes={"dtype": "bool"})
     cond_g.nodes = NodeDict({"c1": inp_c1, "c2": inp_c2, "c_op": c_node})
     cond_g.outputs = ["c_op"]
-    object.__setattr__(cond_g, "sorted_nodes", [inp_c1, inp_c2, c_node])
+    _obj_set_attr(cond_g, "sorted_nodes", [inp_c1, inp_c2, c_node])
 
     body_g = IRGraph()
     inp_b1 = LogicalNode(id="b1", op_type="Input")
@@ -633,7 +634,7 @@ def test_stablehlo_while_extra_block_inputs() -> None:
     b_node = LogicalNode(id="b_op", op_type="Add", inputs=["b1", "b1"], shape_metadata=(1,))
     body_g.nodes = NodeDict({"b1": inp_b1, "b2": inp_b2, "b_op": b_node})
     body_g.outputs = ["b_op"]
-    object.__setattr__(body_g, "sorted_nodes", [inp_b1, inp_b2, b_node])
+    _obj_set_attr(body_g, "sorted_nodes", [inp_b1, inp_b2, b_node])
 
     while_node = LogicalNode(
         id="while_res",
@@ -668,7 +669,7 @@ def test_stablehlo_aot_artifact_coverage(monkeypatch: pytest.MonkeyPatch) -> Non
     g.nodes = NodeDict({"in1": inp1, "in2": inp2, "out1": out1, "out2": out2})
     g.inputs = ["in1", "in2"]
     g.outputs = ["out1"]
-    object.__setattr__(g, "sorted_nodes", [inp1, inp2, out1, out2])
+    _obj_set_attr(g, "sorted_nodes", [inp1, inp2, out1, out2])
 
     # Test 1: Normal schema existence and single output return
     gen1 = StableHLOCodeGenerator(g)
@@ -711,14 +712,14 @@ def test_stablehlo_mlir_text_compliance() -> None:
     g = IRGraph()
     inp1 = LogicalNode(id="in1", op_type="Input")
     inp1.shape_metadata = (2, 2)
-    setattr(inp1, "dtype", "float32")
+    _set_attr(inp1, "dtype", "float32")
     out1 = LogicalNode(id="out1", op_type="Add", inputs=["in1", "in1"])
     out1.shape_metadata = (2, 2)
-    setattr(out1, "dtype", "float32")
+    _set_attr(out1, "dtype", "float32")
     g.nodes = NodeDict({"in1": inp1, "out1": out1})
     g.inputs = ["in1"]
     g.outputs = ["out1"]
-    object.__setattr__(g, "sorted_nodes", [inp1, out1])
+    _obj_set_attr(g, "sorted_nodes", [inp1, out1])
 
     gen = StableHLOCodeGenerator(g)
     code = gen.generate()

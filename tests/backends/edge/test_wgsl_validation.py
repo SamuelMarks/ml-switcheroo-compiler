@@ -16,6 +16,7 @@ from ml_switcheroo_compiler.backends.edge.wgsl_ast import (
     validate_memory_layout,
     validate_workgroup_size,
 )
+from ml_switcheroo_compiler.core.shape import _set_attr
 
 
 def test_validate_identifier_comprehensive() -> None:
@@ -200,8 +201,8 @@ def test_wgsl_node_recursive_validation() -> None:
         single_child=WGSLVar("var3"),
     )
     # Add non-node attribute and list with non-node items
-    setattr(valid_container, "scalar_attr", 42)
-    setattr(valid_container, "mixed_list", ["string_item", 100])
+    _set_attr(valid_container, "scalar_attr", 42)
+    _set_attr(valid_container, "mixed_list", ["string_item", 100])
     valid_container.validate()
 
     invalid_container = ContainerNode(

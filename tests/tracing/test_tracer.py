@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.core.shape import _del_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -106,7 +107,7 @@ def test_proxy_tensor_sparsity_and_branches() -> None:
     # 2. Inside tracing when active_graph has no input_specs
     g = global_tracing_state.start_tracing("no_specs")
     # Remove input_specs attribute to hit branch
-    delattr(g, "input_specs")
+    _del_attr(g, "input_specs")
     ProxyTensor(id="p_no_specs", shape=(2, 2))
     assert "p_no_specs" in g.inputs
 
@@ -125,7 +126,7 @@ def test_proxy_tensor_sparsity_and_branches() -> None:
 
         pass
 
-    setattr(global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(global_tracing_state, "active_graph", DummyGraph())
     p_dummy = ProxyTensor(id="dummy", shape=(1,))
     assert p_dummy.id == "dummy"
 

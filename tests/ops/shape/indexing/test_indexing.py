@@ -6,6 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.indexing import (
     DynamicIndexInDim,
@@ -70,10 +71,10 @@ def test_gather(mocker: EagerTensorProtocol) -> None:
     assert gather(t, 0, idx) == "gather"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
-    setattr(mock_backend.array, "return_value", MockTensor((1, 3)))
+    _set_attr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.array, "return_value", MockTensor((1, 3)))
     res = gather(t, 0, idx)
-    assert as_tensor(getattr(res, "config")).shape == (1, 3)
+    assert as_tensor(_get_attr(res, "config")).shape == (1, 3)
 
 
 def test_gather_nd(mocker: EagerTensorProtocol) -> None:
@@ -89,9 +90,9 @@ def test_gather_nd(mocker: EagerTensorProtocol) -> None:
     assert gather_nd(t, idx) == "gather_nd"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
-    setattr(mock_backend.array, "return_value", MockTensor((1,)))
-    assert as_tensor(getattr(gather_nd(t, idx), "config")).shape == (1,)
+    _set_attr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.array, "return_value", MockTensor((1,)))
+    assert as_tensor(_get_attr(gather_nd(t, idx), "config")).shape == (1,)
 
 
 def test_take(mocker: EagerTensorProtocol) -> None:
@@ -107,9 +108,9 @@ def test_take(mocker: EagerTensorProtocol) -> None:
     assert take(t, idx) == "take"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
-    setattr(mock_backend.array, "return_value", MockTensor((1,)))
-    assert as_tensor(getattr(take(t, idx), "config")).shape == (1,)
+    _set_attr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.array, "return_value", MockTensor((1,)))
+    assert as_tensor(_get_attr(take(t, idx), "config")).shape == (1,)
 
 
 def test_take_along_axis(mocker: EagerTensorProtocol) -> None:
@@ -121,7 +122,7 @@ def test_take_along_axis(mocker: EagerTensorProtocol) -> None:
     t = Tensor(MockTensor((2, 3)).data, TensorConfig((2, 3), "float32", "cpu"))
     idx = Tensor([0], TensorConfig((1,), "int32", "cpu"))
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.execute_op, "return_value", "res")
     assert take_along_axis(t, idx, 0) == "res"
 
 
@@ -138,9 +139,9 @@ def test_searchsorted(mocker: EagerTensorProtocol) -> None:
     assert searchsorted(a, v) == "searchsorted"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
-    setattr(mock_backend.array, "return_value", MockTensor((1,)))
-    assert as_tensor(getattr(searchsorted(a, v), "config")).shape == (1,)
+    _set_attr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.array, "return_value", MockTensor((1,)))
+    assert as_tensor(_get_attr(searchsorted(a, v), "config")).shape == (1,)
 
 
 def test_where(mocker: EagerTensorProtocol) -> None:
@@ -156,9 +157,9 @@ def test_where(mocker: EagerTensorProtocol) -> None:
     assert where(c, t, t) == "where"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
-    setattr(mock_backend.array, "return_value", MockTensor((2, 3)))
-    assert as_tensor(getattr(where(c, t, t), "config")).shape == (2, 3)
+    _set_attr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.array, "return_value", MockTensor((2, 3)))
+    assert as_tensor(_get_attr(where(c, t, t), "config")).shape == (2, 3)
 
 
 def test_select(mocker: EagerTensorProtocol) -> None:
@@ -187,9 +188,9 @@ def test_boolean_mask(mocker: EagerTensorProtocol) -> None:
     assert boolean_mask(t, c) == "mask"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
-    setattr(mock_backend.array, "return_value", MockTensor((2, 3)))
-    assert as_tensor(getattr(boolean_mask(t, c), "config")).shape == (2, 3)
+    _set_attr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.array, "return_value", MockTensor((2, 3)))
+    assert as_tensor(_get_attr(boolean_mask(t, c), "config")).shape == (2, 3)
 
 
 def test_invert_permutation(mocker: EagerTensorProtocol) -> None:
@@ -204,9 +205,9 @@ def test_invert_permutation(mocker: EagerTensorProtocol) -> None:
     assert invert_permutation(t) == "invert"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", "res")
-    setattr(mock_backend.array, "return_value", MockTensor((2,)))
-    assert as_tensor(getattr(invert_permutation(t), "config")).shape == (2,)
+    _set_attr(mock_backend.execute_op, "return_value", "res")
+    _set_attr(mock_backend.array, "return_value", MockTensor((2,)))
+    assert as_tensor(_get_attr(invert_permutation(t), "config")).shape == (2,)
 
 
 def test_put_along_axis(mocker: EagerTensorProtocol) -> None:
@@ -223,8 +224,8 @@ def test_put_along_axis(mocker: EagerTensorProtocol) -> None:
     assert put_along_axis(arr, idx, val, 0) == "put"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.indexing.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((2,)))
-    assert as_tensor(getattr(put_along_axis(arr, idx, val, 0), "config")).shape == (2,)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2,)))
+    assert as_tensor(_get_attr(put_along_axis(arr, idx, val, 0), "config")).shape == (2,)
 
 
 def test_classes_infer_shape() -> None:
@@ -318,7 +319,7 @@ def test_indexing_exact_shapes(mocker: EagerTensorProtocol) -> None:
     part_ids = MockTensor((10,))
     p_shapes = as_callable(as_callable(DynamicPartition)().infer_shape)(part_data, part_ids, 3)
     assert as_callable(len)(p_shapes) == 3
-    assert as_tensor(getattr(p_shapes, "__getitem__")(0)) == (None, 4)
+    assert as_tensor(_get_attr(p_shapes, "__getitem__")(0)) == (None, 4)
 
     # 7. UnravelIndex
     flat_idx = MockTensor((15,))

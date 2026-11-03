@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.base_generator import (
     CompiledArtifact,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 from tests.testing_utils import as_callable, as_tensor
 
@@ -102,7 +103,7 @@ def test_base_generator_compile_aot_and_device_edge_cases() -> None:
 
         def __init__(self) -> None:
             """Initialize with None graph."""
-            setattr(self, "graph", None)
+            _set_attr(self, "graph", None)
 
     with pytest.raises(NotImplementedError):
         EmptyGen().compile_aot(None)

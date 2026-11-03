@@ -7,6 +7,7 @@ import typing
 # ruff: noqa: E501
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry import _VJP_REGISTRY, get_vjp, register_vjp
 from tests.testing_utils import as_callable, as_tensor
 
@@ -75,7 +76,7 @@ def test_vjp_registry_lazy_load() -> None:
         Args:
             name: Test parameter `name`.
         """
-        getattr(_VJP_REGISTRY, "__setitem__")(name, "lazy_loaded_vjp")
+        _get_attr(_VJP_REGISTRY, "__setitem__")(name, "lazy_loaded_vjp")
         return None
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.vjp_registry.get_vjp_from_data", side_effect=mock_get_data):

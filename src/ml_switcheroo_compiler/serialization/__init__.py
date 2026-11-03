@@ -15,7 +15,7 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_str, as_tensor
 from ml_switcheroo_compiler.core.device import Device, DeviceType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRGraph, as_attr_val, as_graph
@@ -250,9 +250,9 @@ def _extract_model_weights(
         dict[str, TensorOrScalar]: A dictionary containing the extracted weights.
     """
     weights_store: dict[str, TensorOrScalar] = {}
-    if hasattr(model, "weights"):
-        for i, w in enumerate(getattr(model, "weights")):
-            name = str(getattr(w, "name", f"weight_{i}"))
+    if _has_attr(model, "weights"):
+        for i, w in enumerate(_get_attr(model, "weights")):
+            name = str(_get_attr(w, "name", f"weight_{i}"))
             weights_store[name] = to_numpy(w)
     return weights_store
 
@@ -267,14 +267,14 @@ def _extract_optimizer_state(
         model (TensorOrScalar): The model parameter.
         state_store (TensorOrScalar): The state_store parameter.
     """
-    if hasattr(model, "optimizer"):
-        if hasattr(getattr(model, "optimizer"), "variables"):
-            for i, w in enumerate(getattr(model, "optimizer").variables):
-                name = getattr(w, "name", f"opt_state_{i}")
+    if _has_attr(model, "optimizer"):
+        if _has_attr(_get_attr(model, "optimizer"), "variables"):
+            for i, w in enumerate(_get_attr(model, "optimizer").variables):
+                name = _get_attr(w, "name", f"opt_state_{i}")
                 as_tensor(state_store)[name] = to_numpy(w)
-        if hasattr(getattr(model, "optimizer"), "momentums"):
-            for i, w in enumerate(getattr(model, "optimizer").momentums):
-                name = getattr(w, "name", f"momentum_{i}")
+        if _has_attr(_get_attr(model, "optimizer"), "momentums"):
+            for i, w in enumerate(_get_attr(model, "optimizer").momentums):
+                name = _get_attr(w, "name", f"momentum_{i}")
                 as_tensor(state_store)[name] = to_numpy(w)
 
 
@@ -290,10 +290,10 @@ def _extract_non_trainable_state(
         state_store (TensorOrScalar): The state_store parameter.
         weights_store (TensorOrScalar): The weights_store parameter.
     """
-    if hasattr(model, "non_trainable_variables"):
+    if _has_attr(model, "non_trainable_variables"):
         existing_keys = set(weights_store) if isinstance(weights_store, Iterable) else set()
-        for i, w in enumerate(getattr(model, "non_trainable_variables")):
-            name = getattr(w, "name", f"non_trainable_{i}")
+        for i, w in enumerate(_get_attr(model, "non_trainable_variables")):
+            name = _get_attr(w, "name", f"non_trainable_{i}")
             if name not in existing_keys:
                 as_tensor(state_store)[name] = to_numpy(w)
 
@@ -308,9 +308,9 @@ def _extract_ema_state(
         model (TensorOrScalar): The model parameter.
         state_store (TensorOrScalar): The state_store parameter.
     """
-    if hasattr(model, "ema_variables"):
-        for i, w in enumerate(getattr(model, "ema_variables")):
-            name = getattr(w, "name", f"ema_{i}")
+    if _has_attr(model, "ema_variables"):
+        for i, w in enumerate(_get_attr(model, "ema_variables")):
+            name = _get_attr(w, "name", f"ema_{i}")
             as_tensor(state_store)[name] = to_numpy(w)
 
 
@@ -349,8 +349,8 @@ def _compile_model_metadata(
         tuple[dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]], dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]]]: Configuration and metadata dicts.
     """
     config_dict: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]] = {}
-    if hasattr(model, "get_config"):
-        config_dict = getattr(model, "get_config")()
+    if _has_attr(model, "get_config"):
+        config_dict = _get_attr(model, "get_config")()
     metadata: dict[str, str | int | float | bool | list[AttributeValue] | dict[str, AttributeValue]] = {"keras_version": "3.0.0", "date_saved": "2026-06-22"}
     return config_dict, metadata
 
@@ -543,7 +543,7 @@ def register_serializable(package: str = "Custom", name: str | None = None) -> C
         Returns:
             T: The registered object unchanged.
         """
-        registered_name = str(name or getattr(arg, "__name__", str(arg)))
+        registered_name = str(name or _get_attr(arg, "__name__", str(arg)))
         _CUSTOM_OBJECTS[registered_name] = as_attr_val(arg)
         if package:
             _CUSTOM_OBJECTS[f"{package}>{registered_name}"] = as_attr_val(arg)
@@ -638,8 +638,8 @@ def get_registered_name(obj: AttributeValue = None, *args: AttributeValue, **kwa
     for name, registered_obj in _CUSTOM_OBJECTS.items():
         if registered_obj is target:
             return name
-    if hasattr(target, "__name__"):
-        return as_str(getattr(target, "__name__"))
+    if _has_attr(target, "__name__"):
+        return as_str(_get_attr(target, "__name__"))
     return "CustomObject"
 
 
@@ -655,7 +655,7 @@ def get_registered_object(name: AttributeValue = None, *args: AttributeValue, **
         AttributeValue: The registered class or function object, or None if not found.
     """
     key = name if name is not None else (args[0] if args else kwargs.get("name"))
-    return getattr(_CUSTOM_OBJECTS, "get")(key) if key is not None else None
+    return _get_attr(_CUSTOM_OBJECTS, "get")(key) if key is not None else None
 
 
 def _serialize_nested_config(val: AttributeValue) -> AttributeValue:
@@ -669,7 +669,7 @@ def _serialize_nested_config(val: AttributeValue) -> AttributeValue:
     """
     if val is None or isinstance(val, (int, float, str, bool)):
         return val
-    if hasattr(val, "get_config"):
+    if _has_attr(val, "get_config"):
         return serialize_object(val)
     if isinstance(val, dict):
         return {k: _serialize_nested_config(v) for k, v in val.items()}
@@ -692,21 +692,21 @@ def serialize_object(instance: AttributeValue = None, **kwargs: AttributeValue) 
     if not obj:
         return {}
 
-    if hasattr(obj, "get_config"):
+    if _has_attr(obj, "get_config"):
         cfg = obj.get_config()
         # Check if obj or its class is registered in custom objects
         reg_name: str | None = None
         for name, reg_obj in _CUSTOM_OBJECTS.items():
-            if reg_obj is obj or reg_obj is getattr(obj, "__class__", None):
+            if reg_obj is obj or reg_obj is _get_attr(obj, "__class__", None):
                 reg_name = name
                 break
 
         if reg_name is not None:
-            class_name = getattr(obj, "__class__", type(obj)).__name__
+            class_name = _get_attr(obj, "__class__", type(obj)).__name__
             return {
                 "class_name": class_name,
                 "config": _serialize_nested_config(cfg),
-                "module": getattr(obj, "__module__", None),
+                "module": _get_attr(obj, "__module__", None),
                 "registered_name": reg_name,
             }
         return _serialize_nested_config(cfg)
@@ -747,8 +747,8 @@ def _instantiate_registered_class(
 
     cls_type = all_customs[str(class_name)]
     deserialized_sub = deserialize_object(sub_config, custom_objects=custom_objects)
-    if hasattr(cls_type, "from_config"):
-        return as_attr_val(getattr(cls_type, "from_config")(deserialized_sub))
+    if _has_attr(cls_type, "from_config"):
+        return as_attr_val(_get_attr(cls_type, "from_config")(deserialized_sub))
     if callable(cls_type):
         return cls_type(**deserialized_sub) if isinstance(deserialized_sub, dict) else cls_type(deserialized_sub)
     return cls_type
@@ -904,11 +904,11 @@ class SavedModel:
         os.makedirs(path, exist_ok=True)
         graph_def: dict[str, AttributeValue] = {}
         if self.model is not None:
-            if hasattr(self.model, "graph"):
-                graph_def = json.loads(graph_to_json(as_graph(getattr(self.model, "graph"))))
-            elif hasattr(self.model, "to_json"):
+            if _has_attr(self.model, "graph"):
+                graph_def = json.loads(graph_to_json(as_graph(_get_attr(self.model, "graph"))))
+            elif _has_attr(self.model, "to_json"):
                 graph_def = json.loads(self.model.to_json())
-            elif hasattr(self.model, "get_config"):
+            elif _has_attr(self.model, "get_config"):
                 graph_def = self.model.get_config()
 
         manifest = {
@@ -1037,7 +1037,7 @@ def load_variable(path: str, name: str) -> Tensor:
         data = backend_cls.load(var_path)
     else:
         data = backend_cls.zeros((1,))
-    return Tensor(data, TensorConfig(getattr(data, "shape"), str(getattr(data, "dtype", "float32")), Device(DeviceType("cpu"))))
+    return Tensor(data, TensorConfig(_get_attr(data, "shape"), str(_get_attr(data, "dtype", "float32")), Device(DeviceType("cpu"))))
 
 
 def _load_restored_weights_from_dir(path: str) -> dict[str, AttributeValue]:
@@ -1080,24 +1080,24 @@ def _validate_restored_target_weights(
     Raises:
         ValueError: If any restored weight shape mismatches the target variable shape.
     """
-    if target_model is not None and hasattr(target_model, "weights"):
+    if target_model is not None and _has_attr(target_model, "weights"):
         for w in target_model.weights:
-            name = getattr(w, "name", None)
+            name = _get_attr(w, "name", None)
             if name and name in restored_weights:
                 restored_arr = restored_weights[name]
-                w_shape = getattr(w, "shape", ())
-                r_shape = getattr(restored_arr, "shape")
+                w_shape = _get_attr(w, "shape", ())
+                r_shape = _get_attr(restored_arr, "shape")
                 if tuple(w_shape) != tuple(r_shape):
                     raise ValueError(f"Shape mismatch restoring variable '{name}': expected {w_shape} but got {r_shape}")
-                if hasattr(w, "assign"):
+                if _has_attr(w, "assign"):
                     w.assign(restored_arr)
 
     if isinstance(variables, dict):
         for name, var in variables.items():
             if name in restored_weights:
                 restored_arr = restored_weights[name]
-                var_shape = getattr(var, "shape", ())
-                r_shape = getattr(restored_arr, "shape")
+                var_shape = _get_attr(var, "shape", ())
+                r_shape = _get_attr(restored_arr, "shape")
                 if tuple(var_shape) != tuple(r_shape):
                     raise ValueError(f"Shape mismatch restoring variable '{name}': expected {var_shape} but got {r_shape}")
 
@@ -1125,7 +1125,7 @@ def run_restore_ops(path: str, target_model: AttributeValue = None, variables: A
     else:
         fmt = _infer_weight_format(path)
         handler = _get_format_handler(fmt)
-        restored_weights = dict(getattr(handler, "load")(path))
+        restored_weights = dict(_get_attr(handler, "load")(path))
 
     _validate_restored_target_weights(restored_weights, target_model, variables)
     return restored_weights

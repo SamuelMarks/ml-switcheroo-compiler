@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.grad.checkpointing import (
     RematerializationPolicyModel,
@@ -100,8 +101,8 @@ def test_custom_vjp_declarative_subgraph() -> None:
     bwd_g.nodes["scaled"] = LogicalNode(id="scaled", op_type="Mul", inputs=["cot", "x"])
     bwd_g.outputs = ["scaled"]
 
-    as_tensor(getattr(dummy_fn, "defvjp_subgraph"))(bwd_g)
-    assert as_tensor(getattr(dummy_fn, "bwd_subgraph")) == bwd_g
+    as_tensor(_get_attr(dummy_fn, "defvjp_subgraph"))(bwd_g)
+    assert as_tensor(_get_attr(dummy_fn, "bwd_subgraph")) == bwd_g
 
 
 def test_custom_jvp_declarative_subgraph() -> None:

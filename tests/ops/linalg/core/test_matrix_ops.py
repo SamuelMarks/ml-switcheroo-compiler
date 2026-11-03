@@ -9,6 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.linalg.matrix_ops as mod
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -93,7 +94,7 @@ def test_matrix_ops_eager(mock_get_backend: EagerTensorProtocol) -> None:
     mock_backend.execute_op.return_value = np.zeros((2, 2))
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
-    setattr(mock_get_backend, "return_value", mock_backend)
+    _set_attr(mock_get_backend, "return_value", mock_backend)
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
     as_callable(mod.band_part)(a, 1, 1)

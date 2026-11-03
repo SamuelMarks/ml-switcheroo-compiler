@@ -26,6 +26,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_auxiliary import (
     _np_unknown,
 )
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -60,11 +61,11 @@ def test_unknown() -> None:
 def test_rand() -> None:
     """Test function test_rand."""
     res = _np_rand(np, 2, 2)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res2 = _np_rand(np, 2, 2, dtype="float64")
-    assert as_tensor(getattr(res2, "dtype")) == np.float64
+    assert as_tensor(_get_attr(res2, "dtype")) == np.float64
     res3 = _np_rand(np, 2, 2, dtype="bfloat16")
-    assert as_tensor(getattr(res3, "dtype")) == np.float32
+    assert as_tensor(_get_attr(res3, "dtype")) == np.float32
 
 
 def test_is_non_decreasing() -> None:
@@ -165,7 +166,7 @@ def test_eager_broadcastediota() -> None:
 def test_rand_int4() -> None:
     """Test function test_rand_int4."""
     res = _np_rand(np, 2, 2, dtype="int4")
-    assert as_tensor(getattr(res, "dtype")) == np.int8
+    assert as_tensor(_get_attr(res, "dtype")) == np.int8
 
 
 def test_np_rand_dt_str() -> None:

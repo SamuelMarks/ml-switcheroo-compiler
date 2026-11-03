@@ -11,6 +11,7 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.creation.basic import Arange, Full, Ones, Zeros
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
@@ -67,15 +68,15 @@ def test_rand_ops() -> None:
     assert op.infer_shape((2, 3)) == (2, 3)
     assert op.infer_shape(2, 3) == (2, 3)
     res = op.eager_eval(2, 3, dtype=np.float32)
-    assert as_tensor(getattr(res, "shape")) == (2, 3)
-    assert as_tensor(getattr(res, "dtype")) == np.float32
+    assert as_tensor(_get_attr(res, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(res, "dtype")) == np.float32
     res_none = op.eager_eval(2, 3, dtype=None)
-    assert as_tensor(getattr(res_none, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(res_none, "shape")) == (2, 3)
     op_randn = get_op("Randn")()
     res_randn = op_randn.eager_eval(2, 3, dtype=np.float32)
-    assert as_tensor(getattr(res_randn, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(res_randn, "shape")) == (2, 3)
     res_randn_none = op_randn.eager_eval(2, 3, dtype=None)
-    assert as_tensor(getattr(res_randn_none, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(res_randn_none, "shape")) == (2, 3)
     op_randint = get_op("Randint")()
     assert op_randint.infer_shape(size=(2, 3)) == (2, 3)
     assert op_randint.infer_shape(0, 10, (2, 3)) == (2, 3)
@@ -120,12 +121,12 @@ def test_creation_frontend_basic_eager_and_tracing() -> None:
                 Args:
                     n: Test parameter `n`.
                 """
-                getattr(getattr(self, "nodes"), "__setitem__")(getattr(n, "id"), n)
+                _get_attr(_get_attr(self, "nodes"), "__setitem__")(_get_attr(n, "id"), n)
 
         orig_is_tracing = global_tracing_state.is_tracing
         orig_active_graph = global_tracing_state.active_graph
         global_tracing_state.is_tracing = True
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
         convert_to_tensor(1)
         zeros((2, 2))
         ones((2, 2))
@@ -149,7 +150,7 @@ def test_creation_frontend_basic_eager_and_tracing() -> None:
             as_callable(convert_to_tensor)(1, dtype="int32")
     finally:
         config.eager_mode = orig_eager
-        if "orig_is_tracing" in locals():
+        if "orig_is_tracing" in _caller_locals():
             global_tracing_state.is_tracing = orig_is_tracing
             global_tracing_state.active_graph = orig_active_graph
 
@@ -238,11 +239,11 @@ def _test_creation_frontend_basic_tensor_inputs_part_1(_state: dict[str, EagerTe
     asarray(t)
     with pytest.raises(RuntimeError):
         asarray(t, dtype=DType.Int32)
-    getattr(_state, "update")({"DType": DType, "DummyData": DummyData, "Tensor": Tensor, "TensorConfig": TensorConfig})
-    getattr(_state, "update")({"_infer_dtype": _infer_dtype, "asarray": asarray, "convert_to_numpy": convert_to_numpy, "empty_like": empty_like})
-    getattr(_state, "update")({"full_like": full_like, "np": np, "ones_like": ones_like, "t": t})
-    getattr(_state, "update")({"tc": tc, "zeros_like": zeros_like})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DType": DType, "DummyData": DummyData, "Tensor": Tensor, "TensorConfig": TensorConfig})
+    _get_attr(_state, "update")({"_infer_dtype": _infer_dtype, "asarray": asarray, "convert_to_numpy": convert_to_numpy, "empty_like": empty_like})
+    _get_attr(_state, "update")({"full_like": full_like, "np": np, "ones_like": ones_like, "t": t})
+    _get_attr(_state, "update")({"tc": tc, "zeros_like": zeros_like})
+    _state.update(_caller_locals())
 
 
 def _test_creation_frontend_basic_tensor_inputs_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -263,7 +264,7 @@ def _test_creation_frontend_basic_tensor_inputs_part_2(_state: dict[str, EagerTe
         ones_like(t, dtype=DType.Int32)
     with pytest.raises(RuntimeError):
         full_like(t, 5)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_creation_frontend_basic_tensor_inputs_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -417,17 +418,17 @@ def test_creation_frontend_basic_frombuffer() -> None:
                 Args:
                     n: Test parameter `n`.
                 """
-                getattr(getattr(self, "nodes"), "__setitem__")(getattr(n, "id"), n)
+                _get_attr(_get_attr(self, "nodes"), "__setitem__")(_get_attr(n, "id"), n)
 
         orig_is_tracing = global_tracing_state.is_tracing
         orig_active_graph = global_tracing_state.active_graph
         global_tracing_state.is_tracing = True
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
         frombuffer(b"hello")
         frombuffer(b"hello", count=2, dtype=DType.Int32)
     finally:
         config.eager_mode = orig_eager
-        if "orig_is_tracing" in locals():
+        if "orig_is_tracing" in _caller_locals():
             global_tracing_state.is_tracing = orig_is_tracing
             global_tracing_state.active_graph = orig_active_graph
     assert config.eager_mode == orig_eager

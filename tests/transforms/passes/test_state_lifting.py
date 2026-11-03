@@ -8,6 +8,7 @@ import typing
 import pytest
 from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.state_lifting import (
@@ -290,8 +291,8 @@ def test_functionalize_callable() -> None:
             return x * self.weight[0] + self.counter
 
     model = CallableModel()
-    setattr(model, "weight", MockTensor(shape=(1,), dtype="float32", requires_grad=True))
-    setattr(model, "counter", MockTensor(shape=(), dtype="int32", requires_grad=False))
+    _set_attr(model, "weight", MockTensor(shape=(1,), dtype="float32", requires_grad=True))
+    _set_attr(model, "counter", MockTensor(shape=(), dtype="int32", requires_grad=False))
 
     init_state, pure_fn = pass_obj.functionalize(as_callable(model))
     assert "weight" in init_state

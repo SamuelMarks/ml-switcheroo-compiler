@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import TracingError
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import AssertOp, assert_value, cond, map_fn, pmap, scan, stop_gradient, vmap, while_loop
 from ml_switcheroo_compiler.ops.control_flow.tracing import _flatten_inputs, assert_value_tracing, map_fn_tracing, pmap_tracing
@@ -248,10 +249,10 @@ def test_vmap_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return Tensor(getattr(t, "data") * 2, TensorConfig(getattr(t, "shape"), getattr(t, "dtype"), getattr(t, "device")))
+            return Tensor(_get_attr(t, "data") * 2, TensorConfig(_get_attr(t, "shape"), _get_attr(t, "dtype"), _get_attr(t, "device")))
 
         res = as_callable(vmap)(func)(x)
-        assert as_callable(np.array_equal)(as_tensor(getattr(res, "data")), as_callable(np.array)([2, 4, 6]))
+        assert as_callable(np.array_equal)(as_tensor(_get_attr(res, "data")), as_callable(np.array)([2, 4, 6]))
 
 
 def test_pmap_eager() -> None:
@@ -272,10 +273,10 @@ def test_pmap_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            return Tensor(getattr(t, "data") * 2, TensorConfig(getattr(t, "shape"), getattr(t, "dtype"), getattr(t, "device")))
+            return Tensor(_get_attr(t, "data") * 2, TensorConfig(_get_attr(t, "shape"), _get_attr(t, "dtype"), _get_attr(t, "device")))
 
         res = as_callable(pmap)(func)(x)
-        assert as_callable(np.array_equal)(as_tensor(getattr(res, "data")), as_callable(np.array)([2, 4, 6]))
+        assert as_callable(np.array_equal)(as_tensor(_get_attr(res, "data")), as_callable(np.array)([2, 4, 6]))
 
 
 def test_vmap_trace() -> None:
@@ -300,7 +301,7 @@ def test_vmap_trace() -> None:
 
         global_tracing_state.start_tracing()
         res = as_callable(vmap)(func)(x)
-        assert as_tensor(getattr(res, "dtype")) == DType.Int32
+        assert as_tensor(_get_attr(res, "dtype")) == DType.Int32
         global_tracing_state.stop_tracing()
 
 
@@ -326,7 +327,7 @@ def test_pmap_trace() -> None:
 
         global_tracing_state.start_tracing()
         res = as_callable(pmap)(func)(x)
-        assert as_tensor(getattr(res, "dtype")) == DType.Int32
+        assert as_tensor(_get_attr(res, "dtype")) == DType.Int32
         global_tracing_state.stop_tracing()
 
 
@@ -432,7 +433,7 @@ def test_vmap_tuple_axes() -> None:
         vmap_f = vmap(f, in_axes=(0,), out_axes=(0,))
         x = Tensor(np.array([1, 2]), TensorConfig((2,), DType.Int32, device))
         y = as_callable(vmap_f)(x)
-        assert as_callable(np.array_equal)(as_tensor(getattr(y, "data")), as_callable(np.array)([-1, -2]))
+        assert as_callable(np.array_equal)(as_tensor(_get_attr(y, "data")), as_callable(np.array)([-1, -2]))
 
 
 def test_new_control_flow_fori() -> None:
@@ -576,8 +577,8 @@ def test_dyn_custom_grad_infer_shape_and_vjp() -> None:
             pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
             out = as_callable(my_op)(pt)
             assert out is not None
-            node = as_tensor(getattr(graph.nodes, "__getitem__")(as_tensor(getattr(out, "_data")).id))
-            op_obj = getattr(node, "op", getattr(node, "op_type", None))
+            node = as_tensor(_get_attr(graph.nodes, "__getitem__")(as_tensor(_get_attr(out, "_data")).id))
+            op_obj = _get_attr(node, "op", _get_attr(node, "op_type", None))
             from ml_switcheroo_compiler.ops.registry import get_op
 
             OpCls = as_callable(get_op)(op_obj)
@@ -673,7 +674,7 @@ def test_associative_scan_lazy() -> None:
         try:
             pt = ProxyTensor(id="pt", shape=(2, 2), dtype="float32")
             out = associative_scan(pt)
-            assert getattr(out, "shape", as_tensor(getattr(out, "_data")).shape) == (2, 2)
+            assert _get_attr(out, "shape", as_tensor(_get_attr(out, "_data")).shape) == (2, 2)
         finally:
             global_tracing_state.stop_tracing()
     finally:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.joining import append, column_stack, concatenate, dstack, hstack, stack, vstack
 from tests.testing_utils import as_callable, as_tensor
@@ -47,8 +48,8 @@ def test_concatenate(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
-    assert as_tensor(getattr(concatenate([t1, t2], 0), "config")).shape == (6, 3)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
+    assert as_tensor(_get_attr(concatenate([t1, t2], 0), "config")).shape == (6, 3)
 
 
 def test_stack(mocker: EagerTensorProtocol) -> None:
@@ -66,8 +67,8 @@ def test_stack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((2, 2, 3)))
-    assert as_tensor(getattr(stack([t1, t2], 0), "config")).shape == (2, 2, 3)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 2, 3)))
+    assert as_tensor(_get_attr(stack([t1, t2], 0), "config")).shape == (2, 2, 3)
 
 
 def test_vstack(mocker: EagerTensorProtocol) -> None:
@@ -85,8 +86,8 @@ def test_vstack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
-    assert as_tensor(getattr(vstack([t1, t2]), "config")).shape == (6, 3)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
+    assert as_tensor(_get_attr(vstack([t1, t2]), "config")).shape == (6, 3)
 
 
 def test_hstack(mocker: EagerTensorProtocol) -> None:
@@ -104,8 +105,8 @@ def test_hstack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((2, 7)))
-    assert as_tensor(getattr(hstack([t1, t2]), "config")).shape == (2, 7)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 7)))
+    assert as_tensor(_get_attr(hstack([t1, t2]), "config")).shape == (2, 7)
 
 
 def test_dstack(mocker: EagerTensorProtocol) -> None:
@@ -123,8 +124,8 @@ def test_dstack(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3, 2)))
-    assert as_tensor(getattr(dstack([t1, t2]), "config")).shape == (2, 3, 2)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 3, 2)))
+    assert as_tensor(_get_attr(dstack([t1, t2]), "config")).shape == (2, 3, 2)
 
 
 def test_append(mocker: EagerTensorProtocol) -> None:
@@ -144,8 +145,8 @@ def test_append(mocker: EagerTensorProtocol) -> None:
 
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.shape.joining.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
-    assert as_tensor(getattr(append(t1, t2, axis=0), "config")).shape == (6, 3)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((6, 3)))
+    assert as_tensor(_get_attr(append(t1, t2, axis=0), "config")).shape == (6, 3)
 
 
 def test_column_stack(mocker: EagerTensorProtocol) -> None:

@@ -17,6 +17,7 @@ from ml_switcheroo_compiler.backends.snapshot_grounding import (
     _extract_item_endpoints,
     load_backend_snapshot_targets,
 )
+from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _get_attr, _set_attr
 from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -644,10 +645,10 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_1(_state: dict[
 
     real_exists = os.path.exists
     real_listdir = os.listdir
-    getattr(_state, "update")({"alt_engine": alt_engine, "cfg": cfg, "f": f, "fake_cache": fake_cache})
-    getattr(_state, "update")({"fake_default": fake_default, "found_item": found_item, "item_file": item_file, "json": json})
-    getattr(_state, "update")({"real_exists": real_exists, "real_listdir": real_listdir})
-    _state.update(locals())
+    _get_attr(_state, "update")({"alt_engine": alt_engine, "cfg": cfg, "f": f, "fake_cache": fake_cache})
+    _get_attr(_state, "update")({"fake_default": fake_default, "found_item": found_item, "item_file": item_file, "json": json})
+    _get_attr(_state, "update")({"real_exists": real_exists, "real_listdir": real_listdir})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -668,10 +669,11 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_2(_state: dict[
             return False
         if "ml_ecosystem_snapshots" in p and "snapshots" in p:
             return True
-        return typing.cast("bool", real_exists(p))
+        _typed_ret_1: bool = _cast_val("bool", real_exists(p))
+        return _typed_ret_1
 
-    getattr(_state, "update")({"mock_exists": mock_exists})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_exists": mock_exists})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -694,7 +696,8 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state: dict[
             return ["torch_v1.0.json"]
         if ".cache" in p:
             return []
-        return typing.cast("list[str]", real_listdir(p))
+        _typed_ret_2: list[str] = _cast_val("list[str]", real_listdir(p))
+        return _typed_ret_2
 
     monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
     monkeypatch.setattr(os.path, "exists", mock_exists)
@@ -721,9 +724,9 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_3(_state: dict[
     # Sub-case C: neither has jsons
     monkeypatch.setattr(os, "listdir", lambda p: [])
     eng_empty = SnapshotGroundingEngine()
-    getattr(_state, "update")({"eng_cache": eng_cache, "eng_default": eng_default, "eng_empty": eng_empty, "mock_listdir": mock_listdir})
-    getattr(_state, "update")({"mock_listdir_cache": mock_listdir_cache})
-    _state.update(locals())
+    _get_attr(_state, "update")({"eng_cache": eng_cache, "eng_default": eng_default, "eng_empty": eng_empty, "mock_listdir": mock_listdir})
+    _get_attr(_state, "update")({"mock_listdir_cache": mock_listdir_cache})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -761,8 +764,8 @@ def _test_snapshot_grounding_cache_resolution_and_alt_roots_part_4(_state: dict[
     engine_dirs._is_default_snapshot_dir = True
     path = engine_dirs.get_snapshot_path("pytorch")
     assert path is not None
-    getattr(_state, "update")({"dummy_sdir": dummy_sdir, "engine_dirs": engine_dirs, "f": f, "fake_cache_dir": fake_cache_dir})
-    getattr(_state, "update")({"mock_expanduser": mock_expanduser, "path": path, "real_expanduser": real_expanduser})
+    _get_attr(_state, "update")({"dummy_sdir": dummy_sdir, "engine_dirs": engine_dirs, "f": f, "fake_cache_dir": fake_cache_dir})
+    _get_attr(_state, "update")({"mock_expanduser": mock_expanduser, "path": path, "real_expanduser": real_expanduser})
 
 
 def test_snapshot_grounding_cache_resolution_and_alt_roots(tmp_path: EagerTensorProtocol, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -832,11 +835,11 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_1(_state: dict
     monkeypatch.setenv("ML_FRAMEWORK_SNAPSHOTS_DIR", str(pkg_snapshots))
     import importlib.util
 
-    getattr(_state, "update")({"DummySpec": DummySpec, "SnapshotGroundingEngine": SnapshotGroundingEngine, "_extract_stub_endpoints": _extract_stub_endpoints, "_resolve_default_snapshot_dir": _resolve_default_snapshot_dir})
-    getattr(_state, "update")({"_split_signature_params": _split_signature_params, "_validate_keyword_args": _validate_keyword_args, "dummy_stub_dir": dummy_stub_dir, "endpoints_set": endpoints_set})
-    getattr(_state, "update")({"errs": errs, "importlib": importlib, "m": m, "pkg_snapshots": pkg_snapshots})
-    getattr(_state, "update")({"stub_file": stub_file})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummySpec": DummySpec, "SnapshotGroundingEngine": SnapshotGroundingEngine, "_extract_stub_endpoints": _extract_stub_endpoints, "_resolve_default_snapshot_dir": _resolve_default_snapshot_dir})
+    _get_attr(_state, "update")({"_split_signature_params": _split_signature_params, "_validate_keyword_args": _validate_keyword_args, "dummy_stub_dir": dummy_stub_dir, "endpoints_set": endpoints_set})
+    _get_attr(_state, "update")({"errs": errs, "importlib": importlib, "m": m, "pkg_snapshots": pkg_snapshots})
+    _get_attr(_state, "update")({"stub_file": stub_file})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_remaining_undercovered_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -873,9 +876,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_2(_state: dict
         m.setattr("os.path.expanduser", mock_expanduser)
         resolved_compiler_cache = _resolve_default_snapshot_dir()
         assert resolved_compiler_cache == str(compiler_cache)
-    getattr(_state, "update")({"_": _, "compiler_cache": compiler_cache, "m": m, "mock_expanduser": mock_expanduser})
-    getattr(_state, "update")({"resolved_cand": resolved_cand, "resolved_compiler_cache": resolved_compiler_cache})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "compiler_cache": compiler_cache, "m": m, "mock_expanduser": mock_expanduser})
+    _get_attr(_state, "update")({"resolved_cand": resolved_cand, "resolved_compiler_cache": resolved_compiler_cache})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_remaining_undercovered_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -916,9 +919,9 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_3(_state: dict
         m.setattr("os.listdir", mock_default_dir_listdir)
         resolved_default_dir = _resolve_default_snapshot_dir()
         assert "ml-ecosystem-snapshots" in resolved_default_dir
-    getattr(_state, "update")({"m": m, "mock_default_dir_exists": mock_default_dir_exists, "mock_default_dir_listdir": mock_default_dir_listdir, "real_exists": real_exists})
-    getattr(_state, "update")({"real_listdir": real_listdir, "resolved_default_dir": resolved_default_dir})
-    _state.update(locals())
+    _get_attr(_state, "update")({"m": m, "mock_default_dir_exists": mock_default_dir_exists, "mock_default_dir_listdir": mock_default_dir_listdir, "real_exists": real_exists})
+    _get_attr(_state, "update")({"real_listdir": real_listdir, "resolved_default_dir": resolved_default_dir})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_remaining_undercovered_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -990,8 +993,8 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_4(_state: dict
                 return self.kind_val
             return default
 
-    getattr(_state, "update")({"ClearSigDict": ClearSigDict, "MutatingDict": MutatingDict})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ClearSigDict": ClearSigDict, "MutatingDict": MutatingDict})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_remaining_undercovered_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1056,8 +1059,8 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_5(_state: dict
             [{"name": "x", "kind": "POSITIONAL_OR_KEYWORD"}, {"name": "y", "kind": "POSITIONAL_OR_KEYWORD"}, {"name": "", "kind": "POSITIONAL_OR_KEYWORD"}],
         ],
     )
-    getattr(_state, "update")({"FrameHackingDict": FrameHackingDict, "engine": engine, "hack_sig": hack_sig, "inspect": inspect})
-    _state.update(locals())
+    _get_attr(_state, "update")({"FrameHackingDict": FrameHackingDict, "engine": engine, "hack_sig": hack_sig, "inspect": inspect})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_remaining_undercovered_branches_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1078,7 +1081,7 @@ def _test_snapshot_grounding_remaining_undercovered_branches_part_6(_state: dict
     assert engine.validate_parameter_contract("dummy_be", "dummy_ep", 0, ["valid_p"]) == []
     monkeypatch.setattr(engine, "get_endpoint_parameters", lambda be, ep: None)
     assert engine.validate_parameter_contract("dummy_be", "dummy_ep", 0, ["kw"]) == []
-    getattr(_state, "update")({"dup_params": dup_params})
+    _get_attr(_state, "update")({"dup_params": dup_params})
 
 
 def test_snapshot_grounding_remaining_undercovered_branches(tmp_path: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1393,6 +1396,7 @@ def _test_snapshot_grounding_complete_branches_part_1(_state: dict[str, EagerTen
         _state: Shared test state dictionary.
     """
     monkeypatch = _state["monkeypatch"]
+    _ = monkeypatch
     import importlib
     import sys
     from unittest import mock
@@ -1422,12 +1426,12 @@ def _test_snapshot_grounding_complete_branches_part_1(_state: dict[str, EagerTen
     assert _find_discrepancy_replacement("keepdim", set(), {"keepdims"}, "torch", "torch.sum") == "keepdims"
     assert _find_discrepancy_replacement("keepdim", set(), set(), "torch", "torch.sum") is None
 
-    getattr(_state, "update")({"ExtendedGhostRef": ExtendedGhostRef, "SnapshotGroundingEngine": SnapshotGroundingEngine, "_find_discrepancy_replacement": _find_discrepancy_replacement})
-    getattr(_state, "update")({"_load_standard_arg_map": _load_standard_arg_map, "_param_to_dict": _param_to_dict, "_populate_from_grounding_engine": _populate_from_grounding_engine, "_populate_from_snapshot_data": _populate_from_snapshot_data})
-    getattr(_state, "update")({"_register_ghost_ref": _register_ghost_ref, "_signatures_from_ghost_ref": _signatures_from_ghost_ref, "_signatures_from_item": _signatures_from_item, "_split_signature_params": _split_signature_params})
-    getattr(_state, "update")({"compute_levenshtein": compute_levenshtein, "fallback_map": fallback_map, "importlib": importlib, "mock": mock})
-    getattr(_state, "update")({"real_import": real_import, "sys": sys})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ExtendedGhostRef": ExtendedGhostRef, "SnapshotGroundingEngine": SnapshotGroundingEngine, "_find_discrepancy_replacement": _find_discrepancy_replacement})
+    _get_attr(_state, "update")({"_load_standard_arg_map": _load_standard_arg_map, "_param_to_dict": _param_to_dict, "_populate_from_grounding_engine": _populate_from_grounding_engine, "_populate_from_snapshot_data": _populate_from_snapshot_data})
+    _get_attr(_state, "update")({"_register_ghost_ref": _register_ghost_ref, "_signatures_from_ghost_ref": _signatures_from_ghost_ref, "_signatures_from_item": _signatures_from_item, "_split_signature_params": _split_signature_params})
+    _get_attr(_state, "update")({"compute_levenshtein": compute_levenshtein, "fallback_map": fallback_map, "importlib": importlib, "mock": mock})
+    _get_attr(_state, "update")({"real_import": real_import, "sys": sys})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_complete_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1445,7 +1449,7 @@ def _test_snapshot_grounding_complete_branches_part_2(_state: dict[str, EagerTen
     assert compute_levenshtein("a", "b") == 1
     assert compute_levenshtein("short", "much_longer_string") > 0
     assert compute_levenshtein("", "test") == 4
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1508,9 +1512,9 @@ def _test_snapshot_grounding_complete_branches_part_3(_state: dict[str, EagerTen
         {},
         {},
     )
-    getattr(_state, "update")({"MockEngineDiscoverFalse": MockEngineDiscoverFalse, "MockEngineDiscoverNoLoad": MockEngineDiscoverNoLoad, "MockTarget": MockTarget, "endpoints_set": endpoints_set})
-    getattr(_state, "update")({"params": params, "split_sigs": split_sigs})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockEngineDiscoverFalse": MockEngineDiscoverFalse, "MockEngineDiscoverNoLoad": MockEngineDiscoverNoLoad, "MockTarget": MockTarget, "endpoints_set": endpoints_set})
+    _get_attr(_state, "update")({"params": params, "split_sigs": split_sigs})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1590,9 +1594,9 @@ def _test_snapshot_grounding_complete_branches_part_4(_state: dict[str, EagerTen
         item_map_already,
         ref_map_already,
     )
-    getattr(_state, "update")({"MockEngineRaising": MockEngineRaising, "dummy_ref_empty": dummy_ref_empty, "endpoints_set2": endpoints_set2, "item_map2": item_map2})
-    getattr(_state, "update")({"item_map_already": item_map_already, "item_map_unhydrated": item_map_unhydrated, "ref_map2": ref_map2, "ref_map_already": ref_map_already})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockEngineRaising": MockEngineRaising, "dummy_ref_empty": dummy_ref_empty, "endpoints_set2": endpoints_set2, "item_map2": item_map2})
+    _get_attr(_state, "update")({"item_map_already": item_map_already, "item_map_unhydrated": item_map_unhydrated, "ref_map2": ref_map2, "ref_map_already": ref_map_already})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1637,10 +1641,10 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
 
     # 11. SnapshotGroundingEngine.__init__ ge_cls is None branch and exception
     mock_mod_no_ge = mock.MagicMock()
-    setattr(mock_mod_no_ge, "GroundingEngine", None)
+    _set_attr(mock_mod_no_ge, "GroundingEngine", None)
     with mock.patch.dict(sys.modules, {"ml_ecosystem_snapshots.grounding.engine": mock_mod_no_ge}):
         eng_no_ge_cls = SnapshotGroundingEngine()
-        assert as_tensor(getattr(eng_no_ge_cls, "_grounding_engine")) is None
+        assert as_tensor(_get_attr(eng_no_ge_cls, "_grounding_engine")) is None
 
     def mock_import_ge_fail(name: str, pkg: str | None = None) -> EagerValue:
         """Test function mock_import_ge_fail.
@@ -1654,9 +1658,9 @@ def _test_snapshot_grounding_complete_branches_part_5(_state: dict[str, EagerTen
         return real_import(name, pkg)
 
     monkeypatch.setattr(importlib, "import_module", mock_import_ge_fail)
-    getattr(_state, "update")({"BadModelDump": BadModelDump, "eng_no_ge_cls": eng_no_ge_cls, "extracted": extracted, "item_overloads": item_overloads})
-    getattr(_state, "update")({"mock_import_ge_fail": mock_import_ge_fail, "mock_mod_no_ge": mock_mod_no_ge, "ref_empty_sigs": ref_empty_sigs})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BadModelDump": BadModelDump, "eng_no_ge_cls": eng_no_ge_cls, "extracted": extracted, "item_overloads": item_overloads})
+    _get_attr(_state, "update")({"mock_import_ge_fail": mock_import_ge_fail, "mock_mod_no_ge": mock_mod_no_ge, "ref_empty_sigs": ref_empty_sigs})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_complete_branches_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1686,7 +1690,7 @@ def _test_snapshot_grounding_complete_branches_part_6(_state: dict[str, EagerTen
             return "suggested_symbol"
 
     engine_with_sug = SnapshotGroundingEngine()
-    setattr(engine_with_sug, "_grounding_engine", MockGEWithSuggest())
+    _set_attr(engine_with_sug, "_grounding_engine", MockGEWithSuggest())
     assert engine_with_sug.suggest_closest_endpoint("pytorch", "torch.ad") == "suggested_symbol"
 
     class MockGEWithNone:
@@ -1704,12 +1708,12 @@ def _test_snapshot_grounding_complete_branches_part_6(_state: dict[str, EagerTen
             return None
 
     engine_sug_none = SnapshotGroundingEngine()
-    setattr(engine_sug_none, "_grounding_engine", MockGEWithNone())
+    _set_attr(engine_sug_none, "_grounding_engine", MockGEWithNone())
     with mock.patch.object(engine_sug_none, "get_valid_endpoints", return_value={"torch.add"}):
         assert engine_sug_none.suggest_closest_endpoint("pytorch", "torch.ad") == "torch.add"
-    getattr(_state, "update")({"MockGEWithNone": MockGEWithNone, "MockGEWithSuggest": MockGEWithSuggest, "eng_no_ge": eng_no_ge, "engine_sug_none": engine_sug_none})
-    getattr(_state, "update")({"engine_with_sug": engine_with_sug})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockGEWithNone": MockGEWithNone, "MockGEWithSuggest": MockGEWithSuggest, "eng_no_ge": eng_no_ge, "engine_sug_none": engine_sug_none})
+    _get_attr(_state, "update")({"engine_with_sug": engine_with_sug})
+    _state.update(_caller_locals())
 
 
 def _test_snapshot_grounding_complete_branches_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1735,17 +1739,17 @@ def _test_snapshot_grounding_complete_branches_part_7(_state: dict[str, EagerTen
             raise RuntimeError("Symbol suggest error")
 
     engine_sug_exc = SnapshotGroundingEngine()
-    setattr(engine_sug_exc, "_grounding_engine", MockGEWithExc())
+    _set_attr(engine_sug_exc, "_grounding_engine", MockGEWithExc())
     with mock.patch.object(engine_sug_exc, "get_valid_endpoints", return_value={"torch.add"}):
         assert engine_sug_exc.suggest_closest_endpoint("pytorch", "torch.ad") == "torch.add"
 
     engine_no_sug_fn = SnapshotGroundingEngine()
-    setattr(engine_no_sug_fn, "_grounding_engine", object())
+    _set_attr(engine_no_sug_fn, "_grounding_engine", object())
     with mock.patch.object(engine_no_sug_fn, "get_valid_endpoints", return_value={"torch.add"}):
         assert engine_no_sug_fn.suggest_closest_endpoint("pytorch", "torch.ad") == "torch.add"
 
     engine_fallback = SnapshotGroundingEngine()
-    setattr(engine_fallback, "_grounding_engine", None)
+    _set_attr(engine_fallback, "_grounding_engine", None)
     with mock.patch.object(engine_fallback, "get_valid_endpoints", return_value={"torch.add", "torch.sub"}):
         assert engine_fallback.suggest_closest_endpoint("pytorch", "torch.ad", max_distance=3) == "torch.add"
         assert engine_fallback.suggest_closest_endpoint("pytorch", "xyz_completely_different", max_distance=1) is None
@@ -1772,7 +1776,7 @@ def _test_snapshot_grounding_complete_branches_part_7(_state: dict[str, EagerTen
         ep_empty: set[str] = set()
         _populate_from_framework_ast("/dummy", BackendSnapshotTargetModel(framework="pytorch", snapshot_glob="*.json", canonical_roots=["torch"]), ep_empty, {}, {})
         assert ep_empty == set()
-    getattr(_state, "update")({"MockGEWithExc": MockGEWithExc, "engine_fallback": engine_fallback, "engine_no_sug_fn": engine_no_sug_fn, "engine_sug_exc": engine_sug_exc})
+    _get_attr(_state, "update")({"MockGEWithExc": MockGEWithExc, "engine_fallback": engine_fallback, "engine_no_sug_fn": engine_no_sug_fn, "engine_sug_exc": engine_sug_exc})
 
 
 def test_snapshot_grounding_complete_branches(monkeypatch: pytest.MonkeyPatch) -> None:

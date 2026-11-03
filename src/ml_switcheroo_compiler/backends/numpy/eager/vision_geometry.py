@@ -7,6 +7,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager import iou_eager, nms_eager
 from ml_switcheroo_compiler.backends.eager_registry import as_callable, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("AffineGenerator")
@@ -60,8 +61,8 @@ def _np_elastic_transform(
     if disp.ndim < 1 or disp.size == 0 or disp.all() is None:
         return arr
     if arr.ndim >= 2:
-        shift_y = int(getattr(np, "mean")(disp[..., 0])) if disp.size > 0 else 0
-        shift_x = int(getattr(np, "mean")(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
+        shift_y = int(_get_attr(np, "mean")(disp[..., 0])) if disp.size > 0 else 0
+        shift_x = int(_get_attr(np, "mean")(disp[..., 1])) if disp.shape[-1] > 1 and disp.size > 0 else 0
         return np.roll(arr, shift=(shift_y, shift_x), axis=(0, 1))
     return arr
 

@@ -7,6 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.nn.time_distributed import TimeDistributed, time_distributed
@@ -76,9 +77,9 @@ def test_time_distributed_dispatch_eager(mocker: pytest.MonkeyPatch) -> None:
 
     # Graph/tracing mode (config.eager_mode = False) executes the underlying decorated function
     config.eager_mode = False
-    mock_op = as_tensor(getattr(mocker, "patch"))("ml_switcheroo_compiler.ops.nn.time_distributed.get_op")
+    mock_op = as_tensor(_get_attr(mocker, "patch"))("ml_switcheroo_compiler.ops.nn.time_distributed.get_op")
     mock_instance = mock_op.return_value.return_value
-    setattr(mock_instance, "return_value", "traced_result")
+    _set_attr(mock_instance, "return_value", "traced_result")
 
     res_graph = time_distributed(t_3d, wrapped_op_name="Relu")
     assert res_graph == "traced_result"

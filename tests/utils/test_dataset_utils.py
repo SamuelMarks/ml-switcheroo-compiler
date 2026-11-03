@@ -8,6 +8,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.utils.dataset_utils import (
     BatchConfig,
     DataLoaderConfig,
@@ -119,10 +120,10 @@ def _test_directory_dataset_parsers_and_loaders_sub_1(_state: dict[str, EagerTen
     for p in [cat1_img, cat2_png, cat_txt, cat_audio, dog1_img, dog_txt, dog_audio]:
         with open(p, "w") as f:
             f.write("content")
-    getattr(_state, "update")({"cat1_img": cat1_img, "cat2_png": cat2_png, "cat_audio": cat_audio, "cat_dir": cat_dir})
-    getattr(_state, "update")({"cat_txt": cat_txt, "dog1_img": dog1_img, "dog_audio": dog_audio, "dog_dir": dog_dir})
-    getattr(_state, "update")({"dog_txt": dog_txt, "empty_dir": empty_dir, "f": f})
-    _state.update(locals())
+    _get_attr(_state, "update")({"cat1_img": cat1_img, "cat2_png": cat2_png, "cat_audio": cat_audio, "cat_dir": cat_dir})
+    _get_attr(_state, "update")({"cat_txt": cat_txt, "dog1_img": dog1_img, "dog_audio": dog_audio, "dog_dir": dog_dir})
+    _get_attr(_state, "update")({"dog_txt": dog_txt, "empty_dir": empty_dir, "f": f})
+    _state.update(_caller_locals())
 
 
 def _test_directory_dataset_parsers_and_loaders_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -148,9 +149,9 @@ def _test_directory_dataset_parsers_and_loaders_sub_2(_state: dict[str, EagerTen
     (fps, lbls, cls_names) = as_callable(_get_files_and_labels)(tmp_dir, labels=[10, 20, 30], class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
     assert lbls == [10, 20, 30]
     (fps_str, lbls_str, _) = as_callable(_get_files_and_labels)(tmp_dir, labels="custom_mode", class_names=["cats", "dogs"], valid_exts=(".jpg", ".png", ".bmp"))
-    getattr(_state, "update")({"_": _, "classes": classes, "classes_explicit": classes_explicit, "cls_names": cls_names})
-    getattr(_state, "update")({"fps": fps, "fps_str": fps_str, "lbls": lbls, "lbls_str": lbls_str})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "classes": classes, "classes_explicit": classes_explicit, "cls_names": cls_names})
+    _get_attr(_state, "update")({"fps": fps, "fps_str": fps_str, "lbls": lbls, "lbls_str": lbls_str})
+    _state.update(_caller_locals())
 
 
 def _test_directory_dataset_parsers_and_loaders_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -173,17 +174,17 @@ def _test_directory_dataset_parsers_and_loaders_sub_3(_state: dict[str, EagerTen
     txt_ds = as_callable(text_dataset_from_directory)(tmp_dir)
     assert len(txt_ds) >= 1
     items = list(txt_ds)
-    assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(items, "__getitem__")(0)), "__getitem__")(0)), "__getitem__")(0)) == "content"
-    getattr(_state, "update")({"audio_ds": audio_ds, "audio_ds_default": audio_ds_default, "cfg_audio": cfg_audio, "img_ds": img_ds})
-    getattr(_state, "update")({"items": items, "txt_ds": txt_ds})
-    _state.update(locals())
+    assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(items, "__getitem__")(0)), "__getitem__")(0)), "__getitem__")(0)) == "content"
+    _get_attr(_state, "update")({"audio_ds": audio_ds, "audio_ds_default": audio_ds_default, "cfg_audio": cfg_audio, "img_ds": img_ds})
+    _get_attr(_state, "update")({"items": items, "txt_ds": txt_ds})
+    _state.update(_caller_locals())
 
 
 def test_directory_dataset_parsers_and_loaders() -> None:
     """Test directory parsing, file validation, and datasets from directory."""
     with tempfile.TemporaryDirectory() as tmp_dir:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"tmp_dir": tmp_dir})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"tmp_dir": tmp_dir})
         for _sub_fn in (_test_directory_dataset_parsers_and_loaders_sub_1, _test_directory_dataset_parsers_and_loaders_sub_2, _test_directory_dataset_parsers_and_loaders_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0

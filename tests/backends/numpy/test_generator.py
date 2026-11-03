@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.numpy.generator import NumpyASTVisitor, NumpyGenerator, NumpyTypeTranslator
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -142,8 +143,8 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
         fn_multi = gen.compile_aot(g_multi)
         outs = fn_multi(t_in)
         assert as_callable(len)(outs) == 2
-        assert id(as_tensor(getattr(outs, "__getitem__")(0))) == id(t_in)
-        assert isinstance(as_tensor(getattr(outs, "__getitem__")(1)), Tensor)
+        assert id(as_tensor(_get_attr(outs, "__getitem__")(0))) == id(t_in)
+        assert isinstance(as_tensor(_get_attr(outs, "__getitem__")(1)), Tensor)
 
     # 4. compile_aot with no outputs
     g_empty = LogicalGraph("g_empty")
@@ -152,4 +153,4 @@ def test_numpy_generator_aot_and_fallback_prefix() -> None:
     assert fn_empty() is None
 
     assert NumpyGenerator.get_module() is np
-    assert hasattr(NumpyGenerator.get_scipy_module("special"), "erf")
+    assert _has_attr(NumpyGenerator.get_scipy_module("special"), "erf")

@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import as_str, as_tensor, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -28,16 +27,16 @@ def _unpack_shape(shape: Sequence[int | Tensor]) -> tuple[int, ...]:
     """
     unpacked_shape = []
     for s in shape:
-        if hasattr(s, "data"):
+        if _has_attr(s, "data"):
             s_val = s.data
-            if hasattr(s_val, "item"):
-                s_val = getattr(s_val, "item")()
+            if _has_attr(s_val, "item"):
+                s_val = _get_attr(s_val, "item")()
             unpacked_shape.append(s_val)
-        elif hasattr(s, "item"):
+        elif _has_attr(s, "item"):
             unpacked_shape.append(s.item())
         else:
             unpacked_shape.append(s)
-    return tuple(getattr(unpacked_shape, "__iter__")())
+    return tuple(_get_attr(unpacked_shape, "__iter__")())
 
 
 def _infer_dtype(val_arr: TensorOrScalar) -> DType:
@@ -49,7 +48,7 @@ def _infer_dtype(val_arr: TensorOrScalar) -> DType:
     Returns:
         DType: Result.
     """
-    dtype_str = str(getattr(val_arr, "dtype", "float32"))
+    dtype_str = str(_get_attr(val_arr, "dtype", "float32"))
     if dtype_str.startswith("<U") or dtype_str.startswith("|S"):
         return DType.String
     if dtype_str in ("Any", "object", "O"):
@@ -66,9 +65,9 @@ def _get_dtype_val(dtype: DType | str | type | None) -> str | type | None:
     Returns:
         str | type | None: Result.
     """
-    if hasattr(dtype, "value"):
-        return str(getattr(dtype, "value"))
-    if hasattr(dtype, "name"):
+    if _has_attr(dtype, "value"):
+        return str(_get_attr(dtype, "value"))
+    if _has_attr(dtype, "name"):
         return str(dtype)
     return dtype
 
@@ -90,13 +89,13 @@ def _try_create_array(
     """
     if dtype_val is None:
         try:
-            return as_tensor(getattr(backend, "array")(obj))
+            return as_tensor(_get_attr(backend, "array")(obj))
         except ValueError:
-            return as_tensor(getattr(backend, "array")(obj, dtype="Any"))
+            return as_tensor(_get_attr(backend, "array")(obj, dtype="Any"))
     try:
-        return as_tensor(getattr(backend, "array")(obj, dtype=dtype_val))
+        return as_tensor(_get_attr(backend, "array")(obj, dtype=dtype_val))
     except TypeError:
-        return as_tensor(getattr(backend, "array")(obj))
+        return as_tensor(_get_attr(backend, "array")(obj))
 
 
 def _create_backend_array(
@@ -139,7 +138,7 @@ def array(
     if dtype is None:
         dtype = _infer_dtype(val_arr)
 
-    shape = tuple(getattr(val_arr, "shape"))
+    shape = tuple(_get_attr(val_arr, "shape"))
 
     if config.eager_mode:
         return Tensor(val_arr, TensorConfig(shape, dtype, config.default_device))
@@ -210,7 +209,7 @@ def zeros(
         data = get_active_backend().execute_op(
             "Zeros",
             shape,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return as_tensor_obj(_emit_creation_node("Zeros", shape, dtype, {}))
@@ -239,7 +238,7 @@ def ones(
         data = get_active_backend().execute_op(
             "Ones",
             shape,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return as_tensor_obj(_emit_creation_node("Ones", shape, dtype, {}))
@@ -254,11 +253,12 @@ def _extract_fill_value(fill_value: float | int | bool | Tensor) -> float | int 
     Returns:
         float | int | bool: Result.
     """
-    val = fill_value.data if hasattr(fill_value, "data") else fill_value
-    if hasattr(val, "item"):
-        val = getattr(val, "item")()
+    val = fill_value.data if _has_attr(fill_value, "data") else fill_value
+    if _has_attr(val, "item"):
+        val = _get_attr(val, "item")()
 
-    return typing.cast("float | int | bool", val)
+    _typed_ret_1: float | int | bool = _cast_val("float | int | bool", val)
+    return _typed_ret_1
 
 
 def _full_eager(shape: tuple[int, ...], fill_value: TensorOrScalar, dtype: DType, device: Device) -> Tensor:
@@ -273,7 +273,7 @@ def _full_eager(shape: tuple[int, ...], fill_value: TensorOrScalar, dtype: DType
     Returns:
         Tensor: Result.
     """
-    dt_val = dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype))
+    dt_val = dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype))
     data = get_active_backend().execute_op("Full", shape, fill_value, dtype=dt_val)
     return Tensor(data, TensorConfig(shape, dtype, device))
 
@@ -334,7 +334,7 @@ def zeros_like(
         data = get_active_backend().execute_op(
             "Zeros_like",
             input.data,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
     return as_tensor_obj(_emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 0}))
@@ -361,7 +361,7 @@ def ones_like(
         data = get_active_backend().execute_op(
             "Ones_like",
             input.data,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
     return as_tensor_obj(_emit_creation_node("ConstantOfShape", input.shape, dtype, {"value": 1}))
@@ -391,7 +391,7 @@ def full_like(
             "Full_like",
             input.data,
             fill_value,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(input.shape, dtype, device))
     return as_tensor_obj(
@@ -427,7 +427,7 @@ def empty(
         data = get_active_backend().execute_op(
             "Empty",
             shape,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return as_tensor_obj(_emit_creation_node("Zeros", shape, dtype, {}))
@@ -458,11 +458,12 @@ def convert_to_numpy(x: Tensor) -> TensorOrScalar:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    if hasattr(backend, "convert_to_numpy"):
-        return as_tensor(getattr(backend, "convert_to_numpy")(x))
-    if hasattr(x, "numpy"):
-        return x.numpy()
-    return backend.asarray(getattr(x, "data", x))
+    if _has_attr(backend, "convert_to_numpy"):
+        return as_tensor(_get_attr(backend, "convert_to_numpy")(x))
+    if _has_attr(x, "numpy"):
+        _typed_ret_2: TensorOrScalar = x.numpy()
+        return _typed_ret_2
+    return backend.asarray(_get_attr(x, "data", x))
 
 
 def frombuffer(
@@ -487,10 +488,10 @@ def frombuffer(
         data = get_active_backend().execute_op(
             "Frombuffer",
             buffer,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
             count=count,
             offset=offset,
         )
-        shape = getattr(data, "shape") if hasattr(data, "shape") else ()
+        shape = _get_attr(data, "shape") if _has_attr(data, "shape") else ()
         return Tensor(data, TensorConfig(shape, dtype, config.default_device))
     return as_tensor_obj(_emit_creation_node("Frombuffer", (count,) if count != -1 else (), dtype, {"offset": offset}))

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from unittest.mock import patch
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.unary.exponential import Exp, Exp2, Expm1, Log, Log1P, Log10, NanToNum, ZeroFraction
 from tests.testing_utils import as_tensor
 
@@ -27,7 +28,7 @@ def test_unary_exponential_ops() -> None:
     for inst, name, np_name in ops:
         assert inst.op_name == name
         if np_name:
-            assert getattr(inst, "np_op_name", None) == np_name
+            assert _get_attr(inst, "np_op_name", None) == np_name
 
     # Test NanToNum copy argument handling
     with patch("ml_switcheroo_compiler.ops.base.dispatch_op", return_value="mock_nanto_num") as mock_dispatch:

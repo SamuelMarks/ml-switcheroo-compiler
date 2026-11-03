@@ -7,6 +7,7 @@ import builtins  # noqa: F401
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @global_eager_registry.register("Intersect1d")
@@ -21,7 +22,7 @@ def _intersect1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "intersect1d")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "intersect1d")(*args, **kwargs))
 
 
 @global_eager_registry.register("Union1d")
@@ -36,7 +37,7 @@ def _np_union1d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "union1d", getattr(backend_module, "union1d", None))
+    func = _get_attr(backend_module, "union1d", _get_attr(backend_module, "union1d", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).union1d(*args, **kwargs)
@@ -54,7 +55,7 @@ def _np_unique(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "unique", getattr(backend_module, "unique", None))
+    func = _get_attr(backend_module, "unique", _get_attr(backend_module, "unique", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unique(*args, **kwargs)
@@ -72,7 +73,7 @@ def _np_uniqueall(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "uniqueall", getattr(backend_module, "uniqueall", None))
+    func = _get_attr(backend_module, "uniqueall", _get_attr(backend_module, "uniqueall", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
@@ -99,7 +100,7 @@ def _np_uniquecounts(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "uniquecounts", getattr(backend_module, "uniquecounts", None))
+    func = _get_attr(backend_module, "uniquecounts", _get_attr(backend_module, "uniquecounts", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
@@ -124,7 +125,7 @@ def _np_uniquevalues(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "uniquevalues", getattr(backend_module, "uniquevalues", None))
+    func = _get_attr(backend_module, "uniquevalues", _get_attr(backend_module, "uniquevalues", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unique(args[0])

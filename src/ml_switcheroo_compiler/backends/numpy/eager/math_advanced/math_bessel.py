@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced.math_general impo
     _get_sc,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("BesselI0e")
@@ -72,7 +73,7 @@ def _np_modified_bessel_i0(
     x = _get_np_arg(args, 0)
     if x is None:
         return None
-    return as_ndarray(getattr(np, "i0")(x))
+    return as_ndarray(_get_attr(np, "i0")(x))
 
 
 @numpy_eager_registry.register("modified_bessel_i1")
@@ -101,9 +102,9 @@ def _np_modified_bessel_i1(
         t_grid = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(x_ex * np.cos(t_grid)) * np.cos(t_grid)
-        trapz_fn = as_callable(getattr(np, "trapezoid", getattr(np, "trapz", None)))
+        trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
         return as_ndarray(trapz_fn(integrand, dx=dt, axis=-1) * (1.0 / np.pi))
-    return as_ndarray(getattr(sc_module, "i1")(x))
+    return as_ndarray(_get_attr(sc_module, "i1")(x))
 
 
 @numpy_eager_registry.register("modified_bessel_k0")
@@ -132,9 +133,9 @@ def _np_modified_bessel_k0(
         t_grid = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(-x_ex * np.cosh(t_grid))
-        trapz_fn = as_callable(getattr(np, "trapezoid", getattr(np, "trapz", None)))
+        trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
         return as_ndarray(trapz_fn(integrand, dx=dt, axis=-1))
-    return as_ndarray(getattr(sc_module, "k0")(x))
+    return as_ndarray(_get_attr(sc_module, "k0")(x))
 
 
 @numpy_eager_registry.register("modified_bessel_k1")
@@ -163,6 +164,6 @@ def _np_modified_bessel_k1(
         t_grid = np.reshape(t, (1,) * np.ndim(x) + (-1,)) if np.ndim(x) > 0 else t
         x_ex = np.expand_dims(x, -1) if np.ndim(x) > 0 else x
         integrand = np.exp(-x_ex * np.cosh(t_grid)) * np.cosh(t_grid)
-        trapz_fn = as_callable(getattr(np, "trapezoid", getattr(np, "trapz", None)))
+        trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
         return as_ndarray(trapz_fn(integrand, dx=dt, axis=-1))
-    return as_ndarray(getattr(sc_module, "k1")(x))
+    return as_ndarray(_get_attr(sc_module, "k1")(x))

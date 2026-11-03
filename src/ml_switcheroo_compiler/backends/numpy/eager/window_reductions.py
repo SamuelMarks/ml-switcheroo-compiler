@@ -7,6 +7,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window, _segment_sum
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("ReduceWindow")
@@ -53,12 +54,12 @@ def _np_segment_max(backend_module: BackendModuleProtocol, data: EagerValue, seg
             tuple[int, ...]: Result.
     """
     if num_segments is None:
-        num_segments = getattr(np, "max")(segment_ids) + 1
-    out = np.full((num_segments,) + getattr(data, "shape")[1:], -np.inf, dtype=getattr(data, "dtype"))
+        num_segments = _get_attr(np, "max")(segment_ids) + 1
+    out = np.full((num_segments,) + _get_attr(data, "shape")[1:], -np.inf, dtype=_get_attr(data, "dtype"))
     for i in range(as_int(num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            as_tensor(out)[i] = np.max(getattr(data, "__getitem__")(mask), axis=0)
+            as_tensor(out)[i] = np.max(_get_attr(data, "__getitem__")(mask), axis=0)
     return out
 
 
@@ -76,12 +77,12 @@ def _np_segment_min(backend_module: BackendModuleProtocol, data: EagerValue, seg
             tuple[int, ...]: Result.
     """
     if num_segments is None:
-        num_segments = getattr(np, "max")(segment_ids) + 1
-    out = np.full((num_segments,) + getattr(data, "shape")[1:], np.inf, dtype=getattr(data, "dtype"))
+        num_segments = _get_attr(np, "max")(segment_ids) + 1
+    out = np.full((num_segments,) + _get_attr(data, "shape")[1:], np.inf, dtype=_get_attr(data, "dtype"))
     for i in range(as_int(num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            as_tensor(out)[i] = np.min(getattr(data, "__getitem__")(mask), axis=0)
+            as_tensor(out)[i] = np.min(_get_attr(data, "__getitem__")(mask), axis=0)
     return out
 
 
@@ -99,12 +100,12 @@ def _np_segment_prod(backend_module: BackendModuleProtocol, data: EagerValue, se
             tuple[int, ...]: Result.
     """
     if num_segments is None:
-        num_segments = getattr(np, "max")(segment_ids) + 1
-    out = np.ones((num_segments,) + getattr(data, "shape")[1:], dtype=getattr(data, "dtype"))
+        num_segments = _get_attr(np, "max")(segment_ids) + 1
+    out = np.ones((num_segments,) + _get_attr(data, "shape")[1:], dtype=_get_attr(data, "dtype"))
     for i in range(as_int(num_segments)):
         mask = segment_ids == i
         if np.any(mask):
-            as_tensor(out)[i] = np.prod(getattr(data, "__getitem__")(mask), axis=0)
+            as_tensor(out)[i] = np.prod(_get_attr(data, "__getitem__")(mask), axis=0)
     return out
 
 

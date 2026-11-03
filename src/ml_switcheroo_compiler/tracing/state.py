@@ -45,6 +45,50 @@ def _is_attr_dict(val: Mapping[str, AttributeValue]) -> typing.TypeGuard[dict[st
     return isinstance(val, dict)
 
 
+@typing.runtime_checkable
+class _NodeAstRefProtocol(typing.Protocol):
+    """Protocol for nodes exposing `source_ast_ref`."""
+
+    source_ast_ref: str | None
+
+
+@typing.runtime_checkable
+class _NodeDomainProtocol(typing.Protocol):
+    """Protocol for nodes exposing `domain`."""
+
+    domain: str
+
+
+@typing.runtime_checkable
+class _NodeStreamProtocol(typing.Protocol):
+    """Protocol for nodes exposing `stream`."""
+
+    stream: str | None
+
+
+@typing.runtime_checkable
+class _NodeLoopAttrsProtocol(typing.Protocol):
+    """Protocol for loop nodes exposing `op_type` and `attributes`."""
+
+    op_type: str
+    attributes: dict[str, AttributeValue]
+
+
+@typing.runtime_checkable
+class _NodeOpTypeProtocol(typing.Protocol):
+    """Protocol for nodes exposing `id` and `op_type`."""
+
+    id: str
+    op_type: str
+
+
+@typing.runtime_checkable
+class _GraphNameProtocol(typing.Protocol):
+    """Protocol for graphs exposing `name`."""
+
+    name: str | None
+
+
 class TracingState:
     """Thread-safe state for tracing."""
 
@@ -63,12 +107,12 @@ class TracingState:
         Args:
             node (LogicalNode): The IR node to enrich.
         """
-        node_vars = vars(node)
-        if node_vars.get("source_ast_ref") is None:
-            node.source_ast_ref = get_source_ast_ref()
+        raw_node: StructuralOperandProtocol = node
+        if isinstance(raw_node, _NodeAstRefProtocol) and raw_node.source_ast_ref is None:
+            raw_node.source_ast_ref = get_source_ast_ref()
         active_g: StructuralOperandProtocol | None = self.active_graph
-        if active_g is not None and self.active_graph is not None and vars(active_g).get("name") is not None and node_vars.get("domain", "") in (None, ""):
-            node.domain = self.active_graph.name
+        if active_g is not None and self.active_graph is not None and isinstance(active_g, _GraphNameProtocol) and active_g.name is not None and isinstance(raw_node, _NodeDomainProtocol) and raw_node.domain in (None, ""):
+            raw_node.domain = self.active_graph.name
 
     def _enrich_stream(self, node: LogicalNode) -> None:
         """Enrich a node with current stream information.
@@ -79,8 +123,9 @@ class TracingState:
         if "ml_switcheroo_compiler.core.config" not in sys.modules:
             return
         config = sys.modules["ml_switcheroo_compiler.core.config"].config
-        if vars(node).get("stream", "default") is None and config.current_stream != "default":
-            node.stream = config.current_stream
+        raw_node: StructuralOperandProtocol = node
+        if isinstance(raw_node, _NodeStreamProtocol) and raw_node.stream is None and config.current_stream != "default":
+            raw_node.stream = config.current_stream
 
     def _enrich_node(self, node: LogicalNode) -> None:
         """Enrich a newly created node with implicit context metadata (AST, domain, stream).
@@ -107,10 +152,10 @@ class TracingState:
         """
         from ml_switcheroo_compiler.ir.core import as_attrs
 
-        node_vars = vars(node)
-        attrs = node_vars.get("attributes")
-        if self.current_loop_options is None or node_vars.get("op_type", "") not in ("Loop", "WhileLoop") or not isinstance(attrs, dict):
+        raw_node: StructuralOperandProtocol = node
+        if self.current_loop_options is None or not isinstance(raw_node, _NodeLoopAttrsProtocol) or raw_node.op_type not in ("Loop", "WhileLoop") or not isinstance(raw_node.attributes, dict):
             return
+        attrs = raw_node.attributes
         opts = self.current_loop_options
         raw_attrs: dict[str, TensorOrScalar] = {}
         opt_items: tuple[tuple[str, TensorOrScalar], ...] = (
@@ -141,7 +186,8 @@ class TracingState:
         self._apply_loop_options_to_node(node)
 
         self.active_graph.nodes[node.id] = node
-        if vars(node).get("op_type", "") != "Input" and isinstance(self.active_graph, _GraphInputsProtocol):
+        raw_node: StructuralOperandProtocol = node
+        if isinstance(raw_node, _NodeOpTypeProtocol) and raw_node.op_type != "Input" and isinstance(self.active_graph, _GraphInputsProtocol):
             if node.id in self.active_graph.inputs:
                 self.active_graph.inputs.remove(node.id)
                 if isinstance(self.active_graph, _GraphInputSpecsProtocol):

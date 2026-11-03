@@ -8,6 +8,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.creation.frontend_basic as fb
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
@@ -40,22 +41,22 @@ def _test_creation_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> No
     # zeros
     z = fb.zeros((2, 2))
     assert z.shape == (2, 2)
-    assert as_tensor(getattr((z.numpy() == 0), "all"))()
+    assert as_tensor(_get_attr((z.numpy() == 0), "all"))()
     z = fb.zeros(2)
     assert z.shape == (2,)
 
     # ones
     o = fb.ones((2, 2))
     assert o.shape == (2, 2)
-    assert as_tensor(getattr((o.numpy() == 1), "all"))()
+    assert as_tensor(_get_attr((o.numpy() == 1), "all"))()
 
     # full
     f = fb.full((2, 2), 3.0)
     assert f.shape == (2, 2)
-    assert as_tensor(getattr((f.numpy() == 3.0), "all"))()
-    getattr(_state, "update")({"f": f, "o": o, "t": t, "t2": t2})
-    getattr(_state, "update")({"z": z})
-    _state.update(locals())
+    assert as_tensor(_get_attr((f.numpy() == 3.0), "all"))()
+    _get_attr(_state, "update")({"f": f, "o": o, "t": t, "t2": t2})
+    _get_attr(_state, "update")({"z": z})
+    _state.update(_caller_locals())
 
 
 def _test_creation_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -72,20 +73,20 @@ def _test_creation_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> No
         data = 4.0
 
     f2 = as_callable(fb.full)((2, 2), as_callable(DummyFill)())
-    assert as_tensor(getattr((f2.numpy() == 4.0), "all"))()
+    assert as_tensor(_get_attr((f2.numpy() == 4.0), "all"))()
     zl = as_callable(fb.zeros_like)(t)
     assert zl.shape == t.shape
-    assert as_tensor(getattr((zl.numpy() == 0), "all"))()
+    assert as_tensor(_get_attr((zl.numpy() == 0), "all"))()
 
     # ones_like
     ol = as_callable(fb.ones_like)(t)
     assert ol.shape == t.shape
-    assert as_tensor(getattr((ol.numpy() == 1), "all"))()
+    assert as_tensor(_get_attr((ol.numpy() == 1), "all"))()
 
     # full_like
     fl = as_callable(fb.full_like)(t, 5.0)
     assert fl.shape == t.shape
-    assert as_tensor(getattr((fl.numpy() == 5.0), "all"))()
+    assert as_tensor(_get_attr((fl.numpy() == 5.0), "all"))()
 
     # empty
     e = fb.empty((2, 2))
@@ -98,9 +99,9 @@ def _test_creation_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> No
 
     # convert_to_numpy
     assert isinstance(as_callable(fb.convert_to_numpy)(t), np.ndarray)
-    getattr(_state, "update")({"DummyFill": DummyFill, "e": e, "el": el, "f2": f2})
-    getattr(_state, "update")({"fl": fl, "ol": ol, "zl": zl})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyFill": DummyFill, "e": e, "el": el, "f2": f2})
+    _get_attr(_state, "update")({"fl": fl, "ol": ol, "zl": zl})
+    _state.update(_caller_locals())
 
 
 def _test_creation_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -124,8 +125,8 @@ def _test_creation_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> No
 
     # tracing mode
     original_eager = config.eager_mode
-    getattr(_state, "update")({"DummyNoNumpy": DummyNoNumpy, "buf": buf, "fb_buf": fb_buf, "original_eager": original_eager})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyNoNumpy": DummyNoNumpy, "buf": buf, "fb_buf": fb_buf, "original_eager": original_eager})
+    _state.update(_caller_locals())
 
 
 def _test_creation_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -155,7 +156,7 @@ def _test_creation_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> No
                 """
                 pass
 
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
         import ml_switcheroo_compiler.ops.registry as registry
 
         def dummy_emit_creation_node(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -188,7 +189,7 @@ def _test_creation_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> No
         as_callable(fb._unpack_shape)((as_callable(DummyNodeShape)(),))
 
     finally:
-        setattr(config, "eager_mode", original_eager)
+        _set_attr(config, "eager_mode", original_eager)
         global_tracing_state.is_tracing = False
 
 

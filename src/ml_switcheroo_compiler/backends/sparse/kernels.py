@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.sparse.types import (
     CSCTensor,
     CSRTensor,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def coo_sum_duplicates(
@@ -1147,6 +1148,6 @@ def __getattr__(name: str) -> EagerValue:
     Raises:
         AttributeError: If attribute is not found in numpy.
     """
-    if hasattr(_SP_BACKEND, name):
-        return as_tensor(getattr(_SP_BACKEND, name))
+    if _has_attr(_SP_BACKEND, name):
+        return as_tensor(_get_attr(_SP_BACKEND, name))
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

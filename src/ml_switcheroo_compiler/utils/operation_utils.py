@@ -7,6 +7,7 @@ import typing
 from collections.abc import Iterable, Sequence
 
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 class _OperationProtocol(typing.Protocol):
@@ -58,7 +59,7 @@ def get_source_inputs(tensor: _LineageTensorProtocol) -> list[_LineageTensorProt
     Returns:
         list[_LineageTensorProtocol]: Root source input tensors.
     """
-    lineage: _LineageHistoryProtocol | None = getattr(tensor, "_lineage_history", None)
+    lineage: _LineageHistoryProtocol | None = _get_attr(tensor, "_lineage_history", None)
     if lineage is not None:
         node = lineage.node
         if not node.operation.inputs:

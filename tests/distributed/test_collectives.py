@@ -9,6 +9,7 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.distributed.collectives import (
     DistributedBarrier,
     WebRTCDataChannelStream,
@@ -131,7 +132,7 @@ async def test_collectives_datatypes() -> None:
         await as_callable(_send_data)(conn, arr)
         conn.recv_queue = list(conn.sent)
         rec = await as_callable(_recv_data)(conn)
-        assert as_tensor(getattr(rec, "dtype")) == as_tensor(getattr(np, "dtype"))(dt)
+        assert as_tensor(_get_attr(rec, "dtype")) == as_tensor(_get_attr(np, "dtype"))(dt)
         assert as_callable(np.array_equal)(arr, rec)
 
 
@@ -440,8 +441,8 @@ async def _test_stream_send_recv_message_variants_part_1(_state: dict[str, Eager
     s1 = as_callable(WebRTCDataChannelStream)(ch_coro)
     await s1.send_bytes(b"coro_send")
     assert ch_coro.sent == [b"coro_send"]
-    getattr(_state, "update")({"CoroSendChannel": CoroSendChannel, "ch_coro": ch_coro, "s1": s1})
-    _state.update(locals())
+    _get_attr(_state, "update")({"CoroSendChannel": CoroSendChannel, "ch_coro": ch_coro, "s1": s1})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_send_recv_message_variants_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -489,9 +490,9 @@ async def _test_stream_send_recv_message_variants_part_2(_state: dict[str, Eager
 
     ch_msg_sync = SyncSendMessageChannel()
     s3 = as_callable(WebRTCDataChannelStream)(ch_msg_sync)
-    getattr(_state, "update")({"AsyncSendMessageChannel": AsyncSendMessageChannel, "SyncSendMessageChannel": SyncSendMessageChannel, "ch_msg_async": ch_msg_async, "ch_msg_sync": ch_msg_sync})
-    getattr(_state, "update")({"s2": s2, "s3": s3})
-    _state.update(locals())
+    _get_attr(_state, "update")({"AsyncSendMessageChannel": AsyncSendMessageChannel, "SyncSendMessageChannel": SyncSendMessageChannel, "ch_msg_async": ch_msg_async, "ch_msg_sync": ch_msg_sync})
+    _get_attr(_state, "update")({"s2": s2, "s3": s3})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_send_recv_message_variants_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -528,8 +529,8 @@ async def _test_stream_send_recv_message_variants_part_3(_state: dict[str, Eager
     s4 = as_callable(WebRTCDataChannelStream)(ch_msg_coro)
     await s4.send_bytes(b"msg_coro")
     assert ch_msg_coro.sent == [b"msg_coro"]
-    getattr(_state, "update")({"CoroMsgChannel": CoroMsgChannel, "ch_msg_coro": ch_msg_coro, "s4": s4})
-    _state.update(locals())
+    _get_attr(_state, "update")({"CoroMsgChannel": CoroMsgChannel, "ch_msg_coro": ch_msg_coro, "s4": s4})
+    _state.update(_caller_locals())
 
 
 async def _test_stream_send_recv_message_variants_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -566,7 +567,7 @@ async def _test_stream_send_recv_message_variants_part_4(_state: dict[str, Eager
 
     s_coro = as_callable(WebRTCDataChannelStream)(as_callable(RecvChannel)("sync_coro"))
     assert await s_coro.recv_bytes() == b"bytearray_data"
-    getattr(_state, "update")({"RecvChannel": RecvChannel, "s_coro": s_coro, "s_sync": s_sync})
+    _get_attr(_state, "update")({"RecvChannel": RecvChannel, "s_coro": s_coro, "s_sync": s_sync})
 
 
 @pytest.mark.asyncio
@@ -740,11 +741,11 @@ def _test_dispatch_collective_exhaustive_part_1(_state: dict[str, EagerTensorPro
     assert as_callable(np.array_equal)(res_rs_multi, as_callable(np.array)([1.0], dtype=np.float32))
 
     res_rs_sum = dispatch_collective("ReduceScatter", t, all_ranks_data=ranks_data, rank=0, op_type="SUM", scatter_dim=0)
-    getattr(_state, "update")({"dispatch_collective": dispatch_collective, "patch": patch, "ranks_data": ranks_data, "ranks_data_3": ranks_data_3})
-    getattr(_state, "update")({"res_fallback": res_fallback, "res_gather": res_gather, "res_max": res_max, "res_min": res_min})
-    getattr(_state, "update")({"res_other": res_other, "res_prod": res_prod, "res_rs_multi": res_rs_multi, "res_rs_sum": res_rs_sum})
-    getattr(_state, "update")({"res_sum": res_sum, "t": t})
-    _state.update(locals())
+    _get_attr(_state, "update")({"dispatch_collective": dispatch_collective, "patch": patch, "ranks_data": ranks_data, "ranks_data_3": ranks_data_3})
+    _get_attr(_state, "update")({"res_fallback": res_fallback, "res_gather": res_gather, "res_max": res_max, "res_min": res_min})
+    _get_attr(_state, "update")({"res_other": res_other, "res_prod": res_prod, "res_rs_multi": res_rs_multi, "res_rs_sum": res_rs_sum})
+    _get_attr(_state, "update")({"res_sum": res_sum, "t": t})
+    _state.update(_caller_locals())
 
 
 def _test_dispatch_collective_exhaustive_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -786,10 +787,10 @@ def _test_dispatch_collective_exhaustive_part_2(_state: dict[str, EagerTensorPro
     with patch("ml_switcheroo_compiler.backends.pytorch.distributed_collectives.pytorch_all_reduce", return_value=t) as mock_pt_ar:
         dispatch_collective("AllReduce", t, backend="pytorch")
         assert mock_pt_ar.called
-    getattr(_state, "update")({"data_2x2_0": data_2x2_0, "data_2x2_1": data_2x2_1, "mock_pt_ar": mock_pt_ar, "res_a2a": res_a2a})
-    getattr(_state, "update")({"res_bcast": res_bcast, "res_rs_max": res_rs_max, "res_rs_min": res_rs_min, "res_rs_prod": res_rs_prod})
-    getattr(_state, "update")({"res_rs_unknown": res_rs_unknown, "res_unhandled_with_ranks": res_unhandled_with_ranks})
-    _state.update(locals())
+    _get_attr(_state, "update")({"data_2x2_0": data_2x2_0, "data_2x2_1": data_2x2_1, "mock_pt_ar": mock_pt_ar, "res_a2a": res_a2a})
+    _get_attr(_state, "update")({"res_bcast": res_bcast, "res_rs_max": res_rs_max, "res_rs_min": res_rs_min, "res_rs_prod": res_rs_prod})
+    _get_attr(_state, "update")({"res_rs_unknown": res_rs_unknown, "res_unhandled_with_ranks": res_unhandled_with_ranks})
+    _state.update(_caller_locals())
 
 
 def _test_dispatch_collective_exhaustive_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -817,9 +818,9 @@ def _test_dispatch_collective_exhaustive_part_3(_state: dict[str, EagerTensorPro
     with patch("ml_switcheroo_compiler.backends.jax.distributed_collectives.jax_all_reduce", return_value=t) as mock_jax_ar:
         dispatch_collective("AllReduce", t, backend="jax")
         assert mock_jax_ar.called
-    getattr(_state, "update")({"mock_jax_ar": mock_jax_ar, "mock_pt_ag": mock_pt_ag, "mock_pt_bc": mock_pt_bc, "mock_pt_rs": mock_pt_rs})
-    getattr(_state, "update")({"res_pt_err": res_pt_err})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_jax_ar": mock_jax_ar, "mock_pt_ag": mock_pt_ag, "mock_pt_bc": mock_pt_bc, "mock_pt_rs": mock_pt_rs})
+    _get_attr(_state, "update")({"res_pt_err": res_pt_err})
+    _state.update(_caller_locals())
 
 
 def _test_dispatch_collective_exhaustive_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -838,7 +839,7 @@ def _test_dispatch_collective_exhaustive_part_4(_state: dict[str, EagerTensorPro
     with as_callable(patch)("ml_switcheroo_compiler.backends.jax.distributed_collectives.jax_all_reduce", side_effect=as_callable(RuntimeError)("jax_err")):
         res_jax_err = dispatch_collective("AllReduce", t, backend="jax")
         assert as_callable(np.array_equal)(res_jax_err, t)
-    getattr(_state, "update")({"mock_jax_ag": mock_jax_ag, "mock_jax_bc": mock_jax_bc, "res_jax_err": res_jax_err})
+    _get_attr(_state, "update")({"mock_jax_ag": mock_jax_ag, "mock_jax_bc": mock_jax_bc, "res_jax_err": res_jax_err})
 
 
 def test_dispatch_collective_exhaustive() -> None:
@@ -1111,10 +1112,10 @@ async def _test_multi_peer_ring_reduce_scatter_part_1(_state: dict[str, EagerTen
 
     # PROD test
     mesh_prod = _create_mesh_channels(world_size)
-    getattr(_state, "update")({"inputs": inputs, "mesh": mesh, "mesh_prod": mesh_prod, "mesh_ring": mesh_ring})
-    getattr(_state, "update")({"results": results, "results_ring": results_ring, "run_rank_ring": run_rank_ring, "run_rank_sum": run_rank_sum})
-    getattr(_state, "update")({"world_size": world_size})
-    _state.update(locals())
+    _get_attr(_state, "update")({"inputs": inputs, "mesh": mesh, "mesh_prod": mesh_prod, "mesh_ring": mesh_ring})
+    _get_attr(_state, "update")({"results": results, "results_ring": results_ring, "run_rank_ring": run_rank_ring, "run_rank_sum": run_rank_sum})
+    _get_attr(_state, "update")({"world_size": world_size})
+    _state.update(_caller_locals())
 
 
 async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1153,10 +1154,10 @@ async def _test_multi_peer_ring_reduce_scatter_part_2(_state: dict[str, EagerTen
 
     results_max = await asyncio.gather(*[run_rank_max(r) for r in range(world_size)])
     expected_max = [3.0, 6.0, 9.0, 12.0]
-    getattr(_state, "update")({"expected_max": expected_max, "expected_prod": expected_prod, "inputs_max": inputs_max, "inputs_prod": inputs_prod})
-    getattr(_state, "update")({"mesh_max": mesh_max, "results_max": results_max, "results_prod": results_prod, "run_rank_max": run_rank_max})
-    getattr(_state, "update")({"run_rank_prod": run_rank_prod})
-    _state.update(locals())
+    _get_attr(_state, "update")({"expected_max": expected_max, "expected_prod": expected_prod, "inputs_max": inputs_max, "inputs_prod": inputs_prod})
+    _get_attr(_state, "update")({"mesh_max": mesh_max, "results_max": results_max, "results_prod": results_prod, "run_rank_max": run_rank_max})
+    _get_attr(_state, "update")({"run_rank_prod": run_rank_prod})
+    _state.update(_caller_locals())
 
 
 async def _test_multi_peer_ring_reduce_scatter_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1197,8 +1198,8 @@ async def _test_multi_peer_ring_reduce_scatter_part_3(_state: dict[str, EagerTen
     # 3. Missing neighbor
     with pytest.raises(ValueError, match="Ring topology requires connections"):
         await ring_reduce_scatter(single, "SUM", 0, [None, None], 0)
-    getattr(_state, "update")({"mesh_min": mesh_min, "res_single": res_single, "results_min": results_min, "run_rank_min": run_rank_min})
-    getattr(_state, "update")({"single": single})
+    _get_attr(_state, "update")({"mesh_min": mesh_min, "res_single": res_single, "results_min": results_min, "run_rank_min": run_rank_min})
+    _get_attr(_state, "update")({"single": single})
 
 
 @pytest.mark.asyncio

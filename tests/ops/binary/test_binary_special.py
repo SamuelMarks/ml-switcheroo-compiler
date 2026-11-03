@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.binary.special import Allclose, Atan2, Divmod, Isclose
 from tests.testing_utils import as_tensor
 
@@ -50,13 +51,13 @@ def test_binary_special() -> None:
 
     import ml_switcheroo_compiler.ops.binary.special as sp
 
-    orig_evaluator = as_tensor(getattr(sp, "EagerEvaluator"))
+    orig_evaluator = as_tensor(_get_attr(sp, "EagerEvaluator"))
 
     try:
-        setattr(sp, "EagerEvaluator", DummyEval())
+        _set_attr(sp, "EagerEvaluator", DummyEval())
         assert as_tensor(d(1, 2)) == as_tensor("eager_eval")
     finally:
-        setattr(sp, "EagerEvaluator", orig_evaluator)
+        _set_attr(sp, "EagerEvaluator", orig_evaluator)
 
     config.eager_mode = False
 

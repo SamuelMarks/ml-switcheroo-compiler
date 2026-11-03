@@ -21,7 +21,7 @@ from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxDistributedV
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator, MLXGenerator
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator, PyTorchGenerator
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator, TensorFlowGenerator
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from tests.testing_utils import as_callable, as_shape, as_tensor, as_tensor_list
@@ -578,10 +578,10 @@ def test_stablehlo_compile_aot_impl() -> None:
     gen = StableHLOCodeGenerator(graph)
 
     artifact: TypedVariadicCallable[EagerValue] | EagerValue = gen._compile_aot_impl(graph)
-    assert hasattr(artifact, "bytecode")
-    assert hasattr(artifact, "mlir")
-    assert len(as_tensor(getattr(artifact, "bytecode"))) > 0
-    assert "module" in as_tensor(getattr(artifact, "mlir"))
+    assert _has_attr(artifact, "bytecode")
+    assert _has_attr(artifact, "mlir")
+    assert len(as_tensor(_get_attr(artifact, "bytecode"))) > 0
+    assert "module" in as_tensor(_get_attr(artifact, "mlir"))
 
     # Execute artifact
     inp = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
@@ -658,7 +658,7 @@ def test_dask_compile_aot_fallbacks() -> None:
         import ml_switcheroo_compiler.backends.dask.generator as dask_gen_mod
 
         importlib.reload(dask_gen_mod)
-        assert as_tensor(getattr(dask_gen_mod, "da")) is None
+        assert as_tensor(_get_attr(dask_gen_mod, "da")) is None
 
     # Restore dask_gen_mod
     importlib.reload(dask_gen_mod)

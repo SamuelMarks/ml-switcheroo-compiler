@@ -6,7 +6,8 @@ import typing
 
 import pytest
 
-from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY, JVPRuleCallable, get_jvp, register_jvp
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
+from ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry import _JVP_REGISTRY, get_jvp, register_jvp
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -29,12 +30,12 @@ def test_jvp_registry_coverage_brute() -> None:
             TensorOrScalar: The evaluated or processed output.
         """
 
-    register_jvp("fake_op")(typing.cast("JVPRuleCallable", fake_jvp))
+    register_jvp("fake_op")(_cast_val("JVPRuleCallable", fake_jvp))
 
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value=None):
-        assert get_jvp("fake_op") == typing.cast("JVPRuleCallable", fake_jvp)
+        assert get_jvp("fake_op") == _cast_val("JVPRuleCallable", fake_jvp)
     with pytest.raises(ValueError, match="already registered"):
 
         def fake_jvp2() -> None:
@@ -44,7 +45,7 @@ def test_jvp_registry_coverage_brute() -> None:
                 TensorOrScalar: The evaluated or processed output.
             """
 
-        register_jvp("fake_op")(typing.cast("JVPRuleCallable", fake_jvp2))
+        register_jvp("fake_op")(_cast_val("JVPRuleCallable", fake_jvp2))
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", return_value=None):
         with pytest.raises(ValueError, match="No JVP rule"):
@@ -81,7 +82,7 @@ def test_jvp_registry_full_branches() -> None:
         Args:
             name: Test parameter `name`.
         """
-        getattr(_JVP_REGISTRY, "__setitem__")(name, "lazy_jvp_result")
+        _get_attr(_JVP_REGISTRY, "__setitem__")(name, "lazy_jvp_result")
         return None
 
     with patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp_from_data", side_effect=mock_get_data):

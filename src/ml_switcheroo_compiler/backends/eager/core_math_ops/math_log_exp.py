@@ -7,6 +7,7 @@ import builtins  # noqa: F401
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 @global_eager_registry.register("Expm1")
@@ -22,9 +23,9 @@ def _expm1(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
             EagerValue: Result.
     """
     x = args[0]
-    if hasattr(backend_module, "expm1"):
-        return as_tensor(getattr(backend_module, "expm1")(x))
-    return as_tensor(getattr(backend_module, "exp")(x) - 1.0)
+    if _has_attr(backend_module, "expm1"):
+        return as_tensor(_get_attr(backend_module, "expm1")(x))
+    return as_tensor(_get_attr(backend_module, "exp")(x) - 1.0)
 
 
 @global_eager_registry.register("FloatPower")
@@ -39,7 +40,7 @@ def _float_power(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "float_power", getattr(backend_module, "power", None))
+    func = _get_attr(backend_module, "float_power", _get_attr(backend_module, "power", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -57,7 +58,7 @@ def _frexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """
     import math
 
-    func = getattr(backend_module, "frexp", getattr(math, "frexp", None))
+    func = _get_attr(backend_module, "frexp", _get_attr(math, "frexp", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -75,7 +76,7 @@ def _ldexp(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     """
     import math
 
-    func = getattr(backend_module, "ldexp", getattr(math, "ldexp", None))
+    func = _get_attr(backend_module, "ldexp", _get_attr(math, "ldexp", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -91,14 +92,14 @@ def _slogdet(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "slogdet"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "slogdet"):
         return as_tensor(func.slogdet(*args, **kwargs))
-    if hasattr(backend_module, "slogdet"):
-        return as_tensor(getattr(backend_module, "slogdet")(*args, **kwargs))
+    if _has_attr(backend_module, "slogdet"):
+        return as_tensor(_get_attr(backend_module, "slogdet")(*args, **kwargs))
 
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").slogdet(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").slogdet(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Xlog1py")
@@ -113,7 +114,7 @@ def _np_xlog1py(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "xlog1py", getattr(backend_module, "xlog1py", None))
+    func = _get_attr(backend_module, "xlog1py", _get_attr(backend_module, "xlog1py", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
@@ -132,7 +133,7 @@ def _np_xlogy(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "xlogy", getattr(backend_module, "xlogy", None))
+    func = _get_attr(backend_module, "xlogy", _get_attr(backend_module, "xlogy", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)

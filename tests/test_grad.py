@@ -1,6 +1,7 @@
 """Tests for test_grad."""
 
 from __future__ import annotations
+from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_type_obj
 
 import importlib
@@ -39,8 +40,8 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
     from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
-CustomJVPFunction = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
-CustomJVPFunction = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
+CustomJVPFunction = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
+CustomJVPFunction = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
 
 
 def test_grad() -> None:
@@ -91,7 +92,7 @@ def test_grad() -> None:
             Args:
                 node: Test parameter `node`.
             """
-            getattr(getattr(self, "nodes"), "__setitem__")(getattr(node, "id"), node)
+            _get_attr(_get_attr(self, "nodes"), "__setitem__")(_get_attr(node, "id"), node)
 
     state.global_tracing_state.start_tracing("test_grad_overwrite_bwd")
     res = vjp_fun(t)
@@ -201,7 +202,7 @@ def test_grad_overwrite_bwd() -> None:
             Args:
                 node: Test parameter `node`.
             """
-            getattr(getattr(self, "nodes"), "__setitem__")(getattr(node, "id"), node)
+            _get_attr(_get_attr(self, "nodes"), "__setitem__")(_get_attr(node, "id"), node)
 
     state.global_tracing_state.start_tracing("test_grad_overwrite_bwd")
     from ml_switcheroo_compiler.core.dtype import DType
@@ -215,7 +216,7 @@ def test_grad_overwrite_bwd() -> None:
     t1 = as_callable(Tensor)(data=as_callable(DummyData)(), config=as_callable(TensorConfig)((1,), DType.Float32, "cpu"))
     t2 = as_callable(Tensor)(data=as_callable(DummyData)(), config=as_callable(TensorConfig)((1,), DType.Float32, "cpu"))
     overwrite_with_gradient(t1, t2)
-    n = as_tensor(getattr(list(as_tensor(getattr(state.global_tracing_state.active_graph, "nodes")).values()), "__getitem__")(0)) if as_tensor(getattr(state.global_tracing_state.active_graph, "nodes")) else None
+    n = as_tensor(_get_attr(list(as_tensor(_get_attr(state.global_tracing_state.active_graph, "nodes")).values()), "__getitem__")(0)) if as_tensor(_get_attr(state.global_tracing_state.active_graph, "nodes")) else None
     if n is not None:
         bwd_fn = n.attributes["bwd_fn"]
     if n is not None:
@@ -291,7 +292,7 @@ def test_register_gradient() -> None:
         return cotangent
 
     dec(f)
-    assert getattr(dec, "op_type") == "my_op"
+    assert _get_attr(dec, "op_type") == "my_op"
 
 
 def test_checkpoint_remat() -> None:
@@ -349,10 +350,10 @@ def test_jvp_vjp_hvp() -> None:
 
     # HVP of x^3 is d(3x^2)/dx * v = 6x * v
     val_hvp, out_tan_hvp = as_callable(hvp)(hvp_test_func, primal_x, tangent_v)
-    assert as_tensor(getattr(val_hvp, "shape")) == (2,)
-    assert as_tensor(getattr(val_hvp, "dtype")) in (np.float32, np.float64)
-    assert as_tensor(getattr(out_tan_hvp, "shape")) == (2,)
-    assert as_tensor(getattr(out_tan_hvp, "dtype")) in (np.float32, np.float64)
+    assert as_tensor(_get_attr(val_hvp, "shape")) == (2,)
+    assert as_tensor(_get_attr(val_hvp, "dtype")) in (np.float32, np.float64)
+    assert as_tensor(_get_attr(out_tan_hvp, "shape")) == (2,)
+    assert as_tensor(_get_attr(out_tan_hvp, "dtype")) in (np.float32, np.float64)
     assert as_callable(np.allclose)(out_tan_hvp, [12.0, 18.0])
     # --------------------------------------------------------------
     assert tan == 1.0
@@ -593,7 +594,7 @@ def test_grad_missing_coverage() -> None:
             pass
 
         opts_bad = GradOptions()
-        object.__setattr__(opts_bad, "argnums", MyArgnums())
+        _obj_set_attr(opts_bad, "argnums", MyArgnums())
         grad_multi = as_callable(grad)(f_bool, opts_bad)
         res_multi = grad_multi(1.0)
         assert res_multi is not None
@@ -609,7 +610,7 @@ def test_grad_missing_coverage() -> None:
 
     grad_aux = grad(f_aux, GradOptions(has_aux=True))
     res_aux = grad_aux(3.0)
-    assert as_tensor(getattr(res_aux, "__getitem__")(0)) == 2.0
+    assert as_tensor(_get_attr(res_aux, "__getitem__")(0)) == 2.0
 
     # 5. grad with argnums as list/tuple (line 631-634)
     def f_multi(x: EagerValue, y: EagerValue) -> EagerValue:

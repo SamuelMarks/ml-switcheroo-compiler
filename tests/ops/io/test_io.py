@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import io
 from ml_switcheroo_compiler.ops.io import SparsePlus, SparseSigmoid, _fallback_load, set_default_stream, set_memory_limit, set_wired_limit, sparse_plus, sparse_sigmoid
@@ -117,11 +118,11 @@ def _test_io_functions_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     assert isinstance(gfile_stat(__file__), dict)
     gfile_makedirs("test_dir_to_make")
     os.rmdir("test_dir_to_make")
-    getattr(_state, "update")({"TFRecordOptions": TFRecordOptions, "TFRecordWriter": TFRecordWriter, "config": config, "decode_bmp": decode_bmp})
-    getattr(_state, "update")({"decode_gif": decode_gif, "decode_jpeg": decode_jpeg, "decode_png": decode_png, "gfile_copy": gfile_copy})
-    getattr(_state, "update")({"gfile_glob": gfile_glob, "gfile_makedirs": gfile_makedirs, "gfile_stat": gfile_stat, "global_tracing_state": global_tracing_state})
-    getattr(_state, "update")({"os": os, "save_safetensors": save_safetensors, "tempfile": tempfile})
-    _state.update(locals())
+    _get_attr(_state, "update")({"TFRecordOptions": TFRecordOptions, "TFRecordWriter": TFRecordWriter, "config": config, "decode_bmp": decode_bmp})
+    _get_attr(_state, "update")({"decode_gif": decode_gif, "decode_jpeg": decode_jpeg, "decode_png": decode_png, "gfile_copy": gfile_copy})
+    _get_attr(_state, "update")({"gfile_glob": gfile_glob, "gfile_makedirs": gfile_makedirs, "gfile_stat": gfile_stat, "global_tracing_state": global_tracing_state})
+    _get_attr(_state, "update")({"os": os, "save_safetensors": save_safetensors, "tempfile": tempfile})
+    _state.update(_caller_locals())
 
 
 def _test_io_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -143,8 +144,8 @@ def _test_io_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_get:
             del mock_get.return_value.execute_op
             pass
-    getattr(_state, "update")({"dst": dst, "mock_fb": mock_fb, "mock_get": mock_get, "src": src})
-    _state.update(locals())
+    _get_attr(_state, "update")({"dst": dst, "mock_fb": mock_fb, "mock_get": mock_get, "src": src})
+    _state.update(_caller_locals())
 
 
 def _test_io_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -171,8 +172,8 @@ def _test_io_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         pass
         pass
         pass
-    getattr(_state, "update")({"mock_backend": mock_backend})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_backend": mock_backend})
+    _state.update(_caller_locals())
 
 
 def _test_io_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -203,8 +204,8 @@ def _test_io_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
         assert writer.write("data") is None
         with writer:
             pass
-    getattr(_state, "update")({"mock_backend": mock_backend, "opt": opt, "writer": writer})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_backend": mock_backend, "opt": opt, "writer": writer})
+    _state.update(_caller_locals())
 
 
 def _test_io_functions_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -217,7 +218,7 @@ def _test_io_functions_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
     with patch("ml_switcheroo_compiler.serialization.formats.safetensors.SafetensorsWeightFormat.save") as mock_save:
         save_safetensors("path", {})
         mock_save.assert_called_once()
-    getattr(_state, "update")({"mock_save": mock_save})
+    _get_attr(_state, "update")({"mock_save": mock_save})
 
 
 def test_io_functions() -> None:

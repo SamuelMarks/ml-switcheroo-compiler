@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 
+from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -35,15 +36,14 @@ def axis_translation_pass(graph: IRGraph) -> bool:
                     transp_in_id = f"transpose_{uuid.uuid4().hex[:8]}"
 
                     # Estimate new shape metadata
-                    import typing
 
                     orig_shape = graph.nodes[inp_id].shape_metadata if inp_id in graph.nodes else None
                     new_meta: Sequence[int | str] | None
                     if orig_shape and len(orig_shape) == 4:
                         new_shape = (orig_shape[0], orig_shape[2], orig_shape[3], orig_shape[1])
-                        new_meta = typing.cast("Sequence[int | str] | None", new_shape)
+                        new_meta = _cast_val("Sequence[int | str] | None", new_shape)
                     else:
-                        new_meta = typing.cast("Sequence[int | str] | None", orig_shape)
+                        new_meta = _cast_val("Sequence[int | str] | None", orig_shape)
 
                     transp_in_node = IRNode(id=transp_in_id, op_type="Transpose", inputs=[inp_id], attributes={"axes": [0, 2, 3, 1]}, shape_metadata=new_meta)
                     graph.nodes[transp_in_id] = transp_in_node

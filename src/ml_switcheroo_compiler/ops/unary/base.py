@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.base import OpDef
 
 if typing.TYPE_CHECKING:
@@ -41,4 +42,4 @@ class UnaryMathOp(OpDef):
         if not shapes:
             return ()
         first = shapes[0]
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))

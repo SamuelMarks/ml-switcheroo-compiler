@@ -21,6 +21,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_trig import (
     _sinc,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod
 
 if typing.TYPE_CHECKING:
@@ -87,8 +88,8 @@ def _test_math_trig_all_branches_part_1(_state: dict[str, EagerTensorProtocol]) 
             return "arccosh_val"
 
     assert _acosh(as_mod(BackendArccosh()), 1.5) == "arccosh_val"
-    getattr(_state, "update")({"BackendAcos": BackendAcos, "BackendArccos": BackendArccos, "BackendArccosh": BackendArccosh, "empty_backend": empty_backend})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendAcos": BackendAcos, "BackendArccos": BackendArccos, "BackendArccosh": BackendArccosh, "empty_backend": empty_backend})
+    _state.update(_caller_locals())
 
 
 def _test_math_trig_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -146,8 +147,8 @@ def _test_math_trig_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) 
 
     # Case C: fallback
     assert as_callable(np.isclose)(as_callable(_asin)(empty_backend, 0.5), as_callable(math.asin)(0.5))
-    getattr(_state, "update")({"BackendAcosh": BackendAcosh, "BackendArcsin": BackendArcsin, "BackendAsin": BackendAsin})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendAcosh": BackendAcosh, "BackendArcsin": BackendArcsin, "BackendAsin": BackendAsin})
+    _state.update(_caller_locals())
 
 
 def _test_math_trig_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -201,8 +202,8 @@ def _test_math_trig_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) 
             return "arctan_val"
 
     assert _atan(as_mod(BackendArctan()), 0.5) == "arctan_val"
-    getattr(_state, "update")({"BackendArcsinh": BackendArcsinh, "BackendArctan": BackendArctan, "BackendAsin": BackendAsin})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendArcsinh": BackendArcsinh, "BackendArctan": BackendArctan, "BackendAsin": BackendAsin})
+    _state.update(_caller_locals())
 
 
 def _test_math_trig_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -260,8 +261,8 @@ def _test_math_trig_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) 
 
     # Case C: fallback
     assert as_callable(np.isclose)(as_callable(_atanh)(empty_backend, 0.5), as_callable(math.atan)(0.5))
-    getattr(_state, "update")({"BackendArctanh": BackendArctanh, "BackendAtan": BackendAtan, "BackendAtanh": BackendAtanh})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendArctanh": BackendArctanh, "BackendAtan": BackendAtan, "BackendAtanh": BackendAtanh})
+    _state.update(_caller_locals())
 
 
 def _test_math_trig_all_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -319,8 +320,8 @@ def _test_math_trig_all_branches_part_5(_state: dict[str, EagerTensorProtocol]) 
 
     # Case B: fallback
     assert as_callable(np.isclose)(as_callable(_sinc)(empty_backend, 0.0), 1.0)
-    getattr(_state, "update")({"BackendArctan2": BackendArctan2, "BackendAtan2": BackendAtan2, "BackendSinc": BackendSinc})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendArctan2": BackendArctan2, "BackendAtan2": BackendAtan2, "BackendSinc": BackendSinc})
+    _state.update(_caller_locals())
 
 
 def _test_math_trig_all_branches_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -380,9 +381,9 @@ def _test_math_trig_all_branches_part_6(_state: dict[str, EagerTensorProtocol]) 
     # Case B: backend lacks isposinf -> fallback to np.isposinf
     posinf_res = _isposinf(empty_backend, np.array([float("inf"), float("-inf"), 1.0]))
     assert as_callable(list)(posinf_res) == [True, False, False]
-    getattr(_state, "update")({"BackendIsin": BackendIsin, "BackendIsinfDirect": BackendIsinfDirect, "BackendIsposinfDirect": BackendIsposinfDirect, "inf_res": inf_res})
-    getattr(_state, "update")({"posinf_res": posinf_res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendIsin": BackendIsin, "BackendIsinfDirect": BackendIsinfDirect, "BackendIsposinfDirect": BackendIsposinfDirect, "inf_res": inf_res})
+    _get_attr(_state, "update")({"posinf_res": posinf_res})
+    _state.update(_caller_locals())
 
 
 def _test_math_trig_all_branches_part_7(_state: dict[str, EagerTensorProtocol]) -> None:

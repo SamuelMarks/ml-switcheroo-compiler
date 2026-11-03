@@ -11,6 +11,7 @@ import pytest
 import yaml
 
 from ml_switcheroo_compiler.backends.cuda.nccl_collectives import NCCLDriver
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.distributed.collectives import (
     dispatch_collective,
     get_collective_backend,
@@ -33,7 +34,7 @@ def _worker_all_reduce(rank: int, world_size: int, return_dict: dict[str, EagerV
     all_data = [np.array([i + 1.0, (i + 1.0) * 2.0], dtype=np.float32) for i in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllReduce", local_tensor, backend="numpy", op_type="SUM", rank=rank, all_ranks_data=all_data)
-    getattr(return_dict, "__setitem__")(rank, res)
+    _get_attr(return_dict, "__setitem__")(rank, res)
 
 
 def _worker_all_gather(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
@@ -47,7 +48,7 @@ def _worker_all_gather(rank: int, world_size: int, return_dict: dict[str, EagerV
     all_data = [np.array([[float(i)]], dtype=np.float32) for i in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllGather", local_tensor, backend="numpy", axis=0, rank=rank, all_ranks_data=all_data)
-    getattr(return_dict, "__setitem__")(rank, res)
+    _get_attr(return_dict, "__setitem__")(rank, res)
 
 
 def _worker_reduce_scatter(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
@@ -62,7 +63,7 @@ def _worker_reduce_scatter(rank: int, world_size: int, return_dict: dict[str, Ea
     all_data = [np.array([float(rank_idx + 1) * (k + 1) for k in range(world_size)], dtype=np.float32) for rank_idx in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("ReduceScatter", local_tensor, backend="numpy", op_type="SUM", scatter_dim=0, rank=rank, all_ranks_data=all_data)
-    getattr(return_dict, "__setitem__")(rank, res)
+    _get_attr(return_dict, "__setitem__")(rank, res)
 
 
 def _worker_all_to_all(rank: int, world_size: int, return_dict: dict[str, EagerValue]) -> None:
@@ -77,7 +78,7 @@ def _worker_all_to_all(rank: int, world_size: int, return_dict: dict[str, EagerV
     all_data = [np.arange(world_size * 2, dtype=np.float32).reshape(world_size, 2) + rank_idx * 10 for rank_idx in range(world_size)]
     local_tensor = all_data[rank]
     res = dispatch_collective("AllToAll", local_tensor, backend="numpy", scatter_dim=0, gather_dim=0, rank=rank, all_ranks_data=all_data)
-    getattr(return_dict, "__setitem__")(rank, res)
+    _get_attr(return_dict, "__setitem__")(rank, res)
 
 
 def test_multiprocess_all_reduce() -> None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import operator
+import types
 import typing
 import uuid
 from collections.abc import Callable, Iterator, Sequence
@@ -162,6 +164,10 @@ class TensorConversionMixin(_ConversionBase):
         Returns:
             TensorOrScalar: The converted array.
         """
+        arr_hook: TensorOrScalar = operator.attrgetter("__array__")(self)
+        if isinstance(arr_hook, types.FunctionType):
+            res_hook: TensorOrScalar = arr_hook()
+            return res_hook
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
@@ -175,17 +181,6 @@ class TensorConversionMixin(_ConversionBase):
             return backend.array(data, dtype=dtype) if dtype is not None else backend.asarray(data)
         except Exception:
             return backend.array(data.tolist() if is_backend_buffer(data) else data, dtype=dtype)
-
-    def to_numpy(self, dtype: DType | str | type | None = None) -> TensorOrScalar:
-        """Convert the tensor to a NumPy/backend array with optional dtype cast.
-
-        Args:
-            dtype (DType | str | type | None): Optional target data type.
-
-        Returns:
-            TensorOrScalar: The converted array.
-        """
-        return self.to_backend_array(dtype=dtype)
 
     def __array__(self, dtype: DType | str | type | None = None) -> TensorOrScalar:
         """Convert the tensor to a backend array with optional dtype cast.

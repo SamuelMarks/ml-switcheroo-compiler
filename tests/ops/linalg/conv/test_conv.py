@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg.conv import (
     ConvLocalHyperparams,
@@ -34,7 +35,7 @@ def test_conv_general_dilated(mock_infer: EagerTensorProtocol, mock_emit: EagerT
     rhs.dtype = "float32"
     config = ConvConfig(window_strides=[1, 1], padding="SAME", lhs_dilation=[1, 1], rhs_dilation=[1, 1], dimension_numbers=None, feature_group_count=1)
 
-    as_tensor(getattr(conv_general_dilated, "__wrapped__"))(lhs, rhs, config)
+    as_tensor(_get_attr(conv_general_dilated, "__wrapped__"))(lhs, rhs, config)
     mock_emit.assert_called()
 
 
@@ -53,7 +54,7 @@ def test_conv_general_dilated_local(mock_infer: EagerTensorProtocol, mock_emit: 
     rhs.dtype = "float32"
     config = ConvLocalHyperparams(window_strides=[1, 1], padding="SAME", filter_shape=(1, 1))
 
-    as_tensor(getattr(conv_general_dilated_local, "__wrapped__"))(lhs, rhs, config)
+    as_tensor(_get_attr(conv_general_dilated_local, "__wrapped__"))(lhs, rhs, config)
     mock_emit.assert_called()
 
 
@@ -69,7 +70,7 @@ def test_conv_general_dilated_patches(mock_infer: EagerTensorProtocol, mock_emit
     lhs = MagicMock()
     lhs.dtype = "float32"
 
-    as_tensor(getattr(conv_general_dilated_patches, "__wrapped__"))(lhs, (1, 1), [1, 1], "SAME")
+    as_tensor(_get_attr(conv_general_dilated_patches, "__wrapped__"))(lhs, (1, 1), [1, 1], "SAME")
     mock_emit.assert_called()
 
 
@@ -87,5 +88,5 @@ def test_conv_with_general_padding(mock_infer: EagerTensorProtocol, mock_emit: E
     rhs = MagicMock()
     rhs.dtype = "float32"
 
-    as_tensor(getattr(conv_with_general_padding, "__wrapped__"))(lhs, rhs, [1, 1], "SAME")
+    as_tensor(_get_attr(conv_with_general_padding, "__wrapped__"))(lhs, rhs, [1, 1], "SAME")
     mock_emit.assert_called()

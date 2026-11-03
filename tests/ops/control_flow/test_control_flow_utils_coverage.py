@@ -10,6 +10,7 @@ from ml_switcheroo_ir import LogicalGraph, NodeDict
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _del_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import (
     _get_tensor_ids,
@@ -55,8 +56,8 @@ def test_control_flow_utils_wrap_proxy_inputs_no_input_specs() -> None:
     """Cover _wrap_proxy_inputs branch when subgraph does not have input_specs."""
     graph = LogicalGraph(name="test_graph_no_specs")
     graph.nodes = NodeDict({})
-    if hasattr(graph, "input_specs"):
-        delattr(graph, "input_specs")
+    if _has_attr(graph, "input_specs"):
+        _del_attr(graph, "input_specs")
 
     cfg = TensorConfig(shape=(2,), dtype=DType.Float32, device=Device("cpu"))
     t1 = Tensor(np.array([1.0, 2.0], dtype=np.float32), cfg)
@@ -79,11 +80,11 @@ def test_control_flow_utils_get_tensor_ids_branches() -> None:
 
     # Tensor where cur has no data.id but has id on Tensor
     t_no_id_payload = Tensor(np.array([1.0]), cfg)
-    setattr(t_no_id_payload, "id", "tensor_attr_id")
+    _set_attr(t_no_id_payload, "id", "tensor_attr_id")
     assert _get_tensor_ids(t_no_id_payload) == ["tensor_attr_id"]
 
     # Tensor where cur has neither data.id nor id (generates uuid)
-    delattr(t_no_id_payload, "id")
+    _del_attr(t_no_id_payload, "id")
     ids_uuid = _get_tensor_ids(t_no_id_payload)
     assert len(ids_uuid) == 1
     assert isinstance(ids_uuid[0], str)

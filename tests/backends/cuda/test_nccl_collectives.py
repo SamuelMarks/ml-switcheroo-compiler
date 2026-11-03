@@ -20,6 +20,7 @@ from ml_switcheroo_compiler.backends.cuda.nccl_collectives import (
     NCCLDriver,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.distributed.host_collectives import HostCollectiveCommunicator
 from tests.testing_utils import as_callable
 
@@ -394,7 +395,7 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state: dict[str, EagerT
         Returns:
             int: Return status code.
         """
-        as_callable(ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents.__setattr__("value", 0x12345678)
+        _set_attr(as_callable(ctypes.cast)(ptr_ref, ctypes.POINTER(ctypes.c_void_p)).contents, "value", 0x12345678)
         return 0
 
     mock_rt.cudaMalloc = fake_malloc_success
@@ -414,9 +415,9 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_1(_state: dict[str, EagerT
 
     # cudaMemcpy H2D success and exception
     arr = np.array([1.0, 2.0, 3.0], dtype=np.float32)
-    getattr(_state, "update")({"arr": arr, "ctypes": ctypes, "dev_ptr": dev_ptr, "driver": driver})
-    getattr(_state, "update")({"fake_malloc_success": fake_malloc_success, "mock_nccl": mock_nccl, "mock_rt": mock_rt})
-    _state.update(locals())
+    _get_attr(_state, "update")({"arr": arr, "ctypes": ctypes, "dev_ptr": dev_ptr, "driver": driver})
+    _get_attr(_state, "update")({"fake_malloc_success": fake_malloc_success, "mock_nccl": mock_nccl, "mock_rt": mock_rt})
+    _state.update(_caller_locals())
 
 
 def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -426,8 +427,8 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerT
         _state: Shared test state dictionary.
     """
     arr, dev_ptr, driver, mock_rt = _state["arr"], _state["dev_ptr"], _state["driver"], _state["mock_rt"]
-    setattr(mock_rt.cudaMemcpy, "return_value", 0)
-    setattr(mock_rt.cudaMemcpy, "side_effect", None)
+    _set_attr(mock_rt.cudaMemcpy, "return_value", 0)
+    _set_attr(mock_rt.cudaMemcpy, "side_effect", None)
     driver.copy_host_to_device(arr, dev_ptr)
     assert mock_rt.cudaMemcpy.called
 
@@ -435,30 +436,30 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_2(_state: dict[str, EagerT
     del mock_rt.cudaMalloc
     host_buf_ptr = driver.allocate_buffer(arr.nbytes)
     real_buf = driver._allocated_buffers.pop(host_buf_ptr)
-    setattr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("H2D failed"))
+    _set_attr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("H2D failed"))
     driver.copy_host_to_device(arr, host_buf_ptr)
 
     # cudaMemcpy D2H success and exception
     out_arr = np.zeros_like(arr)
-    setattr(mock_rt.cudaMemcpy, "side_effect", None)
+    _set_attr(mock_rt.cudaMemcpy, "side_effect", None)
     driver.copy_device_to_host(dev_ptr, out_arr)
     assert mock_rt.cudaMemcpy.called
 
-    setattr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("D2H failed"))
+    _set_attr(mock_rt.cudaMemcpy, "side_effect", RuntimeError("D2H failed"))
     driver.copy_device_to_host(host_buf_ptr, out_arr)
     assert as_callable(np.allclose)(out_arr, arr)
     del real_buf
 
     # Restore cudaMalloc with non-zero status branch (fails cudaMalloc, falls back to host buffer)
-    setattr(mock_rt, "cudaMalloc", MagicMock(return_value=1))
+    _set_attr(mock_rt, "cudaMalloc", MagicMock(return_value=1))
     fallback_buf = driver.allocate_buffer(64)
     assert fallback_buf in driver._allocated_buffers
 
     # stream_synchronize success, None, and exception
-    setattr(mock_rt.cudaStreamSynchronize, "side_effect", None)
-    setattr(mock_rt.cudaStreamSynchronize, "return_value", 0)
-    getattr(_state, "update")({"fallback_buf": fallback_buf, "host_buf_ptr": host_buf_ptr, "out_arr": out_arr})
-    _state.update(locals())
+    _set_attr(mock_rt.cudaStreamSynchronize, "side_effect", None)
+    _set_attr(mock_rt.cudaStreamSynchronize, "return_value", 0)
+    _get_attr(_state, "update")({"fallback_buf": fallback_buf, "host_buf_ptr": host_buf_ptr, "out_arr": out_arr})
+    _state.update(_caller_locals())
 
 
 def _test_nccl_driver_cuda_rt_memory_and_streams_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -471,14 +472,14 @@ def _test_nccl_driver_cuda_rt_memory_and_streams_part_3(_state: dict[str, EagerT
     assert driver.stream_synchronize(None) == 0
     assert driver.stream_synchronize(999) == 0
 
-    setattr(mock_rt.cudaStreamSynchronize, "side_effect", RuntimeError("Sync fail"))
+    _set_attr(mock_rt.cudaStreamSynchronize, "side_effect", RuntimeError("Sync fail"))
     assert driver.stream_synchronize(999) == -1
 
     # cuda_rt without stream synchronize
     mock_no_sync = MagicMock(spec=[])
-    setattr(driver, "cuda_rt", mock_no_sync)
+    _set_attr(driver, "cuda_rt", mock_no_sync)
     assert driver.stream_synchronize(999) == 0
-    getattr(_state, "update")({"mock_no_sync": mock_no_sync})
+    _get_attr(_state, "update")({"mock_no_sync": mock_no_sync})
 
 
 def test_nccl_driver_cuda_rt_memory_and_streams() -> None:

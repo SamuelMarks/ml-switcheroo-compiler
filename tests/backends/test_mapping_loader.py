@@ -25,6 +25,7 @@ from ml_switcheroo_compiler.backends.mapping_loader import (
     translate_kwargs,
 )
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -230,7 +231,7 @@ def test_resolve_target_api() -> None:
         """Return dummy constant 777."""
         return 777
 
-    setattr(dummy, "special.pkg.func", dummy_func)
+    _set_attr(dummy, "special.pkg.func", dummy_func)
     res_dotted = resolve_target_api("special.pkg.func", backend_module=dummy)
     assert res_dotted == dummy_func
 
@@ -243,7 +244,7 @@ def test_resolve_target_api() -> None:
             return 5
 
     res3 = resolve_target_api("some.prefix.my_func", backend_module=as_tensor(MockBackend()))
-    assert as_tensor(getattr(res3, "__name__")) == "my_func"
+    assert as_tensor(_get_attr(res3, "__name__")) == "my_func"
 
     # backend_module has nested structure without root attribute (lines 198-200)
     class InnerMod:

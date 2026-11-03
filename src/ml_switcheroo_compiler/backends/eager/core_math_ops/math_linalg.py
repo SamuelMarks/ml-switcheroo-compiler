@@ -7,6 +7,7 @@ import builtins  # noqa: F401
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 from .math_special import _dispatch_special
 
@@ -23,13 +24,13 @@ def _det(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "det"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "det"):
         return as_tensor(func.det(*args, **kwargs))
-    if hasattr(backend_module, "det"):
-        return as_tensor(getattr(backend_module, "det")(*args, **kwargs))
+    if _has_attr(backend_module, "det"):
+        return as_tensor(_get_attr(backend_module, "det")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").det(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").det(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eig")
@@ -44,13 +45,13 @@ def _eig(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "eig"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "eig"):
         return as_tensor(func.eig(*args, **kwargs))
-    if hasattr(backend_module, "eig"):
-        return as_tensor(getattr(backend_module, "eig")(*args, **kwargs))
+    if _has_attr(backend_module, "eig"):
+        return as_tensor(_get_attr(backend_module, "eig")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").eig(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").eig(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eigh")
@@ -65,13 +66,13 @@ def _eigh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "eigh"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "eigh"):
         return as_tensor(func.eigh(*args, **kwargs))
-    if hasattr(backend_module, "eigh"):
-        return as_tensor(getattr(backend_module, "eigh")(*args, **kwargs))
+    if _has_attr(backend_module, "eigh"):
+        return as_tensor(_get_attr(backend_module, "eigh")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").eigh(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").eigh(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eigvals")
@@ -86,13 +87,13 @@ def _eigvals(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "eigvals"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "eigvals"):
         return as_tensor(func.eigvals(*args, **kwargs))
-    if hasattr(backend_module, "eigvals"):
-        return as_tensor(getattr(backend_module, "eigvals")(*args, **kwargs))
+    if _has_attr(backend_module, "eigvals"):
+        return as_tensor(_get_attr(backend_module, "eigvals")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").eigvals(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").eigvals(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Eigvalsh")
@@ -107,13 +108,13 @@ def _eigvalsh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "eigvalsh"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "eigvalsh"):
         return as_tensor(func.eigvalsh(*args, **kwargs))
-    if hasattr(backend_module, "eigvalsh"):
-        return as_tensor(getattr(backend_module, "eigvalsh")(*args, **kwargs))
+    if _has_attr(backend_module, "eigvalsh"):
+        return as_tensor(_get_attr(backend_module, "eigvalsh")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").eigvalsh(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").eigvalsh(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Cholesky")
@@ -128,13 +129,13 @@ def _cholesky(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "cholesky"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "cholesky"):
         return as_tensor(func.cholesky(*args, **kwargs))
-    if hasattr(backend_module, "cholesky"):
-        return as_tensor(getattr(backend_module, "cholesky")(*args, **kwargs))
+    if _has_attr(backend_module, "cholesky"):
+        return as_tensor(_get_attr(backend_module, "cholesky")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").cholesky(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").cholesky(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("CholeskyEx")
@@ -150,8 +151,8 @@ def _cholesky_ex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
             EagerValue: Result.
     """
     chol = _cholesky(backend_module, *args, **kwargs)
-    if hasattr(backend_module, "zeros"):
-        info = getattr(backend_module, "zeros")((), dtype=getattr(backend_module, "int32", int))
+    if _has_attr(backend_module, "zeros"):
+        info = _get_attr(backend_module, "zeros")((), dtype=_get_attr(backend_module, "int32", int))
     else:
         info = 0
     return (chol, info)
@@ -169,13 +170,13 @@ def _norm(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "norm"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "norm"):
         return as_tensor(func.norm(*args, **kwargs))
-    if hasattr(backend_module, "norm"):
-        return as_tensor(getattr(backend_module, "norm")(*args, **kwargs))
+    if _has_attr(backend_module, "norm"):
+        return as_tensor(_get_attr(backend_module, "norm")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").norm(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(_get_attr(backend_module, "linalg").norm(_get_attr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Pinv")
@@ -190,13 +191,13 @@ def _pinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "pinv"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "pinv"):
         return as_tensor(func.pinv(*args, **kwargs))
-    if hasattr(backend_module, "pinv"):
-        return as_tensor(getattr(backend_module, "pinv")(*args, **kwargs))
+    if _has_attr(backend_module, "pinv"):
+        return as_tensor(_get_attr(backend_module, "pinv")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").pinv(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(_get_attr(backend_module, "linalg").pinv(_get_attr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Qr")
@@ -211,13 +212,13 @@ def _qr(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eage
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "qr"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "qr"):
         return as_tensor(func.qr(*args, **kwargs))
-    if hasattr(backend_module, "qr"):
-        return as_tensor(getattr(backend_module, "qr")(*args, **kwargs))
+    if _has_attr(backend_module, "qr"):
+        return as_tensor(_get_attr(backend_module, "qr")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").qr(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(_get_attr(backend_module, "linalg").qr(_get_attr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Svd")
@@ -232,13 +233,13 @@ def _svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "svd"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "svd"):
         return as_tensor(func.svd(*args, **kwargs))
-    if hasattr(backend_module, "svd"):
-        return as_tensor(getattr(backend_module, "svd")(*args, **kwargs))
+    if _has_attr(backend_module, "svd"):
+        return as_tensor(_get_attr(backend_module, "svd")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").svd(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(_get_attr(backend_module, "linalg").svd(_get_attr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Tensorinv")
@@ -253,13 +254,13 @@ def _tensorinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "tensorinv"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "tensorinv"):
         return as_tensor(func.tensorinv(*args, **kwargs))
-    if hasattr(backend_module, "tensorinv"):
-        return as_tensor(getattr(backend_module, "tensorinv")(*args, **kwargs))
+    if _has_attr(backend_module, "tensorinv"):
+        return as_tensor(_get_attr(backend_module, "tensorinv")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").tensorinv(getattr(backend_module, "asarray")(x), **kwargs))
+    return as_tensor(_get_attr(backend_module, "linalg").tensorinv(_get_attr(backend_module, "asarray")(x), **kwargs))
 
 
 @global_eager_registry.register("Inv")
@@ -274,13 +275,13 @@ def _inv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "linalg", None)
-    if func and hasattr(func, "inv"):
+    func = _get_attr(backend_module, "linalg", None)
+    if func and _has_attr(func, "inv"):
         return as_tensor(func.inv(*args, **kwargs))
-    if hasattr(backend_module, "inv"):
-        return as_tensor(getattr(backend_module, "inv")(*args, **kwargs))
+    if _has_attr(backend_module, "inv"):
+        return as_tensor(_get_attr(backend_module, "inv")(*args, **kwargs))
     x = args[0]
-    return as_tensor(getattr(backend_module, "linalg").inv(getattr(backend_module, "asarray")(x)))
+    return as_tensor(_get_attr(backend_module, "linalg").inv(_get_attr(backend_module, "asarray")(x)))
 
 
 @global_eager_registry.register("Vander")
@@ -295,7 +296,7 @@ def _vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "vander")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "vander")(*args, **kwargs))
 
 
 @global_eager_registry.register("Schur")
@@ -325,7 +326,7 @@ def _np_svd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "svd", getattr(backend_module, "svd", None))
+    func = _get_attr(backend_module, "svd", _get_attr(backend_module, "svd", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.svd(*args, **kwargs)
@@ -343,7 +344,7 @@ def _np_svdvals(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "svdvals", getattr(backend_module, "svdvals", None))
+    func = _get_attr(backend_module, "svdvals", _get_attr(backend_module, "svdvals", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.svd(*args, **kwargs)[1]
@@ -361,7 +362,7 @@ def _np_tensorinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "tensorinv", getattr(backend_module, "tensorinv", None))
+    func = _get_attr(backend_module, "tensorinv", _get_attr(backend_module, "tensorinv", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.tensorinv(*args, **kwargs)
@@ -379,7 +380,7 @@ def _np_triinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "triinv", getattr(backend_module, "triinv", None))
+    func = _get_attr(backend_module, "triinv", _get_attr(backend_module, "triinv", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.inv(args[0])
@@ -397,7 +398,7 @@ def _np_uniqueinverse(backend_module: BackendModuleProtocol, *args: EagerValue, 
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "uniqueinverse", getattr(backend_module, "uniqueinverse", None))
+    func = _get_attr(backend_module, "uniqueinverse", _get_attr(backend_module, "uniqueinverse", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unique(args[0], return_inverse=True)
@@ -415,7 +416,7 @@ def _np_vander(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "vander", getattr(backend_module, "vander", None))
+    func = _get_attr(backend_module, "vander", _get_attr(backend_module, "vander", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).vander(*args, **kwargs)
@@ -433,7 +434,7 @@ def _np_vectornorm(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "vectornorm", getattr(backend_module, "vectornorm", None))
+    func = _get_attr(backend_module, "vectornorm", _get_attr(backend_module, "vectornorm", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).linalg.norm(*args, **kwargs)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import as_callable, as_int, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot as RaggedDot
 
@@ -50,7 +50,7 @@ def _get_dense_shape(obj: TensorOrScalar) -> tuple[int, ...]:
     if obj is None:
         return ()
     for attr in ("dense_shape", "shape", "shape_metadata"):
-        val = getattr(obj, attr, None)
+        val = _get_attr(obj, attr, None)
         if val is not None:
             return tuple(int(d) for d in val)
     if isinstance(obj, (list, tuple)):
@@ -352,7 +352,7 @@ class SparseEye(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        r = int(as_int(getattr(num_rows, "value", num_rows))) if isinstance(num_rows, int) or hasattr(num_rows, "value") else 1
+        r = int(as_int(_get_attr(num_rows, "value", num_rows))) if isinstance(num_rows, int) or _has_attr(num_rows, "value") else 1
         c = int(as_int(kwargs.get("num_columns", r)))
         return (r, c)
 
@@ -493,7 +493,7 @@ class SparseResetShape(OpDef):
         """
         new_shape = kwargs.get("new_shape")
         if new_shape is not None:
-            return tuple(int(d) for d in getattr(new_shape, "__iter__")())
+            return tuple(int(d) for d in _get_attr(new_shape, "__iter__")())
         return _get_dense_shape(sp_input)
 
 
@@ -675,7 +675,7 @@ class SparseTranspose(OpDef):
         shape = _get_dense_shape(sp_input)
         perm = kwargs.get("perm")
         if perm is not None:
-            return tuple(shape[int(p)] for p in getattr(perm, "__iter__")())
+            return tuple(shape[int(p)] for p in _get_attr(perm, "__iter__")())
         return tuple(reversed(shape))
 
 

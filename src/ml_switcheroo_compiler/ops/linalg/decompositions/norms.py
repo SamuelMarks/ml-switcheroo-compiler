@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.registry import as_tensor, as_tensor_triple
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 from ml_switcheroo_compiler.ops.shape.utils import compute_reduction_shape
@@ -30,8 +30,8 @@ def matrix_power(input: Tensor, n: int) -> TensorOrScalar:
 
         backend = get_active_backend()
         data = as_tensor(backend.execute_op("MatrixPower", (input.data if type(input).__name__ == "Tensor" else input), n))
-        return Tensor(data, TensorConfig(data.shape, getattr(input, "dtype", None), getattr(input, "device", None)))
-    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [getattr(input, "dtype", None)])
+        return Tensor(data, TensorConfig(data.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None)))
+    return _emit_linalg_node("MatrixPower", [input], {"n": n}, [input.shape], [_get_attr(input, "dtype", None)])
 
 
 def _norm_out_shape(x_shape: tuple[int, ...], axis: int | tuple[int, ...] | None, keepdims: bool) -> tuple[int, ...]:
@@ -76,9 +76,9 @@ def norm(
         backend = get_active_backend()
         data = backend.execute_op("Norm", (x.data if type(x).__name__ == "Tensor" else x), ord=ord, axis=axis, keepdims=keepdims)
 
-        return Tensor(data, TensorConfig(out_shape, getattr(x, "dtype", None), getattr(x, "device", None)))
+        return Tensor(data, TensorConfig(out_shape, _get_attr(x, "dtype", None), _get_attr(x, "device", None)))
 
-    return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [getattr(x, "dtype", None)])
+    return _emit_linalg_node("Norm", [x], {"ord": ord, "axis": axis, "keepdims": keepdims}, [out_shape], [_get_attr(x, "dtype", None)])
 
 
 def matrix_exponential(a: Tensor) -> TensorOrScalar:
@@ -95,8 +95,8 @@ def matrix_exponential(a: Tensor) -> TensorOrScalar:
 
         backend = get_active_backend()
         data = as_tensor(backend.execute_op("MatrixExponential", (a.data if type(a).__name__ == "Tensor" else a)))
-        return Tensor(data, TensorConfig(data.shape, getattr(a, "dtype", None), getattr(a, "device", None)))
-    return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [getattr(a, "dtype", None)])
+        return Tensor(data, TensorConfig(data.shape, _get_attr(a, "dtype", None), _get_attr(a, "device", None)))
+    return _emit_linalg_node("MatrixExponential", [a], {}, [a.shape], [_get_attr(a, "dtype", None)])
 
 
 def matrix_exp(a: Tensor) -> TensorOrScalar:
@@ -140,9 +140,9 @@ def _power_iteration_eager(
     )
 
     return (
-        Tensor(v_data, TensorConfig(v_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
-        Tensor(u_data, TensorConfig(u_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
-        Tensor(sigma_data, TensorConfig(sigma_data.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+        Tensor(v_data, TensorConfig(v_data.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None))),
+        Tensor(u_data, TensorConfig(u_data.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None))),
+        Tensor(sigma_data, TensorConfig(sigma_data.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None))),
     )
 
 
@@ -178,5 +178,5 @@ def power_iteration(
         inputs,
         {"num_iters": num_iters},
         [v_shape, u_shape, sigma_shape],
-        [getattr(input, "dtype", None), getattr(input, "dtype", None), getattr(input, "dtype", None)],
+        [_get_attr(input, "dtype", None), _get_attr(input, "dtype", None), _get_attr(input, "dtype", None)],
     )

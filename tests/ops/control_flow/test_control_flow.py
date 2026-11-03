@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.control_flow import AssertOp, AssociativeScan, DebugInfs, DebugNans, ScanOp, SwitchOp, assert_value, associative_scan, case, cond, custom_gradient, fori_loop, map, map_fn, pmap, scan, scan_bind, stop_gradient, switch, switch_case, vectorized_map, while_loop
 from tests.testing_utils import as_callable, as_graph, as_node, as_tensor
 
@@ -80,8 +81,8 @@ def _test_control_flow_extra_functions_part_1(_state: dict[str, EagerTensorProto
         assert as_callable(map_fn)(None, None) == "map_fn_eager"
     with patch("ml_switcheroo_compiler.ops.control_flow.pmap_eager", return_value="pmap_eager"):
         assert as_callable(pmap)(None) == "pmap_eager"
-    getattr(_state, "update")({"config": config})
-    _state.update(locals())
+    _get_attr(_state, "update")({"config": config})
+    _state.update(_caller_locals())
 
 
 def _test_control_flow_extra_functions_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -95,14 +96,14 @@ def _test_control_flow_extra_functions_part_2(_state: dict[str, EagerTensorProto
         assert as_callable(stop_gradient)(None) == "stop_eager"
     with patch("ml_switcheroo_compiler.ops.control_flow.assert_value_eager", return_value="assert_eager"):
         assert_value(None)
-    setattr(config, "eager_mode", False)
+    _set_attr(config, "eager_mode", False)
     with patch("ml_switcheroo_compiler.ops.control_flow.cond_tracing", return_value="cond_tracing"):
         assert as_callable(cond)(None, None, None) == "cond_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.while_loop_tracing", return_value="while_tracing"):
         assert as_callable(while_loop)(None, None, None) == "while_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.scan_tracing", return_value="scan_tracing"):
         assert as_callable(scan)(None, None, None) == "scan_tracing"
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_control_flow_extra_functions_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -120,8 +121,8 @@ def _test_control_flow_extra_functions_part_3(_state: dict[str, EagerTensorProto
         assert as_callable(stop_gradient)(None) == "stop_tracing"
     with patch("ml_switcheroo_compiler.ops.control_flow.assert_value_tracing", return_value="assert_tracing"):
         assert_value(None)
-    setattr(config, "eager_mode", True)
-    _state.update(locals())
+    _set_attr(config, "eager_mode", True)
+    _state.update(_caller_locals())
 
 
 def _test_control_flow_extra_functions_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -144,9 +145,9 @@ def _test_control_flow_extra_functions_part_4(_state: dict[str, EagerTensorProto
     with patch("ml_switcheroo_compiler.ops.control_flow.vmap") as vm:
         vm.return_value.return_value = "vmap"
         assert as_callable(vectorized_map)(None, None) == "vmap"
-    getattr(_state, "update")({"body_wrapper": body_wrapper, "cond_fn": cond_fn, "res": res, "vm": vm})
-    getattr(_state, "update")({"wl": wl})
-    _state.update(locals())
+    _get_attr(_state, "update")({"body_wrapper": body_wrapper, "cond_fn": cond_fn, "res": res, "vm": vm})
+    _get_attr(_state, "update")({"wl": wl})
+    _state.update(_caller_locals())
 
 
 def _test_control_flow_extra_functions_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -164,7 +165,7 @@ def _test_control_flow_extra_functions_part_5(_state: dict[str, EagerTensorProto
         assert res == "cond_res"
         res2 = as_callable(switch)(as_callable(DummyTensor)(0), [lambda: "leaf"])
         assert res2 == "leaf"
-    getattr(_state, "update")({"cnd": cnd, "res": res, "res2": res2})
+    _get_attr(_state, "update")({"cnd": cnd, "res": res, "res2": res2})
 
 
 def test_control_flow_extra_functions() -> None:
@@ -274,7 +275,7 @@ def _exercise_custom_gradient_variants(custom_gradient: EagerValue) -> None:
     with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emitted"):
         as_callable(wrapped)(1)
     for k in [name for name in OpRegistry if name.startswith("CustomGradient_")]:
-        getattr(OpRegistry[k], "infer_shape")(None)
+        _get_attr(OpRegistry[k], "infer_shape")(None)
         VJP_REGISTRY[k](as_graph(None), as_node(None), "cotangent")
         wrapped3 = as_callable(custom_gradient)(lambda x: (as_callable(DummyTensor)(), lambda g: as_callable(DummyProxy)()))
         with patch("ml_switcheroo_compiler.ops.shape.utils._emit_shape_node", return_value="emitted"):
@@ -286,7 +287,7 @@ def _exercise_custom_gradient_variants(custom_gradient: EagerValue) -> None:
             as_callable(wrapped2)(1)
         for k2 in [name for name in OpRegistry if name.startswith("CustomGradient_") and name != k]:
             VJP_REGISTRY[k2](as_graph(None), as_node(None), "cotangent")
-            getattr(OpRegistry[k2], "infer_shape")(None)
+            _get_attr(OpRegistry[k2], "infer_shape")(None)
             break
         break
 

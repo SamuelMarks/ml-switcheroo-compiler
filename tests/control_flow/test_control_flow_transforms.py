@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ops.vmap import _eager_vmap, vmap
@@ -63,7 +64,7 @@ def test_vmap_backend_without_asarray() -> None:
 
     with patch("ml_switcheroo_compiler.ops.vmap.get_active_backend", return_value=BackendNoAsarray()):
         res = _eager_vmap(lambda t: t, 0, 0, (x,))
-        assert as_callable(np.array_equal)(as_tensor(getattr(res, "data")), as_callable(np.array)([1, 2]))
+        assert as_callable(np.array_equal)(as_tensor(_get_attr(res, "data")), as_callable(np.array)([1, 2]))
 
 
 def test_evaluate_static_predicate_numpy_item() -> None:

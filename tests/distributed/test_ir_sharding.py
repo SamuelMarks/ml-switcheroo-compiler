@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _has_attr, _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 from tests.testing_utils import as_tensor
 
@@ -18,6 +19,6 @@ def test_ir_node_sharding() -> None:
         TensorOrScalar: The inferred shape or computed result.
     """
     node = IRNode("node_1", "Add")
-    object.__setattr__(node, "sharding", "shard_info")
-    assert hasattr(node, "sharding")
+    _obj_set_attr(node, "sharding", "shard_info")
+    assert _has_attr(node, "sharding")
     assert as_tensor(node.sharding) == as_tensor("shard_info")

@@ -7,10 +7,10 @@ import re
 import typing
 from collections.abc import Callable
 
-from ml_switcheroo_ir import AttributeValue, LogicalNode
+from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.registry import as_str
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph, as_opt_graph
 from ml_switcheroo_compiler.ops.base import emit_ir_node
 
@@ -118,31 +118,31 @@ def _build_parsed_call(
         if node_id not in graph.nodes:
             from ml_switcheroo_compiler.ir.core import LogicalNode
 
-            new_node = LogicalNode(id=node_id, op_type="Constant", attributes={"value": val}, shape_metadata=getattr(node, "shape_metadata", None))
+            new_node = LogicalNode(id=node_id, op_type="Constant", attributes={"value": val}, shape_metadata=_get_attr(node, "shape_metadata", None))
             graph.nodes[node_id] = new_node
         return node_id
 
     if op in ("BroadcastAlign", "BroadcastReduce"):
         cot_id, tgt_id = parsed_inputs[0], parsed_inputs[1]
-        shape_meta = getattr(graph.nodes.get(tgt_id), "shape_metadata", None) if hasattr(graph, "nodes") and tgt_id in graph.nodes else None
+        shape_meta = _get_attr(graph.nodes.get(tgt_id), "shape_metadata", None) if _has_attr(graph, "nodes") and tgt_id in graph.nodes else None
         return emit_ir_node(graph, "BroadcastReduce", [cot_id, tgt_id], shape_metadata=shape_meta, attributes={"target_id": tgt_id})
 
     if op == "BroadcastLike":
         src_id, tgt_id = parsed_inputs[0], parsed_inputs[1]
-        shape_meta = getattr(graph.nodes.get(tgt_id), "shape_metadata", None) if hasattr(graph, "nodes") and tgt_id in graph.nodes else None
+        shape_meta = _get_attr(graph.nodes.get(tgt_id), "shape_metadata", None) if _has_attr(graph, "nodes") and tgt_id in graph.nodes else None
         return emit_ir_node(graph, "BroadcastLike", [src_id, tgt_id], shape_metadata=shape_meta, attributes={"target_id": tgt_id})
 
-    attrs = dict(node.attributes) if hasattr(node, "attributes") and op == getattr(node, "op_type", "") else {}
-    if not attrs and op == "SetItem" and hasattr(node, "attributes"):
+    attrs = dict(node.attributes) if _has_attr(node, "attributes") and op == _get_attr(node, "op_type", "") else {}
+    if not attrs and op == "SetItem" and _has_attr(node, "attributes"):
         attrs = dict(node.attributes)
-    if not attrs and hasattr(node, "attributes"):
-        if (op == "ExpandDims" and getattr(node, "op_type", "") == "Squeeze") or (op == "Squeeze" and getattr(node, "op_type", "") == "ExpandDims"):
+    if not attrs and _has_attr(node, "attributes"):
+        if (op == "ExpandDims" and _get_attr(node, "op_type", "") == "Squeeze") or (op == "Squeeze" and _get_attr(node, "op_type", "") == "ExpandDims"):
             attrs = dict(node.attributes)
     attrs.update(parsed_attrs)
 
-    shape_meta = getattr(node, "shape_metadata", None)
-    if op == "Reshape" and hasattr(node, "inputs") and node.inputs and hasattr(graph, "nodes") and node.inputs[0] in graph.nodes:
-        shape_meta = getattr(graph.nodes[node.inputs[0]], "shape_metadata", None)
+    shape_meta = _get_attr(node, "shape_metadata", None)
+    if op == "Reshape" and _has_attr(node, "inputs") and node.inputs and _has_attr(graph, "nodes") and node.inputs[0] in graph.nodes:
+        shape_meta = _get_attr(graph.nodes[node.inputs[0]], "shape_metadata", None)
     return emit_ir_node(graph, op, parsed_inputs, shape_meta, attributes=attrs or None)
 
 
@@ -167,7 +167,8 @@ def _resolve_variable_ref(
         assert cotangent is not None
         return cotangent
     if expr == "$output":
-        return getattr(node, "id", "")
+        _typed_ret_1: str = _get_attr(node, "id", "")
+        return _typed_ret_1
     if expr.startswith("$input["):
         match = re.match(r"\$input\[(\d+)\]", expr)
         assert match is not None
@@ -209,7 +210,7 @@ def _parse_expression(
     if expr.startswith("- ") or (expr.startswith("-") and not expr.startswith("-=")):
         inner_str = expr[2:].strip() if expr.startswith("- ") else expr[1:].strip()
         inner_id = _parse_expression(graph, inner_str, node, cotangent, tangents)
-        return emit_ir_node(graph, "Negative", [inner_id], getattr(node, "shape_metadata", None))
+        return emit_ir_node(graph, "Negative", [inner_id], _get_attr(node, "shape_metadata", None))
 
     m = re.match(r"^([A-Za-z0-9_]+)\((.*)\)$", expr)
     if m:
@@ -241,20 +242,20 @@ def _fallback_finite_difference_jvp(graph: TensorOrScalar, node: TensorOrScalar,
     neg_inputs = []
 
     tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
-    for _idx, (inp, tang) in enumerate(zip(getattr(node, "inputs"), tangents_list)):
-        eps_t = emit_ir_node(as_opt_graph(graph), "Multiply", [epsilon, tang], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None))
-        pos_inputs.append(emit_ir_node(as_opt_graph(graph), "Add", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
-        neg_inputs.append(emit_ir_node(as_opt_graph(graph), "Subtract", [inp, eps_t], getattr(getattr(graph, "nodes").get(inp), "shape_metadata", None)))
+    for _idx, (inp, tang) in enumerate(zip(_get_attr(node, "inputs"), tangents_list)):
+        eps_t = emit_ir_node(as_opt_graph(graph), "Multiply", [epsilon, tang], _get_attr(_get_attr(graph, "nodes").get(inp), "shape_metadata", None))
+        pos_inputs.append(emit_ir_node(as_opt_graph(graph), "Add", [inp, eps_t], _get_attr(_get_attr(graph, "nodes").get(inp), "shape_metadata", None)))
+        neg_inputs.append(emit_ir_node(as_opt_graph(graph), "Subtract", [inp, eps_t], _get_attr(_get_attr(graph, "nodes").get(inp), "shape_metadata", None)))
 
-    for i in range(len(tangents_list), len(getattr(node, "inputs"))):
-        pos_inputs.append(getattr(node, "inputs")[i])
-        neg_inputs.append(getattr(node, "inputs")[i])
+    for i in range(len(tangents_list), len(_get_attr(node, "inputs"))):
+        pos_inputs.append(_get_attr(node, "inputs")[i])
+        neg_inputs.append(_get_attr(node, "inputs")[i])
 
-    f_pos = emit_ir_node(as_opt_graph(graph), getattr(node, "op_type"), pos_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
-    f_neg = emit_ir_node(as_opt_graph(graph), getattr(node, "op_type"), neg_inputs, getattr(node, "shape_metadata", None), attributes=getattr(node, "attributes"))
+    f_pos = emit_ir_node(as_opt_graph(graph), _get_attr(node, "op_type"), pos_inputs, _get_attr(node, "shape_metadata", None), attributes=_get_attr(node, "attributes"))
+    f_neg = emit_ir_node(as_opt_graph(graph), _get_attr(node, "op_type"), neg_inputs, _get_attr(node, "shape_metadata", None), attributes=_get_attr(node, "attributes"))
 
-    diff = emit_ir_node(as_opt_graph(graph), "Subtract", [f_pos, f_neg], getattr(node, "shape_metadata", None))
-    return emit_ir_node(as_opt_graph(graph), "Divide", [diff, two_eps], getattr(node, "shape_metadata", None))
+    diff = emit_ir_node(as_opt_graph(graph), "Subtract", [f_pos, f_neg], _get_attr(node, "shape_metadata", None))
+    return emit_ir_node(as_opt_graph(graph), "Divide", [diff, two_eps], _get_attr(node, "shape_metadata", None))
 
 
 _MANIFEST_MODEL_CACHE: AutodiffRulesManifestModel | None = None
@@ -518,7 +519,7 @@ def get_vjp_from_data(op_type: str) -> Callable[[IRGraph, IRNode, str], tuple[st
         Returns:
             tuple[str, ...]: Result.
         """
-        adjs = [_parse_expression(graph, expr, node, cotangent=cotangent) for expr in getattr(vjp_exprs, "__iter__")()]
+        adjs = [_parse_expression(graph, expr, node, cotangent=cotangent) for expr in _get_attr(vjp_exprs, "__iter__")()]
         return tuple(adjs)
 
     return data_vjp
@@ -551,6 +552,6 @@ def get_jvp_from_data(op_type: str) -> Callable[[TensorOrScalar, TensorOrScalar,
             str: Emitted JVP tangent node ID.
         """
         tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
-        return _parse_expression(as_graph(graph), as_str(jvp_expr), typing.cast("LogicalNode", node), tangents=tangents_list)
+        return _parse_expression(as_graph(graph), as_str(jvp_expr), _cast_val("LogicalNode", node), tangents=tangents_list)
 
     return data_jvp

@@ -6,7 +6,7 @@ import json
 import struct
 
 from ml_switcheroo_compiler.core.constants import SAFETENSORS_HEADER_SIZE_BYTES
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
@@ -43,7 +43,7 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
                 from ml_switcheroo_compiler.backends.registry import get_active_backend
 
                 backend = get_active_backend()
-                if hasattr(backend, "from_buffer"):
+                if _has_attr(backend, "from_buffer"):
                     weights[k] = backend.from_buffer(buffer, dtype=v["dtype"], shape=v["shape"])
                 else:
                     # Pass the raw buffer if no converter is available
@@ -62,8 +62,8 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
         offset = 0
         buffers = []
 
-        for k, v in getattr(weights_np, "items")():
-            if not hasattr(v, "dtype") or not hasattr(v, "shape") or not hasattr(v, "tobytes"):
+        for k, v in _get_attr(weights_np, "items")():
+            if not _has_attr(v, "dtype") or not _has_attr(v, "shape") or not _has_attr(v, "tobytes"):
                 continue
 
             import os
@@ -78,15 +78,15 @@ class SafetensorsWeightFormat(WeightLoader, WeightSaver):
                 schema = SerializationSchemaConfig(**data)
             dtype_map = schema.safetensors.dtype_map
 
-            dtype_str = str(getattr(v, "dtype"))
+            dtype_str = str(_get_attr(v, "dtype"))
             st_dtype = dtype_map.get(dtype_str, "F32")
 
-            buffer = getattr(v, "tobytes")()
+            buffer = _get_attr(v, "tobytes")()
             length = len(buffer)
 
             header[k] = {
                 "dtype": st_dtype,
-                "shape": list(getattr(v, "shape")),
+                "shape": list(_get_attr(v, "shape")),
                 "data_offsets": [offset, offset + length],
             }
 

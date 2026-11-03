@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.autodiff import grad
 from ml_switcheroo_compiler.transforms.passes.rematerialization import _load_rules, rematerialization_pass
@@ -19,7 +20,7 @@ def test_rematerialization_pass() -> None:
     assert "Add" in rules["target_ops"]
 
     graph = IRGraph()
-    getattr(graph.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
+    _get_attr(graph.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
     graph.nodes["add_small"] = IRNode("add_small", "Add", inputs=["in0", "in0"], shape_metadata=[10])
     graph.nodes["add_large"] = IRNode("add_large", "Add", inputs=["in0", "in0"], shape_metadata=[10000, 10000])
     for i in range(11):
@@ -35,7 +36,7 @@ def test_rematerialization_pass() -> None:
 def test_autodiff_recompute() -> None:
     """Test function test_autodiff_recompute."""
     graph = IRGraph()
-    getattr(graph.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
+    _get_attr(graph.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
     graph.nodes["add1"] = IRNode("add1", "Add", inputs=["in0", "in0"], shape_metadata=[10000, 10000])
     for i in range(11):
         graph.nodes[f"dummy{i}"] = IRNode(f"dummy{i}", "Add", inputs=["add1", "in0"], shape_metadata=[10000, 10000])
@@ -58,7 +59,7 @@ def test_autodiff_recompute() -> None:
 def test_autodiff_recompute_nested() -> None:
     """Test function test_autodiff_recompute_nested."""
     graph = IRGraph()
-    getattr(graph.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
+    _get_attr(graph.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
     graph.nodes["add1"] = IRNode("add1", "Add", inputs=["in0", "in0"])
     graph.nodes["add1"].attributes["rematerialize"] = True
     graph.nodes["add2"] = IRNode("add2", "Add", inputs=["add1", "in0"])
@@ -74,7 +75,7 @@ def test_autodiff_recompute_nested() -> None:
 def test_numerical_gradients() -> None:
     """Test function test_numerical_gradients."""
     graph1 = IRGraph()
-    getattr(graph1.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
+    _get_attr(graph1.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
     graph1.nodes["add1"] = IRNode("add1", "Add", inputs=["in0", "in0"])
     graph1.nodes["add2"] = IRNode("add2", "Add", inputs=["add1", "in0"])
     graph1.outputs = ["add2"]
@@ -82,7 +83,7 @@ def test_numerical_gradients() -> None:
     grad_graph1 = grad(graph1, ["in0"], "add2")
 
     graph2 = IRGraph()
-    getattr(graph2.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
+    _get_attr(graph2.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
     graph2.nodes["add1"] = IRNode("add1", "Add", inputs=["in0", "in0"])
     graph2.nodes["add1"].attributes["rematerialize"] = True
     graph2.nodes["add2"] = IRNode("add2", "Add", inputs=["add1", "in0"])
@@ -99,7 +100,7 @@ def test_buffer_analysis() -> None:
     from ml_switcheroo_compiler.transforms.passes.buffer_allocation import buffer_allocation_pass
 
     graph1 = IRGraph()
-    getattr(graph1.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
+    _get_attr(graph1.nodes, "__setitem__")("in0", IRNode("in0", "Input", inputs=[]))
     graph1.nodes["add_large"] = IRNode("add_large", "Add", inputs=["in0", "in0"], shape_metadata=[10000, 10000])
     for i in range(15):
         graph1.nodes[f"dummy{i}"] = IRNode(f"dummy{i}", "Add", inputs=["add_large", "in0"], shape_metadata=[10000, 10000])

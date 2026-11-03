@@ -11,6 +11,7 @@ import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import custom_jvp, grad, jvp
 from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import custom_jvp_vjp
@@ -27,7 +28,7 @@ from tests.testing_utils import as_callable, as_tensor
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-CustomJVPFunction = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
+CustomJVPFunction = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.grad"), "CustomJVPFunction"))
 
 
 def test_custom_jvp_decorator_and_eager() -> None:
@@ -321,19 +322,19 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_1(_state: dict[str, E
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
         """
-        p = as_tensor(getattr(primals, "__getitem__")(0))
-        t = as_tensor(getattr(tangents, "__getitem__")(0))
+        p = as_tensor(_get_attr(primals, "__getitem__")(0))
+        t = as_tensor(_get_attr(tangents, "__getitem__")(0))
         return p * 2, t * 2
 
     # Line 82 & 98-108: tracing active
     g = LogicalGraph("trace_g")
     global_tracing_state.is_tracing = True
     global_tracing_state.active_graph = g
-    getattr(_state, "update")({"DType": DType, "Device": Device, "LogicalGraph": LogicalGraph, "Tensor": Tensor})
-    getattr(_state, "update")({"TensorConfig": TensorConfig, "config": config, "custom_jvp": custom_jvp, "g": g})
-    getattr(_state, "update")({"global_tracing_state": global_tracing_state, "jvp": jvp, "my_fn": my_fn, "my_jvp": my_jvp})
-    getattr(_state, "update")({"vjp": vjp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DType": DType, "Device": Device, "LogicalGraph": LogicalGraph, "Tensor": Tensor})
+    _get_attr(_state, "update")({"TensorConfig": TensorConfig, "config": config, "custom_jvp": custom_jvp, "g": g})
+    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state, "jvp": jvp, "my_fn": my_fn, "my_jvp": my_jvp})
+    _get_attr(_state, "update")({"vjp": vjp})
+    _state.update(_caller_locals())
 
 
 def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -346,7 +347,7 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
     config, custom_jvp, global_tracing_state, jvp = _state["config"], _state["custom_jvp"], _state["global_tracing_state"], _state["jvp"]
     my_fn = _state["my_fn"]
     try:
-        setattr(config, "eager_mode", False)
+        _set_attr(config, "eager_mode", False)
         # Line 82: non-tensor arg
         assert my_fn(5.0) == 10.0
 
@@ -355,9 +356,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
         res_t = my_fn(t_noid)
         assert res_t is not None
     finally:
-        setattr(global_tracing_state, "is_tracing", False)
-        setattr(global_tracing_state, "active_graph", None)
-        setattr(config, "eager_mode", True)
+        _set_attr(global_tracing_state, "is_tracing", False)
+        _set_attr(global_tracing_state, "active_graph", None)
+        _set_attr(config, "eager_mode", True)
 
     # Lines 163-164 & 169-170: unpacked signature and single return
     @custom_jvp
@@ -393,9 +394,9 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_2(_state: dict[str, E
         """
         return as_tensor(x) + as_tensor(y)
 
-    getattr(_state, "update")({"tan": tan, "unpack4_fn": unpack4_fn, "unpack_fn": unpack_fn, "unpack_jvp": unpack_jvp})
-    getattr(_state, "update")({"val": val})
-    _state.update(locals())
+    _get_attr(_state, "update")({"tan": tan, "unpack4_fn": unpack4_fn, "unpack_fn": unpack_fn, "unpack_jvp": unpack_jvp})
+    _get_attr(_state, "update")({"val": val})
+    _state.update(_caller_locals())
 
 
 def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -435,17 +436,17 @@ def _test_custom_jvp_and_vjp_tracing_and_unpacked_jvp_part_3(_state: dict[str, E
 
     _, vjp_fn = vjp(simple_f, 2.0)
     g_active = LogicalGraph("g_active")
-    setattr(global_tracing_state, "is_tracing", True)
-    setattr(global_tracing_state, "active_graph", g_active)
+    _set_attr(global_tracing_state, "is_tracing", True)
+    _set_attr(global_tracing_state, "active_graph", g_active)
     try:
         cot = Tensor(1.0, TensorConfig((), DType.Float32, Device("cpu")))
         grads = vjp_fn(cot)
         assert len(grads) == 1
     finally:
-        setattr(global_tracing_state, "is_tracing", False)
-        setattr(global_tracing_state, "active_graph", None)
-    getattr(_state, "update")({"_": _, "g_active": g_active, "simple_f": simple_f, "tan4": tan4})
-    getattr(_state, "update")({"unpack4_jvp": unpack4_jvp, "val4": val4, "vjp_fn": vjp_fn})
+        _set_attr(global_tracing_state, "is_tracing", False)
+        _set_attr(global_tracing_state, "active_graph", None)
+    _get_attr(_state, "update")({"_": _, "g_active": g_active, "simple_f": simple_f, "tan4": tan4})
+    _get_attr(_state, "update")({"unpack4_jvp": unpack4_jvp, "val4": val4, "vjp_fn": vjp_fn})
 
 
 def test_custom_jvp_and_vjp_tracing_and_unpacked_jvp() -> None:
@@ -500,11 +501,11 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_1(_state: dict[str, E
     graph_rule = LogicalGraph("graph_rule")
     as_callable(fn_jvp_rule_graph.defjvp)(graph_rule)
     assert fn_jvp_rule_graph.jvp_subgraph is graph_rule
-    getattr(_state, "update")({"DType": DType, "Device": Device, "LogicalGraph": LogicalGraph, "Tensor": Tensor})
-    getattr(_state, "update")({"TensorConfig": TensorConfig, "config": config, "custom_jvp": custom_jvp, "custom_vjp": custom_vjp})
-    getattr(_state, "update")({"fn_jvp_rule_graph": fn_jvp_rule_graph, "fn_jvp_sub": fn_jvp_sub, "global_tracing_state": global_tracing_state, "graph_rule": graph_rule})
-    getattr(_state, "update")({"subgraph_jvp": subgraph_jvp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DType": DType, "Device": Device, "LogicalGraph": LogicalGraph, "Tensor": Tensor})
+    _get_attr(_state, "update")({"TensorConfig": TensorConfig, "config": config, "custom_jvp": custom_jvp, "custom_vjp": custom_vjp})
+    _get_attr(_state, "update")({"fn_jvp_rule_graph": fn_jvp_rule_graph, "fn_jvp_sub": fn_jvp_sub, "global_tracing_state": global_tracing_state, "graph_rule": graph_rule})
+    _get_attr(_state, "update")({"subgraph_jvp": subgraph_jvp})
+    _state.update(_caller_locals())
 
 
 def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -527,7 +528,7 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_2(_state: dict[str, E
                 primals: Test parameter `primals`.
                 tangents: Test parameter `tangents`.
             """
-            return as_tensor(getattr(primals, "__getitem__")(0)), as_tensor(getattr(tangents, "__getitem__")(0))
+            return as_tensor(_get_attr(primals, "__getitem__")(0)), as_tensor(_get_attr(tangents, "__getitem__")(0))
 
     @custom_jvp
     def fn_jvp_hasattr_graph(x: EagerValue) -> EagerValue:
@@ -546,10 +547,10 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_2(_state: dict[str, E
 
     # Trace custom_jvp with jvp_subgraph not None
     g_trace_jvp = LogicalGraph("trace_jvp")
-    setattr(global_tracing_state, "is_tracing", True)
-    setattr(global_tracing_state, "active_graph", g_trace_jvp)
-    getattr(_state, "update")({"RuleWithGraph": RuleWithGraph, "fn_jvp_hasattr_graph": fn_jvp_hasattr_graph, "g_trace_jvp": g_trace_jvp})
-    _state.update(locals())
+    _set_attr(global_tracing_state, "is_tracing", True)
+    _set_attr(global_tracing_state, "active_graph", g_trace_jvp)
+    _get_attr(_state, "update")({"RuleWithGraph": RuleWithGraph, "fn_jvp_hasattr_graph": fn_jvp_hasattr_graph, "g_trace_jvp": g_trace_jvp})
+    _state.update(_caller_locals())
 
 
 def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -562,15 +563,15 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state: dict[str, E
     TensorConfig, config, custom_vjp, fn_jvp_sub = _state["TensorConfig"], _state["config"], _state["custom_vjp"], _state["fn_jvp_sub"]
     g_trace_jvp, global_tracing_state, subgraph_jvp = _state["g_trace_jvp"], _state["global_tracing_state"], _state["subgraph_jvp"]
     try:
-        setattr(config, "eager_mode", False)
+        _set_attr(config, "eager_mode", False)
         t = Tensor(2.0, TensorConfig((), DType.Float32, Device("cpu")))
         out = fn_jvp_sub(t)
         assert out is not None
         assert any(n.op_type == "CustomJVP" and n.attributes.get("jvp_graph") is subgraph_jvp for n in g_trace_jvp.nodes.values())
     finally:
-        setattr(global_tracing_state, "is_tracing", False)
-        setattr(global_tracing_state, "active_graph", None)
-        setattr(config, "eager_mode", True)
+        _set_attr(global_tracing_state, "is_tracing", False)
+        _set_attr(global_tracing_state, "active_graph", None)
+        _set_attr(config, "eager_mode", True)
     subgraph_vjp = LogicalGraph("vjp_sub")
 
     @custom_vjp
@@ -596,8 +597,8 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_3(_state: dict[str, E
 
     fn_vjp_graph.defvjp(lambda x: (x * 3, x), subgraph_vjp)
     assert fn_vjp_graph.bwd_subgraph is subgraph_vjp
-    getattr(_state, "update")({"fn_vjp": fn_vjp, "fn_vjp_graph": fn_vjp_graph, "subgraph_vjp": subgraph_vjp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"fn_vjp": fn_vjp, "fn_vjp_graph": fn_vjp_graph, "subgraph_vjp": subgraph_vjp})
+    _state.update(_caller_locals())
 
 
 def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -638,10 +639,10 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_4(_state: dict[str, E
 
     # Trace custom_vjp with bwd_subgraph and Tensor lacking data.id
     g_trace_vjp = LogicalGraph("trace_vjp")
-    setattr(global_tracing_state, "is_tracing", True)
-    setattr(global_tracing_state, "active_graph", g_trace_vjp)
-    getattr(_state, "update")({"BwdWithGraph": BwdWithGraph, "fn_vjp_hasattr": fn_vjp_hasattr, "g_trace_vjp": g_trace_vjp})
-    _state.update(locals())
+    _set_attr(global_tracing_state, "is_tracing", True)
+    _set_attr(global_tracing_state, "active_graph", g_trace_vjp)
+    _get_attr(_state, "update")({"BwdWithGraph": BwdWithGraph, "fn_vjp_hasattr": fn_vjp_hasattr, "g_trace_vjp": g_trace_vjp})
+    _state.update(_caller_locals())
 
 
 def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -654,7 +655,7 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state: dict[str, E
     config, custom_vjp, fn_vjp, g_trace_vjp = _state["config"], _state["custom_vjp"], _state["fn_vjp"], _state["g_trace_vjp"]
     global_tracing_state, subgraph_vjp = _state["global_tracing_state"], _state["subgraph_vjp"]
     try:
-        setattr(config, "eager_mode", False)
+        _set_attr(config, "eager_mode", False)
         t_noid = Tensor(np.array([3.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
         out_v = fn_vjp(t_noid)
         assert out_v is not None
@@ -694,9 +695,9 @@ def _test_custom_jvp_and_custom_vjp_subgraph_branches_part_5(_state: dict[str, E
         out_no_primal = fn_vjp_nofwd._emit_vjp_node([t_noid], None, None)
         assert out_no_primal is not None
     finally:
-        setattr(global_tracing_state, "is_tracing", False)
-        setattr(global_tracing_state, "active_graph", None)
-        setattr(config, "eager_mode", True)
+        _set_attr(global_tracing_state, "is_tracing", False)
+        _set_attr(global_tracing_state, "active_graph", None)
+        _set_attr(config, "eager_mode", True)
 
 
 def test_custom_jvp_and_custom_vjp_subgraph_branches() -> None:

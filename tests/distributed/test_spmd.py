@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_ir import PartitionSpec
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
 from ml_switcheroo_compiler.distributed.strategy import MeshShardingStrategy
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
@@ -25,7 +26,7 @@ class MockSharding(PartitionSpec):
             axes: Test parameter `axes`.
         """
         super().__init__(axes=tuple(str(a) if a is not None else None for a in axes))
-        object.__setattr__(self, "mesh_mapping", axes)
+        _obj_set_attr(self, "mesh_mapping", axes)
 
 
 def test_spmd_all_gather(monkeypatch: EagerTensorProtocol) -> None:
@@ -121,4 +122,4 @@ def test_mesh_sharding_strategy() -> None:
     strategy.lower_sharding(graph)
 
     # Sharding should be propagated
-    assert getattr(graph.nodes["n2"].sharding, "mesh_mapping") == ["x"]
+    assert _get_attr(graph.nodes["n2"].sharding, "mesh_mapping") == ["x"]

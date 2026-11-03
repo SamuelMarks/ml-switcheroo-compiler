@@ -10,6 +10,7 @@ from unittest.mock import patch
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg.decompositions.qr import Hessenberg, HouseholderProduct, Qdwh, Qr, Schur, Tridiagonal, hessenberg, householder_product, qdwh, qr, schur, tridiagonal
 from tests.testing_utils import as_callable, as_tensor
@@ -38,7 +39,7 @@ def test_qr_dummy() -> None:
     assert as_callable(Tridiagonal)().infer_shape(t) == ((2, 4), (2, 2), (2, 4, 3))
     assert as_callable(Qdwh)().infer_shape(t) == ((2, 4, 3), (2, 4, 3), (2,), (2,))
     t2 = MockTensor()
-    setattr(t2, "shape", (2, 0))
+    _set_attr(t2, "shape", (2, 0))
     assert as_callable(Tridiagonal)().infer_shape(t2) == ((2,), (2,), (2, 0))
 
 

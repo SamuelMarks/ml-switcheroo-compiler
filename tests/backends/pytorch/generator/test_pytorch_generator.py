@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 from ml_switcheroo_compiler.backends.pytorch.pytorch_mixins import PyTorchScatterVisitor
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 from tests.testing_utils import as_callable, as_tensor_list
 
@@ -43,7 +44,7 @@ def test_generator_basics(monkeypatch: EagerTensorProtocol) -> None:
         import torch
     except ImportError:
         torch = MagicMock()
-        getattr(monkeypatch, "setitem")(sys.modules, "torch", torch)
+        _get_attr(monkeypatch, "setitem")(sys.modules, "torch", torch)
 
     g = IRGraph()
     gen = PyTorchCodeGenerator(g)
@@ -62,11 +63,11 @@ def test_generator_basics(monkeypatch: EagerTensorProtocol) -> None:
     prefix = gen._get_prefix_code()
     assert "import torch" in prefix[0]
     n_const = DummyNode({"value": 1.0}, "Constant")
-    setattr(gen, "sorted_nodes", [n_const])
+    _set_attr(gen, "sorted_nodes", [n_const])
     gen.code = []
     assert gen._emit_init_body() is True
     assert "register_parameter" in gen.code[0]
-    setattr(gen, "sorted_nodes", [as_callable(DummyNode)({}, "Unknown")])
+    _set_attr(gen, "sorted_nodes", [as_callable(DummyNode)({}, "Unknown")])
     assert gen._emit_init_body() is False
     monkeypatch.setattr(torch, "save", lambda *args, **kwargs: "mock_save")
     monkeypatch.setattr(torch, "load", lambda *args, **kwargs: "mock_load")
@@ -106,7 +107,7 @@ def test_pytorch_generator_distributed_visitor() -> None:
 
     nn_vis = PyTorchNNMixin()
     lines = as_tensor_list([])
-    setattr(nn_vis, "add_line", lines.append)
+    _set_attr(nn_vis, "add_line", lines.append)
 
     class DummyNode:
         """Test class DummyNode."""

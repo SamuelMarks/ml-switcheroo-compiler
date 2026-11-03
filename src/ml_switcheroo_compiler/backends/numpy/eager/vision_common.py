@@ -7,6 +7,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager.audio import mel_filterbank_eager, mfcc_eager
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("MelFilterbank")
@@ -55,19 +56,19 @@ def _np_power_iteration(backend_module: BackendModuleProtocol, w: EagerValue, *a
     num_iters = kwargs.get("num_iters", 1)
     u_raw = kwargs.get("u", None)
     if u_raw is None:
-        u = np.ones(getattr(w, "shape")[:-2] + (getattr(w, "shape")[-2], 1), dtype=getattr(w, "dtype"))
-    elif getattr(u_raw, "ndim", 1) < getattr(w, "ndim", 2):
-        u = np.asarray(getattr(np, "expand_dims")(u_raw, axis=-1))
+        u = np.ones(_get_attr(w, "shape")[:-2] + (_get_attr(w, "shape")[-2], 1), dtype=_get_attr(w, "dtype"))
+    elif _get_attr(u_raw, "ndim", 1) < _get_attr(w, "ndim", 2):
+        u = np.asarray(_get_attr(np, "expand_dims")(u_raw, axis=-1))
     else:
         u = np.asarray(u_raw)
     v = np.zeros_like(u)
     for _ in range(as_int(num_iters)):
-        w_t = np.asarray(getattr(np, "swapaxes")(w, -1, -2))
+        w_t = np.asarray(_get_attr(np, "swapaxes")(w, -1, -2))
         v = np.matmul(w_t, u)
         v = v / (np.linalg.norm(v, axis=-2, keepdims=True) + 1e-12)
-        u = np.asarray(getattr(np, "matmul")(w, v))
+        u = np.asarray(_get_attr(np, "matmul")(w, v))
         u = u / (np.linalg.norm(u, axis=-2, keepdims=True) + 1e-12)
-    sigma = np.asarray(getattr(np, "matmul")(np.swapaxes(u, -1, -2), getattr(np, "matmul")(w, v)))
+    sigma = np.asarray(_get_attr(np, "matmul")(np.swapaxes(u, -1, -2), _get_attr(np, "matmul")(w, v)))
     return (np.squeeze(v, axis=-1), np.squeeze(u, axis=-1), np.squeeze(np.squeeze(sigma, axis=-1), axis=-1))
 
 

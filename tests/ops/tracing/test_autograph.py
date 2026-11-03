@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, do_not_convert, set_loop_options
 from tests.testing_utils import as_callable, as_tensor
 
@@ -21,7 +22,7 @@ def test_autograph_coverage() -> None:
         return 1
 
     assert as_callable(f)() == 1
-    assert as_tensor(getattr(f, "_autograph_do_not_convert"))
+    assert as_tensor(_get_attr(f, "_autograph_do_not_convert"))
 
     def f2() -> EagerValue:
         """Test function f2."""
@@ -29,7 +30,7 @@ def test_autograph_coverage() -> None:
 
     f2_d = do_not_convert(f2)
     assert as_callable(f2_d)() == 2
-    assert as_tensor(getattr(f2_d, "_autograph_do_not_convert"))
+    assert as_tensor(_get_attr(f2_d, "_autograph_do_not_convert"))
 
     lo = LoopOptions(parallel_iterations=1, swap_memory=True, maximum_iterations=10, shape_invariants=None)
     assert lo.parallel_iterations == 1

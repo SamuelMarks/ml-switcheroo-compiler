@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.serialization import (
     SavedModel,
@@ -325,7 +326,7 @@ def test_load_checkpoint_dir_formats_and_validations() -> None:
 
         model_ok = DummyModel()
         run_restore_ops(ckpt_dir, target_model=as_tensor(model_ok))
-        assert as_tensor(getattr(model_ok.weights[0], "assigned_val")) is not None
+        assert as_tensor(_get_attr(model_ok.weights[0], "assigned_val")) is not None
 
         # 3. Validate shape mismatch in target_model
         class DummyModelMismatch:

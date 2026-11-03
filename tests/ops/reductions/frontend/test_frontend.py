@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions import approx_max_k, approx_min_k, segment_max, segment_mean, segment_min, segment_prod, unsorted_segment_max, unsorted_segment_mean, unsorted_segment_min, unsorted_segment_prod, unsorted_segment_sqrt_n, unsorted_segment_sum
 from ml_switcheroo_compiler.ops.reductions.frontend import max as fe_max
@@ -26,7 +27,7 @@ from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-WindowConfig = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils"), "WindowConfig"))
+WindowConfig = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.ops.reductions.frontend_utils"), "WindowConfig"))
 
 
 def test_reductions_frontend_coverage_brute() -> None:
@@ -85,9 +86,9 @@ def _test_reductions_frontend_brute_part_1(_state: dict[str, EagerTensorProtocol
     indices = Tensor(np.zeros((2, 3, 8)).astype(np.int64), TensorConfig((2, 3, 8), "int64", "cpu"))
     indices2d = Tensor(np.zeros((2, 3, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8), "int64", "cpu"))
     indices3d = Tensor(np.zeros((2, 3, 8, 8, 8)).astype(np.int64), TensorConfig((2, 3, 8, 8, 8), "int64", "cpu"))
-    getattr(_state, "update")({"indices": indices, "indices2d": indices2d, "indices3d": indices3d, "t_1d": t_1d})
-    getattr(_state, "update")({"t_2d": t_2d, "t_3d": t_3d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"indices": indices, "indices2d": indices2d, "indices3d": indices3d, "t_1d": t_1d})
+    _get_attr(_state, "update")({"t_2d": t_2d, "t_3d": t_3d})
+    _state.update(_caller_locals())
 
 
 def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -142,10 +143,10 @@ def _test_reductions_frontend_brute_part_2(_state: dict[str, EagerTensorProtocol
         as_callable(reduce_window)(t_1d, 0.0, "max", w_conf)
         t_scalar = Tensor(np.array(0.0).astype(np.float32), TensorConfig((), "float32", "cpu"))
         as_callable(reduce_window)(t_1d, t_scalar, "max", w_conf)
-    getattr(_state, "update")({"DummyBackend": DummyBackend, "dummy_backend": dummy_backend, "mock_backend": mock_backend, "mock_backend_utils": mock_backend_utils})
-    getattr(_state, "update")({"opt1": opt1, "opt2": opt2, "opt3": opt3, "t_scalar": t_scalar})
-    getattr(_state, "update")({"w_conf": w_conf})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyBackend": DummyBackend, "dummy_backend": dummy_backend, "mock_backend": mock_backend, "mock_backend_utils": mock_backend_utils})
+    _get_attr(_state, "update")({"opt1": opt1, "opt2": opt2, "opt3": opt3, "t_scalar": t_scalar})
+    _get_attr(_state, "update")({"w_conf": w_conf})
+    _state.update(_caller_locals())
 
 
 def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -181,8 +182,8 @@ def _test_reductions_frontend_brute_part_3(_state: dict[str, EagerTensorProtocol
             as_callable(reduce_window)(t_1d, t_1d, "max", w_conf)
     finally:
         global_tracing_state.is_tracing = False
-    getattr(_state, "update")({"global_tracing_state": global_tracing_state})
-    _state.update(locals())
+    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state})
+    _state.update(_caller_locals())
 
 
 def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -192,7 +193,7 @@ def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol
         _state: Shared test state dictionary.
     """
     global_tracing_state = _state["global_tracing_state"]
-    setattr(global_tracing_state, "is_tracing", True)
+    _set_attr(global_tracing_state, "is_tracing", True)
     try:
 
         class DummyData:
@@ -204,8 +205,8 @@ def _test_reductions_frontend_brute_part_4(_state: dict[str, EagerTensorProtocol
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_utils.global_tracing_state.add_node"):
             as_callable(_emit_reduction_node)("Test", [t_dummy], {}, (2,), "float32")
     finally:
-        setattr(global_tracing_state, "is_tracing", False)
-    assert getattr(global_tracing_state, "is_tracing") is False
+        _set_attr(global_tracing_state, "is_tracing", False)
+    assert _get_attr(global_tracing_state, "is_tracing") is False
 
 
 def test_reductions_frontend_brute() -> None:

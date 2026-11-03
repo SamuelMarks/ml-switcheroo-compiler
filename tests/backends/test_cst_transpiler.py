@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.cst_transpiler import (
     type_infer_dry_run,
     validate_diff,
 )
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -341,7 +342,7 @@ def test_cst_transpiler_missing_branches() -> None:
         class_bases = as_tensor({"fake_base": []})
 
     visitor = CSTTransformer("pytorch")
-    setattr(visitor, "target_config", FakeConfig())
+    _set_attr(visitor, "target_config", FakeConfig())
 
     tree = cst.parse_module("func(x=1)")
     tree = tree.visit(visitor)
@@ -349,7 +350,7 @@ def test_cst_transpiler_missing_branches() -> None:
     # 5. broadcast_method different but not expand/broadcast_to
     # Just need fw_config.broadcast_method = "A" and target = "B"
     # Actually, we can just trigger it using fake visitor
-    setattr(visitor, "target_config", FakeConfig())
+    _set_attr(visitor, "target_config", FakeConfig())
     # It needs a valid original fw config in _CONFIG.frameworks to match
 
     # 6. line 247 -> 241 (target base parts empty)
@@ -360,7 +361,7 @@ def test_cst_transpiler_missing_branches() -> None:
     # 5. properly visit
     # Let's say pytorch to fake, pytorch uses expand, fake uses broadcast_fake
     tree = cst.parse_module("x.expand(1)")
-    setattr(visitor, "target_config", FakeConfig())  # with broadcast_fake
+    _set_attr(visitor, "target_config", FakeConfig())  # with broadcast_fake
     visitor.target_framework = "fake"
     # To match we need final_node.func.attr.value to be the broadcast_method of some config.
     # We can just visit it directly
@@ -428,7 +429,7 @@ def test_cst_transpiler_advanced_transforms() -> None:
             return False
 
     t_dynamic = CSTTransformer("jax")
-    setattr(t_dynamic, "target_config", FalsyAfterFirstCheck())
+    _set_attr(t_dynamic, "target_config", FalsyAfterFirstCheck())
     tree_dynamic = cst.parse_module(src_early_ret)
     res_dynamic = tree_dynamic.visit(t_dynamic)
     assert "jnp.where(cond, a, b)" in res_dynamic.code

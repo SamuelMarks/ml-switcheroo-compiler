@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import pickle
-import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 
@@ -23,7 +22,8 @@ class PickleWeightFormat(WeightLoader, WeightSaver):
             dict[str, TensorLike]: Loaded weight dictionary.
         """
         with open(filepath, "rb") as f:
-            return typing.cast(dict[str, TensorLike], pickle.load(f))
+            _typed_ret_1: dict[str, TensorLike] = _cast_val(dict[str, TensorLike], pickle.load(f))
+            return _typed_ret_1
 
     def save(self, weights_np: TensorOrScalar, filepath: str) -> None:
         """Save pickle weights.

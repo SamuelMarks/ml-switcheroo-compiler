@@ -6,6 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.transforms import elastic_transform, flip_left_right, flip_up_down, perspective_transform
 from tests.testing_utils import as_callable, as_tensor
@@ -40,19 +41,19 @@ def test_vision_transforms_funcs(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.vision.transforms._emit_shape_node", return_value="node")
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.vision.transforms.get_op")
     mock_op = mocker.MagicMock()
-    setattr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
+    _set_attr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
     assert perspective_transform(t, t, t) == "node"
     assert elastic_transform(t, t) == "node"
     assert flip_left_right(t) == mock_op()
     assert flip_up_down(t) == mock_op()
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.transforms.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
-    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert as_tensor(getattr(perspective_transform(t, t, t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(elastic_transform(t, t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(flip_left_right(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(flip_up_down(t), "config")).shape == (2, 3)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
+    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert as_tensor(_get_attr(perspective_transform(t, t, t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(elastic_transform(t, t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(flip_left_right(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(flip_up_down(t), "config")).shape == (2, 3)
 
 
 def test_vision_transforms_funcs_kwargs(mocker: EagerTensorProtocol) -> None:

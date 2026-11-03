@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.unary.arithmetic import Abs, Ceil, Floor, Negative, Positive, Round, Sign, Sqrt, Square
 from ml_switcheroo_compiler.ops.unary.base import UnaryMathOp
 from ml_switcheroo_compiler.ops.unary.exponential import Exp, Log
@@ -89,15 +90,15 @@ def test_unary_special_coverage() -> None:
     x = np.array([1.5, 2.5])
     cast_op = Cast()
     res1 = cast_op.eager_eval(x, dtype=DType.Int32)
-    assert as_tensor(getattr(res1, "dtype")) == np.int32
+    assert as_tensor(_get_attr(res1, "dtype")) == np.int32
     res1_str = cast_op.eager_eval(x, dtype="int32")
-    assert as_tensor(getattr(res1_str, "dtype")) == np.int32
+    assert as_tensor(_get_attr(res1_str, "dtype")) == np.int32
     bitcast_op = Bitcast()
     x_int = np.array([1, 2], dtype=np.int32)
     res2 = bitcast_op.eager_eval(x_int, dtype=DType.Float32)
-    assert as_tensor(getattr(res2, "dtype")) == np.float32
+    assert as_tensor(_get_attr(res2, "dtype")) == np.float32
     res2_str = bitcast_op.eager_eval(x_int, dtype="float32")
-    assert as_tensor(getattr(res2_str, "dtype")) == np.float32
+    assert as_tensor(_get_attr(res2_str, "dtype")) == np.float32
     frexp_op = Frexp()
     res_frexp = frexp_op.eager_eval(x)
     assert isinstance(res_frexp, tuple)

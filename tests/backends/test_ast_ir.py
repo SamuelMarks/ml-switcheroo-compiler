@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.ir_to_ast import (
     emit_ir_to_ast,
     emit_ir_to_class,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -244,7 +245,7 @@ def test_ir_to_ast_defaults() -> None:
     from ml_switcheroo_compiler.backends.ir_to_ast import _get_class_base_expr, _get_compute_method_name
 
     assert _get_compute_method_name("unknown_fw") == "forward"
-    assert as_tensor(getattr(_get_class_base_expr("unknown_fw"), "value")) == "object"
+    assert as_tensor(_get_attr(_get_class_base_expr("unknown_fw"), "value")) == "object"
 
 
 def test_ir_to_ast_missing_branches() -> None:
@@ -280,7 +281,7 @@ def test_ir_to_ast_missing_branches() -> None:
         inputs=["x"],
         attributes={"var_name": "", "callee": "pkg.bar"},
     )
-    object.__setattr__(foreign_no_var, "id", "")
+    _obj_set_attr(foreign_no_var, "id", "")
     stmt_no_var = _emit_foreign_statement(foreign_no_var)
     assert stmt_no_var is not None
     assert isinstance(stmt_no_var.body[0], cst.Expr)

@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 
@@ -48,7 +48,7 @@ def eye(
             n,
             m,
             k=k,
-            dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+            dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
         )
         return Tensor(data, TensorConfig(shape, dtype, device))
     return _emit_creation_node("EyeLike", shape, dtype, {"n": n, "m": m, "k": k})
@@ -84,10 +84,10 @@ def _diag_eager(input: Tensor, diagonal: int, device: TensorOrScalar, dtype: Ten
     Returns:
         Tensor: Result.
     """
-    data = get_active_backend().execute_op("Diag", getattr(input, "data", input), k=diagonal)
-    shape = getattr(data, "shape") if hasattr(data, "shape") else ()
+    data = get_active_backend().execute_op("Diag", _get_attr(input, "data", input), k=diagonal)
+    shape = _get_attr(data, "shape") if _has_attr(data, "shape") else ()
     if dtype is None:
-        dtype = getattr(data, "dtype", DType.Float32)
+        dtype = _get_attr(data, "dtype", DType.Float32)
     return Tensor(data, TensorConfig(shape, dtype, device))
 
 
@@ -105,13 +105,13 @@ def diag(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
         RuntimeError: An exception.
         ValueError: An exception.
     """
-    device = getattr(input, "device", None)
-    dtype = getattr(input, "dtype", None)
+    device = _get_attr(input, "device", None)
+    dtype = _get_attr(input, "dtype", None)
 
     if config.eager_mode:
         return _diag_eager(input, diagonal, device, dtype)
 
-    input_shape = getattr(input, "shape", ())
+    input_shape = _get_attr(input, "shape", ())
     if len(input_shape) == MATRIX_RANK:
         n = min(input_shape) - abs(diagonal)
         shape = (max(0, n),)
@@ -123,7 +123,7 @@ def diag(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
         msg = "Cannot emit diag node outside of a tracing context."
         raise RuntimeError(msg)
     out_id = str(uuid.uuid4())
-    input_id = getattr(input.data, "id") if hasattr(input, "data") else getattr(input, "id", "const")
+    input_id = _get_attr(input.data, "id") if _has_attr(input, "data") else _get_attr(input, "id", "const")
     node = LogicalNode(
         id=out_id,
         op_type="Diag",
@@ -135,6 +135,6 @@ def diag(input: Tensor, diagonal: int = 0) -> TensorOrScalar:
     proxy = ProxyTensor(
         id=out_id,
         shape=shape,
-        dtype=getattr(dtype, "value") if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        dtype=_get_attr(dtype, "value") if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
     )
     return Tensor(proxy, TensorConfig(shape, dtype, device))

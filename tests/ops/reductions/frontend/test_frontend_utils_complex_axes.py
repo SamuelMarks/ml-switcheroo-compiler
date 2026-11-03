@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_utils import ReduceWindow, reduce_window
 from tests.testing_utils import as_callable, as_tensor
@@ -52,10 +53,10 @@ def test_frontend_utils_extras() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    setattr(state.global_tracing_state, "add_node", lambda node: None)
+    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
     try:
         as_callable(reduce_window)(t, 0.0, "add", as_callable(DummyConfig)())
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)

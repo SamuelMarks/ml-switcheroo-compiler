@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.core.ragged_tensor import RaggedTensor
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -30,7 +31,7 @@ class DummyTensor:
 
     def __len__(self) -> EagerValue:
         """Test function __len__."""
-        return as_tensor(getattr(self.shape, "__getitem__")(0))
+        return as_tensor(_get_attr(self.shape, "__getitem__")(0))
 
 
 def test_ragged_tensor() -> None:

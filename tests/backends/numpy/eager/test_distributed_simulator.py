@@ -7,12 +7,13 @@ import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
-numpy_eager_registry = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager"), "numpy_eager_registry"))
+numpy_eager_registry = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.numpy.eager"), "numpy_eager_registry"))
 
 
 def test_numpy_distributed_simulators() -> None:
@@ -26,7 +27,7 @@ def test_numpy_distributed_simulators() -> None:
 
     # AllGather
     gathered = as_callable(numpy_eager_registry.get)("AllGather")(np_mod, tensor, axis=0)
-    assert as_tensor(getattr(gathered, "shape")) == (1, 3)
+    assert as_tensor(_get_attr(gathered, "shape")) == (1, 3)
 
     # AllReduce
     reduced = as_callable(numpy_eager_registry.get)("AllReduce")(np_mod, tensor)

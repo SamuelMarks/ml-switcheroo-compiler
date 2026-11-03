@@ -10,6 +10,7 @@ import pydantic
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -122,9 +123,9 @@ def _serialize_initializers(graph: IRGraph) -> dict[str, AttributeValue]:
         dict[str, AttributeValue]: Serialized initializers dictionary.
     """
     initializers_dict: dict[str, AttributeValue] = {}
-    if hasattr(graph, "initializers") and graph.initializers:
+    if _has_attr(graph, "initializers") and graph.initializers:
         for k, v in graph.initializers.items():
-            if hasattr(v, "tolist"):
+            if _has_attr(v, "tolist"):
                 initializers_dict[str(k)] = v.tolist()
             elif isinstance(v, (int, float, str, bool, list, dict)):
                 initializers_dict[str(k)] = v
@@ -142,15 +143,15 @@ def _build_serialization_dict(graph: IRGraph) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Structured serialization dictionary.
     """
-    inputs_list: list[str] = list(getattr(graph, "inputs", [])) if getattr(graph, "inputs", None) else [node_id for node_id, node in graph.nodes.items() if getattr(node, "op_type", "") == "Input"]
-    outputs_list: list[str] = list(getattr(graph, "outputs", []))
+    inputs_list: list[str] = list(_get_attr(graph, "inputs", [])) if _get_attr(graph, "inputs", None) else [node_id for node_id, node in graph.nodes.items() if _get_attr(node, "op_type", "") == "Input"]
+    outputs_list: list[str] = list(_get_attr(graph, "outputs", []))
     nodes_dict: dict[str, NodeSerializationModel] = {}
     initializers_dict = _serialize_initializers(graph)
 
     for node_id, node in graph.nodes.items():
-        shape_list = _serialize_shape_metadata(getattr(node, "shape_metadata", None))
-        clean_attrs = _clean_node_attributes(getattr(node, "attributes", {}))
-        serialized_subgraphs: dict[str, GraphSerializationModel] = {str(sub_k): GraphSerializationModel.model_validate(_build_serialization_dict(sub_g)) for sub_k, sub_g in getattr(node, "subgraphs", {}).items() if hasattr(sub_g, "nodes")}
+        shape_list = _serialize_shape_metadata(_get_attr(node, "shape_metadata", None))
+        clean_attrs = _clean_node_attributes(_get_attr(node, "attributes", {}))
+        serialized_subgraphs: dict[str, GraphSerializationModel] = {str(sub_k): GraphSerializationModel.model_validate(_build_serialization_dict(sub_g)) for sub_k, sub_g in _get_attr(node, "subgraphs", {}).items() if _has_attr(sub_g, "nodes")}
 
         node_entry = NodeSerializationModel(
             id=node_id,
@@ -165,7 +166,7 @@ def _build_serialization_dict(graph: IRGraph) -> dict[str, AttributeValue]:
         nodes_dict[node_id] = node_entry
 
     model = GraphSerializationModel(
-        name=getattr(graph, "name", "graph"),
+        name=_get_attr(graph, "name", "graph"),
         inputs=inputs_list,
         outputs=outputs_list,
         initializers=initializers_dict,
@@ -228,7 +229,7 @@ def _parse_serialization_dict(data: Mapping[str, AttributeValue]) -> IRGraph:
         graph.outputs = [str(out) for out in raw_outputs]
 
     raw_inits = data.get("initializers", {})
-    if isinstance(raw_inits, dict) and hasattr(graph, "initializers"):
+    if isinstance(raw_inits, dict) and _has_attr(graph, "initializers"):
         for k, v in raw_inits.items():
             graph.initializers[str(k)] = v
 

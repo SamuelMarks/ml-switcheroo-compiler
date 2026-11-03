@@ -6,6 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization.utils import (
     _dtype_to_descr,
     _extract_arr_bytes,
@@ -301,7 +302,7 @@ def test_get_npz_bytes(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-    setattr(mock_backend.get_npz_bytes, "return_value", b"npz_bytes")
+    _set_attr(mock_backend.get_npz_bytes, "return_value", b"npz_bytes")
     assert get_npz_bytes({}) == b"npz_bytes"
     del mock_backend.get_npz_bytes
 
@@ -333,9 +334,9 @@ def test_load_npz(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-    setattr(mock_backend.load_npz, "return_value", [1, 2])
+    _set_attr(mock_backend.load_npz, "return_value", [1, 2])
     assert as_tensor(load_npz("file")) == as_tensor([1, 2])
-    setattr(mock_backend.load_npz, "side_effect", NotImplementedError)
+    _set_attr(mock_backend.load_npz, "side_effect", NotImplementedError)
     mocker.patch("ml_switcheroo_compiler.serialization.utils.parse_npz", return_value={"a": 1})
     assert as_tensor(load_npz("file")) == as_tensor([1])
 

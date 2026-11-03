@@ -7,6 +7,7 @@ import sys
 import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.tracing.state import TracingState
 from tests.testing_utils import as_callable, as_node, as_tensor
 
@@ -38,7 +39,7 @@ def test_tracing_state() -> None:
     assert node.domain == "MyGraph"
     if "ml_switcheroo_compiler.core.config" in sys.modules:
         config = sys.modules["ml_switcheroo_compiler.core.config"].config
-        old_stream = getattr(config, "current_stream", "default")
+        old_stream = _get_attr(config, "current_stream", "default")
         config.current_stream = "my_stream"
         node2 = MockNode()
         node2.id = "2"

@@ -9,6 +9,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import search_sort_ops as sort_module
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -36,9 +37,9 @@ def test_search_sort_ops() -> None:
     # Partition
     a = np.array([3, 4, 2, 1])
     part = sort_module._np_partition(np, a, 2)
-    assert as_tensor(getattr(part, "__getitem__")(2)) == 3
+    assert as_tensor(_get_attr(part, "__getitem__")(2)) == 3
     reg_part = numpy_eager_registry.get("Partition")
-    assert as_tensor(getattr(as_callable(reg_part)(np, a, 2), "__getitem__")(2)) == 3
+    assert as_tensor(_get_attr(as_callable(reg_part)(np, a, 2), "__getitem__")(2)) == 3
 
     # Percentile
     data = np.array([1, 2, 3, 4, 5])

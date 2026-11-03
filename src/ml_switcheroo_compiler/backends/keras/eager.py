@@ -7,6 +7,7 @@ import sys
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_str, as_tensor
 from ml_switcheroo_compiler.backends.mapping_loader import OpMappingSchema
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def _get_keras_module() -> EagerValue | None:
@@ -34,8 +35,8 @@ def _convert_arg(arg: EagerValue, keras: EagerValue | None) -> EagerValue:
     Returns:
         EagerValue: Converted tensor or original object.
     """
-    ops_mod = getattr(keras, "ops", None) if keras is not None else None
-    if isinstance(arg, (list, tuple)) and ops_mod is not None and hasattr(ops_mod, "convert_to_tensor"):
+    ops_mod = _get_attr(keras, "ops", None) if keras is not None else None
+    if isinstance(arg, (list, tuple)) and ops_mod is not None and _has_attr(ops_mod, "convert_to_tensor"):
         try:
             return as_tensor(ops_mod.convert_to_tensor(arg))
         except Exception:
@@ -62,8 +63,8 @@ def _try_dispatch_mapped_op(
     """
     from ml_switcheroo_compiler.backends.mapping_loader import resolve_target_api
 
-    target_api = getattr(op_spec, "target_api", None)
-    custom_code = getattr(op_spec, "custom_code", None)
+    target_api = _get_attr(op_spec, "target_api", None)
+    custom_code = _get_attr(op_spec, "custom_code", None)
     if not (target_api or custom_code):
         return None
 
@@ -71,10 +72,10 @@ def _try_dispatch_mapped_op(
     if func is None or not callable(func):
         return None
 
-    kwarg_trans = getattr(op_spec, "kwarg_translations", {}) or {}
+    kwarg_trans = _get_attr(op_spec, "kwarg_translations", {}) or {}
     translated_kwargs: dict[str, EagerValue] = {kwarg_trans.get(k, k): v for k, v in kwargs.items()}
-    if getattr(op_spec, "is_method", False) and args:
-        method = getattr(args[0], as_str(target_api), None)
+    if _get_attr(op_spec, "is_method", False) and args:
+        method = _get_attr(args[0], as_str(target_api), None)
         if method is not None and callable(method):
             return as_tensor(method(*args[1:], **translated_kwargs))
     return func(*args, **translated_kwargs)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, as_opt_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
@@ -57,8 +57,8 @@ def load(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
         "Load",
         list(args),
         kwargs,
-        getattr(_first, "shape", ()),
-        getattr(_first, "dtype", "float32"),
+        _get_attr(_first, "shape", ()),
+        _get_attr(_first, "dtype", "float32"),
     )
 
 
@@ -174,13 +174,14 @@ class Load(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_1: TensorOrScalar = res
+        return _typed_ret_1
 
 
 @register_op("Save")
@@ -201,13 +202,14 @@ class Save(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_2: TensorOrScalar = res
+        return _typed_ret_2
 
 
 @register_op("SaveGguf")
@@ -228,13 +230,14 @@ class SaveGguf(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_3: TensorOrScalar = res
+        return _typed_ret_3
 
 
 @register_op("Savez")
@@ -255,13 +258,14 @@ class Savez(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_4: TensorOrScalar = res
+        return _typed_ret_4
 
 
 @register_op("SavezCompressed")
@@ -282,10 +286,11 @@ class SavezCompressed(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_5: TensorOrScalar = res
+        return _typed_ret_5

@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.cupy.eager import (
     cupy_resize_bilinear,
     execute_op,
 )
+from ml_switcheroo_compiler.core.shape import _cast_val
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -54,7 +55,8 @@ class MockGPUArray:
         Returns:
             MockGPUArray: Copied array on GPU.
         """
-        return typing.cast("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        _typed_ret_1: MockGPUArray = _cast_val("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        return _typed_ret_1
 
     def __add__(self, other: EagerValue) -> MockGPUArray:
         """Mock addition returning GPU array.
@@ -62,7 +64,8 @@ class MockGPUArray:
         Args:
             other: Test parameter `other`.
         """
-        return typing.cast("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        _typed_ret_2: MockGPUArray = _cast_val("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        return _typed_ret_2
 
     def __mul__(self, other: EagerValue) -> MockGPUArray:
         """Mock multiplication returning GPU array.
@@ -70,7 +73,8 @@ class MockGPUArray:
         Args:
             other: Test parameter `other`.
         """
-        return typing.cast("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        _typed_ret_3: MockGPUArray = _cast_val("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        return _typed_ret_3
 
     def __truediv__(self, other: EagerValue) -> MockGPUArray:
         """Mock division returning GPU array.
@@ -78,7 +82,8 @@ class MockGPUArray:
         Args:
             other: Test parameter `other`.
         """
-        return typing.cast("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        _typed_ret_4: MockGPUArray = _cast_val("MockGPUArray", as_callable(MockGPUArray)(shape=self.shape, dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        return _typed_ret_4
 
     def __getitem__(self, key: EagerValue) -> MockGPUArray:
         """Mock slicing returning GPU array.
@@ -86,7 +91,8 @@ class MockGPUArray:
         Args:
             key: Test parameter `key`.
         """
-        return typing.cast("MockGPUArray", as_callable(MockGPUArray)(shape=(2, 2), dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        _typed_ret_5: MockGPUArray = _cast_val("MockGPUArray", as_callable(MockGPUArray)(shape=(2, 2), dtype=self.dtype, data=as_callable(MockGPUData)("cuda:0")))
+        return _typed_ret_5
 
 
 def _create_mock_cupy() -> MagicMock:

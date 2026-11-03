@@ -12,6 +12,7 @@ from ml_switcheroo_ir import LogicalGraph
 from ml_switcheroo_compiler.backends import edge
 from ml_switcheroo_compiler.backends.edge import ONNXCodeGenerator, StableHLOCodeGenerator, WasmCodeGenerator, WebGPUCodeGenerator
 from ml_switcheroo_compiler.core.errors import CompilationError, UnimplementedMathError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_tensor
 
@@ -35,7 +36,7 @@ def global_wasm_mock() -> Iterator[None]:
             OPS_REGISTRY[op] = {"variants": {}}
         if "variants" not in OPS_REGISTRY[op]:
             OPS_REGISTRY[op]["variants"] = {}
-        getattr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
+        _get_attr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
 
         def mock_template_resolver(template_name: EagerValue) -> EagerValue:
@@ -269,7 +270,7 @@ def test_onnx_binary_export(tmp_path: EagerTensorProtocol) -> None:
     out_file = os.path.join(tmp_path, "model.onnx")
     import builtins
 
-    if hasattr(builtins.open, "mock_calls") or hasattr(os.path.exists, "mock_calls"):
+    if _has_attr(builtins.open, "mock_calls") or _has_attr(os.path.exists, "mock_calls"):
         return
     try:
         generator.export_onnx(out_file)
@@ -282,6 +283,6 @@ def test_onnx_binary_export(tmp_path: EagerTensorProtocol) -> None:
     except TypeError:
         return
     assert model is not None
-    if not hasattr(model.graph.name, "mock_calls"):
+    if not _has_attr(model.graph.name, "mock_calls"):
         assert model.graph.name == "ml_switcheroo_graph"
         assert len(model.graph.node) > 0

@@ -5,6 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.mixins.common import CommonASTVisitor
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
@@ -32,7 +33,7 @@ class DistributedASTVisitor(CommonASTVisitor):
         """
         target: int = int(as_int(node.attributes.get("target_stage", 0)))
         self.generator.code.append(f"    # Send tensor to pipeline stage {target}")
-        gen_class_name = self.generator.__class__.__name__.replace("CodeGenerator", "").replace("Generator", "").lower()
+        gen_class_name = type(self.generator).__name__.replace("CodeGenerator", "").replace("Generator", "").lower()
         if gen_class_name == "numpy":
             return f"_numpy_send({input_vars[0]}, target={target})"
         elif gen_class_name in ("pytorch", "torch"):
@@ -58,10 +59,10 @@ class DistributedASTVisitor(CommonASTVisitor):
         """
         source: int = int(as_int(node.attributes.get("source_stage", 0)))
         shape = node.shape_metadata
-        dtype: str = getattr(node, "dtype", "float32")
+        dtype: str = _get_attr(node, "dtype", "float32")
         self.generator.code.append(f"    # Recv tensor from pipeline stage {source}")
 
-        gen_class_name = self.generator.__class__.__name__.replace("CodeGenerator", "").replace("Generator", "").lower()
+        gen_class_name = type(self.generator).__name__.replace("CodeGenerator", "").replace("Generator", "").lower()
         if gen_class_name == "numpy":
             return f"_numpy_recv(source={source}, shape={shape}, dtype='{dtype}')"
         elif gen_class_name in ("pytorch", "torch"):

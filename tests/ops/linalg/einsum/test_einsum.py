@@ -6,6 +6,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.ops.linalg.einsum import Einsum, EinsumEquationParser, EinsumLexer, EinsumPlanner, EinsumValidator, ParsedEquationPart
 from tests.testing_utils import as_callable, as_int_list, as_tensor, as_tensor_dict
 
@@ -83,7 +84,7 @@ def test_einsum_planner() -> None:
     as_callable(EinsumPlanner._parse_named_part)("ij", (2, 3), amap)
     assert amap == {"i": 2, "j": 3}
     amap = {}
-    bcast = typing.cast("tuple[int, ...] | None", as_callable(EinsumPlanner._parse_ellipsis_part)("i...j", (2, 3, 4, 5), amap, None))
+    bcast = _cast_val("tuple[int, ...] | None", as_callable(EinsumPlanner._parse_ellipsis_part)("i...j", (2, 3, 4, 5), amap, None))
     assert amap == {"i": 2, "j": 5}
     assert bcast == (3, 4)
     (amap_2, bcast_2) = as_tensor(EinsumPlanner.build_axis_size_map("...ij,jk", [(3, 4, 2, 3), (3, 4)]))

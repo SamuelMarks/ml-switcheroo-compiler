@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, _cast_val
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.passes.state_lifting import (
     StateEntry,
@@ -62,7 +61,7 @@ def unflatten_state_dict(
         for part in parts[:-1]:
             if part not in d:
                 d[part] = {}
-            d = typing.cast(dict[str, StateValue], d[part])
+            d = _cast_val(dict[str, StateValue], d[part])
         d[parts[-1]] = v
     return nested
 

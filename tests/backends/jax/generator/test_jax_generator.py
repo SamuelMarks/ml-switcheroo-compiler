@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.backends.jax.generator import JAXCodeGenerator
 from ml_switcheroo_compiler.backends.jax.generator_mixins import JaxControlFlowVisitor, JaxDistributedVisitor, JaxMathVisitor
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict, as_tensor_list
 
@@ -144,7 +145,7 @@ def test_jax_generator() -> None:
     imports = gen._resolve_imports()
     assert "import jax" in imports
     assert "import jax.numpy as jnp" in imports
-    setattr(gen, "code", [])
+    _set_attr(gen, "code", [])
     gen._generate_function_signature()
     assert gen.indent_level == 1
     assert "def apply_model(params, *args, **kwargs) -> object:" in gen.code[0]

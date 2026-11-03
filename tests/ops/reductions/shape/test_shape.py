@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fold, fractional_max_pool2d, fractional_max_pool3d, unfold
 from ml_switcheroo_compiler.ops.shape.frontend import (
@@ -64,8 +65,8 @@ def _test_frontend_pool_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    getattr(_state, "update")({"global_tracing_state": global_tracing_state})
-    _state.update(locals())
+    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state})
+    _state.update(_caller_locals())
 
 
 def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -90,7 +91,7 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
             """
             pass
 
-    setattr(global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(global_tracing_state, "active_graph", DummyGraph())
     import ml_switcheroo_compiler.ops.reductions.frontend_utils as fu
 
     orig_emit = fu._emit_reduction_node
@@ -116,8 +117,8 @@ def _test_frontend_pool_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -
             """
             return ()
 
-    getattr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "fu": fu, "orig_emit": orig_emit})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "fu": fu, "orig_emit": orig_emit})
+    _state.update(_caller_locals())
 
 
 def _test_frontend_pool_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -128,7 +129,7 @@ def _test_frontend_pool_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -
     """
     (DummyOp, fu, global_tracing_state, orig_emit) = (_state["DummyOp"], _state["fu"], _state["global_tracing_state"], _state["orig_emit"])
     (t_2d, t_3d) = (_state["t_2d"], _state["t_3d"])
-    setattr(fu, "_emit_reduction_node", lambda *args, **kwargs: DummyOp())
+    _set_attr(fu, "_emit_reduction_node", lambda *args, **kwargs: DummyOp())
     try:
         assert as_callable(fractional_max_pool2d)(t_2d, (2, 2)) is not None
         assert as_callable(adaptive_avg_pool2d)(t_2d, (2, 2)) is not None
@@ -139,10 +140,10 @@ def _test_frontend_pool_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -
         assert as_callable(adaptive_avg_pool3d)(t_3d, (2, 2, 2)) is not None
         assert as_callable(adaptive_max_pool3d)(t_3d, (2, 2, 2)) is not None
     finally:
-        setattr(fu, "_emit_reduction_node", orig_emit)
+        _set_attr(fu, "_emit_reduction_node", orig_emit)
         config.eager_mode = True
-        setattr(global_tracing_state, "is_tracing", False)
-    _state.update(locals())
+        _set_attr(global_tracing_state, "is_tracing", False)
+    _state.update(_caller_locals())
 
 
 def test_frontend_pool_coverage() -> None:
@@ -185,11 +186,11 @@ def test_frontend_pool_coverage() -> None:
             return np.array(x)
 
     orig_backend = registry_mod.get_active_backend
-    setattr(registry_mod, "get_active_backend", lambda: MockBackend())
+    _set_attr(registry_mod, "get_active_backend", lambda: MockBackend())
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"id": id, "orig_backend": orig_backend, "registry_mod": registry_mod, "t_2d": t_2d})
-        getattr(_state, "update")({"t_3d": t_3d})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"id": id, "orig_backend": orig_backend, "registry_mod": registry_mod, "t_2d": t_2d})
+        _get_attr(_state, "update")({"t_3d": t_3d})
         for _sub_fn in (_test_frontend_pool_coverage_sub_1, _test_frontend_pool_coverage_sub_2, _test_frontend_pool_coverage_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -222,7 +223,7 @@ def _test_shape_frontend_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) 
     assert diagflat(t) is not None
     assert block([[t, t]]) is not None
     assert delete(t, 0) is not None
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_shape_frontend_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -232,12 +233,12 @@ def _test_shape_frontend_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     (backend_inst, t) = (_state["backend_inst"], _state["t"])
-    setattr(backend_inst, "res", [np.zeros((2,)), np.zeros((2,))])
+    _set_attr(backend_inst, "res", [np.zeros((2,)), np.zeros((2,))])
     assert diag_indices(2) is not None
     assert diag_indices_from(t) is not None
-    setattr(backend_inst, "res", np.array(4))
+    _set_attr(backend_inst, "res", np.array(4))
     assert size(t) is not None
-    setattr(backend_inst, "res", np.zeros((4,)))
+    _set_attr(backend_inst, "res", np.zeros((4,)))
     assert as_callable(reshape)(t, (4,)) is not None
     assert as_callable(flip)(t) is not None
     assert fliplr(t) is not None
@@ -246,8 +247,8 @@ def _test_shape_frontend_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) 
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    getattr(_state, "update")({"global_tracing_state": global_tracing_state})
-    _state.update(locals())
+    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state})
+    _state.update(_caller_locals())
 
 
 def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -272,7 +273,7 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
             """
             pass
 
-    setattr(global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(global_tracing_state, "active_graph", DummyGraph())
     import ml_switcheroo_compiler.ops.shape.utils as shape_utils
 
     orig_emit = shape_utils._emit_shape_node
@@ -298,8 +299,8 @@ def _test_shape_frontend_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) 
             """
             return ()
 
-    getattr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "orig_emit": orig_emit, "shape_utils": shape_utils})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyGraph": DummyGraph, "DummyOp": DummyOp, "orig_emit": orig_emit, "shape_utils": shape_utils})
+    _state.update(_caller_locals())
 
 
 def _test_shape_frontend_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -309,8 +310,8 @@ def _test_shape_frontend_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     (DummyOp, shape_utils) = (_state["DummyOp"], _state["shape_utils"])
-    setattr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
-    _state.update(locals())
+    _set_attr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
+    _state.update(_caller_locals())
 
 
 def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -340,7 +341,7 @@ def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) 
         assert diagflat(t) is not None
         assert block([[t, t]]) is not None
         assert delete(t, 0) is not None
-        setattr(shape_utils, "_emit_shape_node", orig_emit)
+        _set_attr(shape_utils, "_emit_shape_node", orig_emit)
         with patch("ml_switcheroo_compiler.tracing.builder.TracingNodeBuilder.emit_tracing_node") as mock_emit:
 
             class DummyItemNode:
@@ -352,17 +353,17 @@ def _test_shape_frontend_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) 
             mock_emit.return_value = DummyItemNode()
             assert diag_indices(2) is not None
             assert diag_indices_from(t) is not None
-        setattr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
+        _set_attr(shape_utils, "_emit_shape_node", lambda *args, **kwargs: DummyOp())
         assert size(t) is not None
         assert as_callable(reshape)(t, (4,)) is not None
         assert as_callable(flip)(t) is not None
         assert fliplr(t) is not None
         assert flipud(t) is not None
     finally:
-        setattr(shape_utils, "_emit_shape_node", orig_emit)
+        _set_attr(shape_utils, "_emit_shape_node", orig_emit)
         config.eager_mode = True
-        setattr(global_tracing_state, "is_tracing", False)
-    _state.update(locals())
+        _set_attr(global_tracing_state, "is_tracing", False)
+    _state.update(_caller_locals())
 
 
 def test_shape_frontend_coverage() -> None:
@@ -409,15 +410,15 @@ def test_shape_frontend_coverage() -> None:
             Args:
                 x: Test parameter `x`.
             """
-            return as_tensor(getattr(x, "item"))() if hasattr(x, "item") else x
+            return as_tensor(_get_attr(x, "item"))() if _has_attr(x, "item") else x
 
     backend_inst = MockShapeBackend()
     orig_backend = registry_mod.get_active_backend
-    setattr(registry_mod, "get_active_backend", lambda: backend_inst)
+    _set_attr(registry_mod, "get_active_backend", lambda: backend_inst)
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"backend_inst": backend_inst, "id": id, "orig_backend": orig_backend, "registry_mod": registry_mod})
-        getattr(_state, "update")({"t": t})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"backend_inst": backend_inst, "id": id, "orig_backend": orig_backend, "registry_mod": registry_mod})
+        _get_attr(_state, "update")({"t": t})
         for _sub_fn in (_test_shape_frontend_coverage_sub_1, _test_shape_frontend_coverage_sub_2, _test_shape_frontend_coverage_sub_3, _test_shape_frontend_coverage_sub_4, _test_shape_frontend_coverage_sub_5):
             _sub_fn(_state)
         assert len(_state) > 0

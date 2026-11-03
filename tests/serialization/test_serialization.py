@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _set_attr
 from ml_switcheroo_compiler.serialization import (
     LoadedModel,
     SavedModel,
@@ -60,15 +61,16 @@ def test_serialization_primitives_and_custom_objects() -> None:
             Args:
                 cfg: Test parameter `cfg`.
             """
-            return typing.cast("CustomDense", as_callable(cls)(**cfg))
+            _typed_ret_1: CustomDense = _cast_val("CustomDense", as_callable(cls)(**cfg))
+            return _typed_ret_1
 
     obj = CustomDense(units=64)
     serialized = serialize_object(as_tensor(obj))
-    assert as_tensor(getattr(serialized, "__getitem__")("class_name")) == "CustomDense"
-    assert as_tensor(getattr(as_tensor(getattr(serialized, "__getitem__")("config")), "__getitem__")("units")) == 64
+    assert as_tensor(_get_attr(serialized, "__getitem__")("class_name")) == "CustomDense"
+    assert as_tensor(_get_attr(as_tensor(_get_attr(serialized, "__getitem__")("config")), "__getitem__")("units")) == 64
 
     # Deserialization from registry
-    deserialized = typing.cast("CustomDense", deserialize_object(serialized))
+    deserialized = _cast_val("CustomDense", deserialize_object(serialized))
     assert isinstance(deserialized, CustomDense)
     assert deserialized.units == 64
 
@@ -91,7 +93,7 @@ def test_serialization_primitives_and_custom_objects() -> None:
     with custom_object_scope({"ScopedLayer": ScopedLayer}):
         assert get_registered_object("ScopedLayer") is ScopedLayer
         s_cfg = as_tensor({"class_name": "ScopedLayer", "config": {"rate": 0.25}})
-        des_scoped = typing.cast("ScopedLayer", deserialize_object(s_cfg))
+        des_scoped = _cast_val("ScopedLayer", deserialize_object(s_cfg))
         assert isinstance(des_scoped, ScopedLayer)
         assert des_scoped.rate == 0.25
 
@@ -193,7 +195,7 @@ def test_saved_model_and_fingerprinting() -> None:
         # SavedModel load
         loaded_sm = SavedModel.load(sm_dir)
         assert loaded_sm.signatures == {"serving_default": {"inputs": ["x"]}}
-        assert as_tensor(getattr(loaded_sm.model, "__getitem__")("op")) == "Add"
+        assert as_tensor(_get_attr(loaded_sm.model, "__getitem__")("op")) == "Add"
 
         # Corrupted proto load
         corrupt_pb_dir = os.path.join(tmpdir, "corrupt_sm")
@@ -246,7 +248,7 @@ def test_variable_restoration_engine() -> None:
                 Args:
                     val: Test parameter `val`.
                 """
-                setattr(self, "assigned", val)
+                _set_attr(self, "assigned", val)
 
         class TargetModel:
             """Test class TargetModel."""

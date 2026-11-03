@@ -46,7 +46,7 @@ class CompilerError(RuntimeError):
             **kwargs: Values to inject into predefined error templates.
         """
         _load_error_templates()
-        template = _ERROR_TEMPLATES.get(self.__class__.__name__) or _ERROR_TEMPLATES.get("SwitcherooError")
+        template = _ERROR_TEMPLATES.get(type(self).__name__) or _ERROR_TEMPLATES.get("SwitcherooError")
         if template and kwargs and not message:
             try:
                 message = template.format(**kwargs)

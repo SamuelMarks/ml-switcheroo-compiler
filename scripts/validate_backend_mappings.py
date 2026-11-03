@@ -238,7 +238,7 @@ def extract_endpoints_from_ast(expr_str: str, backend_name: str = "") -> list[tu
         if isinstance(node, ast.Call):
             ep = _resolve_call_func_name(node.func, backend_name)
             if ep and ep.split(".")[-1] not in guarded:
-                pos_args: list[str] = [ast.unparse(a) for a in node.args] if hasattr(ast, "unparse") else []
+                pos_args: list[str] = [ast.unparse(a) for a in node.args]
                 kw_args: list[str] = [str(k.arg) for k in node.keywords if k.arg is not None]
                 results.append((ep, pos_args, kw_args))
         elif isinstance(node, ast.BinOp) and type(node.op) in _BINOP_MAP:

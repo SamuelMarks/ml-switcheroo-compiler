@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.window_reductions as wr
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -20,7 +21,7 @@ def _test_window_reductions_coverage_part_1(_state: dict[str, EagerTensorProtoco
         _state: Shared test state dictionary.
     """
     res = wr._np_adaptive_avg_pool2d(np, np.zeros((1, 1, 2, 2)), (1, 1))
-    assert as_tensor(getattr(res, "shape")) == (1, 1, 1, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 1, 1, 1)
     res = wr._np_adaptive_avg_pool2d(np, 1.0, (1, 1))
     assert res == 1.0
 
@@ -36,7 +37,7 @@ def _test_window_reductions_coverage_part_1(_state: dict[str, EagerTensorProtoco
 
     # AdaptiveAvgPool3D
     res = wr._np_adaptive_avg_pool3d(np, np.zeros((1, 1, 2, 2, 2)), (1, 1, 1))
-    assert as_tensor(getattr(res, "shape")) == (1, 1, 1, 1, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 1, 1, 1, 1)
     res = wr._np_adaptive_avg_pool3d(np, 1.0, (1, 1, 1))
     assert res == 1.0
 
@@ -47,16 +48,16 @@ def _test_window_reductions_coverage_part_1(_state: dict[str, EagerTensorProtoco
 
     # AdaptiveMaxPool3D
     res = wr._np_adaptive_max_pool3d(np, np.zeros((1, 1, 2, 2, 2)), (1, 1, 1))
-    assert as_tensor(getattr(res, "shape")) == (1, 1, 1, 1, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 1, 1, 1, 1)
     res = wr._np_adaptive_max_pool3d(np, 1.0, (1, 1, 1))
     assert res == 1.0
 
     # AdaptiveMaxPool3D_Indices
     res = wr._np_adaptive_max_pool3d_indices(np, np.zeros((1, 1, 2, 2, 2)), (1, 1, 1))
     assert as_callable(len)(res) == 2
-    getattr(_state, "update")({"input_2d": input_2d, "input_3d": input_3d, "res": res, "res_math": res_math})
-    getattr(_state, "update")({"res_math_2x2": res_math_2x2, "res_math_3d": res_math_3d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"input_2d": input_2d, "input_3d": input_3d, "res": res, "res_math": res_math})
+    _get_attr(_state, "update")({"res_math_2x2": res_math_2x2, "res_math_3d": res_math_3d})
+    _state.update(_caller_locals())
 
 
 def _test_window_reductions_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -102,8 +103,8 @@ def _test_window_reductions_coverage_part_2(_state: dict[str, EagerTensorProtoco
 
     # SegmentProd
     res = as_tensor(wr._np_segment_prod(np, data, segment_ids))
-    getattr(_state, "update")({"data": data, "res": res, "res_max_math": res_max_math, "segment_ids": segment_ids})
-    _state.update(locals())
+    _get_attr(_state, "update")({"data": data, "res": res, "res_max_math": res_max_math, "segment_ids": segment_ids})
+    _state.update(_caller_locals())
 
 
 def _test_window_reductions_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -128,7 +129,7 @@ def _test_window_reductions_coverage_part_3(_state: dict[str, EagerTensorProtoco
         mock_ss.return_value = 1
         res = as_tensor(wr._np_segment_sum(np))
         assert res == 1
-    getattr(_state, "update")({"mock_rw": mock_rw, "mock_ss": mock_ss, "patch": patch, "res": res})
+    _get_attr(_state, "update")({"mock_rw": mock_rw, "mock_ss": mock_ss, "patch": patch, "res": res})
 
 
 def test_window_reductions_coverage() -> None:

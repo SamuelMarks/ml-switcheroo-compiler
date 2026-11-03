@@ -12,6 +12,7 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor, as_tensor_list
 
@@ -86,7 +87,7 @@ def test_cuda_runner_allocate_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", mock_cupy):
         runner = CUDARunner()
         ptr = runner.allocate_buffer(100)
-        assert as_tensor(getattr(ptr, "value")) == 12345
+        assert as_tensor(_get_attr(ptr, "value")) == 12345
 
 
 def test_cuda_runner_allocate_ctypes() -> None:
@@ -119,7 +120,7 @@ def test_cuda_runner_allocate_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = CUDARunner()
             ptr = runner.allocate_buffer(100)
-            assert as_tensor(getattr(ptr, "value")) is None
+            assert as_tensor(_get_attr(ptr, "value")) is None
 
 
 def test_cuda_runner_write_cupy() -> None:
@@ -437,7 +438,7 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
                 prog: Test parameter `prog`.
                 size_ptr: Test parameter `size_ptr`.
             """
-            setattr(getattr(size_ptr, "_obj"), "value", 64)
+            _set_attr(_get_attr(size_ptr, "_obj"), "value", 64)
             return 0
 
         mock_nvrtc.nvrtcGetPTXSize.side_effect = get_ptx_size_side_effect
@@ -449,7 +450,7 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
                 prog: Test parameter `prog`.
                 buf: Test parameter `buf`.
             """
-            setattr(buf, "value", b"compiled_ptx_code")
+            _set_attr(buf, "value", b"compiled_ptx_code")
             return 0
 
         mock_nvrtc.nvrtcGetPTX.side_effect = get_ptx_side_effect
@@ -477,7 +478,7 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
                 prog: Test parameter `prog`.
                 size_ptr: Test parameter `size_ptr`.
             """
-            setattr(getattr(size_ptr, "_obj"), "value", 64)
+            _set_attr(_get_attr(size_ptr, "_obj"), "value", 64)
             return 0
 
         mock_nvrtc.nvrtcGetProgramLogSize.side_effect = get_log_size_side_effect
@@ -489,7 +490,7 @@ def test_cuda_compile_to_ptx_nvrtc_ctypes() -> None:
                 prog: Test parameter `prog`.
                 buf: Test parameter `buf`.
             """
-            setattr(buf, "value", b"syntax error in kernel")
+            _set_attr(buf, "value", b"syntax error in kernel")
             return 0
 
         mock_nvrtc.nvrtcGetProgramLog.side_effect = get_log_side_effect
@@ -547,7 +548,7 @@ def test_cuda_runner_ctypes_init_failure() -> None:
             mock_cdll.cuCtxCreate_v2.side_effect = RuntimeError("ctx error")
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_cdll):
                 runner = CUDARunner()
-                assert as_tensor(getattr(runner._ctx, "value")) is None
+                assert as_tensor(_get_attr(runner._ctx, "value")) is None
 
 
 def test_cuda_runner_read_buffer_error() -> None:
@@ -578,7 +579,7 @@ def test_cuda_runner_cupy_nvrtc_exception_fallback() -> None:
         mock_nvrtc = MagicMock()
         mock_nvrtc.nvrtcCreateProgram.return_value = 0
         mock_nvrtc.nvrtcCompileProgram.return_value = 0
-        mock_nvrtc.nvrtcGetPTXSize.side_effect = lambda prog, s: (as_callable(setattr)(getattr(s, "_obj"), "value", 32), 0)[1]
+        mock_nvrtc.nvrtcGetPTXSize.side_effect = lambda prog, s: (as_callable(setattr)(_get_attr(s, "_obj"), "value", 32), 0)[1]
         mock_nvrtc.nvrtcGetPTX.side_effect = lambda prog, b: (as_callable(setattr)(b, "value", b"ptx_fallback"), 0)[1]
         mock_nvrtc.nvrtcDestroyProgram.return_value = 0
 
@@ -645,9 +646,9 @@ def _test_cuda_additional_branches_part_1(_state: dict[str, EagerTensorProtocol]
     mock_cupy_str = MagicMock()
     del mock_cupy_str.cuda.nvrtc.create_program
     mock_cupy_str.cuda.nvrtc.get_ptx.return_value = "ptx_str_result"
-    getattr(_state, "update")({"mock_cupy": mock_cupy, "mock_cupy_str": mock_cupy_str, "mock_lib": mock_lib, "mock_lib_dev": mock_lib_dev})
-    getattr(_state, "update")({"runner": runner})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_cupy": mock_cupy, "mock_cupy_str": mock_cupy_str, "mock_lib": mock_lib, "mock_lib_dev": mock_lib_dev})
+    _get_attr(_state, "update")({"runner": runner})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_additional_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -663,11 +664,11 @@ def _test_cuda_additional_branches_part_2(_state: dict[str, EagerTensorProtocol]
 
     # 3. execute_graph with bytearray data and allocate_buffer returning None
     runner_exec = CUDARunner()
-    setattr(runner_exec, "is_available", lambda: True)
-    setattr(runner_exec, "compile_cuda_to_ptx", lambda src: "ptx")
-    setattr(runner_exec, "load_and_dispatch", lambda *args, **kwargs: None)
-    setattr(runner_exec, "allocate_buffer", lambda size: None)
-    setattr(runner_exec, "synchronize", lambda: None)
+    _set_attr(runner_exec, "is_available", lambda: True)
+    _set_attr(runner_exec, "compile_cuda_to_ptx", lambda src: "ptx")
+    _set_attr(runner_exec, "load_and_dispatch", lambda *args, **kwargs: None)
+    _set_attr(runner_exec, "allocate_buffer", lambda size: None)
+    _set_attr(runner_exec, "synchronize", lambda: None)
     g = IRGraph()
     g.outputs = ["out_0"]
     as_callable(runner_exec.execute_graph)(g, {"barr": as_callable(bytearray)(b"\x00\x00\x00\x00")})
@@ -687,10 +688,10 @@ def _test_cuda_additional_branches_part_2(_state: dict[str, EagerTensorProtocol]
 
     # 6. _emit_node with FusedElementwise and ghost input for buf_to_free (branch 175->172)
     node_fused_ghost = IRNode(id="fused_node", op_type="FusedElementwise", inputs=["x_ghost"], attributes={"scalar_expr": "1.0f"})
-    getattr(_state, "update")({"cuda_lines": cuda_lines, "g": g, "g_empty": g_empty, "gen": gen})
-    getattr(_state, "update")({"n_empty": n_empty, "node_barrier": node_barrier, "node_fused_ghost": node_fused_ghost, "runner_exec": runner_exec})
-    getattr(_state, "update")({"runner_ptx": runner_ptx})
-    _state.update(locals())
+    _get_attr(_state, "update")({"cuda_lines": cuda_lines, "g": g, "g_empty": g_empty, "gen": gen})
+    _get_attr(_state, "update")({"n_empty": n_empty, "node_barrier": node_barrier, "node_fused_ghost": node_fused_ghost, "runner_exec": runner_exec})
+    _get_attr(_state, "update")({"runner_ptx": runner_ptx})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_additional_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -701,7 +702,7 @@ def _test_cuda_additional_branches_part_3(_state: dict[str, EagerTensorProtocol]
     """
     cuda_lines, gen, node_fused_ghost = _state["cuda_lines"], _state["gen"], _state["node_fused_ghost"]
     gen._emit_node(node_fused_ghost, 0, {}, {"x_ghost": "fused_node"}, set(), set(), cuda_lines)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_cuda_additional_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -717,7 +718,7 @@ def _test_cuda_additional_branches_part_4(_state: dict[str, EagerTensorProtocol]
             mock_nvrtc_fail = MagicMock(spec=["nvrtcCreateProgram", "nvrtcCompileProgram", "nvrtcGetProgramLogSize", "nvrtcGetProgramLog"])
             mock_nvrtc_fail.nvrtcCreateProgram.return_value = 0
             mock_nvrtc_fail.nvrtcCompileProgram.return_value = 1
-            mock_nvrtc_fail.nvrtcGetProgramLogSize.side_effect = lambda prog, s: (as_callable(setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
+            mock_nvrtc_fail.nvrtcGetProgramLogSize.side_effect = lambda prog, s: (as_callable(setattr)(_get_attr(s, "_obj"), "value", 16), 0)[1]
             mock_nvrtc_fail.nvrtcGetProgramLog.side_effect = lambda prog, b: (as_callable(setattr)(b, "value", b"err"), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc_fail):
                 with pytest.raises(RuntimeError, match="NVRTC compilation failed"):
@@ -727,12 +728,12 @@ def _test_cuda_additional_branches_part_4(_state: dict[str, EagerTensorProtocol]
             mock_nvrtc_ok = MagicMock(spec=["nvrtcCreateProgram", "nvrtcCompileProgram", "nvrtcGetPTXSize", "nvrtcGetPTX"])
             mock_nvrtc_ok.nvrtcCreateProgram.return_value = 0
             mock_nvrtc_ok.nvrtcCompileProgram.return_value = 0
-            mock_nvrtc_ok.nvrtcGetPTXSize.side_effect = lambda prog, s: (as_callable(setattr)(getattr(s, "_obj"), "value", 16), 0)[1]
+            mock_nvrtc_ok.nvrtcGetPTXSize.side_effect = lambda prog, s: (as_callable(setattr)(_get_attr(s, "_obj"), "value", 16), 0)[1]
             mock_nvrtc_ok.nvrtcGetPTX.side_effect = lambda prog, b: (as_callable(setattr)(b, "value", b"ptx_code"), 0)[1]
             with patch("ctypes.cdll.LoadLibrary", return_value=mock_nvrtc_ok):
                 assert runner_ctypes.compile_cuda_to_ptx("code") == "ptx_code"
-    getattr(_state, "update")({"mock_nvrtc_fail": mock_nvrtc_fail, "mock_nvrtc_ok": mock_nvrtc_ok, "runner_ctypes": runner_ctypes})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_nvrtc_fail": mock_nvrtc_fail, "mock_nvrtc_ok": mock_nvrtc_ok, "runner_ctypes": runner_ctypes})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_additional_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -773,8 +774,8 @@ def _test_cuda_additional_branches_part_5(_state: dict[str, EagerTensorProtocol]
     runner_sync.synchronize()
 
     mock_cuda.cudaDeviceSynchronize.return_value = 1
-    getattr(_state, "update")({"mock_cuda": mock_cuda, "mock_cupy": mock_cupy, "runner_sync": runner_sync})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_cuda": mock_cuda, "mock_cupy": mock_cupy, "runner_sync": runner_sync})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_additional_branches_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -788,17 +789,17 @@ def _test_cuda_additional_branches_part_6(_state: dict[str, EagerTensorProtocol]
         runner_sync.synchronize()
 
     # Reset sync return value to 0 for successful execute_graph
-    setattr(mock_cuda.cudaDeviceSynchronize, "return_value", 0)
-    setattr(mock_cuda.cuMemAlloc_v2, "return_value", 0)
-    setattr(mock_cuda.cuModuleLoadData, "return_value", 0)
-    setattr(mock_cuda.cuModuleGetFunction, "return_value", 0)
-    setattr(mock_cuda.cuLaunchKernel, "return_value", 0)
+    _set_attr(mock_cuda.cudaDeviceSynchronize, "return_value", 0)
+    _set_attr(mock_cuda.cuMemAlloc_v2, "return_value", 0)
+    _set_attr(mock_cuda.cuModuleLoadData, "return_value", 0)
+    _set_attr(mock_cuda.cuModuleGetFunction, "return_value", 0)
+    _set_attr(mock_cuda.cuLaunchKernel, "return_value", 0)
     unmapped_node = IRNode("unmapped", "UnsupportedUnknownOp")
     gen_cuda = CudaCodeGenerator(IRGraph())
     as_callable(runner_sync._dispatch_compute_node)(unmapped_node, 0, gen_cuda, "ptx", {})
 
     mapped_node = IRNode("mapped", "Add", inputs=[])
-    setattr(getattr(getattr(gen_cuda.config, "templates"), "__getitem__")("add"), "workgroup_size", [16, 16, 2])
+    _set_attr(_get_attr(_get_attr(gen_cuda.config, "templates"), "__getitem__")("add"), "workgroup_size", [16, 16, 2])
     as_callable(runner_sync._dispatch_compute_node)(mapped_node, 0, gen_cuda, "ptx", {})
 
     # FusedElementwise dispatch
@@ -811,8 +812,8 @@ def _test_cuda_additional_branches_part_6(_state: dict[str, EagerTensorProtocol]
     with patch.object(runner_sync, "compile_cuda_to_ptx", return_value="// PTX"):
         with pytest.raises(BackendNotSupportedError, match="not supported"):
             runner_sync.execute_graph(g_unmapped, {})
-    getattr(_state, "update")({"fused_node": fused_node, "g_unmapped": g_unmapped, "gen_cuda": gen_cuda, "mapped_node": mapped_node})
-    getattr(_state, "update")({"unmapped_node": unmapped_node})
+    _get_attr(_state, "update")({"fused_node": fused_node, "g_unmapped": g_unmapped, "gen_cuda": gen_cuda, "mapped_node": mapped_node})
+    _get_attr(_state, "update")({"unmapped_node": unmapped_node})
 
 
 def test_cuda_additional_branches() -> None:
@@ -844,7 +845,7 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
                 Args:
                     count_ref: Test parameter `count_ref`.
                 """
-                setattr(getattr(count_ref, "_obj"), "value", 1)
+                _set_attr(_get_attr(count_ref, "_obj"), "value", 1)
                 return 0
 
             mock_lib_dev.cuDeviceGetCount.side_effect = set_count_positive
@@ -857,7 +858,7 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
                 Args:
                     count_ref: Test parameter `count_ref`.
                 """
-                setattr(getattr(count_ref, "_obj"), "value", 0)
+                _set_attr(_get_attr(count_ref, "_obj"), "value", 0)
                 return 0
 
             mock_lib_dev.cuDeviceGetCount.side_effect = set_count_zero
@@ -878,9 +879,9 @@ def _test_cuda_full_coverage_branches_part_1(_state: dict[str, EagerTensorProtoc
         inputs_set={"y"},
         cuda=lines,
     )
-    getattr(_state, "update")({"fused_node": fused_node, "gen": gen, "lines": lines, "mock_lib_dev": mock_lib_dev})
-    getattr(_state, "update")({"set_count_positive": set_count_positive, "set_count_zero": set_count_zero})
-    _state.update(locals())
+    _get_attr(_state, "update")({"fused_node": fused_node, "gen": gen, "lines": lines, "mock_lib_dev": mock_lib_dev})
+    _get_attr(_state, "update")({"set_count_positive": set_count_positive, "set_count_zero": set_count_zero})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_full_coverage_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -921,16 +922,16 @@ def _test_cuda_full_coverage_branches_part_2(_state: dict[str, EagerTensorProtoc
     # 4. synchronize when cuda_lib has neither cuCtxSynchronize nor cudaDeviceSynchronize
     runner = CUDARunner()
     runner.mode = "ctypes"
-    setattr(runner, "cuda_lib", object())  # Has neither attribute
+    _set_attr(runner, "cuda_lib", object())  # Has neither attribute
     runner.synchronize()  # Exits cleanly without error
 
     # 5. _prepare_device_buffers with bytes, memoryview, list, and write_buffer execution
-    setattr(runner, "allocate_buffer", lambda size: ctypes.c_void_p(12345))
+    _set_attr(runner, "allocate_buffer", lambda size: ctypes.c_void_p(12345))
     written = []
-    setattr(runner, "write_buffer", lambda ptr, raw: written.append((ptr, raw)))
-    getattr(_state, "update")({"add_node": add_node, "fused_code": fused_code, "fused_with_inp": fused_with_inp, "g_fused_inputs": g_fused_inputs})
-    getattr(_state, "update")({"gen_fused": gen_fused, "inp": inp, "runner": runner, "written": written})
-    _state.update(locals())
+    _set_attr(runner, "write_buffer", lambda ptr, raw: written.append((ptr, raw)))
+    _get_attr(_state, "update")({"add_node": add_node, "fused_code": fused_code, "fused_with_inp": fused_with_inp, "g_fused_inputs": g_fused_inputs})
+    _get_attr(_state, "update")({"gen_fused": gen_fused, "inp": inp, "runner": runner, "written": written})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_full_coverage_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -952,13 +953,13 @@ def _test_cuda_full_coverage_branches_part_3(_state: dict[str, EagerTensorProtoc
     assert len(written) == 3
 
     # 6. _dispatch_compute_node with out_ptr is None and empty ptx_source
-    setattr(runner, "allocate_buffer", lambda size: None)
+    _set_attr(runner, "allocate_buffer", lambda size: None)
     runner._dispatch_compute_node(fused_with_inp, 0, gen_fused, "", {})
     runner._dispatch_compute_node(add_node, 0, gen_fused, "ptx", {})
     runner_unavail = CUDARunner()
     runner_unavail.mode = "ctypes"
     runner_unavail.cuda_lib = None
-    setattr(runner_unavail, "is_available", lambda: False)
+    _set_attr(runner_unavail, "is_available", lambda: False)
     with pytest.raises(BackendNotSupportedError, match="CUDA accelerator hardware or driver is not available"):
         runner_unavail.execute_graph(IRGraph(), {})
 
@@ -966,15 +967,15 @@ def _test_cuda_full_coverage_branches_part_3(_state: dict[str, EagerTensorProtoc
     runner_valid = CUDARunner()
     runner_valid.mode = "ctypes"
     runner_valid.cuda_lib = MagicMock()
-    setattr(runner_valid, "is_available", lambda: True)
-    setattr(runner_valid, "compile_cuda_to_ptx", lambda code: "// PTX")
+    _set_attr(runner_valid, "is_available", lambda: True)
+    _set_attr(runner_valid, "compile_cuda_to_ptx", lambda code: "// PTX")
     alloc_map = {16: ctypes.c_void_p(1001), 32: None}
-    setattr(runner_valid, "allocate_buffer", lambda size: alloc_map.get(size, ctypes.c_void_p(999)))
-    setattr(runner_valid, "write_buffer", lambda ptr, raw: None)
-    setattr(runner_valid, "compile_and_dispatch", lambda *args, **kwargs: None)
-    setattr(runner_valid, "synchronize", lambda: None)
-    getattr(_state, "update")({"alloc_map": alloc_map, "bufs": bufs, "runner_unavail": runner_unavail, "runner_valid": runner_valid})
-    _state.update(locals())
+    _set_attr(runner_valid, "allocate_buffer", lambda size: alloc_map.get(size, ctypes.c_void_p(999)))
+    _set_attr(runner_valid, "write_buffer", lambda ptr, raw: None)
+    _set_attr(runner_valid, "compile_and_dispatch", lambda *args, **kwargs: None)
+    _set_attr(runner_valid, "synchronize", lambda: None)
+    _get_attr(_state, "update")({"alloc_map": alloc_map, "bufs": bufs, "runner_unavail": runner_unavail, "runner_valid": runner_valid})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_full_coverage_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -984,9 +985,9 @@ def _test_cuda_full_coverage_branches_part_4(_state: dict[str, EagerTensorProtoc
         _state: Shared test state dictionary.
     """
     runner_valid = _state["runner_valid"]
-    setattr(runner_valid, "read_buffer", lambda ptr, size: b"result_bytes")
+    _set_attr(runner_valid, "read_buffer", lambda ptr, size: b"result_bytes")
     freed = []
-    setattr(runner_valid, "free_buffer", lambda ptr: freed.append(ptr))
+    _set_attr(runner_valid, "free_buffer", lambda ptr: freed.append(ptr))
 
     g_exec = IRGraph()
     inp_node = IRNode("inp", "Input")
@@ -1004,8 +1005,8 @@ def _test_cuda_full_coverage_branches_part_4(_state: dict[str, EagerTensorProtoc
         assert "calc" in res
         assert res["calc"] == b"result_bytes"
         assert len(freed) > 0
-    getattr(_state, "update")({"calc_node": calc_node, "freed": freed, "g_exec": g_exec, "inp_node": inp_node})
-    getattr(_state, "update")({"res": res})
+    _get_attr(_state, "update")({"calc_node": calc_node, "freed": freed, "g_exec": g_exec, "inp_node": inp_node})
+    _get_attr(_state, "update")({"res": res})
 
 
 def test_cuda_full_coverage_branches() -> None:
@@ -1040,7 +1041,7 @@ def _test_cuda_streams_and_events_part_1(_state: dict[str, EagerTensorProtocol])
             s: Test parameter `s`.
             e: Test parameter `e`.
         """
-        setattr(getattr(ptr, "contents"), "value", 12.5)
+        _set_attr(_get_attr(ptr, "contents"), "value", 12.5)
         return 0
 
     mock_lib.cuEventElapsedTime.side_effect = mock_elapsed
@@ -1057,9 +1058,9 @@ def _test_cuda_streams_and_events_part_1(_state: dict[str, EagerTensorProtocol])
     runner.record_event(event_end, stream)
 
     elapsed = runner.elapsed_time(event_start, event_end)
-    getattr(_state, "update")({"elapsed": elapsed, "event_end": event_end, "event_start": event_start, "mock_elapsed": mock_elapsed})
-    getattr(_state, "update")({"mock_lib": mock_lib, "runner": runner, "stream": stream})
-    _state.update(locals())
+    _get_attr(_state, "update")({"elapsed": elapsed, "event_end": event_end, "event_start": event_start, "mock_elapsed": mock_elapsed})
+    _get_attr(_state, "update")({"mock_lib": mock_lib, "runner": runner, "stream": stream})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_streams_and_events_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1074,32 +1075,32 @@ def _test_cuda_streams_and_events_part_2(_state: dict[str, EagerTensorProtocol])
     assert runner.elapsed_time(None, None) == 0.0
 
     # Test error paths
-    setattr(mock_lib.cuStreamCreate, "return_value", 1)
+    _set_attr(mock_lib.cuStreamCreate, "return_value", 1)
     with pytest.raises(RuntimeError, match="cuStreamCreate failed"):
         runner.create_stream()
 
-    setattr(mock_lib.cuStreamSynchronize, "return_value", 1)
+    _set_attr(mock_lib.cuStreamSynchronize, "return_value", 1)
     with pytest.raises(RuntimeError, match="cuStreamSynchronize failed"):
         runner.synchronize_stream(stream)
 
-    setattr(mock_lib.cuEventCreate, "return_value", 1)
+    _set_attr(mock_lib.cuEventCreate, "return_value", 1)
     with pytest.raises(RuntimeError, match="cuEventCreate failed"):
         runner.create_event()
 
-    setattr(mock_lib.cuEventRecord, "return_value", 1)
+    _set_attr(mock_lib.cuEventRecord, "return_value", 1)
     with pytest.raises(RuntimeError, match="cuEventRecord failed"):
         runner.record_event(event_start)
 
-    setattr(mock_lib.cuEventElapsedTime, "side_effect", None)
-    setattr(mock_lib.cuEventElapsedTime, "return_value", 1)
+    _set_attr(mock_lib.cuEventElapsedTime, "side_effect", None)
+    _set_attr(mock_lib.cuEventElapsedTime, "return_value", 1)
     with pytest.raises(RuntimeError, match="cuEventElapsedTime failed"):
         runner.elapsed_time(event_start, event_end)
 
     # CuPy mode
     runner_cupy = CUDARunner()
     mock_cupy = MagicMock()
-    getattr(_state, "update")({"mock_cupy": mock_cupy, "runner_cupy": runner_cupy})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_cupy": mock_cupy, "runner_cupy": runner_cupy})
+    _state.update(_caller_locals())
 
 
 def _test_cuda_streams_and_events_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1110,7 +1111,7 @@ def _test_cuda_streams_and_events_part_3(_state: dict[str, EagerTensorProtocol])
     """
     mock_cupy, runner_cupy = _state["mock_cupy"], _state["runner_cupy"]
     with patch("ml_switcheroo_compiler.backends.cuda.cuda.cupy", mock_cupy):
-        setattr(runner_cupy, "mode", "cupy")
+        _set_attr(runner_cupy, "mode", "cupy")
         c_stream = runner_cupy.create_stream()
         assert c_stream is not None
         runner_cupy.synchronize_stream(c_stream)
@@ -1118,7 +1119,7 @@ def _test_cuda_streams_and_events_part_3(_state: dict[str, EagerTensorProtocol])
         c_event = runner_cupy.create_event()
         assert c_event is not None
         runner_cupy.record_event(c_event, c_stream)
-    getattr(_state, "update")({"c_event": c_event, "c_stream": c_stream})
+    _get_attr(_state, "update")({"c_event": c_event, "c_stream": c_stream})
 
 
 def test_cuda_streams_and_events() -> None:
@@ -1142,15 +1143,15 @@ def test_cuda_generator_synthesized_kernels_and_runner_none_lib() -> None:
 
     tpl_unary = gen._ensure_template(n_unary, 0)
     assert tpl_unary is not None
-    assert "customsynthunary_kernel" in as_tensor(getattr(tpl_unary, "body"))
+    assert "customsynthunary_kernel" in as_tensor(_get_attr(tpl_unary, "body"))
 
     tpl_bin = gen._ensure_template(n_bin, 1)
     assert tpl_bin is not None
-    assert "customsynthbinary_kernel" in as_tensor(getattr(tpl_bin, "body"))
+    assert "customsynthbinary_kernel" in as_tensor(_get_attr(tpl_bin, "body"))
 
     tpl_tri = gen._ensure_template(n_tri, 2)
     assert tpl_tri is not None
-    assert "customsynthternary_kernel" in as_tensor(getattr(tpl_tri, "body"))
+    assert "customsynthternary_kernel" in as_tensor(_get_attr(tpl_tri, "body"))
 
     # Unsupported operation raises BackendNotSupportedError
     n_unsup = IRNode(id="n_unsup", op_type="UnsupportedCustomOp", inputs=["in0"])
@@ -1314,7 +1315,7 @@ def test_cuda_compile_and_runner_dispatch() -> None:
         artifact = gen.compile_aot(graph, compile_options=["-O3"])
         assert isinstance(artifact, CompiledArtifact)
         assert artifact.binary_bytes == b".version 7.0\n.target sm_70"
-        assert as_tensor(getattr(artifact.metadata, "__getitem__")("compiler_cli")) == "nvcc"
+        assert as_tensor(_get_attr(artifact.metadata, "__getitem__")("compiler_cli")) == "nvcc"
 
     # 2. Compile without list options and without assembly ptx
     mock_comp_empty = HardwareCompilationResult(

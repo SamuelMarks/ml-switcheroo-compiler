@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def jax_all_reduce(
@@ -26,11 +27,11 @@ def jax_all_reduce(
         import jax.lax as lax
 
         if op.upper() in ("SUM", "ADD"):
-            return as_tensor(getattr(lax, "psum")(tensor, axis_name=axis_name))
+            return as_tensor(_get_attr(lax, "psum")(tensor, axis_name=axis_name))
         elif op.upper() == "MAX":
-            return as_tensor(getattr(lax, "pmax")(tensor, axis_name=axis_name))
+            return as_tensor(_get_attr(lax, "pmax")(tensor, axis_name=axis_name))
         elif op.upper() == "MIN":
-            return as_tensor(getattr(lax, "pmin")(tensor, axis_name=axis_name))
+            return as_tensor(_get_attr(lax, "pmin")(tensor, axis_name=axis_name))
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -55,7 +56,7 @@ def jax_all_gather(
     try:
         import jax.lax as lax
 
-        return as_tensor(getattr(lax, "all_gather")(tensor, axis_name=axis_name, axis=axis))
+        return as_tensor(_get_attr(lax, "all_gather")(tensor, axis_name=axis_name, axis=axis))
     except (ImportError, NameError):
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 

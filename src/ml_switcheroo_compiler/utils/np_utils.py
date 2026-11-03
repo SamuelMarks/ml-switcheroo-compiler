@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _has_attr
 
 
 def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str = "float32") -> TensorOrScalar:
@@ -19,7 +19,7 @@ def to_categorical(x: TensorOrScalar, num_classes: int | None = None, dtype: str
     """
     if num_classes is None:
         max_val = ops.max(x)
-        num_classes = int(max_val.item() if hasattr(max_val, "item") else max_val) + 1
+        num_classes = int(max_val.item() if _has_attr(max_val, "item") else max_val) + 1
 
     x_ops = ops.cast(x, "int32")
     indices = ops.arange(num_classes)

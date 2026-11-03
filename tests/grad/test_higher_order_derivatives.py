@@ -10,6 +10,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.api import (
     hvp,
@@ -91,11 +92,11 @@ def test_nth_order_grad_callable() -> None:
 
         first_deriv = nth_order_grad(cubic, n=1)
         res1 = first_deriv(x)
-        assert np.isclose(float(np.asarray(getattr(res1, "data", res1)).reshape(-1)[0]), 12.0, atol=1e-3)
+        assert np.isclose(float(np.asarray(_get_attr(res1, "data", res1)).reshape(-1)[0]), 12.0, atol=1e-3)
 
         second_deriv = nth_order_grad(cubic, n=2)
         res2 = second_deriv(x)
-        assert np.isclose(float(np.asarray(getattr(res2, "data", res2)).reshape(-1)[0]), 12.0, atol=1e-3)
+        assert np.isclose(float(np.asarray(_get_attr(res2, "data", res2)).reshape(-1)[0]), 12.0, atol=1e-3)
 
         with pytest.raises(ValueError, match="Derivative order n must be >= 1"):
             nth_order_grad(cubic, n=0)
@@ -127,5 +128,5 @@ def test_hvp_api_delegation() -> None:
         # H = [[1, 0], [0, 1]]
         # H · v = [1, 1]
         primal, hvp_res = hvp(scalar_quad, (x_val,), (v_val,))
-        assert as_callable(np.allclose)(getattr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
-        assert as_callable(np.allclose)(getattr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)
+        assert as_callable(np.allclose)(_get_attr(primal, "data", primal), [4.5, 8.0], atol=1e-3)
+        assert as_callable(np.allclose)(_get_attr(hvp_res, "data", hvp_res), [1.0, 1.0], atol=1e-3)

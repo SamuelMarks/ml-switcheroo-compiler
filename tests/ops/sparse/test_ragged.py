@@ -7,6 +7,7 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.ragged import RaggedAdd, RaggedDynamicBroadcast, RaggedGather, RaggedMatMul, RaggedTensorToDense
 from ml_switcheroo_compiler.ops.ragged.core import RaggedDot
@@ -76,7 +77,7 @@ def test_sparse_bincount() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_bincount = as_callable(getattr(_ops_mod, "sparse_bincount"))
+        sparse_bincount = as_callable(_get_attr(_ops_mod, "sparse_bincount"))
         (e, t) = as_callable(_test_op)(sparse_bincount, a)
         assert e is not None
 
@@ -90,7 +91,7 @@ def test_sparse_reduce_max() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_reduce_max = as_callable(getattr(_ops_mod, "sparse_reduce_max"))
+        sparse_reduce_max = as_callable(_get_attr(_ops_mod, "sparse_reduce_max"))
         (e, t) = as_callable(_test_op)(sparse_reduce_max, a)
         assert e is not None
 
@@ -104,7 +105,7 @@ def test_sparse_reduce_sum() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_reduce_sum = as_callable(getattr(_ops_mod, "sparse_reduce_sum"))
+        sparse_reduce_sum = as_callable(_get_attr(_ops_mod, "sparse_reduce_sum"))
         (e, t) = as_callable(_test_op)(sparse_reduce_sum, a)
         assert e is not None
 
@@ -130,7 +131,7 @@ def test_sparse_segment_sqrt_n() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_segment_sqrt_n = as_callable(getattr(_ops_mod, "sparse_segment_sqrt_n"))
+        sparse_segment_sqrt_n = as_callable(_get_attr(_ops_mod, "sparse_segment_sqrt_n"))
         (e, t) = as_callable(_test_op)(sparse_segment_sqrt_n, a, a, a)
         assert e is not None
 
@@ -144,7 +145,7 @@ def test_sparse_segment_sum() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        sparse_segment_sum = as_callable(getattr(_ops_mod, "sparse_segment_sum"))
+        sparse_segment_sum = as_callable(_get_attr(_ops_mod, "sparse_segment_sum"))
         (e, t) = as_callable(_test_op)(sparse_segment_sum, a, a, a)
         assert e is not None
 
@@ -158,7 +159,7 @@ def test_ragged_dot() -> None:
     with pytest.raises(AttributeError):
         import ml_switcheroo_compiler.ops as _ops_mod
 
-        ragged_dot = as_callable(getattr(_ops_mod, "ragged_dot"))
+        ragged_dot = as_callable(_get_attr(_ops_mod, "ragged_dot"))
         (e, t) = as_callable(_test_op)(ragged_dot, a, a)
         assert e is not None
 

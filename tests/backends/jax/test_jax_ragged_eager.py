@@ -7,6 +7,7 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -26,5 +27,5 @@ def test_jax_ragged_eager(monkeypatch: pytest.MonkeyPatch) -> None:
 
     a = [jnp.array([1, 2]), jnp.array([1])]
     res = _execute_ragged_tensor_to_dense(a)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     assert _execute_ragged_tensor_to_dense(np.array([1, 2])) is not None

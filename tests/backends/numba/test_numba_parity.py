@@ -15,6 +15,7 @@ from ml_switcheroo_compiler.backends.numba.eager import _unwrap_arg, execute_op
 from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 from ml_switcheroo_compiler.backends.numba.profiler import NumbaProfiler, _get_process_memory_mb
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor
@@ -180,11 +181,11 @@ def test_numba_profiler_and_memory_metrics() -> None:
 
     assert "latencies" in metrics
     assert as_callable(len)(metrics["latencies"]) == 3
-    assert getattr(metrics, "__getitem__")("latency_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("p50_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("p95_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("p99_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("peak_memory_mb") > 0.0
+    assert _get_attr(metrics, "__getitem__")("latency_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("p50_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("p95_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("p99_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("peak_memory_mb") > 0.0
 
     # Test Linux RSS branch in _get_process_memory_mb
     with mock.patch("sys.platform", "linux"):
@@ -254,12 +255,12 @@ def test_numba_generator_aot_and_classmethods() -> None:
     as_callable(np.testing.assert_allclose)(res, as_callable(np.abs)(input_arr))
 
     # Classmethods on NumbaGenerator and package exports
-    assert as_tensor(getattr(nb_pkg.zeros((2, 2)), "shape")) == (2, 2)
-    assert as_tensor(getattr(NumbaGenerator.zeros((2, 2)), "shape")) == (2, 2)
-    assert as_tensor(getattr(nb_pkg.array([1.0, 2.0]), "shape")) == (2,)
-    assert as_tensor(getattr(NumbaGenerator.array([1.0, 2.0]), "shape")) == (2,)
-    assert as_tensor(getattr(nb_pkg.asarray([1.0, 2.0]), "shape")) == (2,)
-    assert as_tensor(getattr(NumbaGenerator.asarray([1.0, 2.0]), "shape")) == (2,)
+    assert as_tensor(_get_attr(nb_pkg.zeros((2, 2)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(NumbaGenerator.zeros((2, 2)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(nb_pkg.array([1.0, 2.0]), "shape")) == (2,)
+    assert as_tensor(_get_attr(NumbaGenerator.array([1.0, 2.0]), "shape")) == (2,)
+    assert as_tensor(_get_attr(nb_pkg.asarray([1.0, 2.0]), "shape")) == (2,)
+    assert as_tensor(_get_attr(NumbaGenerator.asarray([1.0, 2.0]), "shape")) == (2,)
     assert nb_pkg.item(np.array([42.0])) == 42.0
     assert NumbaGenerator.item(np.array([42.0])) == 42.0
     assert nb_pkg.execute_op("Add", 1, 2) == 3

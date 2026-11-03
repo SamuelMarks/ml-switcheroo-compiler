@@ -353,10 +353,6 @@ def _normalize_config_dtype(dt: DType | str | TensorOrScalar | None) -> DType | 
     Returns:
         Union[DType, str, TensorOrScalar]: Normalized `DType` or original dtype object.
     """
-    if dt is None:
-        return DType.Float32
-    if isinstance(dt, DType):
-        return dt
     raw_val = _extract_dtype_str(dt)
     try:
         return DType(raw_val)
@@ -472,9 +468,8 @@ class Tensor(
 
         shape_tuple = config.shape if isinstance(config.shape, tuple) else ()
         self._shape: tuple[int | str | SymNode, ...] = tuple(_parse_dim(s) for s in shape_tuple)
-        dt_str = _extract_dtype_str(config.dtype)
-        self._dtype: DType = config.dtype if isinstance(config.dtype, DType) else (DType(dt_str) if dt_str in DType._value2member_map_ else _as_dtype_obj(config.dtype))
-        self._device: Device = config.device if isinstance(config.device, Device) else _as_device_obj(config.device)
+        self._dtype: DType = _as_dtype_obj(_normalize_config_dtype(config.dtype))
+        self._device: Device = _as_device_obj(config.device)
         self._requires_grad = config.requires_grad
         self.config = config
 

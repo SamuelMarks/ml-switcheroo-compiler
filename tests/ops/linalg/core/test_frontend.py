@@ -10,6 +10,7 @@ import pytest
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg import CustomLinearSolve, CustomRoot, Vecdot, multi_dot, solvers, vecdot
 from ml_switcheroo_compiler.ops.linalg import matrix_ops as frontend
@@ -57,21 +58,21 @@ def test_frontend_ops() -> None:
         a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
         b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
         (e, t) = as_callable(_test_op)(frontend.matrix_norm, a)
-        assert as_tensor(getattr(e, "shape")) == ()
+        assert as_tensor(_get_attr(e, "shape")) == ()
         (e, t) = as_callable(_test_op)(frontend.vector_norm, b)
-        assert as_tensor(getattr(e, "shape")) == ()
+        assert as_tensor(_get_attr(e, "shape")) == ()
         (e, t) = as_callable(_test_op)(frontend.svdvals, a)
-        assert as_tensor(getattr(e, "shape")) == (2,)
+        assert as_tensor(_get_attr(e, "shape")) == (2,)
         (e, t) = as_callable(_test_op)(solvers.tensorinv, a, ind=1)
-        assert as_tensor(getattr(e, "shape")) == (2, 2)
+        assert as_tensor(_get_attr(e, "shape")) == (2, 2)
         (e, t) = as_callable(_test_op)(solvers.tensorsolve, a, b)
-        assert as_tensor(getattr(e, "shape")) == (2,)
+        assert as_tensor(_get_attr(e, "shape")) == (2,)
         (e, t) = as_callable(_test_op)(frontend.diagonal, a)
-        assert as_tensor(getattr(e, "shape")) == (2,)
+        assert as_tensor(_get_attr(e, "shape")) == (2,)
         (e, t) = as_callable(_test_op)(multi_dot, [a, a])
-        assert as_tensor(getattr(e, "shape")) == (2, 2)
+        assert as_tensor(_get_attr(e, "shape")) == (2, 2)
         (e, t) = as_callable(_test_op)(vecdot, b, b)
-        assert as_tensor(getattr(e, "shape")) == ()
+        assert as_tensor(_get_attr(e, "shape")) == ()
 
 
 def test_opdefs_infer_shapes() -> None:

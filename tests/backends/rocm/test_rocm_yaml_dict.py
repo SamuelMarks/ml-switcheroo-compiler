@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -154,7 +155,7 @@ def test_rocm_runner_allocate_cupy() -> None:
     with patch("ml_switcheroo_compiler.backends.rocm.rocm.cupy", mock_cupy):
         runner = ROCmRunner()
         ptr = runner.allocate_buffer(100)
-        assert as_tensor(getattr(ptr, "value")) == 12345
+        assert as_tensor(_get_attr(ptr, "value")) == 12345
 
 
 def test_rocm_runner_allocate_ctypes() -> None:
@@ -201,7 +202,7 @@ def test_rocm_runner_allocate_ctypes_no_lib() -> None:
         with patch("ctypes.util.find_library", return_value=None):
             runner = ROCmRunner()
             ptr = runner.allocate_buffer(100)
-            assert as_tensor(getattr(ptr, "value")) is None
+            assert as_tensor(_get_attr(ptr, "value")) is None
 
 
 def test_rocm_runner_write_cupy() -> None:

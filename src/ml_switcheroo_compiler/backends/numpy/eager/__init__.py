@@ -10,6 +10,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, global_eager_registry, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def _is_ndarray(val: EagerValue | np.ndarray[tuple[int, ...], np.dtype[np.float64]]) -> typing.TypeGuard[np.ndarray[tuple[int, ...], np.dtype[np.float64]]]:
@@ -114,7 +115,7 @@ def execute_op(
     try:
         s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", op_type)
         snake = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-        func = getattr(np, snake)
+        func = _get_attr(np, snake)
     except AttributeError:
         from ml_switcheroo_compiler.core.errors import UnimplementedMathError
 
@@ -140,7 +141,7 @@ def clone_op(
         np.ndarray: Copied array.
     """
     del np_mod, kwargs
-    return as_ndarray(getattr(np, "copy")(args[0]))
+    return as_ndarray(_get_attr(np, "copy")(args[0]))
 
 
 @numpy_eager_registry.register("Repeat")
@@ -159,7 +160,7 @@ def repeat(
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_ndarray(getattr(np_mod, "repeat")(*args, **kwargs))
+    return as_ndarray(_get_attr(np_mod, "repeat")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Searchsorted")
@@ -178,7 +179,7 @@ def searchsorted(
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_ndarray(getattr(np_mod, "searchsorted")(*args, **kwargs))
+    return as_ndarray(_get_attr(np_mod, "searchsorted")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Split")
@@ -203,7 +204,7 @@ def split(
     Returns:
         List of output arrays.
     """
-    split_fn = getattr(np_mod, "split", getattr(np, "split"))
+    split_fn = _get_attr(np_mod, "split", _get_attr(np, "split"))
     return list(split_fn(x, num_or_size_splits, axis=axis))
 
 
@@ -227,7 +228,7 @@ def squeeze(
     Returns:
         Squeezed array.
     """
-    return as_ndarray(getattr(np_mod, "squeeze")(x, axis=axis))
+    return as_ndarray(_get_attr(np_mod, "squeeze")(x, axis=axis))
 
 
 @numpy_eager_registry.register("Stack")
@@ -250,7 +251,7 @@ def stack(
     Returns:
         Stacked array.
     """
-    return as_ndarray(getattr(np_mod, "stack")(arrays, axis=axis))
+    return as_ndarray(_get_attr(np_mod, "stack")(arrays, axis=axis))
 
 
 @numpy_eager_registry.register("Unstack")
@@ -274,13 +275,13 @@ def unstack(
         List of unstacked arrays.
     """
     # unstack is basically split into 1-sized chunks along axis and squeezed
-    if hasattr(x, "shape"):
-        num_splits = getattr(x, "shape")[axis]
-        split_fn = getattr(np_mod, "split", getattr(np, "split"))
+    if _has_attr(x, "shape"):
+        num_splits = _get_attr(x, "shape")[axis]
+        split_fn = _get_attr(np_mod, "split", _get_attr(np, "split"))
         splits = split_fn(x, num_splits, axis=axis)
-        squeeze_fn = getattr(np_mod, "squeeze", getattr(np, "squeeze"))
+        squeeze_fn = _get_attr(np_mod, "squeeze", _get_attr(np, "squeeze"))
         return tuple(squeeze_fn(s, axis=axis) for s in splits)
-    return tuple(getattr(x, "__iter__")())
+    return tuple(_get_attr(x, "__iter__")())
 
 
 @numpy_eager_registry.register("Equal")
@@ -303,7 +304,7 @@ def equal(
     Returns: np.ndarray: A boolean array where x == y.
     """
     try:
-        return as_ndarray(getattr(np_mod, "equal")(x, y))
+        return as_ndarray(_get_attr(np_mod, "equal")(x, y))
     except Exception:
         # Fallback for incompatible types
         return bool(x == y)

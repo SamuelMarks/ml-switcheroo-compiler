@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.linalg import cross
 from ml_switcheroo_compiler.ops.linalg import decompositions as decomp
@@ -49,8 +50,8 @@ def test_cholesky() -> None:
     """
     a = Tensor(np.array([[2.0, 0.0], [0.0, 2.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.cholesky, a)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
-    assert as_tensor(getattr(t, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(t, "shape")) == (2, 2)
 
 
 def test_svd() -> None:
@@ -61,8 +62,8 @@ def test_svd() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.svd, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_qr() -> None:
@@ -73,8 +74,8 @@ def test_qr() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.qr, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_inv() -> None:
@@ -85,7 +86,7 @@ def test_inv() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.inv, a)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
 
 
 def test_det() -> None:
@@ -96,7 +97,7 @@ def test_det() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.det, a)
-    assert as_tensor(getattr(e, "shape")) == ()
+    assert as_tensor(_get_attr(e, "shape")) == ()
 
 
 def test_slogdet() -> None:
@@ -107,8 +108,8 @@ def test_slogdet() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.slogdet, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == ()
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(1)), "shape")) == ()
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == ()
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(1)), "shape")) == ()
 
 
 def test_eigh() -> None:
@@ -119,7 +120,7 @@ def test_eigh() -> None:
     """
     a = Tensor(np.array([[1.0, 0.0], [0.0, 1.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.eigh, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2,)
 
 
 def test_eigvalsh() -> None:
@@ -130,7 +131,7 @@ def test_eigvalsh() -> None:
     """
     a = Tensor(np.array([[1.0, 0.0], [0.0, 1.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.eigvalsh, a)
-    assert as_tensor(getattr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
 
 
 def test_matrix_power() -> None:
@@ -141,7 +142,7 @@ def test_matrix_power() -> None:
     """
     a = Tensor(np.array([[1.0, 0.0], [0.0, 1.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.matrix_power, a, 2)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
 
 
 def test_solve() -> None:
@@ -153,7 +154,7 @@ def test_solve() -> None:
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.solve, a, b)
-    assert as_tensor(getattr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
 
 
 def test_tri_inv() -> None:
@@ -164,8 +165,8 @@ def test_tri_inv() -> None:
     """
     a = Tensor(np.array([[1.0, 0.0], [2.0, 3.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.tri_inv, a, lower=True)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
-    assert as_tensor(getattr(t, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(t, "shape")) == (2, 2)
 
 
 def test_solve_triangular() -> None:
@@ -177,7 +178,7 @@ def test_solve_triangular() -> None:
     a = Tensor(np.array([[1.0, 2.0], [0.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.solve_triangular, a, b)
-    assert as_tensor(getattr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
 
 
 def test_lu() -> None:
@@ -188,7 +189,7 @@ def test_lu() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.lu, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_lu_factor_solve() -> None:
@@ -209,8 +210,8 @@ def test_lu_factor_solve() -> None:
             out_t = decomp.lu_solve(lu_piv_t, b)
         finally:
             global_tracing_state.stop_tracing()
-    assert as_tensor(getattr(out_e, "shape")) == (2,)
-    assert as_tensor(getattr(out_t, "shape")) == (2,)
+    assert as_tensor(_get_attr(out_e, "shape")) == (2,)
+    assert as_tensor(_get_attr(out_t, "shape")) == (2,)
 
 
 def test_norm() -> None:
@@ -221,11 +222,11 @@ def test_norm() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.norm, a)
-    assert as_tensor(getattr(e, "shape")) == ()
+    assert as_tensor(_get_attr(e, "shape")) == ()
     (e, t) = as_callable(_test_op)(decomp.norm, a, axis=1)
-    assert as_tensor(getattr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
     (e, t) = as_callable(_test_op)(decomp.norm, a, axis=1, keepdims=True)
-    assert as_tensor(getattr(e, "shape")) == (2, 1)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 1)
 
 
 def test_matrix_exponential() -> None:
@@ -236,7 +237,7 @@ def test_matrix_exponential() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.matrix_exponential, a)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
 
 
 def test_cross() -> None:
@@ -248,7 +249,7 @@ def test_cross() -> None:
     a = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
     b = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(cross, a, b)
-    assert as_tensor(getattr(e, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 3)
 
 
 def test_opdef_infer_shapes() -> None:
@@ -281,10 +282,10 @@ def test_hessenberg() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.hessenberg, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(1)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(0)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(1)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(1)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(1)), "shape")) == (2, 2)
 
 
 def test_householder_product() -> None:
@@ -296,8 +297,8 @@ def test_householder_product() -> None:
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     tau = Tensor(np.array([1.0, 1.0]), TensorConfig((2,), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.householder_product, a, tau)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
-    assert as_tensor(getattr(t, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(t, "shape")) == (2, 2)
 
 
 def test_schur() -> None:
@@ -308,10 +309,10 @@ def test_schur() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.schur, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(1)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(0)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(1)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(1)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(1)), "shape")) == (2, 2)
 
 
 def test_tridiagonal() -> None:
@@ -322,12 +323,12 @@ def test_tridiagonal() -> None:
     """
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.tridiagonal, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2,)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(1)), "shape")) == (1,)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(2)), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(0)), "shape")) == (2,)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(1)), "shape")) == (1,)
-    assert as_tensor(getattr(as_tensor(getattr(t, "__getitem__")(2)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(1)), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(2)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(0)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(1)), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(t, "__getitem__")(2)), "shape")) == (2, 2)
 
 
 def test_tridiagonal_solve() -> None:
@@ -341,8 +342,8 @@ def test_tridiagonal_solve() -> None:
     du = Tensor(np.array([1.0]), TensorConfig((1,), "float32", "cpu"))
     b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.tridiagonal_solve, dl, d, du, b)
-    assert as_tensor(getattr(e, "shape")) == (2,)
-    assert as_tensor(getattr(t, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(t, "shape")) == (2,)
 
 
 def test_lu_pivots_to_permutation() -> None:
@@ -353,8 +354,8 @@ def test_lu_pivots_to_permutation() -> None:
     """
     p = Tensor(np.array([1, 0]), TensorConfig((2,), "int32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.lu_pivots_to_permutation, p, 2)
-    assert as_tensor(getattr(e, "shape")) == (2,)
-    assert as_tensor(getattr(t, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(t, "shape")) == (2,)
 
 
 def test_eig() -> None:
@@ -367,43 +368,43 @@ def test_eig() -> None:
     (e_eager, e_traced) = as_callable(_test_op)(decomp.eig, a)
     (w_eager, v_eager) = e_eager
     (w_traced, v_traced) = e_traced
-    assert as_tensor(getattr(w_eager, "shape")) == (2,)
-    assert as_tensor(getattr(w_traced, "shape")) == (2,)
+    assert as_tensor(_get_attr(w_eager, "shape")) == (2,)
+    assert as_tensor(_get_attr(w_traced, "shape")) == (2,)
 
 
 def test_cholesky_ex() -> None:
     """Test function test_cholesky_ex."""
     a = Tensor(np.array([[2.0, 0.0], [0.0, 2.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.cholesky_ex, a, check_errors=True)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_eigvals() -> None:
     """Test function test_eigvals."""
     a = Tensor(np.array([[2.0, 0.0], [0.0, 2.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.eigvals, a)
-    assert as_tensor(getattr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
 
 
 def test_inv_ex() -> None:
     """Test function test_inv_ex."""
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.inv_ex, a, check_errors=True)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_pinv() -> None:
     """Test function test_pinv."""
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.pinv, a)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
 
 
 def test_polar() -> None:
     """Test function test_polar."""
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.polar, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_power_iteration() -> None:
@@ -411,21 +412,21 @@ def test_power_iteration() -> None:
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     u = Tensor(np.array([1.0, 1.0]), TensorConfig((2,), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.power_iteration, a, num_iters=2, u=u)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2,)
 
 
 def test_power_iteration_no_u() -> None:
     """Test function test_power_iteration_no_u."""
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.power_iteration, a, num_iters=2)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2,)
 
 
 def test_qdwh() -> None:
     """Test function test_qdwh."""
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.qdwh, a)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_solve_ex() -> None:
@@ -433,32 +434,32 @@ def test_solve_ex() -> None:
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     b = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.solve_ex, a, b, check_errors=True)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2,)
 
 
 def test_svd_full_matrices() -> None:
     """Test function test_svd_full_matrices."""
     a = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.svd, a, full_matrices=True)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
     (e, t) = as_callable(_test_op)(decomp.svd, a, full_matrices=False)
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
     (e, t) = as_callable(_test_op)(decomp.svd, a, compute_uv=False)
-    assert as_tensor(getattr(e, "shape")) == (2,)
+    assert as_tensor(_get_attr(e, "shape")) == (2,)
 
 
 def test_qr_complete() -> None:
     """Test function test_qr_complete."""
     a = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.qr, a, mode="complete")
-    assert as_tensor(getattr(as_tensor(getattr(e, "__getitem__")(0)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(e, "__getitem__")(0)), "shape")) == (2, 2)
 
 
 def test_qr_r() -> None:
     """Test function test_qr_r."""
     a = Tensor(np.array([[1.0, 2.0, 3.0], [3.0, 4.0, 5.0]]), TensorConfig((2, 3), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(decomp.qr, a, mode="r")
-    assert as_tensor(getattr(e, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 3)
 
 
 def test_matrix_exp() -> None:
@@ -467,7 +468,7 @@ def test_matrix_exp() -> None:
 
     a = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), "float32", "cpu"))
     (e, t) = as_callable(_test_op)(matrix_exp, a)
-    assert as_tensor(getattr(e, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 2)
 
 
 def test_opdef_infer_shapes_extra() -> None:

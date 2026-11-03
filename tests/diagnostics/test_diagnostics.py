@@ -16,6 +16,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.diagnostics import (
     check_numerical_anomaly,
@@ -121,7 +122,7 @@ def test_estimate_flops() -> None:
             raise TypeError(msg)
 
     n5 = LogicalNode(id="n5", op_type="Add")
-    object.__setattr__(n5, "shape_metadata", BadShape())
+    _obj_set_attr(n5, "shape_metadata", BadShape())
     graph.nodes["n5"] = n5
     flops = estimate_flops(graph)
     assert flops == 202
@@ -142,7 +143,7 @@ def test_memory_profiler() -> None:
             raise TypeError(msg)
 
     n3 = LogicalNode(id="n3", op_type="Add")
-    object.__setattr__(n3, "shape_metadata", BadShape())
+    _obj_set_attr(n3, "shape_metadata", BadShape())
     graph.nodes["n3"] = n3
     mem = memory_profiler(graph)
     assert mem == 408

@@ -6,11 +6,10 @@ import logging
 import resource
 import sys
 import time
-import typing
 from collections.abc import Callable
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_opt_callable, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_float, as_opt_callable, as_tensor
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
@@ -46,18 +45,18 @@ def _get_mlx_peak_memory_mb() -> float:
     peak_mem: float = _get_process_memory_mb()
     if mx is not None:
         get_mem_fn = None
-        if hasattr(mx, "metal") and hasattr(mx.metal, "get_peak_memory"):
-            get_mem_fn = getattr(mx.metal, "get_peak_memory", None)
-        elif hasattr(mx, "get_peak_memory"):
-            get_mem_fn = getattr(mx, "get_peak_memory", None)
+        if _has_attr(mx, "metal") and _has_attr(mx.metal, "get_peak_memory"):
+            get_mem_fn = _get_attr(mx.metal, "get_peak_memory", None)
+        elif _has_attr(mx, "get_peak_memory"):
+            get_mem_fn = _get_attr(mx, "get_peak_memory", None)
         if get_mem_fn is not None and callable(get_mem_fn):
             try:
-                metal_mem = float(get_mem_fn()) / (1024.0 * 1024.0)
+                metal_mem = float(as_float(as_callable(get_mem_fn)())) / (1024.0 * 1024.0)
                 if metal_mem > 0.0:
                     return metal_mem
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        if hasattr(mx, "metal") and hasattr(mx.metal, "get_active_memory"):
+        if _has_attr(mx, "metal") and _has_attr(mx.metal, "get_active_memory"):
             try:
                 active_mem = float(mx.metal.get_active_memory()) / (1024.0 * 1024.0)
                 if active_mem > 0.0:
@@ -72,13 +71,13 @@ def _reset_mlx_peak_memory() -> None:
     """Reset peak memory stats on MLX Metal runtime if available."""
     if mx is not None:
         reset_fn = None
-        if hasattr(mx, "metal") and hasattr(mx.metal, "reset_peak_memory"):
-            reset_fn = getattr(mx.metal, "reset_peak_memory", None)
-        elif hasattr(mx, "reset_peak_memory"):
-            reset_fn = getattr(mx, "reset_peak_memory", None)
+        if _has_attr(mx, "metal") and _has_attr(mx.metal, "reset_peak_memory"):
+            reset_fn = _get_attr(mx.metal, "reset_peak_memory", None)
+        elif _has_attr(mx, "reset_peak_memory"):
+            reset_fn = _get_attr(mx, "reset_peak_memory", None)
         if reset_fn is not None and callable(reset_fn):
             try:
-                reset_fn()
+                as_callable(reset_fn)()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
@@ -89,7 +88,7 @@ def _sync_mlx_result(result: EagerValue | dict[str, EagerValue] | list[EagerValu
     Args:
         result (Union[object, dict[str, object], list[object], tuple[object, ...]]): Evaluated array or collection.
     """
-    if mx is None or not hasattr(mx, "eval"):
+    if mx is None or not _has_attr(mx, "eval"):
         return
     if isinstance(result, dict):
         for val in result.values():
@@ -116,12 +115,11 @@ def _prepare_mlx_inputs(
         return []
     mlx_inputs: list[EagerValue] = []
     for val in inputs.values():
-        if isinstance(getattr(mx, "array", None), type) and isinstance(val, mx.array):
-            mlx_inputs.append(val)
-        elif type(val).__name__ == "array" and "mlx" in getattr(type(val), "__module__", ""):
+        mx_arr_cls = _get_attr(mx, "array", None)
+        if (isinstance(mx_arr_cls, type) and isinstance(val, mx_arr_cls)) or (type(val).__name__ == "array" and "mlx" in str(_get_attr(type(val), "__module__", ""))):
             mlx_inputs.append(val)
         else:
-            mlx_inputs.append(getattr(mx, "array")(val, dtype=mx.float32))
+            mlx_inputs.append(as_callable(_get_attr(mx, "array"))(val, dtype=mx.float32))
     return mlx_inputs
 
 
@@ -144,14 +142,14 @@ class MLXProfiler:
         """
         mlx_inputs_dict: dict[str, EagerValue] = {}
         for k, val in inputs.items():
-            mx_array_cls = getattr(mx, "array", None)
-            if (isinstance(mx_array_cls, type) and isinstance(val, mx_array_cls)) or (type(val).__name__ == "array" and "mlx" in getattr(type(val), "__module__", "")):
+            mx_array_cls = _get_attr(mx, "array", None)
+            if (isinstance(mx_array_cls, type) and isinstance(val, mx_array_cls)) or (type(val).__name__ == "array" and "mlx" in str(_get_attr(type(val), "__module__", ""))):
                 mlx_inputs_dict[k] = val
             else:
-                mlx_inputs_dict[k] = getattr(mx, "array")(val, dtype=getattr(mx, "float32", None))
+                mlx_inputs_dict[k] = as_callable(_get_attr(mx, "array"))(val, dtype=_get_attr(mx, "float32", None))
 
-        sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
+        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
         if input_keys and all(k in mlx_inputs_dict for k in input_keys):
             return [mlx_inputs_dict[k] for k in input_keys]
         return list(mlx_inputs_dict.values())
@@ -179,9 +177,9 @@ class MLXProfiler:
         model_cls = ns.get("CompiledModel")
         if model_cls is not None and callable(model_cls):
             model_inst = model_cls()
-            if mx is not None and hasattr(mx, "compile") and callable(mx.compile):
+            if mx is not None and _has_attr(mx, "compile") and callable(mx.compile):
                 try:
-                    return as_opt_callable(getattr(mx, "compile")(model_inst))
+                    return as_opt_callable(as_callable(_get_attr(mx, "compile"))(model_inst))
                 except Exception:
                     return as_opt_callable(model_inst)
             return as_opt_callable(model_inst)
@@ -246,7 +244,7 @@ class MLXProfiler:
                 "peak_memory_mb": _get_process_memory_mb(),
             }
 
-        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         mlx_input_list: list[EagerValue] = self._prepare_ordered_inputs(graph, inputs)
 
         compiled_fn: TypedVariadicCallable[EagerValue] | None = None
@@ -265,11 +263,11 @@ class MLXProfiler:
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
             if not mlx_input_list:
-                return as_tensor(getattr(mx, "zeros")((1,), dtype=getattr(mx, "float32")))
-            accum = getattr(mx, "zeros_like")(mlx_input_list[0])
+                return as_tensor(as_callable(_get_attr(mx, "zeros"))((1,), dtype=_get_attr(mx, "float32")))
+            accum: EagerValue = as_callable(_get_attr(mx, "zeros_like"))(mlx_input_list[0])
             for t in mlx_input_list:
-                accum = getattr(mx, "add")(accum, t)
-            return typing.cast(typing.Union[EagerValue, "dict[str, EagerValue]"], accum)
+                accum = as_callable(_get_attr(mx, "add"))(accum, t)
+            return accum
 
         _reset_mlx_peak_memory()
         for _ in range(max(1, warmup_iters)):

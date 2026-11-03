@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import os
-import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
@@ -12,6 +11,7 @@ from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_a
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 from .keras_mixins import KerasAudioVisitor, KerasVisionVisitor
@@ -31,8 +31,8 @@ class KerasSignatureBuilder:
         Returns:
             str: The code string for the Keras Input tensor.
         """
-        shape_str: str = str(node.shape_metadata) if hasattr(node, "shape_metadata") and node.shape_metadata else "(None,)"
-        return f"{var_name} = keras.Input(shape={shape_str}, name='{getattr(node, 'id', '')}')"
+        shape_str: str = str(node.shape_metadata) if _has_attr(node, "shape_metadata") and node.shape_metadata else "(None,)"
+        return f"{var_name} = keras.Input(shape={shape_str}, name='{_get_attr(node, 'id', '')}')"
 
     @staticmethod
     def get_return_block(input_vars: list[str], output_vars: list[str]) -> str:
@@ -228,9 +228,9 @@ class KerasCodeGenerator(BaseGenerator):
             self.add_line("pass")
             return "\n".join(self.code)
         self._generate_body("input_")
-        if getattr(self, "keras_input_vars", None) and getattr(self, "keras_output_vars", None):
+        if _get_attr(self, "keras_input_vars", None) and _get_attr(self, "keras_output_vars", None):
             self.add_line(KerasSignatureBuilder.get_return_block(self.keras_input_vars, self.keras_output_vars))
-        elif getattr(self, "keras_output_vars", None):
+        elif _get_attr(self, "keras_output_vars", None):
             self.add_line(f"return {', '.join(self.keras_output_vars)}")
         else:
             self.add_line("pass")
@@ -315,7 +315,7 @@ class KerasCodeGenerator(BaseGenerator):
         if "imports" in data and data["imports"]:
             lines.extend(str(data["imports"]).split("\n"))
         if "functions" in data and data["functions"]:
-            for func_code in getattr(data["functions"], "values")():
+            for func_code in _get_attr(data["functions"], "values")():
                 lines.extend(str(func_code).split("\n"))
         return lines
 
@@ -345,7 +345,7 @@ class KerasCodeGenerator(BaseGenerator):
         try:
             exec(source_code, scope)
             if "get_model" in scope:
-                model_obj = typing.cast(Callable[[], EagerValue], scope["get_model"])()
+                model_obj = _cast_val(Callable[[], EagerValue], scope["get_model"])()
         except Exception:
             model_obj = None
 
@@ -367,7 +367,7 @@ class KerasCodeGenerator(BaseGenerator):
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
                 return res_dict

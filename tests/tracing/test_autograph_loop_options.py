@@ -10,6 +10,7 @@ from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.backends.llvm_cpp.generator import LLVMCPPGenerator
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow.tracing import while_loop_tracing
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, set_loop_options
@@ -56,7 +57,7 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     """Test that set_loop_options injects options into active LogicalGraph."""
     graph = global_tracing_state.start_tracing("test_loop_options_graph")
     try:
-        object.__setattr__(graph, "metadata", {})
+        _obj_set_attr(graph, "metadata", {})
         opts = as_callable(set_loop_options)(
             parallel_iterations=16,
             swap_memory=True,
@@ -64,8 +65,8 @@ def test_set_loop_options_injection_on_active_graph() -> None:
             shape_invariants=[(32, 64)],
         )
         assert id(global_tracing_state.current_loop_options) == id(opts)
-        assert getattr(graph, "loop_options", None) is opts
-        assert as_tensor(getattr(graph, "metadata"))["loop_options"] is opts
+        assert _get_attr(graph, "loop_options", None) is opts
+        assert as_tensor(_get_attr(graph, "metadata"))["loop_options"] is opts
 
         loop_node = LogicalNode(
             id="while_loop_1",
@@ -82,11 +83,11 @@ def test_set_loop_options_injection_on_active_graph() -> None:
         assert as_tensor(loop_node.attributes["loop_options"]) is opts
 
         with LoopOptions(parallel_iterations=32, maximum_iterations=256) as inner_opts:
-            assert getattr(graph, "loop_options", None) is inner_opts
-            assert id(as_tensor(getattr(graph, "metadata"))["loop_options"]) == id(inner_opts)
+            assert _get_attr(graph, "loop_options", None) is inner_opts
+            assert id(as_tensor(_get_attr(graph, "metadata"))["loop_options"]) == id(inner_opts)
 
-        assert getattr(graph, "loop_options", None) is opts
-        assert as_tensor(getattr(graph, "metadata"))["loop_options"] is opts
+        assert _get_attr(graph, "loop_options", None) is opts
+        assert as_tensor(_get_attr(graph, "metadata"))["loop_options"] is opts
     finally:
         global_tracing_state.stop_tracing()
 
@@ -96,7 +97,7 @@ def test_set_loop_options_injection_on_active_graph() -> None:
     graph_no_meta = global_tracing_state.start_tracing("test_no_meta")
     try:
         with LoopOptions(parallel_iterations=2):
-            assert as_tensor(getattr(getattr(graph_no_meta, "loop_options", None), "parallel_iterations")) == 2
+            assert as_tensor(_get_attr(_get_attr(graph_no_meta, "loop_options", None), "parallel_iterations")) == 2
     finally:
         global_tracing_state.stop_tracing()
 

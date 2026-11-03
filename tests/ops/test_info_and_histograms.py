@@ -16,6 +16,7 @@ import ml_switcheroo_compiler.ops.random_ops.core as random_core
 import ml_switcheroo_compiler.ops.shape.pad_and_tile as shape_misc
 import ml_switcheroo_compiler.ops.shape.slicing as slicing
 import ml_switcheroo_compiler.ops.unary.logical as unary_logical
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.info_and_histograms import AxisIndex
 from tests.testing_utils import as_callable
@@ -38,7 +39,7 @@ def test_cover_misc() -> None:
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op"):
         for module in [misc, shape_misc, unary_logical, dist_ops, frontend_utils, activations, io_ops, dot_ops, binary_math, slicing, random_core]:
             for attr in dir(module):
-                val = getattr(module, attr)
+                val = _get_attr(module, attr)
                 if callable(val) and attr not in ["dispatch_op", "object", "object"]:
                     try:
                         val()
@@ -55,7 +56,7 @@ def test_grid_and_indices_infer_shapes_extras() -> None:
     assert op.infer_shape() == ()
     assert as_callable(op.infer_shape)((2, 2)) == (2, 2, 2)
     assert as_callable(op.infer_shape)(None) == ()
-    op = typing.cast("Indices", Ix())
+    op = _cast_val("Indices", Ix())
     assert op.infer_shape() == ()
 
     class Dummy:

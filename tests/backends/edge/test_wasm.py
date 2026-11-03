@@ -12,6 +12,7 @@ from ml_switcheroo_ir import NodeDict
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
 from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_attrs, as_callable, as_tensor, as_tensor_list
 
@@ -32,9 +33,9 @@ def test_wasm_generate_fallback() -> None:
     """Test function test_wasm_generate_fallback."""
     graph = IRGraph()
     node = IRNode("Add", "add_1", inputs=["in1", "in2"], shape_metadata=[2, 2])
-    setattr(node, "op_type", "Add")
+    _set_attr(node, "op_type", "Add")
     graph.nodes["add_1"] = node
-    object.__setattr__(graph, "sorted_nodes", [node])
+    _obj_set_attr(graph, "sorted_nodes", [node])
     graph.inputs = ["in1", "in2"]
     graph.outputs = ["add_1"]
     generator = WasmCodeGenerator(graph, [])
@@ -52,38 +53,38 @@ def test_wasm_visit_methods() -> None:
     generator = WasmCodeGenerator(graph, [])
 
     node_conv = IRNode("Conv2D", "conv_1", inputs=["in1", "in2"])
-    setattr(node_conv, "attributes", {"strides": [1, 1], "padding": "SAME"})
+    _set_attr(node_conv, "attributes", {"strides": [1, 1], "padding": "SAME"})
     as_callable(generator.visit_Conv2D)(node_conv, "Conv2D", "conv_1", ["in1", "in2"], [2, 2, 2, 2], 16)
 
     node_max = IRNode("MaxPool2D", "max_1", inputs=["in1"])
-    setattr(node_max, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
+    _set_attr(node_max, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
     as_callable(generator.visit_MaxPool2D)(node_max, "MaxPool2D", "max_1", ["in1"], [2, 2, 2, 2], 16)
 
     node_if = IRNode("If", "if_1", inputs=[])
-    object.__setattr__(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
+    _obj_set_attr(node_if, "attributes", {"then_branch": IRGraph(), "else_branch": IRGraph()})
     as_callable(generator.visit_If)(node_if, "If", "if_1", [], [], 0)
 
     node_concat = IRNode("Concat", "cat_1", inputs=["in1", "in2"])
-    setattr(node_concat, "attributes", {"axis": 0})
+    _set_attr(node_concat, "attributes", {"axis": 0})
     pass  # (node_concat, "Concat", "cat_1", ["in1", "in2"], [4], 4)
 
     IRNode("Reshape", "res_1", inputs=["in1"])
     pass  # (node_reshape, "Reshape", "res_1", ["in1"], [4], 4)
 
     node_transpose = IRNode("Transpose", "trans_1", inputs=["in1"])
-    setattr(node_transpose, "attributes", {"axes": [1, 0]})
+    _set_attr(node_transpose, "attributes", {"axes": [1, 0]})
     pass  # (node_transpose, "Transpose", "trans_1", ["in1"], [2, 2], 4)
 
     node_slice = IRNode("Slice", "slice_1", inputs=["in1"])
-    setattr(node_slice, "attributes", {"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
+    _set_attr(node_slice, "attributes", {"starts": [0], "ends": [1], "axes": [0], "steps": [1]})
     pass  # (node_slice, "Slice", "slice_1", ["in1"], [1, 2], 2)
 
     node_gather = IRNode("Gather", "gath_1", inputs=["in1", "indices"])
-    setattr(node_gather, "attributes", {"axis": 0})
+    _set_attr(node_gather, "attributes", {"axis": 0})
     pass  # (node_gather, "Gather", "gath_1", ["in1", "indices"], [1, 2], 2)
 
     node_cast = IRNode("Cast", "cast_1", inputs=["in1"])
-    setattr(node_cast, "attributes", {"to": "int32"})
+    _set_attr(node_cast, "attributes", {"to": "int32"})
     pass  # (node_cast, "Cast", "cast_1", ["in1"], [2], 2)
 
     IRNode("Where", "wh_1", inputs=["cond", "x", "y"])
@@ -96,11 +97,11 @@ def test_wasm_coverage_methods() -> None:
     generator = WasmCodeGenerator(graph, [])
 
     node = IRNode("AvgPool2D", "avg_1", inputs=["in1"])
-    setattr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "SAME"})
+    _set_attr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "SAME"})
     as_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_1", ["in1"], [2, 2, 2, 2], 16)
 
     node = IRNode("AvgPool2D", "avg_2", inputs=["in1"])
-    setattr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
+    _set_attr(node, "attributes", {"window_size": [2, 2], "stride": [2, 2], "padding": "VALID"})
     as_callable(generator.visit_AvgPool2D)(node, "AvgPool2D", "avg_2", ["in1"], [2, 2, 2, 2], 16)
 
     node = IRNode("AllReduce", "allr_1", inputs=["in1"])
@@ -116,21 +117,21 @@ def test_wasm_coverage_methods() -> None:
     as_callable(generator.visit_ReduceScatter)(node, "ReduceScatter", "reds_1", ["in1"], [4], 4)
 
     node = IRNode("Cond", "cond_1", inputs=[])
-    object.__setattr__(node, "attributes", {"true_branch": IRGraph(), "false_branch": IRGraph()})
+    _obj_set_attr(node, "attributes", {"true_branch": IRGraph(), "false_branch": IRGraph()})
     as_callable(generator.visit_Cond)(node, "Cond", "cond_1", [], [], 0)
 
     node = IRNode("Scan", "scan_1", inputs=[])
-    object.__setattr__(node, "attributes", {"body": IRGraph()})
+    _obj_set_attr(node, "attributes", {"body": IRGraph()})
     as_callable(generator.visit_Scan)(node, "Scan", "scan_1", [], [], 0)
 
     node = IRNode("MatMul", "mat_1", inputs=["in1", "in2"])
-    object.__setattr__(node, "shape_metadata", [2, 2])
+    _obj_set_attr(node, "shape_metadata", [2, 2])
     # To mock inputs shapes properly, we need to add nodes to graph
     n1 = IRNode("I", "in1", inputs=[])
-    object.__setattr__(n1, "shape_metadata", [2, 2])
+    _obj_set_attr(n1, "shape_metadata", [2, 2])
     n2 = IRNode("I", "in2", inputs=[])
-    object.__setattr__(n2, "shape_metadata", [2, 2])
-    object.__setattr__(graph, "sorted_nodes", [n1, n2])
+    _obj_set_attr(n2, "shape_metadata", [2, 2])
+    _obj_set_attr(graph, "sorted_nodes", [n1, n2])
     as_callable(generator.visit_MatMul)(node, "MatMul", "mat_1", ["in1", "in2"], [2, 2], 4)
 
     node = IRNode("Log", "log_1", inputs=["in1"])
@@ -160,7 +161,7 @@ def global_wasm_mock() -> Iterator[EagerValue]:
             OPS_REGISTRY[op] = {"variants": {}}
         if "variants" not in OPS_REGISTRY[op]:
             OPS_REGISTRY[op]["variants"] = {}
-        getattr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
+        _get_attr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
 
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
         mock_bodies = {
@@ -202,29 +203,29 @@ def test_wasm_coverage_unknown_op() -> None:
     """Test function test_wasm_coverage_unknown_op."""
     g = IRGraph()
     n = IRNode("dummy", "UnknownOp")
-    object.__setattr__(n, "inputs", ("dummy_in",))
-    object.__setattr__(n, "shape_metadata", 1)
+    _obj_set_attr(n, "inputs", ("dummy_in",))
+    _obj_set_attr(n, "shape_metadata", 1)
     g.inputs = []
-    object.__setattr__(g, "outputs", [n])
-    object.__setattr__(g, "_nodes", {"dummy": n})
+    _obj_set_attr(g, "outputs", [n])
+    _obj_set_attr(g, "_nodes", {"dummy": n})
     gen = WasmCodeGenerator(g)
     gen.var_names = {"dummy_in": "dummy_in"}
-    setattr(gen, "sorted_nodes", g.inputs + [n])
+    _set_attr(gen, "sorted_nodes", g.inputs + [n])
     code = gen.generate()
     assert "Unimplemented UnknownOp" in code
 
     n2 = IRNode("dummy_sigmoid", "Sigmoid")
-    object.__setattr__(n2, "inputs", ("dummy_in",))
-    object.__setattr__(n2, "shape_metadata", 10)
-    getattr(getattr(g, "_nodes"), "__setitem__")("dummy_sigmoid", n2)
+    _obj_set_attr(n2, "inputs", ("dummy_in",))
+    _obj_set_attr(n2, "shape_metadata", 10)
+    _get_attr(_get_attr(g, "_nodes"), "__setitem__")("dummy_sigmoid", n2)
     gen.sorted_nodes.append(n2)
     code = gen.generate()
     assert "std::exp" in code
 
     n3 = IRNode("dummy_exp", "Exp")
-    object.__setattr__(n3, "inputs", ("dummy_in",))
-    object.__setattr__(n3, "shape_metadata", 10)
-    getattr(getattr(g, "_nodes"), "__setitem__")("dummy_exp", n3)
+    _obj_set_attr(n3, "inputs", ("dummy_in",))
+    _obj_set_attr(n3, "shape_metadata", 10)
+    _get_attr(_get_attr(g, "_nodes"), "__setitem__")("dummy_exp", n3)
     gen.sorted_nodes.append(n3)
     code = gen.generate()
     assert "std::exp" in code
@@ -336,9 +337,9 @@ def test_wasm_scalar_shapes3() -> None:
     n_conv.shape_metadata = (1, 16, 16, 16)
 
     in1 = IRNode("in1", "Input")
-    object.__setattr__(in1, "shape_metadata", 5.0)
+    _obj_set_attr(in1, "shape_metadata", 5.0)
     in2 = IRNode("in2", "Input")
-    object.__setattr__(in2, "shape_metadata", 5.0)
+    _obj_set_attr(in2, "shape_metadata", 5.0)
 
     g.nodes = NodeDict({"in1": in1, "in2": in2, "conv": n_conv})
     g.inputs = ["in1", "in2"]
@@ -360,7 +361,7 @@ def test_wasm_scalar_pool_norm() -> None:
     n_pool.shape_metadata = (1, 16, 8, 8)
 
     in1 = IRNode("in1", "Input")
-    object.__setattr__(in1, "shape_metadata", 5.0)
+    _obj_set_attr(in1, "shape_metadata", 5.0)
 
     g.nodes = NodeDict({"in1": in1, "pool": n_pool})
     g.inputs = ["in1"]
@@ -373,7 +374,7 @@ def test_wasm_scalar_pool_norm() -> None:
     # LayerNorm with bad inputs
     g2 = IRGraph()
     in_ln = IRNode("in_ln", "Input")
-    object.__setattr__(in_ln, "shape_metadata", 5.0)
+    _obj_set_attr(in_ln, "shape_metadata", 5.0)
     n_ln = IRNode("ln", "LayerNorm", inputs=["in_ln"], attributes={"padding": (1, 1)})
     n_ln.shape_metadata = (1, 16, 8, 8)
     g2.nodes = NodeDict({"in_ln": in_ln, "ln": n_ln})
@@ -771,7 +772,7 @@ def test_wasm_generate_op_missing_template(mocker: EagerTensorProtocol) -> None:
         id = "op_id"
 
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {}}}})
-    UnimplementedMathError = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
+    UnimplementedMathError = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
 
     with as_callable(pytest.raises)(UnimplementedMathError, match="Missing WASM SIMD template"):
         as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
@@ -793,7 +794,7 @@ def test_wasm_generate_op_missing_body(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"FakeOp": {"variants": {"edge_wasm_simd": {"template": "fake_template"}}}})
     mocker.patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template", return_value={"not_body": "x"})
 
-    UnimplementedMathError = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
+    UnimplementedMathError = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.backends.edge.wasm"), "UnimplementedMathError"))
 
     with as_callable(pytest.raises)(UnimplementedMathError, match="MISSING BODY FOR: FakeOp"):
         as_callable(gen._generate_op)(as_callable(DummyNode)(), "FakeOp", "op_id", ["in0"], 5, 5)
@@ -991,8 +992,8 @@ def test_wasm_shape_telemetry() -> None:
     assert payload["inputs"] == ["in0"]
     assert payload["outputs"] == ["mul0"]
     assert len(payload["nodes"]) == 2
-    assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("id")) == "in0"
-    assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("shape_metadata")) == [2, 4]
+    assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("id")) == "in0"
+    assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(payload, "__getitem__")("nodes")), "__getitem__")(0)), "__getitem__")("shape_metadata")) == [2, 4]
 
     # Test applying telemetry back
     gen.apply_shape_telemetry({"mul0": [4, 8]})
@@ -1036,12 +1037,12 @@ def test_wasm_conv3d_branches_coverage() -> None:
 
     graph = IRGraph()
     n_in_scalar = IRNode("in_scalar", "Input", inputs=[])
-    object.__setattr__(n_in_scalar, "shape_metadata", 4)
+    _obj_set_attr(n_in_scalar, "shape_metadata", 4)
     n_in_empty = IRNode("in_empty", "Input", inputs=[], shape_metadata=[])
     n_in_3d = IRNode("in_3d", "Input", inputs=[], shape_metadata=[2, 3, 4])
     n_w_empty = IRNode("w_empty", "Input", inputs=[], shape_metadata=[])
     n_w_scalar = IRNode("w_scalar", "Input", inputs=[])
-    object.__setattr__(n_w_scalar, "shape_metadata", 3)
+    _obj_set_attr(n_w_scalar, "shape_metadata", 3)
     n_w_3d = IRNode("w_3d", "Input", inputs=[], shape_metadata=[2, 3, 4])
 
     graph.nodes["in_scalar"] = n_in_scalar
@@ -1080,7 +1081,7 @@ def test_wasm_conv3d_branches_coverage() -> None:
         inputs=["in_scalar", "w_scalar"],
         attributes={"stride": (2, 2, 2), "padding": (1, 1, 1), "dilation": (1, 1, 1)},
     )
-    object.__setattr__(node_c2, "shape_metadata", 8)
+    _obj_set_attr(node_c2, "shape_metadata", 8)
     as_callable(gen.visit_Conv3D)(node_c2, "Conv3D", "conv3d_scalar", ["in_scalar", "w_scalar"], 8, 8)
 
     # Test Conv3D with 2-element stride and padding

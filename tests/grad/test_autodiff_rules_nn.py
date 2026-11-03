@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
@@ -32,8 +33,8 @@ except ValueError:
         from ml_switcheroo_ir import LogicalNode
 
         sqz_id = uuid.uuid4().hex
-        sqz_node = as_callable(LogicalNode)(id=sqz_id, op_type="Squeeze", inputs=[cotangent], attributes={"axis": as_callable(as_tensor(getattr(node, "attributes")).get)("axis", 0)})
-        getattr(getattr(graph, "nodes"), "__setitem__")(sqz_id, sqz_node)
+        sqz_node = as_callable(LogicalNode)(id=sqz_id, op_type="Squeeze", inputs=[cotangent], attributes={"axis": as_callable(as_tensor(_get_attr(node, "attributes")).get)("axis", 0)})
+        _get_attr(_get_attr(graph, "nodes"), "__setitem__")(sqz_id, sqz_node)
         return (sqz_id,)
 
 
@@ -55,8 +56,8 @@ except ValueError:
         from ml_switcheroo_ir import LogicalNode
 
         exp_id = uuid.uuid4().hex
-        exp_node = as_callable(LogicalNode)(id=exp_id, op_type="ExpandDims", inputs=[cotangent], attributes={"axis": as_callable(as_tensor(getattr(node, "attributes")).get)("axis", 0)})
-        getattr(getattr(graph, "nodes"), "__setitem__")(exp_id, exp_node)
+        exp_node = as_callable(LogicalNode)(id=exp_id, op_type="ExpandDims", inputs=[cotangent], attributes={"axis": as_callable(as_tensor(_get_attr(node, "attributes")).get)("axis", 0)})
+        _get_attr(_get_attr(graph, "nodes"), "__setitem__")(exp_id, exp_node)
         return (exp_id,)
 
 

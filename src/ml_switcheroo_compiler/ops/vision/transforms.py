@@ -5,7 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 from ml_switcheroo_compiler.ops.configs import ElasticConfig, PerspectiveConfig
@@ -43,7 +43,7 @@ def perspective_transform(
             end_points.data,
             config=config_obj,
         )
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "PerspectiveTransform",
         [images, start_points, end_points],
@@ -81,7 +81,7 @@ def elastic_transform(
             displacement.data,
             config=config_obj,
         )
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "ElasticTransform",
         [images, displacement],
@@ -103,7 +103,7 @@ def flip_left_right(images: Tensor) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("FlipLeftRight", images.data)
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
 
     return get_op("FlipLeftRight")()(images, dtype=DType.Int32)
 
@@ -120,7 +120,7 @@ def flip_up_down(images: Tensor) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("FlipUpDown", images.data)
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
 
     return get_op("FlipUpDown")()(images, dtype=DType.Int32)
 
@@ -142,4 +142,5 @@ class ElasticTransform(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(images, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(images, "shape", ())
+        return _typed_ret_1

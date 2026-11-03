@@ -11,7 +11,7 @@ from ml_switcheroo_compiler.core.config import config
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -35,7 +35,7 @@ def dynamic_slice(
     if config.eager_mode:
         starts = []
         for s in start_indices:
-            if hasattr(s, "data"):
+            if _has_attr(s, "data"):
                 starts.append(int(as_int(s.data)))
             else:
                 starts.append(int(s))
@@ -116,7 +116,7 @@ class DynamicSlice(OpDef):
             tuple[int, ...]: Result.
         """
         slice_sizes = args[2] if len(args) > BINARY_OP_ARITY else kwargs["slice_sizes"]
-        return tuple(getattr(slice_sizes, "__iter__")())
+        return tuple(_get_attr(slice_sizes, "__iter__")())
 
 
 @register_op("DynamicUpdateSlice")
@@ -142,4 +142,5 @@ class DynamicUpdateSlice(OpDef):
 
         Returns: Tensor: The computed result.
         """
-        return getattr(x, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(x, "shape", ())
+        return _typed_ret_1

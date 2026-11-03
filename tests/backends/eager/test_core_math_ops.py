@@ -14,6 +14,7 @@ import ml_switcheroo_compiler.backends.eager.core_math_ops as cmo
 import ml_switcheroo_compiler.backends.eager.core_math_ops as core_math_ops
 import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from tests.testing_utils import as_attrs, as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -38,8 +39,8 @@ def _test_core_math_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
     assert res is not None
     res = core_math_ops._fft(as_mod(object), np.array([1.0, 2.0]))
     assert res is None
-    getattr(_state, "update")({"res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"res": res})
+    _state.update(_caller_locals())
 
 
 def _test_core_math_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -58,8 +59,8 @@ def _test_core_math_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
     assert res is not None
     res = core_math_ops._expm1(np, 0.5)
     assert res is not None
-    getattr(_state, "update")({"res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"res": res})
+    _state.update(_caller_locals())
 
 
 def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -120,8 +121,8 @@ def _test_core_math_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
     dummy = DummyMock()
     res = core_math_ops._erf(as_mod(dummy), 0.5)
     assert res is not None
-    getattr(_state, "update")({"DummyMock": DummyMock, "dummy": dummy, "res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyMock": DummyMock, "dummy": dummy, "res": res})
+    _state.update(_caller_locals())
 
 
 def _test_core_math_ops_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -142,8 +143,8 @@ def _test_core_math_ops_coverage_part_4(_state: dict[str, EagerTensorProtocol]) 
     res = core_math_ops._nan_to_num(dummy, np.array([np.nan, 1.0]))
     assert res is not None
     res = core_math_ops._einsum(np, "i,i->", np.array([1.0]), np.array([2.0]))
-    getattr(_state, "update")({"res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"res": res})
+    _state.update(_caller_locals())
 
 
 def _test_core_math_ops_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -163,8 +164,8 @@ def _test_core_math_ops_coverage_part_5(_state: dict[str, EagerTensorProtocol]) 
     res = as_tensor(core_math_ops._psum(np, np.array([1.0])))
     assert res is not None
     res = as_tensor(core_math_ops._pmean(np, np.array([1.0])))
-    getattr(_state, "update")({"res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"res": res})
+    _state.update(_caller_locals())
 
 
 def _test_core_math_ops_coverage_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -193,8 +194,8 @@ def _test_core_math_ops_coverage_part_6(_state: dict[str, EagerTensorProtocol]) 
     assert res is not None
     res = as_tensor(core_math_ops._np_zerofraction(np, np.array([0.0, 1.0])))
     assert res is not None
-    getattr(_state, "update")({"DummyMockDigamma": DummyMockDigamma, "DummyMockPolygamma": DummyMockPolygamma, "res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyMockDigamma": DummyMockDigamma, "DummyMockPolygamma": DummyMockPolygamma, "res": res})
+    _state.update(_caller_locals())
 
 
 def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -226,7 +227,7 @@ def _test_core_math_ops_coverage_part_7(_state: dict[str, EagerTensorProtocol]) 
     assert res is not None
     res = core_math_ops._np_zeta(as_mod(object), 2.0, 1.0)
     assert res is not None
-    getattr(_state, "update")({"MockRandomZeroFraction": MockRandomZeroFraction, "res": res})
+    _get_attr(_state, "update")({"MockRandomZeroFraction": MockRandomZeroFraction, "res": res})
 
 
 def test_core_math_ops_coverage() -> None:
@@ -412,8 +413,8 @@ class AllBackend:
             """
             return np.array([1.0])
 
-        setattr(_dummy, "item", lambda: 1.0)
-        setattr(_dummy, "tolist", lambda: 1.0)
+        _set_attr(_dummy, "item", lambda: 1.0)
+        _set_attr(_dummy, "tolist", lambda: 1.0)
         return _dummy
 
 
@@ -439,7 +440,7 @@ class FallbackBackend:
             raise AttributeError(f"Hidden: {name}")
         if name == "nn":
             return as_tensor(self)
-        return as_tensor(getattr(self.np, str(name)))
+        return as_tensor(_get_attr(self.np, str(name)))
 
 
 def _test_all_core_math_ops_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -450,8 +451,8 @@ def _test_all_core_math_ops_coverage_sub_1(_state: dict[str, EagerTensorProtocol
     """
     op = _state["op"]
     sig = inspect.signature(op)
-    getattr(_state, "update")({"sig": sig})
-    _state.update(locals())
+    _get_attr(_state, "update")({"sig": sig})
+    _state.update(_caller_locals())
 
 
 def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -474,7 +475,7 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
         args = []
         kwargs = {}
         val = arg_int if use_int else arg
-        for p in as_tensor(getattr(sig, "parameters")).values():
+        for p in as_tensor(_get_attr(sig, "parameters")).values():
             if p.name == "backend_module":
                 args.append(bk)
             elif p.kind == inspect.Parameter.VAR_POSITIONAL:
@@ -485,15 +486,15 @@ def _test_all_core_math_ops_coverage_sub_2(_state: dict[str, EagerTensorProtocol
             elif p.name == "axis":
                 kwargs["axis"] = 0
             elif p.name == "axes":
-                getattr(kwargs, "__setitem__")("axes", (0,))
+                _get_attr(kwargs, "__setitem__")("axes", (0,))
             elif p.default != inspect.Parameter.empty:
                 pass
             else:
                 args.append(val)
         return (args, kwargs)
 
-    getattr(_state, "update")({"build_call": build_call})
-    _state.update(locals())
+    _get_attr(_state, "update")({"build_call": build_call})
+    _state.update(_caller_locals())
 
 
 def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -516,7 +517,7 @@ def _test_all_core_math_ops_coverage_sub_3(_state: dict[str, EagerTensorProtocol
                     op(bk, arg)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_all_core_math_ops_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -530,11 +531,11 @@ def _test_all_core_math_ops_coverage_sub_4(_state: dict[str, EagerTensorProtocol
     orig_scipy = sys.modules.get("scipy.special")
     orig_scipy2 = sys.modules.get("scipy.linalg")
     orig_scipy_root = sys.modules.get("scipy")
-    getattr(sys.modules, "__setitem__")("scipy.special", None)
-    getattr(sys.modules, "__setitem__")("scipy.linalg", None)
-    getattr(sys.modules, "__setitem__")("scipy", None)
-    getattr(_state, "update")({"args": args, "kwargs": kwargs, "orig_scipy": orig_scipy, "orig_scipy2": orig_scipy2, "orig_scipy_root": orig_scipy_root})
-    _state.update(locals())
+    _get_attr(sys.modules, "__setitem__")("scipy.special", None)
+    _get_attr(sys.modules, "__setitem__")("scipy.linalg", None)
+    _get_attr(sys.modules, "__setitem__")("scipy", None)
+    _get_attr(_state, "update")({"args": args, "kwargs": kwargs, "orig_scipy": orig_scipy, "orig_scipy2": orig_scipy2, "orig_scipy_root": orig_scipy_root})
+    _state.update(_caller_locals())
 
 
 def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -552,33 +553,33 @@ def _test_all_core_math_ops_coverage_sub_5(_state: dict[str, EagerTensorProtocol
         _caught_err = True
     finally:
         if as_tensor(orig_scipy) is not None:
-            getattr(sys.modules, "__setitem__")("scipy.special", orig_scipy)
+            _get_attr(sys.modules, "__setitem__")("scipy.special", orig_scipy)
         elif "scipy.special" in sys.modules:
             del sys.modules["scipy.special"]
         if as_tensor(orig_scipy2) is not None:
-            getattr(sys.modules, "__setitem__")("scipy.linalg", orig_scipy2)
+            _get_attr(sys.modules, "__setitem__")("scipy.linalg", orig_scipy2)
         elif "scipy.linalg" in sys.modules:
             del sys.modules["scipy.linalg"]
         if as_tensor(orig_scipy_root) is not None:
-            getattr(sys.modules, "__setitem__")("scipy", orig_scipy_root)
+            _get_attr(sys.modules, "__setitem__")("scipy", orig_scipy_root)
         elif "scipy" in sys.modules:
             del sys.modules["scipy"]
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_all_core_math_ops_coverage() -> None:
     """Test function test_all_core_math_ops_coverage."""
     warnings.filterwarnings("ignore")
-    ops = [getattr(cmo, name) for name in dir(cmo) if name.startswith("_") and callable(getattr(cmo, name))]
+    ops = [_get_attr(cmo, name) for name in dir(cmo) if name.startswith("_") and callable(_get_attr(cmo, name))]
     all_bk = AllBackend()
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]])
     arg_int = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
-    hide = [name[1:] for name in dir(cmo) if name.startswith("_") and callable(getattr(cmo, name))]
+    hide = [name[1:] for name in dir(cmo) if name.startswith("_") and callable(_get_attr(cmo, name))]
     fb = FallbackBackend(hide)
     for op in ops:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"all_bk": all_bk, "arg": arg, "arg_int": arg_int, "fb": fb})
-        getattr(_state, "update")({"hide": hide, "op": op, "ops": ops})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"all_bk": all_bk, "arg": arg, "arg_int": arg_int, "fb": fb})
+        _get_attr(_state, "update")({"hide": hide, "op": op, "ops": ops})
         for _sub_fn in (_test_all_core_math_ops_coverage_sub_1, _test_all_core_math_ops_coverage_sub_2, _test_all_core_math_ops_coverage_sub_3, _test_all_core_math_ops_coverage_sub_4, _test_all_core_math_ops_coverage_sub_5):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -619,9 +620,9 @@ def _test_missing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> Non
     as_callable(mod._apply_causal_mask)(as_callable(EmptyBk)(), arg)
     as_callable(mod._apply_softmax)(as_callable(NNSoftmaxBk)(), arg)
     as_callable(mod._apply_softmax)(as_callable(EmptyBk)(), arg)
-    getattr(_state, "update")({"EmptyBk": EmptyBk, "NNSoftmaxBk": NNSoftmaxBk, "arg": arg, "mod": mod})
-    getattr(_state, "update")({"np": np})
-    _state.update(locals())
+    _get_attr(_state, "update")({"EmptyBk": EmptyBk, "NNSoftmaxBk": NNSoftmaxBk, "arg": arg, "mod": mod})
+    _get_attr(_state, "update")({"np": np})
+    _state.update(_caller_locals())
 
 
 def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -662,8 +663,8 @@ def _test_missing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> Non
             """
             return a
 
-    getattr(_state, "update")({"DummyItem": DummyItem, "DummyList": DummyList, "MatmulBk": MatmulBk})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyItem": DummyItem, "DummyList": DummyList, "MatmulBk": MatmulBk})
+    _state.update(_caller_locals())
 
 
 def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -714,8 +715,8 @@ def _test_missing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> Non
 
     as_callable(mod._fix)(as_callable(BkWithWhere)(), arg)
     mod._adaptive_max_pool3d_indices(np, arg, 1)
-    getattr(_state, "update")({"BkWithWhere": BkWithWhere})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BkWithWhere": BkWithWhere})
+    _state.update(_caller_locals())
 
 
 def _test_missing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -751,7 +752,7 @@ def test_empty_backend() -> None:
 
     empty_bk = EmptyBackend()
     arg = np.array([[[1.0, 2.0], [3.0, 4.0]]])
-    ops = [getattr(mod, name) for name in dir(mod) if name.startswith("_") and callable(getattr(mod, name))]
+    ops = [_get_attr(mod, name) for name in dir(mod) if name.startswith("_") and callable(_get_attr(mod, name))]
     for op in ops:
         sig = inspect.signature(op)
         args_to_pass = [empty_bk] + [arg] * (len(sig.parameters) - 1)
@@ -776,8 +777,8 @@ def _test_remaining_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> No
 
     import ml_switcheroo_compiler.backends.eager.core_math_ops as mod
 
-    getattr(_state, "update")({"mod": mod, "np": np})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mod": mod, "np": np})
+    _state.update(_caller_locals())
 
 
 class _BkWithLinalg:
@@ -943,8 +944,8 @@ def _test_remaining_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    getattr(_state, "update")({"BkWithLinalg": _BkWithLinalg})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BkWithLinalg": _BkWithLinalg})
+    _state.update(_caller_locals())
 
 
 def _test_remaining_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -960,8 +961,8 @@ def _test_remaining_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
     mod._banded_triangular_solve(bk, arg)
     mod._svd(bk, arg)
     mod._tensorinv(bk, arg)
-    getattr(_state, "update")({"arg": arg, "bk": bk})
-    _state.update(locals())
+    _get_attr(_state, "update")({"arg": arg, "bk": bk})
+    _state.update(_caller_locals())
 
 
 def _test_remaining_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -977,7 +978,7 @@ def _test_remaining_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> No
     with pytest.raises(AttributeError):
         mod._outer(bk, arg)
     mod._det(bk, arg)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_remaining_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -991,7 +992,7 @@ def _test_remaining_coverage_sub_5(_state: dict[str, EagerTensorProtocol]) -> No
     mod._eigh(bk, arg)
     mod._eigvals(bk, arg)
     mod._eigvalsh(bk, arg)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_remaining_coverage_sub_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1006,12 +1007,12 @@ def _test_remaining_coverage_sub_6(_state: dict[str, EagerTensorProtocol]) -> No
     mod._norm(bk, arg)
     mod._add_n(np, [arg, arg])
     mod._associative_scan(np, lambda a, b: a + b, np.array([1.0, 2.0]))
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_remaining_coverage() -> None:
     """Test function test_remaining_coverage."""
-    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
     for _sub_fn in (_test_remaining_coverage_sub_1, _test_remaining_coverage_sub_2, _test_remaining_coverage_sub_3, _test_remaining_coverage_sub_4, _test_remaining_coverage_sub_5, _test_remaining_coverage_sub_6):
         _sub_fn(_state)
     assert len(_state) > 0
@@ -1035,9 +1036,9 @@ def test_unfold_coverage_manual() -> None:
             return x
 
     res = _np_unfold(as_mod(DummyBackend()), np.ones((1, 1, 4, 4)), kernel_size=3, stride=1)
-    assert as_tensor(getattr(res, "shape")) == (1, 1, 4, 4)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 1, 4, 4)
     res = _np_unfold(as_mod(DummyBackend()), np.ones((1, 1, 2, 2)), kernel_size=3, stride=1)
-    assert as_tensor(getattr(res, "shape")) == (1, 1, 2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 1, 2, 2)
 
 
 warnings.filterwarnings("ignore")
@@ -1253,8 +1254,8 @@ def _test_even_more_coverage_sub_1(_state: dict[str, EagerTensorProtocol]) -> No
     Args:
         _state: Shared test state dictionary.
     """
-    getattr(_state, "update")({"BkSpecial": _BkSpecial})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BkSpecial": _BkSpecial})
+    _state.update(_caller_locals())
 
 
 def _test_even_more_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1282,8 +1283,8 @@ def _test_even_more_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
     mod._pswapaxes(bk, arg)
     mod._ppermute(bk, arg)
     mod._np_tridiagonal(bk, arg)
-    getattr(_state, "update")({"arg": arg, "bk": bk})
-    _state.update(locals())
+    _get_attr(_state, "update")({"arg": arg, "bk": bk})
+    _state.update(_caller_locals())
 
 
 def _test_even_more_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1295,12 +1296,12 @@ def _test_even_more_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> No
     (arg, bk) = (_state["arg"], _state["bk"])
     assert mod._fftn(bk, arg) is not None
     assert mod._psumscatter(bk, arg) is not None
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_even_more_coverage() -> None:
     """Test function test_even_more_coverage."""
-    _state: dict[str, EagerTensorProtocol] = dict(locals())
+    _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
     for _sub_fn in (_test_even_more_coverage_sub_1, _test_even_more_coverage_sub_2, _test_even_more_coverage_sub_3):
         _sub_fn(_state)
     assert len(_state) > 0

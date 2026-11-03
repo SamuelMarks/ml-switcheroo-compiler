@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
+from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.constant_folding import (
     _evaluate_constant_node,
@@ -101,7 +102,7 @@ def test_constant_folding() -> None:
     assert constant_folding_pass(g) is True
     assert g.nodes["n1"].op_type == "Constant"
     val = g.nodes["n1"].attributes["value"]
-    np.testing.assert_allclose(typing.cast("list[float]", val), np.array([5.0]))
+    np.testing.assert_allclose(_cast_val("list[float]", val), np.array([5.0]))
 
 
 def test_constant_folding_unsupported_op() -> None:

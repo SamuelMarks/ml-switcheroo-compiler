@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.nn.gru import _compute_gru_gates, _sigmoid
 from tests.testing_utils import as_callable, as_tensor
 
@@ -61,7 +62,7 @@ def test_gru_extras() -> None:
     orig_tracing = state.global_tracing_state.is_tracing
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    setattr(state.global_tracing_state, "add_node", lambda node: None)
+    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
     try:
         as_callable(_compute_gru_gates)(
             [as_callable(DummyTensor)(), as_callable(DummyTensor)(), as_callable(DummyTensor)()],
@@ -72,5 +73,5 @@ def test_gru_extras() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
-    assert getattr(state.global_tracing_state, "add_node") == orig_add_node
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+    assert _get_attr(state.global_tracing_state, "add_node") == orig_add_node

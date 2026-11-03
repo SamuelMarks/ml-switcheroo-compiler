@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.edge.config_models import WebglTemplatesConfig
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -45,12 +46,12 @@ class WebGLCodeGenerator(BaseGenerator):
         Returns:
             tuple[int, int]: Computed (width, height) dimensions for the framebuffer texture.
         """
-        shape = getattr(node, "shape_metadata", None)
-        node_inputs = getattr(node, "inputs", []) or []
+        shape = _get_attr(node, "shape_metadata", None)
+        node_inputs = _get_attr(node, "inputs", []) or []
         in_shape = None
         if node_inputs:
-            in_node = getattr(self.graph, "nodes", {}).get(node_inputs[0])
-            in_shape = getattr(in_node, "shape_metadata", None) if in_node else None
+            in_node = _get_attr(self.graph, "nodes", {}).get(node_inputs[0])
+            in_shape = _get_attr(in_node, "shape_metadata", None) if in_node else None
 
         eff_shape = shape if (shape and len(shape) > 0) else (in_shape if (in_shape and len(in_shape) > 0) else None)
         if not eff_shape:
@@ -109,7 +110,7 @@ class WebGLCodeGenerator(BaseGenerator):
         """
         binding_lines: list[str] = []
         uniform_names = ["A", "B", "C", "D"]
-        for i, in_id in enumerate(getattr(node, "inputs", [])):
+        for i, in_id in enumerate(_get_attr(node, "inputs", [])):
             binding_lines.append(f"    gl.activeTexture(gl.TEXTURE{i});")
             if in_id in input_map:
                 binding_lines.append(f"    gl.bindTexture(gl.TEXTURE_2D, inputs[{input_map[in_id]}]);")
@@ -129,18 +130,18 @@ class WebGLCodeGenerator(BaseGenerator):
             tuple[int, int, int, int, int]: Tuple of (k_dim, in_h, in_w, k_h, k_w).
         """
         k_dim, in_h, in_w, k_h, k_w = 32, 32, 32, 3, 3
-        node_inputs = getattr(node, "inputs", [])
-        graph_nodes = getattr(self.graph, "nodes", {})
+        node_inputs = _get_attr(node, "inputs", [])
+        graph_nodes = _get_attr(self.graph, "nodes", {})
         if node_inputs and len(node_inputs) > 0:
             in_node = graph_nodes.get(node_inputs[0])
-            in_shape = getattr(in_node, "shape_metadata", None)
+            in_shape = _get_attr(in_node, "shape_metadata", None)
             if in_shape and len(in_shape) > 0 and isinstance(in_shape[-1], int):
                 k_dim = in_w = in_shape[-1]
             if in_shape and len(in_shape) >= 2 and isinstance(in_shape[-2], int):
                 in_h = in_shape[-2]
         if node_inputs and len(node_inputs) > 1:
             k_node = graph_nodes.get(node_inputs[1])
-            k_shape = getattr(k_node, "shape_metadata", None)
+            k_shape = _get_attr(k_node, "shape_metadata", None)
             if k_shape and len(k_shape) >= 2:
                 if isinstance(k_shape[-1], int):
                     k_w = k_shape[-1]
@@ -186,7 +187,7 @@ class WebGLCodeGenerator(BaseGenerator):
         setup_lines: list[str] = []
         if custom_setup:
             k_dim, in_h, in_w, k_h, k_w = self._extract_input_spatial_dims(node)
-            attrs: dict[str, EagerValue] = getattr(node, "attributes", {}) or {}
+            attrs: dict[str, EagerValue] = _get_attr(node, "attributes", {}) or {}
             start_x, start_y = self._parse_slice_starts(attrs.get("starts", attrs.get("start", [0, 0])))
             raw_axis = attrs.get("axis", 0)
             concat_axis: int = int(raw_axis) if isinstance(raw_axis, int) else 0
@@ -211,7 +212,7 @@ class WebGLCodeGenerator(BaseGenerator):
             )
             setup_lines.extend(f"    {line}" for line in formatted_setup.strip().split("\n") if line.strip())
 
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
         if shape and len(shape) > 0:
             shape_ints: list[int] = [int(s) if isinstance(s, int) else 1 for s in shape]
             curr_stride: int = 1
@@ -253,7 +254,7 @@ class WebGLCodeGenerator(BaseGenerator):
         """
         js.append(f'    const shader_{clean_id} = "{escaped_shader}";')
         js.append(f"    const prog_{clean_id} = createProgram(gl, vsSource, shader_{clean_id});")
-        num_outputs: int = int(getattr(node, "attributes", {}).get("num_outputs", 1))
+        num_outputs: int = int(_get_attr(node, "attributes", {}).get("num_outputs", 1))
         js.append("    gl.bindFramebuffer(gl.FRAMEBUFFER, currentFbo);")
         if num_outputs > 1:
             draw_buffers: list[str] = []
@@ -290,8 +291,8 @@ class WebGLCodeGenerator(BaseGenerator):
         Raises:
             ValueError: If shader template is missing for the operation.
         """
-        op_type: str = getattr(node, "op_type", "")
-        clean_id: str = getattr(node, "id", "").replace("-", "_")
+        op_type: str = _get_attr(node, "op_type", "")
+        clean_id: str = _get_attr(node, "id", "").replace("-", "_")
 
         width, height = self._resolve_texture_dims(node)
         escaped_shader, custom_setup = self._lookup_shader_template(op_type)
@@ -336,16 +337,16 @@ class WebGLCodeGenerator(BaseGenerator):
 
         input_map: dict[str, int] = {}
         input_idx: int = 0
-        for node in getattr(self.graph, "nodes", {}).values():
-            if getattr(node, "op_type", "") == "Input":
+        for node in _get_attr(self.graph, "nodes", {}).values():
+            if _get_attr(node, "op_type", "") == "Input":
                 input_map[node.id] = input_idx
                 input_idx += 1
 
         last_width: int = 32
         last_height: int = 32
 
-        for node in getattr(self.graph, "nodes", {}).values():
-            if getattr(node, "op_type", "") == "Input":
+        for node in _get_attr(self.graph, "nodes", {}).values():
+            if _get_attr(node, "op_type", "") == "Input":
                 continue
 
             last_width, last_height = self._emit_node(node, input_map, js)
@@ -384,7 +385,7 @@ class WebGLCodeGenerator(BaseGenerator):
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict)
             if not graph.outputs:
                 return res_dict
@@ -392,7 +393,7 @@ class WebGLCodeGenerator(BaseGenerator):
                 return res_dict.get(graph.outputs[0])
             return tuple(res_dict.get(out) for out in graph.outputs)
 
-        shaders_map = {node_id: f"shader_{node_id}" for node_id, node in getattr(graph, "nodes", {}).items() if getattr(node, "op_type", "").lower() not in ("input", "output")}
+        shaders_map = {node_id: f"shader_{node_id}" for node_id, node in _get_attr(graph, "nodes", {}).items() if _get_attr(node, "op_type", "").lower() not in ("input", "output")}
 
         return CompiledArtifact(
             callable_fn=runner,

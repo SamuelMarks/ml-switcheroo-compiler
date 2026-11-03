@@ -9,6 +9,7 @@ from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.backends.generator_mixins as gen_mixins
 import ml_switcheroo_compiler.transforms.passes.config_models as passes_cfg
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -245,11 +246,11 @@ def _test_transforms_passes_config_models_part_1(_state: dict[str, EagerTensorPr
 
     # Remat, heuristics, behavior
     remat_thresh = passes_cfg.RematerializationThresholds(min_memory_bytes=4096, max_compute_to_memory_ratio=2.5)
-    getattr(_state, "update")({"contract": contract, "conv": conv, "cost_model": cost_model, "costs": costs})
-    getattr(_state, "update")({"fusion": fusion, "node_pat": node_pat, "opt_level": opt_level, "pass_cfg": pass_cfg})
-    getattr(_state, "update")({"pass_cfg_model": pass_cfg_model, "pipeline": pipeline, "remat_thresh": remat_thresh, "repl": repl})
-    getattr(_state, "update")({"stage": stage})
-    _state.update(locals())
+    _get_attr(_state, "update")({"contract": contract, "conv": conv, "cost_model": cost_model, "costs": costs})
+    _get_attr(_state, "update")({"fusion": fusion, "node_pat": node_pat, "opt_level": opt_level, "pass_cfg": pass_cfg})
+    _get_attr(_state, "update")({"pass_cfg_model": pass_cfg_model, "pipeline": pipeline, "remat_thresh": remat_thresh, "repl": repl})
+    _get_attr(_state, "update")({"stage": stage})
+    _state.update(_caller_locals())
 
 
 def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -329,10 +330,10 @@ def _test_transforms_passes_config_models_part_2(_state: dict[str, EagerTensorPr
         devices=[0, 1, 2, 3, 4, 5, 6, 7],
     )
     assert mesh_grid.shape == [2, 4]
-    getattr(_state, "update")({"behaviors": behaviors, "default_proto_path": default_proto_path, "heuristics": heuristics, "loaded_custom_proto": loaded_custom_proto})
-    getattr(_state, "update")({"loaded_protocol": loaded_protocol, "mesh_grid": mesh_grid, "obs_shape": obs_shape, "packet": packet})
-    getattr(_state, "update")({"payload": payload, "remat_rules": remat_rules, "rt_meta": rt_meta})
-    _state.update(locals())
+    _get_attr(_state, "update")({"behaviors": behaviors, "default_proto_path": default_proto_path, "heuristics": heuristics, "loaded_custom_proto": loaded_custom_proto})
+    _get_attr(_state, "update")({"loaded_protocol": loaded_protocol, "mesh_grid": mesh_grid, "obs_shape": obs_shape, "packet": packet})
+    _get_attr(_state, "update")({"payload": payload, "remat_rules": remat_rules, "rt_meta": rt_meta})
+    _state.update(_caller_locals())
 
 
 def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -374,9 +375,9 @@ def _test_transforms_passes_config_models_part_3(_state: dict[str, EagerTensorPr
     default_mesh_path = os.path.join(os.path.dirname(passes_cfg.__file__), "spmd_mappings", "mesh_partitioning.yaml")
     loaded_custom_mesh = passes_cfg.load_mesh_partitioning(default_mesh_path)
     assert loaded_custom_mesh.default_mesh.shape == loaded_mesh.default_mesh.shape
-    getattr(_state, "update")({"comm_cond": comm_cond, "comm_rule": comm_rule, "default_mesh_path": default_mesh_path, "dp_strat": dp_strat})
-    getattr(_state, "update")({"loaded_custom_mesh": loaded_custom_mesh, "loaded_mesh": loaded_mesh, "matrix_cfg": matrix_cfg, "mesh_cfg": mesh_cfg})
-    getattr(_state, "update")({"pp_strat": pp_strat, "root_mesh_cfg": root_mesh_cfg, "strategies": strategies, "tp_strat": tp_strat})
+    _get_attr(_state, "update")({"comm_cond": comm_cond, "comm_rule": comm_rule, "default_mesh_path": default_mesh_path, "dp_strat": dp_strat})
+    _get_attr(_state, "update")({"loaded_custom_mesh": loaded_custom_mesh, "loaded_mesh": loaded_mesh, "matrix_cfg": matrix_cfg, "mesh_cfg": mesh_cfg})
+    _get_attr(_state, "update")({"pp_strat": pp_strat, "root_mesh_cfg": root_mesh_cfg, "strategies": strategies, "tp_strat": tp_strat})
 
 
 def test_transforms_passes_config_models() -> None:

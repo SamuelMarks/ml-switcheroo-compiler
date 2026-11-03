@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -24,13 +24,14 @@ class SparsePlus(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_1: TensorOrScalar = res
+        return _typed_ret_1
 
 
 @register_op("SparseSigmoid")
@@ -51,13 +52,14 @@ class SparseSigmoid(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_2: TensorOrScalar = res
+        return _typed_ret_2
 
 
 def sparse_plus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
@@ -82,8 +84,8 @@ def sparse_plus(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScal
         "SparsePlus",
         list(args),
         kwargs,
-        getattr(args[0], "shape", ()) if args else (),
-        getattr(args[0], "dtype", "float32") if args else "float32",
+        _get_attr(args[0], "shape", ()) if args else (),
+        _get_attr(args[0], "dtype", "float32") if args else "float32",
     )
 
 
@@ -109,6 +111,6 @@ def sparse_sigmoid(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrS
         "SparseSigmoid",
         list(args),
         kwargs,
-        getattr(args[0], "shape", ()) if args else (),
-        getattr(args[0], "dtype", "float32") if args else "float32",
+        _get_attr(args[0], "shape", ()) if args else (),
+        _get_attr(args[0], "dtype", "float32") if args else "float32",
     )

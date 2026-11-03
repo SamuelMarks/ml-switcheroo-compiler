@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.registry import _LOADERS, BackendRegistry
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.core.utils.graph_utils import _TopologicalSorter, topological_sort
 from ml_switcheroo_compiler.export.export_api import (
@@ -47,7 +48,7 @@ from tests.testing_utils import as_callable, as_tensor
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
 
-GradOptions = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.grad.utils"), "GradOptions"))
+GradOptions = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.grad.utils"), "GradOptions"))
 
 device = Device(DeviceType.CPU, 0)
 
@@ -176,7 +177,7 @@ def test_grad_api_features() -> None:
 
     vg_fn = value_and_grad(aux_fn, options=GradOptions(has_aux=True))
     val_aux, g_val = as_callable(vg_fn)(t_in)
-    assert as_tensor(getattr(val_aux, "__getitem__")(1)) == "aux_info"
+    assert as_tensor(_get_attr(val_aux, "__getitem__")(1)) == "aux_info"
 
     g_aux_fn = as_callable(grad)(aux_fn, options=as_callable(GradOptions)(has_aux=True))
     grads_aux, aux_val = as_callable(g_aux_fn)(t_in)
@@ -245,7 +246,7 @@ def test_grad_utils_branches() -> None:
     bool_arr = np.array([True, False], dtype=bool)
     orig_t = Tensor(np.array([1, 0]), TensorConfig((2,), DType.Int32, device))
     t_res_bool = _to_original_type(bool_arr, orig_t)
-    assert as_tensor(getattr(t_res_bool, "dtype")) == DType.Bool
+    assert as_tensor(_get_attr(t_res_bool, "dtype")) == DType.Bool
 
     # 7. _compute_grad_and_value with active tracing (lines 314-319)
     with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):

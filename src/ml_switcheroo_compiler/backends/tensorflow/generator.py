@@ -6,7 +6,7 @@ from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -101,7 +101,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         str: Result.
         """
         res = f"tf.{op}({{shape}})"
-        if "dtype" in getattr(kwargs, "__iter__")():
+        if isinstance(kwargs, dict) and "dtype" in kwargs:
             res += f", dtype='{as_tensor(kwargs)['dtype']}'"
         return res
 
@@ -115,7 +115,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         str: Result.
         """
         res = "tf.full({shape}, {fill_value})"
-        if "dtype" in getattr(kwargs, "__iter__")():
+        if isinstance(kwargs, dict) and "dtype" in kwargs:
             res += f", dtype='{as_tensor(kwargs)['dtype']}'"
         return res
 
@@ -128,7 +128,7 @@ class TensorFlowCodeGenerator(BaseGenerator):
         Returns:
         str: Result.
         """
-        if "axes" in getattr(kwargs, "__iter__")():
+        if isinstance(kwargs, dict) and "axes" in kwargs:
             return "tf.transpose({0}, perm={axes})"
         return "tf.transpose({0})"
 
@@ -257,14 +257,14 @@ class TensorFlowCodeGenerator(BaseGenerator):
             Returns:
                 EagerValue: Computed tensor or collection of tensors.
             """
-            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             evaluated = evaluate_graph(graph, inputs=inputs)
-            if hasattr(graph, "outputs") and graph.outputs:
+            if _has_attr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)

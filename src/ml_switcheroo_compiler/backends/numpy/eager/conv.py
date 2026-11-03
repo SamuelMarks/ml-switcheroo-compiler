@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import itertools
 import logging
-import typing
 from collections.abc import Sequence
 
 import numpy as np
@@ -14,7 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, a
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import SliceType, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import SliceType, _cast_val, _get_attr
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 
 
@@ -107,9 +106,9 @@ def _parse_conv_dimension_numbers(lhs_ndim: int, rhs_ndim: int, spatial_dims: in
         )
     return ConvDimSpecs(
         spatial_dims=spatial_dims,
-        lhs_spec=tuple(getattr(dimension_numbers, "lhs_spec")),
-        rhs_spec=tuple(getattr(dimension_numbers, "rhs_spec")),
-        out_spec=tuple(getattr(dimension_numbers, "out_spec")),
+        lhs_spec=tuple(_get_attr(dimension_numbers, "lhs_spec")),
+        rhs_spec=tuple(_get_attr(dimension_numbers, "rhs_spec")),
+        out_spec=tuple(_get_attr(dimension_numbers, "out_spec")),
     )
 
 
@@ -181,10 +180,10 @@ def _apply_conv_dilation(tensor: EagerValue, dilation: Sequence[int], spatial_di
     """
     if not any(d > 1 for d in dilation):
         return tensor
-    new_shape: list[EagerValue] = list(getattr(tensor, "shape"))
+    new_shape: list[EagerValue] = list(_get_attr(tensor, "shape"))
     for i, d in enumerate(dilation):
-        new_shape[2 + i] = (getattr(tensor, "shape")[2 + i] - 1) * d + 1
-    dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "zeros")(new_shape, dtype=getattr(tensor, "dtype"))
+        new_shape[2 + i] = (_get_attr(tensor, "shape")[2 + i] - 1) * d + 1
+    dilated: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "zeros")(new_shape, dtype=_get_attr(tensor, "dtype"))
     slices: list[SliceType] = [slice(None), slice(None)] + [slice(None, None, d) for d in dilation]
     dilated[tuple(slices)] = as_ndarray(tensor)
     return dilated
@@ -218,7 +217,7 @@ def _compute_conv_patch_group(lhs_patch: EagerValue, rhs_c: EagerValue, config: 
     group_out_c: int = config.group_out_c
     lp_g = as_tensor(lhs_patch)[:, g * group_in_c : (g + 1) * group_in_c, ...]
     rc_g = as_tensor(rhs_c)[g * group_out_c : (g + 1) * group_out_c, :, ...]
-    return as_tensor(getattr(np, "tensordot")(lp_g, rc_g, axes=(config.axes_lhs, config.axes_rhs)))
+    return as_tensor(_get_attr(np, "tensordot")(lp_g, rc_g, axes=(config.axes_lhs, config.axes_rhs)))
 
 
 def _compute_single_patch_grouped(lhs_patch: EagerValue, rhs_c: EagerValue, out: EagerValue, spatial_indices: tuple[int, ...], config: PatchConfig) -> None:
@@ -279,7 +278,7 @@ def _compute_single_patch(state: ConvExecutionState, spatial_indices: tuple[int,
         )
         _compute_single_patch_grouped(lhs_patch, state.rhs_c, state.out, spatial_indices, patch_config)
     else:
-        res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(lhs_patch, state.rhs_c, axes=(axes_lhs, axes_rhs))
+        res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(lhs_patch, state.rhs_c, axes=(axes_lhs, axes_rhs))
         state.out[tuple([slice(None), slice(None)] + list(spatial_indices))] = res
 
 
@@ -292,10 +291,10 @@ def _compute_conv_patches(lhs_pad: EagerValue, rhs_c: EagerValue, out: EagerValu
         out (EagerValue): The out parameter.
         config (ConvConfig): The config parameter.
     """
-    spatial_dims: int = len(getattr(lhs_pad, "shape")) - 2
-    out_spatial: tuple[EagerValue, ...] = getattr(out, "shape")[2:]
+    spatial_dims: int = len(_get_attr(lhs_pad, "shape")) - 2
+    out_spatial: tuple[EagerValue, ...] = _get_attr(out, "shape")[2:]
     for spatial_indices in itertools.product(*[range(as_int(d)) for d in out_spatial]):
-        state: ConvExecutionState = typing.cast("TypedVariadicCallable[ConvExecutionState]", ConvExecutionState)(lhs_pad=lhs_pad, rhs_c=rhs_c, out=out, config=config, spatial_dims=spatial_dims)
+        state: ConvExecutionState = _cast_val("TypedVariadicCallable[ConvExecutionState]", ConvExecutionState)(lhs_pad=lhs_pad, rhs_c=rhs_c, out=out, config=config, spatial_dims=spatial_dims)
         _compute_single_patch(state, spatial_indices)
 
 
@@ -310,11 +309,11 @@ def _apply_conv_padding_helper(lhs_c: EagerValue, rhs_c: EagerValue, config: Con
     Returns:
         EagerValue: Result.
     """
-    pad_list: list[tuple[int, int]] = _calculate_conv_padding(config, getattr(lhs_c, "shape"), getattr(rhs_c, "shape"))
+    pad_list: list[tuple[int, int]] = _calculate_conv_padding(config, _get_attr(lhs_c, "shape"), _get_attr(rhs_c, "shape"))
     pad_width: tuple[tuple[int, int], ...] = tuple((int(x[0]), int(x[1])) for x in [(0, 0), (0, 0)] + pad_list)
-    new_shape = tuple(int(s) + int(p[0]) + int(p[1]) for s, p in zip(getattr(lhs_c, "shape"), pad_width))
-    padded = np.zeros(new_shape, dtype=getattr(lhs_c, "dtype"))
-    slices = tuple(slice(int(p[0]), int(p[0]) + int(s)) for s, p in zip(getattr(lhs_c, "shape"), pad_width))
+    new_shape = tuple(int(s) + int(p[0]) + int(p[1]) for s, p in zip(_get_attr(lhs_c, "shape"), pad_width))
+    padded = np.zeros(new_shape, dtype=_get_attr(lhs_c, "dtype"))
+    slices = tuple(slice(int(p[0]), int(p[0]) + int(s)) for s, p in zip(_get_attr(lhs_c, "shape"), pad_width))
     padded[slices] = lhs_c
     return padded
 
@@ -336,8 +335,8 @@ def _preprocess_conv_tensors(
     Returns:
         tuple[np.ndarray[tuple[int, ...], np.dtype[np.float64]], np.ndarray[tuple[int, ...], np.dtype[np.float64]]]: Result.
     """
-    lhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "transpose")(lhs, specs.lhs_spec)
-    rhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "transpose")(rhs, specs.rhs_spec)
+    lhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "transpose")(lhs, specs.lhs_spec)
+    rhs_c: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "transpose")(rhs, specs.rhs_spec)
     if config.feature_group_count > 1:
         in_channels: int = lhs_c.shape[1]
         expected_rhs_in: int = in_channels // config.feature_group_count
@@ -431,7 +430,7 @@ def _np_conv_general_dilated(backend_module: BackendModuleProtocol, *args: Eager
 
     if len(args) == 4:
         lhs, rhs, window_strides, padding = args
-        pad_val = padding if isinstance(padding, str) else [(int(p[0]), int(p[1])) for p in getattr(padding, "__iter__")()]
+        pad_val = padding if isinstance(padding, str) else [(int(p[0]), int(p[1])) for p in _get_attr(padding, "__iter__")()]
         config = ConvConfig(window_strides=as_shape(window_strides), padding=pad_val)
         return _conv_general_dilated(lhs, rhs, config, **kwargs)
     return _conv_general_dilated(
@@ -473,7 +472,7 @@ def _np_conv2d(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             rhs_g = rhs[g * c_out_g : (g + 1) * c_out_g, :, :, :]
             cfg = ConvConfig(window_strides=as_shape(stride), padding=padding)
             outs.append(_conv_general_dilated(lhs_g, rhs_g, cfg))
-        return as_tensor(getattr(np, "concatenate")(outs, axis=1))
+        return as_tensor(_get_attr(np, "concatenate")(outs, axis=1))
 
     config = ConvConfig(window_strides=as_shape(stride), padding=padding)
     return _conv_general_dilated(lhs, rhs, config)
@@ -632,17 +631,17 @@ def _np_conv2d_input_grad(backend_module: BackendModuleProtocol, *args: EagerVal
     weight: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[1])
 
     stride = kwargs.get("stride", kwargs.get("strides", (1, 1)))
-    s_h, s_w = (stride, stride) if isinstance(stride, int) else (getattr(stride, "__getitem__")(0), getattr(stride, "__getitem__")(1))
+    s_h, s_w = (stride, stride) if isinstance(stride, int) else (_get_attr(stride, "__getitem__")(0), _get_attr(stride, "__getitem__")(1))
 
     dilation = kwargs.get("dilation", kwargs.get("dilations", (1, 1)))
-    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (getattr(dilation, "__getitem__")(0), getattr(dilation, "__getitem__")(1))
+    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (_get_attr(dilation, "__getitem__")(0), _get_attr(dilation, "__getitem__")(1))
 
     groups = int(as_int(kwargs.get("groups", 1)))
     padding = kwargs.get("padding", "SAME")
 
     target_shape = kwargs.get("target_shape")
     if target_shape is not None:
-        n_batch, c_in, in_h, in_w = (int(s) for s in getattr(target_shape, "__iter__")())
+        n_batch, c_in, in_h, in_w = (int(s) for s in _get_attr(target_shape, "__iter__")())
     else:
         n_batch = d_out.shape[0]
         c_in = weight.shape[1] * groups
@@ -673,7 +672,7 @@ def _np_conv2d_input_grad(backend_module: BackendModuleProtocol, *args: EagerVal
                 w_start = kw * d_w
                 w_end = w_start + out_w * s_w
                 w_sub = w_g[:, :, kh, kw]
-                term = getattr(np, "einsum")("n o h w, o i -> n i h w", dy_g, w_sub)
+                term = _get_attr(np, "einsum")("n o h w, o i -> n i h w", dy_g, w_sub)
                 dx_pad[:, g * c_in_g : (g + 1) * c_in_g, h_start:h_end:s_h, w_start:w_end:s_w] += term
 
     return dx_pad[:, :, p_top : p_top + in_h, p_left : p_left + in_w]
@@ -697,17 +696,17 @@ def _np_conv2d_weight_grad(backend_module: BackendModuleProtocol, *args: EagerVa
     d_out: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.asarray(args[1])
 
     stride = kwargs.get("stride", kwargs.get("strides", (1, 1)))
-    s_h, s_w = (stride, stride) if isinstance(stride, int) else (getattr(stride, "__getitem__")(0), getattr(stride, "__getitem__")(1))
+    s_h, s_w = (stride, stride) if isinstance(stride, int) else (_get_attr(stride, "__getitem__")(0), _get_attr(stride, "__getitem__")(1))
 
     dilation = kwargs.get("dilation", kwargs.get("dilations", (1, 1)))
-    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (getattr(dilation, "__getitem__")(0), getattr(dilation, "__getitem__")(1))
+    d_h, d_w = (dilation, dilation) if isinstance(dilation, int) else (_get_attr(dilation, "__getitem__")(0), _get_attr(dilation, "__getitem__")(1))
 
     groups = int(as_int(kwargs.get("groups", 1)))
     padding = kwargs.get("padding", "SAME")
 
     target_shape = kwargs.get("target_shape")
     if target_shape is not None:
-        c_out, c_in_g, k_h, k_w = (int(s) for s in getattr(target_shape, "__iter__")())
+        c_out, c_in_g, k_h, k_w = (int(s) for s in _get_attr(target_shape, "__iter__")())
     else:
         c_out = d_out.shape[1]
         c_in_g = x.shape[1] // groups
@@ -741,7 +740,7 @@ def _np_conv2d_weight_grad(backend_module: BackendModuleProtocol, *args: EagerVa
                 w_start = kw * d_w
                 w_end = w_start + out_w * s_w
                 x_slice = x_g[:, :, h_start:h_end:s_h, w_start:w_end:s_w]
-                dw[g * c_out_g : (g + 1) * c_out_g, :, kh, kw] = getattr(np, "einsum")("n o h w, n i h w -> o i", dy_g, x_slice)
+                dw[g * c_out_g : (g + 1) * c_out_g, :, kh, kw] = _get_attr(np, "einsum")("n o h w, n i h w -> o i", dy_g, x_slice)
 
     return dw
 

@@ -7,6 +7,7 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.ops.shape.pad_and_tile as shape_misc
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -28,7 +29,7 @@ def test_shape_misc_functions() -> None:
     shape_misc._infer_shape_percentile_quantile(a, [0.5], axis=0, keepdims=False)
     for attr in dir(shape_misc):
         if attr.startswith("_infer_shape_"):
-            val = getattr(shape_misc, attr)
+            val = _get_attr(shape_misc, attr)
             if callable(val):
                 with pytest.raises(TypeError):
                     val(a)

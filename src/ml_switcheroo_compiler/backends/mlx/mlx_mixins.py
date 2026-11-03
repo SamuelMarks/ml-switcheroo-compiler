@@ -5,7 +5,17 @@ from __future__ import annotations
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_bool, as_float, as_int, as_str
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    _get_attr,
+    as_bool,
+    as_callable,
+    as_float,
+    as_int,
+    as_int_list,
+    as_shape,
+    as_str,
+)
 from ml_switcheroo_compiler.backends.generator_utils import (
     _extract_extract_boxes_attributes,
     _extract_filter_attributes,
@@ -163,10 +173,10 @@ class MLXOpRegistryMixin:
         "Cross": "mx.linalg.cross({0}, {1}, axis={axis})",
         "GatherNd": "mx.gather_nd({0}, {1})",
         "ScatterNd": "mx.scatter_nd({0}, {1}, {shape})",
-        "TensorScatterUpdate": "(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])), u), c][1])(mx.array({0}), {1}, {2})",
-        "TensorScatterAdd": "(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])), c[tuple(i[..., d] for d in range(i.shape[-1]))] + u), c][1])(mx.array({0}), {1}, {2})",
-        "TensorScatterMax": "(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])), mx.maximum(c[tuple(i[..., d] for d in range(i.shape[-1]))], u)), c][1])(mx.array({0}), {1}, {2})",
-        "TensorScatterMin": "(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])), mx.minimum(c[tuple(i[..., d] for d in range(i.shape[-1]))], u)), c][1])(mx.array({0}), {1}, {2})",
+        "TensorScatterUpdate": "(lambda c, i, u: c.at[tuple(i[..., d] for d in range(i.shape[-1]))].add(u - c[tuple(i[..., d] for d in range(i.shape[-1]))]))(mx.asarray({0}), {1}, {2})",
+        "TensorScatterAdd": "(lambda c, i, u: c.at[tuple(i[..., d] for d in range(i.shape[-1]))].add(u))(mx.asarray({0}), {1}, {2})",
+        "TensorScatterMax": "(lambda c, i, u: c.at[tuple(i[..., d] for d in range(i.shape[-1]))].maximum(u))(mx.asarray({0}), {1}, {2})",
+        "TensorScatterMin": "(lambda c, i, u: c.at[tuple(i[..., d] for d in range(i.shape[-1]))].minimum(u))(mx.asarray({0}), {1}, {2})",
         "Scatter": "mx.scatter({0}, {1}, {2}, {dim})",
         "ScatterAdd": "mx.scatter_add({0}, {1}, {2}, {dim})",
         "Gather": "mx.take({0}, {1}, {dim})",
@@ -297,8 +307,9 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX conv1d expression.
         """
-        stride = getattr(node, "attributes", {}).get("stride", 1)
-        padding = getattr(node, "attributes", {}).get("padding", 0)
+        attrs = _get_attr(node, "attributes", {})
+        stride = attrs.get("stride", 1) if isinstance(attrs, dict) else 1
+        padding = attrs.get("padding", 0) if isinstance(attrs, dict) else 0
         return f"mx.conv1d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
 
     def visit_Conv2D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -312,8 +323,9 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX conv2d expression.
         """
-        stride = getattr(node, "attributes", {}).get("stride", 1)
-        padding = getattr(node, "attributes", {}).get("padding", 0)
+        attrs = _get_attr(node, "attributes", {})
+        stride = attrs.get("stride", 1) if isinstance(attrs, dict) else 1
+        padding = attrs.get("padding", 0) if isinstance(attrs, dict) else 0
         return f"mx.conv2d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
 
     def visit_Conv3D(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -327,8 +339,9 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX conv3d expression.
         """
-        stride = getattr(node, "attributes", {}).get("stride", 1)
-        padding = getattr(node, "attributes", {}).get("padding", 0)
+        attrs = _get_attr(node, "attributes", {})
+        stride = attrs.get("stride", 1) if isinstance(attrs, dict) else 1
+        padding = attrs.get("padding", 0) if isinstance(attrs, dict) else 0
         return f"mx.conv3d({input_vars[0]}, {input_vars[1]}, stride={stride}, padding={padding})"
 
     def visit_MultiHeadAttention(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -369,7 +382,8 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX layer_norm expression.
         """
-        eps = getattr(node, "attributes", {}).get("eps", 1e-5)
+        attrs = _get_attr(node, "attributes", {})
+        eps = attrs.get("eps", 1e-5) if isinstance(attrs, dict) else 1e-5
         return f"(lambda x: (x - mx.mean(x, axis=-1, keepdims=True)) / mx.sqrt(mx.var(x, axis=-1, keepdims=True) + {eps}))({input_vars[0]})"
 
     def visit_RMSNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -383,7 +397,8 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX rms_norm expression.
         """
-        eps = getattr(node, "attributes", {}).get("eps", 1e-5)
+        attrs = _get_attr(node, "attributes", {})
+        eps = attrs.get("eps", 1e-5) if isinstance(attrs, dict) else 1e-5
         return f"({input_vars[0]} * mx.rsqrt(mx.mean({input_vars[0]} ** 2, axis=-1, keepdims=True) + {eps}))"
 
     def visit_BatchNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -397,7 +412,8 @@ class MLXNNOpsVisitor:
         Returns:
             str: Generated MLX batch_norm expression.
         """
-        eps = getattr(node, "attributes", {}).get("eps", 1e-5)
+        attrs = _get_attr(node, "attributes", {})
+        eps = attrs.get("eps", 1e-5) if isinstance(attrs, dict) else 1e-5
         return f"(lambda x: (x - mx.mean(x, axis=0, keepdims=True)) / mx.sqrt(mx.var(x, axis=0, keepdims=True) + {eps}))({input_vars[0]})"
 
     def visit_GroupNorm(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -676,10 +692,9 @@ class MLXShapeOpsVisitor:
         Returns:
             A string representing the formatted MLX code for zeros_ones.
         """
-        shape: tuple[int, ...] | list[int] = getattr(kwargs, "get")("shape", ())
-        if isinstance(shape, list):
-            shape = tuple(shape)
-        dtype: str = getattr(kwargs, "get")("dtype", "float32")
+        raw_sh: EagerValue = as_callable(_get_attr(kwargs, "get"))("shape", ())
+        shape: tuple[int | str, ...] = tuple(as_int_list(raw_sh)) if isinstance(raw_sh, list) else as_shape(raw_sh)
+        dtype: str = as_str(as_callable(_get_attr(kwargs, "get"))("dtype", "float32"))
         dt: str = f"mx.{dtype}" if dtype else "None"
         return f"mx.{op}({shape}, dtype={dt})"
 
@@ -692,11 +707,10 @@ class MLXShapeOpsVisitor:
         Returns:
             str: Result.
         """
-        shape: tuple[int, ...] | list[int] = getattr(kwargs, "get")("shape", ())
-        if isinstance(shape, list):
-            shape = tuple(shape)
-        fill_value: float = getattr(kwargs, "get")("fill_value", 0.0)
-        dtype: str = getattr(kwargs, "get")("dtype", "float32")
+        raw_sh: EagerValue = as_callable(_get_attr(kwargs, "get"))("shape", ())
+        shape: tuple[int | str, ...] = tuple(as_int_list(raw_sh)) if isinstance(raw_sh, list) else as_shape(raw_sh)
+        fill_value: float = as_float(as_callable(_get_attr(kwargs, "get"))("fill_value", 0.0))
+        dtype: str = as_str(as_callable(_get_attr(kwargs, "get"))("dtype", "float32"))
         dt: str = f"mx.{dtype}" if dtype else "None"
         return f"mx.full({shape}, {fill_value}, dtype={dt})"
 
@@ -709,7 +723,7 @@ class MLXShapeOpsVisitor:
         Returns:
             str: Result.
         """
-        axes: tuple[int, ...] | None = getattr(kwargs, "get")("axes", None)
+        axes: EagerValue = as_callable(_get_attr(kwargs, "get"))("axes", None)
         return f"axes={axes}" if axes is not None else ""
 
     def _format_random_categorical(self, input_vars: list[str], kwargs: EagerValue) -> str:
@@ -722,7 +736,7 @@ class MLXShapeOpsVisitor:
         Returns:
             str: Result.
         """
-        num_samples: int = getattr(kwargs, "get")("num_samples", 1)
+        num_samples: int = as_int(as_callable(_get_attr(kwargs, "get"))("num_samples", 1))
         return f"mx.random.categorical({input_vars[0]}, num_samples={num_samples})"
 
     def visit_Concatenate(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:

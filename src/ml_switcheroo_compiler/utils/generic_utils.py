@@ -7,7 +7,6 @@ import random
 import sys
 import tarfile
 import time
-import typing
 import urllib.request
 import zipfile
 from collections.abc import Iterable
@@ -17,7 +16,7 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, as_float, as_tensor
 from ml_switcheroo_compiler.core import config
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.utils.serialization_utils import (
     CustomObjectScope,
     custom_object_scope,
@@ -252,7 +251,7 @@ class Progbar:
         self._last_update = 0.0
 
         self.state = ProgbarState(
-            dynamic_display=hasattr(sys.stdout, "isatty") and sys.stdout.isatty(),
+            dynamic_display=_has_attr(sys.stdout, "isatty") and sys.stdout.isatty(),
             total_width=0,
             seen_so_far=0,
             values=self._values,
@@ -268,7 +267,7 @@ class Progbar:
             current (int): Current step index.
             values (TensorOrScalar): Iterable of `(metric_name, metric_value)` pairs.
         """
-        pairs: Iterable[tuple[TensorOrScalar, TensorOrScalar]] = typing.cast("Iterable[tuple[TensorOrScalar, TensorOrScalar]]", values) if isinstance(values, Iterable) else ()
+        pairs: Iterable[tuple[TensorOrScalar, TensorOrScalar]] = _cast_val("Iterable[tuple[TensorOrScalar, TensorOrScalar]]", values) if isinstance(values, Iterable) else ()
         for item in pairs:
             k = str(item[0])
             v = float(as_float(item[1]))
@@ -387,7 +386,8 @@ def is_interactive_logging_enabled(*args: str | int | bool | None, **kwargs: str
         bool: True if interactive logging is enabled, else False.
     """
     del args, kwargs
-    return getattr(config._state.env, "interactive_logging", False)
+    _typed_ret_1: bool = _get_attr(config._state.env, "interactive_logging", False)
+    return _typed_ret_1
 
 
 def is_symbolic_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> bool:
@@ -439,7 +439,7 @@ def standardize_dtype(*args: TensorOrScalar, **kwargs: AttrValue) -> str | None:
     if not args or args[0] is None:
         return None
     dtype = args[0]
-    if hasattr(dtype, "name"):
+    if _has_attr(dtype, "name"):
         return str(dtype.name).lower()
     val_str = str(dtype).lower()
     if val_str.startswith("<class '") and val_str.endswith("'>"):
@@ -599,7 +599,7 @@ class bounding_boxes:
         if src_lower == tgt_lower:
             return as_tensor(arr)
 
-        coords = typing.cast(
+        coords = _cast_val(
             "tuple[EagerTensorProtocol, ...]",
             cls._unpack_to_xyxy(arr, source, src_lower, image_shape),
         )

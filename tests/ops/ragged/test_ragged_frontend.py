@@ -10,6 +10,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.ragged.frontend import (
     _ragged_op,
@@ -76,8 +77,8 @@ def test_ragged_frontend_eager_dispatch() -> None:
 
         # Test with no args in eager mode (hits args[0] else branch)
         res_no_args = _ragged_op("RaggedConstant")
-        assert as_tensor(getattr(res_no_args, "dtype")) == "float32"
-        assert "cpu" in str(as_tensor(getattr(res_no_args, "device")))
+        assert as_tensor(_get_attr(res_no_args, "dtype")) == "float32"
+        assert "cpu" in str(as_tensor(_get_attr(res_no_args, "device")))
 
 
 def test_ragged_frontend_tracing_dispatch() -> None:

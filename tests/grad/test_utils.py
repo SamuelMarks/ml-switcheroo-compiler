@@ -11,6 +11,7 @@ import pytest
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.utils import _compute_grad_and_value, _convert_to_tensors, _get_inputs_dict, value_and_grad_wrt_vars
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
@@ -160,12 +161,12 @@ def test_grad_utils_extra() -> None:
     with patch("ml_switcheroo_compiler.backends.registry.get_active_backend") as mock_backend:
         mock_backend.return_value.asarray.return_value = np.array([1.0], dtype=np.float64)
         res = _to_original_type(1.0, t)
-        assert getattr(res, "dtype", None) == DType.Float64
+        assert _get_attr(res, "dtype", None) == DType.Float64
 
         mock_backend.return_value.asarray.return_value = np.array([1], dtype=np.int32)
         res = _to_original_type(1, t)
-        assert getattr(res, "dtype", None) == DType.Int32
+        assert _get_attr(res, "dtype", None) == DType.Int32
 
         mock_backend.return_value.asarray.return_value = np.array([True], dtype=bool)
         res = _to_original_type(True, t)
-        assert getattr(res, "dtype", None) == DType.Bool
+        assert _get_attr(res, "dtype", None) == DType.Bool

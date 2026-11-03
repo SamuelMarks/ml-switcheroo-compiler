@@ -8,6 +8,7 @@ import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization.formats.h5 import H5WeightFormat
 from tests.testing_utils import as_callable, as_tensor
 
@@ -65,7 +66,7 @@ def test_h5_load_save_backend(mocker: EagerTensorProtocol) -> None:
     """
     fmt = H5WeightFormat()
     mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-    setattr(mock_backend.load_h5, "return_value", {"a": 1})
+    _set_attr(mock_backend.load_h5, "return_value", {"a": 1})
     assert as_tensor(fmt.load("test.h5")) == as_tensor({"a": 1})
     as_callable(fmt.save)({"a": 1}, "test.h5")
     mock_backend.save_h5.assert_called_with({"a": 1}, "test.h5")

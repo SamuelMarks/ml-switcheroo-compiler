@@ -9,6 +9,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 
 if typing.TYPE_CHECKING:
@@ -44,16 +45,16 @@ def test_gru_coverage() -> None:
 
     orig_matmul = gru_mod.matmul
     orig_gates = gru_mod._compute_gru_gates
-    setattr(gru_mod, "matmul", mock_matmul)
-    setattr(gru_mod, "_compute_gru_gates", mock_gates)
+    _set_attr(gru_mod, "matmul", mock_matmul)
+    _set_attr(gru_mod, "_compute_gru_gates", mock_gates)
     try:
         res = gru_mod.gru_cell(t_in, t_state, w, rw, b)
         assert res == ("hidden", "hidden")
         res = gru_mod.gru_cell(t_in, t_state, w, rw)
         assert res == ("hidden", "hidden")
     finally:
-        setattr(gru_mod, "matmul", orig_matmul)
-        setattr(gru_mod, "_compute_gru_gates", orig_gates)
+        _set_attr(gru_mod, "matmul", orig_matmul)
+        _set_attr(gru_mod, "_compute_gru_gates", orig_gates)
 
     assert gru_mod.Gru().infer_shape(t_in) is t_in
     assert gru_mod.Gru().infer_shape() == ()
@@ -71,11 +72,11 @@ def test_gru_coverage() -> None:
             return "gru_res"
 
     orig_backend = gru_mod.get_active_backend
-    setattr(gru_mod, "get_active_backend", lambda: MockBackend())
+    _set_attr(gru_mod, "get_active_backend", lambda: MockBackend())
     try:
         assert gru_mod.gru(t_in) == "gru_res"
     finally:
-        setattr(gru_mod, "get_active_backend", orig_backend)
+        _set_attr(gru_mod, "get_active_backend", orig_backend)
 
     config.eager_mode = False
     orig_emit = gru_mod._emit_shape_node
@@ -89,9 +90,9 @@ def test_gru_coverage() -> None:
         """
         return "emitted"
 
-    setattr(gru_mod, "_emit_shape_node", dummy_emit)
+    _set_attr(gru_mod, "_emit_shape_node", dummy_emit)
     try:
         assert gru_mod.gru(t_in) == "emitted"
     finally:
-        setattr(gru_mod, "_emit_shape_node", orig_emit)
+        _set_attr(gru_mod, "_emit_shape_node", orig_emit)
         config.eager_mode = True

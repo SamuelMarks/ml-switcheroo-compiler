@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.tracing.autograph import LoopOptions, do_not_convert, set_loop_options
 from tests.testing_utils import as_callable, as_tensor
 
@@ -35,7 +36,7 @@ def test_do_not_convert() -> None:
         return x + 1
 
     assert as_callable(dummy_func)(5) == 6
-    assert bool(as_tensor(getattr(dummy_func, "__wrapped__"))._autograph_do_not_convert) is True
+    assert bool(as_tensor(_get_attr(dummy_func, "__wrapped__"))._autograph_do_not_convert) is True
 
     @as_callable(do_not_convert)()
     def dummy_func2(x: int) -> int:

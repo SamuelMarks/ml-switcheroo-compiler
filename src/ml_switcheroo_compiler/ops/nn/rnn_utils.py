@@ -8,7 +8,7 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor
 from ml_switcheroo_compiler.core.config import config as global_config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.binary import add, multiply
 from ml_switcheroo_compiler.ops.control_flow import scan as cf_scan
@@ -34,7 +34,7 @@ class _PositionalRNNModel(pydantic.BaseModel):
             *args (TensorOrScalar): Positional field values.
             **kwargs (TensorOrScalar): Keyword field values.
         """
-        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
 
 
 class RNNConfig(_PositionalRNNModel):
@@ -116,8 +116,8 @@ def scan(
         carry = init
         ys = []
 
-        for x in getattr(xs_unstacked, "__iter__")():
-            carry, y = getattr(invoke_callable(fn_callable, carry, x), "__iter__")()
+        for x in _get_attr(xs_unstacked, "__iter__")():
+            carry, y = _get_attr(invoke_callable(fn_callable, carry, x), "__iter__")()
             ys.append(y)
 
         carry_tup: tuple[Tensor, ...] = tuple(carry)
@@ -137,12 +137,12 @@ def scan(
                 tuple[tuple[Tensor, ...], Tensor]: Updated carry and step output.
             """
             res_step = invoke_callable(fn_callable, c, x_elem)
-            c_next, y_next = getattr(res_step, "__iter__")()
+            c_next, y_next = _get_attr(res_step, "__iter__")()
             c_tup: tuple[Tensor, ...] = tuple(c_next) if isinstance(c_next, (list, tuple)) else (as_tensor_obj(c_next),)
             return c_tup, as_tensor_obj(y_next)
 
         scan_res = cf_scan(_step_fn, init, xs, conf.length)
-        s_carry, s_y = getattr(scan_res, "__iter__")()
+        s_carry, s_y = _get_attr(scan_res, "__iter__")()
         return s_carry, as_tensor_obj(s_y)
 
 
@@ -241,7 +241,7 @@ def rnn(
         Returns:
             tuple: Result.
         """
-        out, new_carry = getattr(cell_callable(x, carry), "__iter__")()
+        out, new_carry = _get_attr(cell_callable(x, carry), "__iter__")()
         return new_carry, out
 
     final_state, outputs = scan(
@@ -334,7 +334,7 @@ class RNNCellDropoutWrapper:
         """
         if self._config.input_keep_prob < 1.0:
             inputs = as_tensor_obj(dropout(inputs, rate=1.0 - self._config.input_keep_prob))
-        out, new_state = getattr(as_callable(self._cell)(inputs, state, **kwargs), "__iter__")()
+        out, new_state = _get_attr(as_callable(self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._config.output_keep_prob < 1.0:
             out = dropout(out, rate=1.0 - self._config.output_keep_prob)
         return out, new_state
@@ -365,7 +365,7 @@ class RNNCellResidualWrapper:
         Returns:
             tuple: Result.
         """
-        out, new_state = getattr(as_callable(self._cell)(inputs, state, **kwargs), "__iter__")()
+        out, new_state = _get_attr(as_callable(self._cell)(inputs, state, **kwargs), "__iter__")()
         if self._residual_fn is not None:
             out = as_callable(self._residual_fn)(inputs, out)
         else:

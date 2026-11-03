@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.backends.sparse.types import (
     CSCTensor,
     CSRTensor,
 )
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -61,14 +61,14 @@ class SparseProfiler:
         for k, val in inputs.items():
             if isinstance(val, (COOTensor, CSRTensor, CSCTensor)):
                 arr_dict[k] = val
-            elif hasattr(val, "coords") and hasattr(val, "data") and hasattr(val, "shape"):
+            elif _has_attr(val, "coords") and _has_attr(val, "data") and _has_attr(val, "shape"):
                 arr_dict[k] = COOTensor(
-                    indices=_SP_BACKEND.asarray(getattr(val, "coords")),
-                    values=_SP_BACKEND.asarray(getattr(val, "data")),
-                    shape=as_shape(getattr(val, "shape")),
+                    indices=_SP_BACKEND.asarray(_get_attr(val, "coords")),
+                    values=_SP_BACKEND.asarray(_get_attr(val, "data")),
+                    shape=as_shape(_get_attr(val, "shape")),
                 )
-            elif hasattr(val, "shape") and not isinstance(val, (list, tuple)):
-                dense_val = getattr(val, "todense")() if hasattr(val, "todense") else val
+            elif _has_attr(val, "shape") and not isinstance(val, (list, tuple)):
+                dense_val = _get_attr(val, "todense")() if _has_attr(val, "todense") else val
                 arr_dict[k] = COOTensor.from_dense(dense_val)
             elif isinstance(val, (list, tuple)):
                 np_arr = _SP_BACKEND.asarray(val, dtype=_SP_BACKEND.float32)
@@ -76,8 +76,8 @@ class SparseProfiler:
             else:
                 arr_dict[k] = val
 
-        sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
-        input_keys = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
+        input_keys = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
         if input_keys and all(k in arr_dict for k in input_keys):
             return [arr_dict[k] for k in input_keys]
         return list(arr_dict.values())
@@ -123,7 +123,7 @@ class SparseProfiler:
         del device
 
         sparse_inputs = self._prepare_inputs(graph, inputs)
-        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
 
         compiled_fn: TypedVariadicCallable[EagerValue] | None = None
         if has_ops:
@@ -146,7 +146,7 @@ class SparseProfiler:
 
             accum = sparse_inputs[0]
             for t in sparse_inputs[1:]:
-                if hasattr(accum, "__add__"):
+                if _has_attr(accum, "__add__"):
                     accum = as_tensor(accum) + as_tensor(t)
             return accum
 

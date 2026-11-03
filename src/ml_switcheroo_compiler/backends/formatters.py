@@ -5,6 +5,7 @@ from __future__ import annotations
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 class FormatterContext(pydantic.BaseModel):
@@ -118,7 +119,7 @@ class FallbackHandler:
         """
         ctx: FormatterContext = FormatterContext(
             prefix=prefix,
-            op_type=getattr(node, "op_type", "Unknown"),
+            op_type=_get_attr(node, "op_type", "Unknown"),
             input_vars=input_vars,
             kwargs=kwargs,
         )

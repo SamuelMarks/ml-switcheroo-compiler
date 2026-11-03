@@ -10,7 +10,7 @@ import typing
 import yaml
 
 from ml_switcheroo_compiler.backends.registry import as_int
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
 from ml_switcheroo_compiler.transforms.passes.config_models import (
     ComputeCosts,
@@ -74,7 +74,7 @@ def _match_node_inputs(
     if len(node.inputs) != len(p_inputs):
         return False
 
-    if getattr(pattern, "commutative", False) and len(p_inputs) == 2:
+    if _get_attr(pattern, "commutative", False) and len(p_inputs) == 2:
         orig_map = dict(capture_map)
         if match_pattern(graph, node.inputs[0], p_inputs[0], capture_map) and match_pattern(graph, node.inputs[1], p_inputs[1], capture_map):
             return True
@@ -108,7 +108,7 @@ def match_pattern(
     Returns:
         bool: True if the pattern matches, False otherwise.
     """
-    is_wildcard = getattr(pattern, "wildcard", False) or pattern.op_type in ("*", "any")
+    is_wildcard = _get_attr(pattern, "wildcard", False) or pattern.op_type in ("*", "any")
     if not isinstance(node_id, str):
         if (pattern.op_type is not None and not is_wildcard) or pattern.inputs is not None:
             return False
@@ -210,7 +210,7 @@ class PatternMatchingEngine:
         for rule in self.rules:
             capture_map: dict[str, str | IRNode] = {}
             if match_pattern(graph, node_id, rule.pattern, capture_map):
-                replacements: dict[str, IRNode] | None = getattr(rule, "apply")(graph, capture_map)
+                replacements: dict[str, IRNode] | None = _get_attr(rule, "apply")(graph, capture_map)
                 if replacements:
                     if self.cost_model and not self.cost_model.is_fusion_valid(replacements):
                         continue
@@ -237,7 +237,7 @@ class PatternMatchingEngine:
         for n in new_nodes.values():
             n.inputs = [id_map.get(in_id, in_id) for in_id in n.inputs]
 
-        if hasattr(graph, "inputs"):
+        if _has_attr(graph, "inputs"):
             graph.inputs = [id_map.get(in_id, in_id) for in_id in graph.inputs]
         graph.outputs = [id_map.get(out_id, out_id) for out_id in graph.outputs]
 
@@ -512,8 +512,8 @@ class MemoryAwareCostModel:
         memory_sizes = self.config.get("memory_sizes", {})
 
         for node in replacements.values():
-            shape: tuple[int | str, ...] | None = getattr(node, "shape_metadata", None)
-            if shape and not getattr(node, "is_dynamic_shape", False):
+            shape: tuple[int | str, ...] | None = _get_attr(node, "shape_metadata", None)
+            if shape and not _get_attr(node, "is_dynamic_shape", False):
                 if any(isinstance(d, str) for d in shape):
                     continue
 
@@ -599,7 +599,7 @@ def _extract_node_ops_and_expr(node: IRNode) -> tuple[list[str], str]:
         tuple[list[str], str]: List of constituent op names and scalar C expression string.
     """
     if node.op_type == "FusedElementwise":
-        return list(getattr(node.attributes.get("fused_ops", []), "__iter__")()), str(node.attributes.get("scalar_expr", "0.0f"))
+        return list(_get_attr(node.attributes.get("fused_ops", []), "__iter__")()), str(node.attributes.get("scalar_expr", "0.0f"))
     args = [f"in_{k}" for k in range(len(node.inputs))]
     return [node.op_type], _get_scalar_expression_snippet(node.op_type, args)
 
@@ -660,10 +660,10 @@ def _count_consumers(graph: IRGraph) -> dict[str, int]:
     """
     consumer_counts: dict[str, int] = {node_id: 0 for node_id in graph.nodes}
     for node in graph.nodes.values():
-        for inp in getattr(node, "inputs", []):
+        for inp in _get_attr(node, "inputs", []):
             if inp in consumer_counts:
                 consumer_counts[inp] += 1
-    for out_id in getattr(graph, "outputs", []):
+    for out_id in _get_attr(graph, "outputs", []):
         if out_id in consumer_counts:
             consumer_counts[out_id] += 1
     return consumer_counts
@@ -699,8 +699,8 @@ def _try_fuse_cluster_step(graph: IRGraph, consumer_counts: dict[str, int]) -> b
             if not _is_fusable_elementwise_node(producer) or consumer_counts.get(inp_id, 0) != 1:
                 continue
             assert producer is not None
-            p_shape = getattr(producer, "shape_metadata", None)
-            n_shape = getattr(node, "shape_metadata", None)
+            p_shape = _get_attr(producer, "shape_metadata", None)
+            n_shape = _get_attr(node, "shape_metadata", None)
             if p_shape and n_shape and p_shape != n_shape:
                 continue
             _fuse_single_edge(graph, node, inp_id, i, producer)
@@ -717,7 +717,7 @@ def fuse_elementwise_clusters(graph: IRGraph) -> bool:
     Returns:
         bool: True if any elementwise DAG clusters were fused, False otherwise.
     """
-    if not getattr(graph, "nodes", None):
+    if not _get_attr(graph, "nodes", None):
         return False
 
     modified: bool = False
@@ -805,7 +805,7 @@ def fuse_conv_bias_relu(graph: IRGraph) -> bool:
     Returns:
         bool: True if any Conv-Bias-Activation sequences were fused, False otherwise.
     """
-    if not getattr(graph, "nodes", None):
+    if not _get_attr(graph, "nodes", None):
         return False
 
     modified: bool = False
@@ -870,7 +870,7 @@ def fuse_elementwise_activation(graph: IRGraph) -> bool:
     Returns:
         bool: True if any elementwise-activation patterns were fused, False otherwise.
     """
-    if not getattr(graph, "nodes", None):
+    if not _get_attr(graph, "nodes", None):
         return False
 
     modified: bool = False
@@ -918,7 +918,7 @@ def fuse_horizontal_patterns(graph: IRGraph) -> bool:
     Returns:
         bool: True if horizontal fusions were performed, False otherwise.
     """
-    if not getattr(graph, "nodes", None):
+    if not _get_attr(graph, "nodes", None):
         return False
 
     modified: bool = False
@@ -936,8 +936,8 @@ def fuse_horizontal_patterns(graph: IRGraph) -> bool:
 
         for _key, siblings in groups.items():
             if len(siblings) >= 2:
-                first_shape = getattr(siblings[0], "shape_metadata", None)
-                compatible = [s for s in siblings if getattr(s, "shape_metadata", None) == first_shape and (s.op_type == siblings[0].op_type or (s.op_type in ELEMENTWISE_OPS and siblings[0].op_type in ELEMENTWISE_OPS))]
+                first_shape = _get_attr(siblings[0], "shape_metadata", None)
+                compatible = [s for s in siblings if _get_attr(s, "shape_metadata", None) == first_shape and (s.op_type == siblings[0].op_type or (s.op_type in ELEMENTWISE_OPS and siblings[0].op_type in ELEMENTWISE_OPS))]
                 if len(compatible) >= 2:
                     fused_id = f"horizontal_{'_'.join(s.id for s in compatible)}"
                     fused_ops = [s.op_type for s in compatible]
@@ -1016,7 +1016,7 @@ def operator_fusion_pass(graph: IRGraph) -> bool:
 
     engine: PatternMatchingEngine = PatternMatchingEngine(
         rules,
-        typing.cast("TypedVariadicCallable[MemoryAwareCostModel]", MemoryAwareCostModel)(cost_model_config) if cost_model_config else None,
+        _cast_val("TypedVariadicCallable[MemoryAwareCostModel]", MemoryAwareCostModel)(cost_model_config) if cost_model_config else None,
     )
     pattern_modified: bool = engine.apply_passes(graph)
     if pattern_modified:

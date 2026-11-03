@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int
+from ml_switcheroo_compiler.core.shape import _has_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
@@ -22,7 +23,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not hasattr(self.generator, "_cholesky_vjp_imported"):
+        if not _has_attr(self.generator, "_cholesky_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _cholesky_vjp_eager")
             self.generator._cholesky_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()
@@ -40,7 +41,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not hasattr(self.generator, "_lu_vjp_imported"):
+        if not _has_attr(self.generator, "_lu_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _lu_vjp_eager")
             self.generator._lu_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()
@@ -206,7 +207,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not hasattr(self.generator, "_qr_vjp_imported"):
+        if not _has_attr(self.generator, "_qr_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _qr_vjp_eager")
             self.generator._qr_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()
@@ -223,7 +224,7 @@ class LinearAlgebraASTVisitor(CommonASTVisitor):
         Returns:
             str: Result.
         """
-        if not hasattr(self.generator, "_svd_vjp_imported"):
+        if not _has_attr(self.generator, "_svd_vjp_imported"):
             self.generator.add_line("    from ml_switcheroo_compiler.backends.eager.linalg import _svd_vjp_eager")
             self.generator._svd_vjp_imported = True
         pfx: str = self.generator.get_fallback_prefix()

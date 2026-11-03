@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import operator
 import os
 import typing
 from collections.abc import Sequence
@@ -10,7 +11,7 @@ from collections.abc import Sequence
 import yaml
 from pydantic import BaseModel, Field
 
-from ml_switcheroo_compiler.backends.eager_registry import as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import _get_attr, _has_attr, as_tensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
 
@@ -136,11 +137,11 @@ def _resolve_custom_code(custom_code: str, backend_module: AttributeValue | None
         for k in dir(backend_module):
             if not k.startswith("__"):
                 try:
-                    local_env[k] = getattr(backend_module, k)
+                    local_env[k] = as_tensor(operator.attrgetter(k)(backend_module))
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     try:
-        return typing.cast("AttributeValue | None", eval(custom_code, local_env))
+        return as_tensor(eval(custom_code, local_env))
     except Exception:
         return None
 
@@ -160,7 +161,7 @@ def _resolve_by_import(api_str: str) -> AttributeValue | None:
 
         mod: AttributeValue = importlib.import_module(parts[0])
         for p in parts[1:]:
-            mod = getattr(mod, p)
+            mod = as_tensor(operator.attrgetter(p)(mod))
         return mod
     except Exception:
         return None
@@ -185,10 +186,10 @@ def _resolve_from_backend_module(api_str: str, backend_module: AttributeValue) -
         sub_parts = parts
     curr: AttributeValue = backend_module
     for p in sub_parts:
-        if hasattr(curr, p):
-            curr = getattr(curr, p)
+        if _has_attr(curr, p):
+            curr = as_tensor(_get_attr(curr, p))
         else:
-            return getattr(backend_module, parts[-1], None) if hasattr(backend_module, parts[-1]) else None
+            return as_tensor(_get_attr(backend_module, parts[-1], None)) if _has_attr(backend_module, parts[-1]) else None
     return curr
 
 
@@ -222,7 +223,7 @@ def resolve_target_api(
     if res is not None:
         return res
 
-    return getattr(backend_module, api_str, None) if backend_module else None
+    return as_tensor(_get_attr(backend_module, api_str, None)) if backend_module else None
 
 
 def translate_kwargs(kwarg_translations: dict[str, str], kwargs: dict[str, AttributeValue]) -> dict[str, AttributeValue]:
@@ -273,19 +274,22 @@ def dispatch_eager_op(
     if func is None or not callable(func):
         raise BackendNotSupportedError(f"Operation '{op_type}' target API '{op_spec.target_api}' could not be resolved for {backend_name}.")
 
-    kwarg_trans: dict[str, str] = dict(getattr(op_spec, "kwarg_translations", {}) or {})
-    kwarg_map: dict[str, str | None] = getattr(op_spec, "kwarg_map", {}) or {}
+    raw_kt = _get_attr(op_spec, "kwarg_translations", {})
+    kwarg_trans: dict[str, str] = dict(raw_kt) if isinstance(raw_kt, dict) else {}
+    raw_km = _get_attr(op_spec, "kwarg_map", {})
+    kwarg_map: dict[str, str | None] = raw_km if isinstance(raw_km, dict) else {}
     for src_k, dst_k in kwarg_map.items():
         if dst_k and src_k not in kwarg_trans:
             kwarg_trans[src_k] = dst_k
     translated_kwargs = translate_kwargs(kwarg_trans, kwargs)
-    default_kwargs = getattr(op_spec, "default_kwargs", {}) or {}
+    raw_dk = _get_attr(op_spec, "default_kwargs", {})
+    default_kwargs = raw_dk if isinstance(raw_dk, dict) else {}
     for def_k, def_v in default_kwargs.items():
         if def_k not in translated_kwargs:
             translated_kwargs[def_k] = def_v
 
-    if getattr(op_spec, "is_method", False) and len(args) > 0:
-        method = getattr(args[0], op_spec.target_api, None)
+    if bool(_get_attr(op_spec, "is_method", False)) and len(args) > 0:
+        method = _get_attr(args[0], op_spec.target_api, None)
         if method is not None and callable(method):
             return as_tensor(method(*args[1:], **translated_kwargs))
 

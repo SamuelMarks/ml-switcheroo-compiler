@@ -30,7 +30,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.advanced_indexing import (
     _tensor_scatter_min,
     _tensor_scatter_update,
 )
-from ml_switcheroo_compiler.backends.numpy.eager.indexing import IndexingContext
+from ml_switcheroo_compiler.core.shape import _cast_val
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -234,7 +234,7 @@ def test_np_scatter_add() -> None:
 def test_np_scatter_apply() -> None:
     """Test _np_scatter_apply."""
     x = np.zeros((2, 2))
-    res = _np_scatter_apply(np, typing.cast("IndexingContext", None), x)
+    res = _np_scatter_apply(np, _cast_val("IndexingContext", None), x)
     as_callable(np.testing.assert_allclose)(res, x)
 
 

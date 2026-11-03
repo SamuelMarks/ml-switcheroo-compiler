@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 from ml_switcheroo_compiler.backends.edge.webgpu import WebGPUCodeGenerator
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.ir.shape_system import SymInt
 
@@ -40,7 +41,7 @@ def test_webgpu_missing_coverage() -> None:
             g2.nodes["dummy"] = n_dummy2
             g2.inputs = ["dummy"]
             g2.outputs = ["ar"]
-            object.__setattr__(g2, "attributes", {"distributed": True})
+            _obj_set_attr(g2, "attributes", {"distributed": True})
             gen2 = WebGPUCodeGenerator(g2)
             gen2.generate()
     assert gen is not None

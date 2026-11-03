@@ -9,6 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_binary as mb
 from ml_switcheroo_compiler.backends.numpy.eager.math_binary import _np_polygamma, _np_zeta
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -17,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 def test_math_binary_coverage() -> None:
     """Test function test_math_binary_coverage."""
-    ops = [getattr(mb, name) for name in dir(mb) if name.startswith("_") and callable(getattr(mb, name))]
+    ops = [_get_attr(mb, name) for name in dir(mb) if name.startswith("_") and callable(_get_attr(mb, name))]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)
@@ -94,6 +95,6 @@ def test_polygamma_zeta_kwargs() -> None:
     """Test function test_polygamma_zeta_kwargs."""
     a = np.array([1.0])
     res1 = _np_polygamma(np, a, x=a)
-    assert as_tensor(getattr(res1, "shape")) == (1,)
+    assert as_tensor(_get_attr(res1, "shape")) == (1,)
     res2 = _np_zeta(np, a, q=a)
-    assert as_tensor(getattr(res2, "shape")) == (1,)
+    assert as_tensor(_get_attr(res2, "shape")) == (1,)

@@ -9,6 +9,7 @@ from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.keras.generator import KerasCodeGenerator, KerasSignatureBuilder, KerasTensorManipulator
 from ml_switcheroo_compiler.backends.keras.keras_mixins import KerasAudioVisitor, KerasVisionVisitor
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 from tests.testing_utils import as_callable, as_tensor, as_tensor_list
 
@@ -122,12 +123,12 @@ def test_keras_generator() -> None:
         assert "import keras\n" in imports
         assert "import tmp" in imports
         assert "def dummy(): pass" in imports
-    setattr(gen, "code", [])
+    _set_attr(gen, "code", [])
     gen._generate_function_signature()
     assert "def get_model() -> object:" in gen.code[-1]
     assert gen.keras_input_vars == []
-    setattr(gen, "keras_input_vars", ["i"])
-    setattr(gen, "keras_output_vars", ["o"])
+    _set_attr(gen, "keras_input_vars", ["i"])
+    _set_attr(gen, "keras_output_vars", ["o"])
     from ml_switcheroo_compiler.backends.keras.generator import KerasSignatureBuilder
 
     as_callable(gen.code.append)(as_callable(KerasSignatureBuilder.get_return_block)(gen.keras_input_vars, gen.keras_output_vars))
@@ -148,8 +149,8 @@ def test_keras_generator_save_load(tmp_path: EagerTensorProtocol) -> None:
     filez = str(tmp_path / "dummy.npz")
     KerasCodeGenerator.savez(filez, arr, arg2=[4, 5])
     resz = KerasCodeGenerator.load(filez)
-    assert as_tensor(getattr(resz, "__getitem__")("arr_0")) == arr
-    assert as_tensor(getattr(resz, "__getitem__")("arg2")) == [4, 5]
+    assert as_tensor(_get_attr(resz, "__getitem__")("arr_0")) == arr
+    assert as_tensor(_get_attr(resz, "__getitem__")("arg2")) == [4, 5]
     filezc = str(tmp_path / "dummy_comp.npz")
     KerasCodeGenerator.savez_compressed(filezc, arr, arg2=[4, 5])
     import gzip
@@ -217,7 +218,7 @@ def test_keras_generator_return_only_outputs() -> None:
         gen.keras_input_vars = []
         gen.keras_output_vars = ["out_var"]
 
-    setattr(gen, "_generate_body", mock_generate_body)
+    _set_attr(gen, "_generate_body", mock_generate_body)
     code = gen.generate()
     assert "return out_var" in code
 
@@ -239,7 +240,7 @@ def test_keras_generator_return_block_both_inputs_and_outputs() -> None:
         gen.keras_input_vars = ["in_var"]
         gen.keras_output_vars = ["out_var"]
 
-    setattr(gen, "_generate_body", mock_generate_body)
+    _set_attr(gen, "_generate_body", mock_generate_body)
     code = gen.generate()
     assert "return keras.Model(inputs=[in_var], outputs=[out_var])" in code
 
@@ -261,7 +262,7 @@ def test_keras_generator_empty_inputs_and_outputs() -> None:
         gen.keras_input_vars = ["in0"]
         gen.keras_output_vars = []
 
-    setattr(gen, "_generate_body", mock_generate_body)
+    _set_attr(gen, "_generate_body", mock_generate_body)
     code = gen.generate()
     assert "pass" in code
 
@@ -277,11 +278,11 @@ def test_keras_generator_compile_aot() -> None:
     with patch.object(gen, "generate", return_value="def get_model(): return lambda x, **kw: x + 1"):
         artifact = gen.compile_aot(graph)
         assert artifact(41) == 42
-        assert as_tensor(getattr(artifact.metadata, "__getitem__")("backend")) == "keras"
+        assert as_tensor(_get_attr(artifact.metadata, "__getitem__")("backend")) == "keras"
     gen_no_get_model = KerasCodeGenerator(graph)
     with patch.object(gen_no_get_model, "generate", return_value="x_const = 10"):
         artifact_no_gm = gen_no_get_model.compile_aot(graph)
-        assert as_tensor(getattr(artifact_no_gm.metadata, "__getitem__")("model")) is None
+        assert as_tensor(_get_attr(artifact_no_gm.metadata, "__getitem__")("model")) is None
     g_single = IRGraph()
     node_in = IRNode(id="in0", op_type="Input", inputs=[], shape_metadata=[2])
     node_id = IRNode(id="out0", op_type="Identity", inputs=["in0"], shape_metadata=[2])
@@ -325,5 +326,5 @@ def test_keras_generator_compile_aot() -> None:
         art_multi = gen_multi.compile_aot(g_multi)
         res_multi = art_multi(np.array([5, 6]))
         assert as_callable(len)(res_multi) == 2
-        assert as_callable(np.array_equal)(as_tensor(getattr(res_multi, "__getitem__")(0)), as_callable(np.array)([5, 6]))
-        assert as_callable(np.array_equal)(as_tensor(getattr(res_multi, "__getitem__")(1)), as_callable(np.array)([5, 6]))
+        assert as_callable(np.array_equal)(as_tensor(_get_attr(res_multi, "__getitem__")(0)), as_callable(np.array)([5, 6]))
+        assert as_callable(np.array_equal)(as_tensor(_get_attr(res_multi, "__getitem__")(1)), as_callable(np.array)([5, 6]))

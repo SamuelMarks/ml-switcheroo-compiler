@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.tensorflow.generator import TensorFlowCodeGenerator
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 from tests.testing_utils import as_callable, as_tensor
 
@@ -49,7 +50,7 @@ def test_tf_generator_basics(tmp_path: EagerTensorProtocol) -> None:
     file_npz = tmp_path / "test.npz"
     TensorFlowCodeGenerator.savez(str(file_npz), a=arr)
     res_npz = TensorFlowCodeGenerator.load(str(file_npz))
-    as_callable(np.testing.assert_array_equal)(as_tensor(getattr(res_npz, "__getitem__")("a")), arr)
+    as_callable(np.testing.assert_array_equal)(as_tensor(_get_attr(res_npz, "__getitem__")("a")), arr)
 
     file_comp = tmp_path / "test_comp.npz"
     TensorFlowCodeGenerator.savez_compressed(str(file_comp), a=arr)

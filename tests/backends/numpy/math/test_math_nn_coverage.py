@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_nn as math_nn_module
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -51,6 +52,6 @@ def test_math_nn_ops() -> None:
     img = np.array([[1.0, 2.0], [3.0, 4.0]])
     filt = np.array([[1.0, 0.0], [0.0, 1.0]])
     raw_conv = math_nn_module._np_rawconv2d(np, img, filt)
-    assert as_tensor(getattr(raw_conv, "shape")) == (1, 1)
+    assert as_tensor(_get_attr(raw_conv, "shape")) == (1, 1)
     reg_raw_conv = numpy_eager_registry.get("RawConv2D")
-    assert as_tensor(getattr(as_callable(reg_raw_conv)(np, img, filt), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(as_callable(reg_raw_conv)(np, img, filt), "shape")) == (1, 1)

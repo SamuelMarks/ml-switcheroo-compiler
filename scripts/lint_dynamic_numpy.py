@@ -58,7 +58,7 @@ def check_for_prohibited_numpy_imports(directory: str) -> list[str]:
 
             for node in ast.walk(tree):
                 mod_val = _is_prohibited_dynamic_numpy_call(node)
-                if mod_val is not None and hasattr(node, "lineno"):
+                if mod_val is not None and isinstance(node, (ast.stmt, ast.expr)):
                     violations.append(f"{file_path}:{node.lineno}: Prohibited dynamic numpy import '{mod_val}' outside ml-switcheroo-compiler numpy/scipy module.")
     return violations
 

@@ -9,6 +9,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_creation as creation_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.linalg.linear_operator import (
     LinearOperatorIdentity,
     LinearOperatorScaledIdentity,
@@ -28,8 +29,8 @@ def test_math_creation_operations() -> None:
     """
     # Fromfunction
     fn_res = creation_mod._np_fromfunction_(np, lambda i, j: i + j, (2, 2), dtype=np.dtype(int))
-    assert as_tensor(getattr(fn_res, "shape")) == (2, 2)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Fromfunction")(np, lambda i, j: i + j, (2, 2), dtype=int), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(fn_res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Fromfunction")(np, lambda i, j: i + j, (2, 2), dtype=int), "shape")) == (2, 2)
 
     # Fromiter
     iter_res = creation_mod._np_fromiter_(np, [1, 2, 3], dtype=np.dtype(int))
@@ -53,8 +54,8 @@ def test_math_creation_operations() -> None:
     assert as_callable(np.array_equal)(as_callable(creation_mod._np_ones_)(np, (2, 3)), as_callable(np.ones)((2, 3)))
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("Ones")(np, (2, 3)), as_callable(np.ones)((2, 3)))
 
-    assert as_tensor(getattr(creation_mod._np_empty_(np, (2, 3)), "shape")) == (2, 3)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Empty")(np, (2, 3)), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(creation_mod._np_empty_(np, (2, 3)), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Empty")(np, (2, 3)), "shape")) == (2, 3)
 
     assert as_callable(np.array_equal)(as_callable(creation_mod._np_full_)(np, (2, 3), 7), as_callable(np.full)((2, 3), 7))
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("Full")(np, (2, 3), 7), as_callable(np.full)((2, 3), 7))
@@ -67,8 +68,8 @@ def test_math_creation_operations() -> None:
     assert as_callable(np.array_equal)(as_callable(creation_mod._np_ones_like_)(np, proto), as_callable(np.ones)((2, 2)))
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("OnesLike")(np, proto), as_callable(np.ones)((2, 2)))
 
-    assert as_tensor(getattr(creation_mod._np_empty_like_(np, proto), "shape")) == (2, 2)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("EmptyLike")(np, proto), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(creation_mod._np_empty_like_(np, proto), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("EmptyLike")(np, proto), "shape")) == (2, 2)
 
     assert as_callable(np.array_equal)(as_callable(creation_mod._np_full_like_)(np, proto, 9), as_callable(np.full)((2, 2), 9))
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("FullLike")(np, proto, 9), as_callable(np.full)((2, 2), 9))

@@ -9,7 +9,7 @@ import pydantic
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, get_op, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -125,7 +125,8 @@ class ActivityRegularization(OpDef):
         """
         if isinstance(x, (tuple, list)):
             return x
-        return getattr(x, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(x, "shape", ())
+        return _typed_ret_1
 
 
 @dispatch_eager("ActivityRegularization")
@@ -165,7 +166,8 @@ class Dropout1d(OpDef):
         Returns:
             The inferred shape, matching the input.
         """
-        return getattr(x, "shape", ())
+        _typed_ret_2: TensorOrScalar = _get_attr(x, "shape", ())
+        return _typed_ret_2
 
 
 def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScalar:
@@ -187,7 +189,7 @@ def dropout1d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScala
         backend = get_active_backend()
         data = backend.execute_op("Dropout1d", x.data, p=p, training=training)
         return Tensor(data, TensorConfig(x.shape, x.dtype, x.device))
-    return _emit_shape_node("Dropout1d", [x], {"p": p, "training": training}, getattr(x, "shape", ()), getattr(x, "dtype", None))
+    return _emit_shape_node("Dropout1d", [x], {"p": p, "training": training}, _get_attr(x, "shape", ()), _get_attr(x, "dtype", None))
 
 
 @register_op("Dropout2d")
@@ -206,7 +208,8 @@ class Dropout2d(OpDef):
         Returns:
             The inferred shape, matching the input shape.
         """
-        return getattr(x, "shape", ())
+        _typed_ret_3: TensorOrScalar = _get_attr(x, "shape", ())
+        return _typed_ret_3
 
 
 def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScalar:
@@ -224,15 +227,15 @@ def dropout2d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScala
     """
     if config.eager_mode:
         backend = get_active_backend()
-        data = backend.execute_op("Dropout2d", getattr(x, "data", x), p=p, training=training)
-        return Tensor(data, TensorConfig(getattr(data, "shape", ()), getattr(x, "dtype", None), getattr(x, "device", None)))
+        data = backend.execute_op("Dropout2d", _get_attr(x, "data", x), p=p, training=training)
+        return Tensor(data, TensorConfig(_get_attr(data, "shape", ()), _get_attr(x, "dtype", None), _get_attr(x, "device", None)))
 
     return _emit_shape_node(
         "Dropout2d",
         [x],
         {"p": p, "training": training},
-        getattr(x, "shape", ()),
-        getattr(x, "dtype", DType.Float32),
+        _get_attr(x, "shape", ()),
+        _get_attr(x, "dtype", DType.Float32),
     )
 
 
@@ -252,7 +255,8 @@ class Dropout3d(OpDef):
         Returns:
             The inferred shape, matching the input shape.
         """
-        return getattr(x, "shape", ())
+        _typed_ret_4: TensorOrScalar = _get_attr(x, "shape", ())
+        return _typed_ret_4
 
 
 def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScalar:
@@ -270,12 +274,12 @@ def dropout3d(x: Tensor, p: float = 0.5, training: bool = True) -> TensorOrScala
     """
     if config.eager_mode:
         backend = get_active_backend()
-        return backend.execute_op("Dropout3d", getattr(x, "data", x), p=p, training=training)
+        return backend.execute_op("Dropout3d", _get_attr(x, "data", x), p=p, training=training)
 
     return _emit_shape_node(
         "Dropout3d",
         [x],
         {"p": p, "training": training},
-        getattr(x, "shape", ()),
-        getattr(x, "dtype", DType.Float32),
+        _get_attr(x, "shape", ()),
+        _get_attr(x, "dtype", DType.Float32),
     )

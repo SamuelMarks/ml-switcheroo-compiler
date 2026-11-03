@@ -18,6 +18,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError, TracingError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _obj_del_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ir.state import create_read_variable
@@ -59,7 +60,7 @@ def test_proxy_tensor_math() -> None:
     b = ProxyTensor(id="b", shape=(2, 3))
     c = a + b
     assert c.shape == (2, 3)
-    assert as_tensor(getattr(c.data, "id")) != "a"
+    assert as_tensor(_get_attr(c.data, "id")) != "a"
     _ = a - b
     _ = a * b
     _ = a / b
@@ -74,7 +75,7 @@ def test_proxy_tensor_math() -> None:
     n = a @ m
     assert n.shape == (2, 4)
     graph = global_tracing_state.stop_tracing()
-    assert len(as_tensor(getattr(graph, "nodes"))) > 0
+    assert len(as_tensor(_get_attr(graph, "nodes"))) > 0
 
 
 def test_proxy_tensor_outside_context() -> None:
@@ -104,7 +105,7 @@ def test_tracer_add_node_with_ast_ref() -> None:
     n = LogicalNode(id="n1", op_type="Input", source_ast_ref="test:1")
     tape.add_node(n)
     out_graph = tape.stop_tracing()
-    assert as_tensor(getattr(as_tensor(getattr(out_graph, "nodes")), "__getitem__")("n1")).source_ast_ref == "test:1"
+    assert as_tensor(_get_attr(as_tensor(_get_attr(out_graph, "nodes")), "__getitem__")("n1")).source_ast_ref == "test:1"
 
 
 def test_proxy_tensor_assign_operations() -> None:
@@ -157,7 +158,7 @@ def test_proxy_tensor_assign_errors() -> None:
         var_proxy_2 = ProxyTensor(id="var_node", shape=(), dtype="float32")
         out = as_callable(var_proxy_2.assign)(42.0)
         assert out.shape == ()
-        assert as_tensor(getattr(as_tensor(getattr(global_tracing_state.active_graph, "nodes")), "__getitem__")(out.id)).op_type == "AssignVariable"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(global_tracing_state.active_graph, "nodes")), "__getitem__")(out.id)).op_type == "AssignVariable"
     finally:
         global_tracing_state.stop_tracing()
 
@@ -217,11 +218,11 @@ def _test_tracing_state_full_branch_coverage_part_1(_state: dict[str, EagerTenso
     assert state.active_graph is None
     g1 = state.start_tracing("Outer")
     assert state.is_tracing
-    assert as_tensor(getattr(state.active_graph, "name")) == "Outer"
+    assert as_tensor(_get_attr(state.active_graph, "name")) == "Outer"
     opts = SimpleNamespace(parallel_iterations=4, swap_memory=True, maximum_iterations=100, shape_invariants=[])
-    setattr(state, "current_loop_options", opts)
+    _set_attr(state, "current_loop_options", opts)
     g2 = state.start_tracing("Inner")
-    assert as_tensor(getattr(state.active_graph, "name")) == "Inner"
+    assert as_tensor(_get_attr(state.active_graph, "name")) == "Inner"
     assert len(state.graph_stack) == 1
     assert len(state.loop_options_stack) == 1
     node_with_ast = LogicalNode(id="n_ast", op_type="Relu")
@@ -230,10 +231,10 @@ def _test_tracing_state_full_branch_coverage_part_1(_state: dict[str, EagerTenso
     state.add_node(node_with_ast)
     assert node_with_ast.source_ast_ref == "custom_ref"
     assert node_with_ast.domain == "custom_domain"
-    getattr(_state, "update")({"LogicalNode": LogicalNode, "SimpleNamespace": SimpleNamespace, "TracingState": TracingState, "g1": g1})
-    getattr(_state, "update")({"g2": g2, "node_with_ast": node_with_ast, "opts": opts, "state": state})
-    getattr(_state, "update")({"sys": sys})
-    _state.update(locals())
+    _get_attr(_state, "update")({"LogicalNode": LogicalNode, "SimpleNamespace": SimpleNamespace, "TracingState": TracingState, "g1": g1})
+    _get_attr(_state, "update")({"g2": g2, "node_with_ast": node_with_ast, "opts": opts, "state": state})
+    _get_attr(_state, "update")({"sys": sys})
+    _state.update(_caller_locals())
 
 
 def _test_tracing_state_full_branch_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -243,20 +244,20 @@ def _test_tracing_state_full_branch_coverage_part_2(_state: dict[str, EagerTenso
         _state: Shared test state dictionary.
     """
     (LogicalNode, state, sys) = (_state["LogicalNode"], _state["state"], _state["sys"])
-    object.__setattr__(state.active_graph, "name", None)
+    _obj_set_attr(state.active_graph, "name", None)
     node_no_domain = LogicalNode(id="n_no_dom", op_type="Relu")
-    setattr(node_no_domain, "domain", "")
+    _set_attr(node_no_domain, "domain", "")
     state.add_node(node_no_domain)
     assert node_no_domain.domain == ""
-    setattr(state.active_graph, "name", "Inner")
+    _set_attr(state.active_graph, "name", "Inner")
     node_empty_domain = LogicalNode(id="n_emp_dom", op_type="Relu")
-    setattr(node_empty_domain, "domain", "")
+    _set_attr(node_empty_domain, "domain", "")
     state.add_node(node_empty_domain)
     assert node_empty_domain.domain == "Inner"
     config = sys.modules["ml_switcheroo_compiler.core.config"].config
     old_stream = config.current_stream
-    getattr(_state, "update")({"config": config, "node_empty_domain": node_empty_domain, "node_no_domain": node_no_domain, "old_stream": old_stream})
-    _state.update(locals())
+    _get_attr(_state, "update")({"config": config, "node_empty_domain": node_empty_domain, "node_no_domain": node_no_domain, "old_stream": old_stream})
+    _state.update(_caller_locals())
 
 
 def _test_tracing_state_full_branch_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -268,14 +269,14 @@ def _test_tracing_state_full_branch_coverage_part_3(_state: dict[str, EagerTenso
     (LogicalNode, config, old_stream, opts) = (_state["LogicalNode"], _state["config"], _state["old_stream"], _state["opts"])
     (state, sys) = (_state["state"], _state["sys"])
     try:
-        setattr(config, "current_stream", "stream_cuda_1")
+        _set_attr(config, "current_stream", "stream_cuda_1")
         node_stream = LogicalNode(id="n_stream", op_type="Relu")
-        setattr(node_stream, "stream", None)
+        _set_attr(node_stream, "stream", None)
         state.add_node(node_stream)
         assert as_tensor(node_stream.stream) == "stream_cuda_1"
-        setattr(config, "current_stream", "default")
+        _set_attr(config, "current_stream", "default")
         node_stream_def = LogicalNode(id="n_stream_def", op_type="Relu")
-        setattr(node_stream_def, "stream", None)
+        _set_attr(node_stream_def, "stream", None)
         state.add_node(node_stream_def)
         assert as_tensor(node_stream_def.stream) is None
         cfg_module = sys.modules.pop("ml_switcheroo_compiler.core.config")
@@ -285,14 +286,14 @@ def _test_tracing_state_full_branch_coverage_part_3(_state: dict[str, EagerTenso
         finally:
             sys.modules["ml_switcheroo_compiler.core.config"] = cfg_module
     finally:
-        setattr(config, "current_stream", old_stream)
-    setattr(state, "current_loop_options", opts)
+        _set_attr(config, "current_stream", old_stream)
+    _set_attr(state, "current_loop_options", opts)
     loop_node = LogicalNode(id="loop_1", op_type="Loop", attributes={})
     state.add_node(loop_node)
     assert loop_node.attributes["parallel_iterations"] == 4
     assert bool(loop_node.attributes["swap_memory"]) is True
-    getattr(_state, "update")({"loop_node": loop_node})
-    _state.update(locals())
+    _get_attr(_state, "update")({"loop_node": loop_node})
+    _state.update(_caller_locals())
 
 
 def _test_tracing_state_full_branch_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -307,27 +308,27 @@ def _test_tracing_state_full_branch_coverage_part_4(_state: dict[str, EagerTenso
     assert loop_node.attributes["shape_invariants"] == []
     assert loop_node.attributes["loop_options"] is opts
     opts_none = SimpleNamespace(parallel_iterations=None, swap_memory=None, maximum_iterations=None, shape_invariants=None)
-    setattr(state, "current_loop_options", opts_none)
+    _set_attr(state, "current_loop_options", opts_none)
     loop_node_2 = LogicalNode(id="loop_2", op_type="WhileLoop", attributes={"loop_options": "existing"})
     state.add_node(loop_node_2)
     assert "parallel_iterations" not in loop_node_2.attributes
     assert loop_node_2.attributes["loop_options"] == "existing"
-    setattr(state.active_graph, "inputs", ["input_to_replace", "other_input"])
-    object.__setattr__(state.active_graph, "input_specs", {"input_to_replace": "spec"})
+    _set_attr(state.active_graph, "inputs", ["input_to_replace", "other_input"])
+    _obj_set_attr(state.active_graph, "input_specs", {"input_to_replace": "spec"})
     replacing_node = LogicalNode(id="input_to_replace", op_type="Add")
     state.add_node(replacing_node)
     assert "input_to_replace" not in state.active_graph.inputs
     assert "input_to_replace" not in state.active_graph.input_specs
-    object.__delattr__(state.active_graph, "input_specs")
-    setattr(state.active_graph, "inputs", ["input_to_replace_2"])
+    _obj_del_attr(state.active_graph, "input_specs")
+    _set_attr(state.active_graph, "inputs", ["input_to_replace_2"])
     replacing_node_2 = LogicalNode(id="input_to_replace_2", op_type="Mul")
     state.add_node(replacing_node_2)
     assert "input_to_replace_2" not in state.active_graph.inputs
     inner_g = state.stop_tracing()
     assert inner_g is g2
-    getattr(_state, "update")({"inner_g": inner_g, "loop_node_2": loop_node_2, "opts_none": opts_none, "replacing_node": replacing_node})
-    getattr(_state, "update")({"replacing_node_2": replacing_node_2})
-    _state.update(locals())
+    _get_attr(_state, "update")({"inner_g": inner_g, "loop_node_2": loop_node_2, "opts_none": opts_none, "replacing_node": replacing_node})
+    _get_attr(_state, "update")({"replacing_node_2": replacing_node_2})
+    _state.update(_caller_locals())
 
 
 def _test_tracing_state_full_branch_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -352,7 +353,7 @@ def _test_tracing_state_full_branch_coverage_part_5(_state: dict[str, EagerTenso
     popped = state_dummy.stop_tracing()
     assert popped is dummy_inner
     assert as_tensor(state_dummy.current_loop_options) is None
-    getattr(_state, "update")({"dummy_inner": dummy_inner, "outer_g": outer_g, "popped": popped, "state_dummy": state_dummy})
+    _get_attr(_state, "update")({"dummy_inner": dummy_inner, "outer_g": outer_g, "popped": popped, "state_dummy": state_dummy})
 
 
 def test_tracing_state_full_branch_coverage() -> None:

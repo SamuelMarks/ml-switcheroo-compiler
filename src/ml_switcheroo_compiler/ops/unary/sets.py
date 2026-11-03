@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 if typing.TYPE_CHECKING:
@@ -36,7 +37,7 @@ class Setdiff1d(OpDef):
         first = args[0]
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
 
 
 @register_op("Setxor1d")
@@ -64,7 +65,7 @@ class Setxor1d(OpDef):
         first = args[0]
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
 
 
 @register_op("Union1d")
@@ -92,7 +93,7 @@ class Union1d(OpDef):
         first = args[0]
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueAll")
@@ -120,7 +121,7 @@ class UniqueAll(OpDef):
         first = args[0]
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueCounts")
@@ -148,7 +149,7 @@ class UniqueCounts(OpDef):
         first = args[0]
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueInverse")
@@ -176,7 +177,7 @@ class UniqueInverse(OpDef):
         first = args[0]
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))
 
 
 @register_op("UniqueValues")
@@ -204,4 +205,4 @@ class UniqueValues(OpDef):
         first = args[0]
         if isinstance(first, (tuple, list)):
             return tuple(first)
-        return tuple(getattr(first, "shape", getattr(first, "shape_metadata", ())))
+        return tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", ())))

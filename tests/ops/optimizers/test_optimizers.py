@@ -10,6 +10,7 @@ from unittest.mock import patch
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.optimizers.updates import (
     AdadeltaConfig,
@@ -100,7 +101,7 @@ def test_optimizers_coverage() -> None:
                     """
                     pass
 
-            setattr(global_tracing_state, "active_graph", DummyGraph())
+            _set_attr(global_tracing_state, "active_graph", DummyGraph())
 
             assert apply_adam(t, t, t, grad, 0.1) is not None
             assert apply_adagrad(t, t, grad, 0.1) is not None

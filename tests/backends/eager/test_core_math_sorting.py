@@ -20,6 +20,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_sorting import (
     _quantile,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -170,7 +171,7 @@ def test_math_sorting_coverage() -> None:
 
     # Case B: backend lacks partition -> fallback to np.partition
     part_res = _np_partition(as_mod(EmptyBackend()), np.array([3, 1, 2]), 1)
-    assert as_tensor(getattr(part_res, "__getitem__")(1)) == 2
+    assert as_tensor(_get_attr(part_res, "__getitem__")(1)) == 2
 
     # Registry
     assert global_eager_registry.get("Argpartition") is not None

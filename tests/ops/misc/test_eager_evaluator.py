@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.eager_evaluator import BackendExecuteOpStrategy, CustomEagerEvalStrategy, EagerEvaluator, EvaluationContext
 from tests.testing_utils import as_callable
@@ -89,7 +90,7 @@ def test_eager_evaluator() -> None:
 
     try:
         OpRegistry["Op1"] = Op1
-        getattr(OpRegistry, "__setitem__")("Op2", DummyOpBackend)
+        _get_attr(OpRegistry, "__setitem__")("Op2", DummyOpBackend)
 
         from unittest.mock import patch
 

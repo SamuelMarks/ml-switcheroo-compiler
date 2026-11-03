@@ -35,6 +35,7 @@ from ml_switcheroo_compiler.backends.sparse.kernels import (
 )
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, array, asarray, item, zeros
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_ndarray, as_tensor
 
@@ -350,8 +351,8 @@ def test_coo_mul_parity() -> None:
 
     # Empty multiply
     empty = zeros(type, (2, 2))
-    assert as_tensor(getattr(coo_mul(empty, coo_b), "nnz")) == 0
-    assert as_tensor(getattr(coo_mul(empty, dense_d), "nnz")) == 0
+    assert as_tensor(_get_attr(coo_mul(empty, coo_b), "nnz")) == 0
+    assert as_tensor(_get_attr(coo_mul(empty, dense_d), "nnz")) == 0
     as_callable(np.testing.assert_allclose)(as_callable(coo_mul)(as_callable(np.array)([2.0]), as_callable(np.array)([3.0])), [6.0])
 
     # Shape mismatch error
@@ -443,9 +444,9 @@ def test_coo_sum_and_mean_parity() -> None:
     # Empty sum and mean
     empty = zeros(type, (2, 3))
     assert coo_sum(empty) == 0.0
-    assert as_tensor(getattr(coo_sum(empty, keepdims=True), "shape")) == (1, 1)
-    assert as_tensor(getattr(coo_sum(empty, axis=0), "shape")) == (3,)
-    assert as_tensor(getattr(coo_sum(empty, axis=0, keepdims=True), "shape")) == (1, 3)
+    assert as_tensor(_get_attr(coo_sum(empty, keepdims=True), "shape")) == (1, 1)
+    assert as_tensor(_get_attr(coo_sum(empty, axis=0), "shape")) == (3,)
+    assert as_tensor(_get_attr(coo_sum(empty, axis=0, keepdims=True), "shape")) == (1, 3)
     assert coo_mean(empty) == 0.0
 
 
@@ -582,9 +583,9 @@ def test_sparse_init_import_guard() -> None:
     """Test import guard and package initialization."""
     import ml_switcheroo_compiler.backends.sparse as sp_pkg
 
-    assert hasattr(sp_pkg, "SparseGenerator")
-    assert hasattr(sp_pkg, "execute_op")
-    assert hasattr(sp_pkg, "COOTensor")
+    assert _has_attr(sp_pkg, "SparseGenerator")
+    assert _has_attr(sp_pkg, "execute_op")
+    assert _has_attr(sp_pkg, "COOTensor")
 
     with patch("importlib.util.find_spec", side_effect=ValueError):
         importlib.reload(sp_pkg)
@@ -622,7 +623,7 @@ def test_sparse_aot_compilation_and_runner_execution() -> None:
     arr = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32)
     res = artifact(arr)
     # Result could be COOTensor or numpy array
-    dense_res = as_tensor(getattr(res, "to_dense"))() if hasattr(res, "to_dense") else res
+    dense_res = as_tensor(_get_attr(res, "to_dense"))() if _has_attr(res, "to_dense") else res
     as_callable(np.testing.assert_allclose)(dense_res, arr + arr)
 
     # 2. Multi-output execution with extra unused arguments

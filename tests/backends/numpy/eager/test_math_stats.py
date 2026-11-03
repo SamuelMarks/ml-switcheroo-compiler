@@ -10,6 +10,7 @@ import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_stats as ms
 from ml_switcheroo_compiler.backends.numpy.eager.math_stats import _np_randomcategorical, _np_randomshuffle
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -18,7 +19,7 @@ if typing.TYPE_CHECKING:
 
 def test_math_stats_coverage() -> None:
     """Test function test_math_stats_coverage."""
-    ops = [getattr(ms, name) for name in dir(ms) if name.startswith("_") and callable(getattr(ms, name))]
+    ops = [_get_attr(ms, name) for name in dir(ms) if name.startswith("_") and callable(_get_attr(ms, name))]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)
@@ -89,6 +90,6 @@ def test_np_random_shuffle_list() -> None:
 def test_randomcategorical_shape() -> None:
     """Test function test_randomcategorical_shape."""
     res = _np_randomcategorical(as_mod(None), None, logits=np.array([1.0, 2.0]), shape=(1, 2))
-    assert as_tensor(getattr(res, "shape")) == (1, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 2)
     res = _np_randomcategorical(as_mod(None), None, logits=np.array([[1.0, 2.0]]))
-    assert as_tensor(getattr(res, "shape")) == (1,)
+    assert as_tensor(_get_attr(res, "shape")) == (1,)

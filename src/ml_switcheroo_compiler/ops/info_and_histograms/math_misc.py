@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import as_int
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -25,7 +25,8 @@ class Gradient(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_1
 
 
 @register_op("I0")
@@ -46,7 +47,8 @@ class I0(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_2: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_2
 
 
 @register_op("Interp")
@@ -67,7 +69,8 @@ class Interp(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_3: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_3
 
 
 @register_op("Intersect1d")
@@ -108,8 +111,8 @@ class Kron(OpDef):
         if len(args) < 2:
             return ()
         a, b = args[0], args[1]
-        shape_a = getattr(a, "shape", ())
-        shape_b = getattr(b, "shape", ())
+        shape_a = _get_attr(a, "shape", ())
+        shape_b = _get_attr(b, "shape", ())
         ndims = max(len(shape_a), len(shape_b))
         shape_a = (1,) * (ndims - len(shape_a)) + shape_a
         shape_b = (1,) * (ndims - len(shape_b)) + shape_b
@@ -134,14 +137,14 @@ class Median(OpDef):
         """
         if not args:
             return ()
-        shape = list(getattr(args[0], "shape", ()))
+        shape = list(_get_attr(args[0], "shape", ()))
         axis = kwargs.get("axis", None)
         keepdims = kwargs.get("keepdims", False)
         if axis is None:
             return (1,) if keepdims else ()
         if isinstance(axis, int):
             axis = [axis]
-        for ax in sorted(getattr(axis, "__iter__")(), reverse=True):
+        for ax in sorted(_get_attr(axis, "__iter__")(), reverse=True):
             if ax < len(shape):
                 if keepdims:
                     shape[ax] = 1
@@ -168,7 +171,8 @@ class Mish(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_4: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_4
 
 
 @register_op("Modf")
@@ -189,7 +193,8 @@ class Modf(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_5: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_5
 
 
 @register_op("Piecewise")
@@ -210,7 +215,8 @@ class Piecewise(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_6: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_6
 
 
 @register_op("Rot90")
@@ -231,10 +237,10 @@ class Rot90(OpDef):
         """
         if not args:
             return ()
-        shape = list(getattr(args[0], "shape", ()))
+        shape = list(_get_attr(args[0], "shape", ()))
         axes = kwargs.get("axes", (0, 1))
-        if getattr(axes, "__len__")() == 2 and getattr(axes, "__getitem__")(0) < getattr(shape, "__len__")() and getattr(axes, "__getitem__")(1) < getattr(shape, "__len__")():
-            a0, a1 = int(getattr(axes, "__getitem__")(0)), int(getattr(axes, "__getitem__")(1))
+        if _get_attr(axes, "__len__")() == 2 and _get_attr(axes, "__getitem__")(0) < _get_attr(shape, "__len__")() and _get_attr(axes, "__getitem__")(1) < _get_attr(shape, "__len__")():
+            a0, a1 = int(_get_attr(axes, "__getitem__")(0)), int(_get_attr(axes, "__getitem__")(1))
             shape[a0], shape[a1] = shape[a1], shape[a0]
         return tuple(shape)
 
@@ -257,10 +263,10 @@ class Trapezoid(OpDef):
         """
         if not args:
             return ()
-        shape = list(getattr(args[0], "shape", ()))
+        shape = list(_get_attr(args[0], "shape", ()))
         axis = kwargs.get("axis", -1)
         if int(as_int(axis)) < len(shape):
-            getattr(shape, "pop")(axis)
+            _get_attr(shape, "pop")(axis)
         return tuple(shape)
 
 
@@ -303,7 +309,8 @@ class Tril(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_7: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_7
 
 
 @register_op("TrimZeros")
@@ -343,7 +350,8 @@ class Triu(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_8: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_8
 
 
 @register_op("Unwrap")
@@ -364,7 +372,8 @@ class Unwrap(OpDef):
         """
         if not args:
             return ()
-        return getattr(args[0], "shape", ())
+        _typed_ret_9: TensorOrScalar = _get_attr(args[0], "shape", ())
+        return _typed_ret_9
 
 
 @register_op("Vander")
@@ -385,7 +394,7 @@ class Vander(OpDef):
         """
         if not args:
             return ()
-        x = getattr(args[0], "shape", ())
+        x = _get_attr(args[0], "shape", ())
         N = kwargs.get("N", x[0] if x else 0)
         return (*x, N)
 

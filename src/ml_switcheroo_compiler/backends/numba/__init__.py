@@ -6,6 +6,7 @@ import importlib.util
 import sys
 
 from ml_switcheroo_compiler.backends.eager_registry import as_callable
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 
 try:
     _has_pkg = importlib.util.find_spec("numba") is not None
@@ -19,11 +20,11 @@ from .eager import execute_op
 from .generator import NumbaGenerator
 from .types import array, asarray, item, zeros
 
-type.__setattr__(NumbaGenerator, "zeros", staticmethod(zeros))
-type.__setattr__(NumbaGenerator, "array", staticmethod(array))
-type.__setattr__(NumbaGenerator, "asarray", staticmethod(asarray))
-type.__setattr__(NumbaGenerator, "item", staticmethod(item))
-type.__setattr__(NumbaGenerator, "execute_op", as_callable(staticmethod)(execute_op))
+_obj_set_attr(NumbaGenerator, "zeros", staticmethod(zeros))
+_obj_set_attr(NumbaGenerator, "array", staticmethod(array))
+_obj_set_attr(NumbaGenerator, "asarray", staticmethod(asarray))
+_obj_set_attr(NumbaGenerator, "item", staticmethod(item))
+_obj_set_attr(NumbaGenerator, "execute_op", as_callable(staticmethod)(execute_op))
 
 __all__ = [
     "NumbaGenerator",

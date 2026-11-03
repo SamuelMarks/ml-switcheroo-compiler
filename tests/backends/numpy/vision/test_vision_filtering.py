@@ -9,11 +9,12 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.vision_filtering import _np_degeneration, _np_gaussian_blur, _np_median_filter, _np_sharpen
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     pass
-BlurConfig = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.ops.vision.filtering"), "BlurConfig"))
+BlurConfig = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.ops.vision.filtering"), "BlurConfig"))
 
 
 def test_np_degeneration() -> None:
@@ -43,5 +44,5 @@ def test_np_sharpen() -> None:
 def test_gaussian_blur_cov() -> None:
     """Test function test_gaussian_blur_cov."""
     config = BlurConfig(kernel_size=(3, 3), sigma=(1.0, 1.0))
-    _np_gaussian_blur(np, np.ones((1, 3, 3, 1)), config=typing.cast("dict[str, tuple[int, int] | tuple[float, float] | str | None]", config))
+    _np_gaussian_blur(np, np.ones((1, 3, 3, 1)), config=_cast_val("dict[str, tuple[int, int] | tuple[float, float] | str | None]", config))
     assert config is not None

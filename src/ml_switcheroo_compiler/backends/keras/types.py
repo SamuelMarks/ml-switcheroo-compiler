@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.core.shape import _has_attr
 
 try:
     import keras.ops as kops
@@ -55,7 +56,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
         EagerValue: The array tensor.
     """
     del cls
-    if hasattr(kops, "asarray"):
+    if _has_attr(kops, "asarray"):
         return as_tensor(as_callable(generic_asarray)(kops, data))
     return as_tensor(as_callable(generic_array)(kops, data))
 

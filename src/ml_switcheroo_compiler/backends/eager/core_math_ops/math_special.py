@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     numpy_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -28,8 +29,8 @@ def _dispatch_special(op_name: str, attr_name: str, backend_module: BackendModul
     Returns:
         EagerValue: Evaluated special function result.
     """
-    special_mod = getattr(backend_module, "special", backend_module)
-    func = getattr(special_mod, attr_name, getattr(backend_module, attr_name, None))
+    special_mod = _get_attr(backend_module, "special", backend_module)
+    func = _get_attr(special_mod, attr_name, _get_attr(backend_module, attr_name, None))
     if callable(func):
         return as_tensor(func(*args, **kwargs))
     from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
@@ -52,8 +53,9 @@ def _erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Eag
     """
     mod = backend_module
     x = as_tensor(args[0])
-    if hasattr(mod, "erf"):
-        return mod.erf(x)
+    if _has_attr(mod, "erf"):
+        _typed_ret_1: EagerValue = mod.erf(x)
+        return _typed_ret_1
     p = 0.3275911
     a1 = 0.254829592
     a2 = -0.284496736
@@ -82,8 +84,9 @@ def _erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     """
     mod = backend_module
     x = as_tensor(args[0])
-    if hasattr(mod, "erfc"):
-        return mod.erfc(x)
+    if _has_attr(mod, "erfc"):
+        _typed_ret_2: EagerValue = mod.erfc(x)
+        return _typed_ret_2
     return 1.0 - as_tensor(_erf(backend_module, x))
 
 
@@ -101,8 +104,9 @@ def _erfinv(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     """
     mod = backend_module
     x = as_tensor(args[0])
-    if hasattr(mod, "erfinv"):
-        return mod.erfinv(x)
+    if _has_attr(mod, "erfinv"):
+        _typed_ret_3: EagerValue = mod.erfinv(x)
+        return _typed_ret_3
     a = 0.147
     ln_1_x2: EagerTensorProtocol = mod.log(1.0 - x * x + 1e-12)
     term1: EagerTensorProtocol = 2.0 / (3.141592653589793 * a) + ln_1_x2 / 2.0

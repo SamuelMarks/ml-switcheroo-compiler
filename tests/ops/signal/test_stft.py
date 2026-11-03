@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.signal import Istft, Stft, istft, stft
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -25,11 +26,11 @@ def test_stft_istft_eager() -> None:
 
     # stft
     Zxx = stft(x, nfft=16, noverlap=8)
-    assert as_tensor(getattr(Zxx, "shape")) == (10, 9, 11)
+    assert as_tensor(_get_attr(Zxx, "shape")) == (10, 9, 11)
 
     # istft
     xrec = as_callable(istft)(Zxx, nfft=16, noverlap=8)
-    assert as_tensor(getattr(xrec, "shape")) == (10, 96)  # (11 - 1) * 8 + 16 = 80 + 16 = 96
+    assert as_tensor(_get_attr(xrec, "shape")) == (10, 96)  # (11 - 1) * 8 + 16 = 80 + 16 = 96
 
 
 def test_stft_istft_tracing() -> None:
@@ -41,11 +42,11 @@ def test_stft_istft_tracing() -> None:
     global_tracing_state.start_tracing()
     # stft
     Zxx = stft(x, nfft=16, noverlap=8)
-    assert as_tensor(getattr(Zxx, "shape")) == (10, 9, 11)
+    assert as_tensor(_get_attr(Zxx, "shape")) == (10, 9, 11)
 
     # istft
     xrec = as_callable(istft)(Zxx, nfft=16, noverlap=8)
-    assert as_tensor(getattr(xrec, "shape")) == (10, 96)
+    assert as_tensor(_get_attr(xrec, "shape")) == (10, 96)
     global_tracing_state.stop_tracing()
 
 

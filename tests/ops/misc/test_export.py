@@ -6,6 +6,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.export import export_to_dot
 from tests.testing_utils import as_callable
@@ -51,7 +52,7 @@ def test_export() -> None:
     with pytest.raises(RuntimeError):
         as_callable(export_to_dot)("test.dot", t)
 
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
 
     import io
 

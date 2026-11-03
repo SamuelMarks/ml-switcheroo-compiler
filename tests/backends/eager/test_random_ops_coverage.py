@@ -7,7 +7,7 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.random_ops as rand_ops_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
 from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -284,7 +284,7 @@ class SignalBackendWrapper:
         Returns:
             EagerCallableProtocol: Resolved callable attribute.
         """
-        return as_callable(getattr(np, name))
+        return as_callable(_get_attr(np, name))
 
     def pad(
         self,
@@ -531,56 +531,56 @@ def test_random_ops_rand_and_randn() -> None:
     """Verify rand, randn, and randint under various backend capabilities."""
     # 1. rand with shape in kwargs as nested list
     res_rand1 = rand_ops_mod.rand(np, shape=[(2, 3)])
-    assert as_tensor(getattr(res_rand1, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(res_rand1, "shape")) == (2, 3)
 
     # rand with args shape
     res_rand2 = rand_ops_mod.rand(np, 2, 4)
-    assert as_tensor(getattr(res_rand2, "shape")) == (2, 4)
+    assert as_tensor(_get_attr(res_rand2, "shape")) == (2, 4)
 
     # rand with random module without uniform (only rand)
     res_rand3 = rand_ops_mod.rand(as_tensor(MockBackendWithRandOnly()), 3, 3)
-    assert as_tensor(getattr(res_rand3, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(res_rand3, "shape")) == (3, 3)
 
     # rand with direct rand
-    assert as_tensor(getattr(rand_ops_mod.rand(as_tensor(MockBackendDirectRand()), 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.rand(as_tensor(MockBackendDirectRand()), 2, 2), "shape")) == (2, 2)
 
     # rand with direct uniform
-    assert as_tensor(getattr(rand_ops_mod.rand(as_tensor(MockBackendDirectUniform()), 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.rand(as_tensor(MockBackendDirectUniform()), 2, 2), "shape")) == (2, 2)
 
     # rand fallback line 93
     fb_backend = MockBackendWithFallback()
-    assert as_tensor(getattr(rand_ops_mod.rand(as_tensor(fb_backend), 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.rand(as_tensor(fb_backend), 2, 2), "shape")) == (2, 2)
 
     # 2. randn tests
     res_randn1 = rand_ops_mod.randn(np, shape=[(3, 2)])
-    assert as_tensor(getattr(res_randn1, "shape")) == (3, 2)
+    assert as_tensor(_get_attr(res_randn1, "shape")) == (3, 2)
 
     res_randn2 = rand_ops_mod.randn(np, 3, 5)
-    assert as_tensor(getattr(res_randn2, "shape")) == (3, 5)
+    assert as_tensor(_get_attr(res_randn2, "shape")) == (3, 5)
 
     # randn with random module having only randn
-    assert as_tensor(getattr(rand_ops_mod.randn(as_tensor(MockBackendWithRandnOnly()), 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(MockBackendWithRandnOnly()), 2, 2), "shape")) == (2, 2)
 
     # randn with direct randn
-    assert as_tensor(getattr(rand_ops_mod.randn(as_tensor(MockBackendDirectRandn()), 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(MockBackendDirectRandn()), 2, 2), "shape")) == (2, 2)
 
     # randn with direct normal
-    assert as_tensor(getattr(rand_ops_mod.randn(as_tensor(MockBackendDirectNormal()), 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(MockBackendDirectNormal()), 2, 2), "shape")) == (2, 2)
 
     # randn fallback line 122
     fb_backend_normal = MockBackendWithFallback()
-    assert as_tensor(getattr(rand_ops_mod.randn(as_tensor(fb_backend_normal), 2, 2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.randn(as_tensor(fb_backend_normal), 2, 2), "shape")) == (2, 2)
 
     # 3. randint tests
     res_randint1 = rand_ops_mod.randint(np, 0, 10, (2, 3))
-    assert as_tensor(getattr(res_randint1, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(res_randint1, "shape")) == (2, 3)
 
     res_randint2 = rand_ops_mod.randint(np, low=2, high=8, shape=(4,))
-    assert as_tensor(getattr(res_randint2, "shape")) == (4,)
+    assert as_tensor(_get_attr(res_randint2, "shape")) == (4,)
 
     res_randint3 = rand_ops_mod.randint(np)
-    assert as_tensor(getattr(res_randint3, "shape")) == ()
+    assert as_tensor(_get_attr(res_randint3, "shape")) == ()
 
     # randint fallback line 143
     fb_backend_randint = MockBackendWithFallback()
-    assert as_tensor(getattr(rand_ops_mod.randint(as_tensor(fb_backend_randint), 0, 5, (2, 2)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(rand_ops_mod.randint(as_tensor(fb_backend_randint), 0, 5, (2, 2)), "shape")) == (2, 2)

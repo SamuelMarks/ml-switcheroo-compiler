@@ -7,6 +7,7 @@ import importlib
 import inspect
 import json
 import keyword
+import operator
 import os
 
 from ml_switcheroo_compiler.backends.snapshot_grounding import (
@@ -14,6 +15,7 @@ from ml_switcheroo_compiler.backends.snapshot_grounding import (
     _resolve_default_snapshot_dir,
 )
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
+from ml_switcheroo_compiler.core.shape import _has_attr
 
 
 def _sanitize_default(default_str: str) -> str:
@@ -329,7 +331,9 @@ def _clean_type_annotation(raw_annot: str | None) -> str:
 
     try:
         parsed = ast.parse(f"x: {cleaned}")
-        return _validate_annot_ast(getattr(parsed.body[0], "annotation"), cleaned)
+        stmt0 = parsed.body[0]
+        assert isinstance(stmt0, ast.AnnAssign)
+        return _validate_annot_ast(stmt0.annotation, cleaned)
     except Exception:
         return "Tensor"
 
@@ -349,7 +353,7 @@ def format_params_via_ecosystem(
     """
     clean_params: list[dict[str, AttributeValue]] = []
     for p in params:
-        if hasattr(p, "get") and p.get("name"):
+        if _has_attr(p, "get") and p.get("name"):
             clean_params.append(
                 {
                     "name": p["name"],
@@ -506,7 +510,7 @@ def _format_live_attr_stub(mod: AttributeValue, attr: str) -> str | None:
         str | None: Stub line or None if not callable.
     """
     try:
-        obj = getattr(mod, attr)
+        obj = operator.attrgetter(attr)(mod)
         if not callable(obj):
             return None
         sig = inspect.signature(obj)

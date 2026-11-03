@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -29,8 +30,8 @@ def test_extract_proxy_inputs_elif_branch() -> None:
             """
             pass
 
-    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
-    setattr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
+    _set_attr(bmod, "global_tracing_state", FakeTracingState())
 
     class NonTensorWithId:
         """Test class NonTensorWithId."""
@@ -43,4 +44,4 @@ def test_extract_proxy_inputs_elif_branch() -> None:
     ids, shapes, first = TracingNodeBuilder.extract_proxy_inputs((NonTensorWithId(),))
     assert ids == ["my_proxy_id"]
     assert shapes == [(4, 4)]
-    setattr(bmod, "global_tracing_state", old_state)
+    _set_attr(bmod, "global_tracing_state", old_state)

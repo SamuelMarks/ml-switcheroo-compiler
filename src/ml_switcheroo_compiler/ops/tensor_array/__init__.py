@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -33,7 +34,7 @@ class TensorArrayRead(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        elem_shape = getattr(handle, "element_shape", ())
+        elem_shape = _get_attr(handle, "element_shape", ())
         return tuple(elem_shape) if elem_shape is not None else ()
 
 
@@ -84,8 +85,8 @@ class TensorArrayStack(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        elem_shape = tuple(getattr(handle, "element_shape", ()))
-        size = getattr(handle, "size", None)
+        elem_shape = tuple(_get_attr(handle, "element_shape", ()))
+        size = _get_attr(handle, "size", None)
         if size is not None and isinstance(size, int):
             return (size,) + elem_shape
         return (None,) + elem_shape

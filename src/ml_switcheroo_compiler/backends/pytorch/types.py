@@ -6,6 +6,8 @@ import importlib.util
 import sys
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
+
 if typing.TYPE_CHECKING:
     import torch
 else:
@@ -58,8 +60,8 @@ def array(cls: type, data: EagerValue, dtype: EagerValue = None) -> EagerValue:
             tuple[int, ...]: Result.
     """
     if dtype is not None:
-        dtype_str = str(getattr(dtype, "value", dtype)).split(".")[-1]
-        dt = getattr(torch, dtype_str, None)
+        dtype_str = str(_get_attr(dtype, "value", dtype)).split(".")[-1]
+        dt = _get_attr(torch, dtype_str, None)
         return as_tensor(torch.tensor(data, dtype=dt))
     return as_tensor(torch.tensor(data))
 

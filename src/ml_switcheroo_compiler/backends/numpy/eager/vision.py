@@ -9,7 +9,7 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_callable, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 
 
 class ResizeConfig(pydantic.BaseModel):
@@ -152,9 +152,9 @@ def _apply_bilinear_interpolation(np: BackendModuleProtocol, cfg: InterpolationC
     pixels = _compute_bilinear_pixels(np, cfg.images, BilinearCoords(y0=y0, y1=y1, x0=x0, x1=x1))
     weights = _compute_bilinear_weights(dy, dx)
 
-    p0, p1, p2, p3 = getattr(pixels, "__iter__")()
-    w0, w1, w2, w3 = getattr(weights, "__iter__")()
-    return as_tensor((p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3).astype(getattr(cfg.images, "dtype")))
+    p0, p1, p2, p3 = _get_attr(pixels, "__iter__")()
+    w0, w1, w2, w3 = _get_attr(weights, "__iter__")()
+    return as_tensor((p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3).astype(_get_attr(cfg.images, "dtype")))
 
 
 @numpy_eager_registry.register("ResizeBilinear")
@@ -171,20 +171,20 @@ def resize_bilinear(np_mod: BackendModuleProtocol, images: EagerValue, size: tup
             tuple[int, ...]: Result.
     """
     images = np_mod.asarray(images)
-    rank = len(getattr(images, "shape"))
+    rank = len(_get_attr(images, "shape"))
     if rank == 3:
         images = np_mod.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    shape = getattr(images, "shape")
+    shape = _get_attr(images, "shape")
     resize_cfg = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
-    src_y, src_x = getattr(_calculate_bilinear_coords(np_mod, resize_cfg), "__iter__")()
+    src_y, src_x = _get_attr(_calculate_bilinear_coords(np_mod, resize_cfg), "__iter__")()
 
-    interp_cfg = typing.cast("TypedVariadicCallable[InterpolationConfig]", InterpolationConfig)(images=images, src_y=src_y, src_x=src_x, H=shape[1], W=shape[2])
+    interp_cfg = _cast_val("TypedVariadicCallable[InterpolationConfig]", InterpolationConfig)(images=images, src_y=src_y, src_x=src_x, H=shape[1], W=shape[2])
     out = _apply_bilinear_interpolation(np_mod, interp_cfg)
 
-    return getattr(out, "__getitem__")(0) if rank == 3 else out
+    return _get_attr(out, "__getitem__")(0) if rank == 3 else out
 
 
 def _calculate_nearest_coords(np: BackendModuleProtocol, cfg: ResizeConfig) -> EagerValue:
@@ -228,19 +228,19 @@ def resize_nearest(np_mod: BackendModuleProtocol, images: EagerValue, size: tupl
             tuple[int, ...]: Result.
     """
     images = np_mod.asarray(images)
-    rank = len(getattr(images, "shape"))
+    rank = len(_get_attr(images, "shape"))
     if rank == 3:
         images = np_mod.expand_dims(images, 0)
     elif rank != 4:
         return images
 
-    shape = getattr(images, "shape")
+    shape = _get_attr(images, "shape")
     resize_cfg = ResizeConfig(new_H=size[0], new_W=size[1], H=shape[1], W=shape[2], align_corners=align_corners)
-    src_y, src_x = getattr(_calculate_nearest_coords(np_mod, resize_cfg), "__iter__")()
+    src_y, src_x = _get_attr(_calculate_nearest_coords(np_mod, resize_cfg), "__iter__")()
 
     out = as_tensor(images)[:, as_tensor(src_y)[:, None], as_tensor(src_x)[None, :], :]
 
-    return getattr(out, "__getitem__")(0) if rank == 3 else out
+    return _get_attr(out, "__getitem__")(0) if rank == 3 else out
 
 
 @numpy_eager_registry.register("ResizeBicubic")
@@ -425,13 +425,13 @@ def _interpolate_rotation(np: BackendModuleProtocol, cfg: RotationInterpolationC
     Returns:
             tuple[int, ...]: Result.
     """
-    H, W, _ = getattr(cfg.img, "shape")
+    H, W, _ = _get_attr(cfg.img, "shape")
     src_x_clip = np.clip(cfg.src_x, 0, W - 1)
     src_y_clip = np.clip(cfg.src_y, 0, H - 1)
 
     coords = _get_rotation_coords(np, src_x_clip, src_y_clip, W, H)
-    dx = src_x_clip - getattr(coords, "__getitem__")(0)
-    dy = src_y_clip - getattr(coords, "__getitem__")(2)
+    dx = src_x_clip - _get_attr(coords, "__getitem__")(0)
+    dy = src_y_clip - _get_attr(coords, "__getitem__")(2)
 
     pixels = as_callable(_gather_rotation_pixels)(cfg.img, coords)
     weights = _compute_rotation_weights(dx, dy)
@@ -440,7 +440,7 @@ def _interpolate_rotation(np: BackendModuleProtocol, cfg: RotationInterpolationC
     valid_mask = (np.asarray(cfg.src_x, dtype=float) >= 0) & (np.asarray(cfg.src_x, dtype=float) <= W - 1) & (np.asarray(cfg.src_y, dtype=float) >= 0) & (np.asarray(cfg.src_y, dtype=float) <= H - 1)
     if cfg.fill_mode == "constant":
         interp[~valid_mask] = cfg.fill_value
-    return interp.astype(getattr(cfg.img, "dtype"))
+    return interp.astype(_get_attr(cfg.img, "dtype"))
 
 
 def _apply_random_rotation_single(np: BackendModuleProtocol, img: EagerValue, angle: float, fill_mode: str, fill_value: float) -> EagerValue:
@@ -456,9 +456,9 @@ def _apply_random_rotation_single(np: BackendModuleProtocol, img: EagerValue, an
     Returns:
             tuple[int, ...]: Result.
     """
-    H, W, _ = getattr(getattr(img, "shape"), "__iter__")()
-    src_x, src_y = getattr(_compute_rotation_coords(np, H, W, angle), "__iter__")()
-    cfg = typing.cast("TypedVariadicCallable[RotationInterpolationConfig]", RotationInterpolationConfig)(img=img, src_x=src_x, src_y=src_y, fill_mode=fill_mode, fill_value=fill_value)
+    H, W, _ = _get_attr(_get_attr(img, "shape"), "__iter__")()
+    src_x, src_y = _get_attr(_compute_rotation_coords(np, H, W, angle), "__iter__")()
+    cfg = _cast_val("TypedVariadicCallable[RotationInterpolationConfig]", RotationInterpolationConfig)(img=img, src_x=src_x, src_y=src_y, fill_mode=fill_mode, fill_value=fill_value)
     return _interpolate_rotation(np, cfg)
 
 
@@ -486,11 +486,11 @@ def _apply_rotation_to_batch(np: BackendModuleProtocol, x: EagerValue, rng: Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    B = getattr(x, "shape")[0]
+    B = _get_attr(x, "shape")[0]
     out = np.zeros_like(x)
     for i in range(B):
-        angle = getattr(rng, "uniform")(getattr(angles, "__getitem__")(0), getattr(angles, "__getitem__")(1)) * 2 * np.pi
-        out[i] = _apply_random_rotation_single(np, getattr(x, "__getitem__")(i), angle, options.fill_mode, options.fill_value)
+        angle = _get_attr(rng, "uniform")(_get_attr(angles, "__getitem__")(0), _get_attr(angles, "__getitem__")(1)) * 2 * np.pi
+        out[i] = _apply_random_rotation_single(np, _get_attr(x, "__getitem__")(i), angle, options.fill_mode, options.fill_value)
     return out
 
 
@@ -533,5 +533,5 @@ def random_rotation_numpy(
     out = _apply_rotation_to_batch(np, x, rng, (lower, upper), options)
 
     if rank == 3:
-        return as_tensor(getattr(out, "__getitem__")(0))
+        return as_tensor(_get_attr(out, "__getitem__")(0))
     return out

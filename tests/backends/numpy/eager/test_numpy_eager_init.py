@@ -10,6 +10,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import equal, execute_op, repeat, searchsorted, split, squeeze, stack, unstack
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -37,9 +38,9 @@ def test_execute_op() -> None:
 
     assert as_callable(execute_op)(None, "DummyGlobalOp", 1) == 2
     res = as_callable(execute_op)(None, "Add", as_callable(np.array)([1]), as_callable(np.array)([2]))
-    assert as_tensor(getattr(res, "tolist"))() == [3]
+    assert as_tensor(_get_attr(res, "tolist"))() == [3]
     res = as_callable(execute_op)(None, "Erf", as_callable(np.array)([0.0]))
-    assert as_tensor(getattr(res, "tolist"))() == [0.0]
+    assert as_tensor(_get_attr(res, "tolist"))() == [0.0]
     with pytest.raises(Exception, match=r".*"):
         as_callable(execute_op)(None, "NonExistentCrazyOpXYZ123")
 
@@ -52,7 +53,7 @@ def test_repeat() -> None:
     """
     arr = np.array([1, 2])
     res = repeat(np, arr, 2, axis=0)
-    assert as_tensor(getattr(res, "tolist"))() == [1, 1, 2, 2]
+    assert as_tensor(_get_attr(res, "tolist"))() == [1, 1, 2, 2]
 
 
 def test_searchsorted() -> None:
@@ -75,7 +76,7 @@ def test_split() -> None:
     arr = np.array([1, 2, 3, 4])
     res = split(np, arr, 2, axis=0)
     assert as_callable(len)(res) == 2
-    assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")(0)), "tolist"))() == [1, 2]
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")(0)), "tolist"))() == [1, 2]
     res2 = split(np, arr, 2, axis=0)
     assert as_callable(len)(res2) == 2
 
@@ -88,9 +89,9 @@ def test_squeeze() -> None:
     """
     arr = np.array([[1], [2]])
     res = squeeze(np, arr, axis=1)
-    assert as_tensor(getattr(res, "tolist"))() == [1, 2]
+    assert as_tensor(_get_attr(res, "tolist"))() == [1, 2]
     res2 = squeeze(np, arr, axis=1)
-    assert as_tensor(getattr(res2, "tolist"))() == [1, 2]
+    assert as_tensor(_get_attr(res2, "tolist"))() == [1, 2]
 
 
 def test_stack() -> None:
@@ -102,9 +103,9 @@ def test_stack() -> None:
     arr1 = np.array([1, 2])
     arr2 = np.array([3, 4])
     res = stack(np, [arr1, arr2], axis=1)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
     res2 = stack(np, [arr1, arr2], axis=1)
-    assert as_tensor(getattr(res2, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res2, "shape")) == (2, 2)
 
 
 def test_unstack() -> None:
@@ -116,7 +117,7 @@ def test_unstack() -> None:
     arr = np.array([[1, 2], [3, 4]])
     res = unstack(np, arr, axis=1)
     assert as_callable(len)(res) == 2
-    assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")(0)), "tolist"))() == [1, 3]
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")(0)), "tolist"))() == [1, 3]
     res2 = unstack(np, [1, 2, 3], axis=0)
     assert as_tensor(res2) == (1, 2, 3)
 
@@ -128,7 +129,7 @@ def test_equal() -> None:
         None
     """
     res = equal(np, np.array([1]), np.array([1]))
-    assert as_tensor(getattr(res, "tolist"))() == [True]
+    assert as_tensor(_get_attr(res, "tolist"))() == [True]
 
     class IncompatibleType:
         """Test class IncompatibleType."""

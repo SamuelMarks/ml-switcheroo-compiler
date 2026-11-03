@@ -8,7 +8,7 @@ import types
 import typing
 
 from ml_switcheroo_compiler.backends import mapping_loader
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_eager_list, as_shape, as_tensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 da: types.ModuleType | None
@@ -31,8 +31,8 @@ def _verify_dask_task_graph(res: EagerValue) -> None:
     """
     if da is None:
         return
-    da_array = getattr(da, "Array", None)
-    if isinstance(da_array, type) and isinstance(res, da_array) and not hasattr(res, "dask"):
+    da_array = _get_attr(da, "Array", None)
+    if isinstance(da_array, type) and isinstance(res, da_array) and not _has_attr(res, "dask"):
         msg = "Dask array is missing underlying task graph (.dask)."
         raise RuntimeError(msg)
 
@@ -47,12 +47,13 @@ def propagate_chunk_shapes(arr: EagerValue, chunks: EagerValue | None = "auto") 
     Returns:
         tuple[tuple[int, ...], ...]: Standardized chunk tuple layout.
     """
-    if hasattr(arr, "chunks") and getattr(arr, "chunks") is not None:
-        return tuple(getattr(arr, "chunks"))
+    if _has_attr(arr, "chunks") and _get_attr(arr, "chunks") is not None:
+        raw_c = _get_attr(arr, "chunks")
+        return tuple(as_shape(c) for c in as_eager_list(raw_c))
     if da is not None:
         try:
-            dask_arr = getattr(da, "from_array")(arr, chunks=chunks)
-            return tuple(dask_arr.chunks)
+            dask_arr = as_callable(_get_attr(da, "from_array"))(arr, chunks=chunks)
+            return tuple(as_shape(c) for c in as_eager_list(_get_attr(dask_arr, "chunks")))
         except Exception:
             return ()
     return ()
@@ -72,28 +73,30 @@ def dask_conv2d(x: EagerValue, w: EagerValue, stride: EagerValue = 1, padding: E
         EagerValue: Lazy Dask array with task graph.
     """
     del kwargs
-    if da is None or getattr(x, "ndim", 0) != 4 or getattr(w, "ndim", 0) != 4:
+    if da is None or _get_attr(x, "ndim", 0) != 4 or _get_attr(w, "ndim", 0) != 4:
         return x
 
-    n, _, _, _ = as_shape(getattr(x, "shape"))
-    out_c, _, kh, kw = as_shape(getattr(w, "shape"))
+    n, _, _, _ = as_shape(_get_attr(x, "shape"))
+    out_c, _, kh, kw = as_shape(_get_attr(w, "shape"))
     stride_seq = as_shape(stride)
     stride_h, stride_w = (stride, stride) if isinstance(stride, int) else (int(stride_seq[0]), int(stride_seq[1]))
     pad_h = kh // 2 if padding == "SAME" else 0
     pad_w = kw // 2 if padding == "SAME" else 0
     if pad_h > 0 or pad_w > 0:
-        x_pad = getattr(da, "pad")(x, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant")
+        x_pad: EagerValue = as_callable(_get_attr(da, "pad"))(x, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant")
     else:
         x_pad = x
-    x_pad_shape = as_shape(x_pad.shape)
+    x_pad_shape = as_shape(_get_attr(x_pad, "shape"))
     out_h = (int(x_pad_shape[2]) - kh) // stride_h + 1
     out_w = (int(x_pad_shape[3]) - kw) // stride_w + 1
-    chunks = (getattr(x, "chunks")[0] if hasattr(x, "chunks") and len(getattr(x, "chunks")) > 0 else (n,), (out_c,), (out_h,), (out_w,))
-    out = getattr(da, "zeros")((n, out_c, out_h, out_w), dtype=getattr(x, "dtype"), chunks=chunks)
+    x_chunks = as_eager_list(_get_attr(x, "chunks")) if _has_attr(x, "chunks") else []
+    chunks = (x_chunks[0] if len(x_chunks) > 0 else (n,), (out_c,), (out_h,), (out_w,))
+    out = as_callable(_get_attr(da, "zeros"))((n, out_c, out_h, out_w), dtype=_get_attr(x, "dtype"), chunks=chunks)
     for i in range(kh):
         for j in range(kw):
             patch = as_tensor(x_pad)[:, :, i : i + out_h * stride_h : stride_h, j : j + out_w * stride_w : stride_w]
-            out = out + getattr(da, "tensordot")(patch, as_tensor(w)[:, :, i, j], axes=([1], [1])).transpose(0, 3, 1, 2)
+            td = as_callable(_get_attr(da, "tensordot"))(patch, as_tensor(w)[:, :, i, j], axes=([1], [1]))
+            out = out + as_callable(_get_attr(td, "transpose"))(0, 3, 1, 2)
     return as_tensor(out)
 
 
@@ -111,11 +114,11 @@ def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
         EagerValue: Lazy Dask array.
     """
     del padding, kwargs
-    if da is None or getattr(x, "ndim", 0) != 4:
+    if da is None or _get_attr(x, "ndim", 0) != 4:
         return x
     k_seq = as_shape(kernel_size)
     s_seq = as_shape(stride)
-    x_shape = as_shape(getattr(x, "shape"))
+    x_shape = as_shape(_get_attr(x, "shape"))
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
@@ -127,7 +130,7 @@ def dask_maxpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
             if i == 0 and j == 0:
                 continue
             patch = x_arr[:, :, i : i + out_h * sh : sh, j : j + out_w * sw : sw]
-            out = getattr(da, "maximum")(out, patch)
+            out = as_callable(_get_attr(da, "maximum"))(out, patch)
     return out
 
 
@@ -145,11 +148,11 @@ def dask_avgpool2d(x: EagerValue, kernel_size: EagerValue = 2, stride: EagerValu
         EagerValue: Lazy Dask array.
     """
     del padding, kwargs
-    if da is None or getattr(x, "ndim", 0) != 4:
+    if da is None or _get_attr(x, "ndim", 0) != 4:
         return x
     k_seq = as_shape(kernel_size)
     s_seq = as_shape(stride)
-    x_shape = as_shape(getattr(x, "shape"))
+    x_shape = as_shape(_get_attr(x, "shape"))
     kh, kw = (kernel_size, kernel_size) if isinstance(kernel_size, int) else (int(k_seq[0]), int(k_seq[1]))
     sh, sw = (stride, stride) if isinstance(stride, int) else (int(s_seq[0]), int(s_seq[1]))
     out_h = (int(x_shape[2]) - kh) // sh + 1
@@ -177,11 +180,11 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
         EagerValue: Lazy resized Dask array.
     """
     del kwargs
-    if da is None or getattr(x, "ndim", 0) != 4 or size is None:
+    if da is None or _get_attr(x, "ndim", 0) != 4 or size is None:
         return x
     size_seq = as_shape(size)
     new_h, new_w = (int(size_seq[0]), int(size_seq[1]))
-    _, _, h, w = as_shape(getattr(x, "shape"))
+    _, _, h, w = as_shape(_get_attr(x, "shape"))
     if (new_h, new_w) == (h, w):
         return x
 
@@ -196,8 +199,8 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
     x0: list[int] = [int(v) for v in x_coords]
     x1: list[int] = [min(v + 1, int(w) - 1) for v in x0]
 
-    wy = getattr(da, "from_array")([v - float(int(v)) for v in y_coords], chunks=new_h)[None, None, :, None]
-    wx = getattr(da, "from_array")([v - float(int(v)) for v in x_coords], chunks=new_w)[None, None, None, :]
+    wy = as_callable(_get_attr(da, "from_array"))([v - float(int(v)) for v in y_coords], chunks=new_h)[None, None, :, None]
+    wx = as_callable(_get_attr(da, "from_array"))([v - float(int(v)) for v in x_coords], chunks=new_w)[None, None, None, :]
 
     x_arr = as_tensor(x)
     p00 = x_arr[:, :, y0, :][:, :, :, x0]
@@ -208,22 +211,44 @@ def dask_resize_bilinear(x: EagerValue, size: EagerValue = None, **kwargs: Eager
     return as_tensor(p00 * (1.0 - wy) * (1.0 - wx) + p01 * (1.0 - wy) * wx + p10 * wy * (1.0 - wx) + p11 * wy * wx)
 
 
+@typing.runtime_checkable
+class _DaskVisionModuleProtocol(typing.Protocol):
+    """Protocol for Dask module containers supporting vision op attachment."""
+
+    conv2d: EagerValue
+    maxpool2d: EagerValue
+    avgpool2d: EagerValue
+    resize_bilinear: EagerValue
+
+
+def _is_dask_vision_mod(mod: EagerValue) -> typing.TypeGuard[_DaskVisionModuleProtocol]:
+    """Type guard narrowing `mod` to `_DaskVisionModuleProtocol`.
+
+    Args:
+        mod (EagerValue): Candidate module or mock.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return mod is not None
+
+
 def _attach_dask_vision_ops(backend_mod: EagerValue | None) -> None:
     """Attach lazy Dask vision and neural network kernels to Dask container.
 
     Args:
         backend_mod (Optional[object]): Dask module container.
     """
-    if backend_mod is None:
+    if not _is_dask_vision_mod(backend_mod):
         return
-    for name, fn in (
-        ("conv2d", dask_conv2d),
-        ("maxpool2d", dask_maxpool2d),
-        ("avgpool2d", dask_avgpool2d),
-        ("resize_bilinear", dask_resize_bilinear),
-    ):
-        if not hasattr(backend_mod, name):
-            setattr(backend_mod, name, fn)
+    if not _has_attr(backend_mod, "conv2d"):
+        backend_mod.conv2d = as_tensor(dask_conv2d)
+    if not _has_attr(backend_mod, "maxpool2d"):
+        backend_mod.maxpool2d = as_tensor(dask_maxpool2d)
+    if not _has_attr(backend_mod, "avgpool2d"):
+        backend_mod.avgpool2d = as_tensor(dask_avgpool2d)
+    if not _has_attr(backend_mod, "resize_bilinear"):
+        backend_mod.resize_bilinear = as_tensor(dask_resize_bilinear)
 
 
 def execute_op(
@@ -246,7 +271,7 @@ def execute_op(
     Raises:
         BackendNotSupportedError: If Dask is unavailable or op is unmapped.
     """
-    mod_entry = typing.cast("types.ModuleType | EagerValue | None", sys.modules.get("ml_switcheroo_compiler.backends.dask.eager"))
+    mod_entry: types.ModuleType | EagerValue | None = sys.modules.get("ml_switcheroo_compiler.backends.dask.eager")
     if mod_entry is not None and not isinstance(mod_entry, types.ModuleType):
         backend_mod: EagerValue | None = mod_entry
     else:
@@ -256,16 +281,16 @@ def execute_op(
     schema = mapping_loader.load_backend_mappings("dask")
     if op_type in schema.operations:
         op_spec = schema.operations[op_type]
-        is_custom = getattr(op_spec, "target_api", None) == "custom_op" and getattr(op_spec, "custom_code", None)
+        is_custom = _get_attr(op_spec, "target_api", None) == "custom_op" and _get_attr(op_spec, "custom_code", None)
 
         if not is_custom and backend_mod is None:
             raise BackendNotSupportedError("Dask is not installed or available in this environment.")
 
         processed_args: list[EagerValue] = []
         for arg in args:
-            if isinstance(arg, (list, tuple)) and backend_mod is not None and hasattr(backend_mod, "from_array"):
+            if isinstance(arg, (list, tuple)) and backend_mod is not None and _has_attr(backend_mod, "from_array"):
                 try:
-                    processed_args.append(backend_mod.from_array(arg))
+                    processed_args.append(as_callable(_get_attr(backend_mod, "from_array"))(arg))
                 except Exception:
                     processed_args.append(arg)
             else:

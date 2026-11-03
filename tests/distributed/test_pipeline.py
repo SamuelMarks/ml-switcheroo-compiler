@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.distributed.strategy import PipelineParallelismStrategy
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_tensor
@@ -93,5 +94,5 @@ def test_pipeline_lower() -> None:
     strategy = PipelineParallelismStrategy(num_microbatches=2, devices_per_stage=1)
     result = strategy.lower(graph)
     assert result is True
-    assert "pipeline_schedule" in as_tensor(getattr(graph, "attributes"))
-    assert as_tensor(getattr(graph, "attributes"))["num_pipeline_stages"] == 2
+    assert "pipeline_schedule" in as_tensor(_get_attr(graph, "attributes"))
+    assert as_tensor(_get_attr(graph, "attributes"))["num_pipeline_stages"] == 2

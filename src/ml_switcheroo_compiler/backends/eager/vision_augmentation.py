@@ -9,6 +9,7 @@ import pydantic
 from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _from_numpy_array
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_opt_str, as_str, as_tensor
 from ml_switcheroo_compiler.backends.protocols import as_mod
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 from .vision_transforms import _apply_elastic_batch
 from .vision_utils import GeometricGridConfig, RandomCropConfig, TransformInterpolationConfig, _prepare_eager_transform
@@ -89,7 +90,7 @@ def random_flip_eager(backend_module: VisionArray, images: VisionArray, mode: st
     data_format = None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
 
-    out = getattr(ctx.np_mod, "copy")(ctx.imgs)
+    out = _get_attr(ctx.np_mod, "copy")(ctx.imgs)
     strategy = _FLIP_STRATEGIES.get(mode, _identity_flip)
 
     for i in range(ctx.B):
@@ -332,16 +333,16 @@ def random_elastic_transform_eager(
 
     Returns: VisionArray: The batch of elastically transformed images.
     """
-    data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
-    ctx = _prepare_eager_transform(backend_module, images, kwargs.get("seed", None) if hasattr(kwargs, "get") else None, data_format)
+    data_format = kwargs.get("data_format", None) if _has_attr(kwargs, "get") else None
+    ctx = _prepare_eager_transform(backend_module, images, kwargs.get("seed", None) if _has_attr(kwargs, "get") else None, data_format)
     a = _get_elastic_factor(ctx.rng, alpha)
     s = _get_elastic_factor(ctx.rng, sigma)
     (new_y, new_x) = _generate_random_elastic_grid(ctx.np_mod, (ctx.B, ctx.H, ctx.W), ctx.rng, a, s)
     t_config = TransformInterpolationConfig(
         new_y=new_y,
         new_x=new_x,
-        order=1 if str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear") == "bilinear" else 0,
-        fill_value=float(as_float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0)),
+        order=1 if str(kwargs.get("interpolation", "bilinear") if _has_attr(kwargs, "get") else "bilinear") == "bilinear" else 0,
+        fill_value=float(as_float(kwargs.get("fill_value", 0.0) if _has_attr(kwargs, "get") else 0.0)),
     )
     out = _apply_elastic_batch(ctx.np_mod, ctx.imgs, t_config)
     out = _from_channels_last(ctx.np_mod, out, as_opt_str(data_format))
@@ -421,11 +422,11 @@ def random_zoom_eager(
 
     Returns: VisionArray: The batch of zoomed images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
-    interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(as_float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
-    seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
-    data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
+    fill_mode = str(kwargs.get("fill_mode", "reflect") if _has_attr(kwargs, "get") else "reflect")
+    interpolation = str(kwargs.get("interpolation", "bilinear") if _has_attr(kwargs, "get") else "bilinear")
+    fill_value = float(as_float(kwargs.get("fill_value", 0.0) if _has_attr(kwargs, "get") else 0.0))
+    seed = kwargs.get("seed", None) if _has_attr(kwargs, "get") else None
+    data_format = kwargs.get("data_format", None) if _has_attr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
     if width_factor is None:
         width_factor = height_factor
@@ -461,11 +462,11 @@ def random_translation_eager(
 
     Returns: VisionArray: The batch of translated images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
-    interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(as_float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
-    seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
-    data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
+    fill_mode = str(kwargs.get("fill_mode", "reflect") if _has_attr(kwargs, "get") else "reflect")
+    interpolation = str(kwargs.get("interpolation", "bilinear") if _has_attr(kwargs, "get") else "bilinear")
+    fill_value = float(as_float(kwargs.get("fill_value", 0.0) if _has_attr(kwargs, "get") else 0.0))
+    seed = kwargs.get("seed", None) if _has_attr(kwargs, "get") else None
+    data_format = kwargs.get("data_format", None) if _has_attr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
     (new_y, new_x) = _compute_translation_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=height_factor, factor2=width_factor))
     config = RotationConfig(
@@ -499,11 +500,11 @@ def random_shear_eager(
 
     Returns: VisionArray: The batch of sheared images.
     """
-    fill_mode = str(kwargs.get("fill_mode", "reflect") if hasattr(kwargs, "get") else "reflect")
-    interpolation = str(kwargs.get("interpolation", "bilinear") if hasattr(kwargs, "get") else "bilinear")
-    fill_value = float(as_float(kwargs.get("fill_value", 0.0) if hasattr(kwargs, "get") else 0.0))
-    seed = kwargs.get("seed", None) if hasattr(kwargs, "get") else None
-    data_format = kwargs.get("data_format", None) if hasattr(kwargs, "get") else None
+    fill_mode = str(kwargs.get("fill_mode", "reflect") if _has_attr(kwargs, "get") else "reflect")
+    interpolation = str(kwargs.get("interpolation", "bilinear") if _has_attr(kwargs, "get") else "bilinear")
+    fill_value = float(as_float(kwargs.get("fill_value", 0.0) if _has_attr(kwargs, "get") else 0.0))
+    seed = kwargs.get("seed", None) if _has_attr(kwargs, "get") else None
+    data_format = kwargs.get("data_format", None) if _has_attr(kwargs, "get") else None
     ctx = _prepare_eager_transform(backend_module, images, seed, data_format)
     (new_y, new_x) = _compute_shear_grid(ctx.np_mod, GeometricGridConfig(H=ctx.H, W=ctx.W, rng=ctx.rng, factor1=y_factor, factor2=x_factor))
     config = RotationConfig(

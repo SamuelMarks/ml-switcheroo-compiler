@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_attrs, as_callable, as_node_dict, as_tensor
 
@@ -98,7 +99,7 @@ def test_wasm_scalar_fallback_code() -> None:
 
     g = IRGraph()
     g.nodes["n1"] = IRNode(id="n1", op_type="UnknownSIMD_Op_Test")
-    object.__setattr__(g, "sorted_nodes", [g.nodes["n1"]])
+    _obj_set_attr(g, "sorted_nodes", [g.nodes["n1"]])
     gen = WasmCodeGenerator(g)
 
     # We directly invoke _generate_vector_unrolled_op for a fake op that has no simd_macro
@@ -113,7 +114,7 @@ def test_wasm_dummy_allocation() -> None:
 
     g = IRGraph()
     g.nodes["n1"] = IRNode(id="n1", op_type="Linear")
-    object.__setattr__(g, "sorted_nodes", [g.nodes["n1"]])
+    _obj_set_attr(g, "sorted_nodes", [g.nodes["n1"]])
     gen = WasmCodeGenerator(g)
     code = gen.generate()
     assert "float dummy_val = 0.0f;" in code
@@ -139,7 +140,7 @@ def test_wasm_binary_simd_ops_and_peeling() -> None:
     ]:
         gen.code.clear()
         node = IRNode(id=f"node_{op_type}", op_type=op_type, inputs=["x", "y"], shape_metadata=[10])
-        getattr(gen, visit_name)(node, op_type, f"clean_{op_type}", ["x", "y"], [10], 10)
+        _get_attr(gen, visit_name)(node, op_type, f"clean_{op_type}", ["x", "y"], [10], 10)
         code_str = "\n".join(gen.code)
         assert "wasm_v128_load" in code_str
         assert "wasm_v128_store" in code_str
@@ -168,7 +169,7 @@ def test_wasm_unary_simd_ops_and_peeling() -> None:
     ]:
         gen.code.clear()
         node = IRNode(id=f"node_{op_type}", op_type=op_type, inputs=["x"], shape_metadata=[7])
-        getattr(gen, visit_name)(node, op_type, f"clean_{op_type}", ["x"], [7], 7)
+        _get_attr(gen, visit_name)(node, op_type, f"clean_{op_type}", ["x"], [7], 7)
         code_str = "\n".join(gen.code)
         assert "wasm_v128_load" in code_str
         assert "wasm_v128_store" in code_str
@@ -244,11 +245,11 @@ def _test_wasm_additional_edges_and_telemetry_part_1(_state: dict[str, EagerTens
     node_nofallback = IRNode(id="nf", op_type="NoFallback", inputs=["in0", "in1"])
     from unittest.mock import mock_open
 
-    getattr(_state, "update")({"IRGraph": IRGraph, "IRNode": IRNode, "UnimplementedMathError": UnimplementedMathError, "WasmCodeGenerator": WasmCodeGenerator})
-    getattr(_state, "update")({"code_str": code_str, "fake_binary_intrinsics": fake_binary_intrinsics, "g": g, "gen": gen})
-    getattr(_state, "update")({"mock_open": mock_open, "node_custom": node_custom, "node_nofallback": node_nofallback, "os": os})
-    getattr(_state, "update")({"patch": patch, "pytest": pytest})
-    _state.update(locals())
+    _get_attr(_state, "update")({"IRGraph": IRGraph, "IRNode": IRNode, "UnimplementedMathError": UnimplementedMathError, "WasmCodeGenerator": WasmCodeGenerator})
+    _get_attr(_state, "update")({"code_str": code_str, "fake_binary_intrinsics": fake_binary_intrinsics, "g": g, "gen": gen})
+    _get_attr(_state, "update")({"mock_open": mock_open, "node_custom": node_custom, "node_nofallback": node_nofallback, "os": os})
+    _get_attr(_state, "update")({"patch": patch, "pytest": pytest})
+    _state.update(_caller_locals())
 
 
 def _test_wasm_additional_edges_and_telemetry_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -293,9 +294,9 @@ def _test_wasm_additional_edges_and_telemetry_part_2(_state: dict[str, EagerTens
         "scalars": {},
     }
     node_spec = IRNode(id="spec", op_type="SpecialSimd", inputs=["in0"])
-    getattr(_state, "update")({"fake_intrinsics": fake_intrinsics, "node_sin": node_sin, "node_spec": node_spec, "node_tan": node_tan})
-    getattr(_state, "update")({"node_unimpl": node_unimpl})
-    _state.update(locals())
+    _get_attr(_state, "update")({"fake_intrinsics": fake_intrinsics, "node_sin": node_sin, "node_spec": node_spec, "node_tan": node_tan})
+    _get_attr(_state, "update")({"node_unimpl": node_unimpl})
+    _state.update(_caller_locals())
 
 
 def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -340,10 +341,10 @@ def _test_wasm_additional_edges_and_telemetry_part_3(_state: dict[str, EagerTens
     n_non_list_concrete = IRNode(id="n2", op_type="Input", shape_metadata=["B"])
     n_len_mismatch = IRNode(id="n3", op_type="Input", shape_metadata=["B", 10])
     n_failing_eval = IRNode(id="n4", op_type="Relu", inputs=["n1"])
-    object.__setattr__(n_failing_eval, "shape_metadata", [as_callable(FailingEvalDim)()])
-    getattr(_state, "update")({"FailingEvalDim": FailingEvalDim, "code_spec": code_spec, "n_failing_eval": n_failing_eval, "n_len_mismatch": n_len_mismatch})
-    getattr(_state, "update")({"n_non_list_concrete": n_non_list_concrete, "n_valid_str": n_valid_str})
-    _state.update(locals())
+    _obj_set_attr(n_failing_eval, "shape_metadata", [as_callable(FailingEvalDim)()])
+    _get_attr(_state, "update")({"FailingEvalDim": FailingEvalDim, "code_spec": code_spec, "n_failing_eval": n_failing_eval, "n_len_mismatch": n_len_mismatch})
+    _get_attr(_state, "update")({"n_non_list_concrete": n_non_list_concrete, "n_valid_str": n_valid_str})
+    _state.update(_caller_locals())
 
 
 def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -358,7 +359,7 @@ def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTens
     n_no_meta = IRNode(id="n6", op_type="Relu", inputs=["n1"])  # shape_metadata is None
 
     g2 = IRGraph()
-    setattr(
+    _set_attr(
         g2,
         "nodes",
         NodeDict(
@@ -374,8 +375,8 @@ def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTens
             )
         ),
     )
-    setattr(g2, "inputs", ["n1", "n2", "n3"])
-    setattr(g2, "outputs", ["n4", "n5", "n6"])
+    _set_attr(g2, "inputs", ["n1", "n2", "n3"])
+    _set_attr(g2, "outputs", ["n4", "n5", "n6"])
     gen2 = WasmCodeGenerator(g2)
 
     telemetry_payload = {
@@ -386,8 +387,8 @@ def _test_wasm_additional_edges_and_telemetry_part_4(_state: dict[str, EagerTens
     as_callable(gen2.apply_shape_telemetry)(telemetry_payload)
     assert n_valid_str.shape_metadata == (16, 64)
     assert n_failing_eval.shape_metadata == (1,)
-    getattr(_state, "update")({"g2": g2, "gen2": gen2, "n_no_meta": n_no_meta, "n_unresolved_str": n_unresolved_str})
-    getattr(_state, "update")({"telemetry_payload": telemetry_payload})
+    _get_attr(_state, "update")({"g2": g2, "gen2": gen2, "n_no_meta": n_no_meta, "n_unresolved_str": n_unresolved_str})
+    _get_attr(_state, "update")({"telemetry_payload": telemetry_payload})
 
 
 def test_wasm_additional_edges_and_telemetry() -> None:

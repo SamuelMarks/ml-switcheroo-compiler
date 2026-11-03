@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.attention import ScaledDotProductAttention
 from ml_switcheroo_compiler.ops.nn.attention_utils import RopeOp, alibi_mask, rope, sinusoidal_positional_encoding
@@ -38,8 +39,8 @@ def _test_nn_attention_utils_coverage_part_1(_state: dict[str, EagerTensorProtoc
 
     import ml_switcheroo_compiler.backends.registry as registry_mod
 
-    getattr(_state, "update")({"registry_mod": registry_mod, "t": t})
-    _state.update(locals())
+    _get_attr(_state, "update")({"registry_mod": registry_mod, "t": t})
+    _state.update(_caller_locals())
 
 
 class _MockAttentionBackend:
@@ -160,8 +161,8 @@ def __test_nn_attention_utils_coverage_part_2_sub_1(_state: dict[str, EagerTenso
     Args:
         _state: Shared test state dictionary.
     """
-    getattr(_state, "update")({"MockAttentionBackend": _MockAttentionBackend})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockAttentionBackend": _MockAttentionBackend})
+    _state.update(_caller_locals())
 
 
 def __test_nn_attention_utils_coverage_part_2_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -171,9 +172,9 @@ def __test_nn_attention_utils_coverage_part_2_sub_2(_state: dict[str, EagerTenso
         _state: Shared test state dictionary.
     """
     MockAttentionBackend = _state["MockAttentionBackend"]
-    getattr(_state, "update")({"MockAttentionBackend": MockAttentionBackend})
-    _state.update(locals())
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockAttentionBackend": MockAttentionBackend})
+    _state.update(_caller_locals())
+    _state.update(_caller_locals())
 
 
 def _test_nn_attention_utils_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -182,7 +183,7 @@ def _test_nn_attention_utils_coverage_part_2(_state: dict[str, EagerTensorProtoc
     Args:
         _state: Shared test state dictionary.
     """
-    getattr(_state, "__setitem__")("_state", _state)
+    _get_attr(_state, "__setitem__")("_state", _state)
     for _sub_fn in (__test_nn_attention_utils_coverage_part_2_sub_1, __test_nn_attention_utils_coverage_part_2_sub_2):
         _sub_fn(_state)
     assert len(_state) > 0
@@ -197,7 +198,7 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
     MockAttentionBackend, registry_mod, t = _state["MockAttentionBackend"], _state["registry_mod"], _state["t"]
     orig_backend = registry_mod.get_active_backend
     try:
-        setattr(registry_mod, "get_active_backend", lambda: MockAttentionBackend())
+        _set_attr(registry_mod, "get_active_backend", lambda: MockAttentionBackend())
 
         as_callable(rope)(t, axis=2)
 
@@ -220,14 +221,14 @@ def _test_nn_attention_utils_coverage_part_3(_state: dict[str, EagerTensorProtoc
                 """
                 pass
 
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
 
         as_callable(rope)(t, axis=2)
     finally:
         config.eager_mode = False
         global_tracing_state.is_tracing = False
-        setattr(registry_mod, "get_active_backend", orig_backend)
-    getattr(_state, "update")({"orig_backend": orig_backend})
+        _set_attr(registry_mod, "get_active_backend", orig_backend)
+    _get_attr(_state, "update")({"orig_backend": orig_backend})
 
 
 def test_nn_attention_utils_coverage() -> None:

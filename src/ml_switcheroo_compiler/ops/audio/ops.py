@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -21,8 +21,8 @@ class Stft(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and hasattr(args[0], "shape"):
-            shape = list(getattr(args[0], "shape", ()))
+        if len(args) > 0 and _has_attr(args[0], "shape"):
+            shape = list(_get_attr(args[0], "shape", ()))
             if len(shape) > 0:
                 signal_length = shape[-1]
                 frame_length = kwargs.get("frame_length", 256)
@@ -51,8 +51,8 @@ class MelSpectrogram(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and hasattr(args[0], "shape"):
-            shape = list(getattr(args[0], "shape", ()))
+        if len(args) > 0 and _has_attr(args[0], "shape"):
+            shape = list(_get_attr(args[0], "shape", ()))
             if len(shape) > 0:
                 signal_length = shape[-1]
                 frame_length = kwargs.get("frame_length", 256)
@@ -79,8 +79,8 @@ class Istft(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and hasattr(args[0], "shape"):
-            shape = list(getattr(args[0], "shape", ()))
+        if len(args) > 0 and _has_attr(args[0], "shape"):
+            shape = list(_get_attr(args[0], "shape", ()))
             if len(shape) >= 2:
                 num_frames = shape[-2]
                 frame_length = kwargs.get("frame_length", 256)
@@ -126,8 +126,8 @@ class Mfcc(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and hasattr(args[0], "shape"):
-            shape = list(getattr(args[0], "shape", ()))
+        if len(args) > 0 and _has_attr(args[0], "shape"):
+            shape = list(_get_attr(args[0], "shape", ()))
             if len(shape) > 0:
                 signal_length = shape[-1]
                 frame_length = kwargs.get("frame_length", 256)
@@ -154,8 +154,8 @@ class MfccsFromLogMelSpectrograms(OpDef):
         Returns:
             The output shape as a tuple of integers.
         """
-        if len(args) > 0 and hasattr(args[0], "shape"):
-            shape = list(getattr(args[0], "shape", ()))
+        if len(args) > 0 and _has_attr(args[0], "shape"):
+            shape = list(_get_attr(args[0], "shape", ()))
             if len(shape) > 0:
                 num_mfccs = kwargs.get("num_mfccs", 13)
                 shape[-1] = num_mfccs
@@ -179,7 +179,7 @@ class HannWindow(OpDef):
         """
         window_length = kwargs.get("window_length", 256)
         if len(args) > 0:
-            val = getattr(args[0], "value", args[0])
+            val = _get_attr(args[0], "value", args[0])
             if isinstance(val, int):
                 window_length = val
         return (window_length,)
@@ -201,7 +201,7 @@ class HammingWindow(OpDef):
         """
         window_length = kwargs.get("window_length", 256)
         if len(args) > 0:
-            val = getattr(args[0], "value", args[0])
+            val = _get_attr(args[0], "value", args[0])
             if isinstance(val, int):
                 window_length = val
         return (window_length,)
@@ -223,7 +223,7 @@ class KaiserWindow(OpDef):
         """
         window_length = kwargs.get("window_length", 256)
         if len(args) > 0:
-            val = getattr(args[0], "value", args[0])
+            val = _get_attr(args[0], "value", args[0])
             if isinstance(val, int):
                 window_length = val
         return (window_length,)
@@ -283,10 +283,10 @@ class Mdct(OpDef):
         Returns:
             tuple[int, ...]: The output shape of the transformed signal.
         """
-        if len(args) == 0 or not hasattr(args[0], "shape"):
+        if len(args) == 0 or not _has_attr(args[0], "shape"):
             return ()
         a = args[0]
-        shape = list(getattr(a, "shape", ()) or ())
+        shape = list(_get_attr(a, "shape", ()) or ())
         if not shape:
             return ()
 
@@ -331,9 +331,9 @@ class InverseMdct(OpDef):
         Returns:
             tuple[int, ...]: The output shape of the inverse transformed signal.
         """
-        if not args or not hasattr(args[0], "shape"):
+        if not args or not _has_attr(args[0], "shape"):
             return ()
-        shape = list(getattr(args[0], "shape", ()) or ())
+        shape = list(_get_attr(args[0], "shape", ()) or ())
         if not shape:
             return ()
 
@@ -371,10 +371,10 @@ class Frame(OpDef):
         Returns:
             tuple[int, ...]: The output shape containing the newly added frame dimension.
         """
-        if len(args) == 0 or not hasattr(args[0], "shape"):
+        if len(args) == 0 or not _has_attr(args[0], "shape"):
             return ()
         a = args[0]
-        shape = list(getattr(a, "shape", ()) or ())
+        shape = list(_get_attr(a, "shape", ()) or ())
         if not shape:
             return ()
 

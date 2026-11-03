@@ -8,6 +8,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ops.io.tf_io import (
     TFRecordOptions,
     TFRecordWriter,
@@ -162,6 +163,6 @@ def test_tfrecord_writer_edge_cases() -> None:
 
         zlib_empty_path = os.path.join(tmpdir, "zlib_empty.tfrecord")
         writer_zlib = TFRecordWriter(zlib_empty_path, TFRecordOptions("ZLIB"))
-        setattr(writer_zlib, "_compressor", DummyCompressor())
+        _set_attr(writer_zlib, "_compressor", DummyCompressor())
         writer_zlib.close()
         assert writer_zlib._closed

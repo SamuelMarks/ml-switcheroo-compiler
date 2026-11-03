@@ -9,6 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.distributed as dmod
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_all_gather, _np_all_reduce, _np_all_to_all, _np_axis_index, _np_broadcast, _np_reduce, _np_reduce_scatter, _np_shard_tensor, set_np_distributed_context
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -102,12 +103,12 @@ def test_distributed_shutdown_no_conn() -> None:
     ctx = TCPDistributedContext()
     ctx.world_size = 2
     ctx.rank = 1
-    setattr(ctx, "conn", None)
+    _set_attr(ctx, "conn", None)
     ctx.shutdown()
     ctx2 = TCPDistributedContext()
     ctx2.world_size = 2
     ctx2.rank = 0
-    setattr(ctx2, "connections", [])
+    _set_attr(ctx2, "connections", [])
     ctx2.listener = None
     ctx2.shutdown()
     assert ctx2.rank == 0
@@ -148,9 +149,9 @@ def test_ipc_worker_retry_then_success() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            self.calls = getattr(self.__class__, "calls", 0)
-            self.__class__.calls = self.calls + 1
-            if self.__class__.calls < 2:
+            self.calls = _get_attr(type(self), "calls", 0)
+            type(self).calls = self.calls + 1
+            if type(self).calls < 2:
                 raise ConnectionRefusedError("fail first time")
             self.mock = MagicMock()
 
@@ -200,18 +201,18 @@ def test_np_ops_coverage() -> None:
     """Test function test_np_ops_coverage."""
     dmod._tcp_dist_ctx.world_size = 2
     dmod._tcp_dist_ctx.rank = 0
-    setattr(dmod._tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: as_callable(np.array)([5.0]) if op == "sum" else as_callable(np.array)([3.0]))
-    setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])])
+    _set_attr(dmod._tcp_dist_ctx, "all_reduce_ring", lambda t, op, bm: as_callable(np.array)([5.0]) if op == "sum" else as_callable(np.array)([3.0]))
+    _set_attr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])])
     t = np.array([2.0])
-    assert as_tensor(getattr(_np_all_reduce(np, t, op_type="sum"), "item"))() == 5.0
-    setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])])
-    assert as_tensor(getattr(_np_reduce(np, t, op_type="sum"), "item"))() == 5.0
-    assert as_tensor(getattr(_np_all_reduce(np, t, op_type="max"), "item"))() == 3.0
+    assert as_tensor(_get_attr(_np_all_reduce(np, t, op_type="sum"), "item"))() == 5.0
+    _set_attr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0])])
+    assert as_tensor(_get_attr(_np_reduce(np, t, op_type="sum"), "item"))() == 5.0
+    assert as_tensor(_get_attr(_np_all_reduce(np, t, op_type="max"), "item"))() == 3.0
     res = _np_all_gather(np, t, axis=0)
     assert as_callable(np.array_equal)(res, [2.0, 3.0])
     t_rs = np.array([1.0, 2.0])
-    setattr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0, 4.0])])
-    assert as_tensor(getattr(_np_reduce_scatter(np, t_rs, op_type="sum"), "item"))() == 4.0
+    _set_attr(dmod._tcp_dist_ctx, "all_gather_tensors", lambda t: [t, np.array([3.0, 4.0])])
+    assert as_tensor(_get_attr(_np_reduce_scatter(np, t_rs, op_type="sum"), "item"))() == 4.0
     a2a = _np_all_to_all(np, t_rs)
     assert as_callable(len)(a2a) == 2
 

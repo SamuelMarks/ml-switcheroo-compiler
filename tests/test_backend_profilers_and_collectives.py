@@ -45,6 +45,7 @@ from ml_switcheroo_compiler.backends.pytorch.profiler import (
 from ml_switcheroo_compiler.backends.pytorch.profiler import (
     _get_process_memory_mb as torch_get_mem,
 )
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor, install_profiler_backend_stubs
 
@@ -502,7 +503,7 @@ def _test_numba_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol])
     # 2. ImportError branch when numba is not installed
     with patch.dict("sys.modules", {"numba": None}):
         importlib.reload(nb_prof_mod)
-        assert as_tensor(getattr(nb_prof_mod, "numba")) is None
+        assert as_tensor(_get_attr(nb_prof_mod, "numba")) is None
     importlib.reload(nb_prof_mod)
 
     profiler = NumbaProfiler()
@@ -518,10 +519,10 @@ def _test_numba_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol])
     g_both = IRGraph()
     g_both.nodes["x"] = IRNode(id="x", op_type="Input")
     g_both.nodes["y"] = IRNode(id="y", op_type="Input")
-    getattr(_state, "update")({"NumbaProfiler": NumbaProfiler, "_get_process_memory_mb": _get_process_memory_mb, "arr_in": arr_in, "g": g})
-    getattr(_state, "update")({"g_both": g_both, "importlib": importlib, "mem": mem, "nb_prof_mod": nb_prof_mod})
-    getattr(_state, "update")({"prep": prep, "profiler": profiler})
-    _state.update(locals())
+    _get_attr(_state, "update")({"NumbaProfiler": NumbaProfiler, "_get_process_memory_mb": _get_process_memory_mb, "arr_in": arr_in, "g": g})
+    _get_attr(_state, "update")({"g_both": g_both, "importlib": importlib, "mem": mem, "nb_prof_mod": nb_prof_mod})
+    _get_attr(_state, "update")({"prep": prep, "profiler": profiler})
+    _state.update(_caller_locals())
 
 
 def _test_numba_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -561,9 +562,9 @@ def _test_numba_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol])
     with patch.object(profiler, "_compile_graph", return_value=lambda inputs: inputs[0] * 2):
         res_comp = profiler.profile_graph(g_ops, inputs={"x": np.array([2.0])}, num_iters=2, warmup_iters=1)
         assert "mean_latency_ms" in res_comp
-    getattr(_state, "update")({"empty_graph": empty_graph, "fn": fn, "fn_none": fn_none, "g_ops": g_ops})
-    getattr(_state, "update")({"prep_both": prep_both, "prep_empty": prep_empty, "prep_fallback": prep_fallback, "res_comp": res_comp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"empty_graph": empty_graph, "fn": fn, "fn_none": fn_none, "g_ops": g_ops})
+    _get_attr(_state, "update")({"prep_both": prep_both, "prep_empty": prep_empty, "prep_fallback": prep_fallback, "res_comp": res_comp})
+    _state.update(_caller_locals())
 
 
 def _test_numba_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -581,7 +582,7 @@ def _test_numba_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol])
     g_empty = IRGraph()
     res_empty = profiler.profile_graph(g_empty, inputs={}, num_iters=1, warmup_iters=1)
     assert "mean_latency_ms" in res_empty
-    getattr(_state, "update")({"g_empty": g_empty, "res_empty": res_empty, "res_err": res_err})
+    _get_attr(_state, "update")({"g_empty": g_empty, "res_empty": res_empty, "res_err": res_err})
 
 
 def test_numba_profiler_branches() -> None:
@@ -617,7 +618,7 @@ def _test_sparse_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]
     # 2. ImportError branch when sparse is not installed
     with patch.dict("sys.modules", {"sparse": None}):
         importlib.reload(sp_prof_mod)
-        assert as_tensor(getattr(sp_prof_mod, "sparse")) is None
+        assert as_tensor(_get_attr(sp_prof_mod, "sparse")) is None
     importlib.reload(sp_prof_mod)
 
     profiler = SparseProfiler()
@@ -635,10 +636,10 @@ def _test_sparse_profiler_branches_part_1(_state: dict[str, EagerTensorProtocol]
     # Testing all branches of _prepare_inputs: GCXS, np.ndarray, and sequence/scalar
     prep_multi = profiler._prepare_inputs(IRGraph(), {"a": gcxs, "b": np.array([1.0]), "c": [2.0]})
     assert len(prep_multi) == 3
-    getattr(_state, "update")({"SparseProfiler": SparseProfiler, "_get_process_memory_mb": _get_process_memory_mb, "coo": coo, "g": g})
-    getattr(_state, "update")({"gcxs": gcxs, "importlib": importlib, "mem": mem, "prep_multi": prep_multi})
-    getattr(_state, "update")({"prep_sp": prep_sp, "profiler": profiler, "sp_mod": sp_mod, "sp_prof_mod": sp_prof_mod})
-    _state.update(locals())
+    _get_attr(_state, "update")({"SparseProfiler": SparseProfiler, "_get_process_memory_mb": _get_process_memory_mb, "coo": coo, "g": g})
+    _get_attr(_state, "update")({"gcxs": gcxs, "importlib": importlib, "mem": mem, "prep_multi": prep_multi})
+    _get_attr(_state, "update")({"prep_sp": prep_sp, "profiler": profiler, "sp_mod": sp_mod, "sp_prof_mod": sp_prof_mod})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -648,6 +649,7 @@ def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]
         _state: Shared test state dictionary.
     """
     g, profiler, sp_mod = _state["g"], _state["profiler"], _state["sp_mod"]
+    _ = sp_mod
 
     class _MockSparseNoAttrs:
         """Test class _MockSparseNoAttrs."""
@@ -681,9 +683,9 @@ def _test_sparse_profiler_branches_part_2(_state: dict[str, EagerTensorProtocol]
     with patch("ml_switcheroo_compiler.backends.sparse.generator.SparseGenerator.generate", return_value="def evaluate(args): return args[0]"):
         fn = profiler._compile_graph(g)
         assert callable(fn)
-    getattr(_state, "update")({"_MockSparseNoAttrs": _MockSparseNoAttrs, "fn": fn, "g_two": g_two, "mock_sparse_val": mock_sparse_val})
-    getattr(_state, "update")({"prep_matched": prep_matched, "prep_no_sp": prep_no_sp, "prep_sparse_fallback": prep_sparse_fallback})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_MockSparseNoAttrs": _MockSparseNoAttrs, "fn": fn, "g_two": g_two, "mock_sparse_val": mock_sparse_val})
+    _get_attr(_state, "update")({"prep_matched": prep_matched, "prep_no_sp": prep_no_sp, "prep_sparse_fallback": prep_sparse_fallback})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -713,9 +715,9 @@ def _test_sparse_profiler_branches_part_3(_state: dict[str, EagerTensorProtocol]
     class NoAdd:
         """Dummy object without addition support."""
 
-    getattr(_state, "update")({"NoAdd": NoAdd, "fn_none": fn_none, "g_ops": g_ops, "res_accum": res_accum})
-    getattr(_state, "update")({"res_comp": res_comp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"NoAdd": NoAdd, "fn_none": fn_none, "g_ops": g_ops, "res_accum": res_accum})
+    _get_attr(_state, "update")({"res_comp": res_comp})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_profiler_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -734,7 +736,7 @@ def _test_sparse_profiler_branches_part_4(_state: dict[str, EagerTensorProtocol]
     g_empty = IRGraph()
     res_empty = profiler.profile_graph(g_empty, inputs={}, num_iters=1, warmup_iters=1)
     assert "mean_latency_ms" in res_empty
-    getattr(_state, "update")({"g_empty": g_empty, "res_empty": res_empty, "res_no_add": res_no_add})
+    _get_attr(_state, "update")({"g_empty": g_empty, "res_empty": res_empty, "res_no_add": res_no_add})
 
 
 def test_sparse_profiler_branches() -> None:

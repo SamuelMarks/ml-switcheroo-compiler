@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import operator
 import typing
 from collections.abc import Callable, Iterable, Mapping, Sequence  # noqa: F401
 
@@ -24,6 +25,18 @@ if typing.TYPE_CHECKING:
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+
+
+def _is_pass_callable(fn: TensorOrScalar) -> typing.TypeGuard[Callable[[IRGraph], bool]]:
+    """Type guard narrowing a candidate pass function to `Callable[[IRGraph], bool]`.
+
+    Args:
+        fn (TensorOrScalar): Candidate pass function.
+
+    Returns:
+        bool: True if callable.
+    """
+    return callable(fn)
 
 
 @typing.runtime_checkable
@@ -169,13 +182,15 @@ def _restore_graph(graph: IRGraph, snapshot: dict[str, dict[str, IRNode] | list[
     """
     nodes_data = snapshot["nodes"]
     raw_nodes: StructuralOperandProtocol | TensorOrScalar = graph.nodes
+    raw_graph: StructuralOperandProtocol = graph
     if isinstance(nodes_data, dict):
         if isinstance(raw_nodes, _MutableNodesMappingProtocol):
             raw_nodes.clear()
             raw_nodes.update(nodes_data)
         else:
-            vars(graph)["nodes"] = list(nodes_data.values())
-    raw_graph: StructuralOperandProtocol = graph
+            assert isinstance(raw_nodes, list)
+            raw_nodes.clear()
+            raw_nodes.extend(nodes_data.values())
     if isinstance(raw_graph, _GraphInputsAttrProtocol):
         in_snap = snapshot.get("inputs", [])
         out_snap = snapshot.get("outputs", [])
@@ -322,10 +337,15 @@ class PassManager:
         self.pass_names = []
         execution_order = self._extract_execution_order(res, opt_level)
 
-        passes_dict = vars(passes_module)
         for pass_name in execution_order:
-            pass_func = passes_dict.get(f"{pass_name}_pass") or passes_dict.get(pass_name)
-            if pass_func and callable(pass_func):
+            pass_func: TensorOrScalar = None
+            for cand in (f"{pass_name}_pass", pass_name):
+                try:
+                    pass_func = operator.attrgetter(cand)(passes_module)
+                    break
+                except AttributeError:
+                    pass
+            if _is_pass_callable(pass_func):
                 self.add_pass(pass_func, name=pass_name)
 
     def validate(self, graph: IRGraph) -> None:

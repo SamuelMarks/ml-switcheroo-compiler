@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.registry import as_shape, as_tensor_pair, g
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 
 from .frontend_utils import _emit_reduction_node
@@ -196,7 +196,7 @@ def fractional_max_pool3d(
                 operand.data,
                 output_size=output_size,
                 output_ratio=output_ratio,
-                random_samples=getattr(random_samples, "data") if random_samples is not None else None,
+                random_samples=_get_attr(random_samples, "data") if random_samples is not None else None,
             )
         )
         return Tensor(backend.array(data), TensorConfig(tuple(out_shape), operand.dtype, operand.device)), Tensor(backend.array(indices), TensorConfig(tuple(out_shape), "int64", operand.device))

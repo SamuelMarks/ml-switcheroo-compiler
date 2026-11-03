@@ -6,6 +6,7 @@ import typing
 from unittest.mock import MagicMock
 
 from ml_switcheroo_compiler.backends import eager_registry as m
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -56,7 +57,7 @@ def test_custom_jvp_and_process_custom_jvp_call() -> None:
             primals: Test parameter `primals`.
             tangents: Test parameter `tangents`.
         """
-        return (getattr(primals, "__getitem__")(0) * 2, getattr(tangents, "__getitem__")(0) * 2)
+        return (_get_attr(primals, "__getitem__")(0) * 2, _get_attr(tangents, "__getitem__")(0) * 2)
 
     res_rule1 = m._eager_process_custom_jvp_call(backend, 5, 1, num_primals=1, jvp_rule=rule_packed)
     assert res_rule1 == (10, 2)

@@ -7,6 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.creation.frontend_utils import _emit_creation_node
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
@@ -34,8 +35,8 @@ def test_frontend_utils() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -68,8 +69,8 @@ def test_frontend_utils_constant() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
@@ -95,7 +96,7 @@ def test_frontend_utils_constant() -> None:
 
             return T()
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False
@@ -128,8 +129,8 @@ def test_frontend_utils_constant_scalar() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     import ml_switcheroo_compiler.backends.registry as reg
 
     class DummyBackend:
@@ -155,7 +156,7 @@ def test_frontend_utils_constant_scalar() -> None:
 
             return T()
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
     from ml_switcheroo_compiler.core.config import config
 
     config.eager_mode = False

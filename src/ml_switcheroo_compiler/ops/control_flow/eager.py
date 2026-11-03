@@ -9,7 +9,7 @@ from ml_switcheroo_compiler.backends.registry import as_callable, as_tensor, get
 from ml_switcheroo_compiler.core.assertions import record_assertion
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vmap import vmap
 
@@ -49,7 +49,7 @@ def while_loop_eager(
     """
     val = init_val
     res = cond_fn(val)
-    while bool(res.data if hasattr(res, "data") else res):
+    while bool(res.data if _has_attr(res, "data") else res):
         val = body_fn(val)
         res = cond_fn(val)
 
@@ -76,16 +76,16 @@ def _stack_scan_outputs(
         return Tensor(
             stacked_ys,
             TensorConfig(
-                getattr(stacked_ys, "shape"),
-                getattr(last_y, "dtype") if hasattr(last_y, "dtype") else getattr(init, "dtype"),
-                getattr(last_y, "device") if hasattr(last_y, "device") else getattr(init, "device"),
+                _get_attr(stacked_ys, "shape"),
+                _get_attr(last_y, "dtype") if _has_attr(last_y, "dtype") else _get_attr(init, "dtype"),
+                _get_attr(last_y, "device") if _has_attr(last_y, "device") else _get_attr(init, "device"),
             ),
         )
     else:
         stacked_ys = get_active_backend().array(ys)
         return Tensor(
             stacked_ys,
-            TensorConfig(getattr(stacked_ys, "shape"), DType(str(getattr(stacked_ys, "dtype"))), config.default_device),
+            TensorConfig(_get_attr(stacked_ys, "shape"), DType(str(_get_attr(stacked_ys, "dtype"))), config.default_device),
         )
 
 
@@ -104,11 +104,11 @@ def scan_eager(f: TensorOrScalar, init: TensorOrScalar, xs: TensorOrScalar, leng
     fn_callable = f
     carry = init
     ys = []
-    scan_length = length if length is not None else (getattr(xs, "shape")[0] if xs is not None else 0)
+    scan_length = length if length is not None else (_get_attr(xs, "shape")[0] if xs is not None else 0)
     for i in range(scan_length):
-        x = Tensor(getattr(xs, "data")[i], TensorConfig(getattr(xs, "shape")[1:], getattr(xs, "dtype"), getattr(xs, "device"))) if xs is not None else None
-        carry, y = getattr(invoke_callable(fn_callable, carry, x), "__iter__")()
-        ys.append(getattr(y, "data") if hasattr(y, "data") else y)
+        x = Tensor(_get_attr(xs, "data")[i], TensorConfig(_get_attr(xs, "shape")[1:], _get_attr(xs, "dtype"), _get_attr(xs, "device"))) if xs is not None else None
+        carry, y = _get_attr(invoke_callable(fn_callable, carry, x), "__iter__")()
+        ys.append(_get_attr(y, "data") if _has_attr(y, "data") else y)
 
     out_tensor = _stack_scan_outputs(ys, init, y if scan_length > 0 else init)
     return carry, out_tensor
@@ -142,7 +142,7 @@ def _map_fn_eager_execute(fn: TensorOrScalar, elems: Tensor, length: int) -> Ten
     for i in range(length):
         x = Tensor(as_tensor(elems.data)[i], TensorConfig(elems.shape[1:], elems.dtype, elems.device))
         y = invoke_callable(fn_callable, x)
-        ys.append(getattr(y, "data") if hasattr(y, "data") else y)
+        ys.append(_get_attr(y, "data") if _has_attr(y, "data") else y)
     return ys
 
 
@@ -157,13 +157,13 @@ def _map_fn_eager_stack(ys: TensorOrScalar, elems: Tensor, dtype: DType | None) 
     Returns:
         Tensor: Result.
     """
-    if getattr(ys, "__len__")() > 0 and isinstance(getattr(ys, "__getitem__")(0), tuple):
+    if _get_attr(ys, "__len__")() > 0 and isinstance(_get_attr(ys, "__getitem__")(0), tuple):
         stacked_ys = get_active_backend().execute_op("Stack", ys)
-        return Tensor(stacked_ys, TensorConfig(getattr(stacked_ys, "shape"), elems.dtype, elems.device))
+        return Tensor(stacked_ys, TensorConfig(_get_attr(stacked_ys, "shape"), elems.dtype, elems.device))
 
     stacked_ys = get_active_backend().array(ys)
-    out_dtype = dtype if dtype is not None else DType(str(getattr(stacked_ys, "dtype")))
-    return Tensor(stacked_ys, TensorConfig(getattr(stacked_ys, "shape"), out_dtype, elems.device))
+    out_dtype = dtype if dtype is not None else DType(str(_get_attr(stacked_ys, "dtype")))
+    return Tensor(stacked_ys, TensorConfig(_get_attr(stacked_ys, "shape"), out_dtype, elems.device))
 
 
 def map_fn_eager(fn: TensorOrScalar, elems: Tensor, dtype: DType | None = None) -> TensorOrScalar:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.distributed import DistributedASTVisitor
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable, as_tensor_list
 
 if typing.TYPE_CHECKING:
@@ -20,7 +21,7 @@ class DummyGenerator:
         Args:
             name: Test parameter `name`.
         """
-        setattr(self.__class__, "__name__", name)
+        _set_attr(type(self), "__name__", name)
         self.code = as_tensor_list([])
 
 

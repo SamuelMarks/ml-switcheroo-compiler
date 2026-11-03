@@ -6,7 +6,7 @@ import uuid
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import invoke_callable
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_set_attr, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import LogicalGraph, LogicalNode
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
@@ -45,8 +45,8 @@ class CustomVJPFunction:
             self.bwd_subgraph = bwd_subgraph
         elif isinstance(bwd, LogicalGraph):
             self.bwd_subgraph = bwd
-        elif hasattr(bwd, "graph") and isinstance(getattr(bwd, "graph"), LogicalGraph):
-            self.bwd_subgraph = getattr(bwd, "graph")
+        elif _has_attr(bwd, "graph") and isinstance(_get_attr(bwd, "graph"), LogicalGraph):
+            self.bwd_subgraph = _get_attr(bwd, "graph")
         else:
             self.bwd_subgraph = None
 
@@ -101,9 +101,9 @@ class CustomVJPFunction:
         device = "cpu"
         if tensor_args:
             first_arg = tensor_args[0]
-            shape = getattr(first_arg, "shape", ())
-            dtype = getattr(getattr(first_arg, "dtype", None), "value", "float32")
-            device = str(getattr(first_arg, "device", "cpu"))
+            shape = _get_attr(first_arg, "shape", ())
+            dtype = _get_attr(_get_attr(first_arg, "dtype", None), "value", "float32")
+            device = str(_get_attr(first_arg, "device", "cpu"))
         return (shape, dtype, device)
 
     def _emit_vjp_node(
@@ -126,19 +126,19 @@ class CustomVJPFunction:
         meta = self._resolve_output_metadata(tensor_args)
         in_ids: list[str] = []
         for a in tensor_args:
-            if hasattr(a, "data") and hasattr(a.data, "id"):
-                in_ids.append(getattr(a.data, "id"))
+            if _has_attr(a, "data") and _has_attr(a.data, "id"):
+                in_ids.append(_get_attr(a.data, "id"))
             else:
                 cid = str(uuid.uuid4())
-                arr = getattr(a, "data", a)
+                arr = _get_attr(a, "data", a)
                 c_node = LogicalNode(
                     id=cid,
                     op_type="Constant",
                     inputs=[],
                     attributes={},
-                    shape_metadata=getattr(arr, "shape", ()),
+                    shape_metadata=_get_attr(arr, "shape", ()),
                 )
-                object.__setattr__(c_node, "attributes", {"value": arr})
+                _obj_set_attr(c_node, "attributes", {"value": arr})
                 global_tracing_state.add_node(c_node)
                 in_ids.append(cid)
 
@@ -165,7 +165,7 @@ class CustomVJPFunction:
             subgraphs=subgraphs,
             shape_metadata=meta[0],
         )
-        object.__setattr__(node, "attributes", vjp_attrs)
+        _obj_set_attr(node, "attributes", vjp_attrs)
         global_tracing_state.add_node(node)
         proxy = ProxyTensor(id=out_id, shape=meta[0], dtype=meta[1])
         return Tensor(proxy, TensorConfig(meta[0], DType(meta[1]), meta[2]))

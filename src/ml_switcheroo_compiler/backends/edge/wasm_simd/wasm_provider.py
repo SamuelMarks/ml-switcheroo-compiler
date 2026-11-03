@@ -8,7 +8,7 @@ from pathlib import Path
 import yaml
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val
 
 _WASM_TEMPLATES: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = {}
 
@@ -27,7 +27,8 @@ def load_yaml(file_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str,
         from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import WasmTemplatesConfig
 
         raw: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = yaml.safe_load(f)
-        return typing.cast(dict[str, typing.Union[dict[str, dict[str, str]], dict[str, str], "list[str]"]], typing.cast("TypedVariadicCallable[WasmTemplatesConfig]", WasmTemplatesConfig)(**raw).model_dump())
+        _typed_ret_1: dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]] = _cast_val(dict[str, typing.Union[dict[str, dict[str, str]], dict[str, str], "list[str]"]], _cast_val("TypedVariadicCallable[WasmTemplatesConfig]", WasmTemplatesConfig)(**raw).model_dump())
+        return _typed_ret_1
 
 
 def load_yaml_dir(dir_name: str) -> dict[str, dict[str, dict[str, str]] | dict[str, str] | list[str]]:

@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -32,7 +33,7 @@ def test_binary_math_extra_coverage() -> None:
             """
             return op
 
-    setattr(reg, "_ACTIVE_BACKEND", DummyBackend())
+    _set_attr(reg, "_ACTIVE_BACKEND", DummyBackend())
     type("T", (), {"shape": (2, 2)})()
     type("T", (), {"shape": (2,)})()
     assert Clip().infer_shape() == ()
@@ -46,7 +47,7 @@ def test_eager_eval_branches() -> None:
     from ml_switcheroo_compiler.ops.binary.math import ArrayEquiv, Betainc, Diff, Digitize, Poly, Polyadd, Polyder, Polydiv, Polyfit, Polyint, Polymul, Polysub, Polyval, Roots
 
     for cls in [Diff, Digitize, ArrayEquiv, Betainc, Polyadd, Polysub, Polymul, Polydiv, Polyval, Poly, Polyder, Polyfit, Polyint, Roots]:
-        assert as_tensor(getattr(cls(), "op_name")) is not None
+        assert as_tensor(_get_attr(cls(), "op_name")) is not None
 
 
 def test_binary_math_shapes_again() -> None:
@@ -91,8 +92,8 @@ def test_binary_math_shapes_again() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):
         pass
         pass
@@ -128,8 +129,8 @@ def test_binary_math_clip_emit() -> None:
             pass
 
     state.global_tracing_state.is_tracing = True
-    setattr(state.global_tracing_state, "active_graph", DummyGraph())
-    setattr(state.global_tracing_state, "add_node", as_tensor(getattr(state.global_tracing_state.active_graph, "add_node")))
+    _set_attr(state.global_tracing_state, "active_graph", DummyGraph())
+    _set_attr(state.global_tracing_state, "add_node", as_tensor(_get_attr(state.global_tracing_state.active_graph, "add_node")))
     from unittest.mock import patch
 
     with patch("ml_switcheroo_compiler.ops.base.LogicalNode", return_value="node_str", create=True):

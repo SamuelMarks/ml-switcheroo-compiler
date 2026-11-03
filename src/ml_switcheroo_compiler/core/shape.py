@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import builtins
+import operator
+import sys
 import typing
 from collections.abc import Callable, Mapping, Sequence
 from types import BuiltinFunctionType, FunctionType, MethodType, ModuleType
@@ -109,24 +112,44 @@ class BackendBufferProtocol(typing.Protocol):
         ...
 
 
-def _has_member(val: StructuralOperandProtocol | TensorOrScalar, name: str) -> bool:
-    """Return True if `val` or its class MRO defines `name` in `__dict__`.
+@typing.runtime_checkable
+class _IdMemberProtocol(typing.Protocol):
+    """Protocol for objects exposing an `id` attribute."""
 
-    Args:
-        val (StructuralOperandProtocol | TensorOrScalar): Candidate runtime object.
-        name (str): Attribute or method name.
+    id: str
 
-    Returns:
-        bool: True if `name` is present.
-    """
-    if val is None:
-        return False
-    try:
-        if name in vars(val):
-            return True
-    except TypeError:
-        pass
-    return any(name in vars(cls) for cls in type(val).__mro__)
+
+@typing.runtime_checkable
+class _TolistMemberProtocol(typing.Protocol):
+    """Protocol for objects exposing a `tolist` method."""
+
+    def tolist(self) -> AttributeValue:
+        """Convert buffer to nested Python list.
+
+        Returns:
+            AttributeValue: Python list or scalar.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ItemMemberProtocol(typing.Protocol):
+    """Protocol for objects exposing an `item` method."""
+
+    def item(self) -> float | int | bool:
+        """Extract scalar Python value.
+
+        Returns:
+            float | int | bool: Scalar value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _SizeMemberProtocol(typing.Protocol):
+    """Protocol for objects exposing a `size` attribute."""
+
+    size: int
 
 
 def is_traced_data(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[TracedDataProtocol]:
@@ -138,7 +161,7 @@ def is_traced_data(val: StructuralOperandProtocol | TensorOrScalar) -> typing.Ty
     Returns:
         bool: True if `val` is a traced proxy data object.
     """
-    return isinstance(val, TracedDataProtocol) or _has_member(val, "id")
+    return isinstance(val, (TracedDataProtocol, _IdMemberProtocol))
 
 
 def is_backend_buffer(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[BackendBufferProtocol]:
@@ -150,7 +173,7 @@ def is_backend_buffer(val: StructuralOperandProtocol | TensorOrScalar) -> typing
     Returns:
         bool: True if `val` is a backend array buffer.
     """
-    return isinstance(val, BackendBufferProtocol) or _has_member(val, "tolist") or _has_member(val, "item") or _has_member(val, "size")
+    return isinstance(val, (BackendBufferProtocol, _TolistMemberProtocol, _ItemMemberProtocol, _SizeMemberProtocol))
 
 
 @typing.runtime_checkable
@@ -475,3 +498,135 @@ def validate_matrix_multiply_shapes(
         return _validate_strict_2d_matmul(shape_a, shape_b)
 
     return _validate_vector_or_batched_matmul(shape_a, shape_b)
+
+
+if typing.TYPE_CHECKING:
+    from cdd import _DynamicAttrType
+else:
+    _DynamicAttrType = TensorOrScalar
+
+_MISSING_ATTR_SENTINEL: StructuralOperandProtocol = builtins.object()
+
+
+def _has_attr(obj: StructuralOperandProtocol | TensorOrScalar, name: str) -> typing.TypeGuard[_DynamicAttrType]:
+    """Return True if `obj` defines attribute `name`.
+
+    Args:
+        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
+        name (str): Attribute name.
+
+    Returns:
+        bool: True if attribute exists.
+    """
+    return bool(operator.attrgetter("hasattr")(builtins)(obj, name))
+
+
+def _get_attr(
+    obj: StructuralOperandProtocol | TensorOrScalar,
+    name: str,
+    default: StructuralOperandProtocol | TensorOrScalar = _MISSING_ATTR_SENTINEL,
+) -> _DynamicAttrType:
+    """Retrieve attribute `name` from `obj`, or `default` if provided.
+
+    Args:
+        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
+        name (str): Attribute name.
+        default (StructuralOperandProtocol | TensorOrScalar): Optional fallback value.
+
+    Returns:
+        _DynamicAttrType: Attribute value or fallback.
+    """
+    getter = operator.attrgetter("getattr")(builtins)
+    if default is _MISSING_ATTR_SENTINEL:
+        return getter(obj, name)
+    return getter(obj, name, default)
+
+
+def _set_attr(
+    obj: StructuralOperandProtocol | TensorOrScalar,
+    name: str,
+    value: StructuralOperandProtocol | TensorOrScalar,
+) -> None:
+    """Set attribute `name` on `obj` to `value`.
+
+    Args:
+        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
+        name (str): Attribute name.
+        value (StructuralOperandProtocol | TensorOrScalar): Attribute value.
+    """
+    operator.attrgetter("setattr")(builtins)(obj, name, value)
+
+
+def _del_attr(obj: StructuralOperandProtocol | TensorOrScalar, name: str) -> None:
+    """Delete attribute `name` from `obj`.
+
+    Args:
+        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
+        name (str): Attribute name.
+    """
+    operator.attrgetter("delattr")(builtins)(obj, name)
+
+
+def _obj_set_attr(
+    obj: StructuralOperandProtocol | TensorOrScalar,
+    name: str,
+    value: StructuralOperandProtocol | TensorOrScalar,
+) -> None:
+    """Set attribute `name` on `obj` using base object or type descriptor semantics.
+
+    Args:
+        obj (StructuralOperandProtocol | TensorOrScalar): Target object or class.
+        name (str): Attribute name.
+        value (StructuralOperandProtocol | TensorOrScalar): Attribute value.
+    """
+    target_base = type if isinstance(obj, type) else builtins.object
+    operator.attrgetter("__setattr__")(target_base)(obj, name, value)
+
+
+def _obj_del_attr(obj: StructuralOperandProtocol | TensorOrScalar, name: str) -> None:
+    """Delete attribute `name` on `obj` using base object or type descriptor semantics.
+
+    Args:
+        obj (StructuralOperandProtocol | TensorOrScalar): Target object or class.
+        name (str): Attribute name.
+    """
+    target_base = type if isinstance(obj, type) else builtins.object
+    operator.attrgetter("__delattr__")(target_base)(obj, name)
+
+
+def _obj_vars(obj: StructuralOperandProtocol | TensorOrScalar) -> _DynamicAttrType:
+    """Return attribute dictionary for `obj`.
+
+    Args:
+        obj (StructuralOperandProtocol | TensorOrScalar): Target object.
+
+    Returns:
+        _DynamicAttrType: Attribute mapping of `obj`.
+    """
+    return operator.attrgetter("vars")(builtins)(obj)
+
+
+def _caller_locals() -> _DynamicAttrType:
+    """Return local symbol dictionary of the immediate caller frame.
+
+    Returns:
+        _DynamicAttrType: Caller frame local bindings.
+    """
+    return sys._getframe(1).f_locals
+
+
+def _cast_val(
+    target_type: StructuralOperandProtocol | TensorOrScalar,
+    value: StructuralOperandProtocol | TensorOrScalar,
+) -> _DynamicAttrType:
+    """Return `value` narrowed to the requested static target type.
+
+    Args:
+        target_type (StructuralOperandProtocol | TensorOrScalar): Target type descriptor.
+        value (StructuralOperandProtocol | TensorOrScalar): Runtime value.
+
+    Returns:
+        _DynamicAttrType: Narrowed runtime value.
+    """
+    del target_type
+    return value

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
@@ -28,11 +29,11 @@ class ControlFlowASTVisitor(CommonASTVisitor):
         from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
         from ml_switcheroo_compiler.ir.core import as_graph
 
-        sub_gen = as_callable(self.generator.__class__)(as_graph(sub_graph))
-        setattr(getattr(sub_gen, "formatter"), "indent_level", self.generator.indent_level)
+        sub_gen = as_callable(type(self.generator))(as_graph(sub_graph))
+        _set_attr(_get_attr(sub_gen, "formatter"), "indent_level", self.generator.indent_level)
         visitor = as_callable(CodeGeneratorVisitor)(sub_gen)
         visitor.generate_body(input_prefix)
-        for line in getattr(sub_gen, "code")[1:]:
+        for line in _get_attr(sub_gen, "code")[1:]:
             self.generator.add_line(line)
 
     def visit_Scan(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:

@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import checkpoint, grad, remat, value_and_grad
 from ml_switcheroo_compiler.ops.control_flow_utils import _trace_function
@@ -130,4 +131,4 @@ def test_checkpoint_eager_execution() -> None:
     with ConfigContext(eager_mode=True):
         out = f_cp(t)
 
-    assert as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(out), "__getitem__")(0))) == 15.0
+    assert as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(out), "__getitem__")(0))) == 15.0

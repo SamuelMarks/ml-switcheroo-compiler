@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import ast
 import importlib
+import operator
 import os
 import re
 import subprocess
 import sys
 import tempfile
 import types
+
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
@@ -29,9 +32,12 @@ def _get_exports_from_submodule(modname: str) -> list[str]:
         print(f"Failed to import {modname}: {e}")
         return []
 
-    if hasattr(mod, "__all__"):
-        return sorted(list(set(mod.__all__)))
-    return sorted(list(set([n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType)])))
+    try:
+        all_attr = operator.attrgetter("__all__")(mod)
+        return sorted(list(set(all_attr)))
+    except AttributeError:
+        pass
+    return sorted(list(set([n for n in dir(mod) if not n.startswith("_") and not isinstance(operator.attrgetter(n)(mod), types.ModuleType)])))
 
 
 def _append_import_lines(
@@ -181,9 +187,12 @@ def _compute_module_exports(mod: types.ModuleType, source_for_magic: str) -> lis
             raw_exports.extend(_get_exports_from_submodule(sm))
         return sorted({e for e in raw_exports if e not in exclude_set})
     if magic_auto:
-        return sorted({n for n in dir(mod) if not n.startswith("_") and not isinstance(getattr(mod, n), types.ModuleType) and n not in exclude_set})
+        return sorted({n for n in dir(mod) if not n.startswith("_") and not isinstance(operator.attrgetter(n)(mod), types.ModuleType) and n not in exclude_set})
 
-    exports_attr = getattr(mod, "__all__", None)
+    try:
+        exports_attr = operator.attrgetter("__all__")(mod)
+    except AttributeError:
+        exports_attr = None
     if exports_attr is None:
         return sorted({n for n in dir(mod) if not n.startswith("_")})
     if isinstance(exports_attr, (list, tuple, set)):
@@ -204,10 +213,10 @@ def _find_all_lines_to_remove(tree: ast.Module) -> set[int]:
     for node in ast.walk(tree):
         is_assign = isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets)
         is_call = isinstance(node, ast.Expr) and isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute) and isinstance(node.value.func.value, ast.Name) and node.value.func.value.id == "__all__" and node.value.func.attr in ("extend", "append")
-        if is_assign or is_call:
-            lineno = getattr(node, "lineno", None)
-            end_lineno = getattr(node, "end_lineno", None)
-            if isinstance(lineno, int) and isinstance(end_lineno, int):
+        if (is_assign or is_call) and isinstance(node, ast.stmt):
+            lineno = node.lineno
+            end_lineno = node.end_lineno
+            if isinstance(end_lineno, int):
                 for line_num in range(lineno, end_lineno + 1):
                     lines_to_remove.add(line_num)
     return lines_to_remove
@@ -253,7 +262,7 @@ def process_file(filepath: str) -> None:
         return
 
     lines_to_remove = _find_all_lines_to_remove(tree)
-    if not lines_to_remove and not getattr(mod, "__all__", None):
+    if not lines_to_remove and not _get_attr(mod, "__all__", None):
         return
 
     new_lines: list[str] = [line for i, line in enumerate(source.split("\n"), 1) if i not in lines_to_remove]

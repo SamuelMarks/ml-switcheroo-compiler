@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @global_eager_registry.register("TrueDivide")
@@ -26,7 +27,7 @@ def _true_divide(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "divide", getattr(backend_module, "true_divide", None))
+    func = _get_attr(backend_module, "divide", _get_attr(backend_module, "true_divide", None))
     return func(*args, **kwargs) if func else None
 
 
@@ -42,7 +43,7 @@ def _fmod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "fmod", getattr(backend_module, "remainder", getattr(backend_module, "mod", None)))
+    func = _get_attr(backend_module, "fmod", _get_attr(backend_module, "remainder", _get_attr(backend_module, "mod", None)))
     return func(*args, **kwargs) if func else None
 
 
@@ -164,7 +165,7 @@ def _np_scattermul(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "scattermul", getattr(backend_module, "scattermul", None))
+    func = _get_attr(backend_module, "scattermul", _get_attr(backend_module, "scattermul", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return args[0]
@@ -182,7 +183,7 @@ def _np_stringsubstr(backend_module: BackendModuleProtocol, *args: EagerValue, *
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "stringsubstr", getattr(backend_module, "stringsubstr", None))
+    func = _get_attr(backend_module, "stringsubstr", _get_attr(backend_module, "stringsubstr", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).asarray(args[0], dtype=str)
@@ -200,7 +201,7 @@ def _np_tensorscattersub(backend_module: BackendModuleProtocol, *args: EagerValu
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "tensorscattersub", getattr(backend_module, "tensorscattersub", None))
+    func = _get_attr(backend_module, "tensorscattersub", _get_attr(backend_module, "tensorscattersub", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return args[0]
@@ -218,7 +219,7 @@ def _np_truncatediv(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "truncatediv", getattr(backend_module, "truncatediv", None))
+    func = _get_attr(backend_module, "truncatediv", _get_attr(backend_module, "truncatediv", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)
@@ -237,7 +238,7 @@ def _np_truncatemod(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "truncatemod", getattr(backend_module, "truncatemod", None))
+    func = _get_attr(backend_module, "truncatemod", _get_attr(backend_module, "truncatemod", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).mod(args[0], args[1])
@@ -255,7 +256,7 @@ def _np_xdivy(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "xdivy", getattr(backend_module, "xdivy", None))
+    func = _get_attr(backend_module, "xdivy", _get_attr(backend_module, "xdivy", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     mod = _resolve_eager_mod(backend_module)

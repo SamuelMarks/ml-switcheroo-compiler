@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if typing.TYPE_CHECKING:
@@ -29,10 +30,10 @@ def _test_quantized_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    setattr(state.global_tracing_state, "add_node", lambda node: None)
-    getattr(_state, "update")({"np": np, "orig": orig, "orig_add_node": orig_add_node, "orig_tracing": orig_tracing})
-    getattr(_state, "update")({"q_ops": q_ops, "state": state})
-    _state.update(locals())
+    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
+    _get_attr(_state, "update")({"np": np, "orig": orig, "orig_add_node": orig_add_node, "orig_tracing": orig_tracing})
+    _get_attr(_state, "update")({"q_ops": q_ops, "state": state})
+    _state.update(_caller_locals())
 
 
 def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -99,9 +100,9 @@ def _test_quantized_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         assert q_ops.ComputeFloat8ScaleOp().infer_shape(DummyShape()) == (1, 2)
 
     finally:
-        setattr(config, "eager_mode", orig)
-        setattr(state.global_tracing_state, "is_tracing", orig_tracing)
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
+        _set_attr(config, "eager_mode", orig)
+        _set_attr(state.global_tracing_state, "is_tracing", orig_tracing)
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
 
 
 def test_quantized_ops() -> None:

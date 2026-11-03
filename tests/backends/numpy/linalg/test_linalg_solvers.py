@@ -22,6 +22,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import (
     _np_trace,
     _parse_dot_dimension_numbers,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -121,8 +122,8 @@ def test_qr() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_qr(np, a)
     expected = np.linalg.qr(a)
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(0)), as_tensor(getattr(expected, "__getitem__")(0)))
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(1)), as_tensor(getattr(expected, "__getitem__")(1)))
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), as_tensor(_get_attr(expected, "__getitem__")(0)))
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(1)), as_tensor(_get_attr(expected, "__getitem__")(1)))
 
 
 def test_cross() -> None:
@@ -145,8 +146,8 @@ def test_slogdet() -> None:
     a = np.array([[1, 2], [3, 4]])
     res = _np_slogdet(np, a)
     expected = np.linalg.slogdet(a)
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(0)), as_tensor(getattr(expected, "__getitem__")(0)))
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(1)), as_tensor(getattr(expected, "__getitem__")(1)))
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), as_tensor(_get_attr(expected, "__getitem__")(0)))
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(1)), as_tensor(_get_attr(expected, "__getitem__")(1)))
 
 
 def test_dynamically_registered_ops() -> None:
@@ -164,7 +165,7 @@ def test_dynamically_registered_ops() -> None:
     # test eig
     eig_fn = numpy_eager_registry.get("Eig")
     res_eig = as_callable(eig_fn)(np, a)
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res_eig, "__getitem__")(0)), as_tensor(getattr(as_callable(np.linalg.eig)(a), "__getitem__")(0)))
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res_eig, "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.linalg.eig)(a), "__getitem__")(0)))
 
     # test norm
     norm_fn = numpy_eager_registry.get("Norm")

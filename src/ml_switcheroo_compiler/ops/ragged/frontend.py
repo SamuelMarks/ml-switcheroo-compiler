@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.registry import as_callable
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -34,29 +35,30 @@ def _ragged_op(
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op(op_name, *[getattr(a, "data", a) for a in args], **kwargs)
+        data = backend.execute_op(op_name, *[_get_attr(a, "data", a) for a in args], **kwargs)
         return Tensor(
             data,
             TensorConfig(
-                getattr(data, "shape", ()),
-                getattr(args[0], "dtype", "float32") if args else "float32",
-                getattr(args[0], "device", "cpu") if args else "cpu",
+                _get_attr(data, "shape", ()),
+                _get_attr(args[0], "dtype", "float32") if args else "float32",
+                _get_attr(args[0], "device", "cpu") if args else "cpu",
             ),
         )
 
     op = op_cls()
     out_shape = op.infer_shape(*args, **kwargs)
     tensor_inputs = [a for a in args if isinstance(a, Tensor)]
-    return typing.cast(
+    _typed_ret_1: Tensor | tuple[Tensor, ...] = _cast_val(
         "Tensor | tuple[Tensor, ...]",
         as_callable(_emit_linalg_node)(
             op_name,
             tensor_inputs,
             kwargs,
-            [tuple(getattr(out_shape, "__iter__")())],
-            [getattr(args[0], "dtype", "float32") if args else "float32"],
+            [tuple(_get_attr(out_shape, "__iter__")())],
+            [_get_attr(args[0], "dtype", "float32") if args else "float32"],
         ),
     )
+    return _typed_ret_1
 
 
 def ragged_constant(*args: RaggedArg, **kwargs: RaggedKwarg) -> Tensor | tuple[Tensor, ...]:

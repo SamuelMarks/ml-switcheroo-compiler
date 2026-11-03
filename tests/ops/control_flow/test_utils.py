@@ -9,6 +9,7 @@ from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _del_attr, _get_attr, _has_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow_utils import _get_tensor_ids, _process_trace_outputs, _trace_function, _wrap_proxy_inputs
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
@@ -64,13 +65,13 @@ def test_control_flow_utils() -> None:
         pass
 
     t_direct = DirectIdTensor(data="no_id", config=t_cfg)
-    setattr(t_direct, "id", "direct_123")
+    _set_attr(t_direct, "id", "direct_123")
     assert _get_tensor_ids(t_direct) == ["direct_123"]
 
     # No id anywhere (line 83)
     t_no_id = Tensor(data="no_id", config=t_cfg)
-    if hasattr(t_no_id, "id"):
-        delattr(t_no_id, "id")
+    if _has_attr(t_no_id, "id"):
+        _del_attr(t_no_id, "id")
     generated_ids = _get_tensor_ids(t_no_id)
     assert len(generated_ids) == 1
     assert len(generated_ids[0]) > 0
@@ -94,7 +95,7 @@ def test_control_flow_utils() -> None:
 
     block = as_callable(_trace_function)(my_fn, (t,), "my_block")
     assert isinstance(as_tensor(block), LogicalGraph)
-    assert as_tensor(getattr(block, "id")) == "my_block"
+    assert as_tensor(_get_attr(block, "id")) == "my_block"
     assert block.name == "my_block"
     assert len(block.inputs) == 1
     assert len(block.outputs) == 1

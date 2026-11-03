@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import as_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def _get_reduction_axes(reshaped_dims: list[int], axis: int) -> tuple[int, ...]:
@@ -100,7 +101,7 @@ def _group_mean(backend_module: EagerValue, *args: EagerValue, **kwargs: EagerVa
             EagerValue: Result.
     """
     x = args[0]
-    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
+    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else _get_attr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
     axis: int = int(as_int(kwargs.get("axis", -1)))
     return _apply_grouped_reduction(backend_module, "mean", x, groups=groups, axis=axis)
 
@@ -118,7 +119,7 @@ def _group_variance(backend_module: EagerValue, *args: EagerValue, **kwargs: Eag
             EagerValue: Result.
     """
     x = args[0]
-    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
+    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else _get_attr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
     axis: int = int(as_int(kwargs.get("axis", -1)))
     return _apply_grouped_reduction(backend_module, "variance", x, groups=groups, axis=axis)
 
@@ -165,7 +166,7 @@ def _parse_group_norm_args(args: tuple[EagerValue, ...], kwargs: dict[str, Eager
         tuple[object, int, Optional[object], Optional[object], int, float]: Result.
     """
     x = args[0]
-    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else getattr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
+    groups: int = int(as_int(kwargs.get("groups") if "groups" in kwargs else _get_attr(args[1], "__int__", lambda: int(as_int(str(args[1]))))()))
     weight = kwargs.get("weight", None)
     bias = kwargs.get("bias", None)
     axis: int = int(as_int(kwargs.get("axis", -1)))

@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import vision_geometry as geom_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -22,8 +23,8 @@ def test_vision_geometry_ops() -> None:
     """
     # AffineGenerator
     aff_gen = geom_mod._np_affine_generator(np, 2, 0.0, 0.0, 1.0)
-    assert as_tensor(getattr(aff_gen, "shape")) == (2, 8)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("AffineGenerator")(np, 2, 0.0, 0.0, 1.0), "shape")) == (2, 8)
+    assert as_tensor(_get_attr(aff_gen, "shape")) == (2, 8)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("AffineGenerator")(np, 2, 0.0, 0.0, 1.0), "shape")) == (2, 8)
 
     # ElasticTransform
     # Branch 1: empty displacement
@@ -37,13 +38,13 @@ def test_vision_geometry_ops() -> None:
 
     # Branch 3: 2D array with 2-channel displacement
     el_res = geom_mod._np_elastic_transform(np, img_2d, disp_valid)
-    assert as_tensor(getattr(el_res, "shape")) == (4, 4)
+    assert as_tensor(_get_attr(el_res, "shape")) == (4, 4)
 
     # Branch 4: 2D array with 1-channel displacement
     disp_1ch = np.ones((4, 4, 1))
     el_res_1ch = geom_mod._np_elastic_transform(np, img_2d, disp_1ch)
-    assert as_tensor(getattr(el_res_1ch, "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("ElasticTransform")(np, img_2d, disp_valid), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(el_res_1ch, "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("ElasticTransform")(np, img_2d, disp_valid), "shape")) == (4, 4)
 
     # ExtractBoundingBoxes
     boxes = np.array([[0, 0, 1, 1]])
@@ -55,7 +56,7 @@ def test_vision_geometry_ops() -> None:
     boxes1 = np.array([[0.0, 0.0, 1.0, 1.0]])
     boxes2 = np.array([[0.0, 0.0, 1.0, 1.0]])
     iou = geom_mod._np_iou(np, boxes1, boxes2)
-    assert as_tensor(getattr(iou, "shape")) == (1,)
+    assert as_tensor(_get_attr(iou, "shape")) == (1,)
     assert as_callable(numpy_eager_registry.get)("IoU")(np, boxes1, boxes2) is not None
 
     # NonMaxSuppression
@@ -75,15 +76,15 @@ def test_vision_geometry_ops() -> None:
     # Array with len(size) == 4
     theta = np.zeros((1, 2, 3), dtype=np.float32)
     grid4 = geom_mod._np_affine_grid(np, theta, (1, 3, 4, 4))
-    assert as_tensor(getattr(grid4, "shape")) == (1, 4, 4, 2)
+    assert as_tensor(_get_attr(grid4, "shape")) == (1, 4, 4, 2)
 
     # Array with len(size) != 4
     grid3 = geom_mod._np_affine_grid(np, theta, (1, 4, 4))
-    assert as_tensor(getattr(grid3, "shape")) == (1, 4, 4, 2)
+    assert as_tensor(_get_attr(grid3, "shape")) == (1, 4, 4, 2)
 
     # Non-array theta
     assert geom_mod._np_affine_grid(np, 5.0, (1, 4, 4)) == 5.0
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("AffineGrid")(np, theta, (1, 3, 4, 4)), "shape")) == (1, 4, 4, 2)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("AffineGrid")(np, theta, (1, 3, 4, 4)), "shape")) == (1, 4, 4, 2)
 
     # AffineTransform
     trans = np.eye(3)

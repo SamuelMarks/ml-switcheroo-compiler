@@ -9,6 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as ma
 import ml_switcheroo_compiler.backends.numpy.eager.math_special as ms
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -17,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 def test_math_advanced_coverage() -> None:
     """Test function test_math_advanced_coverage."""
-    ops = [getattr(ma, name) for name in dir(ma) if name.startswith("_") and callable(getattr(ma, name))]
+    ops = [_get_attr(ma, name) for name in dir(ma) if name.startswith("_") and callable(_get_attr(ma, name))]
     for op in ops:
         arg = np.array([1.0, 2.0])
         sig = inspect.signature(op)
@@ -42,7 +43,7 @@ def test_math_advanced_coverage() -> None:
 
 def test_math_special_coverage() -> None:
     """Test function test_math_special_coverage."""
-    ops = [getattr(ms, name) for name in dir(ms) if name.startswith("_") and callable(getattr(ms, name))]
+    ops = [_get_attr(ms, name) for name in dir(ms) if name.startswith("_") and callable(_get_attr(ms, name))]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)

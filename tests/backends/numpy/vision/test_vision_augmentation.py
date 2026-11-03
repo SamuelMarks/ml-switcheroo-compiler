@@ -37,6 +37,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.vision_augmentation import (
     _process_batch_item,
     _resolve_rotation_factor,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -108,7 +109,7 @@ def test_np_flip_horizontal() -> None:
     img = np.array([[[1, 2], [3, 4]]])
     rng = random.Random(42)
     res = as_callable(_np_flip_horizontal)(img, rng)
-    assert as_tensor(getattr(res, "shape")) == (1, 2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 2, 2)
 
 
 def test_np_flip_vertical() -> None:
@@ -118,7 +119,7 @@ def test_np_flip_vertical() -> None:
     img = np.array([[[1, 2], [3, 4]]])
     rng = random.Random(42)
     res = as_callable(_np_flip_vertical)(img, rng)
-    assert as_tensor(getattr(res, "shape")) == (1, 2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 2, 2)
 
 
 def test_np_flip_both() -> None:
@@ -128,24 +129,24 @@ def test_np_flip_both() -> None:
     img = np.array([[[1, 2], [3, 4]]])
     rng = random.Random(42)
     res = as_callable(_np_flip_both)(img, rng)
-    assert as_tensor(getattr(res, "shape")) == (1, 2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 2, 2)
 
 
 def test_np_random_flip() -> None:
     """Test function test_np_random_flip."""
     images_3d = np.ones((4, 4, 3))
     res3d = _np_random_flip(images_3d, mode="horizontal", seed=42)
-    assert as_tensor(getattr(res3d, "shape")) == (4, 4, 3)
+    assert as_tensor(_get_attr(res3d, "shape")) == (4, 4, 3)
     images_4d = np.ones((2, 4, 4, 3))
     res4d = _np_random_flip(images_4d, mode="vertical", seed=42)
-    assert as_tensor(getattr(res4d, "shape")) == (2, 4, 4, 3)
+    assert as_tensor(_get_attr(res4d, "shape")) == (2, 4, 4, 3)
 
 
 def test_calculate_rotation_matrix() -> None:
     """Test function test_calculate_rotation_matrix."""
     cfg = RotationConfig(theta=0.0, H=4, W=4, x=np.array([[0, 1], [0, 1]]), y=np.array([[0, 0], [1, 1]]))
     (src_x, src_y) = as_callable(_calculate_rotation_matrix)(np, cfg)
-    assert as_tensor(getattr(src_x, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(src_x, "shape")) == (2, 2)
 
 
 def test_nearest_interpolation() -> None:
@@ -153,7 +154,7 @@ def test_nearest_interpolation() -> None:
     images = np.ones((1, 4, 4, 1))
     coords = (np.array([[0.1, 1.2]]), np.array([[0.1, 1.2]]))
     res = _nearest_interpolation(np, images, coords, (4, 4), (0, 0))
-    assert as_tensor(getattr(res, "shape")) == (1, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 2)
 
 
 def test_get_interp_pixels() -> None:
@@ -161,7 +162,7 @@ def test_get_interp_pixels() -> None:
     images = np.ones((1, 4, 4, 1))
     cfg = InterpPixelsConfig(images=images, y0=np.array([[0]]), y1=np.array([[1]]), x0=np.array([[0]]), x1=np.array([[1]]), H=4, W=4, b_c=(0, 0))
     (Ia, Ib, Ic, Id) = as_callable(_get_interp_pixels)(np, cfg)
-    assert as_tensor(getattr(Ia, "shape")) == (1, 1)
+    assert as_tensor(_get_attr(Ia, "shape")) == (1, 1)
 
 
 def test_get_interp_weights() -> None:
@@ -169,7 +170,7 @@ def test_get_interp_weights() -> None:
     src_coords = (np.array([[0.5]]), np.array([[0.5]]))
     bounds = (np.array([[0]]), np.array([[1]]), np.array([[0]]), np.array([[1]]))
     (wa, wb, wc, wd) = _get_interp_weights(src_coords, bounds)
-    assert as_tensor(getattr(wa, "shape")) == (1, 1)
+    assert as_tensor(_get_attr(wa, "shape")) == (1, 1)
 
 
 def test_bilinear_interpolation() -> None:
@@ -177,7 +178,7 @@ def test_bilinear_interpolation() -> None:
     images = np.ones((1, 4, 4, 1))
     coords = (np.array([[0.5, 1.5]]), np.array([[0.5, 1.5]]))
     res = _bilinear_interpolation(np, images, coords, (4, 4), (0, 0))
-    assert as_tensor(getattr(res, "shape")) == (1, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 2)
 
 
 def test_apply_affine_grid() -> None:
@@ -187,11 +188,11 @@ def test_apply_affine_grid() -> None:
     options_nearest = ("nearest", "constant", 0.0, np.array([[True]]))
     cfg_n = AffineConfig(coords=coords, shape=(4, 4), b_c=(0, 0), options=options_nearest)
     res_n = _apply_affine_grid(np, images, cfg_n)
-    assert as_tensor(getattr(res_n, "shape")) == (1, 1)
+    assert as_tensor(_get_attr(res_n, "shape")) == (1, 1)
     options_bilinear = ("bilinear", "reflect", 0.0, np.array([[True]]))
     cfg_b = AffineConfig(coords=coords, shape=(4, 4), b_c=(0, 0), options=options_bilinear)
     res_b = _apply_affine_grid(np, images, cfg_b)
-    assert as_tensor(getattr(res_b, "shape")) == (1, 1)
+    assert as_tensor(_get_attr(res_b, "shape")) == (1, 1)
 
 
 def test_process_batch_item_and_apply_rotation_batch() -> None:
@@ -205,7 +206,7 @@ def test_process_batch_item_and_apply_rotation_batch() -> None:
     as_callable(_process_batch_item)(np, cfg, 0, out)
     assert out.shape == (1, 4, 4, 1)
     res_batch = as_callable(_apply_rotation_batch)(np, cfg)
-    assert as_tensor(getattr(res_batch, "shape")) == (1, 4, 4, 1)
+    assert as_tensor(_get_attr(res_batch, "shape")) == (1, 4, 4, 1)
 
 
 def test_resolve_rotation_factor() -> None:
@@ -218,13 +219,13 @@ def test_np_random_rotation() -> None:
     """Test function test_np_random_rotation."""
     images = np.ones((1, 4, 4, 1))
     res1 = _np_random_rotation(np, images, factor=0.1)
-    assert as_tensor(getattr(res1, "shape")) == (1, 4, 4, 1)
+    assert as_tensor(_get_attr(res1, "shape")) == (1, 4, 4, 1)
     img_3d = np.ones((4, 4, 1))
     res2 = _np_random_rotation(np, img_3d, factor=0.1)
-    assert as_tensor(getattr(res2, "shape")) == (4, 4, 1)
+    assert as_tensor(_get_attr(res2, "shape")) == (4, 4, 1)
     img_2d = np.ones((4, 4))
     res3 = _np_random_rotation(np, img_2d, factor=0.1)
-    assert as_tensor(getattr(res3, "shape")) == (4, 4)
+    assert as_tensor(_get_attr(res3, "shape")) == (4, 4)
 
 
 def test_np_random_translation() -> None:

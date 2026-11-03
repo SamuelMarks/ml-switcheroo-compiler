@@ -7,6 +7,7 @@ import json
 import typing
 
 from ml_switcheroo_compiler.backends.edge.distributed_webrtc.signaling import SignalingServer
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -50,8 +51,8 @@ def _test_edge_signaling_server_full_workflow_sub_1(_state: dict[str, EagerTenso
     resp = conn.getresponse()
     assert resp.status == 200
     assert as_callable(json.loads)(as_callable(resp.read)().decode("utf-8")) == {}
-    getattr(_state, "update")({"conn": conn, "resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"conn": conn, "resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_edge_signaling_server_full_workflow_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -100,8 +101,8 @@ def _test_edge_signaling_server_full_workflow_sub_2(_state: dict[str, EagerTenso
         headers={"Content-Type": "application/json"},
     )
     resp = conn.getresponse()
-    getattr(_state, "update")({"resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_edge_signaling_server_full_workflow_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -141,8 +142,8 @@ def _test_edge_signaling_server_full_workflow_sub_3(_state: dict[str, EagerTenso
     resp = conn.getresponse()
     assert resp.status == 404
     assert as_callable(json.loads)(as_callable(resp.read)().decode("utf-8")) == {"error": "Not Found"}
-    getattr(_state, "update")({"resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_edge_signaling_server_full_workflow_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -158,8 +159,8 @@ def _test_edge_signaling_server_full_workflow_sub_4(_state: dict[str, EagerTenso
     assert as_callable(json.loads)(as_callable(resp.read)().decode("utf-8")) == {"error": "Missing peer_id"}
 
     conn.close()
-    getattr(_state, "update")({"resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"resp": resp})
+    _state.update(_caller_locals())
 
 
 def test_edge_signaling_server_full_workflow() -> None:
@@ -169,8 +170,8 @@ def test_edge_signaling_server_full_workflow() -> None:
     server.start()
 
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"port": port, "server": server})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"port": port, "server": server})
         for _sub_fn in (
             _test_edge_signaling_server_full_workflow_sub_1,
             _test_edge_signaling_server_full_workflow_sub_2,

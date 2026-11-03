@@ -7,6 +7,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("DivideNoNan")
@@ -139,7 +140,7 @@ def _xlogy(x: EagerValue, y: EagerValue) -> np.ndarray[tuple[int, ...], np.dtype
     Returns:
             tuple[int, ...]: Result.
     """
-    res = getattr(np, "where")(x == 0.0, 0.0, x * getattr(np, "log")(y))
+    res = _get_attr(np, "where")(x == 0.0, 0.0, x * _get_attr(np, "log")(y))
     return as_ndarray(res)
 
 

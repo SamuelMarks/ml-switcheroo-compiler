@@ -25,6 +25,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.indexing import (
     gather_eager,
     stack_eager,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -79,7 +80,7 @@ def test_np_dynamic_update_slice() -> None:
     res = _np_dynamic_update_slice(np, x, update, start_indices)
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     1,
                     1,
@@ -95,8 +96,8 @@ def test_np_unstack() -> None:
     x = np.array([[1, 2], [3, 4]])
     res = _np_unstack(np, x, axis=0)
     assert as_callable(len)(res) == 2
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(0)), [1, 2])
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(1)), [3, 4])
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), [1, 2])
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(1)), [3, 4])
 
 
 def test_np_dynamic_slice() -> None:
@@ -126,7 +127,7 @@ def test_np_dynamic_update_slice_in_dim() -> None:
     res = _np_dynamic_update_slice_in_dim(np, x, update, ctx)
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     0,
                     1,
@@ -137,7 +138,7 @@ def test_np_dynamic_update_slice_in_dim() -> None:
     )
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     0,
                     0,
@@ -154,12 +155,12 @@ def test_np_dynamic_index_in_dim() -> None:
     # keepdims = True
     ctx_true = IndexingContext(axis=1, keepdims=True)
     res_true = _np_dynamic_index_in_dim(np, x, 1, ctx_true)
-    assert as_tensor(getattr(res_true, "shape")) == (2, 1)
+    assert as_tensor(_get_attr(res_true, "shape")) == (2, 1)
 
     # keepdims = False
     ctx_false = IndexingContext(axis=1, keepdims=False)
     res_false = _np_dynamic_index_in_dim(np, x, 1, ctx_false)
-    assert as_tensor(getattr(res_false, "shape")) == (2,)
+    assert as_tensor(_get_attr(res_false, "shape")) == (2,)
 
 
 def test_np_dynamic_update_index_in_dim() -> None:
@@ -171,7 +172,7 @@ def test_np_dynamic_update_index_in_dim() -> None:
     res = _np_dynamic_update_index_in_dim(np, target, ctx)
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     0,
                     1,
@@ -182,7 +183,7 @@ def test_np_dynamic_update_index_in_dim() -> None:
     )
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     0,
                     0,
@@ -328,5 +329,5 @@ def test_backends_numpy_indexing_setitem() -> None:
     assert func is not None
     x = np.array([10, 20, 30])
     res = func(np, x, 99, "1")
-    assert as_tensor(getattr(res, "__getitem__")(1)) == 99
-    assert as_tensor(getattr(res, "__getitem__")(0)) == 10
+    assert as_tensor(_get_attr(res, "__getitem__")(1)) == 99
+    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 10

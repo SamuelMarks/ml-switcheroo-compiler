@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.random.distributions_discrete import binomial
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -59,11 +60,11 @@ def test_approx_k() -> None:
     config.eager_mode = True
     x = ops.array(np.array([1, 4, 3, 2, 5]))
     (val, idx) = as_callable(ops.approx_max_k)(x, 2)
-    as_callable(np.testing.assert_array_equal)(as_tensor(getattr(val, "data")), as_callable(np.array)([5, 4]))
-    as_callable(np.testing.assert_array_equal)(as_tensor(getattr(idx, "data")), as_callable(np.array)([4, 1]))
+    as_callable(np.testing.assert_array_equal)(as_tensor(_get_attr(val, "data")), as_callable(np.array)([5, 4]))
+    as_callable(np.testing.assert_array_equal)(as_tensor(_get_attr(idx, "data")), as_callable(np.array)([4, 1]))
     (val, idx) = as_callable(ops.approx_min_k)(x, 2)
-    as_callable(np.testing.assert_array_equal)(as_tensor(getattr(val, "data")), as_callable(np.array)([1, 2]))
-    as_callable(np.testing.assert_array_equal)(as_tensor(getattr(idx, "data")), as_callable(np.array)([0, 3]))
+    as_callable(np.testing.assert_array_equal)(as_tensor(_get_attr(val, "data")), as_callable(np.array)([1, 2]))
+    as_callable(np.testing.assert_array_equal)(as_tensor(_get_attr(idx, "data")), as_callable(np.array)([0, 3]))
 
 
 def test_arg_ops() -> None:
@@ -83,10 +84,10 @@ def test_arg_ops() -> None:
         out = as_callable(Argwhere)(np, t > 1)
         as_callable(np.testing.assert_array_equal)(out, as_callable(np.array)([[0], [2]]))
         out = as_callable(Argpartition)(np, t, kth=1)
-        assert as_tensor(getattr(out, "__getitem__")(1)) == 2 or as_tensor(getattr(out, "__getitem__")(0)) == 1
+        assert as_tensor(_get_attr(out, "__getitem__")(1)) == 2 or as_tensor(_get_attr(out, "__getitem__")(0)) == 1
         AsString = numpy_eager_registry.get("AsString")
         out = as_callable(AsString)(np, t)
-        assert as_tensor(getattr(out, "dtype")).kind in ("U", "S")
+        assert as_tensor(_get_attr(out, "dtype")).kind in ("U", "S")
         Assert = numpy_eager_registry.get("Assert")
         as_callable(Assert)(np, as_callable(np.array)(True), data=["Everything is fine"])
         with pytest.raises(AssertionError):
@@ -117,11 +118,11 @@ def test_new_ops_part1() -> None:
     AugMix = numpy_eager_registry.get("AugMix")
     if AugMix:
         out = AugMix(np, np.ones((1, 3, 3, 3)), factor=1.0)
-        assert getattr(out, "shape", None) == (1, 3, 3, 3)
+        assert _get_attr(out, "shape", None) == (1, 3, 3, 3)
     AutoContrast = numpy_eager_registry.get("AutoContrast")
     if AutoContrast:
         out = AutoContrast(np, np.ones((1, 3, 3, 3)))
-        assert as_tensor(getattr(out, "shape")) == (1, 3, 3, 3)
+        assert as_tensor(_get_attr(out, "shape")) == (1, 3, 3, 3)
     AxisIndex = numpy_eager_registry.get("AxisIndex")
     if AxisIndex:
         out = AxisIndex(np, axis_name="batch")
@@ -216,10 +217,10 @@ def test_complex_signal() -> None:
         x = ops.array(np.random.randn(2, 4).astype(np.float32))
         fft_out = ops.fft(x)
         assert fft_out is not None
-        irfft_out = as_tensor(getattr(ops, "irfft"))(fft_out)
+        irfft_out = as_tensor(_get_attr(ops, "irfft"))(fft_out)
         assert irfft_out is not None
         x2 = ops.array(np.random.randn(2, 4, 4).astype(np.float32))
-        fft2_out = as_tensor(getattr(ops, "fft2"))(x2)
+        fft2_out = as_tensor(_get_attr(ops, "fft2"))(x2)
         assert fft2_out is not None
         ifft2_out = as_callable(ops.ifft2)(fft2_out)
         assert ifft2_out is not None

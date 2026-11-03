@@ -9,13 +9,14 @@ import pytest
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, TensorSpec
 from ml_switcheroo_compiler.ir.shape_system import ShapeTracker, SymbolicConstraintTracker, SymInt, SymVar, _broadcast_dim, _from_str_shape, _matmul_shape_1d, _matmul_shape_2d, _to_str_shape, matmul_shape
 from tests.testing_utils import as_callable, as_type_obj
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
-ShapeMismatchError = typing.cast("type[Exception]", getattr(importlib.import_module("ml_switcheroo_compiler.ir.shape_system"), "ShapeMismatchError"))
+ShapeMismatchError = _cast_val("type[Exception]", _get_attr(importlib.import_module("ml_switcheroo_compiler.ir.shape_system"), "ShapeMismatchError"))
 
 
 def test_symint_eq() -> None:
@@ -434,10 +435,10 @@ def _test_symbolic_simplification_and_dunder_branches_part_1(_state: dict[str, E
 
     # min with -
     assert (SymBinaryOp("min", SymBinaryOp("-", x, SymConst(5)), x)).simplify() == SymBinaryOp("-", x, SymConst(5))
-    getattr(_state, "update")({"SymBinaryOp": SymBinaryOp, "SymConst": SymConst, "SymNode": SymNode, "SymPiecewise": SymPiecewise})
-    getattr(_state, "update")({"SymUnaryOp": SymUnaryOp, "SymVar": SymVar, "div_node": div_node, "div_node_left": div_node_left})
-    getattr(_state, "update")({"rmod_node": rmod_node, "rpow_node": rpow_node, "x": x, "y": y})
-    _state.update(locals())
+    _get_attr(_state, "update")({"SymBinaryOp": SymBinaryOp, "SymConst": SymConst, "SymNode": SymNode, "SymPiecewise": SymPiecewise})
+    _get_attr(_state, "update")({"SymUnaryOp": SymUnaryOp, "SymVar": SymVar, "div_node": div_node, "div_node_left": div_node_left})
+    _get_attr(_state, "update")({"rmod_node": rmod_node, "rpow_node": rpow_node, "x": x, "y": y})
+    _state.update(_caller_locals())
 
 
 def _test_symbolic_simplification_and_dunder_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -482,9 +483,9 @@ def _test_symbolic_simplification_and_dunder_branches_part_2(_state: dict[str, E
     assert pw1 == pw2
     assert hash(pw1) == hash(pw2)
     assert pw1 != 123
-    getattr(_state, "update")({"pw1": pw1, "pw2": pw2, "pw_false": pw_false, "pw_true": pw_true})
-    getattr(_state, "update")({"u_simp": u_simp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"pw1": pw1, "pw2": pw2, "pw_false": pw_false, "pw_true": pw_true})
+    _get_attr(_state, "update")({"u_simp": u_simp})
+    _state.update(_caller_locals())
 
 
 def _test_symbolic_simplification_and_dunder_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -497,6 +498,7 @@ def _test_symbolic_simplification_and_dunder_branches_part_3(_state: dict[str, E
     from ml_switcheroo_compiler.ir.shape_system import SymNode as _SymNodeCls
 
     SymBinaryOp, SymConst, SymNode, SymPiecewise = _state["SymBinaryOp"], _state["SymConst"], _state["SymNode"], _state["SymPiecewise"]
+    _ = SymNode
     SymUnaryOp, SymVar, x, y = _state["SymUnaryOp"], _state["SymUnaryOp"], _state["x"], _state["y"]
     SymUnaryOp, SymVar = _state["SymUnaryOp"], _state["SymVar"]
 
@@ -539,9 +541,9 @@ def _test_symbolic_simplification_and_dunder_branches_part_3(_state: dict[str, E
     # SymPiecewise cond not callable, SymNode, or bool
     # Boolean conditions (True and False) hitting both 1215->1216 (True) and 1215->1216 (False)
     pw_bool_true = SymPiecewise([(True, SymConst(42))], default=SymConst(0))
-    getattr(_state, "update")({"UnsimplifyingMul": UnsimplifyingMul, "pw_bool_true": pw_bool_true, "raw_mul": raw_mul, "u_cust": u_cust})
-    getattr(_state, "update")({"z": z})
-    _state.update(locals())
+    _get_attr(_state, "update")({"UnsimplifyingMul": UnsimplifyingMul, "pw_bool_true": pw_bool_true, "raw_mul": raw_mul, "u_cust": u_cust})
+    _get_attr(_state, "update")({"z": z})
+    _state.update(_caller_locals())
 
 
 def _test_symbolic_simplification_and_dunder_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -557,7 +559,7 @@ def _test_symbolic_simplification_and_dunder_branches_part_4(_state: dict[str, E
     # Fall-through when cond is neither callable, SymNode, nor bool
     pw_int = SymPiecewise([(1, SymConst(42))], default=SymConst(0))
     assert pw_int.eval({}) == 0
-    getattr(_state, "update")({"pw_bool_false": pw_bool_false, "pw_int": pw_int})
+    _get_attr(_state, "update")({"pw_bool_false": pw_bool_false, "pw_int": pw_int})
 
 
 def test_symbolic_simplification_and_dunder_branches() -> None:

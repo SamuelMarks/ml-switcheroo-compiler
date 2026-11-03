@@ -7,7 +7,7 @@ from collections.abc import Callable, Sequence
 from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, VariadicCallableProtocol, invoke_callable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, VariadicCallableProtocol, _get_attr, _has_attr, _obj_set_attr, _set_attr, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ops.registry import register_util
@@ -42,7 +42,7 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     graph = global_tracing_state.active_graph
     wrt_tensors, wrt_ids = _find_wrt_tensors(graph)
 
-    loss_id = getattr(tensor.data, "id", None)
+    loss_id = _get_attr(tensor.data, "id", None)
     if loss_id is None:
         loss_id = str(tensor.data)
 
@@ -56,9 +56,9 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
     inputs_dict = _get_inputs_dict(graph)
 
     backend = get_active_backend()
-    if hasattr(backend, "execute_graph"):
+    if _has_attr(backend, "execute_graph"):
         outputs_dict = backend.execute_graph(grad_graph, inputs_dict)
-    elif hasattr(backend, "compile_graph"):
+    elif _has_attr(backend, "compile_graph"):
         compiled_fn = backend.compile_graph(grad_graph)
         outputs_dict = compiled_fn(inputs_dict)
     else:
@@ -72,7 +72,7 @@ def backward(tensor: GradValue, *args: GradValue, **kwargs: GradValue) -> None:
         if grad_node_id in outputs_dict:
             grad_val = outputs_dict[grad_node_id]
             t = wrt_tensors[i]
-            setattr(t, "grad", grad_val)
+            _set_attr(t, "grad", grad_val)
 
 
 def RegisterGradient(op_type: str) -> Callable[[VJPRuleCallable], VJPRuleCallable]:
@@ -86,7 +86,7 @@ def RegisterGradient(op_type: str) -> Callable[[VJPRuleCallable], VJPRuleCallabl
     """
     dec = register_vjp(op_type)
     if callable(dec):
-        object.__setattr__(dec, "op_type", op_type)
+        _obj_set_attr(dec, "op_type", op_type)
     return dec
 
 
@@ -234,7 +234,7 @@ def value_and_grad(
         """
         _ = kwargs
         val, grads = _compute_grad_and_value(fun, opts, args)
-        if getattr(opts, "has_aux"):
+        if _get_attr(opts, "has_aux"):
             return val, grads
         return val, grads
 
@@ -317,9 +317,9 @@ def jvp(
     eps = 1e-5
     perturbed: list[GradValue] = []
     for p, t in zip(primals_tuple, tangents_tuple):
-        if hasattr(p, "__add__"):
+        if _has_attr(p, "__add__"):
             try:
-                perturbed.append(getattr(p, "__add__")(getattr(t, "__mul__")(eps)))
+                perturbed.append(_get_attr(p, "__add__")(_get_attr(t, "__mul__")(eps)))
             except Exception:
                 perturbed.append(p)
         else:
@@ -327,7 +327,7 @@ def jvp(
 
     out_eps = invoke_callable(fun, *perturbed)
     try:
-        tangent_out: GradValue = getattr(getattr(out_eps, "__sub__")(primal_out), "__truediv__")(eps)
+        tangent_out: GradValue = _get_attr(_get_attr(out_eps, "__sub__")(primal_out), "__truediv__")(eps)
     except Exception:
         tangent_out = primal_out
     return primal_out, tangent_out

@@ -9,7 +9,7 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
 from ml_switcheroo_compiler.core.constants import BINARY_OP_ARITY
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -463,7 +463,7 @@ class Einsum(OpDef):
             tuple[int, ...]: Result.
         """
         shapes: list[tuple[int, ...]] = []
-        for arg in getattr(args, "__iter__")():
+        for arg in _get_attr(args, "__iter__")():
             if arg is None:
                 continue
             if not isinstance(arg, tuple):
@@ -487,7 +487,7 @@ class Einsum(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        equation, remaining_args = getattr(self, "_extract_equation")(args, kwargs)
+        equation, remaining_args = _get_attr(self, "_extract_equation")(args, kwargs)
         shapes = self._extract_shapes(remaining_args)
         if shapes is None:
             return ()

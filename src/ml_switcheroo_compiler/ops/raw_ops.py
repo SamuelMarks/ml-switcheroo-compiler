@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -32,7 +32,8 @@ class RawOp(OpDef):
             a = args[0]
         else:
             return ()
-        return getattr(a, "shape", getattr(a, "shape_metadata", ()))
+        _typed_ret_1: TensorOrScalar = _get_attr(a, "shape", _get_attr(a, "shape_metadata", ()))
+        return _typed_ret_1
 
 
 @register_op("RawSwitch")
@@ -91,15 +92,15 @@ class RawConv2D(RawOp):
         Returns:
             TensorOrScalar: Computed result.
         """
-        inp: tuple[int, ...] = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
-        filters: tuple[int, ...] = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))
+        inp: tuple[int, ...] = _get_attr(args[0], "shape", _get_attr(args[0], "shape_metadata", ()))
+        filters: tuple[int, ...] = _get_attr(args[1], "shape", _get_attr(args[1], "shape_metadata", ()))
         padding = kwargs.get("padding", "VALID")
         strides = kwargs.get("strides", [1, 1, 1, 1])
 
         # inp: N, H, W, C
         # filters: FH, FW, C, K
         fh, fw = filters[0], filters[1]
-        sh, sw = getattr(strides, "__getitem__")(1), getattr(strides, "__getitem__")(2)
+        sh, sw = _get_attr(strides, "__getitem__")(1), _get_attr(strides, "__getitem__")(2)
 
         out_shape = [inp[0], 0, 0, filters[3]]
 
@@ -128,8 +129,8 @@ class RawMatMul(RawOp):
         Returns:
             TensorOrScalar: Computed result.
         """
-        a: tuple[int, ...] = getattr(args[0], "shape", getattr(args[0], "shape_metadata", ()))
-        b: tuple[int, ...] = getattr(args[1], "shape", getattr(args[1], "shape_metadata", ()))
+        a: tuple[int, ...] = _get_attr(args[0], "shape", _get_attr(args[0], "shape_metadata", ()))
+        b: tuple[int, ...] = _get_attr(args[1], "shape", _get_attr(args[1], "shape_metadata", ()))
         transpose_a = kwargs.get("transpose_a", False)
         transpose_b = kwargs.get("transpose_b", False)
 

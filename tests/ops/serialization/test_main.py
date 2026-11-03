@@ -11,6 +11,7 @@ import zipfile
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization import (
     CustomObjectScope,
     KerasFileEditor,
@@ -185,7 +186,7 @@ def test_export_funcs(mocker: EagerTensorProtocol) -> None:
         mocker: Test parameter `mocker`.
     """
     mock_graph = mocker.MagicMock()
-    setattr(mock_graph.to_json, "return_value", "{}")
+    _set_attr(mock_graph.to_json, "return_value", "{}")
     with tempfile.NamedTemporaryFile() as f:
         as_callable(export_to_onnx)(mock_graph, f.name)
         as_callable(export_to_tflite)(mock_graph, f.name)

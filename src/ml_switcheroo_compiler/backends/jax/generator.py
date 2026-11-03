@@ -19,6 +19,7 @@ from ml_switcheroo_compiler.backends.jax.generator_mixins import (
     JaxMathVisitor,
 )
 from ml_switcheroo_compiler.backends.registry import register_backend
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -80,8 +81,8 @@ class JAXCodeGenerator(BaseGenerator):
             dev = jax.local_devices()[0]
             stats = dev.memory_stats()
             return {
-                "current": int(getattr(stats, "get")("bytes_in_use", 0)),
-                "peak": int(getattr(stats, "get")("peak_bytes_in_use", 0)),
+                "current": int(_get_attr(stats, "get")("bytes_in_use", 0)),
+                "peak": int(_get_attr(stats, "get")("peak_bytes_in_use", 0)),
             }
         except Exception:
             import resource
@@ -101,9 +102,9 @@ class JAXCodeGenerator(BaseGenerator):
 
         backend_config = kwargs.get("backend_config")
         if backend_config:
-            getattr(jax.distributed, "initialize")(coordinator_address=getattr(backend_config, "options").get("coordinator_address") if getattr(backend_config, "options") else None, num_processes=getattr(backend_config, "world_size"), process_id=getattr(backend_config, "rank"))
+            _get_attr(jax.distributed, "initialize")(coordinator_address=_get_attr(backend_config, "options").get("coordinator_address") if _get_attr(backend_config, "options") else None, num_processes=_get_attr(backend_config, "world_size"), process_id=_get_attr(backend_config, "rank"))
         else:
-            getattr(jax.distributed, "initialize")()
+            _get_attr(jax.distributed, "initialize")()
 
     @classmethod
     def load(cls: type, filepath: str, allow_pickle: bool = False, fix_imports: bool = True, encoding: str = "ASCII") -> EagerValue:
@@ -134,7 +135,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        getattr(jnp, "save")(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
+        _get_attr(jnp, "save")(file, arr, allow_pickle=allow_pickle, fix_imports=fix_imports)
 
     @classmethod
     def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -147,7 +148,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        getattr(jnp, "savez")(file, *args, **kwds)
+        _get_attr(jnp, "savez")(file, *args, **kwds)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -160,7 +161,7 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import jax.numpy as jnp
 
-        getattr(jnp, "savez_compressed")(file, *args, **kwds)
+        _get_attr(jnp, "savez_compressed")(file, *args, **kwds)
 
     def __init__(self, graph: IRGraph) -> None:
         """Init.
@@ -304,14 +305,14 @@ class JAXCodeGenerator(BaseGenerator):
             Returns:
                 EagerValue: Evaluated output tensors.
             """
-            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(fn_args):
                     arg_val = fn_args[i]
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             evaluated = evaluate_graph(graph, inputs=inputs)
-            if hasattr(graph, "outputs") and graph.outputs:
+            if _has_attr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
@@ -342,7 +343,7 @@ class JAXCodeGenerator(BaseGenerator):
                 EagerValue: Result from the JAX callable.
             """
             del w_kwargs
-            jax_args = [getattr(jnp_mod, "asarray")(a.data if isinstance(a, Tensor) else a) for a in w_args]
+            jax_args = [_get_attr(jnp_mod, "asarray")(a.data if isinstance(a, Tensor) else a) for a in w_args]
             return as_callable(target_fn)(*jax_args)
 
         return executable

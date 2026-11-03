@@ -8,6 +8,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.errors import ShapeMismatchError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.shape_system import (
     AlgebraicRuleSetModel,
     Polynomial,
@@ -505,12 +506,12 @@ def test_poly_to_symnode_conversions() -> None:
     # Zero polynomial
     p0 = Polynomial.from_const(0)
     assert isinstance(_poly_to_symnode(p0), SymConst)
-    assert as_tensor(getattr(_poly_to_symnode(p0), "value")) == 0
+    assert as_tensor(_get_attr(_poly_to_symnode(p0), "value")) == 0
 
     # Const polynomial
     p7 = Polynomial.from_const(7)
     assert isinstance(_poly_to_symnode(p7), SymConst)
-    assert as_tensor(getattr(_poly_to_symnode(p7), "value")) == 7
+    assert as_tensor(_get_attr(_poly_to_symnode(p7), "value")) == 7
 
     # Polynomial with negative leading coefficient
     p_neg_lead = Polynomial({((("x", 1),)): -3})
@@ -654,11 +655,11 @@ def _test_polynomial_and_symnode_detailed_branches_part_1(_state: dict[str, Eage
     # to_polynomial for binary op operators
     x = SymVar("x")
     y = SymVar("y")
-    getattr(_state, "update")({"div_zero_op": div_zero_op, "p2": p2, "p2x": p2x, "p3x": p3x})
-    getattr(_state, "update")({"p5": p5, "p_zero_coeff": p_zero_coeff, "p_zero_const": p_zero_const, "px": px})
-    getattr(_state, "update")({"px2": px2, "pxy": pxy, "py": py, "simplified_div_zero": simplified_div_zero})
-    getattr(_state, "update")({"x": x, "y": y})
-    _state.update(locals())
+    _get_attr(_state, "update")({"div_zero_op": div_zero_op, "p2": p2, "p2x": p2x, "p3x": p3x})
+    _get_attr(_state, "update")({"p5": p5, "p_zero_coeff": p_zero_coeff, "p_zero_const": p_zero_const, "px": px})
+    _get_attr(_state, "update")({"px2": px2, "pxy": pxy, "py": py, "simplified_div_zero": simplified_div_zero})
+    _get_attr(_state, "update")({"x": x, "y": y})
+    _state.update(_caller_locals())
 
 
 def _test_polynomial_and_symnode_detailed_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -702,9 +703,9 @@ def _test_polynomial_and_symnode_detailed_branches_part_2(_state: dict[str, Eage
     tracker2.record_equality(15, "Y")
     tracker2.record_equality("X", "Y")
     assert tracker2.is_consistent()
-    getattr(_state, "update")({"mul_op": mul_op, "p_empty": p_empty, "p_unclosed": p_unclosed, "si": si})
-    getattr(_state, "update")({"sub_op": sub_op, "tokens": tokens, "tracker": tracker, "tracker2": tracker2})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mul_op": mul_op, "p_empty": p_empty, "p_unclosed": p_unclosed, "si": si})
+    _get_attr(_state, "update")({"sub_op": sub_op, "tokens": tokens, "tracker": tracker, "tracker2": tracker2})
+    _state.update(_caller_locals())
 
 
 def _test_polynomial_and_symnode_detailed_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -725,7 +726,7 @@ def _test_polynomial_and_symnode_detailed_branches_part_3(_state: dict[str, Eage
     # _broadcast_dim where b is SymConst
     sc3 = SymConst(3)
     assert _broadcast_dim(3, sc3) == 3
-    getattr(_state, "update")({"n_noshape": n_noshape, "sc3": sc3, "sub_res": sub_res})
+    _get_attr(_state, "update")({"n_noshape": n_noshape, "sc3": sc3, "sub_res": sub_res})
 
 
 def test_polynomial_and_symnode_detailed_branches() -> None:
@@ -954,10 +955,10 @@ def _test_shape_system_all_remaining_coverage_branches_part_1(_state: dict[str, 
     # 771->774: op == "//" where left is (a * b) and right is c
     s_div_nomatch = SymBinaryOp("//", SymBinaryOp("*", SymVar("a"), SymVar("b")), SymVar("c"))
     assert s_div_nomatch.simplify() is not None
-    getattr(_state, "update")({"p_add": p_add, "p_xy": p_xy, "patch": patch, "poly_const_zero": poly_const_zero})
-    getattr(_state, "update")({"poly_zero": poly_zero, "px": px, "s_div_nomatch": s_div_nomatch, "s_sub": s_sub})
-    getattr(_state, "update")({"s_sub_nomatch": s_sub_nomatch})
-    _state.update(locals())
+    _get_attr(_state, "update")({"p_add": p_add, "p_xy": p_xy, "patch": patch, "poly_const_zero": poly_const_zero})
+    _get_attr(_state, "update")({"poly_zero": poly_zero, "px": px, "s_div_nomatch": s_div_nomatch, "s_sub": s_sub})
+    _get_attr(_state, "update")({"s_sub_nomatch": s_sub_nomatch})
+    _state.update(_caller_locals())
 
 
 def _test_shape_system_all_remaining_coverage_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1003,8 +1004,8 @@ def _test_shape_system_all_remaining_coverage_branches_part_2(_state: dict[str, 
 
     # 4. _poly_to_symnode line 925:
     assert _poly_to_symnode(Polynomial({})) == SymConst(0)
-    getattr(_state, "update")({"IrreducibleNode": IrreducibleNode, "s_irred": s_irred})
-    _state.update(locals())
+    _get_attr(_state, "update")({"IrreducibleNode": IrreducibleNode, "s_irred": s_irred})
+    _state.update(_caller_locals())
 
 
 def _test_shape_system_all_remaining_coverage_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1043,9 +1044,9 @@ def _test_shape_system_all_remaining_coverage_branches_part_3(_state: dict[str, 
     tracker_const.record_equality("K", 42)
     assert tracker_const.substitute(42) == 42
     assert tracker_const.substitute("K") == 42
-    getattr(_state, "update")({"p_power0": p_power0, "s_int": s_int, "sol": sol, "tokens": tokens})
-    getattr(_state, "update")({"tracker": tracker, "tracker_const": tracker_const})
-    _state.update(locals())
+    _get_attr(_state, "update")({"p_power0": p_power0, "s_int": s_int, "sol": sol, "tokens": tokens})
+    _get_attr(_state, "update")({"tracker": tracker, "tracker_const": tracker_const})
+    _state.update(_caller_locals())
 
 
 def _test_shape_system_all_remaining_coverage_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1075,8 +1076,8 @@ def _test_shape_system_all_remaining_coverage_branches_part_4(_state: dict[str, 
     from ml_switcheroo_compiler.ir.shape_system import _broadcast_dim
 
     assert _broadcast_dim("N + 1", "1 + N") == "N + 1"
-    getattr(_state, "update")({"MockGraph": MockGraph, "_broadcast_dim": _broadcast_dim, "n_add": n_add, "n_mat": n_mat})
-    getattr(_state, "update")({"tracker_graph": tracker_graph})
+    _get_attr(_state, "update")({"MockGraph": MockGraph, "_broadcast_dim": _broadcast_dim, "n_add": n_add, "n_mat": n_mat})
+    _get_attr(_state, "update")({"tracker_graph": tracker_graph})
 
 
 def test_shape_system_all_remaining_coverage_branches() -> None:

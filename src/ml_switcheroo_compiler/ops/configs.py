@@ -22,7 +22,7 @@ class _PositionalConfigModel(pydantic.BaseModel):
             *args (AttrValue): Positional field values.
             **kwargs (AttrValue): Keyword field values.
         """
-        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
 
 
 class ConvConfig(_PositionalConfigModel):
@@ -112,7 +112,7 @@ class BlurConfig(_PositionalConfigModel):
             *args (AttrValue): Positional field values.
             **kwargs (AttrValue): Keyword field values.
         """
-        merged = {**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs}
+        merged = {**dict(zip(type(self).model_fields.keys(), args)), **kwargs}
         if "kernel_size" not in merged or "sigma" not in merged:
             msg = "BlurConfig.__init__() missing required arguments: 'kernel_size' and 'sigma'"
             raise TypeError(msg)

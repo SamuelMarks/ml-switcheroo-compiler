@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.utils.operation_utils import (
     ExpandDimsInference,
     MeanInference,
@@ -66,7 +67,8 @@ def test_shape_inference_strategy_base() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", as_callable(super().__call__)(*args, **kwargs))
+            _typed_ret_1: tuple[int | None, ...] | list[tuple[int | None, ...]] | None = _cast_val("tuple[int | None, ...] | list[tuple[int | None, ...]] | None", as_callable(super().__call__)(*args, **kwargs))
+            return _typed_ret_1
 
     strategy = DummyStrategy()
     assert strategy((1,), (), {}) is None

@@ -7,6 +7,7 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.audio.ops import Dct, Frame, HammingWindow, HannWindow, Idct, InverseMdct, Istft, KaiserWindow, Mdct, MelFilterbank, MelSpectrogram, Mfcc, MfccsFromLogMelSpectrograms, OverlapAndAdd, Stft
 from tests.testing_utils import as_callable, as_tensor
@@ -75,22 +76,22 @@ def _test_audio_ops_infer_shape_part_1(_state: dict[str, EagerTensorProtocol]) -
     assert as_callable(op.infer_shape)(as_callable(NoShape)()) == ()
     assert op.infer_shape() == ()
     assert as_callable(op.infer_shape)(as_callable(MockArray)(())) == ()
-    op = typing.cast("Stft", MelSpectrogram())
+    op = _cast_val("Stft", MelSpectrogram())
     assert as_callable(op.infer_shape)(as_callable(MockArray)((2, 100)), frame_step=10, frame_length=20, num_mel_bins=8) == (2, 9, 8)
     assert as_callable(op.infer_shape)(as_callable(NoShape)()) == ()
     assert op.infer_shape() == ()
     assert as_callable(op.infer_shape)(as_callable(MockArray)(())) == ()
-    op = typing.cast("Stft", Istft())
+    op = _cast_val("Stft", Istft())
     assert as_callable(op.infer_shape)(as_callable(MockArray)((2, 9, 11)), frame_step=10, frame_length=20) == (2, 100)
     assert as_callable(op.infer_shape)(as_callable(NoShape)()) == ()
     assert op.infer_shape() == ()
     assert as_callable(op.infer_shape)(as_callable(MockArray)(())) == ()
     assert as_callable(op.infer_shape)(as_callable(MockArray)((10,))) == (10,)
-    op = typing.cast("Stft", MelFilterbank())
+    op = _cast_val("Stft", MelFilterbank())
     assert op.infer_shape(num_mel_bins=12, fft_length=20) == (11, 12)
     assert op.infer_shape() == (129, 128)
-    getattr(_state, "update")({"NoShape": NoShape, "op": op})
-    _state.update(locals())
+    _get_attr(_state, "update")({"NoShape": NoShape, "op": op})
+    _state.update(_caller_locals())
 
 
 def _test_audio_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -105,7 +106,7 @@ def _test_audio_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtocol]) -
     assert op.infer_shape(NoShape()) == ()
     assert op.infer_shape() == ()
     assert as_callable(op.infer_shape)(as_callable(MockArray)(())) == ()
-    op = typing.cast("Mfcc", MfccsFromLogMelSpectrograms())
+    op = _cast_val("Mfcc", MfccsFromLogMelSpectrograms())
     assert as_callable(op.infer_shape)(as_callable(MockArray)((2, 9, 16)), num_mfccs=4) == (2, 9, 4)
     assert op.infer_shape(NoShape()) == ()
     assert op.infer_shape() == ()
@@ -122,8 +123,8 @@ def _test_audio_ops_infer_shape_part_2(_state: dict[str, EagerTensorProtocol]) -
     assert op3.infer_shape(window_length=7) == (7,)
     assert as_callable(op3.infer_shape)(as_callable(MockArg)(8), window_length=None) == (8,)
     assert as_callable(op3.infer_shape)(as_callable(MockArray)(()), window_length=256) == (256,)
-    getattr(_state, "update")({"op": op, "op1": op1, "op2": op2, "op3": op3})
-    _state.update(locals())
+    _get_attr(_state, "update")({"op": op, "op1": op1, "op2": op2, "op3": op3})
+    _state.update(_caller_locals())
 
 
 def _test_audio_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -134,13 +135,13 @@ def _test_audio_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtocol]) -
     """
     op = Dct()
     assert as_callable(op.infer_shape)(as_callable(MockArray)((10, 20))) == (10, 20)
-    op = typing.cast("Dct", Idct())
+    op = _cast_val("Dct", Idct())
     assert as_callable(op.infer_shape)(as_callable(MockArray)((10, 20))) == (10, 20)
-    op = typing.cast("Dct", Mdct())
+    op = _cast_val("Dct", Mdct())
     res = as_callable(op.infer_shape)(as_callable(MockArray)((2, 100)), frame_length=20, frame_step=10)
     assert as_callable(len)(res) == 3
-    assert as_tensor(getattr(res, "__getitem__")(0)) == 2
-    assert as_tensor(getattr(res, "__getitem__")(2)) == 10
+    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 2
+    assert as_tensor(_get_attr(res, "__getitem__")(2)) == 10
     res_pad = as_callable(op.infer_shape)(as_callable(MockArray)((2, 100)), frame_length=20, frame_step=10, pad_end=True)
     assert as_callable(len)(res_pad) == 3
     res_pre = as_callable(op.infer_shape)(as_callable(MockArray)((2, 5, 20)), frame_length=20)
@@ -149,14 +150,14 @@ def _test_audio_ops_infer_shape_part_3(_state: dict[str, EagerTensorProtocol]) -
     assert res_short == (2, 5)
     assert as_callable(op.infer_shape)(as_callable(MockArray)(())) == ()
     assert as_callable(op.infer_shape)() == ()
-    op = typing.cast("Dct", InverseMdct())
+    op = _cast_val("Dct", InverseMdct())
     res = as_callable(op.infer_shape)(as_callable(MockArray)((2, 5, 10)), frame_length=20)
     assert as_callable(len)(res) == 3
     assert res == (2, 5, 20)
     assert as_callable(op.infer_shape)(as_callable(MockArray)(())) == ()
-    getattr(_state, "update")({"op": op, "res": res, "res_pad": res_pad, "res_pre": res_pre})
-    getattr(_state, "update")({"res_short": res_short})
-    _state.update(locals())
+    _get_attr(_state, "update")({"op": op, "res": res, "res_pad": res_pad, "res_pre": res_pre})
+    _get_attr(_state, "update")({"res_short": res_short})
+    _state.update(_caller_locals())
 
 
 def _test_audio_ops_infer_shape_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -181,7 +182,7 @@ def _test_audio_ops_infer_shape_part_4(_state: dict[str, EagerTensorProtocol]) -
         op.infer_shape(NoShape())
     with pytest.raises(TypeError):
         op.infer_shape()
-    getattr(_state, "update")({"op": op})
+    _get_attr(_state, "update")({"op": op})
 
 
 def test_audio_ops_infer_shape() -> None:

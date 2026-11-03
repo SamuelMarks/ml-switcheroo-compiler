@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import cond
 from ml_switcheroo_compiler.tracing import ProxyTensor
@@ -62,5 +63,5 @@ def test_cond_trace() -> None:
 
         global_tracing_state.start_tracing()
         res = cond(pred, true_fn, false_fn)
-        assert as_tensor(getattr(res, "dtype")) == DType.Float32
+        assert as_tensor(_get_attr(res, "dtype")) == DType.Float32
         global_tracing_state.stop_tracing()

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import typing
-
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.serialization.formats.base import WeightLoader, WeightSaver
 from ml_switcheroo_compiler.serialization.utils import parse_npz
@@ -25,9 +23,10 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         import ml_switcheroo_compiler.backends.registry as registry
 
         backend = registry.get_active_backend()
-        if hasattr(backend, "load_npz"):
+        if _has_attr(backend, "load_npz"):
             try:
-                return typing.cast("dict[str, TensorLike]", backend.load_npz(filepath))
+                _typed_ret_1: dict[str, TensorLike] = _cast_val("dict[str, TensorLike]", backend.load_npz(filepath))
+                return _typed_ret_1
             except Exception as e:
                 import warnings
 
@@ -48,8 +47,8 @@ class NpzWeightFormat(WeightLoader, WeightSaver):
         import ml_switcheroo_compiler.backends.registry as registry
 
         backend = registry.get_active_backend()
-        if hasattr(backend, "save_npz"):
+        if _has_attr(backend, "save_npz"):
             backend.save_npz(weights_np, filepath)
             return
         np_mod = registry.BackendRegistry.get("numpy").get_module()
-        getattr(np_mod, "savez")(filepath, **dict(getattr(weights_np, "items")()))
+        _get_attr(np_mod, "savez")(filepath, **dict(_get_attr(weights_np, "items")()))

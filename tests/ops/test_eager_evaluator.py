@@ -6,6 +6,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.eager_evaluator import EvaluationContext, EvaluationStrategy
 from tests.testing_utils import as_callable, as_tensor
 
@@ -25,7 +26,7 @@ def test_evaluation_strategy_base() -> None:
             Args:
                 ctx: Test parameter `ctx`.
             """
-            return as_callable(as_tensor(getattr(super(), "evaluate")))(ctx)
+            return as_callable(as_tensor(_get_attr(super(), "evaluate")))(ctx)
 
     ctx = as_callable(EvaluationContext)(op_cls=None, op_type="foo", args=[], kwargs={}, backend=None)
     with pytest.raises(NotImplementedError):

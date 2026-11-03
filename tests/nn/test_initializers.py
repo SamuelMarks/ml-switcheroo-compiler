@@ -7,6 +7,7 @@ import typing
 import pytest
 
 import ml_switcheroo_compiler.nn.initializers as init
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -67,9 +68,9 @@ def test_initializers(monkeypatch: pytest.MonkeyPatch) -> None:
     assert as_callable(init.orthogonal)(1.0)(None, (3, 3)) == "scalar_mul"
     assert as_callable(init.delta_orthogonal)(1.0)(None, (3, 3, 4)) == "scalar_mul"
 
-    assert as_callable(init.variance_scaling)(as_callable(as_tensor(getattr(init, "InitializerConfig")))(scale=1.0, mode="fan_in", distribution="truncated_normal"))(None, (2, 4)) == "scalar_mul"
-    assert as_callable(init.variance_scaling)(as_callable(getattr(init, "InitializerConfig"))(scale=1.0, mode="fan_out", distribution="normal"))(None, (2, 4), "float32") == "scalar_mul"
-    assert as_callable(init.variance_scaling)(as_callable(as_tensor(getattr(init, "InitializerConfig")))(scale=1.0, mode="fan_avg", distribution="uniform"))(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.variance_scaling)(as_callable(as_tensor(_get_attr(init, "InitializerConfig")))(scale=1.0, mode="fan_in", distribution="truncated_normal"))(None, (2, 4)) == "scalar_mul"
+    assert as_callable(init.variance_scaling)(as_callable(_get_attr(init, "InitializerConfig"))(scale=1.0, mode="fan_out", distribution="normal"))(None, (2, 4), "float32") == "scalar_mul"
+    assert as_callable(init.variance_scaling)(as_callable(as_tensor(_get_attr(init, "InitializerConfig")))(scale=1.0, mode="fan_avg", distribution="uniform"))(None, (2, 4)) == "scalar_mul"
 
     assert as_callable(init.glorot_uniform)()(None, (2, 4)) == "scalar_mul"
     assert as_callable(init.glorot_normal)()(None, (2, 4)) == "scalar_mul"

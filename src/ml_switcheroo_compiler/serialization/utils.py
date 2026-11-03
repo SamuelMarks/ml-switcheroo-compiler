@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.eager_registry import as_bytes, as_str, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -21,16 +19,16 @@ def _extract_numpy_weights(weights: dict[str, TensorLike]) -> dict[str, TensorLi
     """
     weights_np = {}
     for k, w in weights.items():
-        if hasattr(w, "numpy"):
+        if _has_attr(w, "numpy"):
             weights_np[k] = w.numpy()
             continue
 
-        if hasattr(w, "data") and hasattr(w.data, "numpy"):
+        if _has_attr(w, "data") and _has_attr(w.data, "numpy"):
             weights_np[k] = w.data.numpy()
             continue
 
         try:
-            weights_np[k] = as_tensor(w.tolist()) if hasattr(w, "tolist") else w
+            weights_np[k] = as_tensor(w.tolist()) if _has_attr(w, "tolist") else w
         except (ValueError, TypeError):
             weights_np[k] = w
     return weights_np
@@ -45,13 +43,15 @@ def to_numpy(tensor: TensorLike) -> TensorLike:
     Returns:
         TensorLike: Converted array.
     """
-    if hasattr(tensor, "numpy"):
-        return tensor.numpy()
-    if hasattr(tensor, "data") and hasattr(tensor.data, "numpy"):
-        return tensor.data.numpy()
+    if _has_attr(tensor, "numpy"):
+        _typed_ret_1: TensorLike = tensor.numpy()
+        return _typed_ret_1
+    if _has_attr(tensor, "data") and _has_attr(tensor.data, "numpy"):
+        _typed_ret_2: TensorLike = tensor.data.numpy()
+        return _typed_ret_2
 
     try:
-        return as_tensor(tensor.tolist()) if hasattr(tensor, "tolist") else tensor
+        return as_tensor(tensor.tolist()) if _has_attr(tensor, "tolist") else tensor
     except (ValueError, TypeError):
         return tensor
 
@@ -67,7 +67,7 @@ def concatenate_arrays(arrays: list[TensorLike]) -> TensorLike:
     """
     from ml_switcheroo_compiler import ops
 
-    return as_tensor(getattr(ops, "concatenate")(arrays, axis=0))
+    return as_tensor(_get_attr(ops, "concatenate")(arrays, axis=0))
 
 
 def is_numpy_array(array: TensorOrScalar) -> bool:
@@ -79,7 +79,7 @@ def is_numpy_array(array: TensorOrScalar) -> bool:
     Returns:
         bool: True if array is a numpy array or array-like.
     """
-    return type(array).__module__ == "numpy" or hasattr(array, "numpy") or hasattr(array, "__array__")
+    return type(array).__module__ == "numpy" or _has_attr(array, "numpy") or _has_attr(array, "__array__")
 
 
 def _dtype_to_descr(dtype: TensorOrScalar) -> str:
@@ -111,8 +111,8 @@ def _dtype_to_descr(dtype: TensorOrScalar) -> str:
         for k, v in mapping.items():
             if k.value == dtype:
                 return v
-    elif hasattr(dtype, "value"):
-        return as_str(getattr(mapping, "get")(dtype, "<f4"))
+    elif _has_attr(dtype, "value"):
+        return as_str(_get_attr(mapping, "get")(dtype, "<f4"))
     return "<f4"
 
 
@@ -125,8 +125,8 @@ def _extract_arr_shape_dtype(arr: TensorLike) -> tuple[tuple[int, ...], str]:
     Returns:
         tuple[tuple[int, ...], str]: (shape, dtype_str).
     """
-    dtype = getattr(arr.dtype, "name") if hasattr(getattr(arr, "dtype", None), "name") else str(getattr(arr, "dtype", "<f4"))
-    return getattr(arr, "shape", ()), dtype
+    dtype = _get_attr(arr.dtype, "name") if _has_attr(_get_attr(arr, "dtype", None), "name") else str(_get_attr(arr, "dtype", "<f4"))
+    return _get_attr(arr, "shape", ()), dtype
 
 
 def _get_shape_and_dtype(tensor: TensorLike) -> tuple[tuple[int, ...], str]:
@@ -138,13 +138,13 @@ def _get_shape_and_dtype(tensor: TensorLike) -> tuple[tuple[int, ...], str]:
     Returns:
         tuple[tuple[int, ...], str]: (shape, dtype).
     """
-    if hasattr(tensor, "eval"):
+    if _has_attr(tensor, "eval"):
         return _extract_arr_shape_dtype(tensor.eval())
-    if hasattr(tensor, "numpy"):
+    if _has_attr(tensor, "numpy"):
         return _extract_arr_shape_dtype(tensor.numpy())
-    if hasattr(tensor, "data") and hasattr(tensor.data, "numpy"):
+    if _has_attr(tensor, "data") and _has_attr(tensor.data, "numpy"):
         return _extract_arr_shape_dtype(tensor.data.numpy())
-    return getattr(tensor, "shape", ()), getattr(tensor, "dtype", "<f4")
+    return _get_attr(tensor, "shape", ()), _get_attr(tensor, "dtype", "<f4")
 
 
 def _extract_arr_bytes(arr: TensorOrScalar) -> bytes:
@@ -156,10 +156,10 @@ def _extract_arr_bytes(arr: TensorOrScalar) -> bytes:
     Returns:
         bytes: The raw data bytes.
     """
-    if hasattr(arr, "tobytes"):
-        return as_bytes(getattr(arr, "tobytes")())
-    if hasattr(arr, "data") and hasattr(getattr(arr, "data"), "tobytes"):
-        return as_bytes(getattr(arr, "data").tobytes())
+    if _has_attr(arr, "tobytes"):
+        return as_bytes(_get_attr(arr, "tobytes")())
+    if _has_attr(arr, "data") and _has_attr(_get_attr(arr, "data"), "tobytes"):
+        return as_bytes(_get_attr(arr, "data").tobytes())
     return b""
 
 
@@ -172,12 +172,12 @@ def _get_data_bytes(tensor: TensorOrScalar) -> bytes:
     Returns:
         bytes: The raw data bytes.
     """
-    if hasattr(tensor, "eval"):
-        return _extract_arr_bytes(getattr(tensor, "eval")())
-    if hasattr(tensor, "numpy"):
-        return as_bytes(getattr(tensor, "numpy")().tobytes())
-    if hasattr(tensor, "data") and hasattr(getattr(tensor, "data"), "numpy"):
-        return as_bytes(getattr(tensor, "data").numpy().tobytes())
+    if _has_attr(tensor, "eval"):
+        return _extract_arr_bytes(_get_attr(tensor, "eval")())
+    if _has_attr(tensor, "numpy"):
+        return as_bytes(_get_attr(tensor, "numpy")().tobytes())
+    if _has_attr(tensor, "data") and _has_attr(_get_attr(tensor, "data"), "numpy"):
+        return as_bytes(_get_attr(tensor, "data").numpy().tobytes())
     return b""
 
 
@@ -192,7 +192,7 @@ def _tensor_to_npy_bytes(tensor: TensorOrScalar) -> bytes:
     """
     import struct
 
-    shape, dtype = typing.cast("TypedVariadicCallable[tuple[tuple[int, ...], str]]", _get_shape_and_dtype)(tensor)
+    shape, dtype = _cast_val("TypedVariadicCallable[tuple[tuple[int, ...], str]]", _get_shape_and_dtype)(tensor)
     data_bytes = _get_data_bytes(tensor)
     dtype_str = _dtype_to_descr(dtype)
 
@@ -222,13 +222,13 @@ def get_npz_bytes(weights: TensorOrScalar) -> bytes:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    if hasattr(backend, "get_npz_bytes"):
+    if _has_attr(backend, "get_npz_bytes"):
         return as_bytes(backend.get_npz_bytes(weights))
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_STORED) as zf:
-        for k, v in getattr(weights, "items")():
-            name = k if getattr(k, "endswith")(".npy") else f"{k}.npy"
+        for k, v in _get_attr(weights, "items")():
+            name = k if _get_attr(k, "endswith")(".npy") else f"{k}.npy"
             zf.writestr(name, _tensor_to_npy_bytes(v))
         zf_out = buf
     return zf_out.getvalue()
@@ -250,8 +250,8 @@ def parse_npz(file_obj: str | bytes | TensorLike) -> dict[str, TensorLike]:
     try:
         backend_cls = BackendRegistry.get("numpy")
         target = io.BytesIO(file_obj) if isinstance(file_obj, (bytes, bytearray)) else file_obj
-        with getattr(backend_cls, "load")(target) as data:
-            return {k: data[k] for k in getattr(data, "files", [])}
+        with _get_attr(backend_cls, "load")(target) as data:
+            return {k: data[k] for k in _get_attr(data, "files", [])}
     except Exception:
         return {}
 
@@ -268,9 +268,10 @@ def load_npz(file_obj: str | bytes | TensorLike) -> list[TensorLike]:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend = get_active_backend()
-    if hasattr(backend, "load_npz"):
+    if _has_attr(backend, "load_npz"):
         try:
-            return typing.cast(list[TensorLike], backend.load_npz(file_obj))
+            _typed_ret_3: list[TensorLike] = _cast_val(list[TensorLike], backend.load_npz(file_obj))
+            return _typed_ret_3
         except Exception as e:
             import logging
 

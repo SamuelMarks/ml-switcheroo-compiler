@@ -22,6 +22,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import (
     _np_tensorarraywrite,
     _np_vecdot,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_pair
 
 if typing.TYPE_CHECKING:
@@ -97,10 +98,10 @@ def test_raw_and_switch_ops() -> None:
     # rawswitch
     rs_pair1 = as_tensor_pair(as_callable(_np_rawswitch)(np, 42, False))
     assert rs_pair1[0] == 42
-    assert getattr(rs_pair1, "__getitem__")(1) is None
+    assert _get_attr(rs_pair1, "__getitem__")(1) is None
 
     rs_pair2 = as_tensor_pair(as_callable(_np_rawswitch)(np, 42, pred=True))
-    assert getattr(rs_pair2, "__getitem__")(0) is None
+    assert _get_attr(rs_pair2, "__getitem__")(0) is None
     assert rs_pair2[1] == 42
 
     # switchop

@@ -5,7 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import get_op
 from ml_switcheroo_compiler.ops.configs import BlurConfig
@@ -42,7 +42,7 @@ def gaussian_blur(images: Tensor, config_obj: TensorOrScalar = None, **kwargs: T
             config=config_obj,
             padding=padding,
         )
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "GaussianBlur",
         [images],
@@ -81,7 +81,7 @@ def median_filter(
             padding=padding,
             data_format=data_format,
         )
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, images.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, images.device))
     return _emit_shape_node(
         "MedianFilter",
         [images],
@@ -120,7 +120,7 @@ def iou(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), boxes1.dtype, boxes1.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), boxes1.dtype, boxes1.device),
         )
     return _emit_shape_node(
         "IoU",
@@ -161,7 +161,7 @@ def non_max_suppression(
             score_threshold=score_threshold,
         )
         # Note: output of NMS is typically integer indices
-        return Tensor(backend.array(data), TensorConfig(getattr(backend.array(data), "shape"), DType.Int32, boxes.device))
+        return Tensor(backend.array(data), TensorConfig(_get_attr(backend.array(data), "shape"), DType.Int32, boxes.device))
     return _emit_shape_node(
         "NonMaxSuppression",
         [boxes, scores],
@@ -190,7 +190,7 @@ def sharpen(images: Tensor, factor: float = 1.0) -> TensorOrScalar:
         data = backend.execute_op("Sharpen", images.data, factor=factor)
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
 
     return get_op("Sharpen")()(images)
@@ -224,7 +224,7 @@ def random_gaussian_blur(
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomGaussianBlur",
@@ -260,7 +260,7 @@ def random_sharpness(images: Tensor, factor: float | tuple[float, float], **kwar
         )
         return Tensor(
             backend.array(data),
-            TensorConfig(getattr(backend.array(data), "shape"), images.dtype, images.device),
+            TensorConfig(_get_attr(backend.array(data), "shape"), images.dtype, images.device),
         )
     return _emit_shape_node(
         "RandomSharpness",

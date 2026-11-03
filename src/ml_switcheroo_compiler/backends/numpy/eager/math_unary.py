@@ -6,6 +6,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 @numpy_eager_registry.register("Exp")
@@ -83,9 +84,9 @@ def _np_erf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     import math
 
     x = args[0]
-    if hasattr(backend_module, "asarray"):
+    if _has_attr(backend_module, "asarray"):
         x = backend_module.asarray(x)
-    if getattr(x, "ndim", 0) == 0:
+    if _get_attr(x, "ndim", 0) == 0:
         return math.erf(float(as_float(x)))
     return backend_module.vectorize(math.erf)(x)
 
@@ -105,9 +106,9 @@ def _np_erfc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     import math
 
     x = args[0]
-    if hasattr(backend_module, "asarray"):
+    if _has_attr(backend_module, "asarray"):
         x = backend_module.asarray(x)
-    if getattr(x, "ndim", 0) == 0:
+    if _get_attr(x, "ndim", 0) == 0:
         return math.erfc(float(as_float(x)))
     return backend_module.vectorize(math.erfc)(x)
 
@@ -194,7 +195,7 @@ def _np_angle(backend_module: BackendModuleProtocol, x: EagerValue, **kwargs: Ea
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(np, "angle")(x))
+    return as_tensor(_get_attr(np, "angle")(x))
 
 
 @numpy_eager_registry.register("Expm1")

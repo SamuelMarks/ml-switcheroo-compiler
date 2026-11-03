@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad.api import grad
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -138,7 +139,7 @@ def test_eager_vmap_nested() -> None:
         res = as_callable(v_outer)(x)
 
         expected = x_data * 2
-        as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "data")), expected)
+        as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "data")), expected)
 
 
 def test_eager_vmap_grad() -> None:
@@ -163,7 +164,7 @@ def test_eager_vmap_grad() -> None:
 
         # d/dt(t^2) = 2*t
         expected = 2.0 * x_data
-        as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "data")), expected, rtol=1e-4)
+        as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "data")), expected, rtol=1e-4)
 
 
 def test_eager_grad_vmap() -> None:
@@ -195,7 +196,7 @@ def test_eager_grad_vmap() -> None:
         grad_vmap = grad(total_loss)
         res = grad_vmap(x)
         expected = 2.0 * x_data
-        as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "data")), expected, rtol=1e-4)
+        as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "data")), expected, rtol=1e-4)
 
 
 def test_vectorization_helpers() -> None:
@@ -253,9 +254,9 @@ def _test_vectorization_exhaustive_branches_part_1(_state: dict[str, EagerTensor
     # 4. Policy prepend_batch_dim with "shape" (without "newshape") and with "newshape"
     g_prepend = IRGraph(name="prepend")
     g_prepend.inputs = ["x"]
-    getattr(_state, "update")({"g_inputs": g_inputs, "g_neg": g_neg, "g_prepend": g_prepend, "patch": patch})
-    getattr(_state, "update")({"vec_inp": vec_inp, "vec_neg": vec_neg})
-    _state.update(locals())
+    _get_attr(_state, "update")({"g_inputs": g_inputs, "g_neg": g_neg, "g_prepend": g_prepend, "patch": patch})
+    _get_attr(_state, "update")({"vec_inp": vec_inp, "vec_neg": vec_neg})
+    _state.update(_caller_locals())
 
 
 def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -280,7 +281,7 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
         attributes={"newshape": (2, 3)},
         shape_metadata=(2, 3),
     )
-    setattr(g_prepend, "outputs", ["bcast", "resh"])
+    _set_attr(g_prepend, "outputs", ["bcast", "resh"])
 
     vec_prep = as_callable(vectorize_graph)(g_prepend, in_axes=0, batch_size=5, out_axes=0)
     assert vec_prep.nodes["bcast"].attributes["shape"] == (5, 2, 3)
@@ -312,9 +313,9 @@ def _test_vectorization_exhaustive_branches_part_2(_state: dict[str, EagerTensor
     outer_no_shape = IRGraph(name="outer_no_shape")
     outer_no_shape.inputs = ["x_no_s"]
     outer_no_shape.nodes["x_no_s"] = IRNode(id="x_no_s", op_type="Input", inputs=[], shape_metadata=None)
-    getattr(_state, "update")({"body_v": body_v, "opt_tuple": opt_tuple, "outer_no_shape": outer_no_shape, "outer_tuple": outer_tuple})
-    getattr(_state, "update")({"vec_prep": vec_prep})
-    _state.update(locals())
+    _get_attr(_state, "update")({"body_v": body_v, "opt_tuple": opt_tuple, "outer_no_shape": outer_no_shape, "outer_tuple": outer_tuple})
+    _get_attr(_state, "update")({"vec_prep": vec_prep})
+    _state.update(_caller_locals())
 
 
 def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -330,7 +331,7 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
         inputs=["x_no_s"],
         attributes=as_attrs({"body": body_v, "in_axes": 0, "out_axes": 0}),
     )
-    setattr(outer_no_shape, "outputs", ["vmap_no_s"])
+    _set_attr(outer_no_shape, "outputs", ["vmap_no_s"])
     opt_no_s = as_callable(vectorization_pass)(outer_no_shape)
     assert "vmap_no_s" in opt_no_s.nodes
 
@@ -369,9 +370,9 @@ def _test_vectorization_exhaustive_branches_part_3(_state: dict[str, EagerTensor
     b_in_node = IRNode(id="b_in_list", op_type="Input", inputs=[], shape_metadata=(1,))
     b_out_node = IRNode(id="b_add_list", op_type="Add", inputs=["b_in_list", "b_in_list"], shape_metadata=(1,))
     mock_body_list = MockGraphNodesList(inputs=["b_in_list"], outputs=["b_add_list"], nodes=[b_in_node, b_out_node])
-    getattr(_state, "update")({"MockGraphNodesList": MockGraphNodesList, "b_in_node": b_in_node, "b_out_node": b_out_node, "mock_body_list": mock_body_list})
-    getattr(_state, "update")({"opt_no_s": opt_no_s, "opt_oob": opt_oob, "outer_oob": outer_oob})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockGraphNodesList": MockGraphNodesList, "b_in_node": b_in_node, "b_out_node": b_out_node, "mock_body_list": mock_body_list})
+    _get_attr(_state, "update")({"opt_no_s": opt_no_s, "opt_oob": opt_oob, "outer_oob": outer_oob})
+    _state.update(_caller_locals())
 
 
 def _test_vectorization_exhaustive_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -431,9 +432,9 @@ def _test_vectorization_exhaustive_branches_part_4(_state: dict[str, EagerTensor
         inputs=["x_dict"],
         attributes=as_attrs({"body": mock_body_dict, "in_axes": 0, "out_axes": 0}),
     )
-    getattr(_state, "update")({"LogicalNode": LogicalNode, "MockGraphNodesDict": MockGraphNodesDict, "mock_body_dict": mock_body_dict, "opt_list": opt_list})
-    getattr(_state, "update")({"outer_dict": outer_dict, "outer_list": outer_list, "pure_logical_node": pure_logical_node})
-    _state.update(locals())
+    _get_attr(_state, "update")({"LogicalNode": LogicalNode, "MockGraphNodesDict": MockGraphNodesDict, "mock_body_dict": mock_body_dict, "opt_list": opt_list})
+    _get_attr(_state, "update")({"outer_dict": outer_dict, "outer_list": outer_list, "pure_logical_node": pure_logical_node})
+    _state.update(_caller_locals())
 
 
 def _test_vectorization_exhaustive_branches_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -443,10 +444,10 @@ def _test_vectorization_exhaustive_branches_part_5(_state: dict[str, EagerTensor
         _state: Shared test state dictionary.
     """
     outer_dict = _state["outer_dict"]
-    setattr(outer_dict, "outputs", ["vmap_dict"])
+    _set_attr(outer_dict, "outputs", ["vmap_dict"])
     opt_dict = as_callable(vectorization_pass)(outer_dict)
     assert "vmap_dict" in opt_dict.nodes
-    getattr(_state, "update")({"opt_dict": opt_dict})
+    _get_attr(_state, "update")({"opt_dict": opt_dict})
 
 
 def test_vectorization_exhaustive_branches() -> None:

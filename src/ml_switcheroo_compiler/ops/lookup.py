@@ -5,7 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -37,8 +37,8 @@ class MutableHashTable:
         Returns:
             TensorOrScalar: Looked-up values tensor with shape matching `keys`.
         """
-        key_shape = getattr(keys, "shape", ())
-        key_device = getattr(keys, "device", "cpu")
+        key_shape = _get_attr(keys, "shape", ())
+        key_device = _get_attr(keys, "device", "cpu")
         if not config.eager_mode:
             return _emit_shape_node(
                 "LookupTableFind",
@@ -47,13 +47,13 @@ class MutableHashTable:
                 key_shape,
                 self.value_dtype,
             )
-        raw_keys = getattr(keys, "data", keys)
-        raw_default = getattr(self.default_value, "data", self.default_value)
-        raw_default = raw_default.item() if hasattr(raw_default, "item") else raw_default
-        if raw_keys is not None and hasattr(raw_keys, "tolist"):
+        raw_keys = _get_attr(keys, "data", keys)
+        raw_default = _get_attr(self.default_value, "data", self.default_value)
+        raw_default = raw_default.item() if _has_attr(raw_default, "item") else raw_default
+        if raw_keys is not None and _has_attr(raw_keys, "tolist"):
             flat_k = raw_keys.tolist()
             looked_up: TensorOrScalar = [self._table.get(k, raw_default) for k in flat_k] if isinstance(flat_k, list) else self._table.get(flat_k, raw_default)
-            arr = get_active_backend().array(looked_up, dtype=str(self.value_dtype.value if hasattr(self.value_dtype, "value") else self.value_dtype))
+            arr = get_active_backend().array(looked_up, dtype=str(self.value_dtype.value if _has_attr(self.value_dtype, "value") else self.value_dtype))
             return Tensor(arr, TensorConfig(key_shape, self.value_dtype, key_device))
         return Tensor(raw_default, TensorConfig(key_shape, self.value_dtype, key_device))
 
@@ -66,9 +66,9 @@ class MutableHashTable:
         """
         self._keys = keys
         self._values = values
-        raw_k = getattr(keys, "data", keys)
-        raw_v = getattr(values, "data", values)
-        if raw_k is not None and raw_v is not None and hasattr(raw_k, "tolist") and hasattr(raw_v, "tolist"):
+        raw_k = _get_attr(keys, "data", keys)
+        raw_v = _get_attr(values, "data", values)
+        if raw_k is not None and raw_v is not None and _has_attr(raw_k, "tolist") and _has_attr(raw_v, "tolist"):
             k_list = raw_k.tolist()
             v_list = raw_v.tolist()
             if isinstance(k_list, list) and isinstance(v_list, list):

@@ -9,7 +9,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import random_ops as random_mod
-from ml_switcheroo_compiler.backends.numpy.eager.random_ops import LookupTableProtocol
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -24,21 +24,21 @@ def test_random_ops() -> None:
     """
     # Normal with and without config
     norm1 = random_mod._np_normal(np, (2, 3), dtype="float32")
-    assert as_tensor(getattr(norm1, "shape")) == (2, 3)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Normal")(np, (2, 3)), "shape")) == (2, 3)
+    assert as_tensor(_get_attr(norm1, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Normal")(np, (2, 3)), "shape")) == (2, 3)
 
     cfg = types.SimpleNamespace(mean=2.0, stddev=0.5)
     norm2 = random_mod._np_normal(np, (4,), config=cfg, dtype="float64")
-    assert as_tensor(getattr(norm2, "shape")) == (4,)
+    assert as_tensor(_get_attr(norm2, "shape")) == (4,)
 
     # Uniform with config (minval/maxval None and float) and without config
     unif1 = random_mod._np_uniform(np, (2, 2))
-    assert as_tensor(getattr(unif1, "shape")) == (2, 2)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Uniform")(np, (2, 2)), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(unif1, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Uniform")(np, (2, 2)), "shape")) == (2, 2)
 
     cfg_none = types.SimpleNamespace(minval=None, maxval=None)
     unif_none = random_mod._np_uniform(np, (3,), config=cfg_none)
-    assert as_tensor(getattr(unif_none, "shape")) == (3,)
+    assert as_tensor(_get_attr(unif_none, "shape")) == (3,)
 
     cfg_vals = types.SimpleNamespace(minval=10.0, maxval=20.0)
     unif_vals = random_mod._np_uniform(np, (3,), config=cfg_vals)
@@ -47,24 +47,24 @@ def test_random_ops() -> None:
     # StatelessSplit
     # Seed as string
     split_str = random_mod._np_stateless_split(np, "sample_seed", num=3)
-    assert as_tensor(getattr(split_str, "shape")) == (3, 2)
+    assert as_tensor(_get_attr(split_str, "shape")) == (3, 2)
 
     # Seed as integer
     split_int = random_mod._np_stateless_split(np, 42, num=2)
-    assert as_tensor(getattr(split_int, "shape")) == (2, 2)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("StatelessSplit")(np, 42, num=2), "shape")) == (2, 2)
+    assert as_tensor(_get_attr(split_int, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("StatelessSplit")(np, 42, num=2), "shape")) == (2, 2)
 
     # Seed as non-int convertible
     split_obj = random_mod._np_stateless_split(np, np.array([dict()], dtype=object))
-    assert as_tensor(getattr(split_obj, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(split_obj, "shape")) == (2, 2)
 
     # Seed empty
     split_empty = random_mod._np_stateless_split(np, [])
-    assert as_tensor(getattr(split_empty, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(split_empty, "shape")) == (2, 2)
 
     # Lookup: table is dict
     dict_table = {"a": 10, "b": 20}
-    dict_res = random_mod._np_lookup(np, typing.cast("dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int", dict_table), ["a", "b", "c"], default_value=-1)
+    dict_res = random_mod._np_lookup(np, _cast_val("dict[int | str, int | float] | LookupTableProtocol | np.ndarray[tuple[int, ...], np.dtype[np.generic]] | int", dict_table), ["a", "b", "c"], default_value=-1)
     assert as_callable(np.array_equal)(dict_res, [10, 20, -1])
 
     # Lookup: table has lookup method

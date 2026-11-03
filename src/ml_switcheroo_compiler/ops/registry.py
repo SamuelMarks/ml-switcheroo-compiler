@@ -6,7 +6,7 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.backends.registry import as_callable
-from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import CallableObjectProtocol, TensorOrScalar, TypedVariadicCallable, _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.base import OpDef
 
 _REGISTRY: dict[str, type[OpDef]] = {}
@@ -28,7 +28,7 @@ def _load_yaml_registry(force: bool = False) -> None:
         from ml_switcheroo_compiler.ops.generated_registry import OPS_REGISTRY
 
         _YAML_REGISTRY.clear()
-        getattr(_YAML_REGISTRY, "update")(OPS_REGISTRY)
+        _get_attr(_YAML_REGISTRY, "update")(OPS_REGISTRY)
 
 
 def register_op(name: str) -> Callable[[type], type]:
@@ -52,7 +52,7 @@ def register_op(name: str) -> Callable[[type], type]:
         """
         if name in _REGISTRY and _REGISTRY[name].__name__ != cls.__name__:
             raise ValueError(f"Operation {name} already registered")
-        setattr(cls, "op_type", name)
+        _set_attr(cls, "op_type", name)
         _REGISTRY[name] = cls
         return cls
 

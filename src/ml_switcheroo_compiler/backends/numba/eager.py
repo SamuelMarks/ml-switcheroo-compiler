@@ -8,6 +8,7 @@ from ml_switcheroo_compiler.backends import mapping_loader
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.numba import kernels
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 def _unwrap_arg(arg: EagerValue) -> EagerValue:
@@ -19,8 +20,8 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Unwrapped buffer or original value.
     """
-    if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return as_tensor(getattr(arg, "data"))
+    if type(arg).__name__ == "Tensor" and _has_attr(arg, "data"):
+        return as_tensor(_get_attr(arg, "data"))
     return arg
 
 
@@ -41,7 +42,7 @@ def _eval_numba_control_flow(
     """
     if op_type in ("Cond", "cond") and len(actual_args) >= 3:
         pred, true_branch, false_branch = actual_args[0], actual_args[1], actual_args[2]
-        pred_bool = bool(getattr(pred, "item")()) if hasattr(pred, "item") else bool(pred)
+        pred_bool = bool(_get_attr(pred, "item")()) if _has_attr(pred, "item") else bool(pred)
         branch = true_branch if pred_bool else false_branch
         return True, branch() if callable(branch) else branch
 
@@ -55,7 +56,7 @@ def _eval_numba_control_flow(
     if op_type in ("Scan", "scan") and len(actual_args) >= 2:
         carry, xs = actual_args[0], actual_args[1]
         res = []
-        for x in getattr(kernels.asarray(xs), "tolist")():
+        for x in _get_attr(kernels.asarray(xs), "tolist")():
             carry = as_tensor(carry) + x
             res.append(carry)
         return True, kernels.asarray(res)
@@ -139,8 +140,8 @@ def execute_op(
         return func(kernels, *actual_args, **kwargs)
 
     fn_name = op_type.lower()
-    if hasattr(kernels, fn_name):
-        fn = getattr(kernels, fn_name)
+    if _has_attr(kernels, fn_name):
+        fn = _get_attr(kernels, fn_name)
         if callable(fn):
             return as_tensor(fn(*actual_args, **kwargs))
 

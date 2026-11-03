@@ -12,6 +12,7 @@ import pytest
 import ml_switcheroo_compiler.ops.nn.conv_lstm as mod
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_lstm import conv_lstm_cell
 from ml_switcheroo_compiler.ops.nn.rnn_utils import RNNWeights
@@ -19,7 +20,7 @@ from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-ConvLSTMConfig = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_lstm"), "ConvLSTMConfig"))
+ConvLSTMConfig = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_lstm"), "ConvLSTMConfig"))
 
 
 def test_conv_lstm_cov() -> None:
@@ -124,26 +125,26 @@ def test_conv_lstm_gates() -> None:
 
         t4 = as_callable(Tensor)(as_callable(DummyTensor)((2, 2, 2, 2)), tc4)
         w = as_callable(RNNWeights)(t4, t4)
-        orig_split = as_tensor(getattr(mod, "split"))
+        orig_split = as_tensor(_get_attr(mod, "split"))
         orig_sigmoid = mod._sigmoid
-        orig_tanh = as_tensor(getattr(mod, "tanh"))
-        orig_add = as_tensor(getattr(mod, "add"))
-        orig_multiply = as_tensor(getattr(mod, "multiply"))
+        orig_tanh = as_tensor(_get_attr(mod, "tanh"))
+        orig_add = as_tensor(_get_attr(mod, "add"))
+        orig_multiply = as_tensor(_get_attr(mod, "multiply"))
         try:
-            setattr(mod, "split", lambda *args, **kwargs: (t4, t4, t4, t4))
+            _set_attr(mod, "split", lambda *args, **kwargs: (t4, t4, t4, t4))
             mod._sigmoid = lambda x: x
-            setattr(mod, "tanh", lambda x: x)
-            setattr(mod, "add", lambda *args, **kwargs: t4)
-            setattr(mod, "multiply", lambda *args, **kwargs: t4)
+            _set_attr(mod, "tanh", lambda x: x)
+            _set_attr(mod, "add", lambda *args, **kwargs: t4)
+            _set_attr(mod, "multiply", lambda *args, **kwargs: t4)
             as_callable(mod._apply_conv_lstm_gates)(t4, t4, (t4, t4), w, "channels_last")
             w2 = as_callable(RNNWeights)(t4, t4, bias=t4)
             as_callable(mod._apply_conv_lstm_gates)(t4, t4, (t4, t4), w2, "channels_last")
         finally:
-            setattr(mod, "split", orig_split)
+            _set_attr(mod, "split", orig_split)
             mod._sigmoid = orig_sigmoid
-            setattr(mod, "tanh", orig_tanh)
-            setattr(mod, "add", orig_add)
-            setattr(mod, "multiply", orig_multiply)
+            _set_attr(mod, "tanh", orig_tanh)
+            _set_attr(mod, "add", orig_add)
+            _set_attr(mod, "multiply", orig_multiply)
         with pytest.raises(ValueError):
             as_callable(_apply_conv_lstm_gates)(t4, t4, (t4, t4), w, "channels_last")
         with pytest.raises(ValueError):

@@ -11,7 +11,6 @@ import gzip
 import json
 import logging
 import os
-import typing
 
 import yaml
 from ml_switcheroo_ir.schema.ghost import ExtendedGhostRef
@@ -19,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from ml_switcheroo_compiler.core.errors import SnapshotGroundingError
 from ml_switcheroo_compiler.core.shape import AttrValue as AttributeValue
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 
 
 class BackendSnapshotTargetModel(BaseModel):
@@ -543,10 +542,10 @@ def _populate_from_grounding_engine(
     if engine is None or target is None:
         return
     try:
-        discover_fn = getattr(engine, "_discover_target_files", None)
+        discover_fn = _get_attr(engine, "_discover_target_files", None)
         if endpoints and callable(discover_fn) and not discover_fn(target.framework):
             return
-        load_fn = getattr(engine, "load_target", None)
+        load_fn = _get_attr(engine, "load_target", None)
         if load_fn is None:
             return
         target_refs: dict[str, ExtendedGhostRef] = load_fn(target.framework)
@@ -571,10 +570,10 @@ def _extract_ast_canonical_ops(py_path: str) -> list[AttributeValue]:
         tree: ast.Module = ast.parse(f.read(), filename=py_path)
     collected: list[AttributeValue] = []
     for node in tree.body:
-        val_node = getattr(node, "value", None)
+        val_node = _get_attr(node, "value", None)
         list_node = val_node.args[0] if isinstance(val_node, ast.Call) and val_node.args else val_node
         if isinstance(list_node, ast.List) and "CANONICAL_" in ast.unparse(node):
-            raw_ops = typing.cast("list[AttributeValue]", ast.literal_eval(list_node))
+            raw_ops = _cast_val("list[AttributeValue]", ast.literal_eval(list_node))
             collected.extend(raw_ops)
     return collected
 
@@ -648,9 +647,9 @@ def _param_to_dict(p: AttributeValue) -> dict[str, AttributeValue]:
     Returns:
         dict[str, AttributeValue]: Parameter spec dictionary.
     """
-    dump_fn: AttributeValue = getattr(p, "model_dump", None)
+    dump_fn: AttributeValue = _get_attr(p, "model_dump", None)
     if callable(dump_fn):
-        dumped: AttributeValue = typing.cast("TypedVariadicCallable[AttributeValue]", dump_fn)()
+        dumped: AttributeValue = _cast_val("TypedVariadicCallable[AttributeValue]", dump_fn)()
         if isinstance(dumped, dict):
             return dumped
     if isinstance(p, dict):
@@ -674,7 +673,7 @@ def _signatures_from_ghost_ref(ref: ExtendedGhostRef) -> list[list[dict[str, Att
 
     if ref.overloads:
         for ov in ref.overloads:
-            ov_params: AttributeValue = getattr(ov, "params", ov.get("params") if isinstance(ov, dict) else None)
+            ov_params: AttributeValue = _get_attr(ov, "params", ov.get("params") if isinstance(ov, dict) else None)
             if isinstance(ov_params, list) and ov_params:
                 ov_sig: list[dict[str, AttributeValue]] = [_param_to_dict(p) for p in ov_params]
                 signatures.extend(_split_signature_params(ov_sig))
@@ -825,7 +824,7 @@ class SnapshotGroundingEngine:
 
         path: str | None = self.get_snapshot_path(backend_name)
         if path is None:
-            if not getattr(self, "_fail_on_missing", True):
+            if not _get_attr(self, "_fail_on_missing", True):
                 return {}
             raise FileNotFoundError(f"No snapshot JSON file found for backend '{backend_name}' in {self.snapshot_dir}")
 
@@ -1063,7 +1062,7 @@ class SnapshotGroundingEngine:
         target: BackendSnapshotTargetModel | None = self.config.targets.get(backend_name)
         if target is not None and self._grounding_engine is not None:
             try:
-                suggest_fn = getattr(self._grounding_engine, "suggest_closest_symbol", None)
+                suggest_fn = _get_attr(self._grounding_engine, "suggest_closest_symbol", None)
                 if suggest_fn is not None:
                     suggested: str | None = suggest_fn(target.framework, candidate, max_distance=max_distance)
                     if suggested:

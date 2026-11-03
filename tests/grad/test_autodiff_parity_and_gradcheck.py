@@ -12,6 +12,7 @@ from ml_switcheroo_ir import NodeDict
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import jvp, vjp
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
@@ -108,7 +109,7 @@ def test_linear_algebra_vjp_rules() -> None:
     out_t, vjp_t = as_callable(vjp)(f_transpose, t_a)
     grads_t = as_callable(vjp_t)(cot)
     assert as_callable(len)(grads_t) == 1
-    assert as_tensor(getattr(as_tensor(getattr(grads_t, "__getitem__")(0)), "shape")) == as_tensor(getattr(t_a, "shape"))
+    assert as_tensor(_get_attr(as_tensor(_get_attr(grads_t, "__getitem__")(0)), "shape")) == as_tensor(_get_attr(t_a, "shape"))
 
     # 3. Dot
     def f_dot(a: Tensor, b: Tensor) -> Tensor:
@@ -150,7 +151,7 @@ def test_activation_vjp_rules() -> None:
         assert out is not None
         grads = as_callable(vjp_fn)(cot)
         assert as_callable(len)(grads) == 1
-        ana_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(as_tensor(getattr(as_tensor(getattr(grads, "__getitem__")(0)), "data")))
+        ana_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = np.array(as_tensor(_get_attr(as_tensor(_get_attr(grads, "__getitem__")(0)), "data")))
         num_grad: np.ndarray[tuple[int, ...], np.dtype[np.generic]] = _finite_difference_grad(f_act, x)
         as_callable(np.testing.assert_allclose)(ana_grad, num_grad, rtol=1e-2, atol=1e-2)
 
@@ -172,7 +173,7 @@ def test_reduction_vjp_rules() -> None:
     cot_s: Tensor = _make_tensor(1.0)
     grads_s = as_callable(vjp_s)(cot_s)
     assert as_callable(len)(grads_s) == 1
-    assert as_tensor(getattr(as_tensor(getattr(grads_s, "__getitem__")(0)), "shape")) == as_tensor(getattr(x, "shape"))
+    assert as_tensor(_get_attr(as_tensor(_get_attr(grads_s, "__getitem__")(0)), "shape")) == as_tensor(_get_attr(x, "shape"))
 
     # 2. ReduceMean
     def f_mean(t: Tensor) -> Tensor:

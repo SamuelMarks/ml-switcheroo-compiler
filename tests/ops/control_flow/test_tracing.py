@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.errors import TracingError
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow.tracing import _flatten_inputs, assert_value_tracing, cond_tracing, map_fn_tracing, pmap_tracing, scan_tracing, stop_gradient_tracing, while_loop_tracing
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -58,7 +59,7 @@ def test_cond_tracing() -> None:
         return as_callable(Tensor)(as_callable(MockData)("f"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
 
     res = as_callable(cond_tracing)(pred, true_fn, false_fn)
-    assert as_tensor(getattr(res, "config")).dtype == DType.Float32
+    assert as_tensor(_get_attr(res, "config")).dtype == DType.Float32
 
 
 def test_while_loop_tracing() -> None:
@@ -102,8 +103,8 @@ def test_scan_tracing() -> None:
     xs = as_callable(Tensor)(as_callable(MockData)("xs"), as_callable(TensorConfig)((3,), DType.Float32, as_callable(Device)("cpu")))
 
     res_carry, res_ys = as_callable(scan_tracing)(scan_fn, init, xs)
-    assert as_tensor(getattr(as_tensor(getattr(res_carry, "__getitem__")(0)), "config")).dtype == DType.Float32
-    assert as_tensor(getattr(as_tensor(getattr(res_ys, "__getitem__")(0)), "config")).dtype == DType.Float32
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res_carry, "__getitem__")(0)), "config")).dtype == DType.Float32
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res_ys, "__getitem__")(0)), "config")).dtype == DType.Float32
 
 
 def test_map_fn_tracing() -> None:
@@ -120,7 +121,7 @@ def test_map_fn_tracing() -> None:
     elems = as_callable(Tensor)(as_callable(MockData)("elems"), as_callable(TensorConfig)((3,), DType.Float32, as_callable(Device)("cpu")))
 
     res = as_callable(map_fn_tracing)(fn, elems)
-    assert as_tensor(getattr(res, "config")).dtype == DType.Float32
+    assert as_tensor(_get_attr(res, "config")).dtype == DType.Float32
 
 
 def test_pmap_tracing() -> None:
@@ -138,7 +139,7 @@ def test_pmap_tracing() -> None:
 
     x = as_callable(Tensor)(as_callable(MockData)("x"), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
     res = as_callable(fn)(x)
-    assert as_tensor(getattr(res, "config")).dtype == DType.Float32
+    assert as_tensor(_get_attr(res, "config")).dtype == DType.Float32
 
 
 def test_stop_gradient_tracing() -> None:

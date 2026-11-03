@@ -17,6 +17,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_creation import (
     _ogrid,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -119,7 +120,7 @@ def test_math_creation_coverage() -> None:
 
     empty_backend = EmptyBackend()
     fn_res = _np_fromfunction(as_mod(empty_backend), lambda i, j: i + j, (2, 2), dtype=int)
-    assert as_tensor(getattr(fn_res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(fn_res, "shape")) == (2, 2)
 
     it_res = _np_fromiter(as_mod(empty_backend), as_tensor(x * 2 for x in range(3)), dtype=int)
     assert as_callable(list)(it_res) == [0, 2, 4]

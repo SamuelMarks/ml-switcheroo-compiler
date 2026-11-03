@@ -12,7 +12,7 @@ from unittest.mock import mock_open, patch
 import pytest
 
 import scripts.generate_exports as ge
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr, _has_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -64,7 +64,7 @@ def test_get_exports_from_submodule() -> None:
 
         import types
 
-        setattr(MockMod, "mod", types.ModuleType("sub"))
+        _set_attr(MockMod, "mod", types.ModuleType("sub"))
         mock_import.return_value = MockMod()
         assert ge._get_exports_from_submodule("foo") == ["func", "visible"]
     with patch("scripts.generate_exports.importlib.import_module", side_effect=ImportError("mock error")):
@@ -489,7 +489,7 @@ def test_process_file_same_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
         """
         cmd = args[0]
         if cmd and as_tensor("ruff") in as_tensor(cmd):
-            tmp_name = as_tensor(getattr(cmd, "__getitem__")(-1))
+            tmp_name = as_tensor(_get_attr(cmd, "__getitem__")(-1))
             if as_callable(os.path.exists)(tmp_name):
                 with as_callable(builtins.open)(tmp_name, "w") as tmp_f:
                     tmp_f.write(original_source)
@@ -560,7 +560,7 @@ def test_process_file_no_end_lineno(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         """
         nodes = list(original_walk(node))
         for n in nodes:
-            if hasattr(n, "end_lineno"):
+            if _has_attr(n, "end_lineno"):
                 n.end_lineno = None
         return nodes
 

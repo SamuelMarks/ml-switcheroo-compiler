@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable
 from ml_switcheroo_compiler.backends.mapping_loader import dispatch_eager_op, load_backend_mappings
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
@@ -42,9 +42,9 @@ def execute_op(
     # Convert Python sequences to native TensorFlow tensor primitives where possible
     processed_args: list[EagerValue] = []
     for arg in args:
-        if isinstance(arg, (list, tuple)) and hasattr(tf, "convert_to_tensor"):
+        if isinstance(arg, (list, tuple)) and _has_attr(tf, "convert_to_tensor"):
             try:
-                processed_args.append(tf.convert_to_tensor(arg))
+                processed_args.append(as_callable(_get_attr(tf, "convert_to_tensor"))(arg))
             except Exception:
                 processed_args.append(arg)
         else:

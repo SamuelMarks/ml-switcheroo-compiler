@@ -9,6 +9,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, a
 from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLEmitter
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
 
@@ -109,7 +110,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             Tuple[List[int], List[int]]: The shape as a list of dimensions and the corresponding strides.
         """
-        shape_meta = getattr(node, "shape_metadata", None)
+        shape_meta = _get_attr(node, "shape_metadata", None)
         if shape_meta is None:
             return [], []
 
@@ -122,7 +123,7 @@ class WebGPUCodeGenerator(BaseGenerator):
             return [], []
 
         # Check if custom memory strides are explicitly specified in attributes
-        custom_strides = getattr(node, "attributes", {}).get("strides") if node else None
+        custom_strides = _get_attr(node, "attributes", {}).get("strides") if node else None
         if custom_strides is not None and isinstance(custom_strides, (list, tuple)) and len(custom_strides) == len(shape):
             return shape, [int(st) for st in custom_strides]
 
@@ -157,7 +158,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             str: Variable name of the evaluated node.
         """
-        return getattr(node, "id", "")
+        _typed_ret_1: str = _get_attr(node, "id", "")
+        return _typed_ret_1
 
     def _gen_offset_computation(self, idx_var: str, shape: list[int], strides: list[int], out_var: str, base_offset_words: int = 0) -> list[str]:
         """Generate N-dimensional coordinate-to-offset resolution.
@@ -244,7 +246,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         if decl_mapping:
             mapping: dict[str, str] = decl_mapping
             if resolved_op == "Constant":
-                const_val: float = float(getattr(node, "attributes", {}).get("value", 1.0))
+                const_val: float = float(_get_attr(node, "attributes", {}).get("value", 1.0))
                 mapping["expr"] = mapping.get("expr", "{const_val}f").replace("{const_val}", str(const_val))
         else:
             op_def = OPS_REGISTRY.get(resolved_op, OPS_REGISTRY.get(op_type, {}))
@@ -274,7 +276,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             str: Emitted WGSL statements for computing the linear word offset.
         """
-        offset_words: int = int(getattr(target_node, "attributes", {}).get("buffer_offset", 0)) // 4 if target_node else 0
+        offset_words: int = int(_get_attr(target_node, "attributes", {}).get("buffer_offset", 0)) // 4 if target_node else 0
         stmts: list[str] = self._gen_offset_computation("idx", shape, strides, out_var, offset_words)
         return "\n".join([self.emitter.emit(n) for n in stmts])
 
@@ -457,12 +459,12 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_wgsl_template
         from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLFunction, WGSLRaw
 
-        op_type: str = getattr(node, "op_type", "")
+        op_type: str = _get_attr(node, "op_type", "")
         resolved_op: str = self._resolve_wgsl_op_name(op_type)
 
         mapping: dict[str, str] = self._resolve_wgsl_mapping(node, op_type, resolved_op)
-        inputs: list[str] = getattr(node, "inputs", [])
-        input_nodes: list[IRNode | None] = [next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None) for inp in inputs]
+        inputs: list[str] = _get_attr(node, "inputs", [])
+        input_nodes: list[IRNode | None] = [next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == inp), None) for inp in inputs]
 
         in0_shape, in0_strides = self._get_shape_and_strides(input_nodes[0]) if len(input_nodes) > 0 and input_nodes[0] else ([], [])
         in1_shape, in1_strides = self._get_shape_and_strides(input_nodes[1]) if len(input_nodes) > 1 and input_nodes[1] else ([], [])
@@ -482,13 +484,13 @@ class WebGPUCodeGenerator(BaseGenerator):
             "N": inner_n,
             "M": outer_m,
             "clean_id": clean_id,
-            "nelem_in": getattr(node, "inputs_nelem", [1])[0],
+            "nelem_in": _get_attr(node, "inputs_nelem", [1])[0],
             "expr": mapping.get("expr", "0.0"),
         }
         expr_format_args.update(self._build_offset_format_args(node, shape, out_strides, input_nodes, in0_shape, in0_strides, in1_shape, in1_strides))
         expr_format_args.update(mapping)
 
-        attrs: dict[str, EagerValue] = getattr(node, "attributes", {})
+        attrs: dict[str, EagerValue] = _get_attr(node, "attributes", {})
         expr_format_args.update(attrs)
         self._populate_tensor_dim_args(expr_format_args, shape, in0_shape, in1_shape)
         self._populate_window_and_stride_args(expr_format_args, attrs, mapping)
@@ -519,7 +521,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("AllReduce", "buf_in0_f32", op_id)
         return [f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}"], "1", "1", "1"
 
@@ -536,7 +538,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("AllGather", "buf_in0_f32", op_id)
         return [f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}"], "1", "1", "1"
 
@@ -553,7 +555,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("AllToAll", "buf_in0_f32", op_id)
         return [f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}"], "1", "1", "1"
 
@@ -570,7 +572,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("ReduceScatter", "buf_in0_f32", op_id)
         return [f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}"], "1", "1", "1"
 
@@ -587,7 +589,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("Broadcast", "buf_in0_f32", op_id)
         return [f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}"], "1", "1", "1"
 
@@ -610,7 +612,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
         template = get_wgsl_template("while_loop")
-        attrs: dict[str, str] = getattr(node, "attributes", {})
+        attrs: dict[str, str] = _get_attr(node, "attributes", {})
 
         # Lower body subgraph
         body_graph = attrs.get("body")
@@ -621,13 +623,13 @@ class WebGPUCodeGenerator(BaseGenerator):
             from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 
             for sub_node in topological_sort(as_graph(body_graph)):
-                op_type: str = getattr(sub_node, "op_type", "")
+                op_type: str = _get_attr(sub_node, "op_type", "")
                 mapping: dict[str, str] = OPS_REGISTRY.get(op_type, {}).get("variants", {}).get("edge_wgsl", {})
                 expr: str = mapping.get("expr", "")
                 if expr:
                     # Very simple regex-less token replacement for subgraph inlining
                     val_expr: str = expr.replace("buf_in0_f32[in0_offset]", current_state_var).replace("buf_in1_f32[in1_offset]", "1.0")
-                    temp_var: str = f"tmp_{getattr(sub_node, 'id', '0').replace('-', '_')}"
+                    temp_var: str = f"tmp_{_get_attr(sub_node, 'id', '0').replace('-', '_')}"
                     loop_body_lines.append(f"var {temp_var} = {val_expr};")
                     current_state_var = temp_var
             if loop_body_lines:
@@ -644,12 +646,12 @@ class WebGPUCodeGenerator(BaseGenerator):
             comparator: str = "<"
             threshold: str = "10.0"
             for sub_node in topological_sort(as_graph(cond_graph)):
-                op_type = getattr(sub_node, "op_type", "")
+                op_type = _get_attr(sub_node, "op_type", "")
                 if op_type in ("Less", "Lt"):
                     comparator = "<"
                 elif op_type in ("Greater", "Gt"):
                     comparator = ">"
-                if "threshold" in getattr(sub_node, "attributes", {}):
+                if "threshold" in _get_attr(sub_node, "attributes", {}):
                     threshold = str(sub_node.attributes["threshold"])
             condition_expr = f"current_state {comparator} {threshold}"
 
@@ -687,7 +689,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY as OPS_REGISTRY
 
         template = get_wgsl_template("cond")
-        attrs: dict[str, str] = getattr(node, "attributes", {})
+        attrs: dict[str, str] = _get_attr(node, "attributes", {})
 
         def _lower_branch(branch_graph: EagerValue, default_val: str) -> str:
             """Lower a branch subgraph into WGSL strings.
@@ -706,12 +708,12 @@ class WebGPUCodeGenerator(BaseGenerator):
             from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 
             for sub_node in topological_sort(as_graph(branch_graph)):
-                op_type: str = getattr(sub_node, "op_type", "")
+                op_type: str = _get_attr(sub_node, "op_type", "")
                 mapping: dict[str, str] = OPS_REGISTRY.get(op_type, {}).get("variants", {}).get("edge_wgsl", {})
                 expr: str = mapping.get("expr", "")
                 if expr:
                     val_expr: str = expr.replace("buf_in0_f32[in0_offset]", current_state).replace("buf_in1_f32[in1_offset]", "buf_in1_f32[idx]")
-                    temp_var: str = f"tmp_{getattr(sub_node, 'id', '0').replace('-', '_')}"
+                    temp_var: str = f"tmp_{_get_attr(sub_node, 'id', '0').replace('-', '_')}"
                     lines.append(f"var {temp_var} = {val_expr};")
                     current_state = temp_var
             lines.append(f"buf_out_f32[idx] = {current_state};")
@@ -749,7 +751,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         template = get_wgsl_template("scan")
 
-        init_val: str = str(attrs.get("init_val", "0.0")) if (attrs := getattr(node, "attributes", {})) else "0.0"
+        init_val: str = str(attrs.get("init_val", "0.0")) if (attrs := _get_attr(node, "attributes", {})) else "0.0"
         scan_op_expr: str = attrs.get("scan_op_expr") or "acc + buf_in0_f32[i]"
         body: str = str(template["body"]).format(nelem=nelem, init_val=init_val, scan_op_expr=scan_op_expr)
 
@@ -769,11 +771,11 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             tuple[int, int]: Maximum number of inputs (at least 3) and outputs (at least 1).
         """
-        all_inputs_lens: list[int] = [len(getattr(n, "inputs", [])) for n in self.sorted_nodes]
+        all_inputs_lens: list[int] = [len(_get_attr(n, "inputs", [])) for n in self.sorted_nodes]
         max_inputs: int = max(all_inputs_lens + [3]) if all_inputs_lens else 3
         max_outputs: int = 1
         for n in self.sorted_nodes:
-            raw_outs = getattr(n, "outputs", None) or getattr(n, "attributes", {}).get("outputs")
+            raw_outs = _get_attr(n, "outputs", None) or _get_attr(n, "attributes", {}).get("outputs")
             if isinstance(raw_outs, (list, tuple)):
                 max_outputs = max(max_outputs, len(raw_outs))
         return max_inputs, max_outputs
@@ -789,11 +791,11 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         node_arenas: dict[str, str] = {}
         for idx, node in enumerate(self.sorted_nodes):
-            nid: str = getattr(node, "id", "")
-            raw_arena = getattr(node, "attributes", {}).get("buffer_id")
+            nid: str = _get_attr(node, "id", "")
+            raw_arena = _get_attr(node, "attributes", {}).get("buffer_id")
             if raw_arena is not None:
                 arena_id: str = str(raw_arena)
-            elif getattr(node, "op_type", "") == "Output" and getattr(node, "inputs", []):
+            elif _get_attr(node, "op_type", "") == "Output" and _get_attr(node, "inputs", []):
                 arena_id = node_arenas.get(node.inputs[0], str(idx))
             else:
                 arena_id = str(idx)
@@ -801,11 +803,11 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         arenas: dict[str, int] = {}
         for node in self.sorted_nodes:
-            if getattr(node, "op_type", "") == "Output":
+            if _get_attr(node, "op_type", "") == "Output":
                 continue
-            nid = getattr(node, "id", "")
+            nid = _get_attr(node, "id", "")
             arena_id = node_arenas.get(nid, "0")
-            offset: int = int(getattr(node, "attributes", {}).get("buffer_offset", 0))
+            offset: int = int(_get_attr(node, "attributes", {}).get("buffer_offset", 0))
             shape, _ = self._get_shape_and_strides(node)
             size: int = self._num_elements(shape) * 4 if shape else 4
             arenas[arena_id] = max(arenas.get(arena_id, 0), offset + size)
@@ -847,15 +849,15 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         js.append("  // Write inputs to arenas")
         for node in self.sorted_nodes:
-            if getattr(node, "op_type", "") == "Input":
-                nid: str = getattr(node, "id", "")
+            if _get_attr(node, "op_type", "") == "Input":
+                nid: str = _get_attr(node, "id", "")
                 arena_id = node_arenas.get(nid, "0")
-                offset: int = int(getattr(node, "attributes", {}).get("buffer_offset", 0))
+                offset: int = int(_get_attr(node, "attributes", {}).get("buffer_offset", 0))
                 js.append(get_js_orchestration_template("write_input").format(nid=nid, arena_id=arena_id, offset=offset))
 
         js.append("")
         for i, out_id in enumerate(output_ids):
-            out_node: IRNode | None = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            out_node: IRNode | None = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_id), None)
             shape, _ = self._get_shape_and_strides(out_node) if out_node else ([], [])
             nelem: int = self._num_elements(shape) if shape else 1
             js.append(get_js_orchestration_template("create_staging").format(i=i, size=nelem * 4))
@@ -882,8 +884,8 @@ class WebGPUCodeGenerator(BaseGenerator):
             b_idx: int = self._get_binding_for_input(j)
             entries.append(f"{{ binding: {b_idx}, resource: {{ buffer: buf_arena_{inp_arena_id} }} }}")
 
-        raw_outs = getattr(node, "attributes", {}).get("outputs") or getattr(node, "outputs", None)
-        out_nodes: list[str] = [str(o) for o in raw_outs] if isinstance(raw_outs, (list, tuple)) else [getattr(node, "id", "0")]
+        raw_outs = _get_attr(node, "attributes", {}).get("outputs") or _get_attr(node, "outputs", None)
+        out_nodes: list[str] = [str(o) for o in raw_outs] if isinstance(raw_outs, (list, tuple)) else [_get_attr(node, "id", "0")]
 
         for k, out_id in enumerate(out_nodes):
             out_arena_id: str = node_arenas.get(out_id, node_arenas.get(node.id, "0"))
@@ -912,18 +914,18 @@ class WebGPUCodeGenerator(BaseGenerator):
         js.append("  const commandEncoder = device.createCommandEncoder();")
 
         for node in self.sorted_nodes:
-            op_type: str = getattr(node, "op_type", "")
+            op_type: str = _get_attr(node, "op_type", "")
             resolved_op: str = self._resolve_wgsl_op_name(op_type)
             if resolved_op in ("Input", "Output"):
                 continue
-            nid: str = getattr(node, "id", "")
+            nid: str = _get_attr(node, "id", "")
             clean_id: str = nid.replace("-", "_")
 
-            inputs: list[str] = getattr(node, "inputs", [])
+            inputs: list[str] = _get_attr(node, "inputs", [])
             shape, _ = self._get_shape_and_strides(node)
             nelem: int = self._num_elements(shape) if shape else 1
 
-            visitor = getattr(self, f"visit_{op_type}", None)
+            visitor = _get_attr(self, f"visit_{op_type}", None)
             if visitor is not None:
                 op_wgsl, dispatch_x, dispatch_y, dispatch_z = visitor(node, inputs, shape=shape, nelem=nelem, clean_id=clean_id)
             else:
@@ -957,7 +959,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         from ml_switcheroo_compiler.backends.edge.config_models import MemorySchemasConfig
 
-        graph_attrs: dict[str, EagerValue] = getattr(self.graph, "attributes", {})
+        graph_attrs: dict[str, EagerValue] = _get_attr(self.graph, "attributes", {})
         raw_schema = graph_attrs.get("dynamic_memory_schema", {})
         dynamic_schema: dict[str, EagerValue] = dict(raw_schema) if isinstance(raw_schema, dict) else {}
         raw_offsets = dynamic_schema.get("dynamic_offsets", [])
@@ -988,7 +990,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         if resize_tpl:
             computed_size_str: str = " + ".join(total_computed_size) if total_computed_size else "0"
             resize_logic: str = "device.createBuffer({ size: new_cap, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC });"
-            growth: float = float(getattr(getattr(getattr(schemas, "get")("schemas", {}), "get")("default", {}), "get")("growth_multiplier", 1.5))
+            growth: float = float(_get_attr(_get_attr(_get_attr(schemas, "get")("schemas", {}), "get")("default", {}), "get")("growth_multiplier", 1.5))
             resize_block: str = resize_tpl.format(computed_size=computed_size_str, arena_id=0, growth_multiplier=growth, resize_logic=resize_logic)
             for line in resize_block.split("\n"):
                 js.append("  " + line)
@@ -1017,10 +1019,10 @@ class WebGPUCodeGenerator(BaseGenerator):
         if webrtc_ops_found:
             collective_ops: tuple[str, ...] = ("AllReduce", "AllGather", "AllToAll", "ReduceScatter", "Broadcast")
             for node in self.sorted_nodes:
-                op_type: str = getattr(node, "op_type", "")
+                op_type: str = _get_attr(node, "op_type", "")
                 if op_type in collective_ops:
-                    op_id: str = getattr(node, "id", "")
-                    node_inputs: list[str] = getattr(node, "inputs", [])
+                    op_id: str = _get_attr(node, "id", "")
+                    node_inputs: list[str] = _get_attr(node, "inputs", [])
                     in0: str = node_inputs[0] if node_inputs else "dummy"
                     op_str: str = emit_webrtc_op(op_type, f"buf_arena_{in0}", op_id)
                     if op_str:
@@ -1030,9 +1032,9 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         js.append("  // Copy outputs to staging")
         for i, out_id in enumerate(output_ids):
-            out_node: IRNode | None = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            out_node: IRNode | None = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_id), None)
             arena_id: str = node_arenas.get(out_id, "0")
-            offset: int = int(getattr(out_node, "attributes", {}).get("buffer_offset", 0)) if out_node else 0
+            offset: int = int(_get_attr(out_node, "attributes", {}).get("buffer_offset", 0)) if out_node else 0
             shape, _ = self._get_shape_and_strides(out_node) if out_node else ([], [])
             nelem: int = self._num_elements(shape) if shape else 1
             js.append(get_js_orchestration_template("copy_output").format(arena_id=arena_id, offset=offset, i=i, size=nelem * 4))
@@ -1055,7 +1057,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.wgsl.wgsl_provider import get_js_orchestration_template
 
-        output_ids: list[str] = getattr(self.graph, "outputs", []) or []
+        output_ids: list[str] = _get_attr(self.graph, "outputs", []) or []
         max_inputs, max_outputs = self._compute_max_io_counts()
 
         wgsl: list[str] = [self._generate_bind_group_declarations(max_inputs, max_outputs), ""]
@@ -1063,7 +1065,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         node_arenas, arenas = self._build_arena_allocations()
         collective_ops: tuple[str, ...] = ("AllReduce", "AllGather", "AllToAll", "ReduceScatter", "Broadcast")
-        webrtc_ops_found: bool = any(getattr(n, "op_type", "") in collective_ops for n in self.sorted_nodes)
+        webrtc_ops_found: bool = any(_get_attr(n, "op_type", "") in collective_ops for n in self.sorted_nodes)
 
         self._emit_js_arena_and_input_setup(js, node_arenas, arenas, output_ids, webrtc_ops_found)
         self._emit_compute_passes(wgsl, js, node_arenas)
@@ -1231,10 +1233,10 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             None: Updates solved_env and node.shape_metadata in-place.
         """
-        meta = getattr(node, "shape_metadata", None)
+        meta = _get_attr(node, "shape_metadata", None)
         if meta and isinstance(meta, (list, tuple)) and len(meta) == len(concrete):
             for m_dim, c_dim in zip(meta, concrete):
-                if hasattr(m_dim, "node"):
+                if _has_attr(m_dim, "node"):
                     solved_env[str(m_dim.node)] = int(as_int(c_dim))
                 elif isinstance(m_dim, str):
                     solved_env[m_dim] = int(as_int(c_dim))
@@ -1250,9 +1252,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         Returns:
             int | None: Resolved integer dimension size, or None if unresolvable.
         """
-        if hasattr(dim, "node") and hasattr(getattr(dim, "node"), "eval"):
+        if _has_attr(dim, "node") and _has_attr(_get_attr(dim, "node"), "eval"):
             try:
-                return int(getattr(dim, "node").eval(solved_env))
+                return int(_get_attr(dim, "node").eval(solved_env))
             except Exception:
                 return int(dim) if isinstance(dim, (int, float)) else 1
         if isinstance(dim, str) and dim in solved_env:
@@ -1276,13 +1278,13 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         solved_env: dict[str, int] = {}
         for node in self.sorted_nodes:
-            nid: str = getattr(node, "id", "")
+            nid: str = _get_attr(node, "id", "")
             concrete = shape_data.get(nid)
             if isinstance(concrete, (list, tuple)):
                 self._record_node_concrete_shape(node, concrete, solved_env)
 
         for node in self.sorted_nodes:
-            meta = getattr(node, "shape_metadata", None)
+            meta = _get_attr(node, "shape_metadata", None)
             if meta and isinstance(meta, (list, tuple)):
                 refined: list[int] = [val for dim in meta if (val := self._eval_symbolic_dim(dim, solved_env)) is not None]
                 if refined:
@@ -1346,8 +1348,8 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         template = get_wgsl_template("conv2d")
 
-        in0_shape, in0_strides = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[0]), None))
-        in1_shape, in1_strides = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[1]), None))
+        in0_shape, in0_strides = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[0]), None))
+        in1_shape, in1_strides = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[1]), None))
 
         out_width: int = shape[3] if len(shape) == 4 else 1
         out_height: int = shape[2] if len(shape) == 4 else 1
@@ -1389,15 +1391,15 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLFunction, WGSLRaw
 
         template = get_wgsl_template("DepthwiseConv2D")
-        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[0]), None))
-        in1_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[1]), None))
+        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[0]), None))
+        in1_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[1]), None))
 
         out_width: int = shape[3] if len(shape) == 4 else 1
         out_height: int = shape[2] if len(shape) == 4 else 1
         channels: int = shape[1] if len(shape) == 4 else 1
         in_width: int = in0_shape[3] if len(in0_shape) == 4 else 1
 
-        raw_strides = getattr(node, "attributes", {}).get("strides", (1, 1))
+        raw_strides = _get_attr(node, "attributes", {}).get("strides", (1, 1))
         stride_val = raw_strides if isinstance(raw_strides, (list, tuple)) else (1, 1)
         stride_h: int = int(stride_val[0])
         stride_w: int = int(stride_val[1])
@@ -1436,8 +1438,8 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLFunction, WGSLRaw
 
         template = get_wgsl_template("Conv3D")
-        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[0]), None))
-        in1_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[1]), None))
+        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[0]), None))
+        in1_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[1]), None))
 
         out_w = shape[4] if len(shape) == 5 else 1
         out_h = shape[3] if len(shape) == 5 else 1
@@ -1448,7 +1450,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         in_h = in0_shape[3] if len(in0_shape) == 5 else 1
         in_d = in0_shape[2] if len(in0_shape) == 5 else 1
 
-        raw_strides = getattr(node, "attributes", {}).get("strides", (1, 1, 1))
+        raw_strides = _get_attr(node, "attributes", {}).get("strides", (1, 1, 1))
         stride_val = raw_strides if isinstance(raw_strides, (list, tuple)) else (1, 1, 1)
         stride_d = int(stride_val[0])
         stride_h = int(stride_val[1])
@@ -1495,7 +1497,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLFunction, WGSLRaw
 
         template = get_wgsl_template("MaxPool3D")
-        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[0]), None))
+        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[0]), None))
 
         out_w = shape[4] if len(shape) == 5 else 1
         out_h = shape[3] if len(shape) == 5 else 1
@@ -1505,13 +1507,13 @@ class WebGPUCodeGenerator(BaseGenerator):
         in_h = in0_shape[3] if len(in0_shape) == 5 else 1
         in_d = in0_shape[2] if len(in0_shape) == 5 else 1
 
-        raw_strides = getattr(node, "attributes", {}).get("strides", (1, 1, 1))
+        raw_strides = _get_attr(node, "attributes", {}).get("strides", (1, 1, 1))
         stride_val = raw_strides if isinstance(raw_strides, (list, tuple)) else (1, 1, 1)
         stride_d = int(stride_val[0])
         stride_h = int(stride_val[1])
         stride_w = int(stride_val[2])
 
-        raw_win = getattr(node, "attributes", {}).get("window", (2, 2, 2))
+        raw_win = _get_attr(node, "attributes", {}).get("window", (2, 2, 2))
         win_val = raw_win if isinstance(raw_win, (list, tuple)) else (2, 2, 2)
         window_d = int(win_val[0])
         window_h = int(win_val[1])
@@ -1554,7 +1556,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wgsl_ast import WGSLFunction, WGSLRaw
 
         template = get_wgsl_template("AvgPool3D")
-        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if getattr(n, "id", None) == input_vars[0]), None))
+        in0_shape, _ = self._get_shape_and_strides(next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == input_vars[0]), None))
 
         out_w = shape[4] if len(shape) == 5 else 1
         out_h = shape[3] if len(shape) == 5 else 1
@@ -1564,19 +1566,19 @@ class WebGPUCodeGenerator(BaseGenerator):
         in_h = in0_shape[3] if len(in0_shape) == 5 else 1
         in_d = in0_shape[2] if len(in0_shape) == 5 else 1
 
-        raw_strides = getattr(node, "attributes", {}).get("strides", (1, 1, 1))
+        raw_strides = _get_attr(node, "attributes", {}).get("strides", (1, 1, 1))
         stride_val = raw_strides if isinstance(raw_strides, (list, tuple)) else (1, 1, 1)
         stride_d = int(stride_val[0])
         stride_h = int(stride_val[1])
         stride_w = int(stride_val[2])
 
-        raw_win = getattr(node, "attributes", {}).get("window", (2, 2, 2))
+        raw_win = _get_attr(node, "attributes", {}).get("window", (2, 2, 2))
         win_val = raw_win if isinstance(raw_win, (list, tuple)) else (2, 2, 2)
         window_d = int(win_val[0])
         window_h = int(win_val[1])
         window_w = int(win_val[2])
 
-        body = getattr(template["body"], "format")(
+        body = _get_attr(template["body"], "format")(
             out_w=out_w,
             out_h=out_h,
             out_d=out_d,
@@ -1615,7 +1617,7 @@ class WebGPUCodeGenerator(BaseGenerator):
         return {
             "format": "webgpu_wgsl_bundle",
             "code": code_bundle,
-            "pipeline_layout": dict(getattr(self, "var_map", {})),
+            "pipeline_layout": dict(_get_attr(self, "var_map", {})),
             "status": "ready_to_dispatch",
         }
 
@@ -1640,7 +1642,7 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         fwd_code: str = self.generate()
 
-        outputs: list[str] = getattr(self.graph, "outputs", []) or []
+        outputs: list[str] = _get_attr(self.graph, "outputs", []) or []
         if target_output is not None:
             loss_id: str = target_output
         elif outputs:
@@ -1648,9 +1650,9 @@ class WebGPUCodeGenerator(BaseGenerator):
         else:
             raise ValueError("Target output cannot be identified from empty graph outputs.")
 
-        wrt: list[str] = wrt_inputs if wrt_inputs is not None else list(getattr(self.graph, "inputs", []))
+        wrt: list[str] = wrt_inputs if wrt_inputs is not None else list(_get_attr(self.graph, "inputs", []))
         bwd_graph: IRGraph = graph_grad(self.graph, wrt, loss_id)
-        bwd_graph.inputs = [nid for nid, n in getattr(bwd_graph, "nodes", {}).items() if getattr(n, "op_type", "") == "Input"]
+        bwd_graph.inputs = [nid for nid, n in _get_attr(bwd_graph, "nodes", {}).items() if _get_attr(n, "op_type", "") == "Input"]
 
         bwd_generator: WebGPUCodeGenerator = WebGPUCodeGenerator(bwd_graph)
         bwd_code: str = bwd_generator.generate()

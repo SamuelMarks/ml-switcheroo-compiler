@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _cast_val, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.distributed.host_collectives import (
     HostCollectiveCommunicator,
@@ -22,7 +23,6 @@ from ml_switcheroo_compiler.distributed.host_collectives import (
     broadcast,
     reduce_scatter,
 )
-from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from tests.testing_utils import as_callable, as_tensor, as_tensor_obj
 
 if typing.TYPE_CHECKING:
@@ -109,7 +109,7 @@ def test_host_collectives_eager_numpy_dispatch() -> None:
         arr_2d_1 = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
         arr_2d_2 = np.array([[5.0, 6.0], [7.0, 8.0]], dtype=np.float32)
         t_2d = Tensor(arr_2d_1, TensorConfig(shape=(2, 2), dtype="float32", device="cpu"))
-        a2a_res = all_to_all(t_2d, scatter_dim=0, gather_dim=0, all_ranks_data=typing.cast("list[TensorLike]", [arr_2d_1, arr_2d_2]))
+        a2a_res = all_to_all(t_2d, scatter_dim=0, gather_dim=0, all_ranks_data=_cast_val("list[TensorLike]", [arr_2d_1, arr_2d_2]))
         assert isinstance(a2a_res, Tensor)
 
         # Broadcast
@@ -119,20 +119,20 @@ def test_host_collectives_eager_numpy_dispatch() -> None:
 
         # Raw numpy array inputs
         raw_ar = as_callable(all_reduce)(arr1, op="SUM", all_ranks_data=ranks_data)
-        assert hasattr(raw_ar, "shape")
+        assert _has_attr(raw_ar, "shape")
         as_callable(np.testing.assert_allclose)(raw_ar, np.array([5.0, 7.0, 9.0]))
 
         raw_ag = as_callable(all_gather)(arr1, axis=0, all_ranks_data=ranks_data)
-        assert hasattr(raw_ag, "shape")
+        assert _has_attr(raw_ag, "shape")
 
         raw_rs = as_callable(reduce_scatter)(arr1, op="SUM", scatter_dim=0, all_ranks_data=ranks_data)
-        assert hasattr(raw_rs, "shape")
+        assert _has_attr(raw_rs, "shape")
 
         raw_a2a = as_callable(all_to_all)(arr_2d_1, scatter_dim=0, gather_dim=0, all_ranks_data=[arr_2d_1, arr_2d_2])
-        assert hasattr(raw_a2a, "shape")
+        assert _has_attr(raw_a2a, "shape")
 
         raw_bc = as_callable(broadcast)(arr1, root=0, all_ranks_data=ranks_data)
-        assert hasattr(raw_bc, "shape")
+        assert _has_attr(raw_bc, "shape")
 
     finally:
         config.eager_mode = old_eager

@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.linalg.linear_operator import (
@@ -72,7 +73,8 @@ def _np_frompyfunc_(
     Returns:
         np.ufunc: Universal function wrapper.
     """
-    return typing.cast(np.ufunc, backend_module.frompyfunc(*args, **kwargs))
+    _typed_ret_1: np.ufunc = _cast_val(np.ufunc, backend_module.frompyfunc(*args, **kwargs))
+    return _typed_ret_1
 
 
 @numpy_eager_registry.register("Geomspace")
@@ -344,7 +346,7 @@ def _np_fromdlpack(
     Returns:
         Union[np.ndarray, int, float]: Tensor converted from DLPack.
     """
-    if hasattr(backend_module, "from_dlpack"):
+    if _has_attr(backend_module, "from_dlpack"):
         return as_ndarray(backend_module.from_dlpack(*args, **kwargs))
     return as_ndarray(args[0])
 
@@ -367,4 +369,4 @@ def _np_frombuffer(
     """
     if not args:
         return None
-    return as_ndarray(getattr(np, "frombuffer")(args[0], **kwargs))
+    return as_ndarray(_get_attr(np, "frombuffer")(args[0], **kwargs))

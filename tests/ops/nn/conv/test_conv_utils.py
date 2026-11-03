@@ -11,6 +11,7 @@ import ml_switcheroo_compiler.tracing.state as state
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_utils import (
     _build_conv_config,
@@ -54,8 +55,8 @@ def test_prepare_depthwise_conv_extra() -> None:
             mock_reshape.return_value = "reshaped"
             rhs_reshaped, conf = as_callable(_prepare_depthwise_conv)(t1, t2, 1, ((0, 1, 2), (0, 1, 2), (0, 1, 2)), strides=1, lhs_dilation=1, rhs_dilation=1)
             assert rhs_reshaped == "reshaped"
-            assert as_tensor(getattr(conf, "lhs_dilation")) == (1,)
-            assert as_tensor(getattr(conf, "rhs_dilation")) == (1,)
+            assert as_tensor(_get_attr(conf, "lhs_dilation")) == (1,)
+            assert as_tensor(_get_attr(conf, "rhs_dilation")) == (1,)
 
 
 def create_eager_tensor(data: EagerValue) -> EagerValue:
@@ -67,7 +68,7 @@ def create_eager_tensor(data: EagerValue) -> EagerValue:
     return as_callable(Tensor)(
         data,
         as_callable(TensorConfig)(
-            as_tensor(getattr(data, "shape")),
+            as_tensor(_get_attr(data, "shape")),
             DType.Float32,
             as_callable(Device)("cpu"),
         ),
@@ -79,24 +80,24 @@ def test_conv_utils_missing_branches() -> None:
     dim_nums = ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))
 
     cfg = _build_conv_config({"strides": (1, 1), "lhs_dilation": (1, 1), "rhs_dilation": (1, 1)}, dim_nums)
-    assert getattr(cfg, "window_strides", None) == (1, 1)
+    assert _get_attr(cfg, "window_strides", None) == (1, 1)
 
     cfg_ints = _build_conv_config({"strides": 1, "lhs_dilation": 1, "rhs_dilation": 1}, dim_nums)
-    assert getattr(cfg_ints, "window_strides", None) == (1, 1)
-    assert getattr(cfg_ints, "lhs_dilation", None) == (1, 1)
-    assert getattr(cfg_ints, "rhs_dilation", None) == (1, 1)
+    assert _get_attr(cfg_ints, "window_strides", None) == (1, 1)
+    assert _get_attr(cfg_ints, "lhs_dilation", None) == (1, 1)
+    assert _get_attr(cfg_ints, "rhs_dilation", None) == (1, 1)
 
     with ConfigContext(eager_mode=True):
         lhs = create_eager_tensor(np.ones((1, 2, 2, 3)))
         rhs = create_eager_tensor(np.ones((2, 2, 3, 1)))
 
         r, c = as_callable(_prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, config_obj="mock_config")
-        assert as_tensor(getattr(r, "shape")) == (2, 2, 1, 3)
+        assert as_tensor(_get_attr(r, "shape")) == (2, 2, 1, 3)
         assert c == "mock_config"
 
         r2, c2 = as_callable(_prepare_depthwise_conv)(lhs, rhs, 2, dim_nums, strides=(1, 1), lhs_dilation=(1, 1), rhs_dilation=(1, 1))
-        assert as_tensor(getattr(r2, "shape")) == (2, 2, 1, 3)
-        assert getattr(c2, "window_strides", None) == (1, 1)
+        assert as_tensor(_get_attr(r2, "shape")) == (2, 2, 1, 3)
+        assert _get_attr(c2, "window_strides", None) == (1, 1)
 
 
 def test_conv_utils_eager_and_trace_coverage() -> None:
@@ -145,7 +146,7 @@ def test_conv_utils_eager_and_trace_coverage() -> None:
     config.eager_mode = False
     state.global_tracing_state.start_tracing("test_conv_utils_trace")
     try:
-        res_col, res_seq = typing.cast("tuple[Tensor, Tensor]", collapse_repeated(t, t))
+        res_col, res_seq = _cast_val("tuple[Tensor, Tensor]", collapse_repeated(t, t))
         assert res_col.shape == (1,)
         assert res_seq.shape == (1,)
         res_ct = as_tensor_obj(conv_transpose(t, t, (1, 2)))

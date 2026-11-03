@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -52,8 +53,8 @@ def decode_image(
             "name": name,
             "expand_animations": expand_animations,
         },
-        getattr(contents, "shape", ()),
-        getattr(contents, "dtype", "float32"),
+        _get_attr(contents, "shape", ()),
+        _get_attr(contents, "dtype", "float32"),
     )
 
 
@@ -75,14 +76,14 @@ def _decode_image_with_pil(
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    data = getattr(contents, "data", contents)
+    data = _get_attr(contents, "data", contents)
     if not data:
         return Tensor(b"", TensorConfig((0,), "uint8", "cpu"))
 
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
-    if hasattr(backend_cls, "decode_image_bytes"):
+    if _has_attr(backend_cls, "decode_image_bytes"):
         if isinstance(data, str):
             with open(data, "rb") as f:
                 data = f.read()
@@ -109,7 +110,7 @@ def decode_jpeg(
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
-    if hasattr(backend_cls, "decode_jpeg"):
+    if _has_attr(backend_cls, "decode_jpeg"):
         return as_tensor_obj(backend_cls.decode_jpeg(contents, channels=channels, ratio=ratio))
     return _decode_image_with_pil(contents, channels)
 
@@ -132,7 +133,7 @@ def decode_png(
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
-    if hasattr(backend_cls, "decode_png"):
+    if _has_attr(backend_cls, "decode_png"):
         return as_tensor_obj(backend_cls.decode_png(contents, channels=channels, dtype=dtype))
     return _decode_image_with_pil(contents, channels)
 
@@ -149,7 +150,7 @@ def decode_gif(contents: Tensor | bytes | str | None) -> Tensor:
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
-    if hasattr(backend_cls, "decode_gif"):
+    if _has_attr(backend_cls, "decode_gif"):
         return as_tensor_obj(backend_cls.decode_gif(contents))
     return _decode_image_with_pil(contents)
 
@@ -170,7 +171,7 @@ def decode_bmp(
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     backend_cls = get_active_backend()
-    if hasattr(backend_cls, "decode_bmp"):
+    if _has_attr(backend_cls, "decode_bmp"):
         return as_tensor_obj(backend_cls.decode_bmp(contents, channels=channels))
     return _decode_image_with_pil(contents, channels)
 
@@ -198,10 +199,11 @@ class DecodeImage(OpDef):
         _ = kwargs
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_1: tuple[int, ...] = res
+        return _typed_ret_1

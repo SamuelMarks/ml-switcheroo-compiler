@@ -7,12 +7,10 @@ Divide) using NumPy for evaluation
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_str
 
 # Simple broadcasting
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, broadcast_shapes
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr, broadcast_shapes
 from ml_switcheroo_compiler.core.shape import broadcast_shapes as _bs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -37,7 +35,7 @@ class BinaryMathOp(OpDef):
             tuple[int, ...]: Result.
         """
         if shapes and all(isinstance(s, tuple) for s in shapes):
-            return _bs(*typing.cast("tuple[tuple[int, ...], ...]", shapes)) if len(shapes) > 1 else shapes[0]
+            return _bs(*_cast_val("tuple[tuple[int, ...], ...]", shapes)) if len(shapes) > 1 else shapes[0]
         return shapes[0] if shapes else ()
 
 
@@ -402,8 +400,9 @@ class Digitize(OpDef):
             tuple[int, ...]: Result.
         """
         # Returns indices matching input shape
-        if args and hasattr(args[0], "shape"):
-            return args[0].shape
+        if args and _has_attr(args[0], "shape"):
+            _typed_ret_1: TensorOrScalar = args[0].shape
+            return _typed_ret_1
         return ()
 
 
@@ -486,9 +485,9 @@ class Betainc(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        shape_a = getattr(a, "shape", ())
-        shape_b = getattr(b, "shape", ())
-        shape_x = getattr(x, "shape", ()) if x is not None else ()
+        shape_a = _get_attr(a, "shape", ())
+        shape_b = _get_attr(b, "shape", ())
+        shape_x = _get_attr(x, "shape", ()) if x is not None else ()
         return broadcast_shapes(broadcast_shapes(shape_a, shape_b), shape_x)
 
 
@@ -557,11 +556,11 @@ class Polyadd(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -582,11 +581,11 @@ class Polysub(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -607,11 +606,11 @@ class Polymul(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -632,11 +631,11 @@ class Polydiv(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -657,11 +656,11 @@ class Polyval(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -682,11 +681,11 @@ class Poly(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -707,11 +706,11 @@ class Polyder(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -732,11 +731,11 @@ class Polyfit(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -757,11 +756,11 @@ class Polyint(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -782,11 +781,11 @@ class Roots(BinaryMathOp):
         Returns: Tensor: Computed shape.
         """
         if args:
-            if hasattr(args[0], "shape"):
+            if _has_attr(args[0], "shape"):
                 from collections import namedtuple
 
                 ShapeHolder = namedtuple("ShapeHolder", ["shape"])
-                return ShapeHolder(getattr(args[0], "shape", ()))
+                return ShapeHolder(_get_attr(args[0], "shape", ()))
             return args[0]
         return ()
 
@@ -833,8 +832,9 @@ class Clip(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        if args and hasattr(args[0], "shape"):
-            return args[0].shape
+        if args and _has_attr(args[0], "shape"):
+            _typed_ret_2: TensorOrScalar = args[0].shape
+            return _typed_ret_2
         return ()
 
 
@@ -860,7 +860,7 @@ def clip(x: TensorOrScalar, min_val: TensorOrScalar = None, max_val: TensorOrSca
 
     kwargs["a_min"] = min_val
     kwargs["a_max"] = max_val
-    return emit_ir_node(None, "Clip", [as_str(x)], getattr(x, "shape_metadata", None), kwargs)
+    return emit_ir_node(None, "Clip", [as_str(x)], _get_attr(x, "shape_metadata", None), kwargs)
 
 
 def rem(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:

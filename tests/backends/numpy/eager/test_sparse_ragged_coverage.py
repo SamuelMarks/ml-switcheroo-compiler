@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import sparse_and_ragged as sparse_module
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -54,18 +55,18 @@ def test_sparse_and_ragged_ops() -> None:
     # SparseExpandDims branches
     # branch 1: axis=None, kwargs empty
     exp_none = sparse_module._np_sparse_expand_dims(np, data)
-    assert as_tensor(getattr(exp_none, "shape")) == (3, 1)
+    assert as_tensor(_get_attr(exp_none, "shape")) == (3, 1)
 
     # branch 2: axis=1
     exp_ax = sparse_module._np_sparse_expand_dims(np, data, axis=0)
-    assert as_tensor(getattr(exp_ax, "shape")) == (1, 3)
+    assert as_tensor(_get_attr(exp_ax, "shape")) == (1, 3)
 
     # branch 3: in kwargs
     exp_kw = sparse_module._np_sparse_expand_dims(np, data, **{"axis": 0})
-    assert as_tensor(getattr(exp_kw, "shape")) == (1, 3)
+    assert as_tensor(_get_attr(exp_kw, "shape")) == (1, 3)
 
     reg_exp = numpy_eager_registry.get("SparseExpandDims")
-    assert as_tensor(getattr(as_callable(reg_exp)(np, data), "shape")) == (3, 1)
+    assert as_tensor(_get_attr(as_callable(reg_exp)(np, data), "shape")) == (3, 1)
 
     # RaggedDot
     a = np.array([[1, 2], [3, 4]])

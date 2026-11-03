@@ -6,6 +6,7 @@ import typing
 from unittest import mock
 from unittest.mock import patch
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.registry import backend_mapping_registry as registry
 from ml_switcheroo_compiler.ops.registry import get_all_ops, get_op
 from tests.testing_utils import as_callable, as_tensor
@@ -121,9 +122,9 @@ def test_registry_remaining() -> None:
     # hit 112
     from ml_switcheroo_compiler.ops.registry import _YAML_REGISTRY
 
-    getattr(_YAML_REGISTRY, "__setitem__")("DynamicTestOp123", {"test": 1})
+    _get_attr(_YAML_REGISTRY, "__setitem__")("DynamicTestOp123", {"test": 1})
     op_cls = get_op("DynamicTestOp123")
-    assert as_tensor(getattr(op_cls, "get_yaml_data"))() == {"test": 1}
+    assert as_tensor(_get_attr(op_cls, "get_yaml_data"))() == {"test": 1}
 
     # hit 170-175 inside _RegistryShim
     class DummyShim:
@@ -144,12 +145,12 @@ def test_registry_remaining() -> None:
                 prefix: Test parameter `prefix`.
                 op_name: Test parameter `op_name`.
             """
-            op = as_callable(as_tensor(getattr(self.operations, "get")))(op_name, {})
+            op = as_callable(as_tensor(_get_attr(self.operations, "get")))(op_name, {})
             if not op:
                 return None
-            variants = as_tensor(getattr(op, "get"))("variants", {})
-            backend = as_callable(as_tensor(getattr(variants, "get")))(prefix, {})
-            return as_tensor(getattr(backend, "get"))("generator")
+            variants = as_tensor(_get_attr(op, "get"))("variants", {})
+            backend = as_callable(as_tensor(_get_attr(variants, "get")))(prefix, {})
+            return as_tensor(_get_attr(backend, "get"))("generator")
 
     from ml_switcheroo_compiler.ops.registry import _RegistryShim
 

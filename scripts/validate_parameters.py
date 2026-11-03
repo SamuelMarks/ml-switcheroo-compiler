@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import ast
 import glob
+import operator
 import os
 import re
 import sys
@@ -240,14 +241,18 @@ def main() -> int:
     parser.add_argument("--snapshot-dir", type=str, default="", help="Override snapshot directory.")
     args: argparse.Namespace = parser.parse_args()
 
-    engine: SnapshotGroundingEngine = SnapshotGroundingEngine(args.snapshot_dir if hasattr(args, "snapshot_dir") and args.snapshot_dir else None)
+    engine: SnapshotGroundingEngine = SnapshotGroundingEngine(args.snapshot_dir if args.snapshot_dir else None)
 
     print("================================================================")
     print("      ZERO HALLUCINATED PARAMETERS VALIDATION SUITE             ")
     print("================================================================")
     print(f"Snapshot directory: {engine.snapshot_dir}")
 
-    if not getattr(engine, "_fail_on_missing", True) and not os.path.exists(engine.snapshot_dir):
+    try:
+        fail_missing = bool(operator.attrgetter("_fail_on_missing")(engine))
+    except AttributeError:
+        fail_missing = True
+    if not fail_missing and not os.path.exists(engine.snapshot_dir):
         print("Skipping validation since snapshot dir is missing.")
         return 0
 

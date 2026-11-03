@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
 if typing.TYPE_CHECKING:
@@ -35,10 +36,10 @@ def _test_frontend_pool_coverage_part_1(_state: dict[str, EagerTensorProtocol]) 
 
     t = Tensor(np.ones((1, 1, 4, 4)), TensorConfig(shape=(1, 1, 4, 4), dtype=DType("float32"), device=Device("cpu")))
     t_3d = Tensor(np.ones((1, 1, 4, 4, 4)), TensorConfig(shape=(1, 1, 4, 4, 4), dtype=DType("float32"), device=Device("cpu")))
-    getattr(_state, "update")({"MagicMock": MagicMock, "np": np, "orig": orig, "orig_tracing": orig_tracing})
-    getattr(_state, "update")({"patch": patch, "pool": pool, "state": state, "t": t})
-    getattr(_state, "update")({"t_3d": t_3d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MagicMock": MagicMock, "np": np, "orig": orig, "orig_tracing": orig_tracing})
+    _get_attr(_state, "update")({"patch": patch, "pool": pool, "state": state, "t": t})
+    _get_attr(_state, "update")({"t_3d": t_3d})
+    _state.update(_caller_locals())
 
 
 def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -79,12 +80,12 @@ def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
         config.eager_mode = True
 
         mock_backend = MagicMock()
-        setattr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2)))
-        setattr(mock_backend, "array", lambda x: x)
+        _set_attr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2)))
+        _set_attr(mock_backend, "array", lambda x: x)
 
         mock_backend_3d = MagicMock()
-        setattr(mock_backend_3d.execute_op, "return_value", (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2))))
-        setattr(mock_backend_3d, "array", lambda x: x)
+        _set_attr(mock_backend_3d.execute_op, "return_value", (np.zeros((1, 1, 2, 2, 2)), np.zeros((1, 1, 2, 2, 2))))
+        _set_attr(mock_backend_3d, "array", lambda x: x)
 
         with patch("ml_switcheroo_compiler.ops.reductions.frontend_pool.get_active_backend", return_value=mock_backend):
             pool.adaptive_avg_pool2d(t, (2, 2))
@@ -93,7 +94,7 @@ def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
             pool.max_unpool2d(t, t, opt)
             pool.max_unpool3d(t_3d, t_3d, opt3d)
 
-            setattr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2, 2)))
+            _set_attr(mock_backend.execute_op, "return_value", np.zeros((1, 1, 2, 2, 2)))
             pool.adaptive_avg_pool3d(t_3d, (2, 2, 2))
             pool.adaptive_max_pool3d(t_3d, (2, 2, 2), return_indices=False)
 
@@ -105,9 +106,9 @@ def _test_frontend_pool_coverage_part_2(_state: dict[str, EagerTensorProtocol]) 
             pool.fractional_max_pool3d(t_3d, (2, 2, 2))
 
     finally:
-        setattr(state.global_tracing_state, "is_tracing", orig_tracing)
-        setattr(config, "eager_mode", orig)
-    _state.update(locals())
+        _set_attr(state.global_tracing_state, "is_tracing", orig_tracing)
+        _set_attr(config, "eager_mode", orig)
+    _state.update(_caller_locals())
 
 
 def _test_frontend_pool_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -117,7 +118,7 @@ def _test_frontend_pool_coverage_part_3(_state: dict[str, EagerTensorProtocol]) 
         _state: Shared test state dictionary.
     """
     t_3d = _state["t_3d"]
-    assert getattr(t_3d, "shape") == (1, 1, 4, 4, 4)
+    assert _get_attr(t_3d, "shape") == (1, 1, 4, 4, 4)
 
 
 def test_frontend_pool_coverage() -> None:

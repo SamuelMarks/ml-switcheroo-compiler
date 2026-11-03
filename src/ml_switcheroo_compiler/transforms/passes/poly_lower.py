@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import os
-import typing
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
 
 
@@ -159,7 +159,8 @@ def _load_poly_rules() -> dict[str, dict[str, str]]:
     if not os.path.exists(yaml_path):
         return {}
     with open(yaml_path) as f:
-        return typing.cast(dict[str, dict[str, str]], yaml.safe_load(f).get("rules", {}))
+        _typed_ret_1: dict[str, dict[str, str]] = _cast_val(dict[str, dict[str, str]], yaml.safe_load(f).get("rules", {}))
+        return _typed_ret_1
 
 
 def polyfill_lowering_pass(graph: IRGraph) -> bool:

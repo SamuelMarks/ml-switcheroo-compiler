@@ -1,10 +1,6 @@
 operation: TensorScatterAdd
 backend: mlx
-target_api: '''(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in range(i.shape[-1])),
-  c[tuple(i[..., d] for d in range(i.shape[-1]))] + u), c][1])(mx.array({0}), {1},
-  {2})'''
-ast_template: '{out} = ''(lambda c, i, u: [c.__setitem__(tuple(i[..., d] for d in
-  range(i.shape[-1])), c[tuple(i[..., d] for d in range(i.shape[-1]))] + u), c][1])(mx.array({0}),
-  {1}, {2})''({inputs})'
+target_api: "(lambda c, i, u: c.at[tuple(i[..., d] for d in range(i.shape[-1]))].add(u))(mx.asarray({0}), {1}, {2})"
+ast_template: "{out} = (lambda c, i, u: c.at[tuple(i[..., d] for d in range(i.shape[-1]))].add(u))(mx.asarray({0}), {1}, {2})"
 kwarg_map: {}
 dtype_overrides: {}

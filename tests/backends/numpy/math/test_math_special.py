@@ -11,6 +11,7 @@ import pytest
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as _mm_raw
 import ml_switcheroo_compiler.ops as _ops
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_confusion_matrix, _np_decode_csv, _np_decode_image, _np_descriptive, _np_distributions, _np_parse_example, _np_parse_tensor, _np_rawmatmul, _np_read_file, _np_rem, _np_serialize_tensor, _np_sparsedensematmul, _np_write_file
+from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _del_attr, _get_attr, _has_attr, _set_attr
 from tests.testing_utils import as_callable, as_int, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -33,24 +34,24 @@ def test_segment_sum() -> None:
 def test_clz() -> None:
     """Test function test_clz."""
     res = mm._np_clz(np, np.array([1, 2, -1], dtype=np.int32))
-    assert as_tensor(getattr(res, "__getitem__")(0)) == 31
-    assert as_tensor(getattr(res, "__getitem__")(1)) == 30
-    assert as_tensor(getattr(res, "__getitem__")(2)) == 0
+    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 31
+    assert as_tensor(_get_attr(res, "__getitem__")(1)) == 30
+    assert as_tensor(_get_attr(res, "__getitem__")(2)) == 0
 
 
 def test_population_count() -> None:
     """Test function test_population_count."""
     res = mm._np_population_count(np, np.array([1, 3, -1], dtype=np.int32))
-    assert as_tensor(getattr(res, "__getitem__")(0)) == 1
-    assert as_tensor(getattr(res, "__getitem__")(1)) == 2
+    assert as_tensor(_get_attr(res, "__getitem__")(0)) == 1
+    assert as_tensor(_get_attr(res, "__getitem__")(1)) == 2
     res = mm._np_population_count(np, np.array([1, 3, 7], dtype=np.int32))
-    assert as_tensor(getattr(res, "__getitem__")(2)) == 3
+    assert as_tensor(_get_attr(res, "__getitem__")(2)) == 3
 
 
 def test_bitcast_convert_type() -> None:
     """Test function test_bitcast_convert_type."""
     res = mm._np_bitcast_convert_type(np, np.array([1.0], dtype=np.float32), "int32")
-    assert as_tensor(getattr(res, "dtype")) == np.int32
+    assert as_tensor(_get_attr(res, "dtype")) == np.int32
 
 
 def test_reduce_precision() -> None:
@@ -68,13 +69,13 @@ def test_custom_linear_solve() -> None:
 def test_strided_slice() -> None:
     """Test function test_strided_slice."""
     res = mm._np_stridedslice(np, np.ones((5, 5)), [1, 1], [3, 3], [1, 1])
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
 
 def test_sobol_sample() -> None:
     """Test function test_sobol_sample."""
     res = mm._np_sobolsample(np, 2, 4)
-    assert as_tensor(getattr(res, "shape")) == (4, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (4, 2)
 
 
 def test_logsumexp() -> None:
@@ -98,7 +99,7 @@ def test_truncate_mod() -> None:
 def test_math_misc_one_hot() -> None:
     """Test function test_math_misc_one_hot."""
     res = mm._np_one_hot(np, np.array([0, 1]), depth=2)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
 
 def test_math_misc_scipy_and_polynomials() -> None:
@@ -106,7 +107,7 @@ def test_math_misc_scipy_and_polynomials() -> None:
     import sys
 
     old_scipy = sys.modules.get("scipy.special", None)
-    getattr(sys.modules, "__setitem__")("scipy.special", None)
+    _get_attr(sys.modules, "__setitem__")("scipy.special", None)
     try:
         mm._get_sc()
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -233,29 +234,29 @@ def test_all_mocked_try_blocks() -> None:
         "linearoperatorzeros",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, MockOpFunc)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, MockOpFunc)
         try:
-            func = getattr(mm, f"_np_{op_name.lower()}", getattr(mm, f"_np_{op_name}", None))
+            func = _get_attr(mm, f"_np_{op_name.lower()}", _get_attr(mm, f"_np_{op_name}", None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_all_mocked_try_blocks)
 
 
 def test_math_misc_more_edges() -> None:
     """Test function test_math_misc_more_edges."""
     res_fb = mm._np_frombuffer(np, b"\x00\x00\x00\x00", dtype=np.int32)
-    assert as_tensor(getattr(res_fb, "shape")) == (1,)
+    assert as_tensor(_get_attr(res_fb, "shape")) == (1,)
     assert mm._np_frombuffer(np) is None
     res_oh = mm._np_one_hot(np, np.array([0, 1]), depth=2, axis=0)
-    assert as_tensor(getattr(res_oh, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res_oh, "shape")) == (2, 2)
     import ml_switcheroo_compiler.ops as ops
 
     class MockOpFunc:
@@ -279,17 +280,17 @@ def test_math_misc_more_edges() -> None:
             """
             pass
 
-    old_di = getattr(ops, "DecodeImage", None)
-    setattr(ops, "DecodeImage", MockOpFunc)
+    old_di = _get_attr(ops, "DecodeImage", None)
+    _set_attr(ops, "DecodeImage", MockOpFunc)
     try:
         mm._np_decode_image(np, np.ones((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
         if old_di:
-            setattr(ops, "DecodeImage", old_di)
+            _set_attr(ops, "DecodeImage", old_di)
         else:
-            delattr(ops, "DecodeImage")
+            _del_attr(ops, "DecodeImage")
 
 
 def test_all_numpy_math_misc_fallbacks() -> None:
@@ -344,7 +345,7 @@ def test_all_numpy_math_misc_fallbacks() -> None:
     op_names = ["decode_csv", "decode_image", "parse_example", "parse_tensor", "serialize_tensor", "encode_image", "encode_jpeg", "encode_png", "encode_base64", "decode_base64", "decode_json_example", "decode_compressed", "read_file", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
         try:
-            func = getattr(mm, "_np_" + op_name.lower(), getattr(mm, "_np_" + op_name, None))
+            func = _get_attr(mm, "_np_" + op_name.lower(), _get_attr(mm, "_np_" + op_name, None))
             if func:
                 func(MockBM(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -445,7 +446,7 @@ def test_all_numpy_math_misc_fallbacks_2() -> None:
     ]
     for op_name in op_names:
         try:
-            func = getattr(mm, "_np_" + op_name.lower(), getattr(mm, "_np_" + op_name, None))
+            func = _get_attr(mm, "_np_" + op_name.lower(), _get_attr(mm, "_np_" + op_name, None))
             if func:
                 func(MockBM(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -546,7 +547,7 @@ def test_all_numpy_math_misc_fallbacks_3() -> None:
     ]
     for op_name in op_names:
         try:
-            func = getattr(mm, "_np_" + op_name.lower(), getattr(mm, "_np_" + op_name, None))
+            func = _get_attr(mm, "_np_" + op_name.lower(), _get_attr(mm, "_np_" + op_name, None))
             if func:
                 func(MockBM(), np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -592,19 +593,19 @@ def test_np_remaining_math_misc() -> None:
 
     op_names = ["RawMatMul", "SparseDenseMatMul", "decode_csv", "decode_image", "parse_example", "parse_tensor", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, MockOpFunc)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, MockOpFunc)
         try:
-            func = getattr(mm, f"_np_{op_name.lower()}", getattr(mm, f"_np_{op_name}", None))
+            func = _get_attr(mm, f"_np_{op_name.lower()}", _get_attr(mm, f"_np_{op_name}", None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     mm._np_frombuffer(np)
     mm._np_rem(np)
     assert callable(test_np_remaining_math_misc)
@@ -645,7 +646,7 @@ def test_math_misc_scipy_bessels() -> None:
     import sys
 
     old_scipy = sys.modules.get("scipy.special", None)
-    getattr(sys.modules, "__setitem__")("scipy.special", None)
+    _get_attr(sys.modules, "__setitem__")("scipy.special", None)
     try:
         mm._np_modified_bessel_i1(np, np.ones((2, 2)))
         mm._np_modified_bessel_k0(np, np.ones((2, 2)))
@@ -687,19 +688,19 @@ def test_np_remaining_math_misc_2() -> None:
 
     op_names = ["encode_image", "encode_jpeg", "encode_png", "encode_base64", "decode_base64", "decode_json_example", "decode_compressed", "read_file", "write_file", "serialize_tensor"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, MockOpFunc)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, MockOpFunc)
         try:
-            func = getattr(mm, f"_np_{op_name.lower()}", getattr(mm, f"_np_{op_name}", None))
+            func = _get_attr(mm, f"_np_{op_name.lower()}", _get_attr(mm, f"_np_{op_name}", None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_np_remaining_math_misc_2)
 
 
@@ -730,19 +731,19 @@ def test_np_remaining_math_misc_3() -> None:
 
     op_names = ["shifted_chebyshev_polynomial_t", "shifted_chebyshev_polynomial_u", "shifted_chebyshev_polynomial_v", "shifted_chebyshev_polynomial_w"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, MockOpFunc)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, MockOpFunc)
         try:
-            func = getattr(mm, f"_np_{op_name.lower()}", getattr(mm, f"_np_{op_name}", None))
+            func = _get_attr(mm, f"_np_{op_name.lower()}", _get_attr(mm, f"_np_{op_name}", None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     mm._np_rfftfreq(np, 10, d=0.1)
     mm._np_frombuffer(np)
     mm._np_rem(np, 1)
@@ -799,19 +800,19 @@ def test_remaining_math_misc_stuff() -> None:
         "distributions",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, MockOpFunc)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, MockOpFunc)
         try:
-            func = getattr(mm, "_np_" + op_name.lower(), getattr(mm, "_np_" + op_name, None))
+            func = _get_attr(mm, "_np_" + op_name.lower(), _get_attr(mm, "_np_" + op_name, None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_remaining_math_misc_stuff)
 
 
@@ -865,19 +866,19 @@ def test_final_math_misc_mocking() -> None:
         "distributions",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, MockOpFunc)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, MockOpFunc)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking)
 
 
@@ -931,19 +932,19 @@ def test_final_math_misc_mocking_again() -> None:
         "distributions",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, MockOpFunc)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, MockOpFunc)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again)
 
 
@@ -973,7 +974,8 @@ def test_final_math_misc_mocking_once_more() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("MockOpFuncWithInit", np.ones((2, 2)))
+            _typed_ret_1: MockOpFuncWithInit = _cast_val("MockOpFuncWithInit", np.ones((2, 2)))
+            return _typed_ret_1
 
     class RealMockType:
         """Test class RealMockType."""
@@ -1018,19 +1020,19 @@ def test_final_math_misc_mocking_once_more() -> None:
         "distributions",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_once_more)
 
 
@@ -1051,7 +1053,8 @@ def test_final_math_misc_mocking_once_more_2() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType", np.ones((2, 2)))
+            _typed_ret_2: RealMockType = _cast_val("RealMockType", np.ones((2, 2)))
+            return _typed_ret_2
 
     op_names = [
         "RawMatMul",
@@ -1075,19 +1078,19 @@ def test_final_math_misc_mocking_once_more_2() -> None:
         "distributions",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_once_more_2)
 
 
@@ -1108,7 +1111,8 @@ def test_final_math_misc_mocking_again_and_again() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_3: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_3
 
     op_names = [
         "RawMatMul",
@@ -1132,19 +1136,19 @@ def test_final_math_misc_mocking_again_and_again() -> None:
         "distributions",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again)
 
 
@@ -1189,19 +1193,19 @@ def test_final_math_misc_mocking_again_and_again_again() -> None:
         "distributions",
     ]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
 
 
 def test_final_math_misc_mocking_again_and_again_again_2() -> None:
@@ -1221,23 +1225,24 @@ def test_final_math_misc_mocking_again_and_again_again_2() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_4: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_4
 
     op_names = ["decode_csv", "decode_image", "parse_example", "parse_tensor", "serialize_tensor", "encode_image", "encode_jpeg", "encode_png", "encode_base64", "decode_base64", "decode_json_example", "decode_compressed", "read_file", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_2)
 
 
@@ -1258,23 +1263,24 @@ def test_final_math_misc_mocking_again_and_again_again_3() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_5: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_5
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "EncodeImage", "EncodeJpeg", "EncodePng", "EncodeBase64", "DecodeBase64", "DecodeJsonExample", "DecodeCompressed", "ReadFile", "WriteFile", "ConfusionMatrix", "Descriptive", "Distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name.lower(), getattr(mm, "_np_" + op_name, None))
+            func = _get_attr(mm, "_np_" + op_name.lower(), _get_attr(mm, "_np_" + op_name, None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_3)
 
 
@@ -1286,7 +1292,7 @@ def test_final_math_misc_mocking_again_and_again_again_4() -> None:
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
-        func = getattr(mm, "_np_" + op_name.lower() + "_camel", getattr(mm, "_np_" + op_name, None))
+        func = _get_attr(mm, "_np_" + op_name.lower() + "_camel", _get_attr(mm, "_np_" + op_name, None))
         if func:
             func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
     assert callable(test_final_math_misc_mocking_again_and_again_again_4)
@@ -1309,23 +1315,24 @@ def test_final_math_misc_mocking_again_and_again_again_5() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_6: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_6
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name.lower() + "_camel", getattr(mm, "_np_" + op_name, None))
+            func = _get_attr(mm, "_np_" + op_name.lower() + "_camel", _get_attr(mm, "_np_" + op_name, None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_5)
 
 
@@ -1346,23 +1353,24 @@ def test_final_math_misc_mocking_camel() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_7: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_7
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name.lower() + "_camel", getattr(mm, "_np_" + op_name, None))
+            func = _get_attr(mm, "_np_" + op_name.lower() + "_camel", _get_attr(mm, "_np_" + op_name, None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_camel)
 
 
@@ -1383,23 +1391,24 @@ def test_final_math_misc_mocking_again_and_again_again_6() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_8: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_8
 
     op_names = ["decode_csv", "decode_image", "parse_example", "parse_tensor", "serialize_tensor", "read_file", "write_file"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, None)
+            func = _get_attr(mm, "_np_" + op_name, None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_6)
 
 
@@ -1411,7 +1420,7 @@ def test_final_math_misc_mocking_again_and_again_again_7() -> None:
 
     op_names = ["DecodeCsv", "DecodeImage", "ParseExample", "ParseTensor", "SerializeTensor", "ReadFile", "WriteFile"]
     for op_name in op_names:
-        func = getattr(mm, "_np_" + op_name.lower() + "_camel", None)
+        func = _get_attr(mm, "_np_" + op_name.lower() + "_camel", None)
         if func:
             func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
     assert callable(test_final_math_misc_mocking_again_and_again_again_7)
@@ -1450,23 +1459,24 @@ def test_final_math_misc_mocking_for_remaining() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_9: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_9
 
     op_names = ["confusion_matrix", "descriptive", "distributions", "shifted_chebyshev_polynomial_t", "shifted_chebyshev_polynomial_u", "shifted_chebyshev_polynomial_v", "shifted_chebyshev_polynomial_w", "frombuffer", "rem"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_for_remaining)
 
 
@@ -1487,23 +1497,24 @@ def test_final_math_misc_mocking_again_and_again_again_8_fixed() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_10: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_10
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, None)
+            func = _get_attr(mm, "_np_" + op_name, None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_8_fixed)
 
 
@@ -1524,23 +1535,24 @@ def test_final_math_misc_mocking_again_and_again_again_9() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_11: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_11
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name.lower(), None)
+            func = _get_attr(mm, "_np_" + op_name.lower(), None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_9)
 
 
@@ -1561,23 +1573,24 @@ def test_final_math_misc_mocking_again_and_again_again_10() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_12: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_12
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, None)
+            func = _get_attr(mm, "_np_" + op_name, None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_10)
 
 
@@ -1598,23 +1611,24 @@ def test_final_math_misc_mocking_again_and_again_again_11() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_13: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_13
 
     op_names = ["rem", "serialize_tensor", "write_file", "confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name + "_lower", None)
+            func = _get_attr(mm, "_np_" + op_name + "_lower", None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_11)
 
 
@@ -1635,23 +1649,24 @@ def test_final_math_misc_mocking_again_and_again_again_12() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_14: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_14
 
     op_names = ["serialize_tensor", "write_file"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name + "_lower", getattr(mm, "_np_" + op_name.lower() + "_camel", None))
+            func = _get_attr(mm, "_np_" + op_name + "_lower", _get_attr(mm, "_np_" + op_name.lower() + "_camel", None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_12)
 
 
@@ -1672,23 +1687,24 @@ def test_final_math_misc_mocking_again_and_again_again_13() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_15: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_15
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name + "_lower", None)
+            func = _get_attr(mm, "_np_" + op_name + "_lower", None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_13)
 
 
@@ -1709,23 +1725,24 @@ def test_final_math_misc_mocking_again_and_again_again_14() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_16: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_16
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, None)
+            func = _get_attr(mm, "_np_" + op_name, None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_14)
 
 
@@ -1746,23 +1763,24 @@ def test_final_math_misc_mocking_again_and_again_again_15() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_17: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_17
 
     op_names = ["rem", "serialize_tensor", "write_file"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, None)
+            func = _get_attr(mm, "_np_" + op_name, None)
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_15)
 
 
@@ -1783,23 +1801,24 @@ def test_final_math_misc_mocking_again_and_again_again_16() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return typing.cast("RealMockType2", np.ones((2, 2)))
+            _typed_ret_18: RealMockType2 = _cast_val("RealMockType2", np.ones((2, 2)))
+            return _typed_ret_18
 
     op_names = ["confusion_matrix", "descriptive", "distributions"]
     for op_name in op_names:
-        old = getattr(ops, op_name, None)
-        setattr(ops, op_name, RealMockType2)
+        old = _get_attr(ops, op_name, None)
+        _set_attr(ops, op_name, RealMockType2)
         try:
-            func = getattr(mm, "_np_" + op_name, getattr(mm, "_np_" + op_name.lower(), None))
+            func = _get_attr(mm, "_np_" + op_name, _get_attr(mm, "_np_" + op_name.lower(), None))
             if func:
                 func(np, np.ones((2, 2)), np.ones((2, 2)), np.ones((2, 2)))
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
             _caught_err = True
         finally:
             if old:
-                setattr(ops, op_name, old)
+                _set_attr(ops, op_name, old)
             else:
-                delattr(ops, op_name)
+                _del_attr(ops, op_name)
     assert callable(test_final_math_misc_mocking_again_and_again_again_16)
 
 
@@ -1836,24 +1855,24 @@ def _test_np_ops_subclass_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
     Args:
         _state: Shared test state dictionary.
     """
-    original_rawmatmul = getattr(_ops, "RawMatMul", None)
-    original_sparsedensematmul = getattr(_ops, "SparseDenseMatMul", None)
-    original_decode_csv = getattr(_ops, "decode_csv", None)
-    original_decode_image = getattr(_ops, "decode_image", None)
-    original_parse_example = getattr(_ops, "parse_example", None)
-    original_parse_tensor = getattr(_ops, "parse_tensor", None)
-    original_read_file = getattr(_ops, "read_file", None)
-    original_rem = getattr(_ops, "rem", None)
-    original_serialize_tensor = getattr(_ops, "serialize_tensor", None)
-    original_write_file = getattr(_ops, "write_file", None)
-    original_confusion_matrix = getattr(_ops, "confusion_matrix", None)
-    original_descriptive = getattr(_ops, "descriptive", None)
-    original_distributions = getattr(_ops, "distributions", None)
-    getattr(_state, "update")({"original_confusion_matrix": original_confusion_matrix, "original_decode_csv": original_decode_csv, "original_decode_image": original_decode_image, "original_descriptive": original_descriptive})
-    getattr(_state, "update")({"original_distributions": original_distributions, "original_parse_example": original_parse_example, "original_parse_tensor": original_parse_tensor, "original_rawmatmul": original_rawmatmul})
-    getattr(_state, "update")({"original_read_file": original_read_file, "original_rem": original_rem, "original_serialize_tensor": original_serialize_tensor, "original_sparsedensematmul": original_sparsedensematmul})
-    getattr(_state, "update")({"original_write_file": original_write_file})
-    _state.update(locals())
+    original_rawmatmul = _get_attr(_ops, "RawMatMul", None)
+    original_sparsedensematmul = _get_attr(_ops, "SparseDenseMatMul", None)
+    original_decode_csv = _get_attr(_ops, "decode_csv", None)
+    original_decode_image = _get_attr(_ops, "decode_image", None)
+    original_parse_example = _get_attr(_ops, "parse_example", None)
+    original_parse_tensor = _get_attr(_ops, "parse_tensor", None)
+    original_read_file = _get_attr(_ops, "read_file", None)
+    original_rem = _get_attr(_ops, "rem", None)
+    original_serialize_tensor = _get_attr(_ops, "serialize_tensor", None)
+    original_write_file = _get_attr(_ops, "write_file", None)
+    original_confusion_matrix = _get_attr(_ops, "confusion_matrix", None)
+    original_descriptive = _get_attr(_ops, "descriptive", None)
+    original_distributions = _get_attr(_ops, "distributions", None)
+    _get_attr(_state, "update")({"original_confusion_matrix": original_confusion_matrix, "original_decode_csv": original_decode_csv, "original_decode_image": original_decode_image, "original_descriptive": original_descriptive})
+    _get_attr(_state, "update")({"original_distributions": original_distributions, "original_parse_example": original_parse_example, "original_parse_tensor": original_parse_tensor, "original_rawmatmul": original_rawmatmul})
+    _get_attr(_state, "update")({"original_read_file": original_read_file, "original_rem": original_rem, "original_serialize_tensor": original_serialize_tensor, "original_sparsedensematmul": original_sparsedensematmul})
+    _get_attr(_state, "update")({"original_write_file": original_write_file})
+    _state.update(_caller_locals())
 
 
 def _test_np_ops_subclass_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1867,19 +1886,19 @@ def _test_np_ops_subclass_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
     (original_read_file, original_rem, original_serialize_tensor, original_sparsedensematmul) = (_state["original_read_file"], _state["original_rem"], _state["original_serialize_tensor"], _state["original_sparsedensematmul"])
     original_write_file = _state["original_write_file"]
     try:
-        setattr(_ops, "RawMatMul", MockCallableClass)
-        setattr(_ops, "SparseDenseMatMul", MockCallableClass)
-        setattr(_ops, "decode_csv", MockCallableClass)
-        setattr(_ops, "decode_image", MockCallableClass)
-        setattr(_ops, "parse_example", MockCallableClass)
-        setattr(_ops, "parse_tensor", MockCallableClass)
-        setattr(_ops, "read_file", MockCallableClass)
-        setattr(_ops, "rem", MockCallableClass)
-        setattr(_ops, "serialize_tensor", MockCallableClass)
-        setattr(_ops, "write_file", MockCallableClass)
-        setattr(_ops, "confusion_matrix", MockCallableClass)
-        setattr(_ops, "descriptive", MockCallableClass)
-        setattr(_ops, "distributions", MockCallableClass)
+        _set_attr(_ops, "RawMatMul", MockCallableClass)
+        _set_attr(_ops, "SparseDenseMatMul", MockCallableClass)
+        _set_attr(_ops, "decode_csv", MockCallableClass)
+        _set_attr(_ops, "decode_image", MockCallableClass)
+        _set_attr(_ops, "parse_example", MockCallableClass)
+        _set_attr(_ops, "parse_tensor", MockCallableClass)
+        _set_attr(_ops, "read_file", MockCallableClass)
+        _set_attr(_ops, "rem", MockCallableClass)
+        _set_attr(_ops, "serialize_tensor", MockCallableClass)
+        _set_attr(_ops, "write_file", MockCallableClass)
+        _set_attr(_ops, "confusion_matrix", MockCallableClass)
+        _set_attr(_ops, "descriptive", MockCallableClass)
+        _set_attr(_ops, "distributions", MockCallableClass)
         _np_rawmatmul(np, np.ones((2, 2)), np.ones((2, 2)))
         _np_sparsedensematmul(np, np.ones((2, 2)), np.ones((2, 2)))
         _np_decode_csv(np, "1,2,3")
@@ -1887,7 +1906,7 @@ def _test_np_ops_subclass_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _np_parse_example(np, b"")
         _np_parse_tensor(np, [1, 2], out_type=np.float32)
         _np_read_file(np, "/tmp/ml_switcheroo_test_file2.txt")
-        print("HASATTR REM:", hasattr(_ops, "rem"))
+        print("HASATTR REM:", _has_attr(_ops, "rem"))
         _np_rem(np, np.array([5]), np.array([2]))
         _np_serialize_tensor(np, np.ones((2, 2)))
         _np_write_file(np, "/tmp/ml_switcheroo_test_file2.txt", "hello")
@@ -1895,20 +1914,20 @@ def _test_np_ops_subclass_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _np_descriptive(np, np.array([1]))
         _np_distributions(np, np.array([1]))
     finally:
-        setattr(_ops, "RawMatMul", original_rawmatmul)
-        setattr(_ops, "SparseDenseMatMul", original_sparsedensematmul)
-        setattr(_ops, "decode_csv", original_decode_csv)
-        setattr(_ops, "decode_image", original_decode_image)
-        setattr(_ops, "parse_example", original_parse_example)
+        _set_attr(_ops, "RawMatMul", original_rawmatmul)
+        _set_attr(_ops, "SparseDenseMatMul", original_sparsedensematmul)
+        _set_attr(_ops, "decode_csv", original_decode_csv)
+        _set_attr(_ops, "decode_image", original_decode_image)
+        _set_attr(_ops, "parse_example", original_parse_example)
         _ops.parse_tensor = original_parse_tensor
         _ops.read_file = original_read_file
-        setattr(_ops, "rem", original_rem)
+        _set_attr(_ops, "rem", original_rem)
         _ops.serialize_tensor = original_serialize_tensor
-        setattr(_ops, "write_file", original_write_file)
+        _set_attr(_ops, "write_file", original_write_file)
         _ops.confusion_matrix = original_confusion_matrix
-        setattr(_ops, "descriptive", original_descriptive)
-        setattr(_ops, "distributions", original_distributions)
-    _state.update(locals())
+        _set_attr(_ops, "descriptive", original_descriptive)
+        _set_attr(_ops, "distributions", original_distributions)
+    _state.update(_caller_locals())
 
 
 def test_np_ops_subclass() -> None:
@@ -1916,8 +1935,8 @@ def test_np_ops_subclass() -> None:
     import pytest
 
     with pytest.raises(Exception, match=".*"):
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"pytest": pytest})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"pytest": pytest})
         for _sub_fn in (_test_np_ops_subclass_sub_1, _test_np_ops_subclass_sub_2):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -1940,14 +1959,14 @@ def _test_np_ops_missing_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
     del _ops.serialize_tensor
     del _ops.write_file
     del _ops.confusion_matrix
-    if hasattr(_ops, "descriptive"):
-        delattr(_ops, "descriptive")
-    if hasattr(_ops, "distributions"):
-        delattr(_ops, "distributions")
+    if _has_attr(_ops, "descriptive"):
+        _del_attr(_ops, "descriptive")
+    if _has_attr(_ops, "distributions"):
+        _del_attr(_ops, "distributions")
     _np_rawmatmul(np, np.ones((2, 2)), np.ones((2, 2)))
     _np_sparsedensematmul(np, np.ones((2, 2)), np.ones((2, 2)))
     _np_decode_csv(np, "1,2,3")
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_np_ops_missing_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1963,10 +1982,10 @@ def _test_np_ops_missing_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
     with pytest.raises(RuntimeError):
         _np_parse_tensor(np, b"")
     _np_read_file(np, "/tmp/ml_switcheroo_test_file2.txt")
-    print("HASATTR REM:", hasattr(_ops, "rem"))
+    print("HASATTR REM:", _has_attr(_ops, "rem"))
     _np_rem(np, np.array([5]), np.array([2]))
     _np_serialize_tensor(np, np.ones((2, 2)))
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_np_ops_missing_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -1979,47 +1998,47 @@ def _test_np_ops_missing_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
     _np_confusion_matrix(np, np.array([1]), np.array([1]))
     _np_descriptive(np, np.array([1]))
     _np_distributions(np, np.array([1]))
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_np_ops_missing() -> None:
     """Test function test_np_ops_missing."""
-    original_rawmatmul = getattr(_ops, "RawMatMul", None)
-    original_sparsedensematmul = getattr(_ops, "SparseDenseMatMul", None)
-    original_decode_csv = getattr(_ops, "decode_csv", None)
-    original_decode_image = getattr(_ops, "decode_image", None)
-    original_parse_example = getattr(_ops, "parse_example", None)
-    original_parse_tensor = getattr(_ops, "parse_tensor", None)
-    original_read_file = getattr(_ops, "read_file", None)
-    original_rem = getattr(_ops, "rem", None)
-    original_serialize_tensor = getattr(_ops, "serialize_tensor", None)
-    original_write_file = getattr(_ops, "write_file", None)
-    original_confusion_matrix = getattr(_ops, "confusion_matrix", None)
-    original_descriptive = getattr(_ops, "descriptive", None)
-    original_distributions = getattr(_ops, "distributions", None)
+    original_rawmatmul = _get_attr(_ops, "RawMatMul", None)
+    original_sparsedensematmul = _get_attr(_ops, "SparseDenseMatMul", None)
+    original_decode_csv = _get_attr(_ops, "decode_csv", None)
+    original_decode_image = _get_attr(_ops, "decode_image", None)
+    original_parse_example = _get_attr(_ops, "parse_example", None)
+    original_parse_tensor = _get_attr(_ops, "parse_tensor", None)
+    original_read_file = _get_attr(_ops, "read_file", None)
+    original_rem = _get_attr(_ops, "rem", None)
+    original_serialize_tensor = _get_attr(_ops, "serialize_tensor", None)
+    original_write_file = _get_attr(_ops, "write_file", None)
+    original_confusion_matrix = _get_attr(_ops, "confusion_matrix", None)
+    original_descriptive = _get_attr(_ops, "descriptive", None)
+    original_distributions = _get_attr(_ops, "distributions", None)
     try:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"original_confusion_matrix": original_confusion_matrix, "original_decode_csv": original_decode_csv, "original_decode_image": original_decode_image, "original_descriptive": original_descriptive})
-        getattr(_state, "update")({"original_distributions": original_distributions, "original_parse_example": original_parse_example, "original_parse_tensor": original_parse_tensor, "original_rawmatmul": original_rawmatmul})
-        getattr(_state, "update")({"original_read_file": original_read_file, "original_rem": original_rem, "original_serialize_tensor": original_serialize_tensor, "original_sparsedensematmul": original_sparsedensematmul})
-        getattr(_state, "update")({"original_write_file": original_write_file})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"original_confusion_matrix": original_confusion_matrix, "original_decode_csv": original_decode_csv, "original_decode_image": original_decode_image, "original_descriptive": original_descriptive})
+        _get_attr(_state, "update")({"original_distributions": original_distributions, "original_parse_example": original_parse_example, "original_parse_tensor": original_parse_tensor, "original_rawmatmul": original_rawmatmul})
+        _get_attr(_state, "update")({"original_read_file": original_read_file, "original_rem": original_rem, "original_serialize_tensor": original_serialize_tensor, "original_sparsedensematmul": original_sparsedensematmul})
+        _get_attr(_state, "update")({"original_write_file": original_write_file})
         for _sub_fn in (_test_np_ops_missing_sub_1, _test_np_ops_missing_sub_2, _test_np_ops_missing_sub_3):
             _sub_fn(_state)
         assert len(_state) > 0
     finally:
-        setattr(_ops, "RawMatMul", original_rawmatmul)
-        setattr(_ops, "SparseDenseMatMul", original_sparsedensematmul)
-        setattr(_ops, "decode_csv", original_decode_csv)
-        setattr(_ops, "decode_image", original_decode_image)
-        setattr(_ops, "parse_example", original_parse_example)
-        setattr(_ops, "parse_tensor", original_parse_tensor)
-        setattr(_ops, "read_file", original_read_file)
-        setattr(_ops, "rem", original_rem)
-        setattr(_ops, "serialize_tensor", original_serialize_tensor)
-        setattr(_ops, "write_file", original_write_file)
-        setattr(_ops, "confusion_matrix", original_confusion_matrix)
-        setattr(_ops, "descriptive", original_descriptive)
-        setattr(_ops, "distributions", original_distributions)
+        _set_attr(_ops, "RawMatMul", original_rawmatmul)
+        _set_attr(_ops, "SparseDenseMatMul", original_sparsedensematmul)
+        _set_attr(_ops, "decode_csv", original_decode_csv)
+        _set_attr(_ops, "decode_image", original_decode_image)
+        _set_attr(_ops, "parse_example", original_parse_example)
+        _set_attr(_ops, "parse_tensor", original_parse_tensor)
+        _set_attr(_ops, "read_file", original_read_file)
+        _set_attr(_ops, "rem", original_rem)
+        _set_attr(_ops, "serialize_tensor", original_serialize_tensor)
+        _set_attr(_ops, "write_file", original_write_file)
+        _set_attr(_ops, "confusion_matrix", original_confusion_matrix)
+        _set_attr(_ops, "descriptive", original_descriptive)
+        _set_attr(_ops, "distributions", original_distributions)
 
 
 def test_confusion_matrix_num_classes() -> None:
@@ -2038,25 +2057,25 @@ def test__np_affineconfig() -> None:
 def test__np_all_gather() -> None:
     """Test function test__np_all_gather."""
     with pytest.raises(AttributeError):
-        as_tensor(getattr(mm, "_np_all_gather"))(np, np.ones((2, 2)))
+        as_tensor(_get_attr(mm, "_np_all_gather"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        as_tensor(getattr(mm, "_np_all_gather"))(np)
+        as_tensor(_get_attr(mm, "_np_all_gather"))(np)
 
 
 def test__np_all_reduce() -> None:
     """Test function test__np_all_reduce."""
     with pytest.raises(AttributeError):
-        as_tensor(getattr(mm, "_np_all_reduce"))(np, np.ones((2, 2)))
+        as_tensor(_get_attr(mm, "_np_all_reduce"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        as_tensor(getattr(mm, "_np_all_reduce"))(np)
+        as_tensor(_get_attr(mm, "_np_all_reduce"))(np)
 
 
 def test__np_all_to_all() -> None:
     """Test function test__np_all_to_all."""
     with pytest.raises(AttributeError):
-        as_tensor(getattr(mm, "_np_all_to_all"))(np, np.ones((2, 2)))
+        as_tensor(_get_attr(mm, "_np_all_to_all"))(np, np.ones((2, 2)))
     with pytest.raises(AttributeError):
-        as_tensor(getattr(mm, "_np_all_to_all"))(np)
+        as_tensor(_get_attr(mm, "_np_all_to_all"))(np)
 
 
 def test__np_append() -> None:

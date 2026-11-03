@@ -8,6 +8,7 @@ import yaml
 from ml_switcheroo_ir import AttributeValue
 
 from ml_switcheroo_compiler.backends.registry import get_active_backend
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 
 
@@ -36,7 +37,7 @@ def _get_tiling_config() -> dict[str, AttributeValue]:
         return {}
 
     backend = get_active_backend()
-    backend_name = getattr(backend, "__name__", type(backend).__name__).lower() if backend else ""
+    backend_name = _get_attr(backend, "__name__", type(backend).__name__).lower() if backend else ""
 
     profile_name = "default_wgsl" if ("wgsl" in backend_name or "webgpu" in backend_name) else "default_wasm"
     raw_profiles = heuristics.get("tiling_profiles", {})
@@ -133,18 +134,18 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
 
     modified = False
     for node in list(graph.nodes.values()):
-        op_type = getattr(node, "op_type", "").lower()
+        op_type = _get_attr(node, "op_type", "").lower()
         if op_type not in tiling_config:
             continue
 
         op_config = tiling_config[op_type]
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
 
         if not isinstance(op_config, dict) or not op_config or not shape:
             continue
 
         if _should_tile(op_type, shape, op_config):
-            if not hasattr(node, "attributes"):
+            if not _has_attr(node, "attributes"):
                 node.attributes = {}
 
             # Perform actual IR mutation (splitting the shape for tile chunks)

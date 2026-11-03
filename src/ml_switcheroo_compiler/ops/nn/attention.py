@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, get_active_backend
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -31,7 +31,7 @@ def scaled_dot_product_attention(q: Tensor, k: Tensor, v: Tensor, scale_factor: 
             (v.data if type(v).__name__ == "Tensor" else v),
             (scale_factor.data if type(scale_factor).__name__ == "Tensor" else scale_factor),
         )
-        return Tensor(data, TensorConfig(getattr(data, "shape", q.shape), q.dtype, q.device))
+        return Tensor(data, TensorConfig(_get_attr(data, "shape", q.shape), q.dtype, q.device))
     return _emit_shape_node("ScaledDotProductAttention", [q, k, v, scale_factor], {}, q.shape, q.dtype)
 
 
@@ -54,4 +54,5 @@ class ScaledDotProductAttention(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(q, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(q, "shape", ())
+        return _typed_ret_1

@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.nn_polyfills import (
     _np_log_poisson_loss,
     _stirling_gammaln,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 from ml_switcheroo_compiler.transforms.autodiff_rules.custom_rules import (
     log_poisson_loss_jvp,
@@ -77,8 +78,8 @@ def test_log_poisson_loss_vjp_rule() -> None:
 
     assert target_grad_id in graph.nodes
     assert pred_grad_id in graph.nodes
-    assert as_tensor(getattr(graph.nodes, "__getitem__")(target_grad_id)).op_type == "ZerosLike"
-    assert as_tensor(getattr(graph.nodes, "__getitem__")(pred_grad_id)).op_type == "Mul"
+    assert as_tensor(_get_attr(graph.nodes, "__getitem__")(target_grad_id)).op_type == "ZerosLike"
+    assert as_tensor(_get_attr(graph.nodes, "__getitem__")(pred_grad_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_vjp_nonlog_rule() -> None:
@@ -96,7 +97,7 @@ def test_log_poisson_loss_vjp_nonlog_rule() -> None:
     vjp_ids = log_poisson_loss_vjp(graph, node, "cotangent_2")
     assert len(vjp_ids) == 2
     assert vjp_ids[1] in graph.nodes
-    assert as_tensor(getattr(graph.nodes, "__getitem__")(as_tensor(getattr(vjp_ids, "__getitem__")(1)))).op_type == "Mul"
+    assert as_tensor(_get_attr(graph.nodes, "__getitem__")(as_tensor(_get_attr(vjp_ids, "__getitem__")(1)))).op_type == "Mul"
 
 
 def test_log_poisson_loss_jvp_rule() -> None:
@@ -113,7 +114,7 @@ def test_log_poisson_loss_jvp_rule() -> None:
 
     jvp_id = log_poisson_loss_jvp(graph, node, ["tan_targets", "tan_log_inputs"])
     assert jvp_id in graph.nodes
-    assert as_tensor(getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
+    assert as_tensor(_get_attr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_jvp_nonlog_rule() -> None:
@@ -130,7 +131,7 @@ def test_log_poisson_loss_jvp_nonlog_rule() -> None:
 
     jvp_id = log_poisson_loss_jvp(graph, node, ["tan_targets", "tan_inputs"])
     assert jvp_id in graph.nodes
-    assert as_tensor(getattr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
+    assert as_tensor(_get_attr(graph.nodes, "__getitem__")(jvp_id)).op_type == "Mul"
 
 
 def test_log_poisson_loss_numerical_gradcheck() -> None:

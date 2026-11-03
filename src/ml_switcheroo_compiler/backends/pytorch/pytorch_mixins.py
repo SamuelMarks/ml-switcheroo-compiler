@@ -5,6 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_ir import LogicalNode
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 class PyTorchScatterVisitor:
@@ -134,7 +135,7 @@ class PyTorchDistributedVisitor:
         str: Result.
         """
         tensor = input_vars[0]
-        src = getattr(node, "attributes", {}).get("root", 0)
+        src = _get_attr(node, "attributes", {}).get("root", 0)
         return f"torch.distributed.broadcast({tensor}, src={src})"
 
 
@@ -162,9 +163,9 @@ class PyTorchNNMixin:
         Args:
             line (str): Line of code to append.
         """
-        if hasattr(self, "add_line"):
+        if _has_attr(self, "add_line"):
             self.add_line(line)
-        elif self.generator and hasattr(self.generator, "add_line"):
+        elif self.generator and _has_attr(self.generator, "add_line"):
             self.generator.add_line(line)
 
     def visit_Send(self, node: LogicalNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -198,9 +199,9 @@ class PyTorchNNMixin:
         tag = node.attributes.get("tag", 0)
         shape = node.attributes.get("shape", ())
         dtype = "torch." + str(node.attributes.get("dtype", "float32")).lower()
-        nid = getattr(node, "id", "")
+        nid = _get_attr(node, "id", "")
         res_var = f"v_{nid.replace('-', '_')}"
-        self._add_line(f"        {res_var} = torch.empty({list(getattr(shape, '__iter__')())}, dtype={dtype}, device=self.device)")
+        self._add_line(f"        {res_var} = torch.empty({list(_get_attr(shape, '__iter__')())}, dtype={dtype}, device=self.device)")
         self._add_line(f"        torch.distributed.irecv({res_var}, src={src}, tag={tag})")
         return res_var
 
@@ -215,7 +216,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch conv1d expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         stride = attrs.get("stride", 1)
         padding = attrs.get("padding", 0)
         dilation = attrs.get("dilation", 1)
@@ -234,7 +235,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch conv2d expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         stride = attrs.get("stride", 1)
         padding = attrs.get("padding", 0)
         dilation = attrs.get("dilation", 1)
@@ -253,7 +254,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch conv3d expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         stride = attrs.get("stride", 1)
         padding = attrs.get("padding", 0)
         dilation = attrs.get("dilation", 1)
@@ -272,7 +273,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch attention expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         is_causal = bool(attrs.get("is_causal", False))
         q, k, v = input_vars[0], input_vars[1], input_vars[2]
         return f"torch.nn.functional.scaled_dot_product_attention({q}, {k}, {v}, is_causal={is_causal})"
@@ -301,7 +302,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch layer_norm expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         shape = attrs.get("normalized_shape", [1])
         eps = attrs.get("eps", 1e-5)
         weight = input_vars[1] if len(input_vars) > 1 else "None"
@@ -319,7 +320,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch rms_norm expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         shape = attrs.get("normalized_shape", [1])
         eps = attrs.get("eps", 1e-5)
         weight = input_vars[1] if len(input_vars) > 1 else "None"
@@ -336,7 +337,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch batch_norm expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         eps = attrs.get("eps", 1e-5)
         mean = input_vars[1] if len(input_vars) > 1 else "None"
         var = input_vars[2] if len(input_vars) > 2 else "None"
@@ -353,7 +354,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch group_norm expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         num_groups = attrs.get("num_groups", 1)
         eps = attrs.get("eps", 1e-5)
         return f"torch.nn.functional.group_norm({input_vars[0]}, num_groups={num_groups}, eps={eps})"
@@ -369,7 +370,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch max_pool2d expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         kernel_size = attrs.get("kernel_size", 2)
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.max_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
@@ -385,7 +386,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch avg_pool2d expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         kernel_size = attrs.get("kernel_size", 2)
         stride = attrs.get("stride", kernel_size)
         return f"torch.nn.functional.avg_pool2d({input_vars[0]}, kernel_size={kernel_size}, stride={stride})"
@@ -401,7 +402,7 @@ class PyTorchNNMixin:
         Returns:
             str: Generated PyTorch adaptive_avg_pool2d expression.
         """
-        attrs = getattr(node, "attributes", {}) or {}
+        attrs = _get_attr(node, "attributes", {}) or {}
         output_size = attrs.get("output_size", [1, 1])
         return f"torch.nn.functional.adaptive_avg_pool2d({input_vars[0]}, output_size={output_size})"
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -22,8 +22,8 @@ class CTCLoss(OpDef):
             The inferred shape tuple (typically containing the batch size), or an empty tuple if it cannot be determined.
         """
         log_probs = args[0] if len(args) > 0 else kwargs.get("log_probs")
-        if hasattr(log_probs, "shape"):
-            return (getattr(log_probs, "shape")[1],) if len(getattr(log_probs, "shape")) >= MATRIX_RANK else ()
+        if _has_attr(log_probs, "shape"):
+            return (_get_attr(log_probs, "shape")[1],) if len(_get_attr(log_probs, "shape")) >= MATRIX_RANK else ()
         return ()
 
 
@@ -43,9 +43,9 @@ class FractionalMaxPool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
             return tuple(s)
         return ()
 
@@ -66,9 +66,9 @@ class AdaptiveAvgPool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
             return tuple(s)
         return ()
 
@@ -89,9 +89,9 @@ class AdaptiveMaxPool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
             return tuple(s)
         return ()
 
@@ -146,9 +146,9 @@ class FractionalMaxPool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-3], s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1), getattr(output_size, "__getitem__")(2)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
             return tuple(s)
         return ()
 
@@ -169,9 +169,9 @@ class AdaptiveAvgPool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-3], s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1), getattr(output_size, "__getitem__")(2)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
             return tuple(s)
         return ()
 
@@ -192,9 +192,9 @@ class AdaptiveMaxPool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-3], s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1), getattr(output_size, "__getitem__")(2)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
             return tuple(s)
         return ()
 
@@ -215,9 +215,9 @@ class MaxUnpool1D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
-        if output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-1] = getattr(output_size, "__getitem__")(0)
+        if output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-1] = _get_attr(output_size, "__getitem__")(0)
             return tuple(s)
         return ()
 
@@ -238,9 +238,9 @@ class MaxUnpool2D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
-        if output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1)
+        if output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1)
             return tuple(s)
         return ()
 
@@ -261,9 +261,9 @@ class MaxUnpool3D(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[2] if len(args) > 2 else kwargs.get("output_size")
-        if output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-3], s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1), getattr(output_size, "__getitem__")(2)
+        if output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
             return tuple(s)
         return ()
 
@@ -284,9 +284,9 @@ class AdaptiveMaxPool3D_Indices(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-3], s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1), getattr(output_size, "__getitem__")(2)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
             return tuple(s)
         return ()
 
@@ -307,9 +307,9 @@ class FractionalMaxPool3D_Indices(OpDef):
         """
         operand = args[0] if len(args) > 0 else kwargs.get("operand")
         output_size = args[1] if len(args) > 1 else kwargs.get("output_size")
-        if hasattr(operand, "shape") and output_size is not None and hasattr(output_size, "__getitem__"):
-            s = list(getattr(operand, "shape"))
-            s[-3], s[-2], s[-1] = getattr(output_size, "__getitem__")(0), getattr(output_size, "__getitem__")(1), getattr(output_size, "__getitem__")(2)
+        if _has_attr(operand, "shape") and output_size is not None and _has_attr(output_size, "__getitem__"):
+            s = list(_get_attr(operand, "shape"))
+            s[-3], s[-2], s[-1] = _get_attr(output_size, "__getitem__")(0), _get_attr(output_size, "__getitem__")(1), _get_attr(output_size, "__getitem__")(2)
             return tuple(s)
         return ()
 

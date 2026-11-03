@@ -8,6 +8,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.backends.numpy.eager.vision_color as vc_mod
 from ml_switcheroo_compiler.backends.numpy.eager.vision_color import _np_adjust_brightness, _np_adjust_contrast, _np_adjust_hue, _np_adjust_saturation, _np_auto_contrast, _np_equalization, _np_invert, _np_posterize, _np_rgb_to_grayscale, _np_solarize
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -29,7 +30,7 @@ def test_numpy_vision_color_eager() -> None:
     _np_auto_contrast(np, np.ones((2, 2, 3), dtype=np.uint8) * 128)
     img_ac = np.array([[[0, 0, 0], [255, 255, 255]]], dtype=np.uint8)
     _np_auto_contrast(np, img_ac)
-    original_hist = as_tensor(getattr(vc_mod, "np")).histogram
+    original_hist = as_tensor(_get_attr(vc_mod, "np")).histogram
 
     def mock_hist(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate and process the mock hist operation.
@@ -43,11 +44,11 @@ def test_numpy_vision_color_eager() -> None:
         """
         return (np.array([1] * 256), None)
 
-    setattr(as_tensor(getattr(vc_mod, "np")), "histogram", mock_hist)
+    _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", mock_hist)
     try:
         _np_equalization(np, img)
     finally:
-        setattr(as_tensor(getattr(vc_mod, "np")), "histogram", original_hist)
+        _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", original_hist)
 
     def mock_hist2(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
         """Evaluate and process the mock hist2 operation.
@@ -63,11 +64,11 @@ def test_numpy_vision_color_eager() -> None:
         a[0] = 100
         return (a, None)
 
-    setattr(as_tensor(getattr(vc_mod, "np")), "histogram", mock_hist2)
+    _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", mock_hist2)
     try:
         _np_equalization(np, img)
     finally:
-        setattr(as_tensor(getattr(vc_mod, "np")), "histogram", original_hist)
+        _set_attr(as_tensor(_get_attr(vc_mod, "np")), "histogram", original_hist)
     _np_invert(np, img)
     _np_posterize(np, img, bits=4)
     _np_rgb_to_grayscale(np, img)

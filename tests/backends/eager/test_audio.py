@@ -27,6 +27,7 @@ from ml_switcheroo_compiler.backends.eager.audio import (
     mfcc_eager,
     stft_eager,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 from tests.testing_utils import as_callable, as_tensor
 
@@ -44,10 +45,10 @@ def test_get_window() -> None:
     """Test _get_window across all supported window types and boundary lengths."""
     # Length <= 0
     w_empty = _get_window(None, "hann", 0)
-    assert as_tensor(getattr(w_empty, "shape")) == (0,)
+    assert as_tensor(_get_attr(w_empty, "shape")) == (0,)
 
     w_neg = _get_window(np, "hann", -5)
-    assert as_tensor(getattr(w_neg, "shape")) == (0,)
+    assert as_tensor(_get_attr(w_neg, "shape")) == (0,)
 
     # Length == 1
     w_one = _get_window(None, "hann", 1)
@@ -56,28 +57,28 @@ def test_get_window() -> None:
     # Hann window
     w_hann = _get_window(np, "hann", 5)
     assert as_callable(len)(w_hann) == 5
-    assert as_callable(np.isclose)(as_tensor(getattr(w_hann, "__getitem__")(0)), 0.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(w_hann, "__getitem__")(2)), 1.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(w_hann, "__getitem__")(4)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_hann, "__getitem__")(0)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_hann, "__getitem__")(2)), 1.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_hann, "__getitem__")(4)), 0.0)
 
     # Hamming window
     w_hamm = _get_window(None, "hamming", 5)
     assert as_callable(len)(w_hamm) == 5
-    assert as_callable(np.isclose)(as_tensor(getattr(w_hamm, "__getitem__")(0)), 0.08)
-    assert as_callable(np.isclose)(as_tensor(getattr(w_hamm, "__getitem__")(2)), 1.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_hamm, "__getitem__")(0)), 0.08)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_hamm, "__getitem__")(2)), 1.0)
 
     # Blackman window
     w_black = _get_window(np, "blackman", 7)
     assert as_callable(len)(w_black) == 7
-    assert as_callable(np.isclose)(as_tensor(getattr(w_black, "__getitem__")(0)), 0.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(w_black, "__getitem__")(3)), 1.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_black, "__getitem__")(0)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_black, "__getitem__")(3)), 1.0)
 
     # Bartlett window
     w_bart = _get_window(None, "bartlett", 5)
     assert as_callable(len)(w_bart) == 5
-    assert as_callable(np.isclose)(as_tensor(getattr(w_bart, "__getitem__")(0)), 0.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(w_bart, "__getitem__")(2)), 1.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(w_bart, "__getitem__")(4)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_bart, "__getitem__")(0)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_bart, "__getitem__")(2)), 1.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(w_bart, "__getitem__")(4)), 0.0)
 
     # Rectangular / default window
     w_rect = _get_window(np, "rectangular", 6)
@@ -115,7 +116,7 @@ def test_mel_filterbank() -> None:
         upper_edge_hertz=8000.0,
     )
     matrix = _generate_mel_filterbank_matrix(None, config)
-    assert as_tensor(getattr(matrix, "shape")) == (65, 20)
+    assert as_tensor(_get_attr(matrix, "shape")) == (65, 20)
     assert as_callable(np.all)(as_tensor(matrix) >= as_tensor(0.0))
     assert as_callable(np.all)(as_tensor(matrix) <= as_tensor(1.0))
 
@@ -126,13 +127,13 @@ def test_mel_filterbank() -> None:
     # Calling with spectrogram performs projection
     spec = np.ones((4, 10, 65), dtype=np.float32)
     mel_spec = mel_filterbank_eager(np, spec, config)
-    assert as_tensor(getattr(mel_spec, "shape")) == (4, 10, 20)
+    assert as_tensor(_get_attr(mel_spec, "shape")) == (4, 10, 20)
 
 
 def test_power_to_db() -> None:
     """Test decibel conversion with and without dynamic range clipping."""
     # None case
-    assert as_tensor(getattr(_power_to_db(None, None), "shape")) == (0,)
+    assert as_tensor(_get_attr(_power_to_db(None, None), "shape")) == (0,)
 
     power = np.array([1.0, 0.1, 0.01, 1e-5], dtype=np.float32)
     # Without clipping
@@ -142,23 +143,23 @@ def test_power_to_db() -> None:
 
     # With top_db = 25.0, values below -25 should be clamped to -25
     db_clipped = _power_to_db(None, power, top_db=25.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(db_clipped, "__getitem__")(0)), 0.0)
-    assert as_callable(np.isclose)(as_tensor(getattr(db_clipped, "__getitem__")(3)), -25.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(db_clipped, "__getitem__")(0)), 0.0)
+    assert as_callable(np.isclose)(as_tensor(_get_attr(db_clipped, "__getitem__")(3)), -25.0)
 
 
 def test_apply_dct() -> None:
     """Test Discrete Cosine Transform computation and boundary conditions."""
     # None input
-    assert as_tensor(getattr(_apply_dct(None, 13), "shape")) == (0,)
+    assert as_tensor(_get_attr(_apply_dct(None, 13), "shape")) == (0,)
 
     # 0 bins or 0 num_mfccs
-    assert as_tensor(getattr(_apply_dct(np.ones((5, 0)), 10), "shape")) == (5, 0)
-    assert as_tensor(getattr(_apply_dct(np.ones((5, 10)), 0), "shape")) == (5, 0)
+    assert as_tensor(_get_attr(_apply_dct(np.ones((5, 0)), 10), "shape")) == (5, 0)
+    assert as_tensor(_get_attr(_apply_dct(np.ones((5, 10)), 0), "shape")) == (5, 0)
 
     # Normal DCT
     log_mel = np.ones((2, 8, 20), dtype=np.float32)
     mfccs = _apply_dct(log_mel, 13)
-    assert as_tensor(getattr(mfccs, "shape")) == (2, 8, 13)
+    assert as_tensor(_get_attr(mfccs, "shape")) == (2, 8, 13)
 
 
 def test_mfcc_eager() -> None:
@@ -172,20 +173,20 @@ def test_mfcc_eager() -> None:
 
     # None spectrogram
     mfcc_default = mfcc_eager(None, None, config)
-    assert as_tensor(getattr(mfcc_default, "shape")) == (1, 12)
+    assert as_tensor(_get_attr(mfcc_default, "shape")) == (1, 12)
 
     # Given spectrogram
     spec = np.random.uniform(0.1, 10.0, size=(2, 15, 65)).astype(np.float32)
     mfcc_out = mfcc_eager(np, spec, config)
-    assert as_tensor(getattr(mfcc_out, "shape")) == (2, 15, 12)
+    assert as_tensor(_get_attr(mfcc_out, "shape")) == (2, 15, 12)
 
 
 def test_tensor_conversion_helpers() -> None:
     """Test framework conversion utilities."""
     # None inputs
-    assert as_tensor(getattr(_convert_to_np(None, None, False, False), "shape")) == (0,)
-    assert as_tensor(getattr(_to_backend_tensor("test", None, None, None), "shape")) == (0,)
-    assert as_tensor(getattr(_to_backend_tensor_complex("test", None, None, None), "shape")) == (0,)
+    assert as_tensor(_get_attr(_convert_to_np(None, None, False, False), "shape")) == (0,)
+    assert as_tensor(_get_attr(_to_backend_tensor("test", None, None, None), "shape")) == (0,)
+    assert as_tensor(_get_attr(_to_backend_tensor_complex("test", None, None, None), "shape")) == (0,)
 
     # Dummy class with numpy method
     class DummyTorch:
@@ -217,65 +218,65 @@ def test_stft_and_istft_pipeline() -> None:
     """Test STFT and ISTFT eager execution and near-lossless reconstruction."""
     # Edge cases: None input
     cfg = STFTConfig(frame_length=16, frame_step=8, fft_length=16, window_fn="hann", pad_end=False)
-    assert as_tensor(getattr(stft_eager(None, None, cfg), "shape")) == (0, 0)
-    assert as_tensor(getattr(istft_eager(None, None, cfg), "shape")) == (0,)
+    assert as_tensor(_get_attr(stft_eager(None, None, cfg), "shape")) == (0, 0)
+    assert as_tensor(_get_attr(istft_eager(None, None, cfg), "shape")) == (0,)
 
     # Audio too short without pad_end
     short_audio = np.ones((10,), dtype=np.float32)
-    assert as_tensor(getattr(stft_eager(np, short_audio, cfg), "shape")) == (0, 9)
+    assert as_tensor(_get_attr(stft_eager(np, short_audio, cfg), "shape")) == (0, 9)
 
     short_audio_2d = np.ones((2, 10), dtype=np.float32)
-    assert as_tensor(getattr(stft_eager(np, short_audio_2d, cfg), "shape")) == (2, 0, 9)
+    assert as_tensor(_get_attr(stft_eager(np, short_audio_2d, cfg), "shape")) == (2, 0, 9)
 
     # Audio with pad_end=True and remainder != 0
     cfg_padded = STFTConfig(frame_length=16, frame_step=8, fft_length=16, window_fn="hann", pad_end=True)
     stft_short_padded = stft_eager(None, short_audio, cfg_padded)
-    assert as_tensor(getattr(as_tensor(getattr(stft_short_padded, "shape")), "__getitem__")(1)) == 9
-    assert getattr(getattr(stft_short_padded, "shape"), "__getitem__")(0) >= 1
+    assert as_tensor(_get_attr(as_tensor(_get_attr(stft_short_padded, "shape")), "__getitem__")(1)) == 9
+    assert _get_attr(_get_attr(stft_short_padded, "shape"), "__getitem__")(0) >= 1
 
     audio_rem = np.ones((20,), dtype=np.float32)
     stft_rem_padded = stft_eager(None, audio_rem, cfg_padded)
-    assert as_tensor(getattr(as_tensor(getattr(stft_rem_padded, "shape")), "__getitem__")(1)) == 9
-    assert as_tensor(getattr(as_tensor(getattr(stft_rem_padded, "shape")), "__getitem__")(0)) == 2
+    assert as_tensor(_get_attr(as_tensor(_get_attr(stft_rem_padded, "shape")), "__getitem__")(1)) == 9
+    assert as_tensor(_get_attr(as_tensor(_get_attr(stft_rem_padded, "shape")), "__getitem__")(0)) == 2
 
     # Normal 1-D STFT
     t = np.linspace(0.0, 1.0, 320, endpoint=False, dtype=np.float32)
     signal_1d = np.sin(2.0 * np.pi * 440.0 * t).astype(np.float32)
 
     stft_1d = stft_eager(None, signal_1d, cfg)
-    assert as_tensor(getattr(stft_1d, "ndim")) == 2
-    assert as_tensor(getattr(as_tensor(getattr(stft_1d, "shape")), "__getitem__")(1)) == 9  # 16 // 2 + 1
+    assert as_tensor(_get_attr(stft_1d, "ndim")) == 2
+    assert as_tensor(_get_attr(as_tensor(_get_attr(stft_1d, "shape")), "__getitem__")(1)) == 9  # 16 // 2 + 1
 
     # Normal 2-D batched STFT
     signal_2d = np.stack([signal_1d, signal_1d * 0.5], axis=0)
     stft_2d = stft_eager(np, signal_2d, cfg)
-    assert as_tensor(getattr(stft_2d, "ndim")) == 3
-    assert as_tensor(getattr(as_tensor(getattr(stft_2d, "shape")), "__getitem__")(0)) == 2
-    assert as_tensor(getattr(as_tensor(getattr(stft_2d, "shape")), "__getitem__")(2)) == 9
+    assert as_tensor(_get_attr(stft_2d, "ndim")) == 3
+    assert as_tensor(_get_attr(as_tensor(_get_attr(stft_2d, "shape")), "__getitem__")(0)) == 2
+    assert as_tensor(_get_attr(as_tensor(_get_attr(stft_2d, "shape")), "__getitem__")(2)) == 9
 
     # Reconstruct 1-D via istft_eager
     rec_1d = istft_eager(None, stft_1d, cfg, center=False)
-    assert as_tensor(getattr(rec_1d, "ndim")) == 1
+    assert as_tensor(_get_attr(rec_1d, "ndim")) == 1
     assert as_callable(len)(rec_1d) > 0
 
     # Reconstruct 2-D via istft_eager
     rec_2d = istft_eager(np, stft_2d, cfg, center=True)
-    assert as_tensor(getattr(rec_2d, "ndim")) == 2
-    assert as_tensor(getattr(as_tensor(getattr(rec_2d, "shape")), "__getitem__")(0)) == 2
+    assert as_tensor(_get_attr(rec_2d, "ndim")) == 2
+    assert as_tensor(_get_attr(as_tensor(_get_attr(rec_2d, "shape")), "__getitem__")(0)) == 2
 
     # Test with custom provided window
     custom_win = np.hanning(16).astype(np.float32)
     stft_custom = _apply_stft_batch(None, signal_1d, custom_win, cfg)
-    assert as_tensor(getattr(stft_custom, "shape")) == as_tensor(getattr(stft_1d, "shape"))
+    assert as_tensor(_get_attr(stft_custom, "shape")) == as_tensor(_get_attr(stft_1d, "shape"))
 
     # Custom window with wrong size triggers fallback
     stft_wrong_win = _apply_stft_batch(None, signal_1d, np.ones((5,), dtype=np.float32), cfg)
-    assert as_tensor(getattr(stft_wrong_win, "shape")) == as_tensor(getattr(stft_1d, "shape"))
+    assert as_tensor(_get_attr(stft_wrong_win, "shape")) == as_tensor(_get_attr(stft_1d, "shape"))
 
     # Empty stft into istft
-    assert as_tensor(getattr(_run_scipy_istft(None, None, (16, 8, 16), False), "shape")) == (0,)
-    assert as_tensor(getattr(_run_scipy_istft(np.zeros((0, 9), dtype=np.complex64), None, (16, 8, 16), False), "shape")) == (0,)
-    assert as_tensor(getattr(_apply_istft_batch(None, np.zeros((0, 9), dtype=np.complex64), None, cfg), "shape")) == (0,)
+    assert as_tensor(_get_attr(_run_scipy_istft(None, None, (16, 8, 16), False), "shape")) == (0,)
+    assert as_tensor(_get_attr(_run_scipy_istft(np.zeros((0, 9), dtype=np.complex64), None, (16, 8, 16), False), "shape")) == (0,)
+    assert as_tensor(_get_attr(_apply_istft_batch(None, np.zeros((0, 9), dtype=np.complex64), None, cfg), "shape")) == (0,)
 
     # Explicitly test _run_scipy_istft with win=None to verify default window branch
     rec_no_win = _run_scipy_istft(stft_1d, None, (16, 8, 16), False)

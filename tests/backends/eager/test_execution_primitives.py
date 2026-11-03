@@ -32,6 +32,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_logical import (
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_string_io import _np_writefile
 from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import _assert
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -58,19 +59,19 @@ def test_tensorarray_read_and_write() -> None:
 
     # In-bounds list write
     w1 = _np_tensorarraywrite(np, handle_list, 1, 99)
-    assert as_tensor(getattr(w1, "__getitem__")(1)) == 99
+    assert as_tensor(_get_attr(w1, "__getitem__")(1)) == 99
     assert handle_list[1] == 20  # non-mutating copy
 
     # Expanding list write
     w_expand = _np_tensorarraywrite(np, handle_list, 5, 555)
     assert as_callable(len)(w_expand) == 6
-    assert as_tensor(getattr(w_expand, "__getitem__")(5)) == 555
-    assert as_tensor(getattr(w_expand, "__getitem__")(3)) is None
+    assert as_tensor(_get_attr(w_expand, "__getitem__")(5)) == 555
+    assert as_tensor(_get_attr(w_expand, "__getitem__")(3)) is None
 
     # Write on None creates new list
     w_none = _np_tensorarraywrite(np, None, 2, "hello")
     assert as_callable(len)(w_none) == 3
-    assert as_tensor(getattr(w_none, "__getitem__")(2)) == "hello"
+    assert as_tensor(_get_attr(w_none, "__getitem__")(2)) == "hello"
 
     # Negative index rejection
     with pytest.raises(IndexError, match="Negative TensorArray index"):
@@ -86,13 +87,13 @@ def test_tensorarray_read_and_write() -> None:
 
     # NumPy in-bounds write
     arr_w = _np_tensorarraywrite(np, arr_np, 1, np.array([9.0, 9.0], dtype=np.float32))
-    assert as_callable(np.allclose)(as_tensor(getattr(arr_w, "__getitem__")(1)), [9.0, 9.0])
+    assert as_callable(np.allclose)(as_tensor(_get_attr(arr_w, "__getitem__")(1)), [9.0, 9.0])
     assert np.allclose(arr_np[1], [3.0, 4.0])  # non-mutating
 
     # NumPy expanding write
     arr_exp = _np_tensorarraywrite(np, arr_np, 3, np.array([8.0, 8.0], dtype=np.float32))
-    assert as_tensor(getattr(as_tensor(getattr(arr_exp, "shape")), "__getitem__")(0)) == 4
-    assert as_callable(np.allclose)(as_tensor(getattr(arr_exp, "__getitem__")(3)), [8.0, 8.0])
+    assert as_tensor(_get_attr(as_tensor(_get_attr(arr_exp, "shape")), "__getitem__")(0)) == 4
+    assert as_callable(np.allclose)(as_tensor(_get_attr(arr_exp, "__getitem__")(3)), [8.0, 8.0])
 
     # 3. Dict handle read / write
     d_handle: dict[int, str] = {0: "zero", 1: "one"}
@@ -102,7 +103,7 @@ def test_tensorarray_read_and_write() -> None:
         _np_tensorarrayread(np, as_tensor(d_handle), 99)
 
     d_w = _np_tensorarraywrite(np, as_tensor(d_handle), 2, "two")
-    assert as_tensor(getattr(d_w, "__getitem__")(2)) == "two"
+    assert as_tensor(_get_attr(d_w, "__getitem__")(2)) == "two"
 
     # 4. Unknown type fallback
     assert _np_tensorarrayread(np, 12345) == 0
@@ -243,37 +244,37 @@ def test_fftconvolve_fallback() -> None:
 
     # Full convolution: length 4 + 2 - 1 = 5
     out_full = _fftconvolve(np, x, h, mode="full")
-    assert as_tensor(getattr(out_full, "shape")) == (5,)
+    assert as_tensor(_get_attr(out_full, "shape")) == (5,)
     expected_full = np.convolve(x, h, mode="full")
     assert as_callable(np.allclose)(out_full, expected_full, atol=1e-5)
 
     # Same convolution: length 4
     out_same = _fftconvolve(np, x, h, mode="same")
-    assert as_tensor(getattr(out_same, "shape")) == (4,)
+    assert as_tensor(_get_attr(out_same, "shape")) == (4,)
     expected_same = np.convolve(x, h, mode="same")
     assert as_callable(np.allclose)(out_same, expected_same, atol=1e-5)
 
     # Valid convolution: length 4 - 2 + 1 = 3
     out_valid = _fftconvolve(np, x, h, mode="valid")
-    assert as_tensor(getattr(out_valid, "shape")) == (3,)
+    assert as_tensor(_get_attr(out_valid, "shape")) == (3,)
     expected_valid = np.convolve(x, h, mode="valid")
     assert as_callable(np.allclose)(out_valid, expected_valid, atol=1e-5)
 
     # Valid mode with h larger than x returns empty
     out_empty = _fftconvolve(np, np.array([1.0]), np.array([1.0, 2.0, 3.0]), mode="valid")
-    assert as_tensor(getattr(out_empty, "size")) == 0
+    assert as_tensor(_get_attr(out_empty, "size")) == 0
 
     # 2D real signals
     img2d = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32)
     k2d = np.array([[1.0, 0.5], [0.5, 0.25]], dtype=np.float32)
     out_2d = _fftconvolve(np, img2d, k2d, mode="full")
-    assert as_tensor(getattr(out_2d, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(out_2d, "shape")) == (3, 3)
 
     # Complex signal convolution
     c1 = np.array([1.0 + 2.0j, 2.0 - 1.0j], dtype=np.complex64)
     c2 = np.array([0.5 + 0.5j, 1.0 + 0.0j], dtype=np.complex64)
     out_complex = _fftconvolve(np, c1, c2, mode="full")
-    assert as_tensor(getattr(out_complex, "shape")) == (3,)
+    assert as_tensor(_get_attr(out_complex, "shape")) == (3,)
 
     # Backend with fft.fftconvolve
     class MockFFTModule:
@@ -325,7 +326,7 @@ def test_math_fft_edge_cases() -> None:
 
     # 1. Unknown convolution mode falls through to 'return out'
     out_custom = _fftconvolve(np, x, h, mode="custom_unhandled")
-    assert as_tensor(getattr(out_custom, "shape")) == (2,)
+    assert as_tensor(_get_attr(out_custom, "shape")) == (2,)
 
     # 2. _fft and _rfft with backend missing fft
     class EmptyBackend:

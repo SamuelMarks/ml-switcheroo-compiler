@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_ir import NodeDict
 
 import ml_switcheroo_compiler.transforms.passes.operator_fusion as of
+from ml_switcheroo_compiler.core.shape import _caller_locals, _cast_val, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.config_models import FusionPatternConfig
 from ml_switcheroo_compiler.transforms.passes.operator_fusion import (
@@ -121,7 +122,7 @@ def test_operator_fusion_extra_coverage() -> None:
 
     g = IRGraph()
     g.nodes["e"] = IRNode("e", "Exp")
-    op_pass = typing.cast("PatternMatchingEngine", as_callable(PatternMatchingEngine)([as_callable(CostRule)()], as_callable(RejectCostModel)()))
+    op_pass = _cast_val("PatternMatchingEngine", as_callable(PatternMatchingEngine)([as_callable(CostRule)()], as_callable(RejectCostModel)()))
     assert not op_pass.apply_passes(g)
 
 
@@ -323,10 +324,10 @@ def _test_fusion_edge_cases_part_1(_state: dict[str, EagerTensorProtocol]) -> No
 
     # Bias node with non-Add op_type
     g4 = IRGraph()
-    getattr(_state, "update")({"add": add, "empty_g": empty_g, "g": g, "g2": g2})
-    getattr(_state, "update")({"g3": g3, "g4": g4, "other": other, "r1": r1})
-    getattr(_state, "update")({"x": x, "y": y})
-    _state.update(locals())
+    _get_attr(_state, "update")({"add": add, "empty_g": empty_g, "g": g, "g2": g2})
+    _get_attr(_state, "update")({"g3": g3, "g4": g4, "other": other, "r1": r1})
+    _get_attr(_state, "update")({"x": x, "y": y})
+    _state.update(_caller_locals())
 
 
 def _test_fusion_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -362,9 +363,9 @@ def _test_fusion_edge_cases_part_2(_state: dict[str, EagerTensorProtocol]) -> No
     g7.nodes["x"] = IRNode("x", "Input")
     s1 = IRNode("s1", "Relu", inputs=["x"], shape_metadata=[4, 4])
     s2 = IRNode("s2", "Sigmoid", inputs=["x"], shape_metadata=[8, 8])
-    getattr(_state, "update")({"g5": g5, "g6": g6, "g7": g7, "s1": s1})
-    getattr(_state, "update")({"s2": s2})
-    _state.update(locals())
+    _get_attr(_state, "update")({"g5": g5, "g6": g6, "g7": g7, "s1": s1})
+    _get_attr(_state, "update")({"s2": s2})
+    _state.update(_caller_locals())
 
 
 def _test_fusion_edge_cases_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -383,7 +384,7 @@ def _test_fusion_edge_cases_part_3(_state: dict[str, EagerTensorProtocol]) -> No
     g8 = IRGraph()
     g8.nodes["x"] = IRNode("x", "Input")
     assert pass_runner.run(g8) is False
-    getattr(_state, "update")({"g8": g8, "pass_runner": pass_runner})
+    _get_attr(_state, "update")({"g8": g8, "pass_runner": pass_runner})
 
 
 def test_fusion_edge_cases() -> None:

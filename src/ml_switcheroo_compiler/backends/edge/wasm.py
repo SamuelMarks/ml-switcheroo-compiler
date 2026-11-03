@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float, as_int, as_int_list
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
 WasmAttrType = typing.Union[
@@ -47,7 +48,7 @@ class WasmCodeGenerator(BaseGenerator):
 
         sanitized_graph = strip_offline_diagnostic_nodes_pass(graph)
         super().__init__(sanitized_graph, delegates)
-        self.sorted_nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") not in OFFLINE_DIAGNOSTIC_OPS]
+        self.sorted_nodes = [n for n in self.sorted_nodes if _get_attr(n, "op_type", "") not in OFFLINE_DIAGNOSTIC_OPS]
         self.var_map: dict[str, str] = {}
         self.is_simd: bool = False
 
@@ -165,7 +166,8 @@ class WasmCodeGenerator(BaseGenerator):
         Returns:
             str: Variable name of the evaluated node.
         """
-        return getattr(node, "id", "")
+        _typed_ret_1: str = _get_attr(node, "id", "")
+        return _typed_ret_1
 
     @staticmethod
     def _normalize_ndim_shape(raw_shape: WasmAttrType, target_ndim: int) -> list[int]:
@@ -248,10 +250,10 @@ class WasmCodeGenerator(BaseGenerator):
         Returns:
             tuple[list[int], list[int]]: Normalized (in0_shape, in1_shape) lists.
         """
-        inputs_list: list[str] = getattr(node, "inputs", [])
-        input_nodes = [next((n for n in self.sorted_nodes if getattr(n, "id", None) == inp), None) for inp in inputs_list]
-        raw_in0 = getattr(input_nodes[0], "shape_metadata", None) if len(input_nodes) > 0 and input_nodes[0] else None
-        raw_in1 = getattr(input_nodes[1], "shape_metadata", None) if len(input_nodes) > 1 and input_nodes[1] else None
+        inputs_list: list[str] = _get_attr(node, "inputs", [])
+        input_nodes = [next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == inp), None) for inp in inputs_list]
+        raw_in0 = _get_attr(input_nodes[0], "shape_metadata", None) if len(input_nodes) > 0 and input_nodes[0] else None
+        raw_in1 = _get_attr(input_nodes[1], "shape_metadata", None) if len(input_nodes) > 1 and input_nodes[1] else None
         return self._normalize_ndim_shape(raw_in0, target_ndim), self._normalize_ndim_shape(raw_in1, target_ndim)
 
     def visit_Conv2D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
@@ -267,7 +269,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
-        attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {})
+        attrs: dict[str, WasmAttrType] = _get_attr(node, "attributes", {})
         if attrs.get("folded_batch_norm"):
             raw_bn = attrs.get("bn_inputs", [])
             bn_inputs: list[str] = [str(x) for x in raw_bn] if isinstance(raw_bn, (list, tuple)) else []
@@ -279,7 +281,7 @@ class WasmCodeGenerator(BaseGenerator):
 
         template: dict[str, str] = get_wasm_template("im2col_conv2d" if attrs.get("tiling") else "conv2d")
         in0_shape, w_shape = self._resolve_node_input_shapes(node, 4)
-        norm_shape = getattr(self, "_normalize_ndim_shape")(shape, 4)
+        norm_shape = _get_attr(self, "_normalize_ndim_shape")(shape, 4)
 
         stride: WasmAttrType = attrs.get("stride", 1)
         stride_h: int = int(as_int(stride[0])) if isinstance(stride, (tuple, list)) else int(as_int(stride))
@@ -320,9 +322,9 @@ class WasmCodeGenerator(BaseGenerator):
 
         template: dict[str, str] = get_wasm_template("Conv3D")
         in0_shape, w_shape = self._resolve_node_input_shapes(node, 5)
-        norm_shape = getattr(self, "_normalize_ndim_shape")(shape, 5)
+        norm_shape = _get_attr(self, "_normalize_ndim_shape")(shape, 5)
 
-        attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {}) or {}
+        attrs: dict[str, WasmAttrType] = _get_attr(node, "attributes", {}) or {}
         raw_stride = attrs.get("stride", attrs.get("strides", 1))
         stride_d, stride_h, stride_w = self._parse_conv3d_spatial_triplet(raw_stride, 1)
 
@@ -375,7 +377,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("AllReduce", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
         self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
 
@@ -392,7 +394,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("AllGather", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
         self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
 
@@ -409,7 +411,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("AllToAll", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
         self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
 
@@ -426,7 +428,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("ReduceScatter", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
         self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
 
@@ -443,7 +445,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.webgpu_webrtc import emit_webrtc_op
 
-        op_id: str = getattr(node, "id", "op")
+        op_id: str = _get_attr(node, "id", "op")
         js_code: str = emit_webrtc_op("Broadcast", "buf_" + inputs[0] if inputs else "buf_in0", op_id)
         self.add_line(f"// JS Orcherstrator: \n// {js_code.replace(chr(10), chr(10) + '// ')}")
 
@@ -461,7 +463,7 @@ class WasmCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template: dict[str, str] = get_wasm_template("while_loop")
-        attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {})
+        attrs: dict[str, WasmAttrType] = _get_attr(node, "attributes", {})
 
         body_graph: WasmAttrType = attrs.get("body_graph") or attrs.get("body")
         loop_body: str = "// Empty loop body"
@@ -526,7 +528,7 @@ class WasmCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template: dict[str, str] = get_wasm_template("cond")
-        attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {})
+        attrs: dict[str, WasmAttrType] = _get_attr(node, "attributes", {})
 
         def _lower_branch(branch_graph: WasmAttrType, default_input: str) -> str:
             """Lower a branch subgraph into C++ strings.
@@ -546,7 +548,7 @@ class WasmCodeGenerator(BaseGenerator):
             # Map inputs for the subgraph generator to point to the parent's input buffers
             # Offset by 1 because inputs[0] is the conditional predicate
             input_remap = {}
-            for i, in_name in enumerate(getattr(branch_graph, "inputs", [])):
+            for i, in_name in enumerate(_get_attr(branch_graph, "inputs", [])):
                 parent_idx = i + 1 if (i + 1) < len(inputs) else 0
                 input_remap[in_name] = inputs[parent_idx] if inputs else "dummy"
 
@@ -556,8 +558,8 @@ class WasmCodeGenerator(BaseGenerator):
             out_code = subgen.generate()
 
             # Final output mapping
-            if getattr(branch_graph, "outputs"):
-                out_id = subgen.var_map.get(getattr(branch_graph, "outputs")[0], getattr(branch_graph, "outputs")[0].replace("-", "_"))
+            if _get_attr(branch_graph, "outputs"):
+                out_id = subgen.var_map.get(_get_attr(branch_graph, "outputs")[0], _get_attr(branch_graph, "outputs")[0].replace("-", "_"))
                 out_code += f"\\n  for(int i=0; i<{nelem}; i++) buf_{clean_id}[i] = buf_{out_id}[i];"
             else:
                 out_code += f"\\n  for(int i=0; i<{nelem}; i++) buf_{clean_id}[i] = buf_{default_input}[i];"
@@ -609,7 +611,7 @@ class WasmCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template: dict[str, str] = get_wasm_template("scan")
-        attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {})
+        attrs: dict[str, WasmAttrType] = _get_attr(node, "attributes", {})
 
         body_graph: WasmAttrType = attrs.get("body_graph") or attrs.get("body")
         loop_body: str = "// Empty scan body"
@@ -636,7 +638,7 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
-        attrs: dict[str, WasmAttrType] = getattr(node, "attributes", {})
+        attrs: dict[str, WasmAttrType] = _get_attr(node, "attributes", {})
         if attrs.get("tiling"):
             template: dict[str, str] = get_wasm_template("tiled_matmul")
             # For simplicity, fetch the heuristic from the environment or use defaults
@@ -648,8 +650,8 @@ class WasmCodeGenerator(BaseGenerator):
             M = shape[0] if len(shape) > 0 else 1
             N = shape[1] if len(shape) > 1 else 1
 
-            in0_node: WasmAttrType = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-            in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+            in0_node: WasmAttrType = next((n for n in self.sorted_nodes if _get_attr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
+            in0_shape = _get_attr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
             K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
 
             body: str = template["body"].format(M=M, N=N, K=K, TILE_M=TILE_M, TILE_N=TILE_N, TILE_K=TILE_K, in0=in0, in1=in1)
@@ -663,8 +665,8 @@ class WasmCodeGenerator(BaseGenerator):
             M = shape[0] if len(shape) > 0 else 1
             N = shape[1] if len(shape) > 1 else 1
 
-            in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-            in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+            in0_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
+            in0_shape = _get_attr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
             K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
             body = template["body"].format(M=M, N=N, K=K, in0=in0, in1=in1, clean_id=clean_id)
             for line in body.split("\n"):
@@ -709,11 +711,11 @@ class WasmCodeGenerator(BaseGenerator):
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
         template = get_wasm_template(template_name)
-        attrs = getattr(node, "attributes", {})
+        attrs = _get_attr(node, "attributes", {})
 
-        in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "") == inputs[0]), None) if len(inputs) > 0 else None
+        in0_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", "") == inputs[0]), None) if len(inputs) > 0 else None
 
-        in0_shape = getattr(in0_node, "shape_metadata", [1, 1, 1, 1]) if in0_node else [1, 1, 1, 1]
+        in0_shape = _get_attr(in0_node, "shape_metadata", [1, 1, 1, 1]) if in0_node else [1, 1, 1, 1]
 
         if not in0_shape:
             in0_shape = [1, 1, 1, 1]
@@ -780,8 +782,8 @@ class WasmCodeGenerator(BaseGenerator):
         M = shape[0] if len(shape) > 0 else 1
         N = shape[1] if len(shape) > 1 else 1
 
-        in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-        in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+        in0_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
+        in0_shape = _get_attr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
         K = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
 
         has_bias = "true" if in2 != "dummy" else "false"
@@ -808,8 +810,8 @@ class WasmCodeGenerator(BaseGenerator):
         in1 = inputs[1] if len(inputs) > 1 else "dummy"
         in2 = inputs[2] if len(inputs) > 2 else "dummy"
 
-        in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-        in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+        in0_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
+        in0_shape = _get_attr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
         seq_len = in0_shape[0] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 0 else 1
         embed_dim = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
 
@@ -849,11 +851,11 @@ class WasmCodeGenerator(BaseGenerator):
         in1 = inputs[1] if len(inputs) > 1 else "dummy"  # scale
         in2 = inputs[2] if len(inputs) > 2 else "dummy"  # bias
 
-        attrs = getattr(node, "attributes", {})
+        attrs = _get_attr(node, "attributes", {})
         eps = float(attrs.get("epsilon", 1e-5))
 
-        in0_node = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
-        in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
+        in0_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", "").replace("-", "_") == inputs[0]), None) if len(inputs) > 0 else None
+        in0_shape = _get_attr(in0_node, "shape_metadata", None) if in0_node else [1, 1]
         rows = in0_shape[0] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 0 else 1
         cols = in0_shape[1] if isinstance(in0_shape, (list, tuple)) and len(in0_shape) > 1 else 1
 
@@ -1341,10 +1343,10 @@ class WasmCodeGenerator(BaseGenerator):
             print(f"DEBUG: op_type={op_type}, mapping={mapping}, template={template}")
             raise UnimplementedMathError(f"MISSING BODY FOR: {op_type} template: {template}")
 
-        in0_node: WasmAttrType = next((n for n in self.sorted_nodes if getattr(n, "id", "").replace("-", "_") == inputs[0]), None) if inputs else None
-        raw_in0_shape = getattr(in0_node, "shape_metadata", None) if in0_node else None
+        in0_node: WasmAttrType = next((n for n in self.sorted_nodes if _get_attr(n, "id", "").replace("-", "_") == inputs[0]), None) if inputs else None
+        raw_in0_shape = _get_attr(in0_node, "shape_metadata", None) if in0_node else None
         in0_shape = self._normalize_ndim_shape(raw_in0_shape, 2)
-        shape_seq: list[int] = list(shape) if hasattr(shape, "__iter__") else [int(as_int(shape or 1))]
+        shape_seq: list[int] = list(shape) if _has_attr(shape, "__iter__") else [int(as_int(shape or 1))]
 
         K = in0_shape[1] if len(in0_shape) > 1 else 1
         N = shape_seq[1] if len(shape_seq) > 1 else 1
@@ -1359,7 +1361,7 @@ class WasmCodeGenerator(BaseGenerator):
             "K": K,
             "N": N,
             "M": M,
-            "nelem_in": getattr(node, "inputs_nelem", [1])[0],
+            "nelem_in": _get_attr(node, "inputs_nelem", [1])[0],
         }
         expr_format_args.update(mapping)
 
@@ -1379,8 +1381,8 @@ class WasmCodeGenerator(BaseGenerator):
             shape (list[int]): Output tensor shape dimensions.
             nelem (int): Total number of output elements.
         """
-        if hasattr(self, f"visit_{op_type}"):
-            getattr(self, f"visit_{op_type}")(node, op_type, clean_id, inputs, shape, nelem)
+        if _has_attr(self, f"visit_{op_type}"):
+            _get_attr(self, f"visit_{op_type}")(node, op_type, clean_id, inputs, shape, nelem)
             return
 
         from ml_switcheroo_compiler.transforms.passes.strip_offline_nodes import OFFLINE_DIAGNOSTIC_OPS
@@ -1418,12 +1420,12 @@ class WasmCodeGenerator(BaseGenerator):
         """
         func_params: list[str] = []
         for idx, node in enumerate(input_nodes):
-            meta_dtype: str = self._map_type(getattr(node, "dtype", "float32"))
+            meta_dtype: str = self._map_type(_get_attr(node, "dtype", "float32"))
             func_params.append(f"const {meta_dtype}* __restrict__ in_{idx}")
 
         for i, out_id in enumerate(output_ids):
-            out_node: WasmAttrType = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
-            meta_dtype = self._map_type(getattr(out_node, "dtype", "float32")) if out_node else "float"
+            out_node: WasmAttrType = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_id), None)
+            meta_dtype = self._map_type(_get_attr(out_node, "dtype", "float32")) if out_node else "float"
             func_params.append(f"{meta_dtype}* __restrict__ out_{i}")
 
         func_params.append("int size")
@@ -1441,9 +1443,9 @@ class WasmCodeGenerator(BaseGenerator):
         self.add_line("  // Buffer arenas")
         arenas: dict[int, int] = {}
         for node in self.sorted_nodes:
-            arena_id: int = getattr(node, "attributes", {}).get("buffer_id", 0)
-            offset: int = getattr(node, "attributes", {}).get("buffer_offset", 0)
-            shape = getattr(node, "shape_metadata", None)
+            arena_id: int = _get_attr(node, "attributes", {}).get("buffer_id", 0)
+            offset: int = _get_attr(node, "attributes", {}).get("buffer_offset", 0)
+            shape = _get_attr(node, "shape_metadata", None)
             nelem: int = self._num_elements(shape if shape else [1])
             arenas[arena_id] = max(arenas.get(arena_id, 0), offset + nelem * 4)
 
@@ -1452,20 +1454,20 @@ class WasmCodeGenerator(BaseGenerator):
 
         self.add_line("  // Pointers and Input Copies")
         for idx, node in enumerate(input_nodes):
-            clean_id: str = getattr(node, "id", "").replace("-", "_")
-            arena_id = getattr(node, "attributes", {}).get("buffer_id", 0)
-            offset = getattr(node, "attributes", {}).get("buffer_offset", 0) // 4
-            shape = getattr(node, "shape_metadata", None)
+            clean_id: str = _get_attr(node, "id", "").replace("-", "_")
+            arena_id = _get_attr(node, "attributes", {}).get("buffer_id", 0)
+            offset = _get_attr(node, "attributes", {}).get("buffer_offset", 0) // 4
+            shape = _get_attr(node, "shape_metadata", None)
             nelem = self._num_elements(shape if shape else [1])
             self.add_line(f"  float* buf_{clean_id} = buf_arena_{arena_id} + {offset};")
             self.add_line(f"  std::copy(in_{idx}, in_{idx} + {nelem}, buf_{clean_id});")
 
         for node in self.sorted_nodes:
-            if getattr(node, "op_type", "") == "Input":
+            if _get_attr(node, "op_type", "") == "Input":
                 continue
-            clean_id = getattr(node, "id", "").replace("-", "_")
-            arena_id = getattr(node, "attributes", {}).get("buffer_id", 0)
-            offset = getattr(node, "attributes", {}).get("buffer_offset", 0) // 4
+            clean_id = _get_attr(node, "id", "").replace("-", "_")
+            arena_id = _get_attr(node, "attributes", {}).get("buffer_id", 0)
+            offset = _get_attr(node, "attributes", {}).get("buffer_offset", 0) // 4
             self.add_line(f"  float* buf_{clean_id} = buf_arena_{arena_id} + {offset};")
 
         self.add_line("  float dummy_val = 0.0f;")
@@ -1484,22 +1486,22 @@ class WasmCodeGenerator(BaseGenerator):
 
         self.add_line("  // Compute nodes sequentially")
         for node in self.sorted_nodes:
-            op_type: str = getattr(node, "op_type", "")
+            op_type: str = _get_attr(node, "op_type", "")
             if op_type in ("Input", "Output", "Constant") or op_type in OFFLINE_DIAGNOSTIC_OPS:
                 continue
 
-            clean_id = getattr(node, "id", "").replace("-", "_")
-            inputs: list[str] = [inp.replace("-", "_") for inp in getattr(node, "inputs", [])]
-            raw_shape = getattr(node, "shape_metadata", None)
+            clean_id = _get_attr(node, "id", "").replace("-", "_")
+            inputs: list[str] = [inp.replace("-", "_") for inp in _get_attr(node, "inputs", [])]
+            raw_shape = _get_attr(node, "shape_metadata", None)
             shape = [1] if not raw_shape else ([int(raw_shape)] if isinstance(raw_shape, (int, float)) else list(raw_shape))
             self._generate_op(node, op_type, clean_id, inputs, shape, self._num_elements(shape))
 
         self.add_line("  // Copy Outputs")
         for i, out_id in enumerate(output_ids):
-            out_node = next((n for n in self.sorted_nodes if getattr(n, "id", None) == out_id), None)
+            out_node = next((n for n in self.sorted_nodes if _get_attr(n, "id", None) == out_id), None)
             if out_node:
                 clean_id = out_node.id.replace("-", "_")
-                out_shape = getattr(out_node, "shape_metadata", None)
+                out_shape = _get_attr(out_node, "shape_metadata", None)
                 nelem = self._num_elements(out_shape if out_shape else [1])
                 self.add_line(f"  std::copy(buf_{clean_id}, buf_{clean_id} + {nelem}, out_{i});")
 
@@ -1518,8 +1520,8 @@ class WasmCodeGenerator(BaseGenerator):
         """
         from ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider import get_wasm_template
 
-        input_nodes: list[IRNode] = [n for n in self.sorted_nodes if getattr(n, "op_type", "") == "Input"]
-        output_ids: list[str] = getattr(self.graph, "outputs", []) or []
+        input_nodes: list[IRNode] = [n for n in self.sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
+        output_ids: list[str] = _get_attr(self.graph, "outputs", []) or []
 
         self.code.clear()
         params_str: str = self._build_kernel_signature_params(input_nodes, output_ids)
@@ -1622,15 +1624,15 @@ class WasmCodeGenerator(BaseGenerator):
         for node in self.sorted_nodes:
             nodes_list.append(
                 {
-                    "id": str(getattr(node, "id", "")),
-                    "op_type": str(getattr(node, "op_type", "")),
-                    "inputs": [str(i) for i in getattr(node, "inputs", [])],
-                    "shape_metadata": [int(s) for s in (getattr(node, "shape_metadata", ()) or ()) if isinstance(s, (int, float))],
+                    "id": str(_get_attr(node, "id", "")),
+                    "op_type": str(_get_attr(node, "op_type", "")),
+                    "inputs": [str(i) for i in _get_attr(node, "inputs", [])],
+                    "shape_metadata": [int(s) for s in (_get_attr(node, "shape_metadata", ()) or ()) if isinstance(s, (int, float))],
                 }
             )
         return {
-            "inputs": [str(i) for i in getattr(self.graph, "inputs", [])],
-            "outputs": [str(o) for o in getattr(self.graph, "outputs", [])],
+            "inputs": [str(i) for i in _get_attr(self.graph, "inputs", [])],
+            "outputs": [str(o) for o in _get_attr(self.graph, "outputs", [])],
             "nodes": nodes_list,
         }
 
@@ -1649,8 +1651,8 @@ class WasmCodeGenerator(BaseGenerator):
         """
         if meta and len(meta) == len(concrete):
             for m_dim, c_dim in zip(meta, concrete):
-                if hasattr(m_dim, "node"):
-                    solved_env[str(getattr(m_dim, "node"))] = int(as_int(c_dim))
+                if _has_attr(m_dim, "node"):
+                    solved_env[str(_get_attr(m_dim, "node"))] = int(as_int(c_dim))
                 elif isinstance(m_dim, str):
                     solved_env[m_dim] = int(as_int(c_dim))
 
@@ -1665,9 +1667,9 @@ class WasmCodeGenerator(BaseGenerator):
         Returns:
             int | None: Resolved integer dimension or None if unresolvable.
         """
-        if hasattr(dim, "node") and hasattr(getattr(dim, "node"), "eval"):
+        if _has_attr(dim, "node") and _has_attr(_get_attr(dim, "node"), "eval"):
             try:
-                return int(getattr(dim, "node").eval(solved_env))
+                return int(_get_attr(dim, "node").eval(solved_env))
             except Exception:
                 return int(dim) if isinstance(dim, (int, float)) else 1
         if isinstance(dim, str) and dim in solved_env:
@@ -1688,14 +1690,14 @@ class WasmCodeGenerator(BaseGenerator):
 
         solved_env: dict[str, int] = {}
         for node in self.sorted_nodes:
-            nid: str = getattr(node, "id", "")
+            nid: str = _get_attr(node, "id", "")
             concrete = shape_data.get(nid)
             if isinstance(concrete, (list, tuple)):
-                self._record_symbolic_dims_from_concrete(getattr(node, "shape_metadata", None), concrete, solved_env)
+                self._record_symbolic_dims_from_concrete(_get_attr(node, "shape_metadata", None), concrete, solved_env)
                 node.shape_metadata = tuple(int(x) for x in concrete if isinstance(x, (int, float)))
 
         for node in self.sorted_nodes:
-            meta = getattr(node, "shape_metadata", None)
+            meta = _get_attr(node, "shape_metadata", None)
             if isinstance(meta, (list, tuple)):
                 refined = [r for d in meta if (r := self._evaluate_refined_dim(d, solved_env)) is not None]
                 if refined:
@@ -1715,7 +1717,7 @@ class WasmCodeGenerator(BaseGenerator):
             if isinstance(raw, dict) and "opcodes" in raw and isinstance(raw["opcodes"], dict):
                 op_map = raw["opcodes"]
 
-        nodes = [n for n in self.sorted_nodes if getattr(n, "op_type", "") != "Input"]
+        nodes = [n for n in self.sorted_nodes if _get_attr(n, "op_type", "") != "Input"]
         wat_lines: list[str] = [
             "(module",
             '  (memory (export "memory") 1)',
@@ -1728,7 +1730,7 @@ class WasmCodeGenerator(BaseGenerator):
         ]
 
         for node in nodes:
-            op_type = getattr(node, "op_type", "").lower()
+            op_type = _get_attr(node, "op_type", "").lower()
             spec = op_map.get(op_type, {})
             simd_inst: str = str(spec.get("instruction", "f32x4.mul"))
             arity: int = int(as_int(spec.get("arity", 1 if simd_inst in ("f32x4.neg", "f32x4.sqrt", "f32x4.abs", "f32x4.ceil", "f32x4.floor", "f32x4.trunc", "f32x4.nearest") else 2)))

@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.shape_inference import (
     _determine_node_shape,
@@ -313,7 +314,7 @@ def test_record_runtime_observation_and_packet() -> None:
     # Valid observation matching current shape
     record_runtime_observation(graph, "n1", [4, 8], observed_dtype="float32")
     assert graph.nodes["n1"].shape_metadata == (4, 8)
-    assert hasattr(graph, "annotations")
+    assert _has_attr(graph, "annotations")
     assert len(graph.annotations["learned_shapes_history"]) == 1
 
     # Missing node raises KeyError
@@ -383,7 +384,7 @@ def test_multipass_dynamic_shape_refinement_and_conflicts() -> None:
     modified = annotate_learned_shapes(graph, packet_pass1)
     assert modified is True
     assert graph.nodes["inp"].shape_metadata == (8, 32)
-    assert bool(as_tensor(getattr(graph, "annotations"))["convergence_converged"]) is True
+    assert bool(as_tensor(_get_attr(graph, "annotations"))["convergence_converged"]) is True
 
     # Multi-pass: second observation with different batch size
     packet_pass2 = RuntimeShapePacket(
@@ -418,11 +419,11 @@ def test_shape_inference_annotation_branches() -> None:
     graph = LogicalGraph(name="test_graph")
     node = LogicalNode(id="n1", op_type="Relu", shape_metadata=(4, 4))
     graph.nodes[node.id] = node
-    object.__setattr__(graph, "annotations", "invalid_annotations")
+    _obj_set_attr(graph, "annotations", "invalid_annotations")
     res1 = as_callable(annotate_learned_shapes)(graph, {"n1": (4, 4)})
     assert bool(res1) is False
-    assert isinstance(as_tensor(getattr(graph, "annotations")), dict)
-    assert bool(as_tensor(getattr(graph, "annotations")).get("convergence_converged")) is True
+    assert isinstance(as_tensor(_get_attr(graph, "annotations")), dict)
+    assert bool(as_tensor(_get_attr(graph, "annotations")).get("convergence_converged")) is True
     res2 = as_callable(annotate_learned_shapes)(graph, None)
     assert bool(res2) is False
 

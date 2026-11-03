@@ -26,7 +26,7 @@ import sys
 
 STDLIB_MODULES: set[str] = (
     set(sys.builtin_module_names)
-    | set(getattr(sys, "stdlib_module_names", []))
+    | set()
     | {
         "posix",
         "nt",

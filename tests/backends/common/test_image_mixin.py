@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.image import ImageASTVisitor
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -24,7 +25,7 @@ class DummyVisitor(ImageASTVisitor):
 
     def __init__(self) -> None:
         """Test function __init__."""
-        setattr(self, "_generator", DummyGenerator())
+        _set_attr(self, "_generator", DummyGenerator())
 
 
 class DummyNode:

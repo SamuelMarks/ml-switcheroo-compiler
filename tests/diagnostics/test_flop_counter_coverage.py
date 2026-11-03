@@ -5,6 +5,7 @@ from __future__ import annotations
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 import ml_switcheroo_compiler.diagnostics.flop_counter as flop_mod
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 
 
 class _DummyBadShape:
@@ -42,7 +43,7 @@ def test_flop_counter_exhaustive() -> None:
 
     # 3. Node with invalid shape_metadata (raises TypeError)
     n_bad_shape = LogicalNode("n2", "Relu", inputs=["n1"])
-    object.__setattr__(n_bad_shape, "shape_metadata", _DummyBadShape())
+    _obj_set_attr(n_bad_shape, "shape_metadata", _DummyBadShape())
     graph.nodes["n2"] = n_bad_shape
 
     # 4. Node without shape_metadata and op_type != 'Foo'

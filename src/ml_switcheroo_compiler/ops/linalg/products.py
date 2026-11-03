@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -89,7 +89,7 @@ def _has_valid_shape(obj: TensorOrScalar) -> bool:
     Returns:
         bool: Result.
     """
-    return hasattr(obj, "shape") and bool(getattr(obj, "shape"))
+    return _has_attr(obj, "shape") and bool(_get_attr(obj, "shape"))
 
 
 @register_op("MatrixPower")
@@ -110,8 +110,9 @@ class MatrixPower(OpDef):
             tuple[int, ...]: The inferred shape of the matrix power result.
         """
         del kwargs
-        if hasattr(a, "shape"):
-            return a.shape
+        if _has_attr(a, "shape"):
+            _typed_ret_1: tuple[int, ...] = a.shape
+            return _typed_ret_1
         return ()
 
 

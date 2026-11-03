@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.buffer_allocation import (
     BufferAllocationPass,
@@ -117,7 +118,7 @@ def test_buffer_allocation_run_branches() -> None:
     n1 = IRNode(id="n1", op_type="Input", shape_metadata=(8, 8))
     n1.attributes["dtype"] = "float32"
     g.nodes = NodeDict({"n1": n1})
-    object.__setattr__(g, "attributes", {"skip_coloring": True})
+    _obj_set_attr(g, "attributes", {"skip_coloring": True})
     res = pass_obj.run(g)
     assert res is True
     assert "buffer_color" not in n1.attributes
@@ -127,7 +128,7 @@ def test_buffer_allocation_run_branches() -> None:
     n2 = IRNode(id="n2", op_type="Input", shape_metadata=(8, 8))
     n2.attributes["dtype"] = "float32"
     g2.nodes = NodeDict({"n2": n2})
-    object.__setattr__(g2, "attributes", None)
+    _obj_set_attr(g2, "attributes", None)
     res2 = pass_obj.run(g2)
     assert res2 is True
     assert "buffer_color" in n2.attributes

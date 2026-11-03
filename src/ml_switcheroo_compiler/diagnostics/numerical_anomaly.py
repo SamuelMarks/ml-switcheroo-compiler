@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
 
@@ -29,7 +31,7 @@ def check_numerical_anomaly(tensor: Tensor | None) -> None:
     Raises:
         ValueError: If NaN or Inf is found.
     """
-    if getattr(tensor, "data", None) is None:
+    if _get_attr(tensor, "data", None) is None:
         return
 
     try:

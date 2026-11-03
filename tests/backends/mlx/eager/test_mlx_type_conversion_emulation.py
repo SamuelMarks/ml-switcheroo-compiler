@@ -34,6 +34,7 @@ from ml_switcheroo_compiler.backends.mlx.eager import (
     _resolve_dtype,
     execute_op,
 )
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -88,9 +89,9 @@ def _test_mlx_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     import numpy as np
 
     out1 = _mlx_scatter_nd(mx, mx.array([[0]]), mx.array([1.0]), [1])
-    getattr(_state, "update")({"BoxedShape": BoxedShape, "DummyDtype": DummyDtype, "np": np, "out1": out1})
-    getattr(_state, "update")({"t": t, "t2": t2})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BoxedShape": BoxedShape, "DummyDtype": DummyDtype, "np": np, "out1": out1})
+    _get_attr(_state, "update")({"t": t, "t2": t2})
+    _state.update(_caller_locals())
 
 
 def _test_mlx_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -118,8 +119,8 @@ def _test_mlx_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     _mlx_full(mx, BoxedShape(), 2.0, dtype="int32")
     _mlx_full(mx, 1, 2.0, dtype="int32")
     _mlx_full(mx, 1, 2.0, dtype="fake")
-    getattr(_state, "update")({"out2": out2, "out3": out3})
-    _state.update(locals())
+    _get_attr(_state, "update")({"out2": out2, "out3": out3})
+    _state.update(_caller_locals())
 
 
 def _test_mlx_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -157,8 +158,8 @@ def _test_mlx_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
     _mlx_cummax(mx, t, axis=0, dtype=None)
     _mlx_cummin(mx, t, axis=0, dtype="int32")
     _mlx_cummin(mx, t, axis=0, dtype=None)
-    getattr(_state, "update")({"DataMock": DataMock, "ItemMock": ItemMock, "a": a})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DataMock": DataMock, "ItemMock": ItemMock, "a": a})
+    _state.update(_caller_locals())
 
 
 def _test_mlx_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -176,7 +177,7 @@ def _test_mlx_ops_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
     t3 = mx.array([[[1.0, 2.0]]])
     _mlx_rope(mx, t3, dim=2)
     _mlx_variance(mx, t)
-    getattr(_state, "update")({"t3": t3})
+    _get_attr(_state, "update")({"t3": t3})
 
 
 def test_mlx_ops() -> None:

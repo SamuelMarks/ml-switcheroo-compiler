@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
@@ -31,20 +31,20 @@ class _DotGraphVisitor:
         Returns:
         NoneType: Result.
         """
-        if not node_id or node_id not in getattr(self.graph, "nodes") or node_id in self.visited:
+        if not node_id or node_id not in _get_attr(self.graph, "nodes") or node_id in self.visited:
             return
 
         self.visited.add(node_id)
-        node = getattr(self.graph, "nodes")[node_id]
+        node = _get_attr(self.graph, "nodes")[node_id]
 
         # Format the node
-        op_type = getattr(node, "op_type", "Unknown")
+        op_type = _get_attr(node, "op_type", "Unknown")
         label = f"{op_type}\\n{node_id[:8]}"
         self.lines.append(f'  "{node_id}" [label="{label}"];')
 
         # Format the edges and recurse
-        for inp in getattr(node, "inputs", []):
-            inp_id = getattr(inp, "id", str(inp))
+        for inp in _get_attr(node, "inputs", []):
+            inp_id = _get_attr(inp, "id", str(inp))
             self.lines.append(f'  "{inp_id}" -> "{node_id}";')
             self.visit(inp_id)
 
@@ -67,8 +67,8 @@ def export_to_dot(file: str | typing.IO[str], *arrays: Tensor, **kwargs: TensorO
     visitor = _DotGraphVisitor(graph)
 
     for arr in arrays:
-        node_id = getattr(getattr(arr, "data", None), "id", None)
-        getattr(visitor, "visit")(node_id)
+        node_id = _get_attr(_get_attr(arr, "data", None), "id", None)
+        _get_attr(visitor, "visit")(node_id)
 
     visitor.lines.append("}")
     dot_content = "\n".join(visitor.lines)

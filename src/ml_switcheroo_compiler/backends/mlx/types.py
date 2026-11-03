@@ -10,7 +10,7 @@ from ml_switcheroo_compiler.backends.eager import (
     generic_item,
     generic_zeros,
 )
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_float, as_tensor
 
 mx: ModuleType | None
 try:
@@ -46,7 +46,7 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         EagerValue: Result.
     """
     del cls
-    actual_dtype = getattr(mx, dtype) if isinstance(dtype, str) and hasattr(mx, dtype) else dtype
+    actual_dtype = _get_attr(mx, dtype) if isinstance(dtype, str) and _has_attr(mx, dtype) else dtype
     return as_tensor(as_callable(generic_array)(mx, data, actual_dtype))
 
 
@@ -60,7 +60,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
             EagerValue: Result.
     """
-    if hasattr(mx, "asarray"):
+    if _has_attr(mx, "asarray"):
         return as_tensor(as_callable(generic_asarray)(mx, data))
     return as_tensor(as_callable(generic_array)(mx, data))
 

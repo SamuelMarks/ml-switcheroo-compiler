@@ -7,6 +7,7 @@ import typing
 # ruff: noqa: E501
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ir.core import LogicalGraph
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
@@ -27,9 +28,9 @@ class MockProxyTensor(ProxyMathOverloadsMixin):
             shape: Test parameter `shape`.
             dtype: Test parameter `dtype`.
         """
-        setattr(self, "id", id)
-        setattr(self, "shape", shape)
-        setattr(self, "dtype", dtype)
+        _set_attr(self, "id", id)
+        _set_attr(self, "shape", shape)
+        _set_attr(self, "dtype", dtype)
 
 
 def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
@@ -76,8 +77,8 @@ def test_tracer_mixins(mocker: EagerTensorProtocol) -> None:
     assert res6.shape == ()
     res7 = as_callable(proxy.assign)(proxy)
     assert res7.shape == (2, 3)
-    setattr(MockProxyTensor, "__add__", lambda self, other: as_callable(self._binary_op)(other, "Add"))
-    setattr(MockProxyTensor, "__sub__", lambda self, other: as_callable(self._binary_op)(other, "Sub"))
+    _set_attr(MockProxyTensor, "__add__", lambda self, other: as_callable(self._binary_op)(other, "Add"))
+    _set_attr(MockProxyTensor, "__sub__", lambda self, other: as_callable(self._binary_op)(other, "Sub"))
     res8 = as_callable(proxy.assign_add)(proxy)
     assert res8.shape == (2, 3)
     res9 = as_callable(proxy.assign_sub)(proxy)

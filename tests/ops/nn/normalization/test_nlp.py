@@ -8,6 +8,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.nlp import (
     NLPOpsConfig,
@@ -108,7 +109,7 @@ def test_nlp_options_and_shapes(monkeypatch: EagerTensorProtocol) -> None:
         t_logits = Tensor(np.array([[1.0]]), TensorConfig(shape=(1, 1), dtype=DType("float32"), device=Device("cpu")))
         t_len = Tensor(np.array([1]), TensorConfig(shape=(1,), dtype=DType("int32"), device=Device("cpu")))
         res = ctc_loss(t_labels, t_logits, t_len, t_len)
-        assert as_tensor(getattr(res, "shape")) == (1,)
+        assert as_tensor(_get_attr(res, "shape")) == (1,)
     finally:
         config.eager_mode = orig
 
@@ -124,7 +125,7 @@ def test_nlp_tracing_candidate_samplers_and_losses() -> None:
     config.eager_mode = False
     state.global_tracing_state.is_tracing = True
     orig_add_node = state.global_tracing_state.add_node
-    setattr(state.global_tracing_state, "add_node", lambda node: None)
+    _set_attr(state.global_tracing_state, "add_node", lambda node: None)
 
     try:
 
@@ -159,5 +160,5 @@ def test_nlp_tracing_candidate_samplers_and_losses() -> None:
     finally:
         config.eager_mode = orig
         state.global_tracing_state.is_tracing = orig_tracing
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
-    assert getattr(state.global_tracing_state, "add_node") == orig_add_node
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+    assert _get_attr(state.global_tracing_state, "add_node") == orig_add_node

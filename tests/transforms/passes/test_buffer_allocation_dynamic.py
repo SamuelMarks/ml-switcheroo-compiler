@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.buffer_allocation import buffer_allocation_pass
 from tests.testing_utils import as_tensor
@@ -32,7 +33,7 @@ def test_dynamic_allocation_pass() -> None:
     assert buffer_allocation_pass(graph)
 
     # Check attributes
-    schema = as_tensor(getattr(graph, "attributes")).get("dynamic_memory_schema")
+    schema = as_tensor(_get_attr(graph, "attributes")).get("dynamic_memory_schema")
     assert schema is not None
     assert len(schema["dynamic_offsets"]) == 1
     offset_info = schema["dynamic_offsets"][0]

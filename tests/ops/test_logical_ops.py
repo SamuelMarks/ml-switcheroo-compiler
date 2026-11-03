@@ -10,6 +10,7 @@ import pytest
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 from tests.testing_utils import as_callable, as_tensor
@@ -31,7 +32,7 @@ def test_equal_op() -> None:
     a = Tensor(np.array([1, 2, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     b = Tensor(np.array([1, 5, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Equal", a, b)
-    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([True, False, True], dtype=bool))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([True, False, True], dtype=bool))
 
 
 def test_greater_op() -> None:
@@ -39,7 +40,7 @@ def test_greater_op() -> None:
     a = Tensor(np.array([4, 2, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     b = Tensor(np.array([1, 5, 3], dtype=np.float32), TensorConfig((3,), DType.Float32, Device("cpu")))
     res = dispatch_op("Greater", a, b)
-    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([True, False, False], dtype=bool))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([True, False, False], dtype=bool))
 
 
 def test_logical_and_op() -> None:
@@ -47,11 +48,11 @@ def test_logical_and_op() -> None:
     a = Tensor(np.array([True, True, False], dtype=bool), TensorConfig((3,), DType.Bool, Device("cpu")))
     b = Tensor(np.array([True, False, False], dtype=bool), TensorConfig((3,), DType.Bool, Device("cpu")))
     res = dispatch_op("LogicalAnd", a, b)
-    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([True, False, False], dtype=bool))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([True, False, False], dtype=bool))
 
 
 def test_logical_not_op() -> None:
     """Test function test_logical_not_op."""
     a = Tensor(np.array([True, False, False], dtype=bool), TensorConfig((3,), DType.Bool, Device("cpu")))
     res = dispatch_op("LogicalNot", a)
-    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([False, True, True], dtype=bool))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([False, True, True], dtype=bool))

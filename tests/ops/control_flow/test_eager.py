@@ -11,6 +11,7 @@ import pytest
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow.eager import cond_eager, map_fn_eager, scan_eager, while_loop_eager
 from tests.testing_utils import as_callable, as_tensor
@@ -28,7 +29,7 @@ def enable_eager_mode() -> Iterator[None]:
     config.backend = "numpy"
     yield
     config.eager_mode = False
-    setattr(config, "backend", None)
+    _set_attr(config, "backend", None)
 
 
 def test_cond_eager_true() -> None:
@@ -44,7 +45,7 @@ def test_cond_eager_true() -> None:
         return Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     res = cond_eager(pred, true_fn, false_fn)
-    assert as_tensor(getattr(res, "numpy"))() == 1.0
+    assert as_tensor(_get_attr(res, "numpy"))() == 1.0
 
 
 def test_cond_eager_false() -> None:
@@ -60,7 +61,7 @@ def test_cond_eager_false() -> None:
         return Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
 
     res = cond_eager(pred, true_fn, false_fn)
-    assert as_tensor(getattr(res, "numpy"))() == 0.0
+    assert as_tensor(_get_attr(res, "numpy"))() == 0.0
 
 
 def test_while_loop_eager() -> None:
@@ -72,7 +73,7 @@ def test_while_loop_eager() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return Tensor(as_tensor(getattr(as_tensor(getattr(x, "__getitem__")(0)), "numpy"))() < 5, TensorConfig((), DType.Bool, Device("cpu")))
+        return Tensor(as_tensor(_get_attr(as_tensor(_get_attr(x, "__getitem__")(0)), "numpy"))() < 5, TensorConfig((), DType.Bool, Device("cpu")))
 
     def body_fn(x: EagerValue) -> EagerValue:
         """Test function body_fn.
@@ -80,7 +81,7 @@ def test_while_loop_eager() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return [Tensor(as_tensor(getattr(as_tensor(getattr(x, "__getitem__")(0)), "numpy"))() + 1, TensorConfig((), DType.Float32, Device("cpu")))]
+        return [Tensor(as_tensor(_get_attr(as_tensor(_get_attr(x, "__getitem__")(0)), "numpy"))() + 1, TensorConfig((), DType.Float32, Device("cpu")))]
 
     init_val = Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
     res = as_callable(while_loop_eager)(cond_fn, body_fn, [init_val])
@@ -98,14 +99,14 @@ def test_scan_eager() -> None:
             carry: Test parameter `carry`.
             x: Test parameter `x`.
         """
-        new_carry = Tensor(as_tensor(getattr(as_tensor(getattr(carry, "__getitem__")(0)), "numpy"))() + as_tensor(getattr(x, "numpy"))(), TensorConfig((), DType.Float32, Device("cpu")))
+        new_carry = Tensor(as_tensor(_get_attr(as_tensor(_get_attr(carry, "__getitem__")(0)), "numpy"))() + as_tensor(_get_attr(x, "numpy"))(), TensorConfig((), DType.Float32, Device("cpu")))
         return [new_carry], [new_carry]
 
     init = [Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))]
     xs = Tensor(np.array([1.0, 2.0, 3.0]), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res_carry, res_ys = as_callable(scan_eager)(scan_fn, init, xs)
-    assert as_tensor(getattr(as_tensor(getattr(res_carry, "__getitem__")(0)), "numpy"))() == 6.0
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res_carry, "__getitem__")(0)), "numpy"))() == 6.0
 
 
 def test_map_fn_eager() -> None:
@@ -118,12 +119,12 @@ def test_map_fn_eager() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return Tensor(getattr(x, "numpy")() * 2, TensorConfig((), DType.Float32, Device("cpu")))
+        return Tensor(_get_attr(x, "numpy")() * 2, TensorConfig((), DType.Float32, Device("cpu")))
 
     elems = Tensor(np.array([1.0, 2.0, 3.0]), TensorConfig((3,), DType.Float32, Device("cpu")))
 
     res = map_fn_eager(fn, elems)
-    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([2.0, 4.0, 6.0]))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([2.0, 4.0, 6.0]))
 
 
 def test_pmap_eager() -> None:
@@ -137,11 +138,11 @@ def test_pmap_eager() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return Tensor(getattr(x, "numpy")() * 2, TensorConfig((), DType.Float32, Device("cpu")))
+        return Tensor(_get_attr(x, "numpy")() * 2, TensorConfig((), DType.Float32, Device("cpu")))
 
     x = Tensor(np.array([1.0, 2.0]), TensorConfig((2,), DType.Float32, Device("cpu")))
     res = as_callable(fn)(x)
-    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(getattr(res, "numpy")))(), as_callable(np.array)([2.0, 4.0]))
+    as_callable(np.testing.assert_array_equal)(as_callable(as_tensor(_get_attr(res, "numpy")))(), as_callable(np.array)([2.0, 4.0]))
 
 
 def test_stop_gradient_eager() -> None:
@@ -171,7 +172,7 @@ def test_while_loop_eager_non_tuple() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return Tensor(getattr(x, "numpy")() < 5, TensorConfig((), DType.Bool, Device("cpu")))
+        return Tensor(_get_attr(x, "numpy")() < 5, TensorConfig((), DType.Bool, Device("cpu")))
 
     def body_fn(x: EagerValue) -> EagerValue:
         """Test function body_fn.
@@ -179,7 +180,7 @@ def test_while_loop_eager_non_tuple() -> None:
         Args:
             x: Test parameter `x`.
         """
-        return Tensor(getattr(x, "numpy")() + 1, TensorConfig((), DType.Float32, Device("cpu")))
+        return Tensor(_get_attr(x, "numpy")() + 1, TensorConfig((), DType.Float32, Device("cpu")))
 
     init_val = Tensor(np.array(0.0), TensorConfig((), DType.Float32, Device("cpu")))
     res = as_callable(while_loop_eager)(cond_fn, body_fn, init_val)

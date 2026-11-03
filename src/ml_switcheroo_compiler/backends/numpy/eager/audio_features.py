@@ -6,6 +6,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_opt_str, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def _dct_1d_matrix(N: int, type: int, norm: str | None = None) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
@@ -79,7 +80,7 @@ def _np_dct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
 
     N = x.shape[axis]
     m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _dct_1d_matrix(N, type, norm)
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(axis, 1))
     res = np.moveaxis(res, -1, axis)
     return res
 
@@ -140,7 +141,7 @@ def _np_idct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
 
     N = x.shape[axis]
     m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _idct_1d_matrix(N, type, norm)
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(axis, 1))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(axis, 1))
     res = np.moveaxis(res, -1, axis)
     return res
 
@@ -169,8 +170,8 @@ def _np_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
 
     n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(2 * n_int, dtype=float)
     k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(n_int, dtype=float)[:, None]
-    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "cos")(np.pi / n_int * (n + 0.5 + n_int / 2) * (k + 0.5))
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(-1, 1))
+    m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "cos")(np.pi / n_int * (n + 0.5 + n_int / 2) * (k + 0.5))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(-1, 1))
     return res
 
 
@@ -192,7 +193,7 @@ def _np_inverse_mdct(backend_module: BackendModuleProtocol, *args: EagerValue, *
     k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(N, dtype=float)
     n: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.arange(2 * N, dtype=float)[:, None]
     m: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.cos(np.pi / N * (n + 0.5 + N / 2) * (k + 0.5))
-    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "tensordot")(x, m, axes=(-1, 1))
+    res: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "tensordot")(x, m, axes=(-1, 1))
     return res * (1.0 / N)
 
 

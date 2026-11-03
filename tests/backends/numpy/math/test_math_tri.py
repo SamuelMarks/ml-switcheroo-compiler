@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_tri as tri_mod
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ops.linalg.linear_operator import (
     LinearOperatorBlockLowerTriangular,
     LinearOperatorFullMatrix,
@@ -31,12 +32,12 @@ def _test_math_tri_operations_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("Tri")(np, 3, 3), as_callable(np.tri)(3, 3))
 
     # TrilIndices & TrilIndicesFrom
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(tri_mod._np_trilindices)(np, 3), "__getitem__")(0)), as_tensor(getattr(as_callable(np.tril_indices)(3), "__getitem__")(0)))
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(numpy_eager_registry.get)("TrilIndices")(np, 3), "__getitem__")(0)), as_tensor(getattr(as_callable(np.tril_indices)(3), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(tri_mod._np_trilindices)(np, 3), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.tril_indices)(3), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("TrilIndices")(np, 3), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.tril_indices)(3), "__getitem__")(0)))
 
     mat = np.ones((3, 3))
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(tri_mod._np_trilindicesfrom)(np, mat), "__getitem__")(0)), as_tensor(getattr(as_callable(np.tril_indices_from)(mat), "__getitem__")(0)))
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(numpy_eager_registry.get)("TrilIndicesFrom")(np, mat), "__getitem__")(0)), as_tensor(getattr(as_callable(np.tril_indices_from)(mat), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(tri_mod._np_trilindicesfrom)(np, mat), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.tril_indices_from)(mat), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("TrilIndicesFrom")(np, mat), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.tril_indices_from)(mat), "__getitem__")(0)))
 
     # TrimZeros
     trim_arr = np.array([0, 1, 2, 0])
@@ -44,11 +45,11 @@ def _test_math_tri_operations_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("TrimZeros")(np, trim_arr), as_callable(np.array)([1, 2]))
 
     # TriuIndices & TriuIndicesFrom
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(tri_mod._np_triuindices)(np, 3), "__getitem__")(0)), as_tensor(getattr(as_callable(np.triu_indices)(3), "__getitem__")(0)))
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(numpy_eager_registry.get)("TriuIndices")(np, 3), "__getitem__")(0)), as_tensor(getattr(as_callable(np.triu_indices)(3), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(tri_mod._np_triuindices)(np, 3), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.triu_indices)(3), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("TriuIndices")(np, 3), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.triu_indices)(3), "__getitem__")(0)))
 
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(tri_mod._np_triuindicesfrom)(np, mat), "__getitem__")(0)), as_tensor(getattr(as_callable(np.triu_indices_from)(mat), "__getitem__")(0)))
-    assert as_callable(np.array_equal)(as_tensor(getattr(as_callable(numpy_eager_registry.get)("TriuIndicesFrom")(np, mat), "__getitem__")(0)), as_tensor(getattr(as_callable(np.triu_indices_from)(mat), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(tri_mod._np_triuindicesfrom)(np, mat), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.triu_indices_from)(mat), "__getitem__")(0)))
+    assert as_callable(np.array_equal)(as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("TriuIndicesFrom")(np, mat), "__getitem__")(0)), as_tensor(_get_attr(as_callable(np.triu_indices_from)(mat), "__getitem__")(0)))
 
     # Fromstring
     str_res = tri_mod._np_fromstring_(np, "1 2 3", sep=" ")
@@ -63,9 +64,9 @@ def _test_math_tri_operations_part_1(_state: dict[str, EagerTensorProtocol]) -> 
     # AsStringConfig
     cfg = tri_mod._np_asstringconfig(np, precision=5, scientific=True)
     assert isinstance(cfg, AsStringConfig)
-    getattr(_state, "update")({"cfg": cfg, "eye_res": eye_res, "mat": mat, "str_res": str_res})
-    getattr(_state, "update")({"trim_arr": trim_arr})
-    _state.update(locals())
+    _get_attr(_state, "update")({"cfg": cfg, "eye_res": eye_res, "mat": mat, "str_res": str_res})
+    _get_attr(_state, "update")({"trim_arr": trim_arr})
+    _state.update(_caller_locals())
 
 
 def _test_math_tri_operations_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -109,13 +110,13 @@ def _test_math_tri_operations_part_2(_state: dict[str, EagerTensorProtocol]) -> 
     y_t = np.array([0, 1, 2])
     y_p = np.array([0, 2, 1])
     cm1 = tri_mod._np_confusion_matrix(np, y_t, y_p)
-    assert cm1 is not None and as_tensor(getattr(cm1, "shape")) == (3, 3)
+    assert cm1 is not None and as_tensor(_get_attr(cm1, "shape")) == (3, 3)
     cm2 = tri_mod._np_confusion_matrix(np, y_t, y_p, num_classes=4)
-    assert cm2 is not None and as_tensor(getattr(cm2, "shape")) == (4, 4)
+    assert cm2 is not None and as_tensor(_get_attr(cm2, "shape")) == (4, 4)
     assert as_callable(numpy_eager_registry.get)("ConfusionMatrix")(np, y_t, y_p) is not None
-    getattr(_state, "update")({"b_tri": b_tri, "cm1": cm1, "cm2": cm2, "full_op": full_op})
-    getattr(_state, "update")({"lower_op": lower_op, "tridiag_op": tridiag_op, "y_p": y_p, "y_t": y_t})
-    _state.update(locals())
+    _get_attr(_state, "update")({"b_tri": b_tri, "cm1": cm1, "cm2": cm2, "full_op": full_op})
+    _get_attr(_state, "update")({"lower_op": lower_op, "tridiag_op": tridiag_op, "y_p": y_p, "y_t": y_t})
+    _state.update(_caller_locals())
 
 
 def _test_math_tri_operations_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -133,7 +134,7 @@ def _test_math_tri_operations_part_3(_state: dict[str, EagerTensorProtocol]) -> 
     data = np.arange(10)
     assert as_callable(np.array_equal)(as_callable(tri_mod._np_stridedslice)(np, data, [1], [8], [2]), data[1:8:2])
     assert as_callable(np.array_equal)(as_callable(numpy_eager_registry.get)("StridedSlice")(np, data, [1], [8], [2]), data[1:8:2])
-    getattr(_state, "update")({"data": data, "dist_res": dist_res})
+    _get_attr(_state, "update")({"data": data, "dist_res": dist_res})
 
 
 def test_math_tri_operations() -> None:

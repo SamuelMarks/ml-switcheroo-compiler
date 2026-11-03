@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -45,8 +46,8 @@ def _test_backward_tracing_sub_1(_state: dict[str, EagerTensorProtocol]) -> None
         _state: Shared test state dictionary.
     """
     mock_is_tracing = _state["mock_is_tracing"]
-    setattr(mock_is_tracing.__bool__, "return_value", True)  # Make truthy tests pass
-    _state.update(locals())
+    _set_attr(mock_is_tracing.__bool__, "return_value", True)  # Make truthy tests pass
+    _state.update(_caller_locals())
 
 
 def _test_backward_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -68,50 +69,50 @@ def _test_backward_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
         # WRT tensors missing (hits 63)
         with patch("ml_switcheroo_compiler.grad.api._find_wrt_tensors", return_value=([], [])):
             backward(t_scalar)
-            assert getattr(t_scalar, "grad", None) == 1.0
+            assert _get_attr(t_scalar, "grad", None) == 1.0
 
         # Full flow
-        setattr(g, "inputs", ["in_node"])
+        _set_attr(g, "inputs", ["in_node"])
         n_in = LogicalNode(id="in_node", op_type="Input")
         g.nodes["in_node"] = n_in
         wrt_tensors = [t_scalar]
 
         grad_g = IRGraph()
-        setattr(grad_g, "outputs", ["grad_out"])
+        _set_attr(grad_g, "outputs", ["grad_out"])
 
         with patch("ml_switcheroo_compiler.grad.api._find_wrt_tensors", return_value=(wrt_tensors, ["in_node"])):
             with patch("ml_switcheroo_compiler.transforms.autodiff.grad", return_value=grad_g):
                 with patch("ml_switcheroo_compiler.grad.api._get_inputs_dict", return_value={"in_node": np.array([1.0])}):
                     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={"grad_out": np.array([2.0])}):
                         backward(t_scalar)
-                        assert np.array_equal(getattr(t_scalar, "grad", None), np.array([2.0]))
+                        assert np.array_equal(_get_attr(t_scalar, "grad", None), np.array([2.0]))
                     with patch("ml_switcheroo_compiler.interpreter.evaluator.evaluate_graph", return_value={}):
-                        setattr(t_scalar, "grad", None)
+                        _set_attr(t_scalar, "grad", None)
                         backward(t_scalar)
                         assert as_tensor(t_scalar.grad) is None
 
         # Backend with execute_graph
         backend_exec = MagicMock()
-        setattr(backend_exec.execute_graph, "return_value", {"grad_out": np.array([3.0])})
+        _set_attr(backend_exec.execute_graph, "return_value", {"grad_out": np.array([3.0])})
         with patch("ml_switcheroo_compiler.grad.api._find_wrt_tensors", return_value=(wrt_tensors, ["in_node"])):
             with patch("ml_switcheroo_compiler.transforms.autodiff.grad", return_value=grad_g):
                 with patch("ml_switcheroo_compiler.grad.api._get_inputs_dict", return_value={"in_node": np.array([1.0])}):
                     with patch("ml_switcheroo_compiler.grad.api.get_active_backend", return_value=backend_exec):
                         backward(t_scalar)
-                        assert np.array_equal(getattr(t_scalar, "grad", None), np.array([3.0]))
+                        assert np.array_equal(_get_attr(t_scalar, "grad", None), np.array([3.0]))
 
         # Backend with compile_graph
         backend_compile = MagicMock(spec=["compile_graph"])
-        setattr(backend_compile.compile_graph, "return_value", lambda inputs: {"grad_out": np.array([4.0])})
+        _set_attr(backend_compile.compile_graph, "return_value", lambda inputs: {"grad_out": np.array([4.0])})
         with patch("ml_switcheroo_compiler.grad.api._find_wrt_tensors", return_value=(wrt_tensors, ["in_node"])):
             with patch("ml_switcheroo_compiler.transforms.autodiff.grad", return_value=grad_g):
                 with patch("ml_switcheroo_compiler.grad.api._get_inputs_dict", return_value={"in_node": np.array([1.0])}):
                     with patch("ml_switcheroo_compiler.grad.api.get_active_backend", return_value=backend_compile):
                         backward(t_scalar)
-                        assert bool(as_tensor(np.array_equal(getattr(t_scalar, "grad", None), np.array([4.0]))))
-    getattr(_state, "update")({"SwitcherooError": SwitcherooError, "backend_compile": backend_compile, "backend_exec": backend_exec, "grad_g": grad_g})
-    getattr(_state, "update")({"n_in": n_in, "wrt_tensors": wrt_tensors})
-    _state.update(locals())
+                        assert bool(as_tensor(np.array_equal(_get_attr(t_scalar, "grad", None), np.array([4.0]))))
+    _get_attr(_state, "update")({"SwitcherooError": SwitcherooError, "backend_compile": backend_compile, "backend_exec": backend_exec, "grad_g": grad_g})
+    _get_attr(_state, "update")({"n_in": n_in, "wrt_tensors": wrt_tensors})
+    _state.update(_caller_locals())
 
 
 def test_backward_tracing() -> None:
@@ -137,11 +138,11 @@ def test_backward_tracing() -> None:
     t_scalar._data = mock_out
 
     with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", new_callable=MagicMock, return_value=True) as mock_is_tracing:
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"IRGraph": IRGraph, "LogicalNode": LogicalNode, "MagicMock": MagicMock, "Tensor": Tensor})
-        getattr(_state, "update")({"TensorConfig": TensorConfig, "backward": backward, "g": g, "mock_is_tracing": mock_is_tracing})
-        getattr(_state, "update")({"mock_out": mock_out, "np": np, "patch": patch, "pytest": pytest})
-        getattr(_state, "update")({"t_non_scalar": t_non_scalar, "t_scalar": t_scalar})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"IRGraph": IRGraph, "LogicalNode": LogicalNode, "MagicMock": MagicMock, "Tensor": Tensor})
+        _get_attr(_state, "update")({"TensorConfig": TensorConfig, "backward": backward, "g": g, "mock_is_tracing": mock_is_tracing})
+        _get_attr(_state, "update")({"mock_out": mock_out, "np": np, "patch": patch, "pytest": pytest})
+        _get_attr(_state, "update")({"t_non_scalar": t_non_scalar, "t_scalar": t_scalar})
         for _sub_fn in (_test_backward_tracing_sub_1, _test_backward_tracing_sub_2):
             _sub_fn(_state)
         assert len(_state) > 0
@@ -171,9 +172,9 @@ def test_custom_jvp_vjp() -> None:
         return x
 
     f2 = custom_vjp(my_fn)
-    as_tensor(getattr(f2, "defvjp"))(my_fn, my_vjp)
-    assert as_tensor(getattr(f2, "fwd")) == my_fn
-    assert as_tensor(getattr(f2, "bwd")) == my_vjp
+    as_tensor(_get_attr(f2, "defvjp"))(my_fn, my_vjp)
+    assert as_tensor(_get_attr(f2, "fwd")) == my_fn
+    assert as_tensor(_get_attr(f2, "bwd")) == my_vjp
 
     # Just call it directly
     def mock_fwd(t: EagerValue, g: EagerValue) -> EagerValue:
@@ -223,7 +224,7 @@ def test_ir_grad() -> None:
         return x
 
     f_grad = ir_grad(f)
-    assert getattr(f_grad, "__name__", "") == "wrapped"
+    assert _get_attr(f_grad, "__name__", "") == "wrapped"
 
     with patch("ml_switcheroo_compiler.grad.api._compute_grad_and_value", return_value=(("val", "aux"), {"x": "grad"})):
         f_grad_val = ir_grad(f)

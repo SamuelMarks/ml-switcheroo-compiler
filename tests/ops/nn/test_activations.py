@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.activations import HardSilu, HardSwish, LogSoftmax, OneHot, Rrelu, Sigmoid, Softmax, Squareplus, isotonic_regression, log_softmax, one_hot, rrelu, sigmoid, softmax
 from ml_switcheroo_compiler.tracing import global_tracing_state
@@ -22,9 +23,9 @@ def test_isotonic_regression_tracing() -> None:
     try:
         y = Tensor(None, TensorConfig((5,), "float32", "cpu"))
         out1, out2 = as_callable(isotonic_regression)(y)
-        assert as_tensor(getattr(out1, "shape")) == (5,)
-        assert as_tensor(getattr(out2, "shape")) == (5,)
-        assert as_tensor(getattr(out2, "dtype")) == DType.Int32
+        assert as_tensor(_get_attr(out1, "shape")) == (5,)
+        assert as_tensor(_get_attr(out2, "shape")) == (5,)
+        assert as_tensor(_get_attr(out2, "dtype")) == DType.Int32
     finally:
         global_tracing_state.stop_tracing()
         config.eager_mode = True

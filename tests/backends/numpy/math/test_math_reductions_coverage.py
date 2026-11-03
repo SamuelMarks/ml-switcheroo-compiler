@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_reductions as red_module
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -51,7 +52,7 @@ def test_math_reductions_ops(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # ReducePrecision
     reduced = red_module._np_reduce_precision(np, x, 5, 10)
-    assert as_tensor(getattr(reduced, "dtype")) == np.float32
+    assert as_tensor(_get_attr(reduced, "dtype")) == np.float32
     assert as_callable(np.allclose)(reduced, x)
     reg_red_prec = numpy_eager_registry.get("ReducePrecision")
     assert as_callable(np.allclose)(as_callable(reg_red_prec)(np, x, 5, 10), x)

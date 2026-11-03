@@ -6,7 +6,7 @@ import typing
 
 import pydantic
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_shape, as_tensor_pair, get_active_backend
+from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, _get_attr, _has_attr, as_shape, as_tensor_pair, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -194,7 +194,7 @@ class Stft(OpDef):
             ValueError: If `noverlap` is greater than or equal to `nfft`.
         """
         _ = kwargs
-        if not hasattr(x, "shape") or not x.shape:
+        if not _has_attr(x, "shape") or not x.shape:
             return ()
         step = nfft - noverlap
         if step <= 0:
@@ -229,7 +229,7 @@ class Istft(OpDef):
             ValueError: If `noverlap` is greater than or equal to `nfft`.
         """
         _ = kwargs
-        if not hasattr(x, "shape") or not x.shape or len(x.shape) < 2:
+        if not _has_attr(x, "shape") or not x.shape or len(x.shape) < 2:
             return ()
         step = nfft - noverlap
         if step <= 0:
@@ -251,7 +251,7 @@ def window_hann(length: int) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("WindowHann", length)
-        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))
+        return Tensor(data, TensorConfig(as_shape(_get_attr(data, "shape", (length,))), "float32", None))
     return _emit_shape_node("WindowHann", [], {"length": length}, (length,), "float32")
 
 
@@ -267,7 +267,7 @@ def window_hamming(length: int) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("WindowHamming", length)
-        return Tensor(data, TensorConfig(getattr(data, "shape", (length,)), "float32", None))
+        return Tensor(data, TensorConfig(as_shape(_get_attr(data, "shape", (length,))), "float32", None))
     return _emit_shape_node("WindowHamming", [], {"length": length}, (length,), "float32")
 
 
@@ -285,7 +285,7 @@ def stft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Stft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = as_shape(getattr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
+        out_shape = as_shape(_get_attr(data, "shape", Stft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
     out_shape = as_shape(Stft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(
@@ -311,7 +311,7 @@ def istft(x: Tensor, nfft: int, noverlap: int = 0) -> TensorOrScalar:
     if config.eager_mode:
         backend = get_active_backend()
         data = backend.execute_op("Istft", (x.data if type(x).__name__ == "Tensor" else x), nfft=nfft, noverlap=noverlap)
-        out_shape = as_shape(getattr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
+        out_shape = as_shape(_get_attr(data, "shape", Istft().infer_shape(x, nfft=nfft, noverlap=noverlap)))
         return Tensor(data, TensorConfig(out_shape, x.dtype, x.device))
     out_shape = as_shape(Istft().infer_shape(x, nfft=nfft, noverlap=noverlap))
     return _emit_shape_node(

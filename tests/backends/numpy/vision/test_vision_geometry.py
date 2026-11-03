@@ -10,6 +10,7 @@ import pytest
 import ml_switcheroo_compiler.backends.eager as eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_generator, _np_affine_grid, _np_affine_transform, _np_elastic_transform, _np_extract_bounding_boxes, _np_iou, _np_nms, _np_perspective_transform
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_callable, as_ndarray, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -19,9 +20,9 @@ if typing.TYPE_CHECKING:
 def test_np_affine_generator() -> None:
     """Test function test_np_affine_generator."""
     res = _np_affine_generator(
-        np, 2, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None)
+        np, 2, _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None), _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | list[float] | float", None)
     )
-    assert as_tensor(getattr(res, "shape")) == (2, 8)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 8)
 
 
 def test_np_elastic_transform() -> None:
@@ -87,8 +88,8 @@ def test_np_perspective_transform() -> None:
 def test_np_affine_grid() -> None:
     """Test function test_np_affine_grid."""
     res1 = _np_affine_grid(np, np.ones((2, 2)), (2, 2))
-    assert as_tensor(getattr(res1, "shape")) == (2, 2, 2)
-    res2 = _np_affine_grid(np, typing.cast("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float", "dummy"), (2, 2))
+    assert as_tensor(_get_attr(res1, "shape")) == (2, 2, 2)
+    res2 = _np_affine_grid(np, _cast_val("np.ndarray[tuple[int, ...], np.dtype[np.generic]] | float", "dummy"), (2, 2))
     assert res2 == "dummy"
 
 

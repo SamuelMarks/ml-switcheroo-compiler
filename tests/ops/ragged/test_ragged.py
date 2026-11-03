@@ -9,6 +9,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.ragged.frontend as ragged_frontend
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.ragged import (
     BooleanMask,
@@ -78,8 +79,8 @@ def _test_ragged_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
     assert as_callable(len)(as_callable(RaggedStackDynamicPartitions)().infer_shape()) == 2
     assert as_callable(len)(as_callable(BooleanMask)().infer_shape()) == 1
     assert MapFlatValues().infer_shape(t) == ()
-    getattr(_state, "update")({"t": t})
-    _state.update(locals())
+    _get_attr(_state, "update")({"t": t})
+    _state.update(_caller_locals())
 
 
 def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -111,12 +112,12 @@ def _test_ragged_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
                 """
                 pass
 
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
         assert as_callable(ragged_tensor_to_dense)(t) is not None
         config.eager_mode = True
         global_tracing_state.is_tracing = False
-    getattr(_state, "update")({"DummyGraph": DummyGraph, "global_tracing_state": global_tracing_state, "mock_backend": mock_backend})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyGraph": DummyGraph, "global_tracing_state": global_tracing_state, "mock_backend": mock_backend})
+    _state.update(_caller_locals())
 
 
 def _test_ragged_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -136,9 +137,9 @@ def _test_ragged_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None
             self.op_type = "dummy"
 
     orig_eager = config.eager_mode
-    orig_get_op = as_tensor(getattr(ragged_frontend, "get_op"))
-    getattr(_state, "update")({"DummyOp": DummyOp, "orig_eager": orig_eager, "orig_get_op": orig_get_op})
-    _state.update(locals())
+    orig_get_op = as_tensor(_get_attr(ragged_frontend, "get_op"))
+    _get_attr(_state, "update")({"DummyOp": DummyOp, "orig_eager": orig_eager, "orig_get_op": orig_get_op})
+    _state.update(_caller_locals())
 
 
 def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -168,7 +169,7 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                 """
                 pass
 
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
 
         class DummyOpMask:
             """Test class DummyOpMask."""
@@ -191,19 +192,19 @@ def _test_ragged_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None
                 """
                 return ()
 
-        setattr(ragged_frontend, "get_op", lambda x: DummyOpMask)
+        _set_attr(ragged_frontend, "get_op", lambda x: DummyOpMask)
         import ml_switcheroo_compiler.ops.linalg.utils as linalg_utils
 
         orig_emit = linalg_utils._emit_linalg_node
-        setattr(linalg_utils, "_emit_linalg_node", lambda *args, **kwargs: "masked")
+        _set_attr(linalg_utils, "_emit_linalg_node", lambda *args, **kwargs: "masked")
         try:
             assert as_callable(boolean_mask)(t, t) is not None
             assert as_callable(map_flat_values)(as_callable(DummyOp)(), t) is not None
         finally:
             linalg_utils._emit_linalg_node = orig_emit
     finally:
-        setattr(config, "eager_mode", orig_eager)
-        setattr(ragged_frontend, "get_op", orig_get_op)
+        _set_attr(config, "eager_mode", orig_eager)
+        _set_attr(ragged_frontend, "get_op", orig_get_op)
         global_tracing_state.is_tracing = False
 
 

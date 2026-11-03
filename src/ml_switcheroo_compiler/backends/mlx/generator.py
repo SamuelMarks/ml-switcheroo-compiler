@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.base_generator import ClassBasedGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 
 from .mlx_mixins import MLXAudioVisitor, MLXNNOpsVisitor, MLXShapeOpsVisitor, MLXVisionVisitor
@@ -135,12 +135,12 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        save_fn = getattr(mx, "save_gguf", None)
+        save_fn = _get_attr(mx, "save_gguf", None)
         if save_fn is not None:
             try:
-                save_fn(file, arrays, metadata or {})
+                as_callable(save_fn)(file, arrays, metadata or {})
             except TypeError:
-                save_fn(file, arrays)
+                as_callable(save_fn)(file, arrays)
 
     @classmethod
     def set_default_stream(cls, stream: EagerValue) -> None:
@@ -151,8 +151,8 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if hasattr(mx, "set_default_stream"):
-            getattr(mx, "set_default_stream")(stream)
+        if _has_attr(mx, "set_default_stream"):
+            as_callable(_get_attr(mx, "set_default_stream"))(stream)
 
     @classmethod
     def set_memory_limit(cls, limit: int) -> None:
@@ -163,7 +163,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if hasattr(mx, "metal") and hasattr(mx.metal, "set_memory_limit"):
+        if _has_attr(mx, "metal") and _has_attr(mx.metal, "set_memory_limit"):
             mx.metal.set_memory_limit(limit)
 
     @classmethod
@@ -175,7 +175,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        if hasattr(mx, "metal") and hasattr(mx.metal, "set_wired_limit"):
+        if _has_attr(mx, "metal") and _has_attr(mx.metal, "set_wired_limit"):
             mx.metal.set_wired_limit(limit)
 
     def generate(self) -> str:
@@ -253,7 +253,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         """
         import mlx.core as mx
 
-        getattr(mx, "save")(file, arr)
+        as_callable(_get_attr(mx, "save"))(file, arr)
 
     @classmethod
     def savez(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -268,7 +268,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
         data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
-        getattr(mx, "save_safetensors")(file, data)
+        as_callable(_get_attr(mx, "save_safetensors"))(file, data)
 
     @classmethod
     def savez_compressed(cls: type, file: str, *args: EagerValue, **kwds: EagerValue) -> None:
@@ -284,7 +284,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
         data: dict[str, EagerValue] = {f"arr_{i}": arg for i, arg in enumerate(args)}
         data.update(kwds)
         # MLX doesn't have a specific compressed method, safetensors is efficient
-        getattr(mx, "save_safetensors")(file, data)
+        as_callable(_get_attr(mx, "save_safetensors"))(file, data)
 
     def _compile_aot_impl(self, graph: IRGraph, **kwargs: EagerValue) -> EagerValue:
         """Compile IRGraph into an ahead-of-time (AOT) callable using mx.compile.
@@ -309,7 +309,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
             model_instance = model_cls()
             shapeless = bool(kwargs.get("shapeless", False))
-            compiled_fn = getattr(mx, "compile")(model_instance, shapeless=shapeless)
+            compiled_fn = as_callable(as_callable(_get_attr(mx, "compile"))(model_instance, shapeless=shapeless))
 
             def aot_mlx_runner(*w_args: EagerValue, **w_kwargs: EagerValue) -> EagerValue:
                 """Execute AOT compiled MLX graph function.
@@ -321,7 +321,7 @@ class MLXCodeGenerator(ClassBasedGenerator):
                 Returns:
                     EagerValue: Computed outputs.
                 """
-                mlx_args = [getattr(mx, "array")(a.data if isinstance(a, Tensor) else a) for a in w_args]
+                mlx_args = [as_callable(_get_attr(mx, "array"))(a.data if isinstance(a, Tensor) else a) for a in w_args]
                 return as_tensor(compiled_fn(*mlx_args, **w_kwargs))
 
             return aot_mlx_runner
@@ -337,14 +337,14 @@ class MLXCodeGenerator(ClassBasedGenerator):
                 Returns:
                     EagerValue: Evaluated output tensors.
                 """
-                input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+                input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
                 inputs: dict[str, EagerValue] = {}
                 for i, inp_node in enumerate(input_nodes):
                     if i < len(fn_args):
                         arg_val = fn_args[i]
                         inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
                 evaluated = evaluate_graph(graph, inputs=inputs)
-                if hasattr(graph, "outputs") and graph.outputs:
+                if _has_attr(graph, "outputs") and graph.outputs:
                     if len(graph.outputs) == 1:
                         return evaluated.get(graph.outputs[0])
                     return tuple(evaluated.get(out_id) for out_id in graph.outputs)

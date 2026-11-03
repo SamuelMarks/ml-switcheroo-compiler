@@ -6,13 +6,13 @@ import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair, as_tensor_triple
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+    pass
 
 
 @register_op("Qr")
@@ -75,7 +75,7 @@ class HouseholderProduct(OpDef):
         """
         if not args:
             return ()
-        return tuple(int(d) for d in getattr(args[0], "shape", getattr(args[0], "shape_metadata", args[0] if isinstance(args[0], (list, tuple)) else ())))
+        return tuple(int(d) for d in _get_attr(args[0], "shape", _get_attr(args[0], "shape_metadata", args[0] if isinstance(args[0], (list, tuple)) else ())))
 
 
 @register_op("Schur")
@@ -267,7 +267,7 @@ def qdwh(a: Tensor, is_hermitian: bool = False, max_iterations: int = 10) -> Ten
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        q, h, num_iters, is_converged = typing.cast(
+        q, h, num_iters, is_converged = _cast_val(
             "tuple[TensorLike, TensorLike, TensorLike, TensorLike]",
             backend.execute_op("Qdwh", a.data, is_hermitian=is_hermitian, max_iterations=max_iterations),
         )

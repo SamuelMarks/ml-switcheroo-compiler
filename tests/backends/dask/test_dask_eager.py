@@ -13,6 +13,7 @@ import pytest
 import ml_switcheroo_compiler.backends.dask.eager as dask_eager
 from ml_switcheroo_compiler.backends.dask.eager import execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -70,11 +71,11 @@ def test_dask_import_error() -> None:
 
     with patch("builtins.__import__", side_effect=mock_import):
         importlib.reload(dask_eager)
-        assert as_tensor(getattr(dask_eager, "da")) is None
+        assert as_tensor(_get_attr(dask_eager, "da")) is None
 
     # Restore module
     importlib.reload(dask_eager)
-    assert as_tensor(getattr(dask_eager, "da")) is not None
+    assert as_tensor(_get_attr(dask_eager, "da")) is not None
 
 
 def test_dask_eager_unavailable() -> None:

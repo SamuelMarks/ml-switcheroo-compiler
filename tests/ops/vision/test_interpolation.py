@@ -6,6 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.interpolation import map_coordinates, resize, resize_bicubic, resize_bilinear, resize_lanczos3, resize_nearest
 from tests.testing_utils import as_tensor
@@ -40,7 +41,7 @@ def test_vision_interpolation_funcs(mocker: EagerTensorProtocol) -> None:
     mocker.patch("ml_switcheroo_compiler.ops.vision.interpolation._emit_shape_node", return_value="node")
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.registry.get_op")
     mock_op = mocker.MagicMock()
-    setattr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
+    _set_attr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
     assert resize_bilinear(t, (10, 10)) == "node"
     assert resize_nearest(t, (10, 10)) == "node"
     assert resize_bicubic(t, (10, 10)) == "node"
@@ -49,11 +50,11 @@ def test_vision_interpolation_funcs(mocker: EagerTensorProtocol) -> None:
     assert map_coordinates(t, t, 1) == "node"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.interpolation.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
-    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert as_tensor(getattr(resize_bilinear(t, (10, 10)), "config")).shape == (2, 3)
-    assert as_tensor(getattr(resize_nearest(t, (10, 10)), "config")).shape == (2, 3)
-    assert as_tensor(getattr(resize_bicubic(t, (10, 10)), "config")).shape == (2, 3)
-    assert as_tensor(getattr(resize_lanczos3(t, (10, 10)), "config")).shape == (2, 3)
-    assert as_tensor(getattr(resize(t, (10, 10)), "config")).shape == (2, 3)
-    assert as_tensor(getattr(map_coordinates(t, t, 1), "config")).shape == (2, 3)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
+    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert as_tensor(_get_attr(resize_bilinear(t, (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(resize_nearest(t, (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(resize_bicubic(t, (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(resize_lanczos3(t, (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(resize(t, (10, 10)), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(map_coordinates(t, t, 1), "config")).shape == (2, 3)

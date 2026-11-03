@@ -6,7 +6,7 @@ import os
 
 import yaml
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -33,7 +33,7 @@ def _estimate_memory(node: IRNode) -> float:
     Returns:
         float: Estimated memory in bytes.
     """
-    shape = getattr(node, "shape_metadata", None)
+    shape = _get_attr(node, "shape_metadata", None)
     if not shape:
         return 4.0  # default scalar
     if isinstance(shape, (int, float)):
@@ -54,14 +54,14 @@ def _estimate_compute(node: IRNode, rules: TensorOrScalar) -> float:
     Returns:
         float: Estimated FLOPs.
     """
-    shape = getattr(node, "shape_metadata", None)
+    shape = _get_attr(node, "shape_metadata", None)
     if not shape:
         return 1.0
     flops = 1.0
     if isinstance(shape, (list, tuple)):
         for dim in shape:
             flops *= dim
-    if node.op_type in getattr(rules, "get")("high_cost_ops", []):
+    if node.op_type in _get_attr(rules, "get")("high_cost_ops", []):
         flops *= 100  # arbitrary higher cost
     return flops
 
@@ -83,9 +83,9 @@ def _find_target_nodes(
     Returns:
         list[IRNode]: List of nodes to rematerialize.
     """
-    target_ops = set(getattr(rules, "get")("target_ops", []))
-    min_mem = getattr(getattr(rules, "get")("thresholds", {}), "get")("min_memory_bytes", 1024 * 1024)
-    max_ratio = getattr(getattr(rules, "get")("thresholds", {}), "get")("max_compute_to_memory_ratio", 10.0)
+    target_ops = set(_get_attr(rules, "get")("target_ops", []))
+    min_mem = _get_attr(_get_attr(rules, "get")("thresholds", {}), "get")("min_memory_bytes", 1024 * 1024)
+    max_ratio = _get_attr(_get_attr(rules, "get")("thresholds", {}), "get")("max_compute_to_memory_ratio", 10.0)
 
     to_remat = []
     for n in nodes:
@@ -127,7 +127,7 @@ def rematerialization_pass(graph: IRGraph) -> bool:
         if clone_id not in graph.nodes:
             new_node = IRNode(id=clone_id, op_type=n.op_type, inputs=n.inputs.copy())
             new_node.attributes = n.attributes.copy()
-            new_node.shape_metadata = getattr(n, "shape_metadata", None)
+            new_node.shape_metadata = _get_attr(n, "shape_metadata", None)
             graph.nodes[clone_id] = new_node
             modified = True
 

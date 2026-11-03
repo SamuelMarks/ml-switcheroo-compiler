@@ -10,6 +10,7 @@ import numpy as np
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.optimizers.updates import (
     AdadeltaConfig,
@@ -108,10 +109,10 @@ def _test_optimizers_updates_brute_part_1(_state: dict[str, EagerTensorProtocol]
     as_callable(adamw_update)(param, grad, adamw_c, state_adamw)
 
     adagrad_c = AdagradConfig(lr=0.1, weight_decay=0.01)
-    getattr(_state, "update")({"adagrad_c": adagrad_c, "adam_c": adam_c, "adamw_c": adamw_c, "grad": grad})
-    getattr(_state, "update")({"param": param, "sgd_c": sgd_c, "sgd_nesterov": sgd_nesterov, "state_adam": state_adam})
-    getattr(_state, "update")({"state_adamw": state_adamw, "state_sgd": state_sgd})
-    _state.update(locals())
+    _get_attr(_state, "update")({"adagrad_c": adagrad_c, "adam_c": adam_c, "adamw_c": adamw_c, "grad": grad})
+    _get_attr(_state, "update")({"param": param, "sgd_c": sgd_c, "sgd_nesterov": sgd_nesterov, "state_adam": state_adam})
+    _get_attr(_state, "update")({"state_adamw": state_adamw, "state_sgd": state_sgd})
+    _state.update(_caller_locals())
 
 
 def _test_optimizers_updates_brute_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -147,10 +148,10 @@ def _test_optimizers_updates_brute_part_2(_state: dict[str, EagerTensorProtocol]
 
     lion_c = LionConfig(lr=0.1, weight_decay=0.01)
     as_callable(lion_update)(param, grad, lion_c)
-    getattr(_state, "update")({"adadelta_c": adadelta_c, "adamax_c": adamax_c, "lion_c": lion_c, "rmsprop_c": rmsprop_c})
-    getattr(_state, "update")({"rmsprop_c2": rmsprop_c2, "state_adadelta": state_adadelta, "state_adagrad": state_adagrad, "state_adamax": state_adamax})
-    getattr(_state, "update")({"state_rmsprop": state_rmsprop})
-    _state.update(locals())
+    _get_attr(_state, "update")({"adadelta_c": adadelta_c, "adamax_c": adamax_c, "lion_c": lion_c, "rmsprop_c": rmsprop_c})
+    _get_attr(_state, "update")({"rmsprop_c2": rmsprop_c2, "state_adadelta": state_adadelta, "state_adagrad": state_adagrad, "state_adamax": state_adamax})
+    _get_attr(_state, "update")({"state_rmsprop": state_rmsprop})
+    _state.update(_caller_locals())
 
 
 def _test_optimizers_updates_brute_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -178,8 +179,8 @@ def _test_optimizers_updates_brute_part_3(_state: dict[str, EagerTensorProtocol]
     from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
     global_tracing_state.is_tracing = True
-    getattr(_state, "update")({"global_tracing_state": global_tracing_state, "state_lion": state_lion})
-    _state.update(locals())
+    _get_attr(_state, "update")({"global_tracing_state": global_tracing_state, "state_lion": state_lion})
+    _state.update(_caller_locals())
 
 
 def _test_optimizers_updates_brute_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -205,8 +206,8 @@ def _test_optimizers_updates_brute_part_4(_state: dict[str, EagerTensorProtocol]
             ApplyFtrl().infer_shape(param, param, param)
             ApplyRMSProp().infer_shape(param, param, param)
     finally:
-        setattr(global_tracing_state, "is_tracing", False)
-    assert getattr(global_tracing_state, "is_tracing") is False
+        _set_attr(global_tracing_state, "is_tracing", False)
+    assert _get_attr(global_tracing_state, "is_tracing") is False
 
 
 def test_optimizers_updates_brute() -> None:

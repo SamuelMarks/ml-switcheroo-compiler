@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import typing
 from collections.abc import Sequence
 from types import ModuleType
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_float, as_tensor
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 
 
 class _SparseBackendProxy:
@@ -23,10 +23,10 @@ class _SparseBackendProxy:
         """
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        return as_tensor(getattr(BackendRegistry.get("numpy").get_module(), name))
+        return as_tensor(_get_attr(BackendRegistry.get("numpy").get_module(), name))
 
 
-_SP_BACKEND: ModuleType = typing.cast(ModuleType, _SparseBackendProxy())
+_SP_BACKEND: ModuleType = _cast_val(ModuleType, _SparseBackendProxy())
 
 
 class COOTensor:

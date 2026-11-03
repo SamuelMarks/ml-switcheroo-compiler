@@ -11,6 +11,7 @@ import pytest
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from tests.testing_utils import as_callable, as_tensor
@@ -37,8 +38,8 @@ def test_tensor_backward_and_view() -> None:
     config.eager_mode = True
     t = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, "cpu"))
     t.backward()
-    assert as_tensor(getattr(t.view(1), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(t.view)([1]), "shape")) == (1,)
+    assert as_tensor(_get_attr(t.view(1), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(t.view)([1]), "shape")) == (1,)
 
 
 def test_tensor_more_methods() -> None:
@@ -71,7 +72,7 @@ def test_tensor_non_eager_and_index() -> None:
     finally:
         config.eager_mode = old_eager
 
-    assert t.__index__() == 1
+    assert _get_attr(t, "__index__")() == 1
 
 
 def test_tensor_config_list_shape() -> None:
@@ -102,4 +103,4 @@ def test_valid_force_edge_cases() -> None:
 
     t2 = Tensor(np.zeros((0, 5)), TensorConfig((0, 5), DType.Float32, "cpu"))
     assert t2.shape == (0, 5)
-    assert as_tensor(getattr(t2.data, "size")) == 0
+    assert as_tensor(_get_attr(t2.data, "size")) == 0

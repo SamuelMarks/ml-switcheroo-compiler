@@ -17,6 +17,8 @@ for _opt_pkg in ("scipy.linalg", "jax", "dask", "jinja2", "torch", "numba", "spa
     if importlib.util.find_spec(_opt_pkg.split(".")[0]) is not None:
         __import__(_opt_pkg)
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _set_attr  # noqa: E402
+
 if importlib.util.find_spec("tensorflow") is not None:
     import tensorflow as tf
 
@@ -39,8 +41,8 @@ def reset_global_tracing_state() -> Iterator[None]:
 
     old_backend = config.backend
     old_eager = config.eager_mode
-    had_active_backend = hasattr(reg, "_ACTIVE_BACKEND")
-    old_active_backend = getattr(reg, "_ACTIVE_BACKEND", None)
+    had_active_backend = _has_attr(reg, "_ACTIVE_BACKEND")
+    old_active_backend = _get_attr(reg, "_ACTIVE_BACKEND", None)
 
     import os
 
@@ -86,12 +88,12 @@ def reset_global_tracing_state() -> Iterator[None]:
     ) = orig_caches
     state.global_tracing_state.is_tracing = old_is_tracing
     state.global_tracing_state.active_graph = old_graph
-    setattr(state.global_tracing_state, "add_node", old_add_node)
+    _set_attr(state.global_tracing_state, "add_node", old_add_node)
 
     config.backend = old_backend
     config.eager_mode = old_eager
 
     if had_active_backend:
-        setattr(reg, "_ACTIVE_BACKEND", old_active_backend)
-    elif hasattr(reg, "_ACTIVE_BACKEND"):
+        _set_attr(reg, "_ACTIVE_BACKEND", old_active_backend)
+    elif _has_attr(reg, "_ACTIVE_BACKEND"):
         del reg._ACTIVE_BACKEND

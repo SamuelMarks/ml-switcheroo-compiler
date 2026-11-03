@@ -13,6 +13,7 @@ import ml_switcheroo_compiler.ops.creation.frontend_matrix as matrix_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing import global_tracing_state
 from tests.testing_utils import as_callable, as_tensor
@@ -52,8 +53,8 @@ def _test_frontend_matrix_coverage_sub_1(_state: dict[str, EagerTensorProtocol])
     config.eager_mode = True
     mock_backend = MagicMock()
     mock_backend.execute_op.return_value = np.eye(3, dtype=np.float32)
-    getattr(_state, "update")({"mock_backend": mock_backend})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_backend": mock_backend})
+    _state.update(_caller_locals())
 
 
 def _test_frontend_matrix_coverage_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -65,9 +66,9 @@ def _test_frontend_matrix_coverage_sub_2(_state: dict[str, EagerTensorProtocol])
     mock_backend = _state["mock_backend"]
     with patch("ml_switcheroo_compiler.ops.creation.frontend_matrix.get_active_backend", return_value=mock_backend):
         e1 = matrix_mod.eye(3)
-        assert as_tensor(getattr(e1, "shape")) == (3, 3)
+        assert as_tensor(_get_attr(e1, "shape")) == (3, 3)
         e2 = matrix_mod.eye(3, m=4, k=1, dtype=DType.Float64, device=Device("cpu"))
-        assert as_tensor(getattr(e2, "shape")) == (3, 4)
+        assert as_tensor(_get_attr(e2, "shape")) == (3, 4)
 
         # custom dtype without .value
         class DummyDtypeWithoutValue:
@@ -76,11 +77,11 @@ def _test_frontend_matrix_coverage_sub_2(_state: dict[str, EagerTensorProtocol])
             name: str = "float32"
 
         e3 = as_callable(matrix_mod.eye)(2, dtype=as_callable(DummyDtypeWithoutValue)())
-        assert as_tensor(getattr(e3, "shape")) == (2, 2)
+        assert as_tensor(_get_attr(e3, "shape")) == (2, 2)
 
         # identity
         i1 = matrix_mod.identity(4)
-        assert as_tensor(getattr(i1, "shape")) == (4, 4)
+        assert as_tensor(_get_attr(i1, "shape")) == (4, 4)
 
         # _diag_eager with data having shape and raw dtype
         raw_input = np.array([[1.0, 2.0], [3.0, 4.0]])
@@ -89,19 +90,19 @@ def _test_frontend_matrix_coverage_sub_2(_state: dict[str, EagerTensorProtocol])
 
         # _diag_eager with tensor input and data lacking shape
         mock_data_no_shape = 123.0
-        setattr(mock_backend.execute_op, "return_value", mock_data_no_shape)
+        _set_attr(mock_backend.execute_op, "return_value", mock_data_no_shape)
         d2 = matrix_mod._diag_eager(Tensor(raw_input, TensorConfig((2, 2), DType.Float32, Device("cpu"))), 0, Device("cpu"), DType.Float32)
-        assert as_tensor(getattr(d2, "shape")) == ()
+        assert as_tensor(_get_attr(d2, "shape")) == ()
 
         # diag in eager mode
-        setattr(mock_backend.execute_op, "return_value", np.array([1.0, 4.0]))
+        _set_attr(mock_backend.execute_op, "return_value", np.array([1.0, 4.0]))
         t_matrix = Tensor(np.array([[1.0, 2.0], [3.0, 4.0]]), TensorConfig((2, 2), DType.Float32, Device("cpu")))
         res_diag_eager = matrix_mod.diag(t_matrix, 0)
         assert isinstance(res_diag_eager, Tensor)
-    getattr(_state, "update")({"DummyDtypeWithoutValue": DummyDtypeWithoutValue, "d1": d1, "d2": d2, "e1": e1})
-    getattr(_state, "update")({"e2": e2, "e3": e3, "i1": i1, "mock_data_no_shape": mock_data_no_shape})
-    getattr(_state, "update")({"raw_input": raw_input, "res_diag_eager": res_diag_eager, "t_matrix": t_matrix})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyDtypeWithoutValue": DummyDtypeWithoutValue, "d1": d1, "d2": d2, "e1": e1})
+    _get_attr(_state, "update")({"e2": e2, "e3": e3, "i1": i1, "mock_data_no_shape": mock_data_no_shape})
+    _get_attr(_state, "update")({"raw_input": raw_input, "res_diag_eager": res_diag_eager, "t_matrix": t_matrix})
+    _state.update(_caller_locals())
 
 
 def _test_frontend_matrix_coverage_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -126,8 +127,8 @@ def _test_frontend_matrix_coverage_sub_3(_state: dict[str, EagerTensorProtocol])
     with patch.object(global_tracing_state, "is_tracing", False):
         with pytest.raises(RuntimeError, match="Cannot emit diag node outside of a tracing context."):
             as_callable(matrix_mod.diag)(t_matrix)
-    getattr(_state, "update")({"res_graph_eye": res_graph_eye, "t_1d": t_1d})
-    _state.update(locals())
+    _get_attr(_state, "update")({"res_graph_eye": res_graph_eye, "t_1d": t_1d})
+    _state.update(_caller_locals())
 
 
 def _test_frontend_matrix_coverage_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -146,7 +147,7 @@ def _test_frontend_matrix_coverage_sub_4(_state: dict[str, EagerTensorProtocol])
 
             t_traced = as_callable(Tensor)(as_callable(MockDataWithId)(), as_callable(TensorConfig)((3, 3), DType.Float32, as_callable(Device)("cpu")))
             res_traced = as_callable(matrix_mod.diag)(t_traced, 1)
-            assert as_tensor(getattr(res_traced, "shape")) == (2,)
+            assert as_tensor(_get_attr(res_traced, "shape")) == (2,)
             mock_add_node.assert_called_once()
 
             # With input having id directly and dtype lacking value
@@ -160,11 +161,11 @@ def _test_frontend_matrix_coverage_sub_4(_state: dict[str, EagerTensorProtocol])
 
             mock_add_node.reset_mock()
             res_traced2 = as_callable(matrix_mod.diag)(as_callable(MockInputDirectId)(), 0)
-            assert as_tensor(getattr(res_traced2, "shape")) == (4,)
+            assert as_tensor(_get_attr(res_traced2, "shape")) == (4,)
             mock_add_node.assert_called_once()
-    getattr(_state, "update")({"MockDataWithId": MockDataWithId, "MockInputDirectId": MockInputDirectId, "mock_add_node": mock_add_node, "res_traced": res_traced})
-    getattr(_state, "update")({"res_traced2": res_traced2, "t_traced": t_traced})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockDataWithId": MockDataWithId, "MockInputDirectId": MockInputDirectId, "mock_add_node": mock_add_node, "res_traced": res_traced})
+    _get_attr(_state, "update")({"res_traced2": res_traced2, "t_traced": t_traced})
+    _state.update(_caller_locals())
 
 
 def test_frontend_matrix_coverage() -> None:
@@ -172,8 +173,8 @@ def test_frontend_matrix_coverage() -> None:
     orig_eager = config.eager_mode
     try:
         # eye & identity eager mode
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"orig_eager": orig_eager})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"orig_eager": orig_eager})
         for _sub_fn in (
             _test_frontend_matrix_coverage_sub_1,
             _test_frontend_matrix_coverage_sub_2,

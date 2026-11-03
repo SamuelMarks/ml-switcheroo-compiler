@@ -6,6 +6,7 @@ import typing
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.vision.color import (
     adjust_brightness,
@@ -63,7 +64,7 @@ def _test_vision_color_funcs_part_1(_state: dict[str, EagerTensorProtocol]) -> N
     mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.vision.color.get_op")
     mocker.patch("ml_switcheroo_compiler.ops.vision.color._emit_shape_node", return_value="node")
     mock_op = mocker.MagicMock()
-    setattr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
+    _set_attr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
     assert rgb_to_hsv(t) == mock_op()
     assert hsv_to_rgb(t) == mock_op()
     assert adjust_hue(t, 0.5) == mock_op()
@@ -80,8 +81,8 @@ def _test_vision_color_funcs_part_1(_state: dict[str, EagerTensorProtocol]) -> N
     assert auto_contrast(t) == mock_op()
     assert rand_augment(t) == mock_op()
     assert random_erasing(t) == mock_op()
-    getattr(_state, "update")({"mock_get_op": mock_get_op, "mock_op": mock_op, "t": t})
-    _state.update(locals())
+    _get_attr(_state, "update")({"mock_get_op": mock_get_op, "mock_op": mock_op, "t": t})
+    _state.update(_caller_locals())
 
 
 def _test_vision_color_funcs_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -98,23 +99,23 @@ def _test_vision_color_funcs_part_2(_state: dict[str, EagerTensorProtocol]) -> N
     assert as_callable(yuv_to_rgb)(t) == "node"
     config.eager_mode = True
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.vision.color.get_active_backend").return_value
-    setattr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
-    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
-    assert as_tensor(getattr(as_callable(rgb_to_hsv)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(hsv_to_rgb)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(adjust_hue)(t, 0.5), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(adjust_saturation)(t, 0.5), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(adjust_contrast)(t, 0.5), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(adjust_brightness)(t, 0.5), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(rgb_to_grayscale)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(random_color_jitter)(t, brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(solarize)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(invert)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(posterize)(t, 4), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(degeneration)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(augmix)(t), "config")).shape == (2, 3)
-    getattr(_state, "update")({"mock_backend": mock_backend})
-    _state.update(locals())
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((2, 3)))
+    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((2, 3)))
+    assert as_tensor(_get_attr(as_callable(rgb_to_hsv)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(hsv_to_rgb)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(adjust_hue)(t, 0.5), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(adjust_saturation)(t, 0.5), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(adjust_contrast)(t, 0.5), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(adjust_brightness)(t, 0.5), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(rgb_to_grayscale)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(random_color_jitter)(t, brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(solarize)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(invert)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(posterize)(t, 4), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(degeneration)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(augmix)(t), "config")).shape == (2, 3)
+    _get_attr(_state, "update")({"mock_backend": mock_backend})
+    _state.update(_caller_locals())
 
 
 def _test_vision_color_funcs_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -124,14 +125,14 @@ def _test_vision_color_funcs_part_3(_state: dict[str, EagerTensorProtocol]) -> N
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert as_tensor(getattr(as_callable(auto_contrast)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(rand_augment)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(random_erasing)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(equalization)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(rgb_to_yiq)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(yiq_to_rgb)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(rgb_to_yuv)(t), "config")).shape == (2, 3)
-    assert as_tensor(getattr(as_callable(yuv_to_rgb)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(auto_contrast)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(rand_augment)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(random_erasing)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(equalization)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(rgb_to_yiq)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(yiq_to_rgb)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(rgb_to_yuv)(t), "config")).shape == (2, 3)
+    assert as_tensor(_get_attr(as_callable(yuv_to_rgb)(t), "config")).shape == (2, 3)
 
 
 def test_vision_color_funcs(mocker: EagerTensorProtocol) -> None:

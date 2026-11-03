@@ -10,6 +10,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.cupy.eager import _verify_gpu_residency, execute_op
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _del_attr, _has_attr, _set_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -128,14 +129,14 @@ def test_cupy_eager_fallback_mock_mod() -> None:
     """Test CuPy eager fallback when target_name is present on current module (line 69)."""
     import ml_switcheroo_compiler.backends.cupy.eager as cupy_eager
 
-    setattr(cupy_eager, "add", lambda a, b: 42)
+    _set_attr(cupy_eager, "add", lambda a, b: 42)
     try:
         with patch.dict(sys.modules, {"cupy": None}):
             with patch("ml_switcheroo_compiler.backends.cupy.eager.cp", None):
                 res = as_callable(execute_op)(None, "Add", 1, 2)
                 assert res == 42
     finally:
-        delattr(cupy_eager, "add")
+        _del_attr(cupy_eager, "add")
 
 
 def test_cupy_eager_registry_fallback() -> None:
@@ -198,7 +199,7 @@ def test_cupy_eager_remaining_branches() -> None:
 
     empty_mod = EmptyBackendMod()
     as_callable(_attach_vision_ops)(empty_mod)
-    assert hasattr(empty_mod, "conv2d")
-    assert hasattr(empty_mod, "maxpool2d")
-    assert hasattr(empty_mod, "avgpool2d")
-    assert hasattr(empty_mod, "resize_bilinear")
+    assert _has_attr(empty_mod, "conv2d")
+    assert _has_attr(empty_mod, "maxpool2d")
+    assert _has_attr(empty_mod, "avgpool2d")
+    assert _has_attr(empty_mod, "resize_bilinear")

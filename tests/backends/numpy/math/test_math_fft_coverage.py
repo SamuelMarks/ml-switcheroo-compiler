@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_fft as fft_module
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -37,22 +38,22 @@ def _test_math_fft_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     assert as_callable(len)(as_callable(fft_module._np_irfft)(np, r_sig)) == 4
     assert as_callable(len)(as_callable(numpy_eager_registry.get)("Irfft")(np, r_sig)) == 4
 
-    assert as_tensor(getattr(fft_module._np_fftn(np, signal_2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Fftn")(np, signal_2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_fftn(np, signal_2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Fftn")(np, signal_2d), "shape")) == (4, 4)
 
     c_sig2d = fft_module._np_fftn(np, signal_2d)
-    assert as_tensor(getattr(fft_module._np_ifftn(np, c_sig2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Ifftn")(np, c_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_ifftn(np, c_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Ifftn")(np, c_sig2d), "shape")) == (4, 4)
 
-    assert as_tensor(getattr(fft_module._np_rfftn(np, signal_2d), "shape")) == (4, 3)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Rfftn")(np, signal_2d), "shape")) == (4, 3)
+    assert as_tensor(_get_attr(fft_module._np_rfftn(np, signal_2d), "shape")) == (4, 3)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Rfftn")(np, signal_2d), "shape")) == (4, 3)
 
     r_sig2d = fft_module._np_rfftn(np, signal_2d)
-    assert as_tensor(getattr(fft_module._np_irfftn(np, r_sig2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Irfftn")(np, r_sig2d), "shape")) == (4, 4)
-    getattr(_state, "update")({"c_sig": c_sig, "c_sig2d": c_sig2d, "r_sig": r_sig, "r_sig2d": r_sig2d})
-    getattr(_state, "update")({"signal_1d": signal_1d, "signal_2d": signal_2d})
-    _state.update(locals())
+    assert as_tensor(_get_attr(fft_module._np_irfftn(np, r_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Irfftn")(np, r_sig2d), "shape")) == (4, 4)
+    _get_attr(_state, "update")({"c_sig": c_sig, "c_sig2d": c_sig2d, "r_sig": r_sig, "r_sig2d": r_sig2d})
+    _get_attr(_state, "update")({"signal_1d": signal_1d, "signal_2d": signal_2d})
+    _state.update(_caller_locals())
 
 
 def _test_math_fft_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -62,29 +63,29 @@ def _test_math_fft_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     c_sig2d, r_sig2d, signal_1d, signal_2d = _state["c_sig2d"], _state["r_sig2d"], _state["signal_1d"], _state["signal_2d"]
-    assert as_tensor(getattr(fft_module._np_fft2(np, signal_2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Fft2")(np, signal_2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_fft2(np, signal_2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Fft2")(np, signal_2d), "shape")) == (4, 4)
 
-    assert as_tensor(getattr(fft_module._np_ifft2(np, c_sig2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Ifft2")(np, c_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_ifft2(np, c_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Ifft2")(np, c_sig2d), "shape")) == (4, 4)
 
-    assert as_tensor(getattr(fft_module._np_rfft2(np, signal_2d), "shape")) == (4, 3)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Rfft2")(np, signal_2d), "shape")) == (4, 3)
+    assert as_tensor(_get_attr(fft_module._np_rfft2(np, signal_2d), "shape")) == (4, 3)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Rfft2")(np, signal_2d), "shape")) == (4, 3)
 
-    assert as_tensor(getattr(fft_module._np_irfft2(np, r_sig2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Irfft2")(np, r_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_irfft2(np, r_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Irfft2")(np, r_sig2d), "shape")) == (4, 4)
 
-    assert as_tensor(getattr(fft_module._np_fftnd(np, signal_2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Fftnd")(np, signal_2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_fftnd(np, signal_2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Fftnd")(np, signal_2d), "shape")) == (4, 4)
 
-    assert as_tensor(getattr(fft_module._np_ifftnd(np, c_sig2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Ifftnd")(np, c_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_ifftnd(np, c_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Ifftnd")(np, c_sig2d), "shape")) == (4, 4)
 
-    assert as_tensor(getattr(fft_module._np_rfftnd(np, signal_2d), "shape")) == (4, 3)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Rfftnd")(np, signal_2d), "shape")) == (4, 3)
+    assert as_tensor(_get_attr(fft_module._np_rfftnd(np, signal_2d), "shape")) == (4, 3)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Rfftnd")(np, signal_2d), "shape")) == (4, 3)
 
-    assert as_tensor(getattr(fft_module._np_irfftnd(np, r_sig2d), "shape")) == (4, 4)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("Irfftnd")(np, r_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(fft_module._np_irfftnd(np, r_sig2d), "shape")) == (4, 4)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("Irfftnd")(np, r_sig2d), "shape")) == (4, 4)
 
     assert as_callable(len)(as_callable(fft_module._np_fftshift)(np, signal_1d)) == 4
     assert as_callable(len)(as_callable(numpy_eager_registry.get)("Fftshift")(np, signal_1d)) == 4
@@ -94,7 +95,7 @@ def _test_math_fft_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
 
     assert as_callable(len)(as_callable(fft_module._np_fftfreq)(np, 4)) == 4
     assert as_callable(len)(as_callable(numpy_eager_registry.get)("Fftfreq")(np, 4)) == 4
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_math_fft_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:

@@ -9,7 +9,7 @@ import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode, NodeDict
 
 from ml_switcheroo_compiler.core.errors import UnimplementedMathError
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _obj_set_attr, _set_attr
 from ml_switcheroo_compiler.interpreter.environment import Environment
 from ml_switcheroo_compiler.interpreter.evaluator import _evaluate_node, _prepare_node_kwargs, evaluate_graph
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
@@ -48,7 +48,7 @@ def test_evaluator_greater() -> None:
         g.nodes["c"] = LogicalNode(id="c", op_type="Greater", inputs=["a", "b"])
         g.outputs = ["c"]
         res = as_callable(evaluate_graph)(g, inputs={"a": as_callable(np.array)([2.0]), "b": as_callable(np.array)([1.0])})
-        assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")("c")), "__getitem__")(0))
+        assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")("c")), "__getitem__")(0))
     except Exception as e:
         raise e
         pass
@@ -142,7 +142,7 @@ def test_evaluator_stubs() -> None:
         g1.inputs = ["n1", "n2"]
         g1.outputs = ["ng"]
         res1 = as_callable(evaluate_graph)(g1, {"n1": as_callable(np.array)([2.0]), "n2": as_callable(np.array)([1.0])})
-        assert as_tensor(getattr(as_tensor(getattr(res1, "__getitem__")("ng")), "__getitem__")(0))
+        assert as_tensor(_get_attr(as_tensor(_get_attr(res1, "__getitem__")("ng")), "__getitem__")(0))
         g2 = IRGraph()
         nc = IRNode(id="nc", op_type="Input", inputs=[], attributes={}, shape_metadata=(1,))
         nt = IRNode(id="nt", op_type="Input", inputs=[], attributes={}, shape_metadata=(1,))
@@ -152,7 +152,7 @@ def test_evaluator_stubs() -> None:
         g2.inputs = ["nc", "nt", "nf"]
         g2.outputs = ["nw"]
         res2 = as_callable(evaluate_graph)(g2, {"nc": as_callable(np.array)([True]), "nt": as_callable(np.array)([2.0]), "nf": as_callable(np.array)([3.0])})
-        assert as_tensor(getattr(as_tensor(getattr(res2, "__getitem__")("nw")), "__getitem__")(0)) == 2.0
+        assert as_tensor(_get_attr(as_tensor(_get_attr(res2, "__getitem__")("nw")), "__getitem__")(0)) == 2.0
     except Exception as e:
         raise e
         pass
@@ -172,7 +172,7 @@ def test_evaluator_shape_kwargs() -> None:
         g1.inputs = ["n1"]
         g1.outputs = ["ne"]
         res1 = as_callable(evaluate_graph)(g1, {"n1": as_callable(np.array)([1.0])})
-        assert as_tensor(getattr(as_tensor(getattr(res1, "__getitem__")("ne")), "shape")) == (2,)
+        assert as_tensor(_get_attr(as_tensor(_get_attr(res1, "__getitem__")("ne")), "shape")) == (2,)
         g2 = IRGraph()
         n2 = IRNode(id="n2", op_type="Input", inputs=[], attributes={}, shape_metadata=(2,))
         nr = IRNode(id="nr", op_type="Reshape", inputs=["n2"], attributes={}, shape_metadata=(1, 2))
@@ -180,7 +180,7 @@ def test_evaluator_shape_kwargs() -> None:
         g2.inputs = ["n2"]
         g2.outputs = ["nr"]
         res2 = as_callable(evaluate_graph)(g2, {"n2": as_callable(np.array)([1.0, 2.0])})
-        assert as_tensor(getattr(as_tensor(getattr(res2, "__getitem__")("nr")), "shape")) == (1, 2)
+        assert as_tensor(_get_attr(as_tensor(_get_attr(res2, "__getitem__")("nr")), "shape")) == (1, 2)
     except Exception as e:
         raise e
         pass
@@ -333,14 +333,14 @@ def test_evaluator_missing_funcs() -> None:
     assert isinstance(res, tuple)
     assert res[0].shape == (1,)
     res2 = EagerEvaluator._pack_outputs(np.array([2.0]), t, None)
-    assert as_tensor(getattr(res2, "shape")) == (1,)
+    assert as_tensor(_get_attr(res2, "shape")) == (1,)
     from ml_switcheroo_compiler.core.config import ConfigContext
 
     with ConfigContext(eager_mode=True):
         from ml_switcheroo_compiler.ops.dispatcher import dispatch_op
 
         out = dispatch_op("Add", t, t)
-        assert as_tensor(getattr(out, "shape")) == (1,)
+        assert as_tensor(_get_attr(out, "shape")) == (1,)
 
 
 def test_evaluator_base_eval_missing() -> None:
@@ -410,7 +410,7 @@ def test_evaluator_base_eval_missing4() -> None:
 
         pass
 
-    setattr(DummyOp6, "eager_eval", None)
+    _set_attr(DummyOp6, "eager_eval", None)
     strat = EagerEvaluator._get_strategy(DummyOp6)
     assert strat is not None
 
@@ -500,7 +500,7 @@ def disabled_test_evaluator_handle_custom_ops() -> None:
             """
             return "exec"
 
-    env = typing.cast("TypedVariadicCallable[Environment]", Environment)({"n1": as_callable(np.array)([1.0]), "n2": as_callable(np.array)([0]), "n3": as_callable(np.array)([1.0]), "c": as_callable(np.array)([1.0])})
+    env = _cast_val("TypedVariadicCallable[Environment]", Environment)({"n1": as_callable(np.array)([1.0]), "n2": as_callable(np.array)([0]), "n3": as_callable(np.array)([1.0]), "c": as_callable(np.array)([1.0])})
     n_cond = LogicalNode(id="cond_out", op_type="Cond", inputs=["c", "n1"])
     from ml_switcheroo_ir import LogicalGraph
 
@@ -538,7 +538,7 @@ def test_evaluator_handle_checkpoint() -> None:
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value=np.array([2.0])):
         _handle_checkpoint(n, env, [1.0])
     assert isinstance(env.get("n2"), tuple)
-    object.__setattr__(sg, "nodes", [n_sub, n_sub2])
+    _obj_set_attr(sg, "nodes", [n_sub, n_sub2])
     with patch("ml_switcheroo_compiler.ops.dispatcher.dispatch_op", return_value=np.array([2.0])):
         _handle_checkpoint(n, env, [1.0])
 
@@ -740,7 +740,7 @@ def test_evaluate_if_node() -> None:
     node = LogicalNode(id="out", op_type="If", inputs=["cond"])
     then_graph = IRGraph()
     n_then = LogicalNode(id="then_node", op_type="Identity", inputs=["a"])
-    object.__setattr__(then_graph, "nodes", [n_then])
+    _obj_set_attr(then_graph, "nodes", [n_then])
     then_graph.outputs = ["then_node"]
     node.attributes = as_attrs({"then_branch": then_graph})
 
@@ -756,7 +756,7 @@ def test_evaluate_if_node() -> None:
                 kwargs: Test parameter `kwargs`.
             """
             if op == "Identity":
-                return as_tensor(getattr(args, "__getitem__")(0) * 2)
+                return as_tensor(_get_attr(args, "__getitem__")(0) * 2)
             return as_tensor(None)
 
     as_callable(_evaluate_node)(node, env, as_callable(MockBackend)())
@@ -775,7 +775,7 @@ def test_evaluate_if_node_false() -> None:
     else_graph = IRGraph()
     n_else = LogicalNode(id="else_node", op_type="Identity", inputs=["b"])
     else_graph.nodes = NodeDict({"else_node": n_else})
-    object.__setattr__(else_graph, "outputs", "else_node")
+    _obj_set_attr(else_graph, "outputs", "else_node")
     node.attributes = as_attrs({"false_branch": else_graph})
 
     class MockBackend:
@@ -790,7 +790,7 @@ def test_evaluate_if_node_false() -> None:
                 kwargs: Test parameter `kwargs`.
             """
             if op == "Identity":
-                return as_tensor(getattr(args, "__getitem__")(0) + 1)
+                return as_tensor(_get_attr(args, "__getitem__")(0) + 1)
             return as_tensor(None)
 
     as_callable(_evaluate_node)(node, env, as_callable(MockBackend)())
@@ -808,8 +808,8 @@ def test_evaluate_if_node_no_outputs() -> None:
     then_graph = IRGraph()
     n_then = LogicalNode(id="then_node", op_type="Constant", inputs=[])
     n_then.attributes = {"value": 99}
-    object.__setattr__(then_graph, "nodes", [n_then])
-    object.__setattr__(then_graph, "outputs", None)
+    _obj_set_attr(then_graph, "nodes", [n_then])
+    _obj_set_attr(then_graph, "outputs", None)
     node.attributes = as_attrs({"then_branch": then_graph})
 
     class MockBackend:
@@ -848,7 +848,7 @@ def test_evaluate_loop_node() -> None:
     cond_graph = IRGraph()
     n_cond_in = LogicalNode(id="cond_in", op_type="Input")
     n_cond = LogicalNode(id="cond_eval", op_type="Greater", inputs=["cond_in"])
-    object.__setattr__(cond_graph, "nodes", [n_cond_in, n_cond])
+    _obj_set_attr(cond_graph, "nodes", [n_cond_in, n_cond])
     cond_graph.outputs = ["cond_eval"]
     body_graph = IRGraph()
     n_body_in = LogicalNode(id="body_in", op_type="Input")
@@ -971,12 +971,12 @@ def test_evaluator_dispatch() -> None:
 
     n_slice = LogicalNode(id="slice_id", op_type="Slice")
     as_callable(_dispatch_op)(n_slice, env, as_callable(FakeBackend)(), "Slice", [as_callable(np.array)([1, 2, 3])], {"slices": "slice(1, None)"})
-    assert as_tensor(getattr(env.get("slice_id"), "tolist"))() == [2, 3]
+    assert as_tensor(_get_attr(env.get("slice_id"), "tolist"))() == [2, 3]
     as_callable(_dispatch_op)(n_slice, env, as_callable(FakeBackend)(), "Slice", [as_callable(np.array)([1, 2, 3])], {"dim": 0, "start": 0, "end": 1, "step": 1})
-    assert as_tensor(getattr(env.get("slice_id"), "tolist"))() == [1]
+    assert as_tensor(_get_attr(env.get("slice_id"), "tolist"))() == [1]
     n_getitem = LogicalNode(id="get_id", op_type="GetItem")
     as_callable(_dispatch_op)(n_getitem, env, as_callable(FakeBackend)(), "GetItem", [as_callable(np.array)([1, 2, 3])], {"key": "slice(1, None)"})
-    assert as_tensor(getattr(env.get("get_id"), "tolist"))() == [2, 3]
+    assert as_tensor(_get_attr(env.get("get_id"), "tolist"))() == [2, 3]
 
     class FakeSubgraph:
         """Test class FakeSubgraph."""
@@ -1116,7 +1116,7 @@ def test_evaluator_if() -> None:
             if out_is_list:
                 self.outputs = ["out1"]
             else:
-                setattr(self, "outputs", "out1")
+                _set_attr(self, "outputs", "out1")
 
     class FakeBackend:
         """Test class FakeBackend."""
@@ -1163,7 +1163,7 @@ def test_evaluator_if() -> None:
             """Test function item."""
             return True
 
-    env = typing.cast("TypedVariadicCallable[Environment]", Environment)({"cond": as_callable(FakeTensorBool)(), "val1": 10})
+    env = _cast_val("TypedVariadicCallable[Environment]", Environment)({"cond": as_callable(FakeTensorBool)(), "val1": 10})
     as_callable(_evaluate_if_node)(n_if_then, env, as_callable(FakeBackend)())
     assert env.get("if_1") == 10
 
@@ -1188,7 +1188,7 @@ def test_evaluator_loop() -> None:
                 args: Test parameter `args`.
                 kwargs: Test parameter `kwargs`.
             """
-            return as_tensor(getattr(args, "__getitem__")(0) + 1)
+            return as_tensor(_get_attr(args, "__getitem__")(0) + 1)
 
     class FakeCondGraph:
         """Test class FakeCondGraph."""
@@ -1215,7 +1215,7 @@ def test_evaluator_loop() -> None:
             if nodes_dict:
                 self.nodes = {"body_in": LogicalNode(id="body_in", op_type="Input"), "body_out": LogicalNode(id="body_out", op_type="Add", inputs=["body_in"])}
             else:
-                setattr(self, "nodes", [LogicalNode(id="body_in", op_type="Input"), LogicalNode(id="body_out", op_type="Add", inputs=["body_in"])])
+                _set_attr(self, "nodes", [LogicalNode(id="body_in", op_type="Input"), LogicalNode(id="body_out", op_type="Add", inputs=["body_in"])])
             self.outputs = ["body_out"]
 
     n_loop = LogicalNode(id="loop_1", op_type="WhileLoop", inputs=["in1"], attributes=as_attrs({"cond": FakeCondGraph(), "body": FakeBodyGraph()}))
@@ -1229,12 +1229,12 @@ def test_evaluator_loop() -> None:
             env: Test parameter `env`.
             backend: Test parameter `backend`.
         """
-        if as_tensor(getattr(node, "op_type")) == "Less":
-            v = as_callable(as_tensor(getattr(env, "get")))(as_tensor(getattr(as_tensor(getattr(node, "inputs")), "__getitem__")(0)))
-            getattr(env, "set")(getattr(node, "id"), v < 2)
-        elif as_tensor(getattr(node, "op_type")) == "Add":
-            v = as_callable(as_tensor(getattr(env, "get")))(as_tensor(getattr(as_tensor(getattr(node, "inputs")), "__getitem__")(0)))
-            getattr(env, "set")(getattr(node, "id"), v + 1)
+        if as_tensor(_get_attr(node, "op_type")) == "Less":
+            v = as_callable(as_tensor(_get_attr(env, "get")))(as_tensor(_get_attr(as_tensor(_get_attr(node, "inputs")), "__getitem__")(0)))
+            _get_attr(env, "set")(_get_attr(node, "id"), v < 2)
+        elif as_tensor(_get_attr(node, "op_type")) == "Add":
+            v = as_callable(as_tensor(_get_attr(env, "get")))(as_tensor(_get_attr(as_tensor(_get_attr(node, "inputs")), "__getitem__")(0)))
+            _get_attr(env, "set")(_get_attr(node, "id"), v + 1)
 
     with patch("ml_switcheroo_compiler.interpreter.evaluator._evaluate_node", side_effect=mock_eval_node):
         as_callable(_evaluate_loop_node)(n_loop, env, as_callable(FakeBackend)())
@@ -1379,7 +1379,7 @@ def test_evaluator_subgraphs_and_initializers() -> None:
     assert out_cp["cp_node"] == 6.0
     init_graph = LogicalGraph(name="init_graph")
     init_graph.inputs = ["in_val"]
-    getattr(init_graph.initializers, "__setitem__")("weight", np.array([4.0]))
+    _get_attr(init_graph.initializers, "__setitem__")("weight", np.array([4.0]))
     init_graph.nodes["in_val"] = LogicalNode(id="in_val", op_type="Input")
     init_graph.nodes["add_node"] = LogicalNode(id="add_node", op_type="Add", inputs=["in_val", "weight"])
     init_graph.outputs = ["add_node"]

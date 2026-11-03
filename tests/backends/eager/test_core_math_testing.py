@@ -15,6 +15,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_testing import (
     _resulttype,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod
 
 if typing.TYPE_CHECKING:
@@ -67,9 +68,9 @@ def _test_math_testing_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -
             """Return item val."""
             return self.val
 
-    getattr(_state, "update")({"AllcloseBackend": AllcloseBackend, "EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "acb": acb})
-    getattr(_state, "update")({"eb": eb})
-    _state.update(locals())
+    _get_attr(_state, "update")({"AllcloseBackend": AllcloseBackend, "EmptyBackend": EmptyBackend, "ItemObj": ItemObj, "acb": acb})
+    _get_attr(_state, "update")({"eb": eb})
+    _state.update(_caller_locals())
 
 
 def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -139,8 +140,8 @@ def _test_math_testing_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -
     # 3. _assert
     # Case A: condition is True -> returns None
     assert _assert(eb, True) is None
-    getattr(_state, "update")({"ArrayEquivBackend": ArrayEquivBackend, "DataObj": DataObj, "ToListObj": ToListObj})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ArrayEquivBackend": ArrayEquivBackend, "DataObj": DataObj, "ToListObj": ToListObj})
+    _state.update(_caller_locals())
 
 
 def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -199,9 +200,9 @@ def _test_math_testing_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -
     tb = TypeBackend()
     assert _promotetypes(as_mod(tb), "float32", "float64") == "promoted"
     assert _resulttype(as_mod(tb), "int32", "float32") == "result_type"
-    getattr(_state, "update")({"TypeBackend": TypeBackend, "exc_info": exc_info, "exc_info_data": exc_info_data, "exc_info_empty_data": exc_info_empty_data})
-    getattr(_state, "update")({"tb": tb})
-    _state.update(locals())
+    _get_attr(_state, "update")({"TypeBackend": TypeBackend, "exc_info": exc_info, "exc_info_data": exc_info_data, "exc_info_empty_data": exc_info_empty_data})
+    _get_attr(_state, "update")({"tb": tb})
+    _state.update(_caller_locals())
 
 
 def _test_math_testing_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:

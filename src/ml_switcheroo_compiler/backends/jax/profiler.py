@@ -9,6 +9,8 @@ import sys
 import time
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
+
 if typing.TYPE_CHECKING:
     import jax
     import jax.numpy as jnp
@@ -47,7 +49,7 @@ def _extract_jax_peak_memory_mb() -> float:
         default_backend = jax.default_backend()
         if default_backend in ("gpu", "tpu", "cuda"):
             devs = jax.devices()
-            if devs and hasattr(devs[0], "memory_stats"):
+            if devs and _has_attr(devs[0], "memory_stats"):
                 stats = devs[0].memory_stats()
                 if stats and "peak_bytes_in_use" in stats:
                     peak_mem = float(stats["peak_bytes_in_use"]) / (1024.0 * 1024.0)
@@ -84,11 +86,11 @@ def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValu
     Args:
         result (Union[jax.Array, tuple[EagerValue, ...], list[EagerValue], dict[str, EagerValue], EagerValue]): Single or multi-output array evaluation result.
     """
-    if hasattr(jax, "tree_util") and hasattr(jax.tree_util, "tree_leaves"):
+    if _has_attr(jax, "tree_util") and _has_attr(jax.tree_util, "tree_leaves"):
         try:
             leaves = jax.tree_util.tree_leaves(result)
             for leaf in leaves:
-                if hasattr(leaf, "block_until_ready") and callable(leaf.block_until_ready):
+                if _has_attr(leaf, "block_until_ready") and callable(leaf.block_until_ready):
                     leaf.block_until_ready()
             return
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -99,8 +101,8 @@ def _sync_jax_result(result: jax.Array | tuple[EagerValue, ...] | list[EagerValu
     elif isinstance(result, (list, tuple)):
         for item in result:
             _sync_jax_result(item)
-    elif hasattr(result, "block_until_ready") and callable(getattr(result, "block_until_ready")):
-        getattr(result, "block_until_ready")()
+    elif _has_attr(result, "block_until_ready") and callable(_get_attr(result, "block_until_ready")):
+        _get_attr(result, "block_until_ready")()
 
 
 class JAXProfiler:
@@ -157,8 +159,8 @@ class JAXProfiler:
         Returns:
             list[jax.Array]: Topologically ordered list of JAX arrays.
         """
-        sorted_nodes = topological_sort(graph) if getattr(graph, "nodes", None) else []
-        input_keys: list[str] = [n.id for n in sorted_nodes if getattr(n, "op_type", "") == "Input"]
+        sorted_nodes = topological_sort(graph) if _get_attr(graph, "nodes", None) else []
+        input_keys: list[str] = [n.id for n in sorted_nodes if _get_attr(n, "op_type", "") == "Input"]
         if input_keys and all(k in jax_inputs_dict for k in input_keys):
             return [jax_inputs_dict[k] for k in input_keys]
         return list(jax_inputs_dict.values())
@@ -185,7 +187,7 @@ class JAXProfiler:
         """
         del device
 
-        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         jax_inputs_dict, _ = _prepare_jax_inputs(inputs)
         jax_input_list: list[jax.Array] = self._order_inputs(graph, jax_inputs_dict)
         compiled_fn: TypedVariadicCallable[EagerValue] | None = self._compile_graph(graph) if has_ops else None

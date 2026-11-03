@@ -10,6 +10,7 @@ import pytest
 import ml_switcheroo_compiler.backends.registry as registry_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.sparse.frontend import (
     smm,
@@ -89,8 +90,8 @@ def mock_backend(monkeypatch: EagerValue) -> None:
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
-    as_callable(as_tensor(getattr(monkeypatch, "setattr")))(registry_mod, "get_active_backend", lambda: as_callable(MockBackend)())
-    as_callable(as_tensor(getattr(monkeypatch, "setattr")))("ml_switcheroo_compiler.ops.text.frontend.get_active_backend", lambda: as_callable(MockBackend)())
+    as_callable(as_tensor(_get_attr(monkeypatch, "setattr")))(registry_mod, "get_active_backend", lambda: as_callable(MockBackend)())
+    as_callable(as_tensor(_get_attr(monkeypatch, "setattr")))("ml_switcheroo_compiler.ops.text.frontend.get_active_backend", lambda: as_callable(MockBackend)())
 
 
 @pytest.fixture(params=[True, False])
@@ -101,9 +102,9 @@ def eager_mode(request: EagerValue, monkeypatch: EagerValue) -> EagerValue:
         request: Test parameter `request`.
         monkeypatch: Test parameter `monkeypatch`.
     """
-    as_callable(as_tensor(getattr(monkeypatch, "setattr")))(config, "eager_mode", as_tensor(getattr(request, "param")))
-    as_callable(as_tensor(getattr(monkeypatch, "setattr")))(global_tracing_state, "is_tracing", not as_tensor(getattr(request, "param")))
-    return as_tensor(getattr(request, "param"))
+    as_callable(as_tensor(_get_attr(monkeypatch, "setattr")))(config, "eager_mode", as_tensor(_get_attr(request, "param")))
+    as_callable(as_tensor(_get_attr(monkeypatch, "setattr")))(global_tracing_state, "is_tracing", not as_tensor(_get_attr(request, "param")))
+    return as_tensor(_get_attr(request, "param"))
 
 
 def test_sparse_frontend(eager_mode: EagerTensorProtocol, mock_backend: EagerTensorProtocol, monkeypatch: EagerTensorProtocol) -> None:
@@ -164,7 +165,7 @@ def test_sparse_frontend(eager_mode: EagerTensorProtocol, mock_backend: EagerTen
     for op_func in ops:
         res = op_func(t, kwarg1=1)
         if eager_mode:
-            assert hasattr(res, "data")
+            assert _has_attr(res, "data")
         else:
             assert res is not None
 
@@ -285,7 +286,7 @@ def test_create_token(monkeypatch: EagerTensorProtocol) -> None:
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
-    if hasattr(CreateToken, "__abstractmethods__"):
+    if _has_attr(CreateToken, "__abstractmethods__"):
         as_callable(monkeypatch.setattr)(CreateToken, "__abstractmethods__", as_callable(frozenset)())
     monkeypatch.setattr(CreateToken, "infer_shape", lambda self, *args, **kwargs: ())
     monkeypatch.setattr(CreateToken, "__call__", lambda self, *args, **kwargs: args[0])

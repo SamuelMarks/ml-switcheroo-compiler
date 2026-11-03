@@ -8,6 +8,7 @@ import ml_switcheroo_compiler.tracing.state as state
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.reductions.frontend_pool import UnpoolOptions, adaptive_avg_pool2d, adaptive_avg_pool3d, adaptive_max_pool2d, adaptive_max_pool3d, fold, fractional_max_pool2d, fractional_max_pool3d, max_unpool1d, max_unpool2d, max_unpool3d, unfold
 from tests.testing_utils import as_callable, as_tensor
 
@@ -24,7 +25,7 @@ def test_frontend_pool_tracing() -> None:
     try:
         config.eager_mode = False
         state.global_tracing_state.is_tracing = True
-        setattr(state.global_tracing_state, "add_node", lambda node: None)
+        _set_attr(state.global_tracing_state, "add_node", lambda node: None)
 
         class MockData:
             """Test class MockData."""
@@ -69,5 +70,5 @@ def test_frontend_pool_tracing() -> None:
     finally:
         config.eager_mode = orig_eager
         state.global_tracing_state.is_tracing = orig_tracing
-        setattr(state.global_tracing_state, "add_node", orig_add_node)
-    assert getattr(state.global_tracing_state, "add_node") == orig_add_node
+        _set_attr(state.global_tracing_state, "add_node", orig_add_node)
+    assert _get_attr(state.global_tracing_state, "add_node") == orig_add_node

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_int, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 
 # pylint: disable=duplicate-code
 from ml_switcheroo_compiler.core.tensor import Tensor
@@ -19,10 +19,10 @@ def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tup
     Returns:
             tuple[int, ...]: Result.
     """
-    if hasattr(k, "__array__") and not isinstance(k, tuple):
-        k = getattr(k, "__array__")()
-    if hasattr(k, "item"):
-        k = int(getattr(k, "item")())
+    if _has_attr(k, "__array__") and not isinstance(k, tuple):
+        k = _get_attr(k, "__array__")()
+    if _has_attr(k, "item"):
+        k = int(_get_attr(k, "item")())
     else:
         try:
             k = int(as_int(k))
@@ -52,7 +52,7 @@ class TopK(OpDef):
             k = kwargs.get("k", 1)
         k = as_callable(_normalize_k)(k)
 
-        if not hasattr(x, "shape") or not x.shape:
+        if not _has_attr(x, "shape") or not x.shape:
             return (None,)
         out_shape = list(x.shape)
         out_shape[-1] = as_int(k)
@@ -83,9 +83,9 @@ class Argsort(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        if isinstance(x, tuple) and hasattr(x, "shape"):
-            return as_shape(getattr(x, "shape"))
-        return as_shape(getattr(x, "shape", ()))
+        if isinstance(x, tuple) and _has_attr(x, "shape"):
+            return as_shape(_get_attr(x, "shape"))
+        return as_shape(_get_attr(x, "shape", ()))
 
 
 @register_op("Sort")
@@ -112,7 +112,8 @@ class Sort(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return getattr(x, "shape", ())
+        _typed_ret_1: TensorOrScalar = _get_attr(x, "shape", ())
+        return _typed_ret_1
 
 
 @register_op("Where")
@@ -370,7 +371,8 @@ class TensorScatterUpdate(OpDef):
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """
-        return getattr(tensor, "shape", ())
+        _typed_ret_2: TensorOrScalar = _get_attr(tensor, "shape", ())
+        return _typed_ret_2
 
 
 @register_op("Argpartition")
@@ -392,7 +394,7 @@ class Argpartition(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return a.shape if hasattr(a, "shape") else ()
+        return a.shape if _has_attr(a, "shape") else ()
 
 
 @register_op("Partition")
@@ -414,7 +416,7 @@ class Partition(OpDef):
         Returns:
             tuple[int, ...]: Result.
         """
-        return a.shape if hasattr(a, "shape") else ()
+        return a.shape if _has_attr(a, "shape") else ()
 
 
 @register_op("Compress")
@@ -561,4 +563,5 @@ class InvertPermutation(OpDef):
 
         Returns: Tensor: The inferred shape tuple matching the input tensor shape.
         """
-        return getattr(x, "shape", ())
+        _typed_ret_3: TensorOrScalar = _get_attr(x, "shape", ())
+        return _typed_ret_3

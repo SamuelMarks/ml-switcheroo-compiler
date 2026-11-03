@@ -8,7 +8,7 @@ from collections.abc import Callable  # noqa: F401
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_callable, as_tensor
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, get_op, register_op
 
@@ -142,7 +142,7 @@ def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrSc
         Returns:
             tuple[int, ...]: Result.
         """
-        i, _ = getattr(val, "__iter__")()
+        i, _ = _get_attr(val, "__iter__")()
         return less(i, upper)
 
     def body_wrapper(val: TensorOrScalar) -> TensorOrScalar:
@@ -154,7 +154,7 @@ def fori_loop(lower: TensorOrScalar, upper: TensorOrScalar, body_fun: TensorOrSc
         Returns:
             tuple[int, ...]: Result.
         """
-        i, x = getattr(val, "__iter__")()
+        i, x = _get_attr(val, "__iter__")()
         return add(i, 1), invoke_callable(body_callable, i, x)
 
     _, res = as_callable(while_loop)(cond_fn, body_wrapper, (lower, init_val))
@@ -215,7 +215,7 @@ def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -
             tuple[int, ...]: Result.
         """
         if end - start == 1:
-            return as_tensor(getattr(branches, "__getitem__")(start)(*operands))
+            return as_tensor(_get_attr(branches, "__getitem__")(start)(*operands))
 
         mid = (start + end) // 2
 
@@ -237,7 +237,7 @@ def switch(index: Tensor, branches: TensorOrScalar, *operands: TensorOrScalar) -
 
         return cond(less(index, mid), true_fn, false_fn)
 
-    return build_tree(0, getattr(branches, "__len__")())
+    return build_tree(0, _get_attr(branches, "__len__")())
 
 
 def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
@@ -261,7 +261,7 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
         Returns:
             tuple[int, ...]: Result.
         """
-        res_seq = list(getattr(invoke_callable(fn_callable, *getattr(args, "__iter__")(), **kwargs), "__iter__")())
+        res_seq = list(_get_attr(invoke_callable(fn_callable, *_get_attr(args, "__iter__")(), **kwargs), "__iter__")())
         val: TensorOrScalar = res_seq[0]
         _ = res_seq[1]
         if config.eager_mode:
@@ -291,7 +291,8 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
                 Returns:
                 tuple[int, ...]: Result.
                 """
-                return getattr(val, "shape", ())
+                _typed_ret_2: TensorOrScalar = _get_attr(val, "shape", ())
+                return _typed_ret_2
 
         @register_vjp(op_name)
         def dyn_vjp(graph: TensorOrScalar, node: TensorOrScalar, cotangent: str) -> tuple[str, ...]:
@@ -305,9 +306,9 @@ def custom_gradient(func: TensorOrScalar) -> TensorOrScalar:
             Returns:
                 tuple: Input gradients.
             """
-            return tuple([cotangent] * len(getattr(node, "inputs") if node else []))
+            return tuple([cotangent] * len(_get_attr(node, "inputs") if node else []))
 
-        return _emit_shape_node(op_name, list(args), kwargs, getattr(val, "shape", ()), getattr(val, "dtype", None))
+        return _emit_shape_node(op_name, list(args), kwargs, _get_attr(val, "shape", ()), _get_attr(val, "dtype", None))
 
     return wrapper
 
@@ -347,7 +348,8 @@ def case(
         pred, fn = pred_fn_pairs[idx]
         return lambda: as_callable(cond)(pred, fn, _build_case(idx + 1))
 
-    return typing.cast(typing.Union[Tensor, "None"], as_callable(_build_case)(0)())
+    _typed_ret_1: Tensor | None = _cast_val(typing.Union[Tensor, "None"], as_callable(_build_case)(0)())
+    return _typed_ret_1
 
 
 def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: TensorOrScalar = None) -> TensorOrScalar:
@@ -371,10 +373,10 @@ def switch_case(branch_index: Tensor, branch_fns: TensorOrScalar, default: Tenso
 
     pred_fn_pairs = []
     # Sort keys to ensure deterministic ordering (not strictly necessary but good practice)
-    for key in sorted(getattr(branch_fns, "keys")()):
+    for key in sorted(_get_attr(branch_fns, "keys")()):
         key_tensor = Tensor(key, TensorConfig((), branch_index.dtype, branch_index.device))
         pred = equal(branch_index, key_tensor)
-        pred_fn_pairs.append((pred, getattr(branch_fns, "__getitem__")(key)))
+        pred_fn_pairs.append((pred, _get_attr(branch_fns, "__getitem__")(key)))
 
     return as_tensor(as_callable(case)(pred_fn_pairs, default))
 
@@ -500,8 +502,8 @@ def associative_scan(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorO
 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    shape = getattr(args[0], "shape", ()) if args else ()
-    dtype = getattr(args[0], "dtype", "float32") if args else "float32"
+    shape = _get_attr(args[0], "shape", ()) if args else ()
+    dtype = _get_attr(args[0], "dtype", "float32") if args else "float32"
     return _emit_shape_node("AssociativeScan", list(args), kwargs, shape, dtype)
 
 

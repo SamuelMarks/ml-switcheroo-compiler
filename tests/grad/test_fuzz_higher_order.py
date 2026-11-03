@@ -13,6 +13,7 @@ import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import grad, hessian, hvp
 from tests.testing_utils import as_callable, as_tensor
@@ -58,12 +59,12 @@ def test_hvp_polynomial_vs_finite_difference(val: float) -> None:
 
     # Compute HVP using compiler engine
     _, tan = as_callable(hvp)(f, (x,), (v,))
-    computed_hvp = as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(tan), "__getitem__")(0)))
+    computed_hvp = as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(tan), "__getitem__")(0)))
 
     # Central finite difference of gradients: (g(x + eps) - g(x - eps)) / (2 * eps)
     g_fn = grad(f)
-    g_plus = as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val + eps))), "__getitem__")(0)))
-    g_minus = as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val - eps))), "__getitem__")(0)))
+    g_plus = as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val + eps))), "__getitem__")(0)))
+    g_minus = as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val - eps))), "__getitem__")(0)))
     fd_hvp = (g_plus - g_minus) / (2.0 * eps)
 
     # Analytical expected: d^2/dx^2 (x^3) = 6 * x
@@ -95,11 +96,11 @@ def test_hvp_trigonometric_vs_finite_difference(val: float) -> None:
     v = make_tensor(1.0)
 
     _, tan = as_callable(hvp)(f, (x,), (v,))
-    computed_hvp = as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(tan), "__getitem__")(0)))
+    computed_hvp = as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(tan), "__getitem__")(0)))
 
     g_fn = grad(f)
-    g_plus = as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val + eps))), "__getitem__")(0)))
-    g_minus = as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val - eps))), "__getitem__")(0)))
+    g_plus = as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val + eps))), "__getitem__")(0)))
+    g_minus = as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(as_callable(g_fn)(as_callable(make_tensor)(val - eps))), "__getitem__")(0)))
     fd_hvp = (g_plus - g_minus) / (2.0 * eps)
 
     # Analytical: d^2/dx^2 sin(x) = -sin(x)
@@ -130,7 +131,7 @@ def test_hvp_exponential_vs_analytical(val: float) -> None:
     v = make_tensor(1.0)
 
     _, tan = as_callable(hvp)(f, (x,), (v,))
-    computed_hvp = as_callable(float)(as_tensor(getattr(as_callable(get_active_backend)().asarray(tan), "__getitem__")(0)))
+    computed_hvp = as_callable(float)(as_tensor(_get_attr(as_callable(get_active_backend)().asarray(tan), "__getitem__")(0)))
     analytical_hvp = float(np.exp(val))
 
     as_callable(np.testing.assert_allclose)(computed_hvp, analytical_hvp, rtol=1e-2, atol=1e-2)

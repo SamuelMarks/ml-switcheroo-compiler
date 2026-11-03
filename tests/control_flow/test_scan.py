@@ -10,6 +10,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.device import Device, DeviceType
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.control_flow import scan
 from ml_switcheroo_compiler.tracing import ProxyTensor
@@ -40,7 +41,7 @@ def test_scan_eager() -> None:
             Returns:
             EagerValue: The resulting output.
             """
-            y = carry + getattr(x, "data")
+            y = carry + _get_attr(x, "data")
             return (y, Tensor(y, TensorConfig((), DType.Int32, device)))
 
         (carry, ys) = as_callable(scan)(f, 0, xs)

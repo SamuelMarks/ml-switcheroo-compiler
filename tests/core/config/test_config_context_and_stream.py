@@ -7,6 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.core.config import config, disable_compile, enable_compile, enable_op_determinism, enable_tensor_float_32_execution, tensor_float_32_execution_enabled
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_module_type, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -147,7 +148,7 @@ def test_config_eager_mode_branch() -> None:
         global_tracing_state = FakeTracingState()
 
     old = sys.modules.get("ml_switcheroo_compiler.tracing.state")
-    getattr(sys.modules, "__setitem__")("ml_switcheroo_compiler.tracing.state", FakeMod())
+    _get_attr(sys.modules, "__setitem__")("ml_switcheroo_compiler.tracing.state", FakeMod())
 
     config.eager_mode = True
     assert config.eager_mode is True

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_vars
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph, clone_logical_node
 
 
@@ -19,12 +20,12 @@ def evaluate_static_predicate(graph: IRGraph, pred_id: str) -> bool | None:
     if node is None:
         return None
 
-    if getattr(node, "op_type", "") == "Constant":
+    if _get_attr(node, "op_type", "") == "Constant":
         val = node.attributes.get("value")
         if isinstance(val, (bool, int, float)):
             return bool(val)
-        if hasattr(val, "item"):
-            return bool(getattr(val, "item")())
+        if _has_attr(val, "item"):
+            return bool(_get_attr(val, "item")())
 
     # Check comparison of constants
     cmp_dispatch = {
@@ -34,7 +35,7 @@ def evaluate_static_predicate(graph: IRGraph, pred_id: str) -> bool | None:
         "LessEqual": lambda a, b: a <= b,
         "GreaterEqual": lambda a, b: a >= b,
     }
-    if getattr(node, "op_type", "") in cmp_dispatch:
+    if _get_attr(node, "op_type", "") in cmp_dispatch:
         if len(node.inputs) >= 2:
             in0 = graph.nodes.get(node.inputs[0])
             in1 = graph.nodes.get(node.inputs[1])
@@ -65,15 +66,15 @@ def _hoist_common_invariants(
         list[IRNode]: Hoisted nodes added to the outer graph.
     """
     hoisted_nodes: list[IRNode] = []
-    t_nodes = true_branch.nodes if hasattr(true_branch.nodes, "items") else {n.id: n for n in getattr(true_branch, "nodes", [])}
-    f_nodes = false_branch.nodes if hasattr(false_branch.nodes, "items") else {n.id: n for n in getattr(false_branch, "nodes", [])}
+    t_nodes = true_branch.nodes if _has_attr(true_branch.nodes, "items") else {n.id: n for n in _get_attr(true_branch, "nodes", [])}
+    f_nodes = false_branch.nodes if _has_attr(false_branch.nodes, "items") else {n.id: n for n in _get_attr(false_branch, "nodes", [])}
 
     # Find common operations on external outer inputs
     for t_id, t_node in list(t_nodes.items()):
-        if getattr(t_node, "op_type", "") in ("Input", "Output"):
+        if _get_attr(t_node, "op_type", "") in ("Input", "Output"):
             continue
         for f_id, f_node in list(f_nodes.items()):
-            if getattr(f_node, "op_type", "") in ("Input", "Output"):
+            if _get_attr(f_node, "op_type", "") in ("Input", "Output"):
                 continue
             if t_node.op_type == f_node.op_type and t_node.inputs == f_node.inputs:
                 # All inputs must be present in the outer graph
@@ -84,7 +85,7 @@ def _hoist_common_invariants(
                         op_type=t_node.op_type,
                         inputs=list(t_node.inputs),
                         attributes=dict(t_node.attributes),
-                        shape_metadata=getattr(t_node, "shape_metadata", ()),
+                        shape_metadata=_get_attr(t_node, "shape_metadata", ()),
                     )
                     hoisted_nodes.append(hoisted)
 
@@ -94,14 +95,14 @@ def _hoist_common_invariants(
                         op_type="Identity",
                         inputs=[hoist_id],
                         attributes={},
-                        shape_metadata=getattr(t_node, "shape_metadata", ()),
+                        shape_metadata=_get_attr(t_node, "shape_metadata", ()),
                     )
                     f_nodes[f_id] = IRNode(
                         id=f_id,
                         op_type="Identity",
                         inputs=[hoist_id],
                         attributes={},
-                        shape_metadata=getattr(f_node, "shape_metadata", ()),
+                        shape_metadata=_get_attr(f_node, "shape_metadata", ()),
                     )
                     break
 
@@ -122,22 +123,22 @@ def _inline_active_branch(
         active_branch (IRGraph): The active branch subgraph to inline.
         new_nodes (dict[str, IRNode]): Target dictionary of nodes for the optimized graph.
     """
-    b_nodes = active_branch.nodes if hasattr(active_branch.nodes, "items") else {n.id: n for n in getattr(active_branch, "nodes", [])}
+    b_nodes = active_branch.nodes if _has_attr(active_branch.nodes, "items") else {n.id: n for n in _get_attr(active_branch, "nodes", [])}
     id_map: dict[str, str] = {}
 
     for b_id, b_node in b_nodes.items():
-        if getattr(b_node, "op_type", "") in ("Input", "Output"):
+        if _get_attr(b_node, "op_type", "") in ("Input", "Output"):
             continue
         inlined_id = f"{node_id}_pruned_{b_id}"
         id_map[b_id] = inlined_id
         inlined_inputs = [id_map.get(inp, inp) for inp in b_node.inputs]
         cloned = clone_logical_node(b_node, id=inlined_id, inputs=inlined_inputs)
-        new_nodes[inlined_id] = IRNode(**cloned.__dict__)
+        new_nodes[inlined_id] = IRNode(**_obj_vars(cloned))
 
-    b_outs = getattr(active_branch, "outputs", [])
+    b_outs = _get_attr(active_branch, "outputs", [])
     out_ref = id_map.get(b_outs[0], b_outs[0]) if b_outs else list(new_nodes.keys())[-1]
     identity = clone_logical_node(node, id=node_id, op_type="Identity", inputs=[out_ref])
-    new_nodes[node_id] = IRNode(**identity.__dict__)
+    new_nodes[node_id] = IRNode(**_obj_vars(identity))
 
 
 def _optimize_cond_node(
@@ -192,13 +193,13 @@ def control_flow_optimization_pass(graph: IRGraph) -> IRGraph:
     modified = False
 
     for node_id, node in graph.nodes.items():
-        if getattr(node, "op_type", "") in ("Cond", "If"):
+        if _get_attr(node, "op_type", "") in ("Cond", "If"):
             cond_mod, inlined = _optimize_cond_node(graph, node_id, node, new_nodes)
             modified = modified or cond_mod
             if inlined:
                 continue
 
-        new_nodes[node_id] = node if type(node) is IRNode else (IRNode(**node.__dict__) if hasattr(node, "__dict__") else node)
+        new_nodes[node_id] = node if type(node) is IRNode else (IRNode(**_obj_vars(node)) if _has_attr(node, "__dict__") else node)
 
     if modified:
         graph.nodes.clear()

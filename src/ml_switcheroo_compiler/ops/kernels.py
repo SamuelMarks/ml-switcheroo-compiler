@@ -7,7 +7,7 @@ import pydantic
 from ml_switcheroo_compiler.backends.registry import as_str, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
@@ -108,15 +108,15 @@ def _eager_custom_kernel(
     data = get_active_backend().execute_op(
         ctx.op_type,
         ctx.code_or_binary,
-        [getattr(t, "data", t) for t in inputs],
+        [_get_attr(t, "data", t) for t in inputs],
         output_shapes=ctx.output_shapes,
-        output_dtypes=[getattr(dt, "value", dt) for dt in ctx.output_dtypes],
+        output_dtypes=[_get_attr(dt, "value", dt) for dt in ctx.output_dtypes],
         grid=ctx.launch_config.grid,
         block=ctx.launch_config.block,
         name=ctx.launch_config.name,
     )
     device = inputs[0].device if inputs else config.default_device
-    return [Tensor(d, TensorConfig(s, dt, device)) for d, s, dt in zip(getattr(data, "__iter__")(), ctx.output_shapes, ctx.output_dtypes)]
+    return [Tensor(d, TensorConfig(s, dt, device)) for d, s, dt in zip(_get_attr(data, "__iter__")(), ctx.output_shapes, ctx.output_dtypes)]
 
 
 def cuda_kernel(

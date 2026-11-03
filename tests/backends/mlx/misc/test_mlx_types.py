@@ -7,6 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.mlx.types import array, asarray, item, zeros
+from ml_switcheroo_compiler.core.shape import _del_attr, _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -35,9 +36,9 @@ def test_mlx_types_asarray_mock() -> None:
 
     from ml_switcheroo_compiler.backends.mlx.types import asarray
 
-    setattr(mx, "asarray", lambda x: mx.array(x))
+    _set_attr(mx, "asarray", lambda x: mx.array(x))
     as_callable(asarray)(None, [1, 2])
-    delattr(mx, "asarray")
+    _del_attr(mx, "asarray")
     assert callable(asarray)
 
 
@@ -62,7 +63,7 @@ def test_mlx_init_import_error(monkeypatch: EagerTensorProtocol) -> None:
         """
         if name == "mlx":
             return None
-        return as_tensor(getattr(importlib.util, "_find_spec")(name, package))
+        return as_tensor(_get_attr(importlib.util, "_find_spec")(name, package))
 
     monkeypatch.setattr(importlib.util, "find_spec", mock_find_spec)
     monkeypatch.delitem(sys.modules, "pytest", raising=False)

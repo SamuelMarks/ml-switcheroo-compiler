@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _has_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -34,7 +35,7 @@ def test_keras_np_serialization() -> None:
 
     as_callable(save_model)(as_callable(FakeModel)(), test_file)
     model = load_model(test_file)
-    assert hasattr(model, "config")
+    assert _has_attr(model, "config")
     if os.path.exists(test_file):
         os.remove(test_file)
     import pytest

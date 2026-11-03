@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_bitwise import (
     _signbit,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -27,8 +28,8 @@ def test_math_bitwise_coverage() -> None:
     # 1. _signbit
     # Case A: backend has signbit
     res_sb = _signbit(np, np.array([-1.0, 0.0, 1.0]))
-    assert bool(as_tensor(getattr(res_sb, "__getitem__")(0))) is True
-    assert bool(as_tensor(getattr(res_sb, "__getitem__")(2))) is False
+    assert bool(as_tensor(_get_attr(res_sb, "__getitem__")(0))) is True
+    assert bool(as_tensor(_get_attr(res_sb, "__getitem__")(2))) is False
 
     # Case B: backend lacks signbit (fallback x < 0)
     class DummyNoSignbit:
@@ -37,8 +38,8 @@ def test_math_bitwise_coverage() -> None:
         pass
 
     res_fallback = _signbit(as_mod(DummyNoSignbit()), np.array([-2, 5]))
-    assert bool(as_tensor(getattr(res_fallback, "__getitem__")(0))) is True
-    assert bool(as_tensor(getattr(res_fallback, "__getitem__")(1))) is False
+    assert bool(as_tensor(_get_attr(res_fallback, "__getitem__")(0))) is True
+    assert bool(as_tensor(_get_attr(res_fallback, "__getitem__")(1))) is False
 
     # 2. _np_packbits
     # Case A: backend has packbits
@@ -64,7 +65,7 @@ def test_math_bitwise_coverage() -> None:
 
     arr = np.array([[[1, 0, 1, 1, 0, 0, 1, 0]]], dtype=np.uint8)
     packed_res = _np_packbits(as_mod(DummyNoPackbits()), arr, axis=-1)
-    assert as_tensor(getattr(packed_res, "shape")) == (1, 1, 1)
+    assert as_tensor(_get_attr(packed_res, "shape")) == (1, 1, 1)
 
     # 3. _np_unpackbits
     # Case A: backend has unpackbits

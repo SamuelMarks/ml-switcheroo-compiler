@@ -7,7 +7,7 @@ import typing
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr, _has_attr
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
@@ -23,8 +23,8 @@ def resolve_dtype(res_data: TensorOrScalar, first_tensor: Tensor | None) -> DTyp
     Returns:
         DType | str: The resolved DType.
     """
-    if hasattr(res_data, "dtype"):
-        dtype_str = str(getattr(res_data, "dtype"))
+    if _has_attr(res_data, "dtype"):
+        dtype_str = str(_get_attr(res_data, "dtype"))
         if "dtype" in dtype_str:
             m = re.search(r"dtype\('(.*?)'\)", dtype_str)
             if m:
@@ -62,4 +62,4 @@ def resolve_output_dtype_and_device(
     else:
         out_dtype = DType.Float32
     device = first_tensor.device if first_tensor is not None else None
-    return typing.cast("DType | str", out_dtype), device
+    return _cast_val("DType | str", out_dtype), device

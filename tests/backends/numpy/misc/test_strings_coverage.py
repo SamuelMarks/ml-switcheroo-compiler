@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import strings as strings_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -22,22 +23,22 @@ def test_strings_ops() -> None:
     """
     # StringToHash
     hashed = strings_mod._np_string_to_hash(np, np.array(["foo", "bar"]), 100)
-    assert as_tensor(getattr(hashed, "shape")) == (2,)
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("StringToHash")(np, as_callable(np.array)(["foo", "bar"]), 100), "shape")) == (2,)
+    assert as_tensor(_get_attr(hashed, "shape")) == (2,)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("StringToHash")(np, as_callable(np.array)(["foo", "bar"]), 100), "shape")) == (2,)
 
     # TextVectorization
     # Match branch: ndim == 1, size == 3, "hello world" in inputs[0]
     in_vec = ["hello world", "sample two", "sample three"]
     multi_hot_res = strings_mod._np_text_vectorization(np, in_vec, output_mode="multi_hot")
-    assert as_tensor(getattr(multi_hot_res, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(multi_hot_res, "shape")) == (3, 3)
 
     int_res = strings_mod._np_text_vectorization(np, in_vec, output_mode="int")
-    assert as_tensor(getattr(int_res, "shape")) == (3, 2)
+    assert as_tensor(_get_attr(int_res, "shape")) == (3, 2)
 
     # Fallback branch
     other_vec = strings_mod._np_text_vectorization(np, ["random", "words"])
     assert as_callable(np.array_equal)(other_vec, ["random", "words"])
-    assert as_tensor(getattr(as_callable(numpy_eager_registry.get)("TextVectorization")(np, ["foo"]), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(numpy_eager_registry.get)("TextVectorization")(np, ["foo"]), "shape")) == (1,)
 
     # AsString
     assert as_callable(np.array_equal)(as_callable(strings_mod._np_as_string)(np, 123), as_callable(np.array)(["123"]))

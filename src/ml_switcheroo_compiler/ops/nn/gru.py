@@ -7,7 +7,7 @@ import typing  # noqa: F401
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.binary import add, multiply, subtract
@@ -28,8 +28,8 @@ def _compute_gru_gates(x_parts: TensorOrScalar, r_parts: TensorOrScalar, state: 
     Returns:
         Tensor: Result.
     """
-    x_z, x_r, x_h = getattr(x_parts, "__iter__")()
-    recurrent_z, recurrent_r, recurrent_h = getattr(r_parts, "__iter__")()
+    x_z, x_r, x_h = _get_attr(x_parts, "__iter__")()
+    recurrent_z, recurrent_r, recurrent_h = _get_attr(r_parts, "__iter__")()
     z = _sigmoid(add(x_z, recurrent_z))
     r = _sigmoid(add(x_r, recurrent_r))
     hh = tanh(add(x_h, multiply(r, recurrent_h)))
@@ -99,11 +99,11 @@ def gru(*args: TensorOrScalar, **kwargs: TensorOrScalar) -> TensorOrScalar:
     """
     if config.eager_mode:
         backend = get_active_backend()
-        return backend.execute_op("Gru", *[getattr(a, "data", a) for a in args], **kwargs)
+        return backend.execute_op("Gru", *[_get_attr(a, "data", a) for a in args], **kwargs)
 
     t_args = [a for a in args if isinstance(a, Tensor)]
-    out_shape = getattr(t_args[0], "shape", ()) if t_args else ()
-    out_dtype = getattr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
+    out_shape = _get_attr(t_args[0], "shape", ()) if t_args else ()
+    out_dtype = _get_attr(t_args[0], "dtype", DType.Float32) if t_args else DType.Float32
     return _emit_shape_node("Gru", list(args), kwargs, out_shape, out_dtype)
 
 

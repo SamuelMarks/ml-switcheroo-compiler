@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import vjp
 from ml_switcheroo_compiler.ops.control_flow import cond, while_loop
@@ -70,7 +71,7 @@ def test_while_loop_grad() -> None:
             Args:
                 val: Test parameter `val`.
             """
-            return as_tensor(getattr(val, "__getitem__")(0) < 10.0)
+            return as_tensor(_get_attr(val, "__getitem__")(0) < 10.0)
 
         def body_fn(val: EagerValue) -> EagerValue:
             """Test function body_fn.
@@ -78,7 +79,7 @@ def test_while_loop_grad() -> None:
             Args:
                 val: Test parameter `val`.
             """
-            return (getattr(val, "__getitem__")(0) + x,)
+            return (_get_attr(val, "__getitem__")(0) + x,)
 
         res = as_callable(while_loop)(cond_fn, body_fn, (x,))
         return res[0]

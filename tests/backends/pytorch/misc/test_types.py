@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.pytorch.types import (
     item,
     zeros,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -39,7 +40,7 @@ class MockTensor:
 
     def item(self) -> EagerValue:
         """Item."""
-        return as_tensor(getattr(self.data, "__getitem__")(0))
+        return as_tensor(_get_attr(self.data, "__getitem__")(0))
 
 
 mock_torch.as_tensor = lambda data: MockTensor(data)
@@ -51,12 +52,12 @@ mock_torch.unknown_dtype = None
 @pytest.fixture(autouse=True)
 def _patch_pytorch_types() -> Iterator[None]:
     """Temporarily patch pytorch_types.torch and restore afterwards."""
-    orig = as_tensor(getattr(pytorch_types, "torch"))
-    setattr(pytorch_types, "torch", mock_torch)
+    orig = as_tensor(_get_attr(pytorch_types, "torch"))
+    _set_attr(pytorch_types, "torch", mock_torch)
     try:
         yield
     finally:
-        setattr(pytorch_types, "torch", orig)
+        _set_attr(pytorch_types, "torch", orig)
 
 
 def test_zeros() -> None:
@@ -90,7 +91,7 @@ def test_array() -> None:
 def test_asarray() -> None:
     """Test coverage."""
     res = as_callable(asarray)(None, [1, 2])
-    assert as_tensor(getattr(res, "item"))() == 1
+    assert as_tensor(_get_attr(res, "item"))() == 1
 
 
 def test_item() -> None:

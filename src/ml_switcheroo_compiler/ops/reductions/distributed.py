@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import register_op
 from ml_switcheroo_compiler.ops.reductions.core import ReductionOp
@@ -28,7 +29,7 @@ class Psum(ReductionOp):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
-        shape = getattr(x, "shape", ())
+        shape = _get_attr(x, "shape", ())
         return tuple(shape) if shape is not None else ()
 
 
@@ -53,5 +54,5 @@ class Pmean(ReductionOp):
             tuple[int, ...]: Result.
         """
         x = args[0] if len(args) > 0 else kwargs.get("x")
-        shape = getattr(x, "shape", ())
+        shape = _get_attr(x, "shape", ())
         return tuple(shape) if shape is not None else ()

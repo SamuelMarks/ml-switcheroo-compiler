@@ -20,6 +20,12 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     ShapeProtocol as ShapeProtocol,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
+    _get_attr as _get_attr,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
+    _has_attr as _has_attr,
+)
+from ml_switcheroo_compiler.backends.eager_registry import (
     as_bool as as_bool,
 )
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -264,6 +270,18 @@ BackendName = typing.Literal[
 ]
 
 
+def _is_backend_name(val: BackendName | str) -> typing.TypeGuard[BackendName]:
+    """Type guard narrowing a backend name string to `BackendName`.
+
+    Args:
+        val (BackendName | str): Candidate backend name.
+
+    Returns:
+        bool: True for valid string names.
+    """
+    return isinstance(val, str)
+
+
 class BackendRegistry:
     """Registry for pluggable backends."""
 
@@ -311,7 +329,7 @@ class BackendRegistry:
         cls._registry[name] = backend_class
 
     @classmethod
-    def _try_load_lazy(cls, name: BackendName) -> None:
+    def _try_load_lazy(cls, name: BackendName | str) -> None:
         """Attempt to lazily load a backend module if it hasn't been loaded yet.
 
         Args:
@@ -325,7 +343,7 @@ class BackendRegistry:
                 logging.error(f"FAILED TO IMPORT {cls._LAZY_MODULES[name]}: {e}")
 
     @classmethod
-    def _resolve_alias(cls, name: BackendName) -> BackendName:
+    def _resolve_alias(cls, name: BackendName | str) -> BackendName:
         """Resolve backend name aliases to their canonical names.
 
         Args:
@@ -336,6 +354,7 @@ class BackendRegistry:
         """
         if name not in cls._registry and name == "torch" and "pytorch" in cls._registry:
             return "pytorch"
+        assert _is_backend_name(name)
         return name
 
     @classmethod
@@ -351,8 +370,8 @@ class BackendRegistry:
         Raises:
             ValueError: If the specified backend is not found or cannot be loaded.
         """
-        getattr(cls, "_try_load_lazy")(name)
-        resolved_name = getattr(cls, "_resolve_alias")(name)
+        cls._try_load_lazy(name)
+        resolved_name = cls._resolve_alias(name)
 
         if resolved_name not in cls._registry:
             keys = list(cls._registry.keys()) + list(cls._LAZY_MODULES.keys())

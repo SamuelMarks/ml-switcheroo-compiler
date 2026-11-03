@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalGraph
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs, as_graph, as_node_list
 from ml_switcheroo_compiler.transforms.autodiff_rules.common import (
     UnconnectedGradients,
@@ -75,7 +75,7 @@ def _inline_subgraph(graph: IRGraph, subgraph: IRGraph, node: TensorOrScalar, id
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
     new_subgraph = LogicalGraph(name="cp_fwd_inline")
-    nodes_to_process: list[IRNode] = list(subgraph.nodes.values()) if hasattr(subgraph.nodes, "values") else list(as_node_list(subgraph.nodes))
+    nodes_to_process: list[IRNode] = list(subgraph.nodes.values()) if _has_attr(subgraph.nodes, "values") else list(as_node_list(subgraph.nodes))
 
     for n in nodes_to_process:
         if n.op_type == "Input":
@@ -111,16 +111,16 @@ def _inline_grad_subgraph(
     from ml_switcheroo_compiler.ir.core import clone_logical_node
 
     grad_id_map = {}
-    for n in getattr(sg_grad, "nodes").values():
+    for n in _get_attr(sg_grad, "nodes").values():
         grad_id_map[n.id] = f"cp_bwd_{n.id}_{uuid.uuid4().hex[:6]}"
 
-    for in_id, orig_in_id in zip(getattr(sg, "inputs"), getattr(node, "inputs")):
+    for in_id, orig_in_id in zip(_get_attr(sg, "inputs"), _get_attr(node, "inputs")):
         grad_id_map[in_id] = orig_in_id
 
     for _, cot in cotangent_mapping.items():
         grad_id_map[cot] = cot
 
-    for n in getattr(sg_grad, "nodes").values():
+    for n in _get_attr(sg_grad, "nodes").values():
         if n.op_type in ("Input", "Output") or n.id in cotangent_mapping.values():
             continue
         new_n = clone_logical_node(n)
@@ -128,7 +128,7 @@ def _inline_grad_subgraph(
         new_n.inputs = [grad_id_map.get(inp, inp) for inp in n.inputs]
         graph.nodes[new_n.id] = new_n
 
-    return [grad_id_map.get(out_id, out_id) for out_id in getattr(sg_grad, "outputs")]
+    return [grad_id_map.get(out_id, out_id) for out_id in _get_attr(sg_grad, "outputs")]
 
 
 @register_vjp("Checkpoint")
@@ -158,8 +158,8 @@ def checkpoint_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
 
         input_proxies = [
             Tensor(
-                ProxyTensor(id=inp, shape=getattr(graph.nodes.get(inp), "shape_metadata", ())),
-                TensorConfig(getattr(graph.nodes.get(inp), "shape_metadata", ()), DType.Float32, Device("cpu")),
+                ProxyTensor(id=inp, shape=_get_attr(graph.nodes.get(inp), "shape_metadata", ())),
+                TensorConfig(_get_attr(graph.nodes.get(inp), "shape_metadata", ()), DType.Float32, Device("cpu")),
             )
             for inp in node.inputs
         ]
@@ -167,7 +167,7 @@ def checkpoint_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     else:
         subgraph = as_graph(node.attributes["subgraph"])
 
-    nodes_list: list[IRNode] = list(subgraph.nodes.values()) if hasattr(subgraph.nodes, "values") else list(as_node_list(subgraph.nodes))
+    nodes_list: list[IRNode] = list(subgraph.nodes.values()) if _has_attr(subgraph.nodes, "values") else list(as_node_list(subgraph.nodes))
 
     id_map = {n.id: f"cp_fwd_{n.id}_{uuid.uuid4().hex[:6]}" for n in nodes_list}
     for in_id, orig_in_id in zip(subgraph.inputs, node.inputs):
@@ -242,9 +242,9 @@ def _cond_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
     tb = node.attributes.get("then_branch", node.attributes.get("true_branch"))
     eb = node.attributes.get("else_branch", node.attributes.get("false_branch"))
 
-    if tb is not None and eb is not None and hasattr(tb, "inputs") and hasattr(eb, "inputs"):
-        tb_grad = grad(as_graph(tb), tb.inputs, getattr(tb, "outputs")[0] if getattr(tb, "outputs") else "", cotangent_id=cotangent)
-        eb_grad = grad(as_graph(eb), eb.inputs, getattr(eb, "outputs")[0] if getattr(eb, "outputs") else "", cotangent_id=cotangent)
+    if tb is not None and eb is not None and _has_attr(tb, "inputs") and _has_attr(eb, "inputs"):
+        tb_grad = grad(as_graph(tb), tb.inputs, _get_attr(tb, "outputs")[0] if _get_attr(tb, "outputs") else "", cotangent_id=cotangent)
+        eb_grad = grad(as_graph(eb), eb.inputs, _get_attr(eb, "outputs")[0] if _get_attr(eb, "outputs") else "", cotangent_id=cotangent)
 
         adj_id = f"{node.id}_adj_cond"
         adj_node = IRNode(
@@ -284,8 +284,8 @@ def _scan_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str | Uncon
     from ml_switcheroo_compiler.transforms.autodiff_rules.common import UnconnectedGradients
 
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
-    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
-        body_grad = grad(as_graph(body), getattr(body, "inputs"), getattr(body, "outputs")[0] if getattr(body, "outputs") else "", cotangent_id=cotangent)
+    if body is not None and _get_attr(body, "inputs", None) and _get_attr(body, "outputs", None):
+        body_grad = grad(as_graph(body), _get_attr(body, "inputs"), _get_attr(body, "outputs")[0] if _get_attr(body, "outputs") else "", cotangent_id=cotangent)
         adj_id = f"{node.id}_adj_scan"
         adj_node = IRNode(
             id=adj_id,
@@ -324,8 +324,8 @@ def _while_loop_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str |
 
     body = node.attributes.get("body", node.attributes.get("body_subgraph"))
     cond = node.attributes.get("cond", node.attributes.get("cond_graph"))
-    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
-        body_grad = grad(as_graph(body), getattr(body, "inputs"), getattr(body, "outputs")[0] if getattr(body, "outputs") else "", cotangent_id=cotangent)
+    if body is not None and _get_attr(body, "inputs", None) and _get_attr(body, "outputs", None):
+        body_grad = grad(as_graph(body), _get_attr(body, "inputs"), _get_attr(body, "outputs")[0] if _get_attr(body, "outputs") else "", cotangent_id=cotangent)
         adj_id = f"{node.id}_adj_while"
         adj_node = IRNode(
             id=adj_id,
@@ -380,25 +380,25 @@ def _if_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) -> s
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.transforms.autodiff import jvp
 
-    if "then_branch" in getattr(node, "attributes") and "else_branch" in getattr(node, "attributes"):
-        tb = getattr(node, "attributes")["then_branch"]
-        eb = getattr(node, "attributes")["else_branch"]
+    if "then_branch" in _get_attr(node, "attributes") and "else_branch" in _get_attr(node, "attributes"):
+        tb = _get_attr(node, "attributes")["then_branch"]
+        eb = _get_attr(node, "attributes")["else_branch"]
 
         primals = []
         tangent_ids = []
-        for i, in_id in enumerate(getattr(node, "inputs")):
+        for i, in_id in enumerate(_get_attr(node, "inputs")):
             primals.append(in_id)
-            if i < getattr(tangents, "__len__")():
-                tangent_ids.append(getattr(tangents, "__getitem__")(i))
+            if i < _get_attr(tangents, "__len__")():
+                tangent_ids.append(_get_attr(tangents, "__getitem__")(i))
 
-        then_jvp = jvp(tb, primals, tangent_ids, getattr(tb, "outputs"))
-        else_jvp = jvp(eb, primals, tangent_ids, getattr(eb, "outputs"))
+        then_jvp = jvp(tb, primals, tangent_ids, _get_attr(tb, "outputs"))
+        else_jvp = jvp(eb, primals, tangent_ids, _get_attr(eb, "outputs"))
 
-        new_id = f"{getattr(node, 'id')}_jvp"
+        new_id = f"{_get_attr(node, 'id')}_jvp"
         new_node = IRNode(
             id=new_id,
             op_type="If",
-            inputs=getattr(node, "inputs"),
+            inputs=_get_attr(node, "inputs"),
             attributes=as_attrs({"then_branch": then_jvp, "else_branch": else_jvp}),
         )
         graph.nodes[new_id] = new_node
@@ -422,20 +422,20 @@ def _cond_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) ->
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.transforms.autodiff import jvp
 
-    tb = getattr(node, "attributes").get("then_branch", getattr(node, "attributes").get("true_branch"))
-    eb = getattr(node, "attributes").get("else_branch", getattr(node, "attributes").get("false_branch"))
+    tb = _get_attr(node, "attributes").get("then_branch", _get_attr(node, "attributes").get("true_branch"))
+    eb = _get_attr(node, "attributes").get("else_branch", _get_attr(node, "attributes").get("false_branch"))
 
-    if tb is not None and eb is not None and hasattr(tb, "inputs") and hasattr(eb, "inputs"):
-        primals = list(getattr(node, "inputs"))
-        tangent_ids = list(getattr(tangents, "__iter__")())
-        then_jvp = jvp(tb, primals, tangent_ids, getattr(tb, "outputs"))
-        else_jvp = jvp(eb, primals, tangent_ids, getattr(eb, "outputs"))
+    if tb is not None and eb is not None and _has_attr(tb, "inputs") and _has_attr(eb, "inputs"):
+        primals = list(_get_attr(node, "inputs"))
+        tangent_ids = list(_get_attr(tangents, "__iter__")())
+        then_jvp = jvp(tb, primals, tangent_ids, _get_attr(tb, "outputs"))
+        else_jvp = jvp(eb, primals, tangent_ids, _get_attr(eb, "outputs"))
 
-        new_id = f"{getattr(node, 'id')}_jvp"
+        new_id = f"{_get_attr(node, 'id')}_jvp"
         new_node = IRNode(
             id=new_id,
             op_type="Cond",
-            inputs=getattr(node, "inputs"),
+            inputs=_get_attr(node, "inputs"),
             attributes=as_attrs(
                 {
                     "then_branch": then_jvp,
@@ -444,7 +444,7 @@ def _cond_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) ->
                     "false_branch": else_jvp,
                 }
             ),
-            shape_metadata=getattr(node, "shape_metadata"),
+            shape_metadata=_get_attr(node, "shape_metadata"),
         )
         graph.nodes[new_id] = new_node
         return new_id
@@ -467,25 +467,25 @@ def _while_loop_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScal
     from ml_switcheroo_compiler.ir.core import IRNode
     from ml_switcheroo_compiler.transforms.autodiff import jvp
 
-    body = getattr(node, "attributes").get("body", getattr(node, "attributes").get("body_subgraph"))
-    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
-        primals = list(getattr(node, "inputs"))
-        tangent_ids = list(getattr(tangents, "__iter__")())
-        body_jvp = jvp(body, primals, tangent_ids, getattr(body, "outputs"))
+    body = _get_attr(node, "attributes").get("body", _get_attr(node, "attributes").get("body_subgraph"))
+    if body is not None and _get_attr(body, "inputs", None) and _get_attr(body, "outputs", None):
+        primals = list(_get_attr(node, "inputs"))
+        tangent_ids = list(_get_attr(tangents, "__iter__")())
+        body_jvp = jvp(body, primals, tangent_ids, _get_attr(body, "outputs"))
 
-        new_id = f"{getattr(node, 'id')}_jvp"
+        new_id = f"{_get_attr(node, 'id')}_jvp"
         new_node = IRNode(
             id=new_id,
             op_type="WhileLoop",
-            inputs=getattr(node, "inputs"),
+            inputs=_get_attr(node, "inputs"),
             attributes=as_attrs(
                 {
                     "body": body_jvp,
                     "body_subgraph": body_jvp,
-                    "cond": getattr(node, "attributes").get("cond"),
+                    "cond": _get_attr(node, "attributes").get("cond"),
                 }
             ),
-            shape_metadata=getattr(node, "shape_metadata"),
+            shape_metadata=_get_attr(node, "shape_metadata"),
         )
         graph.nodes[new_id] = new_node
         return new_id
@@ -527,25 +527,25 @@ def _scan_jvp(graph: IRGraph, node: TensorOrScalar, tangents: TensorOrScalar) ->
     if node is None or graph is None:
         return ""
 
-    body = getattr(node, "attributes").get("body", getattr(node, "attributes").get("body_subgraph"))
-    if body is not None and getattr(body, "inputs", None) and getattr(body, "outputs", None):
-        primals = list(getattr(node, "inputs"))
-        tangent_ids = list(getattr(tangents, "__iter__")())
-        body_jvp = jvp(body, primals, tangent_ids, getattr(body, "outputs"))
+    body = _get_attr(node, "attributes").get("body", _get_attr(node, "attributes").get("body_subgraph"))
+    if body is not None and _get_attr(body, "inputs", None) and _get_attr(body, "outputs", None):
+        primals = list(_get_attr(node, "inputs"))
+        tangent_ids = list(_get_attr(tangents, "__iter__")())
+        body_jvp = jvp(body, primals, tangent_ids, _get_attr(body, "outputs"))
 
-        new_id = f"{getattr(node, 'id')}_jvp"
+        new_id = f"{_get_attr(node, 'id')}_jvp"
         new_node = IRNode(
             id=new_id,
             op_type="Scan",
-            inputs=getattr(node, "inputs"),
+            inputs=_get_attr(node, "inputs"),
             attributes=as_attrs(
                 {
                     "body": body_jvp,
                     "body_subgraph": body_jvp,
-                    "reverse": getattr(node, "attributes").get("reverse", False),
+                    "reverse": _get_attr(node, "attributes").get("reverse", False),
                 }
             ),
-            shape_metadata=getattr(node, "shape_metadata"),
+            shape_metadata=_get_attr(node, "shape_metadata"),
         )
         graph.nodes[new_id] = new_node
         return new_id
@@ -615,8 +615,8 @@ def custom_vjp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
 
     from ml_switcheroo_ir import LogicalNode
 
-    bwd_subgraph = getattr(node, "subgraphs", {}).get("bwd") or node.attributes.get("bwd_graph") or node.attributes.get("custom_backward_subgraph")
-    if bwd_subgraph is not None and hasattr(bwd_subgraph, "nodes") and hasattr(bwd_subgraph, "inputs"):
+    bwd_subgraph = _get_attr(node, "subgraphs", {}).get("bwd") or node.attributes.get("bwd_graph") or node.attributes.get("custom_backward_subgraph")
+    if bwd_subgraph is not None and _has_attr(bwd_subgraph, "nodes") and _has_attr(bwd_subgraph, "inputs"):
         id_map: dict[str, str] = {}
         if bwd_subgraph.inputs:
             id_map[bwd_subgraph.inputs[0]] = cotangent
@@ -629,7 +629,7 @@ def custom_vjp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
                 continue
             id_map[n.id] = f"cvjp_inlined_{uuid.uuid4().hex[:6]}"
         _inline_subgraph(graph, as_graph(bwd_subgraph), node, id_map)
-        return tuple(id_map.get(out_id, out_id) for out_id in getattr(bwd_subgraph, "outputs"))
+        return tuple(id_map.get(out_id, out_id) for out_id in _get_attr(bwd_subgraph, "outputs"))
 
     bwd_fn = node.attributes.get("bwd_fn")
 
@@ -677,8 +677,8 @@ def custom_jvp_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) 
 
     tangents_list: list[str] = [str(t) for t in tangents] if isinstance(tangents, (tuple, list)) else [str(tangents)]
 
-    jvp_subgraph = getattr(node, "subgraphs", {}).get("jvp") or node.attributes.get("jvp_graph") or node.attributes.get("custom_forward_subgraph")
-    if jvp_subgraph is not None and hasattr(jvp_subgraph, "nodes") and hasattr(jvp_subgraph, "inputs"):
+    jvp_subgraph = _get_attr(node, "subgraphs", {}).get("jvp") or node.attributes.get("jvp_graph") or node.attributes.get("custom_forward_subgraph")
+    if jvp_subgraph is not None and _has_attr(jvp_subgraph, "nodes") and _has_attr(jvp_subgraph, "inputs"):
         id_map: dict[str, str] = {}
         combined_inputs = list(node.inputs) + tangents_list
         for i, sub_inp in enumerate(jvp_subgraph.inputs):
@@ -690,7 +690,7 @@ def custom_jvp_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) 
                 continue
             id_map[n.id] = f"cjvp_inlined_{uuid.uuid4().hex[:6]}"
         _inline_subgraph(graph, as_graph(jvp_subgraph), node, id_map)
-        return str(id_map.get(getattr(jvp_subgraph, "outputs")[0], getattr(jvp_subgraph, "outputs")[0])) if getattr(jvp_subgraph, "outputs") else str(tangents_list[0])
+        return str(id_map.get(_get_attr(jvp_subgraph, "outputs")[0], _get_attr(jvp_subgraph, "outputs")[0])) if _get_attr(jvp_subgraph, "outputs") else str(tangents_list[0])
 
     jvp_rule = node.attributes.get("jvp_rule")
 
@@ -742,14 +742,14 @@ def custom_jvp_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, .
     if fun is not None and node.inputs:
         input_proxies = [
             Tensor(
-                ProxyTensor(id=inp, shape=getattr(graph.nodes.get(inp), "shape_metadata", ())),
-                TensorConfig(getattr(graph.nodes.get(inp), "shape_metadata", ()), DType.Float32, Device("cpu")),
+                ProxyTensor(id=inp, shape=_get_attr(graph.nodes.get(inp), "shape_metadata", ())),
+                TensorConfig(_get_attr(graph.nodes.get(inp), "shape_metadata", ()), DType.Float32, Device("cpu")),
             )
             for inp in node.inputs
         ]
         primal_block = _trace_function(fun, tuple(input_proxies), f"cjvp_primal_{uuid.uuid4().hex[:6]}")
         sg = LogicalGraph(name="cjvp_sg")
-        nodes_list: list[IRNode] = list(primal_block.nodes.values()) if hasattr(primal_block.nodes, "values") else list(as_node_list(primal_block.nodes))
+        nodes_list: list[IRNode] = list(primal_block.nodes.values()) if _has_attr(primal_block.nodes, "values") else list(as_node_list(primal_block.nodes))
         for n in nodes_list:
             sg.nodes[n.id] = clone_logical_node(n)
         sg.inputs = primal_block.inputs
@@ -787,7 +787,7 @@ def getitem_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, ...]
         id=zero_in_id,
         op_type="ZerosLike",
         inputs=[inp_id] if inp_id else [],
-        shape_metadata=getattr(graph.nodes.get(inp_id), "shape_metadata", ()),
+        shape_metadata=_get_attr(graph.nodes.get(inp_id), "shape_metadata", ()),
     )
 
     put_id = f"index_put_{uuid.uuid4().hex[:6]}"
@@ -796,7 +796,7 @@ def getitem_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[str, ...]
         op_type="IndexPut",
         inputs=[zero_in_id, cotangent],
         attributes={"key": key},
-        shape_metadata=getattr(graph.nodes.get(inp_id), "shape_metadata", ()),
+        shape_metadata=_get_attr(graph.nodes.get(inp_id), "shape_metadata", ()),
     )
     return (put_id,)
 
@@ -825,8 +825,8 @@ def index_put_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) -
         id=out_id,
         op_type="IndexPut",
         inputs=[t_target, t_val],
-        attributes=dict(getattr(node, "attributes", {}) or {}),
-        shape_metadata=getattr(node, "shape_metadata", ()),
+        attributes=dict(_get_attr(node, "attributes", {}) or {}),
+        shape_metadata=_get_attr(node, "shape_metadata", ()),
     )
     return out_id
 
@@ -852,8 +852,8 @@ def zeros_like_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] | str) 
         id=zero_id,
         op_type="ZerosLike",
         inputs=list(node.inputs),
-        attributes=dict(getattr(node, "attributes", {}) or {}),
-        shape_metadata=getattr(node, "shape_metadata", ()),
+        attributes=dict(_get_attr(node, "attributes", {}) or {}),
+        shape_metadata=_get_attr(node, "shape_metadata", ()),
     )
     return zero_id
 
@@ -876,7 +876,7 @@ def log_poisson_loss_vjp(graph: IRGraph, node: IRNode, cotangent: str) -> tuple[
 
     targets_id: str = node.inputs[0] if len(node.inputs) > 0 else ""
     log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""
-    attrs: dict[str, AttributeValue] = getattr(node, "attributes", {}) or {}
+    attrs: dict[str, AttributeValue] = _get_attr(node, "attributes", {}) or {}
     log_input_flag: bool = bool(attrs.get("log_input", True))
 
     exp_id = f"exp_{uuid.uuid4().hex[:6]}"
@@ -920,7 +920,7 @@ def log_poisson_loss_jvp(graph: IRGraph, node: IRNode, tangents: Sequence[str] |
     log_input_id: str = node.inputs[1] if len(node.inputs) > 1 else ""
     t_tangent: str = tangents[1] if len(tangents) > 1 else tangents[0]
 
-    attrs: dict[str, AttributeValue] = getattr(node, "attributes", {}) or {}
+    attrs: dict[str, AttributeValue] = _get_attr(node, "attributes", {}) or {}
     log_input_flag: bool = bool(attrs.get("log_input", True))
 
     exp_id = f"exp_tan_{uuid.uuid4().hex[:6]}"

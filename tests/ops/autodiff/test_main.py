@@ -9,6 +9,7 @@ import pytest
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.transforms.autodiff import _accumulate_gradients, _add_nodes, _backward_pass, _copy_graph, _extract_gradients, _get_input_tangents, _get_reachable_from_output, _invoke_jvp_rule, _process_jvp_node, grad, hvp, jvp
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
@@ -66,20 +67,20 @@ def test_accumulate_gradients(mocker: EagerTensorProtocol) -> None:
         """
         return ["da", "db"]
 
-    setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
+    _set_attr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
     adj = as_tensor_dict({})
     as_callable(_accumulate_gradients)(g, n1, "adj", adj)
     assert adj == {"a": "da", "b": "db"}
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._add_nodes", return_value="added")
     as_callable(_accumulate_gradients)(g, n1, "adj", adj)
     assert adj == {"a": "added", "b": "added"}
-    setattr(mock_get_vjp, "side_effect", ValueError)
+    _set_attr(mock_get_vjp, "side_effect", ValueError)
     from ml_switcheroo_compiler.core.errors import MissingJVPRuleError
 
     with pytest.raises(MissingJVPRuleError):
         as_callable(_accumulate_gradients)(g, n1, "adj", adj)
-    setattr(mock_get_vjp, "side_effect", None)
-    setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da"])
+    _set_attr(mock_get_vjp, "side_effect", None)
+    _set_attr(mock_get_vjp, "return_value", lambda g, n, adj: ["da"])
     with pytest.raises(ValueError):
         as_callable(_accumulate_gradients)(g, n1, "adj", adj)
 
@@ -140,7 +141,7 @@ def test_grad(mocker: EagerTensorProtocol) -> None:
         """
         return ["da", "db"]
 
-    setattr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
+    _set_attr(mock_get_vjp, "return_value", lambda g, n, adj: ["da", "db"])
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._add_nodes", return_value="added")
     with pytest.raises(ValueError):
         grad(g, ["n1"], "not_exist")
@@ -194,13 +195,13 @@ def test_process_jvp_node(mocker: EagerTensorProtocol) -> None:
     g = LogicalGraph()
     n1 = LogicalNode("n1", "Mul", inputs=["a", "b"])
     mock_get_jvp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
-    setattr(mock_get_jvp, "return_value", lambda graph, node, tangents: "out_t")
+    _set_attr(mock_get_jvp, "return_value", lambda graph, node, tangents: "out_t")
     _process_jvp_node(g, n1, {})
     tangents = {"a": "t1"}
     mocker.patch("ml_switcheroo_compiler.transforms.autodiff._get_input_tangents", return_value=["t1", "t2"])
     _process_jvp_node(g, n1, tangents)
     assert tangents["n1"] == "out_t"
-    setattr(mock_get_jvp, "side_effect", ValueError)
+    _set_attr(mock_get_jvp, "side_effect", ValueError)
     with pytest.raises(ValueError):
         _process_jvp_node(g, n1, tangents)
 
@@ -217,7 +218,7 @@ def test_jvp_hvp(mocker: EagerTensorProtocol) -> None:
     g.nodes["n1"] = n1
     g.nodes["n2"] = n2
     mock_get_jvp = mocker.patch("ml_switcheroo_compiler.transforms.autodiff_rules.jvp_registry.get_jvp")
-    setattr(mock_get_jvp, "return_value", lambda graph, node, tangents: "out_t")
+    _set_attr(mock_get_jvp, "return_value", lambda graph, node, tangents: "out_t")
     with pytest.raises(ValueError):
         jvp(g, ["n1"], ["t1", "t2"], ["n2"])
     with pytest.raises(ValueError):

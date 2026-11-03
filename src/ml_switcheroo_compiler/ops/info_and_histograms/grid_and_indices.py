@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -53,7 +53,7 @@ class Ix(OpDef):
         # Actually it returns a tuple of arrays, the Op should maybe return a tuple of shapes,
         # but since we can only return one shape, let's return the shape of the first one.
         shape = [1] * nd
-        if hasattr(args[0], "shape") and len(args[0].shape) > 0:
+        if _has_attr(args[0], "shape") and len(args[0].shape) > 0:
             shape[0] = args[0].shape[0]
         return tuple(shape)
 

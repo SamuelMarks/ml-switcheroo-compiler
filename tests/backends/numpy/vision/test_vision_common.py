@@ -9,6 +9,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.vision_common import _np_mel_filterbank, _np_mfcc, _np_power_iteration
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -56,9 +57,9 @@ def test_np_power_iteration() -> None:
     w = np.array([[1.0, 2.0], [3.0, 4.0]])
     res = _np_power_iteration(np, w, num_iters=2)
     assert as_callable(len)(res) == 3
-    assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")(0)), "shape")) == (2,)
-    assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")(1)), "shape")) == (2,)
-    assert as_tensor(getattr(as_tensor(getattr(res, "__getitem__")(2)), "shape")) == ()
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")(0)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")(1)), "shape")) == (2,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res, "__getitem__")(2)), "shape")) == ()
     res2 = _np_power_iteration(np, w)
     assert as_callable(len)(res2) == 3
     u = np.array([[1.0], [0.0]])
@@ -74,7 +75,7 @@ def test_backends_numpy_vision_power_iteration() -> None:
     assert func is not None
     w = np.eye(3, dtype=np.float32)
     (v, u, s) = func(np, w, num_iters=2)
-    assert as_tensor(getattr(v, "shape")) == (3,)
-    assert as_tensor(getattr(u, "shape")) == (3,)
+    assert as_tensor(_get_attr(v, "shape")) == (3,)
+    assert as_tensor(_get_attr(u, "shape")) == (3,)
     (v2, u2, s2) = func(np, w, num_iters=1, u=np.array([1.0, 0.0, 0.0], dtype=np.float32))
-    assert as_tensor(getattr(v2, "shape")) == (3,)
+    assert as_tensor(_get_attr(v2, "shape")) == (3,)

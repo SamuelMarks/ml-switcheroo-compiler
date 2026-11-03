@@ -8,6 +8,7 @@ from ml_switcheroo_compiler.backends.eager.utils import _from_channels_last, _to
 from ml_switcheroo_compiler.backends.eager_registry import as_float, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("AdjustBrightness")
@@ -49,7 +50,7 @@ def _np_adjust_contrast(
     Returns:
         np.ndarray: Contrast adjusted images clipped to [0, 1].
     """
-    mean = getattr(np, "mean")(images, axis=(-3, -2), keepdims=True)
+    mean = _get_attr(np, "mean")(images, axis=(-3, -2), keepdims=True)
     return as_ndarray(np.clip((images - mean) * contrast_factor + mean, 0.0, 1.0))
 
 
@@ -114,8 +115,8 @@ def _np_auto_contrast(
     """
     value_range_val = kwargs.get("value_range", (0, 255))
     value_range = value_range_val if isinstance(value_range_val, tuple) else (0, 255)
-    low = getattr(np, "min")(images, axis=(-3, -2), keepdims=True)
-    high = getattr(np, "max")(images, axis=(-3, -2), keepdims=True)
+    low = _get_attr(np, "min")(images, axis=(-3, -2), keepdims=True)
+    high = _get_attr(np, "max")(images, axis=(-3, -2), keepdims=True)
     diff = high - low
     diff = np.where(diff == 0.0, 1.0, diff)
     out = (images - low) / diff
@@ -148,14 +149,14 @@ def _np_equalization(
     out = np.empty_like(images_uint8)
     for b in range(images.shape[0]):
         for c in range(images.shape[-1]):
-            (hist, _) = getattr(np, "histogram")(images_uint8[b, ..., c].flatten(), 256, [0, 256])
+            (hist, _) = _get_attr(np, "histogram")(images_uint8[b, ..., c].flatten(), 256, [0, 256])
             cdf = hist.cumsum()
-            cdf_m = getattr(np.ma, "masked_equal")(cdf, 0)
+            cdf_m = _get_attr(np.ma, "masked_equal")(cdf, 0)
             if cdf_m.max() - cdf_m.min() == 0:
                 out[b, ..., c] = images_uint8[b, ..., c]
             else:
                 cdf_m = (cdf_m - cdf_m.min()) * 255 / (cdf_m.max() - cdf_m.min())
-                cdf_filled = getattr(np.ma, "filled")(cdf_m, 0).astype("uint8")
+                cdf_filled = _get_attr(np.ma, "filled")(cdf_m, 0).astype("uint8")
                 out[b, ..., c] = cdf_filled[images_uint8[b, ..., c]]
     return np.divide(out.astype(images.dtype), 255.0)
 
@@ -224,7 +225,7 @@ def _np_rgb_to_grayscale(
     data_format_val = kwargs.get("data_format", "channels_last")
     data_format = str(data_format_val) if data_format_val is not None else "channels_last"
     gray = _to_channels_last(np, images, data_format)
-    weights = np.array([0.2989, 0.587, 0.114], dtype=getattr(gray, "dtype"))
+    weights = np.array([0.2989, 0.587, 0.114], dtype=_get_attr(gray, "dtype"))
     gray = np.sum(gray * weights, axis=-1, keepdims=True)
     res = _from_channels_last(np, gray, data_format)
     return np.asarray(res)

@@ -118,3 +118,47 @@ def test_validate_matmul_shapes_batched() -> None:
     with pytest.raises(ShapeMismatchError):
         # Mismatched batch dimension
         validate_matrix_multiply_shapes((3, 2, 4), (4, 4, 5))
+
+
+def test_shape_attr_and_cast_helpers() -> None:
+    """Verify _has_attr, _get_attr, _set_attr, _del_attr, _obj_set_attr, _obj_del_attr, _obj_vars, _caller_locals, and _cast_val."""
+    from ml_switcheroo_compiler.core.shape import (
+        _caller_locals,
+        _cast_val,
+        _del_attr,
+        _get_attr,
+        _has_attr,
+        _obj_del_attr,
+        _obj_set_attr,
+        _obj_vars,
+        _set_attr,
+    )
+
+    class _Sample:
+        """Sample test class."""
+
+        pass
+
+    inst = _Sample()
+    assert _has_attr(inst, "missing") is False
+    _set_attr(inst, "alpha", 10)
+    assert _has_attr(inst, "alpha") is True
+    assert _get_attr(inst, "alpha") == 10
+    assert _get_attr(inst, "missing", 99) == 99
+    assert "alpha" in _obj_vars(inst)
+    _del_attr(inst, "alpha")
+    assert _has_attr(inst, "alpha") is False
+
+    _obj_set_attr(inst, "beta", 20)
+    assert _get_attr(inst, "beta") == 20
+    _obj_del_attr(inst, "beta")
+    assert _has_attr(inst, "beta") is False
+
+    _obj_set_attr(_Sample, "cls_attr", 30)
+    assert _get_attr(_Sample, "cls_attr") == 30
+    _obj_del_attr(_Sample, "cls_attr")
+    assert _has_attr(_Sample, "cls_attr") is False
+
+    local_marker = 42
+    assert _caller_locals()["local_marker"] == local_marker
+    assert _cast_val(int, 7) == 7

@@ -7,6 +7,7 @@ import typing
 # ruff: noqa: E501
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _cast_val
 from ml_switcheroo_compiler.ops.shape.reshape import Atleast1d, Atleast2d, Atleast3d, BroadcastInDim, BroadcastTo, Delete, ExpandDims, FillDiagonal, Flip, Fliplr, Flipud, Insert, Moveaxis, Permute, Reshape, Resize, Roll, Squeeze, Swapaxes, Transpose, _get_shape_list, _resolve_reshape_minus_one
 from tests.testing_utils import as_callable
 
@@ -195,21 +196,21 @@ def test_missing_reshape_classes() -> None:
 
     op = Resize()
     assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), (5, 6)) == (2, 3)
-    op = typing.cast("Resize", ExpandDims())
+    op = _cast_val("Resize", ExpandDims())
     assert as_callable(op.infer_shape)(as_callable(MockTensor)(None)) == (None,)
     assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), axis=None) == (2, 3)
     assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), axis=0) == (1, 2, 3)
     assert as_callable(op.infer_shape)(as_callable(MockTensor)((2, 3)), axis=-1) == (2, 3, 1)
-    op = typing.cast("Resize", Block())
+    op = _cast_val("Resize", Block())
     assert as_callable(op.infer_shape)(arrays=[1, 2]) == ()
     assert as_callable(op.infer_shape)(arrays=1) == ()
     assert C().infer_shape() == ()
     assert Collapse().infer_shape() == ()
-    op = typing.cast("Resize", DiagIndices())
+    op = _cast_val("Resize", DiagIndices())
     assert as_callable(op.infer_shape)(n=3) == ((3,), (3,))
-    op = typing.cast("Resize", DiagIndicesFrom())
+    op = _cast_val("Resize", DiagIndicesFrom())
     assert as_callable(op.infer_shape)(arr=as_callable(MockTensor)((2, 3))) == ((2,), (2,))
     assert as_callable(op.infer_shape)(as_callable(NoShape)()) is None
-    op = typing.cast("Resize", Diagflat())
+    op = _cast_val("Resize", Diagflat())
     assert as_callable(op.infer_shape)(v=as_callable(MockTensor)((2, 3)), k=1) == (7, 7)
     assert as_callable(op.infer_shape)(as_callable(NoShape)()) is None

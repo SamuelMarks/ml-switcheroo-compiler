@@ -6,6 +6,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("SparseBincount")
@@ -121,7 +122,7 @@ def _np_sparse_expand_dims(backend_module: BackendModuleProtocol, x: EagerValue,
     ax = kwargs.get("axis", axis)
     if ax is None:
         ax = -1
-    return as_tensor(getattr(np, "expand_dims")(np.asarray(x), axis=ax))
+    return as_tensor(_get_attr(np, "expand_dims")(np.asarray(x), axis=ax))
 
 
 @numpy_eager_registry.register("RaggedDot")

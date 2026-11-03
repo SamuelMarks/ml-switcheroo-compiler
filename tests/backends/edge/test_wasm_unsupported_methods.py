@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _obj_set_attr, _set_attr
 from tests.testing_utils import as_attr_val, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -62,12 +63,12 @@ def test_wasm_line_coverage_extra() -> None:
 
     n_matmul_int = IRNode(id="n_matmul_int", op_type="MatMul", inputs=["n_dummy_int", "n_dummy_int"], shape_metadata=[])
     n_dummy_int = IRNode(id="n_dummy_int", op_type="Input", inputs=[])
-    object.__setattr__(n_dummy_int, "shape_metadata", 1)
+    _obj_set_attr(n_dummy_int, "shape_metadata", 1)
 
     n_cond_unmapped = IRNode(id="n_cond", op_type="Cond", inputs=["dummy"], shape_metadata=[])
     n_cond_unmapped.attributes["then_branch"] = as_attr_val(IRGraph())
-    setattr(getattr(getattr(n_cond_unmapped, "attributes"), "__getitem__")("then_branch"), "inputs", ["not_in_parent"])
-    getattr(as_tensor(getattr(as_tensor(getattr(n_cond_unmapped.attributes, "__getitem__")("then_branch")), "nodes")), "__setitem__")("sub", IRNode("sub", "Add", inputs=["not_in_parent"]))
+    _set_attr(_get_attr(_get_attr(n_cond_unmapped, "attributes"), "__getitem__")("then_branch"), "inputs", ["not_in_parent"])
+    _get_attr(as_tensor(_get_attr(as_tensor(_get_attr(n_cond_unmapped.attributes, "__getitem__")("then_branch")), "nodes")), "__setitem__")("sub", IRNode("sub", "Add", inputs=["not_in_parent"]))
 
     for n in [n_conv2d, n_dummy, n_dummy_none, n_avgpool, n_matmul_int, n_dummy_int, n_cond_unmapped]:
         g.nodes[n.id] = n

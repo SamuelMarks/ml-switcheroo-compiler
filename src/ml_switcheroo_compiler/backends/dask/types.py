@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
-import typing
 from types import ModuleType
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, as_callable, as_float, as_tensor
 
+da: ModuleType | None
 try:
-    import dask.array as da
+    import dask.array as _da
+
+    da = _da
 except ImportError:
-    da = typing.cast(ModuleType, None)
+    da = None
 
 
 def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
@@ -23,7 +25,7 @@ def zeros(cls: type, shape: tuple[int, ...]) -> EagerValue:
     Returns:
         EagerValue: The zeros tensor.
     """
-    return as_tensor(getattr(da, "zeros")(shape, chunks="auto"))
+    return as_tensor(as_callable(_get_attr(da, "zeros"))(shape, chunks="auto"))
 
 
 def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
@@ -38,8 +40,8 @@ def array(cls: type, data: EagerValue, dtype: EagerValue | None = None) -> Eager
         EagerValue: The array tensor.
     """
     if dtype is not None:
-        return as_tensor(getattr(da, "array")(data, dtype=getattr(dtype, "value", dtype)))
-    return as_tensor(getattr(da, "array")(data))
+        return as_tensor(as_callable(_get_attr(da, "array"))(data, dtype=_get_attr(dtype, "value", dtype)))
+    return as_tensor(as_callable(_get_attr(da, "array"))(data))
 
 
 def asarray(cls: type, data: EagerValue) -> EagerValue:
@@ -52,7 +54,7 @@ def asarray(cls: type, data: EagerValue) -> EagerValue:
     Returns:
         EagerValue: The array tensor.
     """
-    return as_tensor(getattr(da, "asarray")(data))
+    return as_tensor(as_callable(_get_attr(da, "asarray"))(data))
 
 
 def item(cls: type, data: EagerValue) -> float:
@@ -65,4 +67,6 @@ def item(cls: type, data: EagerValue) -> float:
     Returns:
         float: The scalar value.
     """
-    return float(getattr(da, "asarray")(data).compute().item())
+    arr = as_callable(_get_attr(da, "asarray"))(data)
+    comp = as_callable(_get_attr(arr, "compute"))()
+    return float(as_float(as_callable(_get_attr(comp, "item"))()))

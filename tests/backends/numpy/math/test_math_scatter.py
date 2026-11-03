@@ -20,6 +20,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.math_scatter import (
     _np_tensor_scatter_min,
     _np_tensor_scatter_update,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -130,7 +131,7 @@ def test_np_dynamic_update_slice() -> None:
     res = _np_dynamic_update_slice(np, x, np.ones((2, 2)), [1, 1])
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     1,
                     1,
@@ -141,7 +142,7 @@ def test_np_dynamic_update_slice() -> None:
     )
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     0,
                     0,

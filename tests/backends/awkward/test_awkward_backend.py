@@ -14,6 +14,7 @@ import ml_switcheroo_compiler.backends.awkward as ak_pkg
 from ml_switcheroo_compiler.backends.awkward.generator import AwkwardGenerator
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor, as_type_obj
@@ -213,7 +214,7 @@ def _test_awkward_ragged_operations_and_records_part_1(_state: dict[str, EagerTe
     # Ragged array creation
     ragged = ak_pkg.ragged_array([[1.0, 2.0, 3.0], [4.0], [5.0, 6.0]])
     assert isinstance(ragged, ak.Array)
-    ragged_cls = as_tensor(getattr(ak_pkg.AwkwardGenerator, "ragged_array"))([[10.0], [20.0, 30.0]])
+    ragged_cls = as_tensor(_get_attr(ak_pkg.AwkwardGenerator, "ragged_array"))([[10.0], [20.0, 30.0]])
     assert isinstance(ragged_cls, ak.Array)
 
     # Jagged reductions
@@ -235,16 +236,16 @@ def _test_awkward_ragged_operations_and_records_part_1(_state: dict[str, EagerTe
     # Variable-length flattening and unflattening
     flat = ak_pkg.flatten(ragged)
     np.testing.assert_allclose(ak.to_list(flat), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    flat_cls = as_tensor(getattr(ak_pkg.AwkwardGenerator, "flatten"))(ragged)
+    flat_cls = as_tensor(_get_attr(ak_pkg.AwkwardGenerator, "flatten"))(ragged)
     np.testing.assert_allclose(ak.to_list(flat_cls), [1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
 
     unflat = ak_pkg.unflatten([10, 20, 30, 40], counts=[1, 3])
     assert ak.to_list(unflat) == [[10], [20, 30, 40]]
-    unflat_cls = as_tensor(getattr(ak_pkg.AwkwardGenerator, "unflatten"))([10, 20, 30, 40], counts=[2, 2])
-    getattr(_state, "update")({"ak": ak, "flat": flat, "flat_cls": flat_cls, "max_axis1": max_axis1})
-    getattr(_state, "update")({"mean_axis1": mean_axis1, "min_axis1": min_axis1, "prod_axis1": prod_axis1, "ragged": ragged})
-    getattr(_state, "update")({"ragged_cls": ragged_cls, "sum_axis1": sum_axis1, "unflat": unflat, "unflat_cls": unflat_cls})
-    _state.update(locals())
+    unflat_cls = as_tensor(_get_attr(ak_pkg.AwkwardGenerator, "unflatten"))([10, 20, 30, 40], counts=[2, 2])
+    _get_attr(_state, "update")({"ak": ak, "flat": flat, "flat_cls": flat_cls, "max_axis1": max_axis1})
+    _get_attr(_state, "update")({"mean_axis1": mean_axis1, "min_axis1": min_axis1, "prod_axis1": prod_axis1, "ragged": ragged})
+    _get_attr(_state, "update")({"ragged_cls": ragged_cls, "sum_axis1": sum_axis1, "unflat": unflat, "unflat_cls": unflat_cls})
+    _state.update(_caller_locals())
 
 
 def _test_awkward_ragged_operations_and_records_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -259,17 +260,17 @@ def _test_awkward_ragged_operations_and_records_part_2(_state: dict[str, EagerTe
     # Nested record transformations
     rec = ak_pkg.record_array({"f1": [1, 2], "f2": [3, 4]})
     assert rec is not None
-    rec_cls = as_tensor(getattr(ak_pkg.AwkwardGenerator, "record_array"))({"a": [5]})
+    rec_cls = as_tensor(_get_attr(ak_pkg.AwkwardGenerator, "record_array"))({"a": [5]})
     assert rec_cls is not None
 
     with_f = ak_pkg.with_field(rec, [5, 6], where="f3")
     assert "f3" in ak.fields(with_f)
-    with_f_cls = as_tensor(getattr(ak_pkg.AwkwardGenerator, "with_field"))(rec, [7, 8], where="f4")
+    with_f_cls = as_tensor(_get_attr(ak_pkg.AwkwardGenerator, "with_field"))(rec, [7, 8], where="f4")
     assert "f4" in ak.fields(with_f_cls)
 
     unzipped = ak_pkg.unzip(rec)
     assert len(unzipped) == 2
-    unzipped_cls = as_tensor(getattr(ak_pkg.AwkwardGenerator, "unzip"))(rec)
+    unzipped_cls = as_tensor(_get_attr(ak_pkg.AwkwardGenerator, "unzip"))(rec)
     assert len(unzipped_cls) == 2
 
     # Arithmetic without rectangularization
@@ -285,10 +286,10 @@ def _test_awkward_ragged_operations_and_records_part_2(_state: dict[str, EagerTe
     mul_res = ak_pkg.execute_op("Mul", ragged, ragged)
     assert isinstance(mul_res, as_type_obj(ak.Array))
     div_res = ak_pkg.execute_op("Div", ragged, ragged)
-    getattr(_state, "update")({"add_res": add_res, "div_res": div_res, "exp_res": exp_res, "mul_res": mul_res})
-    getattr(_state, "update")({"rec": rec, "rec_cls": rec_cls, "sub_res": sub_res, "unzipped": unzipped})
-    getattr(_state, "update")({"unzipped_cls": unzipped_cls, "with_f": with_f, "with_f_cls": with_f_cls})
-    _state.update(locals())
+    _get_attr(_state, "update")({"add_res": add_res, "div_res": div_res, "exp_res": exp_res, "mul_res": mul_res})
+    _get_attr(_state, "update")({"rec": rec, "rec_cls": rec_cls, "sub_res": sub_res, "unzipped": unzipped})
+    _get_attr(_state, "update")({"unzipped_cls": unzipped_cls, "with_f": with_f, "with_f_cls": with_f_cls})
+    _state.update(_caller_locals())
 
 
 def _test_awkward_ragged_operations_and_records_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -325,9 +326,9 @@ def _test_awkward_ragged_operations_and_records_part_3(_state: dict[str, EagerTe
 
     # Fallback paths when awkward is mocked out
     mock_ak_empty = mock.MagicMock(spec=[])
-    getattr(_state, "update")({"abs_res": abs_res, "arr_obj": arr_obj, "arr_rag": arr_rag, "mock_ak_empty": mock_ak_empty})
-    getattr(_state, "update")({"neg_res": neg_res, "pow_res": pow_res, "sin_res": sin_res, "z_int": z_int})
-    _state.update(locals())
+    _get_attr(_state, "update")({"abs_res": abs_res, "arr_obj": arr_obj, "arr_rag": arr_rag, "mock_ak_empty": mock_ak_empty})
+    _get_attr(_state, "update")({"neg_res": neg_res, "pow_res": pow_res, "sin_res": sin_res, "z_int": z_int})
+    _state.update(_caller_locals())
 
 
 def _test_awkward_ragged_operations_and_records_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -343,15 +344,15 @@ def _test_awkward_ragged_operations_and_records_part_4(_state: dict[str, EagerTe
         rec_fallback = ak_pkg.record_array({"a": [1]})
         assert isinstance(rec_fallback, dict)
         flat_fallback = ak_pkg.flatten(np.array([[1, 2], [3, 4]]))
-        assert as_tensor(getattr(flat_fallback, "shape")) == (4,)
+        assert as_tensor(_get_attr(flat_fallback, "shape")) == (4,)
         unflat_fallback = ak_pkg.unflatten([1, 2], counts=[1, 1])
         assert unflat_fallback == [1, 2]
         with_f_fallback = ak_pkg.with_field({"a": 1}, 2, where="b")
-        assert as_tensor(getattr(with_f_fallback, "__getitem__")("b")) == 2
+        assert as_tensor(_get_attr(with_f_fallback, "__getitem__")("b")) == 2
         unzip_fallback = ak_pkg.unzip({"k1": 10, "k2": 20})
         assert unzip_fallback == (10, 20)
-    getattr(_state, "update")({"flat_fallback": flat_fallback, "ragged_fallback": ragged_fallback, "rec_fallback": rec_fallback, "unflat_fallback": unflat_fallback})
-    getattr(_state, "update")({"unzip_fallback": unzip_fallback, "with_f_fallback": with_f_fallback})
+    _get_attr(_state, "update")({"flat_fallback": flat_fallback, "ragged_fallback": ragged_fallback, "rec_fallback": rec_fallback, "unflat_fallback": unflat_fallback})
+    _get_attr(_state, "update")({"unzip_fallback": unzip_fallback, "with_f_fallback": with_f_fallback})
 
 
 def test_awkward_ragged_operations_and_records() -> None:

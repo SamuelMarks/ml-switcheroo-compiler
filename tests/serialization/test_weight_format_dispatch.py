@@ -11,6 +11,7 @@ from unittest.mock import patch
 import pytest
 
 import ml_switcheroo_compiler.serialization as s
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -40,9 +41,9 @@ def _test_serialization_format_dispatch_part_1(_state: dict[str, EagerTensorProt
         s._load_safetensors_weights(st_path)
     with patch("ml_switcheroo_compiler.serialization.NpzWeightFormat.load"):
         s._load_npz_weights(npz_path)
-    getattr(_state, "update")({"dummy_model": dummy_model, "h5_path": h5_path, "npz_path": npz_path, "pk_path": pk_path})
-    getattr(_state, "update")({"st_path": st_path, "zip_path": zip_path})
-    _state.update(locals())
+    _get_attr(_state, "update")({"dummy_model": dummy_model, "h5_path": h5_path, "npz_path": npz_path, "pk_path": pk_path})
+    _get_attr(_state, "update")({"st_path": st_path, "zip_path": zip_path})
+    _state.update(_caller_locals())
 
 
 def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -86,8 +87,8 @@ def _test_serialization_format_dispatch_part_2(_state: dict[str, EagerTensorProt
             """Test function get_config."""
             return {"c": 1}
 
-    getattr(_state, "update")({"FakeModel": FakeModel, "FakeWeight": FakeWeight})
-    _state.update(locals())
+    _get_attr(_state, "update")({"FakeModel": FakeModel, "FakeWeight": FakeWeight})
+    _state.update(_caller_locals())
 
 
 def _test_serialization_format_dispatch_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -115,8 +116,8 @@ def _test_serialization_format_dispatch_part_3(_state: dict[str, EagerTensorProt
     ctx = as_callable(s.KerasSerializationContext)(filepath=zip_path, config_dict={}, metadata={}, weights_store={"a": 1}, state_store={"b": 1})
     with patch("ml_switcheroo_compiler.serialization._write_h5_to_zip"):
         as_callable(s._write_keras_zip)(ctx)
-    getattr(_state, "update")({"ctx": ctx, "st": st, "ws": ws, "zf": zf})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ctx": ctx, "st": st, "ws": ws, "zf": zf})
+    _state.update(_caller_locals())
 
 
 def _test_serialization_format_dispatch_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -169,7 +170,7 @@ def test_weight_format_load_save(tmp_path: Path) -> None:
     if os.path.exists(tf):
         os.remove(tf)
     s.save_weights(None, tf)
-    with as_callable(patch.object)(as_tensor(getattr(s, "H5WeightFormat")), "load", return_value={"x": 2}):
+    with as_callable(patch.object)(as_tensor(_get_attr(s, "H5WeightFormat")), "load", return_value={"x": 2}):
         res = s.load_weights(tf)
         assert res == {"x": 2}
     if os.path.exists(tf):

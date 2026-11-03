@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import typing
 
 from ml_switcheroo_ir import AttributeValue
 
@@ -11,7 +10,7 @@ from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _cast_val, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -113,7 +112,8 @@ class NumbaGenerator(PythonStringGenerator):
         if not callable(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        return typing.cast(TypedVariadicCallable[tuple[EagerValue, ...]], func)
+        _typed_ret_1: TypedVariadicCallable[tuple[EagerValue, ...]] = _cast_val(TypedVariadicCallable[tuple[EagerValue, ...]], func)
+        return _typed_ret_1
 
     def generic_visit(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Fallback for generic nodes emitting operations compiled by Numba.
@@ -139,7 +139,7 @@ class NumbaGenerator(PythonStringGenerator):
         Returns:
             str: Output variable name.
         """
-        attrs = getattr(node, "attributes", {})
+        attrs = _get_attr(node, "attributes", {})
         max_iters = attrs.get("max_iters", 100)
         init_val = input_vars[0] if input_vars else "0"
         res_var = f"v_{node.id.replace('-', '_')}"
@@ -164,7 +164,7 @@ class NumbaGenerator(PythonStringGenerator):
         Returns:
             str: Output variable name.
         """
-        attrs = getattr(node, "attributes", {})
+        attrs = _get_attr(node, "attributes", {})
         lower = attrs.get("lower", 0)
         upper = attrs.get("upper", 10)
         step = attrs.get("step", 1)
@@ -622,7 +622,7 @@ class NumbaGenerator(PythonStringGenerator):
             del runner_kwargs
             if compiled_fn is not None:
                 try:
-                    args_tuple = tuple(getattr(a, "data", a) for a in args)
+                    args_tuple = tuple(_get_attr(a, "data", a) for a in args)
                     return as_callable(compiled_fn)(args_tuple)
                 except Exception:
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -632,7 +632,7 @@ class NumbaGenerator(PythonStringGenerator):
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict, backend=NumbaGenerator)
             if not graph.outputs:
                 return as_tensor(res_dict)

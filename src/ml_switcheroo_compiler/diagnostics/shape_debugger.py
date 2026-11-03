@@ -15,6 +15,7 @@ from ml_switcheroo_ir import LogicalGraph
 
 from ml_switcheroo_compiler import ops
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if typing.TYPE_CHECKING:
@@ -59,8 +60,8 @@ def debug_shapes(
         res += row_fmt.format(name="input", shape=input_shape, dtype="float64")
 
         out = model_func(dummy_input)
-        if hasattr(out, "shape"):
-            res += row_fmt.format(name="output", shape=getattr(out, "shape"), dtype="float64")
+        if _has_attr(out, "shape"):
+            res += row_fmt.format(name="output", shape=_get_attr(out, "shape"), dtype="float64")
         else:
             res += row_fmt.format(name="output", shape="unknown", dtype="float64")
     except RuntimeError:

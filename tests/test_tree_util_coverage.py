@@ -9,6 +9,7 @@ import pytest
 
 import ml_switcheroo_compiler.tree_util as tree_util_mod
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.ops.base import OpDef, dispatch_eager, emit_ir_node
 from tests.testing_utils import as_callable, as_tensor
@@ -68,9 +69,9 @@ def _test_tree_util_and_ops_base_confirmation_part_1(_state: dict[str, EagerTens
 
     with pytest.raises(ValueError, match="All trees must have the same structure"):
         tree_util_mod.tree_map(lambda x, y: x + y, [1, 2], [1, 2, 3])
-    getattr(_state, "update")({"leaves": leaves, "mapped": mapped, "reconstructed": reconstructed, "structure": structure})
-    getattr(_state, "update")({"td1": td1, "td2": td2, "tree": tree})
-    _state.update(locals())
+    _get_attr(_state, "update")({"leaves": leaves, "mapped": mapped, "reconstructed": reconstructed, "structure": structure})
+    _get_attr(_state, "update")({"td1": td1, "td2": td2, "tree": tree})
+    _state.update(_caller_locals())
 
 
 def _test_tree_util_and_ops_base_confirmation_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -98,8 +99,8 @@ def _test_tree_util_and_ops_base_confirmation_part_2(_state: dict[str, EagerTens
 
     dummy_op = OpDef()
     assert dummy_op.infer_shape() == ()
-    getattr(_state, "update")({"dummy_op": dummy_op, "inner": inner, "outer": outer})
-    _state.update(locals())
+    _get_attr(_state, "update")({"dummy_op": dummy_op, "inner": inner, "outer": outer})
+    _state.update(_caller_locals())
 
 
 def _test_tree_util_and_ops_base_confirmation_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -143,10 +144,10 @@ def _test_tree_util_and_ops_base_confirmation_part_3(_state: dict[str, EagerTens
         return x
 
     original_eager = config.eager_mode
-    getattr(_state, "update")({"DummyGraph": DummyGraph, "backend": backend, "dummy_func": dummy_func, "graph": graph})
-    getattr(_state, "update")({"mock_add_node": mock_add_node, "mock_be": mock_be, "nid": nid, "nid_none": nid_none})
-    getattr(_state, "update")({"original_eager": original_eager})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyGraph": DummyGraph, "backend": backend, "dummy_func": dummy_func, "graph": graph})
+    _get_attr(_state, "update")({"mock_add_node": mock_add_node, "mock_be": mock_be, "nid": nid, "nid_none": nid_none})
+    _get_attr(_state, "update")({"original_eager": original_eager})
+    _state.update(_caller_locals())
 
 
 def _test_tree_util_and_ops_base_confirmation_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -160,7 +161,7 @@ def _test_tree_util_and_ops_base_confirmation_part_4(_state: dict[str, EagerTens
         config.eager_mode = False
         assert dummy_func(42) == 42
     finally:
-        setattr(config, "eager_mode", original_eager)
+        _set_attr(config, "eager_mode", original_eager)
 
 
 def test_tree_util_and_ops_base_confirmation() -> None:

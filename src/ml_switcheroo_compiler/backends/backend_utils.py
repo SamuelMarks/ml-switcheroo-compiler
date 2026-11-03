@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _has_attr
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -31,11 +33,11 @@ def format_shape_metadata(node: IRNode, var_names: dict[str, str]) -> str | None
     Returns:
         str | None: Formatted shape tuple representation or None if not present.
     """
-    if not (hasattr(node, "shape_metadata") and node.shape_metadata):
+    if not (_has_attr(node, "shape_metadata") and node.shape_metadata):
         return None
     formatted_shape: list[str] = []
     for dim in node.shape_metadata:
-        if hasattr(dim, "id"):
+        if _has_attr(dim, "id"):
             dim_id = str(dim.id)
             formatted_shape.append(var_names.get(dim_id, dim_id))
         elif isinstance(dim, str):

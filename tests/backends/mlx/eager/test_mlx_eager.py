@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from ml_switcheroo_compiler.backends.mlx.eager import execute_op
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -84,7 +85,7 @@ def test_mlx_eager_coverage_part2() -> None:
         assert as_callable(execute_op)(cls, "Eye", n_mock, n_mock, k=1, dtype="float32") is not None
         with patch("mlx.core.take", side_effect=ValueError):
             res = as_callable(execute_op)(cls, "Take", as_callable(mx.array)([1, 2]), as_callable(mx.array)([0]), axis=0)
-            assert as_tensor(getattr(getattr(res, "__class__", None), "__name__")) == "array"
+            assert as_tensor(_get_attr(_get_attr(res, "__class__", None), "__name__")) == "array"
         with patch("mlx.core.take", side_effect=ValueError), patch("ml_switcheroo_compiler.backends.numpy.eager.execute_op", return_value=(1, 2)):
             res = as_callable(execute_op)(cls, "Take", as_callable(mx.array)([1, 2]), as_callable(mx.array)([0]), axis=0)
             assert isinstance(as_tensor(res), tuple)
@@ -95,19 +96,19 @@ def test_mlx_ragged_tensor_to_dense() -> None:
     from ml_switcheroo_compiler.backends.mlx.eager import _mlx_ragged_tensor_to_dense
 
     r1: list[mx.array] = [mx.array([1.0, 2.0]), mx.array([3.0, 4.0, 5.0])]
-    dense1: mx.array = typing.cast("mx.array", _mlx_ragged_tensor_to_dense(mx, r1, default_value=0.0))
+    dense1: mx.array = _cast_val("mx.array", _mlx_ragged_tensor_to_dense(mx, r1, default_value=0.0))
     assert dense1.shape == (2, 3)
     assert dense1[0, 2].item() == 0.0
     assert dense1[1, 2].item() == 5.0
     r2: dict[str, mx.array] = {"values": mx.array([10.0, 20.0, 30.0, 40.0]), "row_splits": mx.array([0, 1, 4])}
-    dense2: mx.array = typing.cast("mx.array", _mlx_ragged_tensor_to_dense(mx, r2, default_value=-1.0))
+    dense2: mx.array = _cast_val("mx.array", _mlx_ragged_tensor_to_dense(mx, r2, default_value=-1.0))
     assert dense2.shape == (2, 3)
     assert dense2[0, 0].item() == 10.0
     assert dense2[0, 1].item() == -1.0
     assert dense2[1, 0].item() == 20.0
     assert dense2[1, 2].item() == 40.0
     arr: mx.array = mx.array([1.0, 2.0])
-    res_dense: mx.array = typing.cast("mx.array", _mlx_ragged_tensor_to_dense(mx, arr))
+    res_dense: mx.array = _cast_val("mx.array", _mlx_ragged_tensor_to_dense(mx, arr))
     assert res_dense is arr
 
     class RaggedContainer:
@@ -125,10 +126,10 @@ def test_mlx_ragged_tensor_to_dense() -> None:
 
     r_obj = RaggedContainer(values=mx.array([10.0, 20.0, 30.0, 40.0]), row_splits=mx.array([0, 1, 4]))
     dense_obj = _mlx_ragged_tensor_to_dense(mx, as_tensor(r_obj), default_value=-1.0)
-    assert as_tensor(getattr(dense_obj, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(dense_obj, "shape")) == (2, 3)
     r_empty: dict[str, mx.array] = {"values": mx.array([], dtype=mx.float32), "row_splits": mx.array([0])}
     dense_empty = _mlx_ragged_tensor_to_dense(mx, r_empty)
-    assert as_tensor(getattr(dense_empty, "shape")) == (0, 0)
+    assert as_tensor(_get_attr(dense_empty, "shape")) == (0, 0)
 
 
 def test_mlx_eager_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,6 +146,6 @@ def test_mlx_eager_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "mlx.core", None)
         importlib.reload(mx_eager)
-        assert as_tensor(getattr(mx_eager, "mx")) is None
+        assert as_tensor(_get_attr(mx_eager, "mx")) is None
     importlib.reload(mx_eager)
-    assert as_tensor(getattr(mx_eager, "mx")) is not None
+    assert as_tensor(_get_attr(mx_eager, "mx")) is not None

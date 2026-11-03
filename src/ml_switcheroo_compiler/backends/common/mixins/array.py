@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 
 from .common import CommonASTVisitor
@@ -162,7 +163,7 @@ class ArrayASTVisitor(CommonASTVisitor):
             A string containing the backend-specific code for computing the top k elements.
         """
         k = node.attributes.get("k", 1)
-        k_val = str(getattr(k, "expr")) if hasattr(k, "expr") else str(k)
+        k_val = str(_get_attr(k, "expr")) if _has_attr(k, "expr") else str(k)
         is_idx = node.attributes.get("return_indices", False)
         pfx = self.generator.get_fallback_prefix()
         var = input_vars[0]
@@ -236,7 +237,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         elif pfx in ("torch", "pt"):
             return f"torch.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
         else:
-            fallback = getattr(self.generator, "get_fallback_prefix", lambda: "numpy")()
+            fallback = _get_attr(self.generator, "get_fallback_prefix", lambda: "numpy")()
             return f"{fallback}.meshgrid({inputs_str}, indexing='{indexing}')[{idx}]"
 
     def visit_Slice(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
@@ -277,7 +278,7 @@ class ArrayASTVisitor(CommonASTVisitor):
         """
         operand = input_vars[0]
         starts = input_vars[1:]
-        slice_sizes = list(getattr(node.attributes.get("slice_sizes", []), "__iter__")())
+        slice_sizes = list(_get_attr(node.attributes.get("slice_sizes", []), "__iter__")())
         pfx = self.generator.get_fallback_prefix()
 
         starts_str = ", ".join(starts)

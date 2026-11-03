@@ -46,6 +46,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.array_manipulation import (
     gather_eager,
     stack_eager,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -56,7 +57,7 @@ def test_resize() -> None:
     """Test function test_resize."""
     x = np.ones((1, 2, 3))
     res = _np_resize(np, x, (4, 5))
-    assert as_tensor(getattr(res, "shape")) == (4, 5, 3)
+    assert as_tensor(_get_attr(res, "shape")) == (4, 5, 3)
     assert np.all(res == 1)
 
 
@@ -81,40 +82,40 @@ def test_unstack() -> None:
     x = np.array([[1, 2], [3, 4]])
     res = _np_unstack(np, x, axis=0)
     assert as_callable(len)(res) == 2
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(0)), [1, 2])
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), [1, 2])
 
 
 def test_reshape() -> None:
     """Test function test_reshape."""
     x = np.ones((2, 2))
     res = _np_reshape(np, x, (4,))
-    assert as_tensor(getattr(res, "shape")) == (4,)
+    assert as_tensor(_get_attr(res, "shape")) == (4,)
     res_kwargs = _np_reshape(np, x, shape=(4,))
-    assert as_tensor(getattr(res_kwargs, "shape")) == (4,)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (4,)
     res_newshape = _np_reshape(np, x, newshape=(4,))
-    assert as_tensor(getattr(res_newshape, "shape")) == (4,)
+    assert as_tensor(_get_attr(res_newshape, "shape")) == (4,)
 
 
 def test_squeeze() -> None:
     """Test function test_squeeze."""
     x = np.ones((1, 2, 1))
     res = _np_squeeze(np, x)
-    assert as_tensor(getattr(res, "shape")) == (2,)
+    assert as_tensor(_get_attr(res, "shape")) == (2,)
     res_args = _np_squeeze(np, x, 0)
-    assert as_tensor(getattr(res_args, "shape")) == (2, 1)
+    assert as_tensor(_get_attr(res_args, "shape")) == (2, 1)
     res_kwargs = _np_squeeze(np, x, axis=2)
-    assert as_tensor(getattr(res_kwargs, "shape")) == (1, 2)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (1, 2)
 
 
 def test_transpose() -> None:
     """Test function test_transpose."""
     x = np.ones((1, 2, 3))
     res = _np_transpose(np, x, (2, 1, 0))
-    assert as_tensor(getattr(res, "shape")) == (3, 2, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 2, 1)
     res_axes = _np_transpose(np, x, axes=(2, 1, 0))
-    assert as_tensor(getattr(res_axes, "shape")) == (3, 2, 1)
+    assert as_tensor(_get_attr(res_axes, "shape")) == (3, 2, 1)
     res_dims = _np_transpose(np, x, dims=(2, 1, 0))
-    assert as_tensor(getattr(res_dims, "shape")) == (3, 2, 1)
+    assert as_tensor(_get_attr(res_dims, "shape")) == (3, 2, 1)
 
 
 def test_rot90() -> None:
@@ -199,9 +200,9 @@ def test_permute() -> None:
     """Test function test_permute."""
     x = np.ones((1, 2, 3))
     res = _np_permute(np, x, (2, 1, 0))
-    assert as_tensor(getattr(res, "shape")) == (3, 2, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 2, 1)
     res_dims = _np_permute(np, x, dims=(2, 1, 0))
-    assert as_tensor(getattr(res_dims, "shape")) == (3, 2, 1)
+    assert as_tensor(_get_attr(res_dims, "shape")) == (3, 2, 1)
 
 
 def test_triu() -> None:
@@ -224,33 +225,33 @@ def test_expand_dims() -> None:
     """Test function test_expand_dims."""
     x = np.array([1, 2])
     res = _np_expand_dims(np, x, 0)
-    assert as_tensor(getattr(res, "shape")) == (1, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 2)
     res_kwargs = _np_expand_dims(np, x, axis=1)
-    assert as_tensor(getattr(res_kwargs, "shape")) == (2, 1)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (2, 1)
 
 
 def test_atleast_1d() -> None:
     """Test function test_atleast_1d."""
     res = _np_atleast_1d(np, 1)
-    assert as_tensor(getattr(res, "shape")) == (1,)
+    assert as_tensor(_get_attr(res, "shape")) == (1,)
 
 
 def test_atleast_2d() -> None:
     """Test function test_atleast_2d."""
     res = _np_atleast_2d(np, 1)
-    assert as_tensor(getattr(res, "shape")) == (1, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 1)
 
 
 def test_atleast_3d() -> None:
     """Test function test_atleast_3d."""
     res = _np_atleast_3d(np, 1)
-    assert as_tensor(getattr(res, "shape")) == (1, 1, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 1, 1)
 
 
 def test_append() -> None:
     """Test function test_append."""
     res = _np_append(np, [1, 2, 3], [[4, 5, 6], [7, 8, 9]])
-    assert as_tensor(getattr(res, "shape")) == (9,)
+    assert as_tensor(_get_attr(res, "shape")) == (9,)
 
 
 def test_column_stack() -> None:
@@ -258,9 +259,9 @@ def test_column_stack() -> None:
     a = np.array([1, 2, 3])
     b = np.array([4, 5, 6])
     res = _np_column_stack(np, (a, b))
-    assert as_tensor(getattr(res, "shape")) == (3, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 2)
     res_kwargs = _np_column_stack(np, tup=(a, b))
-    assert as_tensor(getattr(res_kwargs, "shape")) == (3, 2)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (3, 2)
 
 
 def test_dsplit() -> None:
@@ -275,9 +276,9 @@ def test_dstack() -> None:
     a = np.ones((2, 2))
     b = np.ones((2, 2))
     res = _np_dstack(np, (a, b))
-    assert as_tensor(getattr(res, "shape")) == (2, 2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2, 2)
     res_kwargs = _np_dstack(np, tup=(a, b))
-    assert as_tensor(getattr(res_kwargs, "shape")) == (2, 2, 2)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (2, 2, 2)
 
 
 def test_hsplit() -> None:
@@ -292,9 +293,9 @@ def test_hstack() -> None:
     a = np.ones((2, 2))
     b = np.ones((2, 2))
     res = _np_hstack(np, (a, b))
-    assert as_tensor(getattr(res, "shape")) == (2, 4)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 4)
     res_kwargs = _np_hstack(np, tup=(a, b))
-    assert as_tensor(getattr(res_kwargs, "shape")) == (2, 4)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (2, 4)
 
 
 def test_vsplit() -> None:
@@ -309,23 +310,23 @@ def test_vstack() -> None:
     a = np.ones((2, 2))
     b = np.ones((2, 2))
     res = _np_vstack(np, (a, b))
-    assert as_tensor(getattr(res, "shape")) == (4, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (4, 2)
     res_kwargs = _np_vstack(np, tup=(a, b))
-    assert as_tensor(getattr(res_kwargs, "shape")) == (4, 2)
+    assert as_tensor(_get_attr(res_kwargs, "shape")) == (4, 2)
 
 
 def test_moveaxis() -> None:
     """Test function test_moveaxis."""
     a = np.ones((1, 2, 3))
     res = _np_moveaxis(np, a, 0, -1)
-    assert as_tensor(getattr(res, "shape")) == (2, 3, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 3, 1)
 
 
 def test_swapaxes() -> None:
     """Test function test_swapaxes."""
     a = np.ones((1, 2, 3))
     res = _np_swapaxes(np, a, 0, -1)
-    assert as_tensor(getattr(res, "shape")) == (3, 2, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (3, 2, 1)
 
 
 def test_roll() -> None:
@@ -339,7 +340,7 @@ def test_block() -> None:
     """Test function test_block."""
     a = np.ones((2, 2))
     res = _np_block(np, [[a, a], [a, a]])
-    assert as_tensor(getattr(res, "shape")) == (4, 4)
+    assert as_tensor(_get_attr(res, "shape")) == (4, 4)
 
 
 def test_delete() -> None:
@@ -353,7 +354,7 @@ def test_diag_indices() -> None:
     """Test function test_diag_indices."""
     res = _np_diag_indices(np, 2)
     assert as_callable(len)(res) == 2
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(0)), [0, 1])
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), [0, 1])
 
 
 def test_diag_indices_from() -> None:
@@ -361,14 +362,14 @@ def test_diag_indices_from() -> None:
     a = np.ones((2, 2))
     res = _np_diag_indices_from(np, a)
     assert as_callable(len)(res) == 2
-    as_callable(np.testing.assert_allclose)(as_tensor(getattr(res, "__getitem__")(0)), [0, 1])
+    as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(res, "__getitem__")(0)), [0, 1])
 
 
 def test_diagflat() -> None:
     """Test function test_diagflat."""
     a = np.array([1, 2])
     res = _np_diagflat(np, a)
-    assert as_tensor(getattr(res, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(res, "shape")) == (2, 2)
 
 
 def test_fill_diagonal() -> None:
@@ -377,7 +378,7 @@ def test_fill_diagonal() -> None:
     res = _np_fill_diagonal(np, a, 1)
     assert (
         as_tensor(
-            getattr(res, "__getitem__")(
+            _get_attr(res, "__getitem__")(
                 (
                     0,
                     0,
@@ -390,7 +391,7 @@ def test_fill_diagonal() -> None:
     res2 = _np_fill_diagonal(np, a=b, val=2)
     assert (
         as_tensor(
-            getattr(res2, "__getitem__")(
+            _get_attr(res2, "__getitem__")(
                 (
                     0,
                     0,

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable, as_tensor_dict, as_tensor_list
 
 if typing.TYPE_CHECKING:
@@ -123,10 +124,10 @@ def test_visitor() -> None:
     n_in = DummyNode("Input", "i1")
     n_out = DummyNode("Output", "o1", inputs=["in1"])
     n_op = DummyNode("Op", "op1", inputs=["in1"])
-    setattr(n_op, "attributes", {"stream_id": 1, "async_check": True})
-    setattr(n_op, "shape_metadata", (1,))
+    _set_attr(n_op, "attributes", {"stream_id": 1, "async_check": True})
+    _set_attr(n_op, "shape_metadata", (1,))
 
-    setattr(gen, "sorted_nodes", [n_const, n_in, n_op, n_out])
+    _set_attr(gen, "sorted_nodes", [n_const, n_in, n_op, n_out])
 
     vis.generate_body("args")
 

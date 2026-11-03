@@ -25,6 +25,7 @@ from ml_switcheroo_compiler.backends.numpy.eager.io_ops import (
     _np_serialize_tensor,
     _np_write_file,
 )
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -71,13 +72,13 @@ def test_read_write_file(tmp_path: EagerTensorProtocol) -> None:
     f = str(tmp_path / "test.txt")
     _np_write_file(np, f, b"hello")
     res = _np_read_file(np, f)
-    assert as_tensor(getattr(res, "data")) == b"hello"
+    assert as_tensor(_get_attr(res, "data")) == b"hello"
 
 
 def test_decode_image() -> None:
     """Test function test_decode_image."""
     res = _np_decode_image(np, None, dtype="uint8")
-    assert as_tensor(getattr(as_tensor(getattr(res, "config")).dtype, "value")) == "uint8"
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res, "config")).dtype, "value")) == "uint8"
 
 
 def test_decode_csv() -> None:
@@ -95,13 +96,13 @@ def test_parse_example() -> None:
 def test_serialize_tensor() -> None:
     """Test function test_serialize_tensor."""
     res = _np_serialize_tensor(np, None)
-    assert as_tensor(getattr(res, "data")) == b""
+    assert as_tensor(_get_attr(res, "data")) == b""
 
 
 def test_parse_tensor() -> None:
     """Test function test_parse_tensor."""
     res = _np_parse_tensor(np, None, out_type="float32")
-    assert as_tensor(getattr(as_tensor(getattr(res, "config")).dtype, "value")) == "float32"
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res, "config")).dtype, "value")) == "float32"
 
 
 def test_base64() -> None:
@@ -110,9 +111,9 @@ def test_base64() -> None:
 
     b = b"hello"
     enc = _np_encode_base64(np, b, pad=True)
-    assert as_tensor(getattr(enc, "data")) == base64.b64encode(b)
-    dec = _np_decode_base64(np, as_tensor(getattr(enc, "data")))
-    assert as_tensor(getattr(dec, "data")) == b
+    assert as_tensor(_get_attr(enc, "data")) == base64.b64encode(b)
+    dec = _np_decode_base64(np, as_tensor(_get_attr(enc, "data")))
+    assert as_tensor(_get_attr(dec, "data")) == b
 
 
 def test_parse_sequence_example() -> None:
@@ -158,7 +159,7 @@ def test_savez_kwargs(tmp_path: EagerTensorProtocol) -> None:
 def test_read_file_invalid() -> None:
     """Test function test_read_file_invalid."""
     res = _np_read_file(np, 123)
-    assert as_tensor(getattr(res, "data")) is None
+    assert as_tensor(_get_attr(res, "data")) is None
 
 
 def test_missing_io_coverage() -> None:
@@ -167,9 +168,9 @@ def test_missing_io_coverage() -> None:
 
     _np_encode_base64(np, np.array([b"hello world"]))
     decoded = _np_decode_base64(np, np.array([b"aGVsbG8gd29ybGQ="]))
-    assert "hello world" in str(as_tensor(getattr(decoded, "numpy"))() if hasattr(decoded, "numpy") else decoded)
+    assert "hello world" in str(as_tensor(_get_attr(decoded, "numpy"))() if _has_attr(decoded, "numpy") else decoded)
     res = _np_parse_sequence_example(np, "serialized")
-    assert "dummy" in getattr(res, "__getitem__")(0)
+    assert "dummy" in _get_attr(res, "__getitem__")(0)
 
 
 def test_load_fallback() -> None:
@@ -217,9 +218,9 @@ def _test_io_ops_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None
     mod._np_load(as_mod(bk), file=str(pz))
     p_file = tmp_path / "f.txt"
     mod._np_write_file(as_mod(bk), str(p_file), b"hello")
-    getattr(_state, "update")({"DummyBackend": DummyBackend, "bk": bk, "p": p, "p_file": p_file})
-    getattr(_state, "update")({"pz": pz, "res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyBackend": DummyBackend, "bk": bk, "p": p, "p_file": p_file})
+    _get_attr(_state, "update")({"pz": pz, "res": res})
+    _state.update(_caller_locals())
 
 
 def _test_io_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -251,7 +252,7 @@ def _test_io_ops_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None
     mod._np_encode_base64(bk, None)
     mod._np_decode_base64(bk, None)
     mod._np_serialize_tensor(bk, np.array([1.0]))
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_io_ops_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -303,13 +304,13 @@ def test_math_string_io_decode_image_branches() -> None:
         pass
 
     res1 = _np_decode_image(as_mod(DummyBackend()), data, channels=1)
-    assert as_tensor(getattr(res1, "shape")) == (10, 10, 1)
+    assert as_tensor(_get_attr(res1, "shape")) == (10, 10, 1)
     res3 = _np_decode_image(as_mod(DummyBackend()), data, channels=3)
-    assert as_tensor(getattr(res3, "shape")) == (10, 10, 3)
+    assert as_tensor(_get_attr(res3, "shape")) == (10, 10, 3)
     res4 = _np_decode_image(as_mod(DummyBackend()), data, channels=4)
-    assert as_tensor(getattr(res4, "shape")) == (10, 10, 4)
+    assert as_tensor(_get_attr(res4, "shape")) == (10, 10, 4)
     res0 = _np_decode_image(as_mod(DummyBackend()), data, channels=0)
-    assert as_tensor(getattr(res0, "shape")) == (10, 10, 1)
+    assert as_tensor(_get_attr(res0, "shape")) == (10, 10, 1)
 
 
 def _test_math_string_io_coverage_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -358,12 +359,12 @@ def _test_math_string_io_coverage_part_1(_state: dict[str, EagerTensorProtocol])
         _np_sparsesampledadd(as_mod(DummyBackend()))
     with pytest.raises(AttributeError):
         _np_sparsetranspose(as_mod(DummyBackend()))
-    getattr(_state, "update")({"DummyBackend": DummyBackend, "_np_decode_csv": _np_decode_csv, "_np_decode_csv_camel": _np_decode_csv_camel, "_np_decode_image": _np_decode_image})
-    getattr(_state, "update")({"_np_decode_image_camel": _np_decode_image_camel, "_np_encode_image_camel": _np_encode_image_camel, "_np_parse_example": _np_parse_example, "_np_parse_example_camel": _np_parse_example_camel})
-    getattr(_state, "update")({"_np_parse_tensor": _np_parse_tensor, "_np_parse_tensor_camel": _np_parse_tensor_camel, "_np_read_file": _np_read_file, "_np_read_file_camel": _np_read_file_camel})
-    getattr(_state, "update")({"_np_sparsedensematmul": _np_sparsedensematmul, "_np_sparsemapvalues": _np_sparsemapvalues, "_np_sparsereshape": _np_sparsereshape, "_np_sparsesampledadd": _np_sparsesampledadd})
-    getattr(_state, "update")({"_np_sparsetranspose": _np_sparsetranspose, "_np_write_file": _np_write_file, "_np_write_file_camel": _np_write_file_camel, "_parse_scanop_args": _parse_scanop_args})
-    _state.update(locals())
+    _get_attr(_state, "update")({"DummyBackend": DummyBackend, "_np_decode_csv": _np_decode_csv, "_np_decode_csv_camel": _np_decode_csv_camel, "_np_decode_image": _np_decode_image})
+    _get_attr(_state, "update")({"_np_decode_image_camel": _np_decode_image_camel, "_np_encode_image_camel": _np_encode_image_camel, "_np_parse_example": _np_parse_example, "_np_parse_example_camel": _np_parse_example_camel})
+    _get_attr(_state, "update")({"_np_parse_tensor": _np_parse_tensor, "_np_parse_tensor_camel": _np_parse_tensor_camel, "_np_read_file": _np_read_file, "_np_read_file_camel": _np_read_file_camel})
+    _get_attr(_state, "update")({"_np_sparsedensematmul": _np_sparsedensematmul, "_np_sparsemapvalues": _np_sparsemapvalues, "_np_sparsereshape": _np_sparsereshape, "_np_sparsesampledadd": _np_sparsesampledadd})
+    _get_attr(_state, "update")({"_np_sparsetranspose": _np_sparsetranspose, "_np_write_file": _np_write_file, "_np_write_file_camel": _np_write_file_camel, "_parse_scanop_args": _parse_scanop_args})
+    _state.update(_caller_locals())
 
 
 def _test_math_string_io_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -379,7 +380,7 @@ def _test_math_string_io_coverage_part_2(_state: dict[str, EagerTensorProtocol])
     _np_parse_example(DummyBackend())
     _np_parse_tensor(DummyBackend())
     _np_read_file(DummyBackend())
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_math_string_io_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -395,7 +396,7 @@ def _test_math_string_io_coverage_part_3(_state: dict[str, EagerTensorProtocol])
     _np_decode_image_camel(DummyBackend())
     _np_encode_image_camel(DummyBackend())
     _np_parse_example_camel(DummyBackend())
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_math_string_io_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -596,7 +597,7 @@ def test_math_string_io_csv_edge_cases() -> None:
         _parse_csv_row(["invalid"], [0.0], np)
     res = _parse_csv_row(["1.0"], [0.0, 2.0], np)
     assert as_callable(len)(res) == 2
-    assert as_tensor(getattr(res, "__getitem__")(1)) == 2.0
+    assert as_tensor(_get_attr(res, "__getitem__")(1)) == 2.0
     res2 = _get_csv_data((), np)
     assert res2 == ""
 
@@ -650,7 +651,7 @@ def test_math_string_io_decode_image_exceptions() -> None:
     Image.new("RGB", (10, 10)).save(buf, format="PNG")
     png_bytes = buf.getvalue()
     res_zero = _np_decode_image_camel(as_mod(DummyBackend()), png_bytes, channels=0)
-    assert as_tensor(getattr(res_zero, "shape")) == (10, 10, 3)
+    assert as_tensor(_get_attr(res_zero, "shape")) == (10, 10, 3)
 
 
 def test_math_string_io_read_write_file_camel_success(tmp_path: EagerTensorProtocol) -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -47,10 +48,10 @@ def test_checkpointing() -> None:
             self.id = id
 
     t1 = Tensor(np.array([1, 2]), TensorConfig(shape=(2,), dtype="float32", device="cpu"))
-    setattr(t1, "_data", FakeData("n1"))
+    _set_attr(t1, "_data", FakeData("n1"))
 
     t2 = Tensor(np.array([1, 2]), TensorConfig(shape=(2,), dtype="float32", device="cpu"))
-    setattr(t2, "_data", FakeData("n2"))
+    _set_attr(t2, "_data", FakeData("n2"))
 
     cp(t1)
 
@@ -74,7 +75,7 @@ def test_checkpointing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=FakeBlock()):
         res2 = cp(t1)
-        assert as_tensor(getattr(res2, "shape")) == (2,)
+        assert as_tensor(_get_attr(res2, "shape")) == (2,)
 
     class FakeBlock2:
         """Test class FakeBlock2."""
@@ -84,7 +85,7 @@ def test_checkpointing() -> None:
 
     with patch("ml_switcheroo_compiler.ops.control_flow_utils._trace_function", return_value=FakeBlock2()):
         res3 = cp()
-        assert as_tensor(getattr(res3, "shape")) == (2,)
+        assert as_tensor(_get_attr(res3, "shape")) == (2,)
 
     config.eager_mode = True
     global_tracing_state.stop_tracing()

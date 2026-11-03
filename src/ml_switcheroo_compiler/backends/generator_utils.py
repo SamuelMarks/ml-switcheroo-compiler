@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing  # noqa: F401
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
@@ -16,7 +17,7 @@ def _extract_audio_stft_attributes(node: IRNode) -> tuple[int, int, int | None, 
     Returns:
         tuple[int, int, int | None, str, bool]: Frame length, frame step, fft length, window function name, and pad end flag.
     """
-    attrs = getattr(node, "attributes", {})
+    attrs = _get_attr(node, "attributes", {})
     raw_frame_length = attrs.get("frame_length", 2048)
     raw_frame_step = attrs.get("frame_step", 512)
     raw_fft_length = attrs.get("fft_length", None)
@@ -43,7 +44,7 @@ def _extract_resize_attributes(
         tuple[int | tuple[int, int] | list[int] | None, str, bool, bool, str | None]:
             Target size, interpolation method, align corners flag, antialias flag, and data format.
     """
-    attrs = getattr(node, "attributes", {})
+    attrs = _get_attr(node, "attributes", {})
     size: int | tuple[int, int] | list[int] | None = attrs.get("size")
     interpolation: str = str(attrs.get("interpolation", "bilinear"))
     align_corners: bool = bool(attrs.get("align_corners", False))
@@ -62,7 +63,7 @@ def _extract_vision_transform_attributes(node: IRNode) -> tuple[str, float, str 
     Returns:
         tuple[str, float, str | None]: Interpolation method, fill value, and data format.
     """
-    attrs = getattr(node, "attributes", {})
+    attrs = _get_attr(node, "attributes", {})
     interpolation: str = str(attrs.get("interpolation", "bilinear"))
     fill_value: float = float(attrs.get("fill_value", 0.0))
     raw_data_format = attrs.get("data_format", None)
@@ -82,7 +83,7 @@ def _extract_filter_attributes(
         tuple[int | tuple[int, int] | list[int] | None, float | tuple[float, float] | None, str, str | None]:
             Kernel size, sigma, padding, and data format.
     """
-    attrs = getattr(node, "attributes", {})
+    attrs = _get_attr(node, "attributes", {})
     kernel_size: int | tuple[int, int] | list[int] | None = attrs.get("kernel_size")
     sigma: float | tuple[float, float] | None = attrs.get("sigma", None)
     padding: str = str(attrs.get("padding", "same"))
@@ -103,7 +104,7 @@ def _extract_extract_boxes_attributes(
         tuple[tuple[int, int] | list[int] | None, str, float, str | None]:
             Crop size, interpolation method, extrapolation value, and data format.
     """
-    attrs = getattr(node, "attributes", {})
+    attrs = _get_attr(node, "attributes", {})
     crop_size: tuple[int, int] | list[int] | None = attrs.get("crop_size")
     interpolation: str = str(attrs.get("interpolation", "bilinear"))
     extrapolation_value: float = float(attrs.get("extrapolation_value", 0.0))
@@ -124,7 +125,7 @@ def _extract_stft_attributes(
         tuple[int, int | None, int | None, str | None, bool, str, bool, bool]:
             n_fft, hop_length, win_length, window, center, pad_mode, normalized, and onesided.
     """
-    attrs = getattr(node, "attributes", {})
+    attrs = _get_attr(node, "attributes", {})
     raw_n_fft = attrs.get("n_fft", 2048)
     raw_hop_length = attrs.get("hop_length", None)
     raw_win_length = attrs.get("win_length", None)

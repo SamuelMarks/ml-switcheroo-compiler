@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from ml_switcheroo_compiler.core.errors import CompilationError
+from ml_switcheroo_compiler.core.shape import _obj_vars
 
 RESERVED_WGSL_KEYWORDS: set[str] = {
     "array",
@@ -145,7 +146,7 @@ class WGSLNode:
         Raises:
             WGSLValidationError: If node structure violates specifications.
         """
-        for attr_val in self.__dict__.values():
+        for attr_val in _obj_vars(self).values():
             if isinstance(attr_val, WGSLNode):
                 attr_val.validate()
             elif isinstance(attr_val, (list, tuple)):

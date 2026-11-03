@@ -37,6 +37,7 @@ from ml_switcheroo_compiler.backends.dpnp.types import (
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor
@@ -300,20 +301,20 @@ def test_dpnp_types_buffer_management() -> None:
 
     # Basic creation calls
     z = zeros((3, 3), dtype="float32", device="cpu", usm_type="host")
-    assert as_tensor(getattr(z, "shape")) == (3, 3)
+    assert as_tensor(_get_attr(z, "shape")) == (3, 3)
 
     o = ones((2, 2), dtype="float64")
-    assert as_tensor(getattr(o, "shape")) == (2, 2)
+    assert as_tensor(_get_attr(o, "shape")) == (2, 2)
     assert np.all(o == 1.0)
 
     e = empty((2, 4))
-    assert as_tensor(getattr(e, "shape")) == (2, 4)
+    assert as_tensor(_get_attr(e, "shape")) == (2, 4)
 
     f = full((2, 3), 7.0, dtype="float32")
-    assert as_tensor(getattr(f, "shape")) == (2, 3)
+    assert as_tensor(_get_attr(f, "shape")) == (2, 3)
     assert np.all(f == 7.0)
 
-    f_cls = as_tensor(getattr(DPNPGenerator, "full"))((2, 2), 9.0)
+    f_cls = as_tensor(_get_attr(DPNPGenerator, "full"))((2, 2), 9.0)
     assert f_cls.shape == (2, 2)
     assert np.all(f_cls == 9.0)
 
@@ -339,7 +340,7 @@ def test_dpnp_types_buffer_management() -> None:
             """
             return np.array([99.0])
 
-    assert as_tensor(getattr(as_callable(asnumpy)(as_callable(CustomAsNumpyObj)()), "__getitem__")(0)) == 99.0
+    assert as_tensor(_get_attr(as_callable(asnumpy)(as_callable(CustomAsNumpyObj)()), "__getitem__")(0)) == 99.0
 
     from_np = from_numpy(np.array([5.0, 6.0]), device="auto", usm_type="shared")
     assert from_np is not None
@@ -383,11 +384,11 @@ def test_dpnp_profiler_and_timing() -> None:
 
     assert "latencies_ms" in metrics
     assert as_callable(len)(metrics["latencies_ms"]) == 3
-    assert getattr(metrics, "__getitem__")("mean_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("median_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("min_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("max_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("peak_memory_mb") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("mean_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("median_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("min_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("max_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("peak_memory_mb") >= 0.0
 
     # Synchronization helper coverage
     fake_res = mock.MagicMock()
@@ -476,9 +477,9 @@ def _test_dpnp_exhaustive_edge_coverage_part_1(_state: dict[str, EagerTensorProt
     bad_waitable = mock.MagicMock()
     del bad_waitable.sycl_queue
     bad_waitable.wait.side_effect = RuntimeError("wait error")
-    getattr(_state, "update")({"bad_q": bad_q, "bad_res_q": bad_res_q, "bad_waitable": bad_waitable, "mock_dpnp": mock_dpnp})
-    getattr(_state, "update")({"rss": rss})
-    _state.update(locals())
+    _get_attr(_state, "update")({"bad_q": bad_q, "bad_res_q": bad_res_q, "bad_waitable": bad_waitable, "mock_dpnp": mock_dpnp})
+    _get_attr(_state, "update")({"rss": rss})
+    _state.update(_caller_locals())
 
 
 def _test_dpnp_exhaustive_edge_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -519,9 +520,9 @@ def _test_dpnp_exhaustive_edge_coverage_part_2(_state: dict[str, EagerTensorProt
     gen_auto = DPNPGenerator(g, device="auto")
     code_auto = gen_auto.generate()
     assert "# Target SYCL Device" not in code_auto
-    getattr(_state, "update")({"NoMemInfoModule": NoMemInfoModule, "cfg": cfg, "code_auto": code_auto, "g": g})
-    getattr(_state, "update")({"gen_auto": gen_auto, "prepared_inputs": prepared_inputs, "profiler": profiler, "t_obj": t_obj})
-    _state.update(locals())
+    _get_attr(_state, "update")({"NoMemInfoModule": NoMemInfoModule, "cfg": cfg, "code_auto": code_auto, "g": g})
+    _get_attr(_state, "update")({"gen_auto": gen_auto, "prepared_inputs": prepared_inputs, "profiler": profiler, "t_obj": t_obj})
+    _state.update(_caller_locals())
 
 
 def _check_usm(kwargs: dict[str, EagerValue]) -> None:
@@ -622,8 +623,8 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_1(_state: dict[str, EagerTen
             """
             raise RuntimeError("asnumpy failure")
 
-    getattr(_state, "update")({"FallbackModule": FallbackModule})
-    _state.update(locals())
+    _get_attr(_state, "update")({"FallbackModule": FallbackModule})
+    _state.update(_caller_locals())
 
 
 def __test_dpnp_exhaustive_edge_coverage_part_3_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -633,9 +634,9 @@ def __test_dpnp_exhaustive_edge_coverage_part_3_sub_2(_state: dict[str, EagerTen
         _state: Shared test state dictionary.
     """
     FallbackModule = _state["FallbackModule"]
-    getattr(_state, "update")({"FallbackModule": FallbackModule})
-    _state.update(locals())
-    _state.update(locals())
+    _get_attr(_state, "update")({"FallbackModule": FallbackModule})
+    _state.update(_caller_locals())
+    _state.update(_caller_locals())
 
 
 def _test_dpnp_exhaustive_edge_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -644,7 +645,7 @@ def _test_dpnp_exhaustive_edge_coverage_part_3(_state: dict[str, EagerTensorProt
     Args:
         _state: Shared test state dictionary.
     """
-    getattr(_state, "__setitem__")("_state", _state)
+    _get_attr(_state, "__setitem__")("_state", _state)
     for _sub_fn in (
         __test_dpnp_exhaustive_edge_coverage_part_3_sub_1,
         __test_dpnp_exhaustive_edge_coverage_part_3_sub_2,
@@ -661,33 +662,33 @@ def _test_dpnp_exhaustive_edge_coverage_part_4(_state: dict[str, EagerTensorProt
     """
     FallbackModule = _state["FallbackModule"]
     with mock.patch("ml_switcheroo_compiler.backends.dpnp.types._get_dpnp_module", return_value=FallbackModule):
-        assert as_tensor(getattr(zeros((2, 2), dtype="nonexistent_type", usm_type="shared"), "shape")) == (2, 2)
-        assert as_tensor(getattr(ones((2, 2), usm_type="shared"), "shape")) == (2, 2)
-        assert as_tensor(getattr(empty((2, 2), usm_type="shared"), "shape")) == (2, 2)
-        assert as_tensor(getattr(full((2, 2), 5.0, usm_type="shared"), "shape")) == (2, 2)
-        assert as_tensor(getattr(array([1, 2], usm_type="shared"), "shape")) == (2,)
-        assert as_tensor(getattr(asarray([1, 2], usm_type="shared"), "shape")) == (2,)
+        assert as_tensor(_get_attr(zeros((2, 2), dtype="nonexistent_type", usm_type="shared"), "shape")) == (2, 2)
+        assert as_tensor(_get_attr(ones((2, 2), usm_type="shared"), "shape")) == (2, 2)
+        assert as_tensor(_get_attr(empty((2, 2), usm_type="shared"), "shape")) == (2, 2)
+        assert as_tensor(_get_attr(full((2, 2), 5.0, usm_type="shared"), "shape")) == (2, 2)
+        assert as_tensor(_get_attr(array([1, 2], usm_type="shared"), "shape")) == (2,)
+        assert as_tensor(_get_attr(asarray([1, 2], usm_type="shared"), "shape")) == (2,)
 
         # asnumpy fallback when dpnp_mod.asnumpy raises
         res_host = asnumpy(np.array([42]))
-        assert as_tensor(getattr(res_host, "__getitem__")(0)) == 42
+        assert as_tensor(_get_attr(res_host, "__getitem__")(0)) == 42
 
     # 6. DPNPGenerator classmethods for buffer management
-    assert as_tensor(getattr(as_callable(DPNPGenerator.zeros)((1,), dtype=None), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(DPNPGenerator.zeros)((1,), dtype="float32"), "shape")) == (1,)
-    assert as_tensor(getattr(DPNPGenerator, "ones"))((1,), dtype=None).shape == (1,)
-    assert as_tensor(getattr(DPNPGenerator, "ones"))((1,), dtype="float32").shape == (1,)
-    assert as_tensor(getattr(DPNPGenerator, "empty"))((1,), dtype=None).shape == (1,)
-    assert as_tensor(getattr(DPNPGenerator, "empty"))((1,), dtype="float32").shape == (1,)
-    assert as_tensor(getattr(DPNPGenerator, "full"))((1,), 3.0, dtype=None).shape == (1,)
-    assert as_tensor(getattr(DPNPGenerator, "full"))((1,), 3.0, dtype="float32").shape == (1,)
-    assert as_tensor(getattr(DPNPGenerator.array([1], dtype=None), "shape")) == (1,)
-    assert as_tensor(getattr(DPNPGenerator.array([1], dtype="float32"), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(DPNPGenerator.asarray)([1], dtype=None), "shape")) == (1,)
-    assert as_tensor(getattr(as_callable(DPNPGenerator.asarray)([1], dtype="float32"), "shape")) == (1,)
-    assert as_tensor(getattr(DPNPGenerator, "asnumpy"))(np.array([1]))[0] == 1
-    getattr(_state, "update")({"res_host": res_host})
-    _state.update(locals())
+    assert as_tensor(_get_attr(as_callable(DPNPGenerator.zeros)((1,), dtype=None), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(DPNPGenerator.zeros)((1,), dtype="float32"), "shape")) == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator, "ones"))((1,), dtype=None).shape == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator, "ones"))((1,), dtype="float32").shape == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator, "empty"))((1,), dtype=None).shape == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator, "empty"))((1,), dtype="float32").shape == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator, "full"))((1,), 3.0, dtype=None).shape == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator, "full"))((1,), 3.0, dtype="float32").shape == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator.array([1], dtype=None), "shape")) == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator.array([1], dtype="float32"), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(DPNPGenerator.asarray)([1], dtype=None), "shape")) == (1,)
+    assert as_tensor(_get_attr(as_callable(DPNPGenerator.asarray)([1], dtype="float32"), "shape")) == (1,)
+    assert as_tensor(_get_attr(DPNPGenerator, "asnumpy"))(np.array([1]))[0] == 1
+    _get_attr(_state, "update")({"res_host": res_host})
+    _state.update(_caller_locals())
 
 
 def _test_dpnp_exhaustive_edge_coverage_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -696,11 +697,11 @@ def _test_dpnp_exhaustive_edge_coverage_part_5(_state: dict[str, EagerTensorProt
     Args:
         _state: Shared test state dictionary.
     """
-    assert as_tensor(getattr(DPNPGenerator, "to_numpy"))(np.array([1]))[0] == 1
-    assert as_tensor(getattr(DPNPGenerator, "from_numpy"))(np.array([1])) is not None
-    assert as_tensor(getattr(DPNPGenerator, "get_device"))(np.array([1])) == "cpu"
-    assert as_tensor(getattr(DPNPGenerator, "get_usm_type"))(np.array([1])) is None
-    assert bool(as_tensor(getattr(DPNPGenerator, "is_sycl_array"))(np.array([1]))) is False
+    assert as_tensor(_get_attr(DPNPGenerator, "to_numpy"))(np.array([1]))[0] == 1
+    assert as_tensor(_get_attr(DPNPGenerator, "from_numpy"))(np.array([1])) is not None
+    assert as_tensor(_get_attr(DPNPGenerator, "get_device"))(np.array([1])) == "cpu"
+    assert as_tensor(_get_attr(DPNPGenerator, "get_usm_type"))(np.array([1])) is None
+    assert bool(as_tensor(_get_attr(DPNPGenerator, "is_sycl_array"))(np.array([1]))) is False
 
     # 7. Eager dispatch edge cases: op directly in linalg, alias resolution failure, no linalg submodule
     class LinalgOnlyModule:
@@ -723,13 +724,13 @@ def _test_dpnp_exhaustive_edge_coverage_part_5(_state: dict[str, EagerTensorProt
             non_callable = 42
 
     with mock.patch.dict(sys.modules, {"dpnp": LinalgOnlyModule}):
-        assert as_tensor(getattr(execute_op("custom_linalg_op", np.array([5])), "__getitem__")(0)) == 105
+        assert as_tensor(_get_attr(execute_op("custom_linalg_op", np.array([5])), "__getitem__")(0)) == 105
         with pytest.raises(BackendNotSupportedError):
             execute_op("non_callable_root")
         with pytest.raises(BackendNotSupportedError):
             execute_op("non_callable", np.array([5]))
-    getattr(_state, "update")({"LinalgOnlyModule": LinalgOnlyModule})
-    _state.update(locals())
+    _get_attr(_state, "update")({"LinalgOnlyModule": LinalgOnlyModule})
+    _state.update(_caller_locals())
 
 
 def _test_dpnp_exhaustive_edge_coverage_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -750,7 +751,7 @@ def _test_dpnp_exhaustive_edge_coverage_part_6(_state: dict[str, EagerTensorProt
     with mock.patch.dict(dpnp_eager._DPNP_OP_ALIASES, {"fake_op": "missing.submodule.fn"}):
         with pytest.raises(BackendNotSupportedError):
             execute_op("fake_op", 1)
-    getattr(_state, "update")({"NoLinalgModule": NoLinalgModule})
+    _get_attr(_state, "update")({"NoLinalgModule": NoLinalgModule})
 
 
 def test_dpnp_exhaustive_edge_coverage() -> None:

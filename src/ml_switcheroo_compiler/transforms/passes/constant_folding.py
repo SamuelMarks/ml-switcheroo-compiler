@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
 from ml_switcheroo_compiler.backends.registry import BackendRegistry, as_callable, get_active_backend
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.interpreter import evaluate_graph
 from ml_switcheroo_compiler.interpreter.evaluator import EvalValue
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
@@ -61,11 +59,11 @@ def _evaluate_constant_node(
     )
     outputs = evaluate_graph(subgraph, {}, backend=backend)
     val = outputs[node.id]
-    if (hasattr(val, "size") and getattr(val, "size") == 1) or (hasattr(val, "numel") and getattr(val, "numel")() == 1):
-        if hasattr(backend, "item"):
-            val = getattr(backend, "item")(val)
-        elif hasattr(val, "item"):
-            val = getattr(val, "item")()
+    if (_has_attr(val, "size") and _get_attr(val, "size") == 1) or (_has_attr(val, "numel") and _get_attr(val, "numel")() == 1):
+        if _has_attr(backend, "item"):
+            val = _get_attr(backend, "item")(val)
+        elif _has_attr(val, "item"):
+            val = _get_attr(val, "item")()
     return val
 
 
@@ -133,10 +131,10 @@ def _fold_nested_subgraphs(graph: IRGraph) -> bool:
     """
     modified = False
     for node in graph.nodes.values():
-        for sub in getattr(node, "subgraphs", {}).values():
+        for sub in _get_attr(node, "subgraphs", {}).values():
             if isinstance(sub, LogicalGraph) and constant_folding_pass(sub):
                 modified = True
-        for attr_val in typing.cast("dict[str, TensorOrScalar]", node.attributes).values():
+        for attr_val in _cast_val("dict[str, TensorOrScalar]", node.attributes).values():
             if isinstance(attr_val, LogicalGraph) and constant_folding_pass(attr_val):
                 modified = True
     return modified

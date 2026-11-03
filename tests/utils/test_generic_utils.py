@@ -9,6 +9,7 @@ from unittest import mock
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.utils.generic_utils import (
     ArchiveConfig,
     CacheConfig,
@@ -32,11 +33,11 @@ from tests.testing_utils import as_attr_val, as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     pass
-CustomObjectScope = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
-custom_object_scope = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "custom_object_scope"))
-deserialize_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-register_serializable = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
-serialize_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+CustomObjectScope = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "CustomObjectScope"))
+custom_object_scope = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "custom_object_scope"))
+deserialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
+register_serializable = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "register_serializable"))
+serialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
 
 
 def test_configs() -> None:
@@ -54,12 +55,12 @@ def test_set_random_seed() -> None:
     import types
 
     m = types.ModuleType("ml_switcheroo_compiler.backends.numpy.utils")
-    setattr(m, "set_numpy_seed", mock.Mock())
+    _set_attr(m, "set_numpy_seed", mock.Mock())
     with mock.patch.dict(sys.modules, {"ml_switcheroo_compiler.backends.numpy.utils": m}):
         set_random_seed(42)
     with mock.patch("random.seed", side_effect=ImportError):
         set_random_seed(42)
-    assert getattr(m, "set_numpy_seed").called
+    assert _get_attr(m, "set_numpy_seed").called
 
 
 def test_validate_cache() -> None:
@@ -203,10 +204,10 @@ def test_generic_utils_stubs() -> None:
 
 def test_custom_object_scope_and_serialization() -> None:
     """Test functional custom_object_scope and serialization/deserialization."""
-    deserialize_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
-    get_custom_objects = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
-    get_registered_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
-    serialize_object = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
+    deserialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "deserialize_object"))
+    get_custom_objects = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_custom_objects"))
+    get_registered_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_object"))
+    serialize_object = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "serialize_object"))
 
     class CustomDense:
         """CustomDense test class."""
@@ -279,7 +280,7 @@ def test_custom_object_scope_and_serialization() -> None:
     assert deserialize_object(cfg_not_dict, custom_objects={"SimpleLayer": SimpleLayer}) == cfg_not_dict
 
     # Registered name and object lookups
-    get_registered_name = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
+    get_registered_name = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.utils.generic_utils"), "get_registered_name"))
 
     @register_serializable(package="TestPkg", name="NamedCustomLayer")
     class NamedCustomLayer:
@@ -437,7 +438,7 @@ def test_framework_agnostic_serialization_separation() -> None:
 
     deserialized = deserialize_object(serialized)
     assert type(deserialized).__name__ == "AgnosticLayer"
-    assert getattr(deserialized, "size") == 256
+    assert _get_attr(deserialized, "size") == 256
 
     # Test CustomObjectScope context manager enter and exit
     with CustomObjectScope({"TempLayer": AgnosticLayer}):

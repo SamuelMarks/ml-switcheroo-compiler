@@ -7,11 +7,9 @@ tensors with non-uniform shapes across one or more dimensions.
 
 from __future__ import annotations
 
-import typing
-
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_int
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -44,8 +42,8 @@ class RaggedGather(OpDef):
         indices = args[1] if len(args) > 1 else kwargs.get("indices")
         if params is None or indices is None:
             return ()
-        shape_p = tuple(getattr(params, "shape", getattr(params, "shape_metadata", params if isinstance(params, (list, tuple)) else ())))
-        shape_i = tuple(getattr(indices, "shape", getattr(indices, "shape_metadata", indices if isinstance(indices, (list, tuple)) else ())))
+        shape_p = tuple(_get_attr(params, "shape", _get_attr(params, "shape_metadata", params if isinstance(params, (list, tuple)) else ())))
+        shape_i = tuple(_get_attr(indices, "shape", _get_attr(indices, "shape_metadata", indices if isinstance(indices, (list, tuple)) else ())))
         leading = shape_i if shape_i else (SymVar("gather_batch"),)
         trailing = shape_p[1:] if len(shape_p) > 1 else ()
         return leading + trailing
@@ -75,11 +73,11 @@ class RaggedTensorToDense(OpDef):
 
         target_shape = kwargs.get("shape")
         if target_shape is not None:
-            return tuple(getattr(target_shape, "__iter__")())
+            return tuple(_get_attr(target_shape, "__iter__")())
         rt_input = args[0] if args else kwargs.get("rt_input")
         if rt_input is None:
             return ()
-        inp_shape = tuple(getattr(rt_input, "shape", getattr(rt_input, "shape_metadata", rt_input if isinstance(rt_input, (list, tuple)) else ())))
+        inp_shape = tuple(_get_attr(rt_input, "shape", _get_attr(rt_input, "shape_metadata", rt_input if isinstance(rt_input, (list, tuple)) else ())))
         if not inp_shape:
             return ()
         batch = inp_shape[0]
@@ -163,7 +161,7 @@ class RaggedAdd(OpDef):
         inp = args[0] if args else kwargs.get("x", kwargs.get("a"))
         if inp is None:
             return ()
-        return tuple(getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return tuple(_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
 
 
 @register_op("RaggedMatMul")
@@ -190,8 +188,8 @@ class RaggedMatMul(OpDef):
         b = args[1] if len(args) > 1 else kwargs.get("b")
         if a is None or b is None:
             return ()
-        shape_a = tuple(getattr(a, "shape", getattr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
-        shape_b = tuple(getattr(b, "shape", getattr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
+        shape_a = tuple(_get_attr(a, "shape", _get_attr(a, "shape_metadata", a if isinstance(a, (list, tuple)) else ())))
+        shape_b = tuple(_get_attr(b, "shape", _get_attr(b, "shape_metadata", b if isinstance(b, (list, tuple)) else ())))
         if len(shape_a) < 2 or len(shape_b) < 2:
             return shape_a
         m = shape_a[-2]
@@ -222,11 +220,11 @@ class RaggedDynamicBroadcast(OpDef):
         """
         shape = kwargs.get("shape", args[1] if len(args) > 1 else None)
         if shape is not None:
-            return tuple(getattr(shape, "__iter__")())
+            return tuple(_get_attr(shape, "__iter__")())
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        return tuple(getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return tuple(_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
 
 
 @register_op("RaggedConstant")
@@ -284,11 +282,11 @@ class RaggedCrossHashed(OpDef):
 
         inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not inputs and "inputs" in kwargs:
-            inputs = typing.cast(list[EagerTensorProtocol], kwargs["inputs"])
+            inputs = _cast_val(list[EagerTensorProtocol], kwargs["inputs"])
         if not inputs:
             return ()
         first = inputs[0]
-        f_shape = tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
+        f_shape = tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
         batch = f_shape[0] if f_shape else 1
         return (batch, SymVar("cross_len"))
 
@@ -318,7 +316,7 @@ class RaggedRange(OpDef):
         starts = args[0] if args else kwargs.get("starts")
         if starts is None:
             return (1, SymVar("range_len"))
-        s_shape = tuple(getattr(starts, "shape", getattr(starts, "shape_metadata", (len(starts),) if isinstance(starts, (list, tuple)) else ())))
+        s_shape = tuple(_get_attr(starts, "shape", _get_attr(starts, "shape_metadata", (len(starts),) if isinstance(starts, (list, tuple)) else ())))
         batch = s_shape[0] if s_shape else 1
         return (batch, SymVar("range_len"))
 
@@ -398,11 +396,11 @@ class RaggedStack(OpDef):
         """
         rt_inputs = args[0] if (args and isinstance(args[0], (list, tuple))) else list(args)
         if not rt_inputs and "values" in kwargs:
-            rt_inputs = typing.cast(list[EagerTensorProtocol], kwargs["values"])
+            rt_inputs = _cast_val(list[EagerTensorProtocol], kwargs["values"])
         if not rt_inputs:
             return ()
         first = rt_inputs[0]
-        f_shape = tuple(getattr(first, "shape", getattr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
+        f_shape = tuple(_get_attr(first, "shape", _get_attr(first, "shape_metadata", first if isinstance(first, (list, tuple)) else ())))
         axis = int(as_int(kwargs.get("axis", 0)))
         n = len(rt_inputs)
         s = list(f_shape)
@@ -438,7 +436,7 @@ class RaggedStackDynamicPartitions(OpDef):
         data = args[0] if args else kwargs.get("data")
         trailing = ()
         if data is not None:
-            d_shape = tuple(getattr(data, "shape", getattr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
+            d_shape = tuple(_get_attr(data, "shape", _get_attr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
             trailing = d_shape[1:] if len(d_shape) > 1 else ()
         return (num_partitions, SymVar("partition_len")) + trailing
 
@@ -487,10 +485,10 @@ class BooleanMask(OpDef):
         mask = args[1] if len(args) > 1 else kwargs.get("mask")
         if data is None:
             return (SymVar("masked_count"),)
-        d_shape = tuple(getattr(data, "shape", getattr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
+        d_shape = tuple(_get_attr(data, "shape", _get_attr(data, "shape_metadata", data if isinstance(data, (list, tuple)) else ())))
         m_ndim = 1
         if mask is not None:
-            m_shape = getattr(mask, "shape", getattr(mask, "shape_metadata", None))
+            m_shape = _get_attr(mask, "shape", _get_attr(mask, "shape_metadata", None))
             if m_shape:
                 m_ndim = len(m_shape)
         trailing = d_shape[m_ndim:] if len(d_shape) >= m_ndim else ()
@@ -517,7 +515,7 @@ class MapFlatValues(OpDef):
         inp = args[0] if args else kwargs.get("x", kwargs.get("input"))
         if inp is None:
             return ()
-        return tuple(getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        return tuple(_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
 
 
 from .frontend import boolean_mask, map_flat_values

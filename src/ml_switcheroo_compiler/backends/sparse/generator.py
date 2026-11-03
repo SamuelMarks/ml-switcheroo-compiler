@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import logging
-import typing
 
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _cast_val, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 
@@ -123,10 +122,11 @@ class SparseGenerator(PythonStringGenerator):
         if not callable(func):
             msg = f"Generated code did not produce callable '{self._func_name}'."
             raise RuntimeError(msg)
-        return typing.cast(
+        _typed_ret_1: TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]] = _cast_val(
             "TypedVariadicCallable[COOTensor | EagerValue | tuple[COOTensor | EagerValue, ...]]",
             func,
         )
+        return _typed_ret_1
 
     def visit_Spmm(self, node: IRNode, input_vars: list[str], **kwargs: EagerValue) -> str:
         """Emit sparse-dense matrix multiplication.
@@ -393,7 +393,7 @@ class SparseGenerator(PythonStringGenerator):
             del runner_kwargs
             if compiled_fn is not None:
                 try:
-                    args_list = [getattr(a, "data", a) for a in args]
+                    args_list = [_get_attr(a, "data", a) for a in args]
                     return compiled_fn(args_list)
                 except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                     logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -404,7 +404,7 @@ class SparseGenerator(PythonStringGenerator):
             feed_dict: dict[str, EagerValue] = {}
             for idx, arg in enumerate(args):
                 if idx < len(graph.inputs):
-                    feed_dict[graph.inputs[idx]] = getattr(arg, "data", arg)
+                    feed_dict[graph.inputs[idx]] = _get_attr(arg, "data", arg)
             res_dict = evaluate_graph(graph, feed_dict, backend=BackendRegistry.get("numpy"))
             if not graph.outputs:
                 return as_tensor(res_dict)

@@ -12,7 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import as_callable
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, invoke_callable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, _cast_val, _get_attr, _has_attr, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, Variable
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -113,7 +113,7 @@ def _check_scalar(tensor: GradValue) -> None:
     """
     from ml_switcheroo_compiler.core.errors import SwitcherooError
 
-    shape = getattr(tensor, "shape", ())
+    shape = _get_attr(tensor, "shape", ())
     prod = 1
     for s in shape:
         try:
@@ -138,10 +138,10 @@ def _find_wrt_tensors(graph: GradValue) -> tuple[list[GradValue], list[str]]:
     wrt_tensors: list[GradValue] = []
     wrt_ids: list[str] = []
     for t in all_tensors:
-        if hasattr(t, "data") and hasattr(t.data, "id"):
-            node_id = getattr(t.data, "id")
-            if node_id in getattr(graph, "nodes", {}):
-                if getattr(t, "requires_grad", False) or getattr(t, "trainable", False) or isinstance(t, Variable):
+        if _has_attr(t, "data") and _has_attr(t.data, "id"):
+            node_id = _get_attr(t.data, "id")
+            if node_id in _get_attr(graph, "nodes", {}):
+                if _get_attr(t, "requires_grad", False) or _get_attr(t, "trainable", False) or isinstance(t, Variable):
                     wrt_tensors.append(t)
                     wrt_ids.append(node_id)
     return wrt_tensors, wrt_ids
@@ -156,12 +156,13 @@ def _get_concrete_val(t: GradValue) -> GradValue:
     Returns:
         GradValue: Concrete backing array value, or None if unavailable.
     """
-    val = getattr(getattr(t, "data", t), "concrete_value", None)
+    val = _get_attr(_get_attr(t, "data", t), "concrete_value", None)
     if val is None:
-        val = getattr(t, "_data", None)
+        val = _get_attr(t, "_data", None)
         if isinstance(val, ProxyTensor):
-            val = getattr(val, "concrete_value", None)
-    return val
+            val = _get_attr(val, "concrete_value", None)
+    _typed_ret_1: GradValue = val
+    return _typed_ret_1
 
 
 def _collect_live_tensors() -> list[Tensor]:
@@ -188,16 +189,16 @@ def _get_inputs_dict(graph: GradValue) -> dict[str, GradValue]:
         ValueError: If any graph input node is missing a concrete value.
     """
     all_tensors = _collect_live_tensors()
-    graph_nodes = getattr(graph, "nodes", {})
+    graph_nodes = _get_attr(graph, "nodes", {})
     inputs_dict: dict[str, GradValue] = {}
     for t in all_tensors:
-        node_id = getattr(getattr(t, "data", None), "id", "")
+        node_id = _get_attr(_get_attr(t, "data", None), "id", "")
         if node_id and node_id in graph_nodes:
             val = _get_concrete_val(t)
             if val is not None:
                 inputs_dict[node_id] = get_active_backend().asarray(val)
 
-    for inp_id in getattr(graph, "inputs", ()):
+    for inp_id in _get_attr(graph, "inputs", ()):
         if inp_id not in inputs_dict:
             raise ValueError(f"Missing input value for node '{inp_id}'.")
 
@@ -219,7 +220,7 @@ def _convert_to_tensors(primals: Sequence[GradValue]) -> list[Tensor]:
         if isinstance(p, Tensor):
             tensor_primals.append(p)
         else:
-            arr = typing.cast(BackendArray, get_active_backend().asarray(p))
+            arr = _cast_val(BackendArray, get_active_backend().asarray(p))
             dt = DType.Float32
             if str(arr.dtype) == "float64":
                 dt = DType.Float64
@@ -287,7 +288,7 @@ def _to_original_type(val: GradValue, orig: GradValue) -> GradValue:
         return val
 
     if isinstance(orig, Tensor):
-        arr = typing.cast(BackendArray, get_active_backend().asarray(val))
+        arr = _cast_val(BackendArray, get_active_backend().asarray(val))
         dt = DType.Float32
         if str(arr.dtype) == "float64":
             dt = DType.Float64
@@ -317,17 +318,17 @@ def _compute_grad_and_value(
     """
     from .jvp_vjp import _unpack_pair, vjp
 
-    val, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=getattr(options, "has_aux", False)))
+    val, vjp_fn_raw = _unpack_pair(vjp(fun, *args, has_aux=_get_attr(options, "has_aux", False)))
     vjp_fn = vjp_fn_raw
 
-    if getattr(options, "has_aux", False):
-        primal_val, _ = typing.cast(tuple[GradValue, GradValue], val)
+    if _get_attr(options, "has_aux", False):
+        primal_val, _ = _cast_val(tuple[GradValue, GradValue], val)
     else:
         primal_val = val
 
     if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
         c_id = f"cot_{uuid.uuid4().hex[:6]}"
-        p_shape = getattr(primal_val, "shape", ())
+        p_shape = _get_attr(primal_val, "shape", ())
         c_node = LogicalNode(
             id=c_id,
             op_type="Constant",
@@ -339,13 +340,13 @@ def _compute_grad_and_value(
         proxy = ProxyTensor(id=c_id, shape=p_shape, dtype="float32")
         cotangent: GradValue = Tensor(proxy, TensorConfig(p_shape, DType.Float32, Device("cpu")))
     else:
-        primal_arr = get_active_backend().asarray(getattr(primal_val, "data", primal_val))
+        primal_arr = get_active_backend().asarray(_get_attr(primal_val, "data", primal_val))
         cotangent = get_active_backend().execute_op("Ones_like", primal_arr)
 
     grads = invoke_callable(vjp_fn, cotangent)
     grads_seq = tuple(grads) if isinstance(grads, (list, tuple)) else (grads,)
 
-    argnums = getattr(options, "argnums", 0)
+    argnums = _get_attr(options, "argnums", 0)
     if isinstance(argnums, int):
         res_grad = _to_original_type(grads_seq[argnums], args[argnums])
     elif isinstance(argnums, (tuple, list)):

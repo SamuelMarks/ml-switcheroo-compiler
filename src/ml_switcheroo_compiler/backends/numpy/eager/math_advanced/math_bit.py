@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 from .math_general import _get_np_arg, _get_sc  # noqa: F401
 
@@ -65,8 +66,9 @@ def _np_bitcast_convert_type(backend_module: BackendModuleProtocol, x: EagerValu
 
     Returns: np.ndarray: The computed result.
     """
-    dt = getattr(np, str(new_dtype).split(".")[-1], np.float32)
-    return np.asarray(x).view(dt)
+    dt = _get_attr(np, str(new_dtype).split(".")[-1], np.float32)
+    _typed_ret_1: EagerValue = np.asarray(x).view(dt)
+    return _typed_ret_1
 
 
 @numpy_eager_registry.register("Packbits")
@@ -80,7 +82,7 @@ def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(np, "packbits")(np.asarray(args[0]), **kwargs))
+    return as_tensor(_get_attr(np, "packbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("Unpackbits")
@@ -94,7 +96,7 @@ def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **k
 
     Returns: np.ndarray: The computed result.
     """
-    return as_tensor(getattr(np, "unpackbits")(np.asarray(args[0]), **kwargs))
+    return as_tensor(_get_attr(np, "unpackbits")(np.asarray(args[0]), **kwargs))
 
 
 @numpy_eager_registry.register("BitwiseCount")

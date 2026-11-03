@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ml_switcheroo_compiler.backends.backend_utils as backend_utils
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRNode
 
 
@@ -77,7 +78,7 @@ def test_backend_utils_exhaustive() -> None:
 
     # 4. format_shape_metadata with multiple dimensions (no trailing comma) and mixed types
     node_multi_dim = IRNode("node_conv", "Conv")
-    object.__setattr__(
+    _obj_set_attr(
         node_multi_dim,
         "shape_metadata",
         (

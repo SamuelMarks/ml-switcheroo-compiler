@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.kernels import CudaKernelOp, KernelLaunchConfig, MetalKernelOp, PrecompiledCudaKernelOp, cuda_kernel, metal_kernel, precompiled_cuda_kernel
 
@@ -24,7 +25,7 @@ def test_cuda_kernel_tracing(mock_emit: EagerTensorProtocol) -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    setattr(mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
+    _set_attr(mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=False):
         outs = cuda_kernel(source="void kernel() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
@@ -42,7 +43,7 @@ def test_metal_kernel_tracing(mock_emit: EagerTensorProtocol) -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    setattr(mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
+    _set_attr(mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=False):
         outs = metal_kernel(source="kernel void foo() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
@@ -60,7 +61,7 @@ def test_precompiled_cuda_kernel_tracing(mock_emit: EagerTensorProtocol) -> None
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    setattr(mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
+    _set_attr(mock_emit, "return_value", Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu")))
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=False):
         outs = precompiled_cuda_kernel(binary=b"dummy_binary", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
@@ -78,7 +79,7 @@ def test_cuda_kernel_eager(mock_execute_op: EagerTensorProtocol) -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    setattr(mock_execute_op, "return_value", [None])
+    _set_attr(mock_execute_op, "return_value", [None])
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=True):
         outs = cuda_kernel(source="void kernel() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
@@ -96,7 +97,7 @@ def test_metal_kernel_eager(mock_execute_op: EagerTensorProtocol) -> None:
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    setattr(mock_execute_op, "return_value", [None])
+    _set_attr(mock_execute_op, "return_value", [None])
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=True):
         outs = metal_kernel(source="kernel void foo() {}", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))
@@ -114,7 +115,7 @@ def test_precompiled_cuda_kernel_eager(mock_execute_op: EagerTensorProtocol) -> 
     Returns:
         TensorOrScalar: The inferred shape or computed result.
     """
-    setattr(mock_execute_op, "return_value", [None])
+    _set_attr(mock_execute_op, "return_value", [None])
     t1 = Tensor(None, TensorConfig((2, 2), DType.Float32, "cpu"))
     with ConfigContext(eager_mode=True):
         outs = precompiled_cuda_kernel(binary=b"dummy_binary", inputs=[t1], output_shapes=[(2, 2)], output_dtypes=[DType.Float32], launch_config=KernelLaunchConfig(grid=(1, 1, 1), block=(1, 1, 1), name="test"))

@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -32,7 +32,7 @@ class Cholesky(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         return shape
 
 
@@ -72,7 +72,7 @@ class CholeskyEx(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         info_shape = shape[:-2] if len(shape) >= 2 else ()
         return (shape, info_shape)
 

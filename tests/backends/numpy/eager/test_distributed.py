@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import set_np_distributed_context
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _has_attr, _set_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -30,7 +31,7 @@ def test_np_all_reduce_threads() -> None:
         Args:
             ctx: Test parameter `ctx`.
         """
-        as_tensor(getattr(ctx, "initialize"))()
+        as_tensor(_get_attr(ctx, "initialize"))()
 
     t1 = threading.Thread(target=init_ctx, args=(ctx1,))
     t2 = threading.Thread(target=init_ctx, args=(ctx2,))
@@ -52,7 +53,7 @@ def test_np_all_reduce_threads() -> None:
             tensor: Test parameter `tensor`.
             op: Test parameter `op`.
         """
-        return as_tensor(getattr(ctx, "all_reduce_ring"))(tensor, op, np)
+        return as_tensor(_get_attr(ctx, "all_reduce_ring"))(tensor, op, np)
 
     import concurrent.futures
 
@@ -85,7 +86,7 @@ def test_all_gather_np_coverage9() -> None:
         """
         return [[2.0], [3.0]]
 
-    setattr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
+    _set_attr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
 
     class MockNP:
         """Test class MockNP."""
@@ -108,7 +109,7 @@ def test_all_gather_np_coverage9() -> None:
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_tensor(getattr(tensors, "__getitem__")(0))
+                return as_tensor(_get_attr(tensors, "__getitem__")(0))
 
         class minimum:
             """Test class minimum."""
@@ -120,7 +121,7 @@ def test_all_gather_np_coverage9() -> None:
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_tensor(getattr(tensors, "__getitem__")(0))
+                return as_tensor(_get_attr(tensors, "__getitem__")(0))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -139,7 +140,7 @@ def test_all_gather_np_coverage9() -> None:
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return as_tensor(getattr(t, "__getitem__")(0))
+            return as_tensor(_get_attr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.
@@ -200,8 +201,8 @@ def _test_all_gather_np_coverage10_part_1(_state: dict[str, EagerTensorProtocol]
     set_np_distributed_context(1, 0, "127.0.0.1", 40000)
 
     _tcp_dist_ctx.world_size = 2
-    getattr(_state, "update")({"_tcp_dist_ctx": _tcp_dist_ctx})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_tcp_dist_ctx": _tcp_dist_ctx})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -228,7 +229,7 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(getattr(other, "val", other))))
+            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(_get_attr(other, "val", other))))
 
         def __radd__(self, other: EagerValue) -> EagerValue:
             """Test function __radd__.
@@ -238,7 +239,7 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
             """
             if other == 0:
                 return as_tensor(self)
-            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(getattr(other, "val", other))))
+            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(_get_attr(other, "val", other))))
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -246,16 +247,16 @@ def _test_all_gather_np_coverage10_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            if hasattr(other, "val"):
-                return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(getattr(other, "val", other))))
+            if _has_attr(other, "val"):
+                return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(_get_attr(other, "val", other))))
             return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(other)))
 
         def copy(self) -> EagerValue:
             """Test function copy."""
             return as_tensor(ArrayMock(self.val))
 
-    getattr(_state, "update")({"ArrayMock": ArrayMock})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ArrayMock": ArrayMock})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage10_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -274,9 +275,9 @@ def _test_all_gather_np_coverage10_part_3(_state: dict[str, EagerTensorProtocol]
         """
         return [ArrayMock(2.0), ArrayMock(3.0)]
 
-    setattr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
-    getattr(_state, "update")({"mock_all_gather": mock_all_gather})
-    _state.update(locals())
+    _set_attr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
+    _get_attr(_state, "update")({"mock_all_gather": mock_all_gather})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -308,7 +309,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_callable(ArrayMock)(as_callable(max)([as_tensor(getattr(x, "val")) for x in as_tensor(tensors)]))
+                return as_callable(ArrayMock)(as_callable(max)([as_tensor(_get_attr(x, "val")) for x in as_tensor(tensors)]))
 
         class minimum:
             """Test class minimum."""
@@ -320,7 +321,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_callable(ArrayMock)(as_callable(min)([as_tensor(getattr(x, "val")) for x in as_tensor(tensors)]))
+                return as_callable(ArrayMock)(as_callable(min)([as_tensor(_get_attr(x, "val")) for x in as_tensor(tensors)]))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -330,7 +331,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
             """
-            return as_tensor([as_callable(ArrayMock)(as_tensor(getattr(arr, "val")) / as_tensor(indices))]) * as_tensor(indices)
+            return as_tensor([as_callable(ArrayMock)(as_tensor(_get_attr(arr, "val")) / as_tensor(indices))]) * as_tensor(indices)
 
         def concatenate(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function concatenate.
@@ -339,7 +340,7 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return as_tensor(getattr(t, "__getitem__")(0))
+            return as_tensor(_get_attr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.
@@ -350,8 +351,8 @@ def _test_all_gather_np_coverage10_part_4(_state: dict[str, EagerTensorProtocol]
             """
             return t
 
-    getattr(_state, "update")({"MockNP": MockNP})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockNP": MockNP})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage10_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -385,16 +386,16 @@ def _test_all_gather_np_coverage10_part_5(_state: dict[str, EagerTensorProtocol]
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="min")
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="unknown")
 
-    setattr(_tcp_dist_ctx, "world_size", 1)
+    _set_attr(_tcp_dist_ctx, "world_size", 1)
     dmod._np_all_gather(MockNP(), ArrayMock(2.0), axis=0)
     dmod._np_all_gather(MockNP(), ArrayMock(2.0), axis=None)
 
     dmod._np_all_to_all(MockNP(), ArrayMock(2.0))
     dmod._np_broadcast(MockNP(), ArrayMock(2.0), root_rank=0)
 
-    setattr(_tcp_dist_ctx, "world_size", 2)
-    getattr(_state, "update")({"dmod": dmod, "res": res})
-    _state.update(locals())
+    _set_attr(_tcp_dist_ctx, "world_size", 2)
+    _get_attr(_state, "update")({"dmod": dmod, "res": res})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage10_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -435,8 +436,8 @@ def _test_all_gather_np_coverage11_part_1(_state: dict[str, EagerTensorProtocol]
     set_np_distributed_context(1, 0, "127.0.0.1", 40000)
 
     _tcp_dist_ctx.world_size = 2
-    getattr(_state, "update")({"_tcp_dist_ctx": _tcp_dist_ctx})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_tcp_dist_ctx": _tcp_dist_ctx})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -463,7 +464,7 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(getattr(other, "val", other))))
+            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(_get_attr(other, "val", other))))
 
         def __radd__(self, other: EagerValue) -> EagerValue:
             """Test function __radd__.
@@ -473,7 +474,7 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
             """
             if other == 0:
                 return as_tensor(self)
-            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(getattr(other, "val", other))))
+            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(_get_attr(other, "val", other))))
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -481,16 +482,16 @@ def _test_all_gather_np_coverage11_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            if hasattr(other, "val"):
-                return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(getattr(other, "val", other))))
+            if _has_attr(other, "val"):
+                return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(_get_attr(other, "val", other))))
             return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(other)))
 
         def copy(self) -> EagerValue:
             """Test function copy."""
             return as_tensor(ArrayMock(self.val))
 
-    getattr(_state, "update")({"ArrayMock": ArrayMock})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ArrayMock": ArrayMock})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage11_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -509,9 +510,9 @@ def _test_all_gather_np_coverage11_part_3(_state: dict[str, EagerTensorProtocol]
         """
         return [ArrayMock(2.0), ArrayMock(3.0)]
 
-    setattr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
-    getattr(_state, "update")({"mock_all_gather": mock_all_gather})
-    _state.update(locals())
+    _set_attr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
+    _get_attr(_state, "update")({"mock_all_gather": mock_all_gather})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -543,7 +544,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_callable(ArrayMock)(as_callable(max)([as_tensor(getattr(x, "val")) for x in as_tensor(tensors)]))
+                return as_callable(ArrayMock)(as_callable(max)([as_tensor(_get_attr(x, "val")) for x in as_tensor(tensors)]))
 
         class minimum:
             """Test class minimum."""
@@ -555,7 +556,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_callable(ArrayMock)(as_callable(min)([as_tensor(getattr(x, "val")) for x in as_tensor(tensors)]))
+                return as_callable(ArrayMock)(as_callable(min)([as_tensor(_get_attr(x, "val")) for x in as_tensor(tensors)]))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -565,7 +566,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
             """
-            return as_tensor([as_callable(ArrayMock)(as_tensor(getattr(arr, "val")) / as_tensor(indices))]) * as_tensor(indices)
+            return as_tensor([as_callable(ArrayMock)(as_tensor(_get_attr(arr, "val")) / as_tensor(indices))]) * as_tensor(indices)
 
         def concatenate(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function concatenate.
@@ -574,7 +575,7 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return as_tensor(getattr(t, "__getitem__")(0))
+            return as_tensor(_get_attr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.
@@ -585,8 +586,8 @@ def _test_all_gather_np_coverage11_part_4(_state: dict[str, EagerTensorProtocol]
             """
             return t
 
-    getattr(_state, "update")({"MockNP": MockNP})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockNP": MockNP})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage11_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -616,16 +617,16 @@ def _test_all_gather_np_coverage11_part_5(_state: dict[str, EagerTensorProtocol]
     res = dmod._np_reduce(np, np.array([2.0]), root_rank=0, op_type="min")
     res = dmod._np_reduce(np, np.array([2.0]), root_rank=0, op_type="unknown")
 
-    setattr(_tcp_dist_ctx, "world_size", 1)
+    _set_attr(_tcp_dist_ctx, "world_size", 1)
     dmod._np_all_gather(np, np.array([2.0]), axis=0)
     dmod._np_all_gather(np, np.array([2.0]), axis=None)
 
     dmod._np_all_to_all(np, np.array([2.0]))
     dmod._np_broadcast(np, np.array([2.0]), root_rank=0)
 
-    setattr(_tcp_dist_ctx, "world_size", 2)
-    getattr(_state, "update")({"dmod": dmod, "res": res})
-    _state.update(locals())
+    _set_attr(_tcp_dist_ctx, "world_size", 2)
+    _get_attr(_state, "update")({"dmod": dmod, "res": res})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage11_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -666,8 +667,8 @@ def _test_all_gather_np_coverage12_part_1(_state: dict[str, EagerTensorProtocol]
     set_np_distributed_context(1, 0, "127.0.0.1", 40000)
 
     _tcp_dist_ctx.world_size = 2
-    getattr(_state, "update")({"_tcp_dist_ctx": _tcp_dist_ctx})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_tcp_dist_ctx": _tcp_dist_ctx})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -694,7 +695,7 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(getattr(other, "val", other))))
+            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(_get_attr(other, "val", other))))
 
         def __radd__(self, other: EagerValue) -> EagerValue:
             """Test function __radd__.
@@ -704,7 +705,7 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
             """
             if other == 0:
                 return as_tensor(self)
-            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(getattr(other, "val", other))))
+            return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) + as_tensor(_get_attr(other, "val", other))))
 
         def __mul__(self, other: EagerValue) -> EagerValue:
             """Test function __mul__.
@@ -712,16 +713,16 @@ def _test_all_gather_np_coverage12_part_2(_state: dict[str, EagerTensorProtocol]
             Args:
                 other: Test parameter `other`.
             """
-            if hasattr(other, "val"):
-                return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(getattr(other, "val", other))))
+            if _has_attr(other, "val"):
+                return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(_get_attr(other, "val", other))))
             return as_tensor(as_callable(ArrayMock)(as_tensor(self.val) * as_tensor(other)))
 
         def copy(self) -> EagerValue:
             """Test function copy."""
             return as_tensor(ArrayMock(self.val))
 
-    getattr(_state, "update")({"ArrayMock": ArrayMock})
-    _state.update(locals())
+    _get_attr(_state, "update")({"ArrayMock": ArrayMock})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage12_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -740,9 +741,9 @@ def _test_all_gather_np_coverage12_part_3(_state: dict[str, EagerTensorProtocol]
         """
         return [ArrayMock(2.0), ArrayMock(3.0)]
 
-    setattr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
-    getattr(_state, "update")({"mock_all_gather": mock_all_gather})
-    _state.update(locals())
+    _set_attr(_tcp_dist_ctx, "all_gather_tensors", mock_all_gather)
+    _get_attr(_state, "update")({"mock_all_gather": mock_all_gather})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -774,7 +775,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_callable(ArrayMock)(as_callable(max)([as_tensor(getattr(x, "val")) for x in as_tensor(tensors)]))
+                return as_callable(ArrayMock)(as_callable(max)([as_tensor(_get_attr(x, "val")) for x in as_tensor(tensors)]))
 
         class minimum:
             """Test class minimum."""
@@ -786,7 +787,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 Args:
                     tensors: Test parameter `tensors`.
                 """
-                return as_callable(ArrayMock)(as_callable(min)([as_tensor(getattr(x, "val")) for x in as_tensor(tensors)]))
+                return as_callable(ArrayMock)(as_callable(min)([as_tensor(_get_attr(x, "val")) for x in as_tensor(tensors)]))
 
         def array_split(self, arr: EagerValue, indices: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function array_split.
@@ -796,7 +797,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 indices: Test parameter `indices`.
                 axis: Test parameter `axis`.
             """
-            return as_tensor([as_callable(ArrayMock)(as_tensor(getattr(arr, "val")) / as_tensor(indices))]) * as_tensor(indices)
+            return as_tensor([as_callable(ArrayMock)(as_tensor(_get_attr(arr, "val")) / as_tensor(indices))]) * as_tensor(indices)
 
         def concatenate(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function concatenate.
@@ -805,7 +806,7 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
                 t: Test parameter `t`.
                 axis: Test parameter `axis`.
             """
-            return as_tensor(getattr(t, "__getitem__")(0))
+            return as_tensor(_get_attr(t, "__getitem__")(0))
 
         def expand_dims(self, t: EagerValue, axis: EagerValue) -> EagerValue:
             """Test function expand_dims.
@@ -816,8 +817,8 @@ def _test_all_gather_np_coverage12_part_4(_state: dict[str, EagerTensorProtocol]
             """
             return t
 
-    getattr(_state, "update")({"MockNP": MockNP})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockNP": MockNP})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage12_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -847,14 +848,14 @@ def _test_all_gather_np_coverage12_part_5(_state: dict[str, EagerTensorProtocol]
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="min")
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="unknown")
 
-    setattr(_tcp_dist_ctx, "rank", 1)
+    _set_attr(_tcp_dist_ctx, "rank", 1)
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="sum")
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="prod")
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="max")
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="min")
     res = dmod._np_reduce(MockNP(), ArrayMock(2.0), root_rank=0, op_type="unknown")
-    getattr(_state, "update")({"dmod": dmod, "res": res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"dmod": dmod, "res": res})
+    _state.update(_caller_locals())
 
 
 def _test_all_gather_np_coverage12_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -865,14 +866,14 @@ def _test_all_gather_np_coverage12_part_6(_state: dict[str, EagerTensorProtocol]
     """
     ArrayMock, MockNP, _tcp_dist_ctx, dmod = _state["ArrayMock"], _state["MockNP"], _state["_tcp_dist_ctx"], _state["dmod"]
     res = _state["res"]
-    setattr(_tcp_dist_ctx, "world_size", 1)
+    _set_attr(_tcp_dist_ctx, "world_size", 1)
     dmod._np_all_gather(MockNP(), ArrayMock(2.0), axis=0)
     dmod._np_all_gather(MockNP(), ArrayMock(2.0), axis=None)
 
     dmod._np_all_to_all(MockNP(), ArrayMock(2.0))
     dmod._np_broadcast(MockNP(), ArrayMock(2.0), root_rank=0)
 
-    setattr(_tcp_dist_ctx, "world_size", 2)
+    _set_attr(_tcp_dist_ctx, "world_size", 2)
     dmod._np_all_gather(MockNP(), ArrayMock(2.0), axis=0)
     dmod._np_all_to_all(MockNP(), ArrayMock(2.0))
     dmod._np_broadcast(MockNP(), ArrayMock(2.0), root_rank=0)

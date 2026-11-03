@@ -8,6 +8,7 @@ import typing
 
 import numpy as np
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.serialization.formats.hdf5 import HDF5WeightLoader, HDF5WeightSaver
 from tests.testing_utils import as_callable, as_tensor
 
@@ -37,7 +38,7 @@ def test_hdf5_save_and_load() -> None:
         assert len(loaded_weights) == 3
         for k, v in weights.items():
             assert k in loaded_weights
-            as_callable(np.testing.assert_allclose)(as_tensor(getattr(loaded_weights, "__getitem__")(k)), v)
+            as_callable(np.testing.assert_allclose)(as_tensor(_get_attr(loaded_weights, "__getitem__")(k)), v)
 
 
 def test_hdf5_schema_validation() -> None:

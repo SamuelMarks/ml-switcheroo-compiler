@@ -6,6 +6,7 @@ import hashlib
 
 from ml_switcheroo_ir import AttributeValue
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.pass_manager import DAGTopologicalSorter
 
@@ -50,7 +51,7 @@ def _hash_attribute_value(val: AttributeValue | IRGraph) -> str:
             h = compute_node_structural_hash(sn, c_in)
             sub_id_map[sn.id] = h
             sub_sigs.append(f"{sn.op_type}:{h}")
-        sub_out = [sub_id_map.get(o, o) for o in getattr(val, "outputs", [])]
+        sub_out = [sub_id_map.get(o, o) for o in _get_attr(val, "outputs", [])]
         return f"IRGraph({';'.join(sub_sigs)}->{sub_out})"
     if isinstance(val, dict):
         items = sorted((str(k), _hash_attribute_value(v)) for k, v in val.items())
@@ -84,7 +85,7 @@ def compute_node_structural_hash(node: IRNode, canonical_inputs: list[str]) -> s
         attr_list.append((k, _hash_attribute_value(v)))
     attr_list.sort(key=lambda x: x[0])
 
-    shape_str = str(getattr(node, "shape_metadata", None))
+    shape_str = str(_get_attr(node, "shape_metadata", None))
     dtype_str = str(node.attributes.get("dtype", ""))
 
     payload = f"{node.op_type}|{ordered_inputs}|{attr_list}|{shape_str}|{dtype_str}"

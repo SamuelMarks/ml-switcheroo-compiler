@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -118,7 +119,7 @@ def test_all_distributed_ops() -> None:
             t = Tensor(DummyData(), TensorConfig((1,), "float32", "cpu"))
             for func_name in funcs:
                 if func_name not in ("send", "recv"):
-                    func = getattr(dist_ops, func_name)
+                    func = _get_attr(dist_ops, func_name)
                     func(t, None, None) if func_name == "shard_tensor" else func(t)
 
             config.eager_mode = False
@@ -126,7 +127,7 @@ def test_all_distributed_ops() -> None:
             try:
                 pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
                 for func_name in funcs:
-                    func = getattr(dist_ops, func_name)
+                    func = _get_attr(dist_ops, func_name)
                     if func_name == "shard_tensor":
                         func(pt, None, None)
                     elif func_name == "recv":

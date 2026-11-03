@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.control_flow import ControlFlowASTVisitor
+from ml_switcheroo_compiler.core.shape import _obj_set_attr, _set_attr
 from tests.testing_utils import as_attrs, as_callable
 
 if typing.TYPE_CHECKING:
@@ -24,7 +25,7 @@ class DummyVisitor(ControlFlowASTVisitor):
 
     def __init__(self) -> None:
         """Test function __init__."""
-        setattr(self, "_generator", DummyGenerator())
+        _set_attr(self, "_generator", DummyGenerator())
 
 
 class DummyNode:
@@ -92,7 +93,7 @@ def test_control_flow_mixin_advanced() -> None:
 
         def __init__(self) -> None:
             """Test function __init__."""
-            setattr(self, "_generator", DummyGenerator())
+            _set_attr(self, "_generator", DummyGenerator())
             pass
 
     vis = DummyVisitor()
@@ -102,7 +103,7 @@ def test_control_flow_mixin_advanced() -> None:
         """Test function make_graph."""
         g = IRGraph()
         n = LogicalNode(id="dummy_out", op_type="Identity", inputs=["x"])
-        object.__setattr__(g, "nodes", [n])
+        _obj_set_attr(g, "nodes", [n])
         return g
 
     g_cond = make_graph()

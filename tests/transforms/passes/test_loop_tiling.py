@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
 from ml_switcheroo_compiler.transforms.passes.loop_tiling import _load_heuristics, loop_tiling_pass
 from tests.testing_utils import as_callable, as_tensor
@@ -40,9 +41,9 @@ def test_loop_tiling_pass_modifies_nodes() -> None:
 
     graph.nodes = NodeDict({"matmul": n1, "conv": n2, "other": n3})
     assert loop_tiling_pass(graph)
-    assert getattr(n1, "attributes", {}).get("tiling") is True
-    assert getattr(n2, "attributes", {}).get("tiling") is True
-    assert getattr(n3, "attributes", {}).get("tiling") is None
+    assert _get_attr(n1, "attributes", {}).get("tiling") is True
+    assert _get_attr(n2, "attributes", {}).get("tiling") is True
+    assert _get_attr(n3, "attributes", {}).get("tiling") is None
 
     # Check shape splitting
     assert n1.shape_metadata == (16, 8, 16, 8)
@@ -77,7 +78,7 @@ def test_loop_tiling_pass_no_attributes() -> None:
     del n1.attributes
     graph.nodes = NodeDict({"matmul": n1})
     assert loop_tiling_pass(graph)
-    assert getattr(n1, "attributes", {}).get("tiling") is True
+    assert _get_attr(n1, "attributes", {}).get("tiling") is True
 
 
 def test_loop_tiling_extra_coverage() -> None:
@@ -108,8 +109,8 @@ def test_loop_tiling_extra_coverage() -> None:
     with patch("os.path.exists", return_value=True), patch("builtins.open", mock_open(read_data=yaml.dump(mock_yaml))):
         loop_tiling_pass(graph)
 
-    assert getattr(graph.nodes["n1"], "attributes", {}).get("tiling") is None
-    assert getattr(graph.nodes["n2"], "attributes", {}).get("tiling") is None
+    assert _get_attr(graph.nodes["n1"], "attributes", {}).get("tiling") is None
+    assert _get_attr(graph.nodes["n2"], "attributes", {}).get("tiling") is None
 
     # Hit not op_config branch
     mock_yaml2 = as_tensor({"profiles": {"default_wasm": {"tiling": {"matmul": {}}}}})
@@ -172,7 +173,7 @@ def test_loop_tiling_should_tile_but_shape_unchanged() -> None:
     with patch("ml_switcheroo_compiler.transforms.passes.loop_tiling._get_tiling_config", return_value={"matmul": {"threshold_M": 10, "threshold_N": 10}}):
         modified = loop_tiling_pass(graph)
         assert not modified
-        assert getattr(n, "attributes", {}).get("tiling") is None
+        assert _get_attr(n, "attributes", {}).get("tiling") is None
 
 
 def test_loop_tiling_should_not_tile() -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.registry import as_shape
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
@@ -25,8 +26,8 @@ def _infer_group_stat_shape(
     shape = args[0]
     if isinstance(shape, int):
         shape = (shape,)
-    elif hasattr(shape, "shape"):
-        shape = tuple(d for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
+    elif _has_attr(shape, "shape"):
+        shape = tuple(d for d in _get_attr(shape, "shape", _get_attr(shape, "shape_metadata", ())))
 
     if not isinstance(shape, tuple) or len(shape) <= 1:
         return tuple(d for d in shape) if isinstance(shape, tuple) else ()
@@ -113,6 +114,6 @@ class GroupNorm(OpDef):
         shape = args[0]
         if isinstance(shape, int):
             return (shape,)
-        if hasattr(shape, "shape"):
-            shape = tuple(d for d in getattr(shape, "shape", getattr(shape, "shape_metadata", ())))
-        return tuple(d for d in getattr(shape, "__iter__")())
+        if _has_attr(shape, "shape"):
+            shape = tuple(d for d in _get_attr(shape, "shape", _get_attr(shape, "shape_metadata", ())))
+        return tuple(d for d in _get_attr(shape, "__iter__")())

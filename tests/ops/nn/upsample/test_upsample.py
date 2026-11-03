@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.upsample_ops import (
     _resolve_scale_factor,
@@ -98,16 +99,16 @@ def test_pixel_shuffle_and_upsample_eager_and_trace() -> None:
         mock_backend.return_value = DummyBackend()
 
         ps_out = pixel_shuffle(t_2d, 2)
-        assert as_tensor(getattr(ps_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(_get_attr(ps_out, "shape")) == (1, 1, 4, 4)
 
         un_out = upsample_nearest(t_1d, size=(4,))
-        assert as_tensor(getattr(un_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(_get_attr(un_out, "shape")) == (1, 1, 4, 4)
 
         ub_out = upsample_bilinear(t_1d, size=(4,))
-        assert as_tensor(getattr(ub_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(_get_attr(ub_out, "shape")) == (1, 1, 4, 4)
 
         uc_out = upsample_bicubic(t_1d, size=(4,))
-        assert as_tensor(getattr(uc_out, "shape")) == (1, 1, 4, 4)
+        assert as_tensor(_get_attr(uc_out, "shape")) == (1, 1, 4, 4)
 
     # 2. Non-eager (tracing) mode with mocked _emit_shape_node
     config.eager_mode = False

@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     EagerTensorProtocol,
     EagerValue,
     ShapeProtocol,
+    _get_attr,
     as_callable,
     as_float,
     as_int,
@@ -72,7 +73,7 @@ class BackendModuleProtocol(typing.Protocol):
                 EagerValue: Pydantic CoreSchema instance.
             """
             del source_type
-            return typing.cast("EagerValue", getattr(handler, "generate_schema")(AttributeValue))
+            return as_tensor(as_callable(_get_attr(handler, "generate_schema"))(AttributeValue))
 
     if typing.TYPE_CHECKING:
 
@@ -88,7 +89,7 @@ class BackendModuleProtocol(typing.Protocol):
             ...
 
 
-getattr(BackendModuleProtocol, "__protocol_attrs__", set[str]()).discard("__get_pydantic_core_schema__")
+_get_attr(BackendModuleProtocol, "__protocol_attrs__", set[str]()).discard("__get_pydantic_core_schema__")
 
 
 def _is_backend_mod(val: EagerValue) -> typing.TypeGuard[BackendModuleProtocol]:

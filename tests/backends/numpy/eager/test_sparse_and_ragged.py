@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 import ml_switcheroo_compiler.backends.numpy.eager.sparse_and_ragged as sr
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -17,7 +18,7 @@ if typing.TYPE_CHECKING:
 
 def test_sparse_and_ragged_coverage() -> None:
     """Test function test_sparse_and_ragged_coverage."""
-    ops = [getattr(sr, name) for name in dir(sr) if name.startswith("_") and callable(getattr(sr, name))]
+    ops = [_get_attr(sr, name) for name in dir(sr) if name.startswith("_") and callable(_get_attr(sr, name))]
     arg = np.array([1.0, 2.0])
     for op in ops:
         sig = inspect.signature(op)

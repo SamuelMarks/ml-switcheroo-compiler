@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 import pydantic
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
@@ -40,7 +40,7 @@ def conv1d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs
     if config_obj is None:
         config_obj = _build_conv_config(kwargs, ((0, 2, 1), (2, 1, 0), (0, 2, 1)))
 
-    return conv_general_dilated(lhs, rhs, typing.cast(ConvConfig, config_obj))
+    return conv_general_dilated(lhs, rhs, _cast_val(ConvConfig, config_obj))
 
 
 def conv1d_transpose(
@@ -78,8 +78,8 @@ def depthwise_conv1d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None
         Tensor: Result.
     """
     dimension_numbers = ((0, 2, 1), (2, 1, 0), (0, 2, 1))
-    rhs_reshaped, config_obj = getattr(_prepare_depthwise_conv(lhs, rhs, 1, dimension_numbers, config_obj, **kwargs), "__iter__")()
-    return conv_general_dilated(lhs, rhs_reshaped, typing.cast(ConvConfig, config_obj))
+    rhs_reshaped, config_obj = _get_attr(_prepare_depthwise_conv(lhs, rhs, 1, dimension_numbers, config_obj, **kwargs), "__iter__")()
+    return conv_general_dilated(lhs, rhs_reshaped, _cast_val(ConvConfig, config_obj))
 
 
 def separable_conv1d(
@@ -102,7 +102,7 @@ def separable_conv1d(
         Tensor: Result.
     """
     config = config or ConvHyperparams()
-    strides, padding = getattr(config, "strides"), getattr(config, "padding")
+    strides, padding = _get_attr(config, "strides"), _get_attr(config, "padding")
     kwargs["strides"] = strides
     kwargs["padding"] = padding
     depthwise_out = depthwise_conv1d(lhs, depthwise_filter, None, **kwargs)

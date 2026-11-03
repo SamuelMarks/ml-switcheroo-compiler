@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.mlx.generator import MLXCodeGenerator
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -58,12 +59,12 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
 
     # Create a mock module for mlx.core
     mock_mlx_core = types.ModuleType("mlx.core")
-    setattr(mock_mlx_core, "load", as_tensor(getattr(MockMX, "load")))
-    setattr(mock_mlx_core, "save", as_tensor(getattr(MockMX, "save")))
-    setattr(mock_mlx_core, "save_safetensors", as_tensor(getattr(MockMX, "save_safetensors")))
+    _set_attr(mock_mlx_core, "load", as_tensor(_get_attr(MockMX, "load")))
+    _set_attr(mock_mlx_core, "save", as_tensor(_get_attr(MockMX, "save")))
+    _set_attr(mock_mlx_core, "save_safetensors", as_tensor(_get_attr(MockMX, "save_safetensors")))
 
     mock_mlx = types.ModuleType("mlx")
-    setattr(mock_mlx, "core", mock_mlx_core)
+    _set_attr(mock_mlx, "core", mock_mlx_core)
 
     # Use monkeypatch.setitem on sys.modules
     monkeypatch.setitem(sys.modules, "mlx.core", mock_mlx_core)
@@ -84,6 +85,10 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
 
 
 def test_mlx_generator_zeros_and_item() -> None:
-    """Test MLXCodeGenerator.zeros and MLXCodeGenerator.item classmethods."""
+    """Test MLXCodeGenerator.zeros, array, asarray, and item classmethods."""
     z_arr = MLXCodeGenerator.zeros((1,))
     assert MLXCodeGenerator.item(z_arr) == 0.0
+    a_arr = MLXCodeGenerator.array([1.0])
+    assert MLXCodeGenerator.item(a_arr) == 1.0
+    as_arr = MLXCodeGenerator.asarray([2.0])
+    assert MLXCodeGenerator.item(as_arr) == 2.0

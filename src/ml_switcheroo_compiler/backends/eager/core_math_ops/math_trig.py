@@ -7,6 +7,7 @@ import builtins  # noqa: F401
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, global_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @global_eager_registry.register("Acos")
@@ -21,7 +22,7 @@ def _acos(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "arccos", getattr(backend_module, "acos", None))
+    func = _get_attr(backend_module, "arccos", _get_attr(backend_module, "acos", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).arccos(*args, **kwargs)
@@ -39,7 +40,7 @@ def _acosh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "arccosh", getattr(backend_module, "acosh", None))
+    func = _get_attr(backend_module, "arccosh", _get_attr(backend_module, "acosh", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).arccos(*args, **kwargs)
@@ -57,7 +58,7 @@ def _asin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "arcsin", getattr(backend_module, "asin", None))
+    func = _get_attr(backend_module, "arcsin", _get_attr(backend_module, "asin", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).arcsin(*args, **kwargs)
@@ -75,7 +76,7 @@ def _asinh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "arcsinh", getattr(backend_module, "asinh", None))
+    func = _get_attr(backend_module, "arcsinh", _get_attr(backend_module, "asinh", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).arcsin(*args, **kwargs)
@@ -93,7 +94,7 @@ def _atan(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "arctan", getattr(backend_module, "atan", None))
+    func = _get_attr(backend_module, "arctan", _get_attr(backend_module, "atan", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).arctan(*args, **kwargs)
@@ -111,7 +112,7 @@ def _atanh(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "arctanh", getattr(backend_module, "atanh", None))
+    func = _get_attr(backend_module, "arctanh", _get_attr(backend_module, "atanh", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).arctan(*args, **kwargs)
@@ -129,7 +130,7 @@ def _atan2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "arctan2", getattr(backend_module, "atan2", None))
+    func = _get_attr(backend_module, "arctan2", _get_attr(backend_module, "atan2", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).arctan2(*args, **kwargs)
@@ -147,7 +148,7 @@ def _sinc(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "sinc", None)
+    func = _get_attr(backend_module, "sinc", None)
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).sinc(*args, **kwargs)
@@ -165,7 +166,7 @@ def _isin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(backend_module, "isin")(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "isin")(*args, **kwargs))
 
 
 @global_eager_registry.register("Isinf")
@@ -180,7 +181,7 @@ def _isinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: E
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "isinf", None)
+    func = _get_attr(backend_module, "isinf", None)
     if func:
         return as_tensor(func(*args, **kwargs))
 
@@ -199,7 +200,7 @@ def _isposinf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "isposinf", None)
+    func = _get_attr(backend_module, "isposinf", None)
     if func:
         return as_tensor(func(*args, **kwargs))
 

@@ -22,6 +22,7 @@ from ml_switcheroo_compiler.backends.edge.wasm_simd.config_models import (
     WasmTemplateConfig,
     WasmTemplatesConfig,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -106,7 +107,7 @@ def test_wasm_config_model() -> None:
 
     intrs_cfg = WasmIntrinsicsConfig(intrinsics={"test": intr_cfg}, scalars={"abs": "return std::abs(a);"})
     assert "test" in intrs_cfg.intrinsics
-    assert as_tensor(getattr(intrs_cfg.scalars, "__getitem__")("abs")) == "return std::abs(a);"
+    assert as_tensor(_get_attr(intrs_cfg.scalars, "__getitem__")("abs")) == "return std::abs(a);"
 
 
 def test_onnx_and_stablehlo_config_models() -> None:

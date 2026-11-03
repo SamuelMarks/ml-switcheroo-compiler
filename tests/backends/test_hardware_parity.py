@@ -11,6 +11,7 @@ import pytest
 from ml_switcheroo_compiler.backends.cuda.cuda import CudaCodeGenerator, CUDARunner
 from ml_switcheroo_compiler.backends.metal.metal import MetalCodeGenerator, MetalRunner
 from ml_switcheroo_compiler.backends.rocm.rocm import RocmCodeGenerator, ROCmRunner
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_int, as_tensor
 
@@ -31,10 +32,10 @@ def test_hardware_operation_coverage_and_workgroup_rules() -> None:
         assert as_tensor(op) in cuda_gen.config.templates
         assert as_tensor(op) in rocm_gen.config.templates
         assert as_tensor(op) in metal_gen.config.templates
-        cuda_wg = as_tensor(getattr(as_tensor(getattr(cuda_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        metal_wg = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        rocm_wg = as_tensor(getattr(as_tensor(getattr(rocm_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
-        assert as_tensor(isinstance(as_tensor(cuda_wg), list) and as_callable(len)(cuda_wg) == 3 and (as_tensor(getattr(cuda_wg, "__getitem__")(0)) > 0))
+        cuda_wg = as_tensor(_get_attr(as_tensor(_get_attr(cuda_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        metal_wg = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        rocm_wg = as_tensor(_get_attr(as_tensor(_get_attr(rocm_gen.config.templates, "__getitem__")(op)), "get"))("workgroup_size")
+        assert as_tensor(isinstance(as_tensor(cuda_wg), list) and as_callable(len)(cuda_wg) == 3 and (as_tensor(_get_attr(cuda_wg, "__getitem__")(0)) > 0))
         assert as_tensor(isinstance(as_tensor(metal_wg), list) and len(metal_wg) == 3 and (as_int(metal_wg[0]) > 0))
         assert isinstance(as_tensor(rocm_wg), list) and len(rocm_wg) == 3 and (as_int(rocm_wg[0]) > 0)
 
@@ -76,15 +77,15 @@ def test_metal_native_execution_parity() -> None:
         pytest.skip("Apple Silicon Metal device/driver not available on host system")
     runner = MetalRunner()
     metal_gen = MetalCodeGenerator(IRGraph())
-    relu_tpl = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")("relu")), "get"))("body", "")
+    relu_tpl = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")("relu")), "get"))("body", "")
     x = np.array([-5.0, 0.0, 3.5, 12.0], dtype=np.float32)
     relu_res = as_callable(runner.execute_kernel)(relu_tpl, "relu", x)
     as_callable(np.testing.assert_allclose)(relu_res, as_callable(np.maximum)(0.0, x))
-    add_tpl = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")("add")), "get"))("body", "")
+    add_tpl = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")("add")), "get"))("body", "")
     y = np.array([10.0, 20.0, 30.0, 40.0], dtype=np.float32)
     add_res = as_callable(runner.execute_kernel)(add_tpl, "add", x, y)
     as_callable(np.testing.assert_allclose)(add_res, x + y)
-    exp_tpl = as_tensor(getattr(as_tensor(getattr(metal_gen.config.templates, "__getitem__")("exp")), "get"))("body", "")
+    exp_tpl = as_tensor(_get_attr(as_tensor(_get_attr(metal_gen.config.templates, "__getitem__")("exp")), "get"))("body", "")
     x_small = np.array([0.0, 1.0, 2.0, -1.0], dtype=np.float32)
     exp_res = as_callable(runner.execute_kernel)(exp_tpl, "exp_kernel", x_small)
     as_callable(np.testing.assert_allclose)(exp_res, as_callable(np.exp)(x_small), rtol=1e-05, atol=1e-05)
@@ -178,7 +179,7 @@ def test_cross_backend_eager_parity_against_numpy_reference() -> None:
         from ml_switcheroo_compiler.backends.pytorch.generator import PyTorchCodeGenerator
 
         torch_res = PyTorchCodeGenerator.execute_op("MatMul", torch.tensor(a_np), torch.tensor(b_np))
-        as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
+        as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(torch_res, "detach")))().cpu().numpy(), ref_matmul, rtol=1e-05, atol=1e-05)
     if importlib.util.find_spec("jax") is not None:
         import jax.numpy as jnp
 
@@ -295,14 +296,14 @@ def test_hardware_new_ops_coverage_and_numerical_equivalence() -> None:
         assert op in rocm_gen.config.templates, f"Missing {op} in ROCm"
         assert op in metal_gen.config.templates, f"Missing {op} in Metal"
         c_tpl = cuda_gen.config.templates[op]
-        assert "float32" in getattr(c_tpl, "get")("type_mappings", {})
-        assert as_tensor(getattr(c_tpl, "get"))("grid_calc") is not None
+        assert "float32" in _get_attr(c_tpl, "get")("type_mappings", {})
+        assert as_tensor(_get_attr(c_tpl, "get"))("grid_calc") is not None
         r_tpl = rocm_gen.config.templates[op]
-        assert "float32" in getattr(r_tpl, "get")("type_mappings", {})
-        assert as_tensor(getattr(r_tpl, "get"))("grid_calc") is not None
+        assert "float32" in _get_attr(r_tpl, "get")("type_mappings", {})
+        assert as_tensor(_get_attr(r_tpl, "get"))("grid_calc") is not None
         m_tpl = metal_gen.config.templates[op]
-        assert "float32" in getattr(m_tpl, "get")("type_mappings", {})
-        assert as_tensor(getattr(m_tpl, "get"))("grid_calc") is not None
+        assert "float32" in _get_attr(m_tpl, "get")("type_mappings", {})
+        assert as_tensor(_get_attr(m_tpl, "get"))("grid_calc") is not None
     g = IRGraph()
     n_in = IRNode("in0", "Input", shape_metadata=(10, 10), attributes={"dtype": "float32"})
     n_elu = IRNode("elu_op", "Elu", inputs=["in0"], shape_metadata=(10, 10), attributes={"dtype": "float32"})
@@ -350,8 +351,8 @@ def _test_golden_seed_cross_backend_float_equivalence_part_1(_state: dict[str, E
         assert np.allclose(out_jax, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
-    getattr(_state, "update")({"x_np": x_np, "y_np": y_np, "z_ref": z_ref})
-    _state.update(locals())
+    _get_attr(_state, "update")({"x_np": x_np, "y_np": y_np, "z_ref": z_ref})
+    _state.update(_caller_locals())
 
 
 def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -381,13 +382,21 @@ def _test_golden_seed_cross_backend_float_equivalence_part_2(_state: dict[str, E
     try:
         import dask.array as da
 
-        x_d = as_callable(as_tensor(getattr(da, "from_array")))(x_np)
-        y_d = as_callable(as_tensor(getattr(da, "from_array")))(y_np)
-        out_d = as_callable((as_callable(as_tensor(getattr(da, "matmul")))(as_callable(as_tensor(getattr(da, "maximum")))(0.0, x_d + y_d), as_callable(as_tensor(getattr(da, "sin")))(x_d)) - as_callable(as_tensor(getattr(da, "exp")))(-as_callable(as_tensor(getattr(da, "abs")))(y_d))).compute)()
+        x_d = as_callable(as_tensor(_get_attr(da, "from_array")))(x_np)
+        y_d = as_callable(as_tensor(_get_attr(da, "from_array")))(y_np)
+        out_d = as_callable(
+            (
+                as_callable(as_tensor(_get_attr(da, "matmul")))(
+                    as_callable(as_tensor(_get_attr(da, "maximum")))(0.0, x_d + y_d),
+                    as_callable(as_tensor(_get_attr(da, "sin")))(x_d),
+                )
+                - as_callable(as_tensor(_get_attr(da, "exp")))(-as_callable(as_tensor(_get_attr(da, "abs")))(y_d))
+            ).compute
+        )()
         assert as_callable(np.allclose)(out_d, z_ref, atol=1e-05, rtol=0.0001)
     except ImportError:
         assert z_ref.shape == (8, 8)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_golden_seed_cross_backend_float_equivalence_part_3(_state: dict[str, EagerTensorProtocol]) -> None:

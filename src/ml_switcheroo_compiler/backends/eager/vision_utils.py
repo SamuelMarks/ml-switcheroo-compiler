@@ -7,6 +7,7 @@ import pydantic
 from ml_switcheroo_compiler.backends.eager.utils import _to_channels_last, _to_numpy_array
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_tensor, as_tensor_pair
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.configs import PerspectiveConfig
 
 
@@ -23,7 +24,7 @@ def _resolve_backend_mod(backend_module: BackendModuleProtocol | EagerValue | No
         from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
         return _resolve_eager_mod(None)
-    return as_mod(getattr(backend_module, "numpy", backend_module))
+    return as_mod(_get_attr(backend_module, "numpy", backend_module))
 
 
 class RandomCropConfig(pydantic.BaseModel):
@@ -114,7 +115,7 @@ def _prepare_eager_transform(
         EagerTransformContext: Standardized context containing channels-last images.
     """
     np_mod = _resolve_backend_mod(backend_module)
-    name: str = getattr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
+    name: str = _get_attr(backend_module, "__name__", "numpy") if backend_module is not None else "numpy"
 
     if images is None:
         return EagerTransformContext(
@@ -602,8 +603,8 @@ def _apply_perspective_channel(pctx: PerspectiveChannelContext | None) -> EagerV
     np_mod = _resolve_backend_mod(pctx.np_mod)
     b = pctx.ctx.b
     coords = pctx.ctx.coords
-    order = 1 if getattr(pctx.config, "interpolation", "bilinear") == "bilinear" else 0
-    fill_value = float(getattr(pctx.config, "fill_value", 0.0))
+    order = 1 if _get_attr(pctx.config, "interpolation", "bilinear") == "bilinear" else 0
+    fill_value = float(_get_attr(pctx.config, "fill_value", 0.0))
 
     c_count = as_tensor(pctx.imgs).shape[3]
     for c in range(c_count):
@@ -638,7 +639,7 @@ def _apply_perspective_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, h:
     out = mod.zeros_like(imgs)
 
     for b in range(b_count):
-        h_item = as_tensor(h)[b] if getattr(h, "ndim", 2) == 3 else h
+        h_item = as_tensor(h)[b] if _get_attr(h, "ndim", 2) == 3 else h
         coords = _generate_perspective_coords(mod, h_item, grid)
         ctx = PerspectiveContext(b=b, coords=coords, h=h_item)
         pctx = PerspectiveChannelContext(ctx=ctx, config=config, np_mod=mod, imgs=imgs, out=out)

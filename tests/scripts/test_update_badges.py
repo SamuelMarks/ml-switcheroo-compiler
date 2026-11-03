@@ -8,6 +8,7 @@ import subprocess
 import typing
 from unittest.mock import mock_open, patch
 
+from ml_switcheroo_compiler.core.shape import _cast_val
 from scripts.update_badges import (
     _extract_expected_arg_names,
     _has_non_none_return,
@@ -96,7 +97,7 @@ def f_missing_specific_arg(x: int, y: int) -> None:
     pass
 '''
     )
-    f1 = typing.cast(ast.FunctionDef, tree.body[0])
+    f1 = _cast_val(ast.FunctionDef, tree.body[0])
     assert _extract_expected_arg_names(f1.args) == ["x", "args", "y", "kwargs"]
     assert _has_non_none_return(f1.returns) is True
     assert _has_non_none_return(None) is False
@@ -104,19 +105,19 @@ def f_missing_specific_arg(x: int, y: int) -> None:
     assert _has_non_none_return(ast.Name(id="None")) is False
     assert _is_function_doc_complete(f1) is True
 
-    f_bad_any = typing.cast(ast.FunctionDef, tree.body[1])
+    f_bad_any = _cast_val(ast.FunctionDef, tree.body[1])
     assert _is_function_doc_complete(f_bad_any) is False
 
-    f_missing_arg = typing.cast(ast.FunctionDef, tree.body[2])
+    f_missing_arg = _cast_val(ast.FunctionDef, tree.body[2])
     assert _is_function_doc_complete(f_missing_arg) is False
 
-    f_missing_return = typing.cast(ast.FunctionDef, tree.body[3])
+    f_missing_return = _cast_val(ast.FunctionDef, tree.body[3])
     assert _is_function_doc_complete(f_missing_return) is False
 
-    f_none_name = typing.cast(ast.FunctionDef, tree.body[4])
+    f_none_name = _cast_val(ast.FunctionDef, tree.body[4])
     assert _is_function_doc_complete(f_none_name) is True
 
-    f_missing_specific_arg = typing.cast(ast.FunctionDef, tree.body[5])
+    f_missing_specific_arg = _cast_val(ast.FunctionDef, tree.body[5])
     assert _is_function_doc_complete(f_missing_specific_arg) is False
 
 

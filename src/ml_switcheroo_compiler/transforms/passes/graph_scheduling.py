@@ -1,6 +1,7 @@
 """Module graph_scheduling.py."""
 
 from __future__ import annotations  # noqa: I001
+from ml_switcheroo_compiler.core.shape import _get_attr
 import typing
 
 
@@ -117,13 +118,13 @@ class DefaultCostModel:
         """
         dtype = node.attributes.get("dtype", "float32")
         sizes = self.config.memory_sizes
-        dtype_size: int = int(getattr(sizes, "get")(dtype, 4))
+        dtype_size: int = int(_get_attr(sizes, "get")(dtype, 4))
 
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
         if shape is None:
             return dtype_size
 
-        is_dynamic = getattr(node, "is_dynamic_shape", False)
+        is_dynamic = _get_attr(node, "is_dynamic_shape", False)
         has_symbolic_dim = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
@@ -226,11 +227,11 @@ class CpuCostModel:
         dtype: str = str(node.attributes.get("dtype", "float32"))
         dtype_size: int = 8 if "64" in dtype else (2 if ("16" in dtype or "bf16" in dtype) else 4)
 
-        shape: tuple[int | str, ...] | list[int | str] | None = getattr(node, "shape_metadata", None)
+        shape: tuple[int | str, ...] | list[int | str] | None = _get_attr(node, "shape_metadata", None)
         if shape is None:
             return dtype_size
 
-        is_dynamic: bool = bool(getattr(node, "is_dynamic_shape", False))
+        is_dynamic: bool = bool(_get_attr(node, "is_dynamic_shape", False))
         has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
@@ -261,7 +262,7 @@ class CpuCostModel:
         vector_factor: int = max(1, self.simd_width_bytes // dtype_size)
 
         op: str = node.op_type
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
         elems: int = 1
         if shape and not any(isinstance(d, str) for d in shape):
             for dim in shape:
@@ -349,11 +350,11 @@ class GpuCostModel:
         dtype: str = str(node.attributes.get("dtype", "float32"))
         dtype_size: int = 8 if "64" in dtype else (2 if ("16" in dtype or "bf16" in dtype) else 4)
 
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
         if shape is None:
             return dtype_size
 
-        is_dynamic: bool = bool(getattr(node, "is_dynamic_shape", False))
+        is_dynamic: bool = bool(_get_attr(node, "is_dynamic_shape", False))
         has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
@@ -376,7 +377,7 @@ class GpuCostModel:
         """
         launch_cost: int = int(self.launch_latency_ns / 10)
         op: str = node.op_type
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
         elems: int = 1
         if shape and not any(isinstance(d, str) for d in shape):
             for dim in shape:
@@ -458,11 +459,11 @@ class EdgeCostModel:
         dtype: str = str(node.attributes.get("dtype", "float32"))
         dtype_size: int = 8 if "64" in dtype else 4
 
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
         if shape is None:
             return dtype_size
 
-        is_dynamic: bool = bool(getattr(node, "is_dynamic_shape", False))
+        is_dynamic: bool = bool(_get_attr(node, "is_dynamic_shape", False))
         has_symbolic_dim: bool = any(isinstance(d, str) for d in shape)
 
         if not is_dynamic and not has_symbolic_dim:
@@ -487,7 +488,7 @@ class EdgeCostModel:
             int: Compute cost score.
         """
         op: str = node.op_type
-        shape = getattr(node, "shape_metadata", None)
+        shape = _get_attr(node, "shape_metadata", None)
         elems: int = 1
         if shape and not any(isinstance(d, str) for d in shape):
             for dim in shape:
@@ -681,8 +682,8 @@ class GraphSchedulingPass:
         stream_counter = 0
         for nid in scheduled_order:
             node = graph.nodes[nid]
-            if getattr(node, "stream", None) is None:
-                parent_streams: set[str] = {str(graph.nodes[inp].stream) for inp in node.inputs if inp in graph.nodes and getattr(graph.nodes[inp], "stream", None) is not None}
+            if _get_attr(node, "stream", None) is None:
+                parent_streams: set[str] = {str(graph.nodes[inp].stream) for inp in node.inputs if inp in graph.nodes and _get_attr(graph.nodes[inp], "stream", None) is not None}
                 if len(parent_streams) == 1:
                     node.stream = next(iter(parent_streams))
                     stream_modified = True

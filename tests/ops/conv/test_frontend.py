@@ -12,6 +12,7 @@ import ml_switcheroo_compiler.ops.nn.conv2d as conv2d
 import ml_switcheroo_compiler.ops.nn.conv3d as conv3d
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from tests.testing_utils import as_callable, as_tensor
 
@@ -137,13 +138,13 @@ def test_conv_frontend_cov_config_obj_not_none() -> None:
         t = as_callable(Tensor)(as_callable(DummyTensor)(), as_callable(types.SimpleNamespace)(shape=(2, 2, 2), dtype=as_callable(DummyTensor)().dtype, device=None, requires_grad=False, trainable=False))
 
         # conv1d
-        as_callable(conv1d.conv1d)(t, t, config_obj=as_callable(as_tensor(getattr(conv1d, "_build_conv_config")))({}, ((0, 2, 1), (2, 1, 0), (0, 2, 1))))
+        as_callable(conv1d.conv1d)(t, t, config_obj=as_callable(as_tensor(_get_attr(conv1d, "_build_conv_config")))({}, ((0, 2, 1), (2, 1, 0), (0, 2, 1))))
 
         # conv2d
-        as_callable(conv2d.conv2d)(t, t, config_obj=as_callable(as_tensor(getattr(conv2d, "_build_conv_config")))({}, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
+        as_callable(conv2d.conv2d)(t, t, config_obj=as_callable(as_tensor(_get_attr(conv2d, "_build_conv_config")))({}, ((0, 3, 1, 2), (3, 2, 0, 1), (0, 3, 1, 2))))
 
         # conv3d
-        as_callable(conv3d.conv3d)(t, t, config_obj=as_callable(as_tensor(getattr(conv3d, "_build_conv_config")))({}, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
+        as_callable(conv3d.conv3d)(t, t, config_obj=as_callable(as_tensor(_get_attr(conv3d, "_build_conv_config")))({}, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3))))
 
     finally:
         config.eager_mode = orig_eager

@@ -14,6 +14,33 @@ from ml_switcheroo_compiler.core.shape import (
 from ml_switcheroo_compiler.core.shape import (
     TensorOrScalar,
 )
+from ml_switcheroo_compiler.core.shape import (
+    _caller_locals as _caller_locals,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _cast_val as _cast_val,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _del_attr as _del_attr,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _get_attr as _get_attr,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _has_attr as _has_attr,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _obj_del_attr as _obj_del_attr,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _obj_set_attr as _obj_set_attr,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _obj_vars as _obj_vars,
+)
+from ml_switcheroo_compiler.core.shape import (
+    _set_attr as _set_attr,
+)
 
 
 @typing.runtime_checkable
@@ -619,7 +646,7 @@ class EagerTensorProtocol(typing.Protocol):
                 EagerValue: Pydantic CoreSchema instance.
             """
             del source_type
-            return typing.cast("EagerValue", getattr(handler, "generate_schema")(AttributeValue))
+            return as_tensor(as_callable(_get_attr(handler, "generate_schema"))(AttributeValue))
 
     if typing.TYPE_CHECKING:
 
@@ -1343,7 +1370,19 @@ class EagerTensorProtocol(typing.Protocol):
         ...
 
 
-getattr(EagerTensorProtocol, "__protocol_attrs__", set[str]()).discard("__get_pydantic_core_schema__")
+def _is_eager_callable_generic(fn: _F) -> typing.TypeGuard[EagerCallableProtocol]:
+    """Type guard narrowing `fn` to `EagerCallableProtocol`.
+
+    Args:
+        fn (_F): Candidate callable.
+
+    Returns:
+        bool: True if callable.
+    """
+    return callable(fn)
+
+
+_get_attr(EagerTensorProtocol, "__protocol_attrs__", set[str]()).discard("__get_pydantic_core_schema__")
 
 
 BackendArray = EagerTensorProtocol
@@ -1377,7 +1416,9 @@ class EagerOpRegistry:
             Returns:
                 _F: Result.
             """
-            self._registry[op_type] = typing.cast("EagerCallableProtocol", func)
+            cand_fn: _F = func
+            assert _is_eager_callable_generic(cand_fn)
+            self._registry[op_type] = cand_fn
             return func
 
         return decorator
@@ -1421,9 +1462,9 @@ class EagerOpRegistry:
         # If the op is not explicitly registered but the backend natively supports it, map it dynamically.
         # This resolves missing operations (like Sin, Cos, Add, MatMul) that adhere to the
         # N-to-M universal utility rule natively on the target tensor backend.
-        if args and hasattr(args[0], op_type.lower()):
+        if args and _has_attr(args[0], op_type.lower()):
             # e.g., np.sin() fallback
-            return as_tensor(getattr(args[0], op_type.lower())(*args[1:], **kwargs))
+            return as_tensor(as_callable(_get_attr(args[0], op_type.lower()))(*args[1:], **kwargs))
 
         backend = kwargs.get("backend_module")
         if backend is None and len(args) > 0:
@@ -1435,13 +1476,13 @@ class EagerOpRegistry:
         if backend is not None:
             # Map common names
             op_name = op_type.lower()
-            if hasattr(backend, op_name):
-                return as_tensor(getattr(backend, op_name)(*op_args, **kwargs))
+            if _has_attr(backend, op_name):
+                return as_tensor(as_callable(_get_attr(backend, op_name))(*op_args, **kwargs))
 
             # Alternative common mappings
             mapping = {"matmul": "matmul", "add": "add", "sub": "subtract", "mul": "multiply", "div": "divide", "truedivide": "divide"}
-            if op_name in mapping and hasattr(backend, mapping[op_name]):
-                return as_tensor(getattr(backend, mapping[op_name])(*op_args, **kwargs))
+            if op_name in mapping and _has_attr(backend, mapping[op_name]):
+                return as_tensor(as_callable(_get_attr(backend, mapping[op_name]))(*op_args, **kwargs))
 
         msg = f"Operation '{op_type}' not found in registry and no universal fallback could be inferred for backend {backend}."
         raise ValueError(msg)
@@ -1552,7 +1593,7 @@ def _eager_tuple_get_item(backend_module: EagerValue, *args: EagerValue, **kwarg
     Returns:
         EagerValue: Extracted element at the requested index.
     """
-    index: int = int(getattr(kwargs.get("index", 0), "__int__", lambda: 0)())
+    index: int = as_int(kwargs.get("index", 0))
     if isinstance(args[0], (tuple, list)):
         return as_tensor(args[0][index])
     return None

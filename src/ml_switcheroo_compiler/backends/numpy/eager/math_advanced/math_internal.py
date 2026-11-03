@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 from .math_string_io import _parse_scanop_args
 
@@ -311,9 +312,9 @@ def _np_rawmatmul(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
         tuple[int, ...]: Result.
     """
-    if hasattr(backend_module, "rawmatmul"):
+    if _has_attr(backend_module, "rawmatmul"):
         return as_tensor(backend_module.rawmatmul(*args, **kwargs))
-    return as_tensor(getattr(np, "matmul")(args[0], args[1]))
+    return as_tensor(_get_attr(np, "matmul")(args[0], args[1]))
 
 
 @numpy_eager_registry.register("RawMerge")
@@ -428,7 +429,7 @@ def _np_tensorarrayread(backend_module: BackendModuleProtocol, *args: EagerValue
     """
     handle = args[0]
     index = args[1]
-    return as_tensor(getattr(handle, "__getitem__")(index))
+    return as_tensor(_get_attr(handle, "__getitem__")(index))
 
 
 @numpy_eager_registry.register("TensorArrayWrite")
@@ -446,7 +447,7 @@ def _np_tensorarraywrite(backend_module: BackendModuleProtocol, *args: EagerValu
     handle = args[0]
     index = args[1]
     value = args[2]
-    new_handle = list(getattr(handle, "__iter__")())
+    new_handle = list(_get_attr(handle, "__iter__")())
     if int(as_int(index)) >= len(new_handle):
         new_handle.extend([None] * int(as_tensor(index) - as_tensor(len(new_handle)) + 1))
     as_tensor(new_handle)[index] = value

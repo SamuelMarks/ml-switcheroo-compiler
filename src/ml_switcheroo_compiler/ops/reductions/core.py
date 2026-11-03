@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, as_tensor_obj
 from ml_switcheroo_compiler.ops.base import OpDef
 
@@ -54,7 +54,7 @@ class ReductionOp(OpDef):
         Returns:
             tuple[int, ...]: Inferred output shape.
         """
-        if not args or not hasattr(args[0], "shape"):
+        if not args or not _has_attr(args[0], "shape"):
             return ()
         in_shape = tuple(int(d) for d in args[0].shape)
         ndim = len(in_shape)

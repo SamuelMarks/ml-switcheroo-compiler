@@ -13,6 +13,7 @@ import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import hvp
 from tests.testing_utils import as_callable
@@ -45,7 +46,7 @@ def test_higher_order_equivalence(backend_name: EagerTensorProtocol, val1: Eager
 
     prev = config.backend
     try:
-        setattr(config, "backend", backend_name)
+        _set_attr(config, "backend", backend_name)
         backend = get_active_backend()
         arr_x = backend.asarray(np.array([val1], dtype=np.float32))
         arr_v = backend.asarray(np.array([1.0], dtype=np.float32))

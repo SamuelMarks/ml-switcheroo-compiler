@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.shape_system import SymVar
 from ml_switcheroo_compiler.ops.text.ops import (
@@ -93,8 +94,8 @@ def test_string_split_token_dimensions() -> None:
 
     # Dynamic splits: returns (8, SymVar("num_tokens"))
     out_dynamic = as_callable(op_split.infer_shape)(t)
-    assert as_tensor(getattr(out_dynamic, "__getitem__")(0)) == 8
-    assert isinstance(as_tensor(getattr(out_dynamic, "__getitem__")(1)), SymVar)
+    assert as_tensor(_get_attr(out_dynamic, "__getitem__")(0)) == 8
+    assert isinstance(as_tensor(_get_attr(out_dynamic, "__getitem__")(1)), SymVar)
 
     # Explicit max_splits=3 -> (8, 4)
     out_bounded = as_callable(op_split.infer_shape)(t, max_splits=3)
@@ -171,8 +172,8 @@ def test_edit_distance_and_vectorization() -> None:
 
     # TextVectorization default with SymVar
     out_default = as_callable(op_vec.infer_shape)(sentences)
-    assert as_tensor(getattr(out_default, "__getitem__")(0)) == 8
-    assert isinstance(as_tensor(getattr(out_default, "__getitem__")(1)), SymVar)
+    assert as_tensor(_get_attr(out_default, "__getitem__")(0)) == 8
+    assert isinstance(as_tensor(_get_attr(out_default, "__getitem__")(1)), SymVar)
 
     # TextVectorization empty fallbacks
     assert op_vec.infer_shape() == ()

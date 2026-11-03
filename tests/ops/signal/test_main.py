@@ -8,6 +8,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
 # ruff: noqa: E501
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.signal import (
     Convolve2d,
@@ -137,8 +138,8 @@ def _test_signal_funcs_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     assert ifft2(t) == "node"
     assert rfft2(t) == "node"
     assert irfft2(t) == "node"
-    getattr(_state, "update")({"WelchConfig": WelchConfig, "t": t})
-    _state.update(locals())
+    _get_attr(_state, "update")({"WelchConfig": WelchConfig, "t": t})
+    _state.update(_caller_locals())
 
 
 def _test_signal_funcs_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -164,14 +165,14 @@ def _test_signal_funcs_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops.get_active_backend").return_value
     mocker.patch("ml_switcheroo_compiler.ops.signal.fft_ops.get_active_backend", return_value=mock_backend)
     mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops.get_active_backend", return_value=mock_backend)
-    setattr(mock_backend.execute_op, "return_value", MockTensor((10,)))
-    setattr(mock_backend.array, "side_effect", lambda x: MockTensor((10,)))
-    assert as_tensor(getattr(as_callable(fft)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(ifft)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(fftn)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(ifftn)(t), "config")).shape == (10,)
-    getattr(_state, "update")({"mock_backend": mock_backend})
-    _state.update(locals())
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((10,)))
+    _set_attr(mock_backend.array, "side_effect", lambda x: MockTensor((10,)))
+    assert as_tensor(_get_attr(as_callable(fft)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(ifft)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(fftn)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(ifftn)(t), "config")).shape == (10,)
+    _get_attr(_state, "update")({"mock_backend": mock_backend})
+    _state.update(_caller_locals())
 
 
 def _test_signal_funcs_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -181,23 +182,23 @@ def _test_signal_funcs_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
         _state: Shared test state dictionary.
     """
     t = _state["t"]
-    assert as_tensor(getattr(as_callable(rfftn)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(irfftn)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(ifft2)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(rfft2)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(irfft2)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(fftnd)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(ifftnd)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(rfftnd)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(irfftnd)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(fftshift)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(ifftshift)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(hfft)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(rfftfreq)(t), "config")).shape == (10,)
-    assert as_tensor(getattr(window_hann(5), "config")).shape == (10,)
-    assert as_tensor(getattr(window_hamming(5), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(stft)(t, 4), "config")).shape == (10,)
-    assert as_tensor(getattr(as_callable(istft)(t, 4), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(rfftn)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(irfftn)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(ifft2)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(rfft2)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(irfft2)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(fftnd)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(ifftnd)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(rfftnd)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(irfftnd)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(fftshift)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(ifftshift)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(hfft)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(rfftfreq)(t), "config")).shape == (10,)
+    assert as_tensor(_get_attr(window_hann(5), "config")).shape == (10,)
+    assert as_tensor(_get_attr(window_hamming(5), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(stft)(t, 4), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_callable(istft)(t, 4), "config")).shape == (10,)
 
 
 def test_signal_funcs(mocker: EagerTensorProtocol) -> None:
@@ -224,13 +225,13 @@ def test_signal_funcs_eager_extra(mocker: EagerTensorProtocol) -> None:
     mock_backend = mocker.patch("ml_switcheroo_compiler.ops.signal.conv_ops.get_active_backend").return_value
     mocker.patch("ml_switcheroo_compiler.ops.signal.fft_ops.get_active_backend", return_value=mock_backend)
     mocker.patch("ml_switcheroo_compiler.ops.signal.spectral_ops.get_active_backend", return_value=mock_backend)
-    setattr(mock_backend.execute_op, "return_value", MockTensor((10,)))
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((10,)))
     res1 = convolve2d(t, t)
-    assert as_tensor(getattr(res1, "config")).shape == (10,)
-    setattr(mock_backend.execute_op, "return_value", MockTensor((10,)))
+    assert as_tensor(_get_attr(res1, "config")).shape == (10,)
+    _set_attr(mock_backend.execute_op, "return_value", MockTensor((10,)))
     res2 = fftconvolve(t, t)
-    assert as_tensor(getattr(res2, "config")).shape == (10,)
-    setattr(mock_backend.execute_op, "return_value", (MockTensor((10,)), MockTensor((10,))))
+    assert as_tensor(_get_attr(res2, "config")).shape == (10,)
+    _set_attr(mock_backend.execute_op, "return_value", (MockTensor((10,)), MockTensor((10,))))
     res3 = welch(t)
-    assert as_tensor(getattr(as_tensor(getattr(res3, "__getitem__")(0)), "config")).shape == (10,)
-    assert as_tensor(getattr(as_tensor(getattr(res3, "__getitem__")(1)), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res3, "__getitem__")(0)), "config")).shape == (10,)
+    assert as_tensor(_get_attr(as_tensor(_get_attr(res3, "__getitem__")(1)), "config")).shape == (10,)

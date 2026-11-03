@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -32,7 +32,7 @@ class Eig(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         val_shape = shape[:-1] if len(shape) >= 1 else ()
         return (val_shape, shape)
 
@@ -54,7 +54,7 @@ class Eigh(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         val_shape = shape[:-1] if len(shape) >= 1 else ()
         return (val_shape, shape)
 
@@ -76,7 +76,7 @@ class Eigvalsh(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         return shape[:-1] if len(shape) >= 1 else ()
 
 
@@ -96,10 +96,10 @@ def eigh(input: Tensor, UPLO: str = "L") -> TensorOrScalar:
         backend = get_active_backend()
         w, v = as_tensor_pair(backend.execute_op("Eigh", (input.data if type(input).__name__ == "Tensor" else input), UPLO=UPLO))
         return (
-            Tensor(w, TensorConfig(w.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
-            Tensor(v, TensorConfig(v.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+            Tensor(w, TensorConfig(w.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None))),
+            Tensor(v, TensorConfig(v.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None))),
         )
-    return _emit_linalg_node("Eigh", [input], {"UPLO": UPLO}, [input.shape[:-1], input.shape], [getattr(input, "dtype", None)] * 2)
+    return _emit_linalg_node("Eigh", [input], {"UPLO": UPLO}, [input.shape[:-1], input.shape], [_get_attr(input, "dtype", None)] * 2)
 
 
 def eigvalsh(input: Tensor, UPLO: str = "L") -> TensorOrScalar:
@@ -120,9 +120,9 @@ def eigvalsh(input: Tensor, UPLO: str = "L") -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), getattr(input, "dtype", None), getattr(input, "device", None)),
+            TensorConfig(tuple(_get_attr(arr, "shape")), _get_attr(input, "dtype", None), _get_attr(input, "device", None)),
         )
-    return _emit_linalg_node("Eigvalsh", [input], {"UPLO": UPLO}, [input.shape[:-1]], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Eigvalsh", [input], {"UPLO": UPLO}, [input.shape[:-1]], [_get_attr(input, "dtype", None)])
 
 
 @register_op("Eigvals")
@@ -142,7 +142,7 @@ class Eigvals(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         return shape[:-1] if len(shape) >= 1 else ()
 
 
@@ -163,9 +163,9 @@ def eigvals(input: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), getattr(input, "dtype", None), getattr(input, "device", None)),
+            TensorConfig(tuple(_get_attr(arr, "shape")), _get_attr(input, "dtype", None), _get_attr(input, "device", None)),
         )
-    return _emit_linalg_node("Eigvals", [input], {}, [input.shape[:-1]], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Eigvals", [input], {}, [input.shape[:-1]], [_get_attr(input, "dtype", None)])
 
 
 def eig(input: Tensor) -> TensorOrScalar:
@@ -183,7 +183,7 @@ def eig(input: Tensor) -> TensorOrScalar:
         backend = get_active_backend()
         w, v = as_tensor_pair(backend.execute_op("Eig", (input.data if type(input).__name__ == "Tensor" else input)))
         return (
-            Tensor(w, TensorConfig(w.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
-            Tensor(v, TensorConfig(v.shape, getattr(input, "dtype", None), getattr(input, "device", None))),
+            Tensor(w, TensorConfig(w.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None))),
+            Tensor(v, TensorConfig(v.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None))),
         )
-    return _emit_linalg_node("Eig", [input], {}, [input.shape[:-1], input.shape], [getattr(input, "dtype", None)] * 2)
+    return _emit_linalg_node("Eig", [input], {}, [input.shape[:-1], input.shape], [_get_attr(input, "dtype", None)] * 2)

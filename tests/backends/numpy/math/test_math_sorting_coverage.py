@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import math_sorting as math_sorting
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -18,7 +19,7 @@ def test_math_sorting() -> None:
     """Test ArgPartition, Lexsort, and Median directly and via registry."""
     arr = np.array([3, 1, 2, 5, 4])
     part = math_sorting._np_argpartition(np, arr, 2)
-    assert as_callable(getattr(part, "__getitem__"))(2) == 2 or as_callable(np.array_equal)(as_callable(getattr(arr, "__getitem__"))(as_tensor(part)[:2]), [1, 2]) or as_callable(np.array_equal)(as_callable(getattr(arr, "__getitem__"))(as_tensor(part)[:2]), [2, 1])
+    assert as_callable(_get_attr(part, "__getitem__"))(2) == 2 or as_callable(np.array_equal)(as_callable(_get_attr(arr, "__getitem__"))(as_tensor(part)[:2]), [1, 2]) or as_callable(np.array_equal)(as_callable(_get_attr(arr, "__getitem__"))(as_tensor(part)[:2]), [2, 1])
 
     reg_part = numpy_eager_registry.get("ArgPartition")
     part_reg = as_callable(reg_part)(np, arr, 2)

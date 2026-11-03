@@ -12,6 +12,7 @@ import ml_switcheroo_compiler.ops.io.base64_io as b64_mod
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from tests.testing_utils import as_tensor
 
@@ -48,7 +49,7 @@ def test_base64_io_coverage() -> None:
     raw_str = "hello world"
     encoded_unpadded = b64_mod._eager_base64("encode", raw_str, pad=False)
     encoded_padded = b64_mod._eager_base64("encode", raw_str, pad=True)
-    assert not as_tensor(getattr(encoded_unpadded, "endswith"))(b"=")
+    assert not as_tensor(_get_attr(encoded_unpadded, "endswith"))(b"=")
     assert encoded_padded == base64.b64encode(raw_str.encode("utf-8"))
 
     # 3. Decode bytes

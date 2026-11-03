@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.common.mixins.linalg import LinearAlgebraASTVisitor
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -80,7 +81,7 @@ class DummyVisitor(LinearAlgebraASTVisitor):
         Args:
             gen: Test parameter `gen`.
         """
-        setattr(self, "_generator", gen or DummyGenerator())
+        _set_attr(self, "_generator", gen or DummyGenerator())
 
 
 class DummyNode:
@@ -101,11 +102,11 @@ def test_linalg_mixin() -> None:
     node = DummyNode()
 
     assert as_callable(vis.visit_CholeskyVjp)(node, ["a", "b"]) == "_cholesky_vjp_eager(bk, a, b)"
-    assert as_tensor(getattr(vis._generator, "lines")) == ["    from ml_switcheroo_compiler.backends.eager.linalg import _cholesky_vjp_eager"]
+    assert as_tensor(_get_attr(vis._generator, "lines")) == ["    from ml_switcheroo_compiler.backends.eager.linalg import _cholesky_vjp_eager"]
     assert as_callable(vis.visit_CholeskyVjp)(node, ["a", "b"]) == "_cholesky_vjp_eager(bk, a, b)"
 
     assert as_callable(vis.visit_LuVjp)(node, ["a", "b", "c", "d"]) == "_lu_vjp_eager(bk, a, b, c, d)"
-    assert "    from ml_switcheroo_compiler.backends.eager.linalg import _lu_vjp_eager" in as_tensor(getattr(vis._generator, "lines"))
+    assert "    from ml_switcheroo_compiler.backends.eager.linalg import _lu_vjp_eager" in as_tensor(_get_attr(vis._generator, "lines"))
 
     assert as_callable(vis.visit_BandPart)(node, ["a"], num_lower=1, num_upper=2) == "bk_band_part(a, 1, 2)"
     assert as_callable(vis.visit_BandPart)(node, ["a"]) == "bk_band_part(a, -1, -1)"

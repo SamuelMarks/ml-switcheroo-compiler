@@ -9,6 +9,7 @@ from collections.abc import Callable
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerTensorProtocol, EagerValue
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.foreign import ForeignCall
 from tests.testing_utils import as_callable, as_tensor, as_tensor_list
 
@@ -118,8 +119,8 @@ def _test_foreign_call_introspection_branches_part_1(_state: dict[str, EagerTens
             """Init."""
             self.shape_metadata = (11, 11)
 
-    getattr(_state, "update")({"BadOutputShape": BadOutputShape, "EmptyOutputShapes": EmptyOutputShapes, "MockSubNode": MockSubNode, "fc": fc})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BadOutputShape": BadOutputShape, "EmptyOutputShapes": EmptyOutputShapes, "MockSubNode": MockSubNode, "fc": fc})
+    _state.update(_caller_locals())
 
 
 def _test_foreign_call_introspection_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -161,8 +162,8 @@ def _test_foreign_call_introspection_branches_part_2(_state: dict[str, EagerTens
         pass
 
     assert fc.infer_shape(empty_callable) == ()
-    getattr(_state, "update")({"MockSubgraph": MockSubgraph, "WithSubgraph": WithSubgraph, "empty_callable": empty_callable, "failing_typing_hints": failing_typing_hints})
-    _state.update(locals())
+    _get_attr(_state, "update")({"MockSubgraph": MockSubgraph, "WithSubgraph": WithSubgraph, "empty_callable": empty_callable, "failing_typing_hints": failing_typing_hints})
+    _state.update(_caller_locals())
 
 
 def _test_foreign_call_introspection_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -194,7 +195,7 @@ def _test_foreign_call_introspection_branches_part_3(_state: dict[str, EagerTens
 
     # Fallthrough
     assert as_callable(fc.infer_shape)(as_callable(object)()) == ()
-    getattr(_state, "update")({"ast_int_return": ast_int_return, "ast_str_return": ast_str_return, "non_int_tuple": non_int_tuple})
+    _get_attr(_state, "update")({"ast_int_return": ast_int_return, "ast_str_return": ast_str_return, "non_int_tuple": non_int_tuple})
 
 
 def test_foreign_call_introspection_branches() -> None:
@@ -290,7 +291,7 @@ def test_foreign_call_fallback_exceptions() -> None:
         raise OSError("Cannot get source")
 
     original_getsource = inspect.getsource
-    setattr(inspect, "getsource", mock_getsource)
+    _set_attr(inspect, "getsource", mock_getsource)
     try:
         assert fc.infer_shape(bad_ast_func) == ()
     finally:
@@ -350,7 +351,7 @@ def test_foreign_call_exception_branch_inspect_signature() -> None:
         """
         raise ValueError("Cannot get sig")
 
-    setattr(inspect, "signature", failing_sig)
+    _set_attr(inspect, "signature", failing_sig)
     try:
 
         def another_func() -> None:

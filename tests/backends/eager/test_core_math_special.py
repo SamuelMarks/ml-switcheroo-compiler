@@ -32,6 +32,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_special import (
     _polygamma,
 )
 from ml_switcheroo_compiler.backends.eager_registry import global_eager_registry
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -151,8 +152,8 @@ def test_math_special_all_branches() -> None:
 
     # Case B: backend lacks erfinv -> approximation
     erfinv_approx = _erfinv(as_mod(bmo), np.array([0.5]))
-    assert as_tensor(getattr(erfinv_approx, "shape")) == (1,)
-    assert getattr(erfinv_approx, "__getitem__")(0) > 0
+    assert as_tensor(_get_attr(erfinv_approx, "shape")) == (1,)
+    assert _get_attr(erfinv_approx, "__getitem__")(0) > 0
 
     # 4. SciPy special functions
     x_val = 1.5

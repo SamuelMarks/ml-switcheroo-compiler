@@ -8,6 +8,7 @@ import sys
 import time
 
 from ml_switcheroo_compiler.backends.eager_registry import as_callable
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 try:
     import cupy as cp
@@ -42,10 +43,10 @@ def _is_cupy_available() -> bool:
     if type(cp).__name__ == "MagicMock":
         return True
     try:
-        if hasattr(cp, "cuda"):
-            if hasattr(cp.cuda, "is_available") and not cp.cuda.is_available():
+        if _has_attr(cp, "cuda"):
+            if _has_attr(cp.cuda, "is_available") and not cp.cuda.is_available():
                 return False
-            if hasattr(cp.cuda, "runtime") and hasattr(cp.cuda.runtime, "getDeviceCount"):
+            if _has_attr(cp.cuda, "runtime") and _has_attr(cp.cuda.runtime, "getDeviceCount"):
                 return bool(cp.cuda.runtime.getDeviceCount() > 0)
     except Exception:
         return False
@@ -61,7 +62,7 @@ def _get_cupy_peak_memory_mb() -> float:
     if cp is None or not _is_cupy_available():
         return _get_process_memory_mb()
     peak_mem: float = 0.0
-    if hasattr(cp, "cuda") and hasattr(cp.cuda, "Device"):
+    if _has_attr(cp, "cuda") and _has_attr(cp.cuda, "Device"):
         try:
             mem_info = cp.cuda.Device().mem_info
             if isinstance(mem_info, (tuple, list)) and len(mem_info) == 2:
@@ -72,7 +73,7 @@ def _get_cupy_peak_memory_mb() -> float:
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if peak_mem <= 0.0:
-        if hasattr(cp, "get_default_memory_pool"):
+        if _has_attr(cp, "get_default_memory_pool"):
             try:
                 peak_mem = float(cp.get_default_memory_pool().used_bytes() / (1024.0 * 1024.0))
             except Exception:
@@ -89,12 +90,12 @@ class CupyProfiler:
         """Synchronize execution using CUDA stream synchronization."""
         if cp is None or not _is_cupy_available():
             return
-        if hasattr(cp, "cuda") and hasattr(cp.cuda, "Stream") and hasattr(cp.cuda.Stream, "null"):
+        if _has_attr(cp, "cuda") and _has_attr(cp.cuda, "Stream") and _has_attr(cp.cuda.Stream, "null"):
             try:
                 cp.cuda.Stream.null.synchronize()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        if hasattr(cp, "cuda") and hasattr(cp.cuda, "Device"):
+        if _has_attr(cp, "cuda") and _has_attr(cp.cuda, "Device"):
             try:
                 cp.cuda.Device().synchronize()
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
@@ -215,7 +216,7 @@ class CupyProfiler:
                 "peak_memory_mb": _get_process_memory_mb(),
             }
 
-        has_ops: bool = bool(getattr(graph, "nodes", None) and any(getattr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
+        has_ops: bool = bool(_get_attr(graph, "nodes", None) and any(_get_attr(n, "op_type", "") != "Input" for n in graph.nodes.values()))
         cp_inputs_dict, cp_input_list = self._prepare_cupy_inputs(inputs)
 
         def _execute_step() -> cp.ndarray | dict[str, cp.ndarray]:
@@ -240,6 +241,6 @@ class CupyProfiler:
             _ = _execute_step()
             self._sync()
 
-        has_cuda_events: bool = bool(hasattr(cp, "cuda") and hasattr(cp.cuda, "Event") and hasattr(cp.cuda, "get_elapsed_time"))
+        has_cuda_events: bool = bool(_has_attr(cp, "cuda") and _has_attr(cp.cuda, "Event") and _has_attr(cp.cuda, "get_elapsed_time"))
         latencies: list[float] = [self._measure_single_step_ms(_execute_step, has_cuda_events) for _ in range(max(1, num_iters))]
         return self._summarize_latencies(latencies, warmup_iters)

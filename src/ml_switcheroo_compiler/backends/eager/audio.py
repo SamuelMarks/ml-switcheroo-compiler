@@ -9,6 +9,7 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue, as_float, as_tensor
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, as_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.configs import STFTConfig
 
 MEL_SCALE_MULTIPLIER: float = 2595.0
@@ -60,7 +61,7 @@ def _resolve_module(module: BackendModuleProtocol | ModuleType | EagerValue | No
         from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 
         return _resolve_eager_mod(None)
-    return as_mod(getattr(module, "numpy", module))
+    return as_mod(_get_attr(module, "numpy", module))
 
 
 def _get_window(np_mod: BackendModuleProtocol | None, window: str, frame_length: int) -> EagerValue:
@@ -339,7 +340,7 @@ def _convert_to_np(
     mod: BackendModuleProtocol = _resolve_module(np_mod)
     if x is None:
         return as_tensor(mod.zeros((0,), dtype=mod.float32))
-    np_fn = getattr(x, "numpy", None)
+    np_fn = _get_attr(x, "numpy", None)
     if callable(np_fn):
         return as_tensor(mod.asarray(np_fn()))
     return as_tensor(mod.asarray(x))

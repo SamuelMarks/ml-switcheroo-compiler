@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -60,13 +61,13 @@ def test_builder_extract_proxy() -> None:
             """
             pass
 
-    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
-    setattr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
+    _set_attr(bmod, "global_tracing_state", FakeTracingState())
     (id2, shape2) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor2)())
     assert id2 in FakeTracingState.constant_cache.values()
     (id3, shape3) = as_callable(TracingNodeBuilder.extract_from_tensor)(as_callable(FakeTensor2)())
     assert id2 == id3
-    setattr(bmod, "global_tracing_state", old_state)
+    _set_attr(bmod, "global_tracing_state", old_state)
 
 
 def test_builder_extract_constant() -> None:
@@ -89,8 +90,8 @@ def test_builder_extract_constant() -> None:
             """
             pass
 
-    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
-    setattr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
+    _set_attr(bmod, "global_tracing_state", FakeTracingState())
 
     class ProxyT:
         """Test class ProxyT."""
@@ -107,7 +108,7 @@ def test_builder_extract_constant() -> None:
 
     ProxyT.__name__ = "ProxyTensor"
     proxy_inst = ProxyT("proxy_id", (2,))
-    proxy_inst.__class__.__name__ = "ProxyTensor"
+    type(proxy_inst).__name__ = "ProxyTensor"
 
     class RealTensor:
         """Test class RealTensor."""
@@ -123,12 +124,13 @@ def test_builder_extract_constant() -> None:
         @property
         def shape(self) -> EagerValue:
             """Test function shape."""
-            return getattr(self.data, "shape", ())
+            _typed_ret_1: EagerValue = _get_attr(self.data, "shape", ())
+            return _typed_ret_1
 
     val = [ProxyT("id_1", (1,)), RealTensor(123)]
     (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_constant)(val)
     assert id1[0] == "id_1"
-    setattr(bmod, "global_tracing_state", old_state)
+    _set_attr(bmod, "global_tracing_state", old_state)
 
 
 def test_builder_extract_proxy_inputs_proxy() -> None:
@@ -167,8 +169,8 @@ def test_builder_tensor_cache_missing() -> None:
             """
             pass
 
-    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
-    setattr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
+    _set_attr(bmod, "global_tracing_state", FakeTracingState())
 
     class FakeData:
         """Test class FakeData."""
@@ -184,7 +186,7 @@ def test_builder_tensor_cache_missing() -> None:
         requires_grad = False
 
     fake_t = as_callable(Tensor)(as_callable(FakeData)(), as_callable(FakeConfig)())
-    setattr(fake_t, "_data", FakeData())
+    _set_attr(fake_t, "_data", FakeData())
     (id1, shape1) = as_callable(TracingNodeBuilder.extract_from_tensor)(fake_t)
     assert shape1 == (1,)
 
@@ -194,7 +196,7 @@ def test_builder_tensor_cache_missing() -> None:
     assert len(ids) == 2
     # Verify the ids are actually consistent or the same depending on implementation
 
-    setattr(bmod, "global_tracing_state", old_state)
+    _set_attr(bmod, "global_tracing_state", old_state)
 
 
 def test_builder_extract_proxy_inputs_tensor_missing() -> None:
@@ -216,8 +218,8 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
             """
             pass
 
-    old_state = as_tensor(getattr(bmod, "global_tracing_state"))
-    setattr(bmod, "global_tracing_state", FakeTracingState())
+    old_state = as_tensor(_get_attr(bmod, "global_tracing_state"))
+    _set_attr(bmod, "global_tracing_state", FakeTracingState())
 
     class DummyNotTensor:
         """Test class DummyNotTensor."""
@@ -233,7 +235,7 @@ def test_builder_extract_proxy_inputs_tensor_missing() -> None:
     (ids, shapes, first) = as_callable(TracingNodeBuilder.extract_proxy_inputs)((as_callable(DummyNotTensor)(),))
     assert len(ids) == 1
     assert shapes[0] == ()
-    setattr(bmod, "global_tracing_state", old_state)
+    _set_attr(bmod, "global_tracing_state", old_state)
 
 
 def test_builder_infer_shape_none_branch() -> None:

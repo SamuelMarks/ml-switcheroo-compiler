@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -19,7 +19,7 @@ def _has_valid_shape(obj: Tensor | Sequence[int] | None) -> bool:
     Returns:
         bool: Result.
     """
-    return hasattr(obj, "shape") and bool(getattr(obj, "shape"))
+    return _has_attr(obj, "shape") and bool(_get_attr(obj, "shape"))
 
 
 def _extract_dot_operand_shape(obj: TensorOrScalar) -> tuple[int, ...]:
@@ -31,10 +31,10 @@ def _extract_dot_operand_shape(obj: TensorOrScalar) -> tuple[int, ...]:
     Returns:
         tuple[int, ...]: Extracted shape tuple.
     """
-    if hasattr(obj, "shape"):
-        return tuple(int(d) for d in getattr(obj, "shape"))
-    if hasattr(obj, "shape_metadata"):
-        sm = getattr(obj, "shape_metadata")
+    if _has_attr(obj, "shape"):
+        return tuple(int(d) for d in _get_attr(obj, "shape"))
+    if _has_attr(obj, "shape_metadata"):
+        sm = _get_attr(obj, "shape_metadata")
         if sm:
             return tuple(int(d) for d in sm)
     if isinstance(obj, (list, tuple)):
@@ -114,13 +114,14 @@ class DotGeneral(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_1: TensorOrScalar = res
+        return _typed_ret_1
 
     def _compute_out_shape(self, lhs_shape: TensorOrScalar, rhs_shape: TensorOrScalar, dimension_numbers: TensorOrScalar) -> TensorOrScalar:
         """Compute the compute out shape tensor operation.
@@ -133,13 +134,13 @@ class DotGeneral(OpDef):
         Returns:
             tuple: Result.
         """
-        contracting, batch = getattr(dimension_numbers, "__iter__")()
-        lhs_contracting, rhs_contracting = getattr(contracting, "__iter__")()
-        lhs_batch, rhs_batch = getattr(batch, "__iter__")()
+        contracting, batch = _get_attr(dimension_numbers, "__iter__")()
+        lhs_contracting, rhs_contracting = _get_attr(contracting, "__iter__")()
+        lhs_batch, rhs_batch = _get_attr(batch, "__iter__")()
 
-        out_shape = [getattr(lhs_shape, "__getitem__")(b) for b in getattr(lhs_batch, "__iter__")()]
-        out_shape.extend([getattr(lhs_shape, "__getitem__")(i) for i in range(getattr(lhs_shape, "__len__")()) if i not in getattr(lhs_contracting + lhs_batch, "__iter__")()])
-        out_shape.extend([getattr(rhs_shape, "__getitem__")(i) for i in range(getattr(rhs_shape, "__len__")()) if i not in getattr(rhs_contracting + rhs_batch, "__iter__")()])
+        out_shape = [_get_attr(lhs_shape, "__getitem__")(b) for b in _get_attr(lhs_batch, "__iter__")()]
+        out_shape.extend([_get_attr(lhs_shape, "__getitem__")(i) for i in range(_get_attr(lhs_shape, "__len__")()) if i not in _get_attr(lhs_contracting + lhs_batch, "__iter__")()])
+        out_shape.extend([_get_attr(rhs_shape, "__getitem__")(i) for i in range(_get_attr(rhs_shape, "__len__")()) if i not in _get_attr(rhs_contracting + rhs_batch, "__iter__")()])
 
         return tuple(out_shape)
 
@@ -246,8 +247,8 @@ class Pdot(OpDef):
         del kwargs
         lhs = args[0]
         rhs = args[1]
-        lhs_shape = getattr(lhs, "shape", lhs if isinstance(lhs, tuple) else ())
-        rhs_shape = getattr(rhs, "shape", rhs if isinstance(rhs, tuple) else ())
+        lhs_shape = _get_attr(lhs, "shape", lhs if isinstance(lhs, tuple) else ())
+        rhs_shape = _get_attr(rhs, "shape", rhs if isinstance(rhs, tuple) else ())
         return _compute_pdot_shape(lhs_shape, rhs_shape)
 
 

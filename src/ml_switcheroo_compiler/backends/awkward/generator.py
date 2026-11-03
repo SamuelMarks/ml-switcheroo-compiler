@@ -2,9 +2,70 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.backends.awkward.eager import execute_op as _ak_execute_op
+from ml_switcheroo_compiler.backends.awkward.types import (
+    array as _ak_array,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    asarray as _ak_asarray,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    broadcast_ragged as _ak_broadcast_ragged,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    flatten as _ak_flatten,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    from_iter as _ak_from_iter,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    from_numpy as _ak_from_numpy,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    from_regular as _ak_from_regular,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    get_layout as _ak_get_layout,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    is_ragged as _ak_is_ragged,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    item as _ak_item,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    ragged_array as _ak_ragged_array,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    ragged_shape as _ak_ragged_shape,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    record_array as _ak_record_array,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    to_list as _ak_to_list,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    to_numpy as _ak_to_numpy,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    to_regular as _ak_to_regular,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    unflatten as _ak_unflatten,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    unzip as _ak_unzip,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    with_field as _ak_with_field,
+)
+from ml_switcheroo_compiler.backends.awkward.types import (
+    zeros as _ak_zeros,
+)
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_tensor
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -345,7 +406,7 @@ class AwkwardGenerator(PythonStringGenerator):
         from ml_switcheroo_compiler.core.tensor import Tensor
         from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-        generator_cls = self.__class__
+        generator_cls = type(self)
 
         def aot_awkward_runner(*w_args: EagerValue, **w_kw: EagerValue) -> EagerValue:
             """Execute graph with Awkward arrays.
@@ -357,7 +418,7 @@ class AwkwardGenerator(PythonStringGenerator):
             Returns:
                 EagerValue: Output results.
             """
-            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if _get_attr(n, "op_type", "") == "Input"]
             inputs: dict[str, EagerValue] = {}
             for i, inp_node in enumerate(input_nodes):
                 if i < len(w_args):
@@ -365,10 +426,32 @@ class AwkwardGenerator(PythonStringGenerator):
                     inputs[inp_node.id] = arg_val.data if isinstance(arg_val, Tensor) else arg_val
             inputs.update(w_kw)
             evaluated = evaluate_graph(graph, inputs=inputs, backend=generator_cls)
-            if hasattr(graph, "outputs") and graph.outputs:
+            if _has_attr(graph, "outputs") and graph.outputs:
                 if len(graph.outputs) == 1:
                     return evaluated.get(graph.outputs[0])
                 return tuple(evaluated.get(out_id) for out_id in graph.outputs)
             return as_tensor(evaluated)
 
         return aot_awkward_runner
+
+    zeros = staticmethod(_ak_zeros)
+    array = staticmethod(_ak_array)
+    asarray = staticmethod(_ak_asarray)
+    ragged_array = staticmethod(_ak_ragged_array)
+    record_array = staticmethod(_ak_record_array)
+    flatten = staticmethod(_ak_flatten)
+    unflatten = staticmethod(_ak_unflatten)
+    with_field = staticmethod(_ak_with_field)
+    unzip = staticmethod(_ak_unzip)
+    item = staticmethod(_ak_item)
+    execute_op = staticmethod(_ak_execute_op)
+    broadcast_ragged = staticmethod(_ak_broadcast_ragged)
+    is_ragged = staticmethod(_ak_is_ragged)
+    ragged_shape = staticmethod(_ak_ragged_shape)
+    to_regular = staticmethod(_ak_to_regular)
+    from_regular = staticmethod(_ak_from_regular)
+    to_numpy = staticmethod(_ak_to_numpy)
+    from_numpy = staticmethod(_ak_from_numpy)
+    to_list = staticmethod(_ak_to_list)
+    from_iter = staticmethod(_ak_from_iter)
+    get_layout = staticmethod(_ak_get_layout)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ml_switcheroo_compiler.ops.nn.rnn as rnn
+from ml_switcheroo_compiler.core.shape import _has_attr
 from ml_switcheroo_compiler.ops.registry import _OP_REGISTRY
 
 
@@ -14,4 +15,4 @@ def test_rnn_operations_exist_and_registered() -> None:
     assert "Rnn" in _OP_REGISTRY or "RnnStep" in _OP_REGISTRY or "Lstm" in _OP_REGISTRY or "Gru" in _OP_REGISTRY or "RnnCell" in _OP_REGISTRY
 
     # Check that the module exposes expected attributes
-    assert hasattr(rnn, "rnn") or hasattr(rnn, "rnn_step")
+    assert _has_attr(rnn, "rnn") or _has_attr(rnn, "rnn_step")

@@ -6,6 +6,7 @@ import typing
 from unittest.mock import MagicMock
 
 import ml_switcheroo_compiler.backends.registry as registry
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr, _obj_vars
 from tests.testing_utils import as_callable, as_module_type, as_tensor
 
 try:
@@ -164,8 +165,8 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
         generator_mod: Test parameter `generator_mod`.
         mock_b: Test parameter `mock_b`.
     """
-    if hasattr(mod, "eager_registry"):
-        for _op, func in as_tensor(getattr(mod, "eager_registry"))._registry.items():
+    if _has_attr(mod, "eager_registry"):
+        for _op, func in as_tensor(_get_attr(mod, "eager_registry"))._registry.items():
             if _op in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
                 continue
             for call_args in ((mock_b, MagicMock()), (mock_b, MagicMock(), MagicMock())):
@@ -173,7 +174,7 @@ def _exercise_eager_and_gen(mod: EagerValue, generator_mod: EagerValue, mock_b: 
                     func(*call_args)
                 except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                     _caught_err = True
-    if generator_mod is not None and hasattr(generator_mod, "generator_registry"):
+    if generator_mod is not None and _has_attr(generator_mod, "generator_registry"):
         for _op, func in generator_mod.generator_registry._registry.items():
             try:
                 func(MagicMock(), MagicMock(), MagicMock(), MagicMock())
@@ -192,7 +193,7 @@ def _exercise_types_mod(types_mod: EagerValue) -> None:
     for func_name in dir(types_mod):
         if func_name.startswith(("to_", "from_")):
             try:
-                getattr(types_mod, func_name)("float32")
+                _get_attr(types_mod, func_name)("float32")
             except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
                 _caught_err = True
 
@@ -217,7 +218,7 @@ def test_backends_brute_force() -> None:
     for mod, generator_mod, types_mod in modules:
         _exercise_eager_and_gen(mod, generator_mod, mock_b)
         _exercise_types_mod(types_mod)
-    for fn_call in (lambda: as_callable(registry.register_backend)("dummy", as_callable(MagicMock)()), registry.get_active_backend, lambda: as_tensor(getattr(registry, "set_active_backend"))("dummy")):
+    for fn_call in (lambda: as_callable(registry.register_backend)("dummy", as_callable(MagicMock)()), registry.get_active_backend, lambda: as_tensor(_get_attr(registry, "set_active_backend"))("dummy")):
         try:
             fn_call()
         except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
@@ -229,7 +230,7 @@ def test_numpy_math_misc() -> None:
     """Test function test_numpy_math_misc."""
     import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as math_misc
 
-    for name, func in list(vars(math_misc).items()):
+    for name, func in list(_obj_vars(math_misc).items()):
         if callable(func) and name.startswith("_"):
             try:
                 func(MagicMock(), MagicMock(), MagicMock())

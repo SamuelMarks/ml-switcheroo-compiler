@@ -10,6 +10,7 @@ from collections.abc import Iterable, Iterator, Sequence
 import pydantic
 
 from ml_switcheroo_compiler.backends.eager_registry import as_callable
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 
 DatasetElement = typing.Union[int, float, str, bool, list[int], list[float], list[str], tuple[int, ...], "tuple[float, ...]"]
 
@@ -101,8 +102,8 @@ class NumpyDataset:
             config (BatchConfig | None): Optional batching and shuffling configuration.
         """
         conf = config if config is not None else BatchConfig()
-        self.x = list(x) if hasattr(x, "__iter__") else [x]
-        self.y = list(getattr(y, "__iter__")()) if hasattr(y, "__iter__") else [y] if y is not None else None
+        self.x = list(x) if _has_attr(x, "__iter__") else [x]
+        self.y = list(_get_attr(y, "__iter__")()) if _has_attr(y, "__iter__") else [y] if y is not None else None
         self.batch_size = conf.batch_size
         self.shuffle = conf.shuffle
         self.seed = conf.seed
@@ -404,7 +405,7 @@ def timeseries_dataset_from_array(
         {"sequence_length": sequence_length, "sampling_rate": sampling_rate},
         (start, stop, stride),
     )
-    return typing.cast(
+    _typed_ret_1: NumpyDataset = _cast_val(
         NumpyDataset,
         as_callable(NumpyDataset)(
             x,
@@ -416,6 +417,7 @@ def timeseries_dataset_from_array(
             ),
         ),
     )
+    return _typed_ret_1
 
 
 def pack_x_y_sample_weight(
@@ -482,7 +484,7 @@ def pad_sequences(
             else:
                 padded.append(seq_list + pad_vals)
         else:
-            padded.append(seq.copy() if hasattr(seq, "copy") else seq_list)
+            padded.append(seq.copy() if _has_attr(seq, "copy") else seq_list)
     return padded
 
 

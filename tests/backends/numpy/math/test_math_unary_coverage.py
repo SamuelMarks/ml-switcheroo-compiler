@@ -9,6 +9,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_unary as unary_module
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod
 
 if typing.TYPE_CHECKING:
@@ -55,8 +56,8 @@ def _test_math_unary_ops_part_1(_state: dict[str, EagerTensorProtocol]) -> None:
     # Igamma branches
     assert unary_module._np_igamma(np, 1.0, 2.0) is not None
     assert unary_module._np_igamma(np, 1.0, x=2.0) is not None
-    getattr(_state, "update")({"no_asarray_mod": no_asarray_mod, "x": x})
-    _state.update(locals())
+    _get_attr(_state, "update")({"no_asarray_mod": no_asarray_mod, "x": x})
+    _state.update(_caller_locals())
 
 
 def _test_math_unary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -104,8 +105,8 @@ def _test_math_unary_ops_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
 
     # Isnan, Isinf, Isfinite
     mix = np.array([np.nan, np.inf, 1.0])
-    getattr(_state, "update")({"c_x": c_x, "i_x": i_x, "mix": mix, "s_x": s_x})
-    _state.update(locals())
+    _get_attr(_state, "update")({"c_x": c_x, "i_x": i_x, "mix": mix, "s_x": s_x})
+    _state.update(_caller_locals())
 
 
 def _test_math_unary_ops_part_3(_state: dict[str, EagerTensorProtocol]) -> None:

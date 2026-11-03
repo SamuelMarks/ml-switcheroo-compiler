@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_float_list, as_shape, as_tensor
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.configs import BlurConfig
 
 
@@ -19,11 +20,11 @@ def _generate_gaussian_kernel(np_mod: EagerValue, kernel_size: tuple[int, int], 
     """
     kx, ky = kernel_size
     sx, sy = sigma
-    ax = getattr(np_mod, "arange")(-kx // 2 + 1.0, kx // 2 + 1.0)
-    ay = getattr(np_mod, "arange")(-ky // 2 + 1.0, ky // 2 + 1.0)
-    xx, yy = getattr(np_mod, "meshgrid")(ax, ay)
-    kernel = getattr(np_mod, "exp")(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
-    return as_tensor(kernel / getattr(np_mod, "sum")(kernel))
+    ax = _get_attr(np_mod, "arange")(-kx // 2 + 1.0, kx // 2 + 1.0)
+    ay = _get_attr(np_mod, "arange")(-ky // 2 + 1.0, ky // 2 + 1.0)
+    xx, yy = _get_attr(np_mod, "meshgrid")(ax, ay)
+    kernel = _get_attr(np_mod, "exp")(-(xx**2 / (2.0 * sx**2) + yy**2 / (2.0 * sy**2)))
+    return as_tensor(kernel / _get_attr(np_mod, "sum")(kernel))
 
 
 def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue, mode: str) -> EagerValue:
@@ -42,19 +43,19 @@ def _apply_conv2d_batch(np_mod: EagerValue, imgs: EagerValue, kernel: EagerValue
         ValueError: If the input images tensor is not 4-dimensional.
     """
     del mode
-    if getattr(imgs, "ndim") != 4:
+    if _get_attr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    _b, _c, H, W = as_shape(getattr(imgs, "shape"))
-    kH, kW = as_shape(getattr(kernel, "shape"))
+    _b, _c, H, W = as_shape(_get_attr(imgs, "shape"))
+    kH, kW = as_shape(_get_attr(kernel, "shape"))
     pad_h = kH // 2
     pad_w = kW // 2
-    padded = getattr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
-    out = getattr(np_mod, "zeros_like")(imgs)
+    padded = _get_attr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="reflect")
+    out = _get_attr(np_mod, "zeros_like")(imgs)
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
-            expanded_kernel = getattr(np_mod, "expand_dims")(getattr(np_mod, "expand_dims")(kernel, 0), 0)
-            out[:, :, y, x] = getattr(np_mod, "sum")(region * expanded_kernel, axis=(-2, -1))
+            expanded_kernel = _get_attr(np_mod, "expand_dims")(_get_attr(np_mod, "expand_dims")(kernel, 0), 0)
+            out[:, :, y, x] = _get_attr(np_mod, "sum")(region * expanded_kernel, axis=(-2, -1))
     return as_tensor(out)
 
 
@@ -69,9 +70,9 @@ def _get_blur_config(kwargs: dict[str, EagerValue], config_obj: BlurConfig | Non
         BlurConfig: Resolved Gaussian blur configuration.
     """
     if config_obj is None:
-        ks = kwargs.get("kernel_size", (3, 3)) if hasattr(kwargs, "get") else (3, 3)
-        sg = kwargs.get("sigma", (1.0, 1.0)) if hasattr(kwargs, "get") else (1.0, 1.0)
-        df = str(kwargs.get("data_format", None)) if hasattr(kwargs, "get") else None
+        ks = kwargs.get("kernel_size", (3, 3)) if _has_attr(kwargs, "get") else (3, 3)
+        sg = kwargs.get("sigma", (1.0, 1.0)) if _has_attr(kwargs, "get") else (1.0, 1.0)
+        df = str(kwargs.get("data_format", None)) if _has_attr(kwargs, "get") else None
         ks_seq = as_shape(ks)
         ks_pair: tuple[int, int] = (ks_seq[0], ks_seq[1]) if len(ks_seq) >= 2 else (3, 3)
         sg_seq = as_float_list(sg)
@@ -120,19 +121,19 @@ def _apply_median_filter_batch(np_mod: EagerValue, imgs: EagerValue, kernel_size
     Raises:
         ValueError: If the input images tensor is not 4-dimensional.
     """
-    if getattr(imgs, "ndim") != 4:
+    if _get_attr(imgs, "ndim") != 4:
         raise ValueError("Images must be 4D")
-    B, C, H, W = as_shape(getattr(imgs, "shape"))
+    B, C, H, W = as_shape(_get_attr(imgs, "shape"))
     kH, kW = kernel_size
     pad_h = kH // 2
     pad_w = kW // 2
-    padded = getattr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant" if padding == "same" else "reflect")
-    out = getattr(np_mod, "zeros_like")(imgs)
+    padded = _get_attr(np_mod, "pad")(imgs, ((0, 0), (0, 0), (pad_h, pad_h), (pad_w, pad_w)), mode="constant" if padding == "same" else "reflect")
+    out = _get_attr(np_mod, "zeros_like")(imgs)
     for y in range(H):
         for x in range(W):
             region = padded[:, :, y : y + kH, x : x + kW]
-            flat_region = getattr(np_mod, "reshape")(region, (B, C, kH * kW))
-            out[:, :, y, x] = getattr(np_mod, "median")(flat_region, axis=-1)
+            flat_region = _get_attr(np_mod, "reshape")(region, (B, C, kH * kW))
+            out[:, :, y, x] = _get_attr(np_mod, "median")(flat_region, axis=-1)
     return as_tensor(out)
 
 

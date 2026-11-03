@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 import ml_switcheroo_compiler.ops.ragged.core as ragged_core_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_tensor
 
 if typing.TYPE_CHECKING:
@@ -50,21 +51,21 @@ def test_ragged_core_coverage() -> None:
 
     # shape_a variations:
     # 1. a is raw list/tuple
-    assert as_tensor(getattr(dot_op.infer_shape([3, 5], None), "__getitem__")(0)) == 3
+    assert as_tensor(_get_attr(dot_op.infer_shape([3, 5], None), "__getitem__")(0)) == 3
 
     # 2. len(shape_a) <= 1 (ragged_dim uses SymVar fallback)
     t_1d = DummyWithShape((7,))
     out_1d = dot_op.infer_shape(t_1d, None)
-    assert as_tensor(getattr(out_1d, "__getitem__")(0)) == 7
-    assert str(as_tensor(getattr(out_1d, "__getitem__")(1))) == "ragged_dim"
-    assert as_tensor(getattr(out_1d, "__getitem__")(2)) == 1  # len(shape_a) <= 2, len(shape_b) == 0 fallback
+    assert as_tensor(_get_attr(out_1d, "__getitem__")(0)) == 7
+    assert str(as_tensor(_get_attr(out_1d, "__getitem__")(1))) == "ragged_dim"
+    assert as_tensor(_get_attr(out_1d, "__getitem__")(2)) == 1  # len(shape_a) <= 2, len(shape_b) == 0 fallback
 
     # 3. len(shape_a) == 0 (batch fallback to 1)
     t_0d = DummyWithShape(())
     out_0d = dot_op.infer_shape(t_0d, None)
-    assert as_tensor(getattr(out_0d, "__getitem__")(0)) == 1
+    assert as_tensor(_get_attr(out_0d, "__getitem__")(0)) == 1
 
     # 4. len(shape_b) == 0, len(shape_a) > 2 (out_features falls back to shape_a[-1])
     t_3d = DummyWithShape((2, 3, 9))
     out_3d = dot_op.infer_shape(t_3d, None)
-    assert as_tensor(getattr(out_3d, "__getitem__")(2)) == 9
+    assert as_tensor(_get_attr(out_3d, "__getitem__")(2)) == 9

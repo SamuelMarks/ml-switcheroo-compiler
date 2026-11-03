@@ -10,6 +10,7 @@ import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.normalization import (
     BatchNormConfig,
@@ -69,13 +70,13 @@ def test_normalization_coverage() -> None:
             return "normed"
 
     orig_get_op = norm_frontend.get_op
-    setattr(norm_frontend, "get_op", lambda x: DummyOp)
+    _set_attr(norm_frontend, "get_op", lambda x: DummyOp)
     try:
         assert as_tensor(group_mean(t, 1)) == as_tensor("normed")
         assert as_tensor(group_variance(t, 1)) == as_tensor("normed")
         assert as_tensor(frontend_group_norm(t, 1)) == as_tensor("normed")
     finally:
-        setattr(norm_frontend, "get_op", orig_get_op)
+        _set_attr(norm_frontend, "get_op", orig_get_op)
 
     with pytest.raises(Exception, match=r".*"):
         spectral_normalization(t, t)
@@ -90,7 +91,7 @@ def test_tracing_normalization_ops() -> None:
     global_tracing_state.start_tracing("test_norm_trace")
 
     t = Tensor(np.ones((1, 2)), TensorConfig(shape=(1, 2), dtype=DType("float32"), device=Device("cpu")))
-    setattr(t, "id", "tensor_n0")
+    _set_attr(t, "id", "tensor_n0")
 
     try:
         # Test normalize_moments tracing

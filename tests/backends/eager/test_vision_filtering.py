@@ -26,6 +26,7 @@ from ml_switcheroo_compiler.backends.eager.vision_filtering import (
     iou_eager,
     nms_eager,
 )
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
@@ -58,7 +59,7 @@ def test_vision_filtering_volume_patches() -> None:
     # 5D array - normal case
     arr_5d = np.arange(32).reshape(1, 2, 2, 2, 4)
     patches = _extract_volume_patches(as_mod(DummyBackend()), arr_5d, ksizes=[1, 1, 1, 1, 1], strides=[1, 1, 1, 1, 1])
-    assert as_tensor(getattr(patches, "shape")) == (1, 2, 2, 2, 4, 1)
+    assert as_tensor(_get_attr(patches, "shape")) == (1, 2, 2, 2, 4, 1)
 
     # Invalid window size (ValueError caught)
     patches = _extract_volume_patches(as_mod(DummyBackend()), arr_5d, ksizes=[1, 1, 1, 1, 5])
@@ -118,18 +119,18 @@ def test_vision_filtering_boxes_batch() -> None:
     config = BBoxConfig(crop_size=(5, 5))
 
     out = _extract_boxes_batch(np, imgs, bxs, bxs_idx, config)
-    assert as_tensor(getattr(out, "shape")) == (1, 5, 5, 1)
+    assert as_tensor(_get_attr(out, "shape")) == (1, 5, 5, 1)
 
     # scalar imgs
     imgs_scalar = np.array(0)
     out2 = _extract_boxes_batch(np, imgs_scalar, bxs, bxs_idx, config)
-    assert as_tensor(getattr(out2, "shape")) == (1, 5, 5, 1)
+    assert as_tensor(_get_attr(out2, "shape")) == (1, 5, 5, 1)
 
     res = as_callable(_extract_boxes_tf)(as_callable(DummyBackend)(), imgs, bxs, bxs_idx, config)
-    assert as_tensor(getattr(res, "shape")) == (1, 5, 5, 1)
+    assert as_tensor(_get_attr(res, "shape")) == (1, 5, 5, 1)
 
     res2 = as_callable(extract_bounding_boxes_eager)(as_callable(DummyBackend)(), imgs, bxs, bxs_idx, config)
-    assert as_tensor(getattr(res2, "shape")) == (1, 5, 5, 1)
+    assert as_tensor(_get_attr(res2, "shape")) == (1, 5, 5, 1)
 
 
 def test_vision_filtering_xyxy_format() -> None:
@@ -157,7 +158,7 @@ def test_vision_filtering_iou() -> None:
 
     # Empty
     iou3 = _compute_iou(np, np.empty((0, 4)), np.empty((0, 4)))
-    assert as_tensor(getattr(iou3, "size")) == 0
+    assert as_tensor(_get_attr(iou3, "size")) == 0
 
 
 def test_vision_filtering_sort_and_nms() -> None:
@@ -167,7 +168,7 @@ def test_vision_filtering_sort_and_nms() -> None:
 
     b, s, i, o = _sort_boxes_by_score(np, boxes, scores, 0.85)
     assert as_callable(len)(b) == 2
-    assert as_tensor(getattr(o, "__getitem__")(0)) == 1  # 0.95 is max, which is index 1 of the filtered array (which had 0.9 and 0.95)
+    assert as_tensor(_get_attr(o, "__getitem__")(0)) == 1  # 0.95 is max, which is index 1 of the filtered array (which had 0.9 and 0.95)
 
     # empty sort
     b2, s2, i2, o2 = _sort_boxes_by_score(np, np.array([]), np.array([]), 0.5)

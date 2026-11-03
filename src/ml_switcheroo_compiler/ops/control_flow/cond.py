@@ -6,6 +6,7 @@ import typing
 from collections.abc import Callable
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 
 T = typing.TypeVar("T")
@@ -32,5 +33,7 @@ def cond(
     import ml_switcheroo_compiler.ops.control_flow as cf
 
     if config.eager_mode:
-        return typing.cast(T, getattr(cf, "cond_eager")(pred, true_fn, false_fn))
-    return typing.cast(T, getattr(cf, "cond_tracing")(pred, true_fn, false_fn))
+        _typed_ret_2: T = _cast_val("T", _get_attr(cf, "cond_eager")(pred, true_fn, false_fn))
+        return _typed_ret_2
+    _typed_ret_1: T = _cast_val("T", _get_attr(cf, "cond_tracing")(pred, true_fn, false_fn))
+    return _typed_ret_1

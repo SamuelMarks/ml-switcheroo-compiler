@@ -18,6 +18,7 @@ from ml_switcheroo_compiler.benchmarks.config_models import (
     load_benchmark_suite,
 )
 from ml_switcheroo_compiler.benchmarks.orchestrator import BenchmarkOrchestrator
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
 from tests.testing_utils import as_callable, as_tensor, install_profiler_backend_stubs
 
@@ -157,7 +158,7 @@ def test_orchestrator_internal_run(monkeypatch: EagerTensorProtocol) -> None:
 
     metrics = orchestrator._run_single(IRGraph(), "numpy", 1, 5, 2)
     assert as_callable(len)(metrics["latencies"]) == 5
-    assert as_tensor(getattr(as_tensor(getattr(metrics, "__getitem__")("latencies")), "__getitem__")(0)) == 5.0
+    assert as_tensor(_get_attr(as_tensor(_get_attr(metrics, "__getitem__")("latencies")), "__getitem__")(0)) == 5.0
 
 
 def test_orchestrator_unregistered_backend() -> None:
@@ -258,9 +259,9 @@ def test_mlx_profiler() -> None:
 
     inp = {"x": [1.0, 2.0, 3.0]}
     res = as_callable(MLXProfiler)().profile_graph(as_callable(IRGraph)(), inp, num_iters=3, warmup_iters=1)
-    assert getattr(res, "__getitem__")("latency_ms") >= 0.0
+    assert _get_attr(res, "__getitem__")("latency_ms") >= 0.0
     assert as_callable(len)(res["latencies"]) == 3
-    assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
+    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
 
 
 def test_numpy_profiler() -> None:
@@ -273,9 +274,9 @@ def test_numpy_profiler() -> None:
 
     inp = {"x": np.array([1.0, 2.0, 3.0], dtype=np.float32)}
     res = as_callable(NumpyProfiler)().profile_graph(as_callable(IRGraph)(), inp, num_iters=3, warmup_iters=1)
-    assert getattr(res, "__getitem__")("latency_ms") >= 0.0
+    assert _get_attr(res, "__getitem__")("latency_ms") >= 0.0
     assert as_callable(len)(res["latencies"]) == 3
-    assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
+    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
 
 
 def test_pytorch_profiler() -> None:
@@ -287,9 +288,9 @@ def test_pytorch_profiler() -> None:
 
     inp = {"x": [1.0, 2.0, 3.0]}
     res = as_callable(PyTorchProfiler)().profile_graph(as_callable(IRGraph)(), inp, device="cpu", num_iters=3, warmup_iters=1)
-    assert getattr(res, "__getitem__")("latency_ms") >= 0.0
+    assert _get_attr(res, "__getitem__")("latency_ms") >= 0.0
     assert as_callable(len)(res["latencies"]) == 3
-    assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
+    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
 
 
 def test_jax_profiler() -> None:
@@ -301,9 +302,9 @@ def test_jax_profiler() -> None:
 
     inp = {"x": [1.0, 2.0, 3.0]}
     res = as_callable(JAXProfiler)().profile_graph(as_callable(IRGraph)(), inp, num_iters=3, warmup_iters=1)
-    assert getattr(res, "__getitem__")("latency_ms") >= 0.0
+    assert _get_attr(res, "__getitem__")("latency_ms") >= 0.0
     assert as_callable(len)(res["latencies"]) == 3
-    assert getattr(res, "__getitem__")("peak_memory_mb") > 0.0
+    assert _get_attr(res, "__getitem__")("peak_memory_mb") > 0.0
 
 
 def test_cupy_profiler() -> None:

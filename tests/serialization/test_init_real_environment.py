@@ -6,6 +6,8 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol
 
@@ -64,17 +66,17 @@ def _test_missing_init_unmocked_part_1(_state: dict[str, EagerTensorProtocol]) -
     _load_h5_weights(h5_path)
     _load_safetensors_weights(st_path)
     _load_npz_weights(npz_path)
-    getattr(_state, "update")({"CustomObjectScope": CustomObjectScope, "KerasFileEditor": KerasFileEditor, "MaxShardSizePolicy": MaxShardSizePolicy, "PythonState": PythonState})
-    getattr(_state, "update")({"SavedModel": SavedModel, "ShardByTaskPolicy": ShardByTaskPolicy, "TrackableResource": TrackableResource, "_compile_model_metadata": _compile_model_metadata})
-    getattr(_state, "update")({"_extract_ema_state": _extract_ema_state, "_extract_model_state": _extract_model_state, "_extract_model_weights": _extract_model_weights, "_extract_non_trainable_state": _extract_non_trainable_state})
-    getattr(_state, "update")({"_extract_optimizer_state": _extract_optimizer_state, "_load_h5_weights": _load_h5_weights, "_load_npz_weights": _load_npz_weights, "_load_pickle_weights": _load_pickle_weights})
-    getattr(_state, "update")({"_load_safetensors_weights": _load_safetensors_weights, "_save_as_h5": _save_as_h5, "_save_as_safetensors": _save_as_safetensors, "_write_h5_to_zip": _write_h5_to_zip})
-    getattr(_state, "update")({"_write_keras_zip": _write_keras_zip, "custom_object_scope": custom_object_scope, "deserialize_object": deserialize_object, "dummy_zip": dummy_zip})
-    getattr(_state, "update")({"get_custom_objects": get_custom_objects, "get_registered_name": get_registered_name, "get_registered_object": get_registered_object, "h5_path": h5_path})
-    getattr(_state, "update")({"load_model": load_model, "load_variable": load_variable, "model_path": model_path, "npz_path": npz_path})
-    getattr(_state, "update")({"pk_path": pk_path, "read_fingerprint": read_fingerprint, "register_serializable": register_serializable, "run_restore_ops": run_restore_ops})
-    getattr(_state, "update")({"save_model": save_model, "serialize_object": serialize_object, "st_path": st_path})
-    _state.update(locals())
+    _get_attr(_state, "update")({"CustomObjectScope": CustomObjectScope, "KerasFileEditor": KerasFileEditor, "MaxShardSizePolicy": MaxShardSizePolicy, "PythonState": PythonState})
+    _get_attr(_state, "update")({"SavedModel": SavedModel, "ShardByTaskPolicy": ShardByTaskPolicy, "TrackableResource": TrackableResource, "_compile_model_metadata": _compile_model_metadata})
+    _get_attr(_state, "update")({"_extract_ema_state": _extract_ema_state, "_extract_model_state": _extract_model_state, "_extract_model_weights": _extract_model_weights, "_extract_non_trainable_state": _extract_non_trainable_state})
+    _get_attr(_state, "update")({"_extract_optimizer_state": _extract_optimizer_state, "_load_h5_weights": _load_h5_weights, "_load_npz_weights": _load_npz_weights, "_load_pickle_weights": _load_pickle_weights})
+    _get_attr(_state, "update")({"_load_safetensors_weights": _load_safetensors_weights, "_save_as_h5": _save_as_h5, "_save_as_safetensors": _save_as_safetensors, "_write_h5_to_zip": _write_h5_to_zip})
+    _get_attr(_state, "update")({"_write_keras_zip": _write_keras_zip, "custom_object_scope": custom_object_scope, "deserialize_object": deserialize_object, "dummy_zip": dummy_zip})
+    _get_attr(_state, "update")({"get_custom_objects": get_custom_objects, "get_registered_name": get_registered_name, "get_registered_object": get_registered_object, "h5_path": h5_path})
+    _get_attr(_state, "update")({"load_model": load_model, "load_variable": load_variable, "model_path": model_path, "npz_path": npz_path})
+    _get_attr(_state, "update")({"pk_path": pk_path, "read_fingerprint": read_fingerprint, "register_serializable": register_serializable, "run_restore_ops": run_restore_ops})
+    _get_attr(_state, "update")({"save_model": save_model, "serialize_object": serialize_object, "st_path": st_path})
+    _state.update(_caller_locals())
 
 
 def _test_missing_init_unmocked_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -91,7 +93,7 @@ def _test_missing_init_unmocked_part_2(_state: dict[str, EagerTensorProtocol]) -
     _extract_optimizer_state(None, {})
     _extract_non_trainable_state(None, {}, {})
     _extract_ema_state(None, {})
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_missing_init_unmocked_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -109,7 +111,7 @@ def _test_missing_init_unmocked_part_3(_state: dict[str, EagerTensorProtocol]) -
     with pytest.raises(AttributeError):
         _write_keras_zip(None)
     save_model(None, model_path)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_missing_init_unmocked_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -125,7 +127,7 @@ def _test_missing_init_unmocked_part_4(_state: dict[str, EagerTensorProtocol]) -
     custom_object_scope()
     CustomObjectScope()
     KerasFileEditor(model_path)
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_missing_init_unmocked_part_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -141,7 +143,7 @@ def _test_missing_init_unmocked_part_5(_state: dict[str, EagerTensorProtocol]) -
     get_registered_object()
     serialize_object(None)
     deserialize_object()
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_missing_init_unmocked_part_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -157,7 +159,7 @@ def _test_missing_init_unmocked_part_6(_state: dict[str, EagerTensorProtocol]) -
     MaxShardSizePolicy(1)
     ShardByTaskPolicy()
     SavedModel()
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def _test_missing_init_unmocked_part_7(_state: dict[str, EagerTensorProtocol]) -> None:

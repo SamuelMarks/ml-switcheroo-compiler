@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 @numpy_eager_registry.register("Average")
@@ -153,17 +154,17 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, *args: EagerValu
     y_true = args[0] if len(args) > 0 else kwargs.get("labels", None)
     y_pred = args[1] if len(args) > 1 else kwargs.get("predictions", None)
 
-    if hasattr(y_true, "data"):
-        y_true = getattr(y_true, "data")
-    if hasattr(y_pred, "data"):
-        y_pred = getattr(y_pred, "data")
+    if _has_attr(y_true, "data"):
+        y_true = _get_attr(y_true, "data")
+    if _has_attr(y_pred, "data"):
+        y_pred = _get_attr(y_pred, "data")
 
     if y_true is None or y_pred is None:
         raise ValueError("Expected labels and predictions")
 
     num_classes = kwargs.get("num_classes", None)
     if num_classes is None:
-        num_classes = max(getattr(np, "max")(y_true), getattr(np, "max")(y_pred)) + 1
+        num_classes = max(_get_attr(np, "max")(y_true), _get_attr(np, "max")(y_pred)) + 1
 
     y_true = np.asarray(y_true).flatten()
     y_pred = np.asarray(y_pred).flatten()
@@ -171,8 +172,8 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, *args: EagerValu
     y_true_t = y_true
     y_pred_t = as_tensor(y_pred)
     num_classes_t = as_tensor(num_classes)
-    bins = getattr(np, "bincount")(y_true_t * num_classes_t + y_pred_t, minlength=num_classes_t**2)
-    return as_tensor(getattr(bins, "reshape")((num_classes, num_classes)))
+    bins = _get_attr(np, "bincount")(y_true_t * num_classes_t + y_pred_t, minlength=num_classes_t**2)
+    return as_tensor(_get_attr(bins, "reshape")((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Descriptive")
@@ -193,13 +194,13 @@ def _np_descriptive(backend_module: BackendModuleProtocol, *args: EagerValue, **
     import numpy as np
 
     a = args[0] if len(args) > 0 else kwargs.get("a", None)
-    if hasattr(a, "data"):
-        a = getattr(a, "data")
+    if _has_attr(a, "data"):
+        a = _get_attr(a, "data")
 
     if a is None:
         raise ValueError("Expected 1 argument")
 
-    return {"mean": getattr(np, "mean")(a), "std": getattr(np, "std")(a), "min": getattr(np, "min")(a), "max": getattr(np, "max")(a)}
+    return {"mean": _get_attr(np, "mean")(a), "std": _get_attr(np, "std")(a), "min": _get_attr(np, "min")(a), "max": _get_attr(np, "max")(a)}
 
 
 @numpy_eager_registry.register("Distributions")
@@ -239,17 +240,17 @@ def _np_randomcategorical(backend_module: BackendModuleProtocol, *args: EagerVal
         logits = args[1]
     except IndexError:
         logits = kwargs.get("logits")
-    if hasattr(logits, "data"):
-        logits = getattr(logits, "data")
+    if _has_attr(logits, "data"):
+        logits = _get_attr(logits, "data")
     shape = kwargs.get("shape", ())
     # Compute probabilities from logits
-    p = getattr(np, "exp")(logits - getattr(np, "max")(logits, axis=-1, keepdims=True))
+    p = _get_attr(np, "exp")(logits - _get_attr(np, "max")(logits, axis=-1, keepdims=True))
     p = p / np.sum(p, axis=-1, keepdims=True)
     if not shape:
         shape = p.shape[:-1]
     # Simple choice using flat probabilities
     # Assuming logits are 1D or batched properly
-    res = getattr(np, "zeros")(shape, dtype=np.int32)
+    res = _get_attr(np, "zeros")(shape, dtype=np.int32)
     return as_tensor(res)
 
 
@@ -273,12 +274,12 @@ def _np_randompermutation(backend_module: BackendModuleProtocol, *args: EagerVal
         x = args[1]
     except IndexError:
         x = kwargs.get("x")
-    if hasattr(x, "data"):
-        x = getattr(x, "data")
+    if _has_attr(x, "data"):
+        x = _get_attr(x, "data")
 
     if isinstance(x, (int, np.integer)):
         return np.random.permutation(x)
-    return np.random.permutation(getattr(np, "copy")(x))
+    return np.random.permutation(_get_attr(np, "copy")(x))
 
 
 @numpy_eager_registry.register("RandomTruncatedNormal")
@@ -351,12 +352,12 @@ def _np_randomchoice(backend_module: BackendModuleProtocol, *args: EagerValue, *
     replace = kwargs.get("replace", True)
     p = kwargs.get("p", args[2] if len(args) > 2 else None)
 
-    if hasattr(a, "data"):
-        a = getattr(a, "data")
-    if hasattr(p, "data") and p is not None:
+    if _has_attr(a, "data"):
+        a = _get_attr(a, "data")
+    if _has_attr(p, "data") and p is not None:
         p = p.data
 
-    return as_tensor(getattr(np.random, "choice")(a, size=shape, replace=replace, p=p))
+    return as_tensor(_get_attr(np.random, "choice")(a, size=shape, replace=replace, p=p))
 
 
 @numpy_eager_registry.register("RandomShuffle")
@@ -374,9 +375,9 @@ def _np_randomshuffle(backend_module: BackendModuleProtocol, *args: EagerValue, 
     import numpy as np
 
     x = kwargs.get("x", args[1] if len(args) > 1 else args[0])
-    if hasattr(x, "data"):
-        x = getattr(x, "data")
-    x = getattr(np, "copy")(x)
+    if _has_attr(x, "data"):
+        x = _get_attr(x, "data")
+    x = _get_attr(np, "copy")(x)
     np.random.shuffle(x)
     return as_tensor(x)
 
@@ -397,6 +398,6 @@ def _np_dirichlet(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
 
     alpha = kwargs.get("alpha", args[1] if len(args) > 1 else None)
     shape = kwargs.get("shape", ())
-    if hasattr(alpha, "data"):
-        alpha = getattr(alpha, "data")
-    return as_tensor(getattr(np.random, "dirichlet")(alpha, size=shape))
+    if _has_attr(alpha, "data"):
+        alpha = _get_attr(alpha, "data")
+    return as_tensor(_get_attr(np.random, "dirichlet")(alpha, size=shape))

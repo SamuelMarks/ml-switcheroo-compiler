@@ -16,6 +16,7 @@ from ml_switcheroo_compiler.backends.sparse.generator import SparseGenerator
 from ml_switcheroo_compiler.backends.sparse.profiler import SparseProfiler, _get_process_memory_mb
 from ml_switcheroo_compiler.backends.sparse.types import COOTensor, CSCTensor, CSRTensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor
 
@@ -85,13 +86,13 @@ def test_csr_and_csc_arithmetic() -> None:
     (csr_1, csr_2) = (coo_1.to_csr(), coo_2.to_csr())
     (csc_1, csc_2) = (coo_1.to_csc(), coo_2.to_csc())
     res_csr_add = execute_op(SparseGenerator, "Add", csr_1, csr_2)
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_csr_add, "to_dense")))(), as_tensor(dense_1) + as_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_csr_add, "to_dense")))(), as_tensor(dense_1) + as_tensor(dense_2), rtol=1e-05, atol=1e-05)
     res_csr_sub = execute_op(SparseGenerator, "Sub", csr_1, csr_2)
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_csr_sub, "to_dense")))(), as_tensor(dense_1) - as_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_csr_sub, "to_dense")))(), as_tensor(dense_1) - as_tensor(dense_2), rtol=1e-05, atol=1e-05)
     res_csc_add = execute_op(SparseGenerator, "add", csc_1, csc_2)
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_csc_add, "to_dense")))(), as_tensor(dense_1) + as_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_csc_add, "to_dense")))(), as_tensor(dense_1) + as_tensor(dense_2), rtol=1e-05, atol=1e-05)
     res_csc_sub = execute_op(SparseGenerator, "sub", csc_1, csc_2)
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(res_csc_sub, "to_dense")))(), as_tensor(dense_1) - as_tensor(dense_2), rtol=1e-05, atol=1e-05)
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(res_csc_sub, "to_dense")))(), as_tensor(dense_1) - as_tensor(dense_2), rtol=1e-05, atol=1e-05)
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
     empty_csr = empty_coo.to_csr()
     empty_csc = empty_coo.to_csc()
@@ -113,9 +114,9 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     attn_dense = attn_coo.to_dense()
     for r in range(4):
         if np.any(dense_adj[r] != 0):
-            assert as_callable(np.isclose)(as_callable(np.sum)(as_tensor(getattr(attn_dense, "__getitem__")(r))), 1.0, atol=1e-05)
+            assert as_callable(np.isclose)(as_callable(np.sum)(as_tensor(_get_attr(attn_dense, "__getitem__")(r))), 1.0, atol=1e-05)
         else:
-            assert as_callable(np.isclose)(as_callable(np.sum)(as_tensor(getattr(attn_dense, "__getitem__")(r))), 0.0)
+            assert as_callable(np.isclose)(as_callable(np.sum)(as_tensor(_get_attr(attn_dense, "__getitem__")(r))), 0.0)
     empty_coo = COOTensor(indices=np.zeros((2, 0), dtype=np.int64), values=np.zeros(0, dtype=np.float32), shape=(4, 4))
     assert kernels.sparse_softmax(empty_coo).nnz == 0
     masked_softmax = kernels.sparse_softmax(coo_adj, mask=coo_adj)
@@ -132,10 +133,10 @@ def test_gnn_attention_and_adjacency_kernels() -> None:
     assert norm_adj_no_loops.shape == (4, 4)
     node_features = np.array([[1.0, 0.5], [0.2, 0.8], [1.5, 0.1], [0.7, 0.9]], dtype=np.float32)
     agg_out = kernels.gnn_spmm_attention(coo_adj, node_features)
-    assert as_tensor(getattr(agg_out, "shape")) == (4, 2)
+    assert as_tensor(_get_attr(agg_out, "shape")) == (4, 2)
     as_callable(np.testing.assert_allclose)(agg_out, as_tensor(dense_adj) @ as_tensor(node_features), rtol=1e-05, atol=1e-05)
     agg_attn_out = kernels.gnn_spmm_attention(coo_adj, node_features, attention_weights=coo_adj)
-    assert as_tensor(getattr(agg_attn_out, "shape")) == (4, 2)
+    assert as_tensor(_get_attr(agg_attn_out, "shape")) == (4, 2)
     dropped = kernels.sparse_dropout(coo_adj, drop_rate=0.5, training=True, seed=42)
     assert isinstance(dropped, COOTensor)
     assert dropped.shape == coo_adj.shape
@@ -194,11 +195,11 @@ def test_sparse_profiler_and_memory_metrics() -> None:
     metrics = profiler.profile_graph(g, inputs={"x": [[1.0, 2.0], [3.0, 4.0]]}, num_iters=3, warmup_iters=1)
     assert "latencies" in metrics
     assert as_callable(len)(metrics["latencies"]) == 3
-    assert getattr(metrics, "__getitem__")("latency_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("p50_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("p95_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("p99_ms") >= 0.0
-    assert getattr(metrics, "__getitem__")("peak_memory_mb") > 0.0
+    assert _get_attr(metrics, "__getitem__")("latency_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("p50_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("p95_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("p99_ms") >= 0.0
+    assert _get_attr(metrics, "__getitem__")("peak_memory_mb") > 0.0
     with mock.patch("sys.platform", "linux"):
         assert _get_process_memory_mb() > 0.0
     empty_graph = IRGraph()
@@ -270,11 +271,11 @@ def _test_sparse_edge_cases_and_branch_coverage_part_1(_state: dict[str, EagerTe
         kernels.csc_sub(csc_adj, CSCTensor.from_dense(np.ones((2, 2))))
     sub_csr_res = kernels.csr_sub(empty_csr, csr_adj)
     assert isinstance(sub_csr_res, CSRTensor)
-    getattr(_state, "update")({"_": _, "coo_adj": coo_adj, "csc_adj": csc_adj, "csr_adj": csr_adj})
-    getattr(_state, "update")({"dense_adj": dense_adj, "empty_coo": empty_coo, "empty_csc": empty_csc, "empty_csr": empty_csr})
-    getattr(_state, "update")({"handled_add": handled_add, "handled_coo_add": handled_coo_add, "handled_dense_matmul": handled_dense_matmul, "handled_mixed_add": handled_mixed_add})
-    getattr(_state, "update")({"handled_sub": handled_sub, "sub_csr_res": sub_csr_res})
-    _state.update(locals())
+    _get_attr(_state, "update")({"_": _, "coo_adj": coo_adj, "csc_adj": csc_adj, "csr_adj": csr_adj})
+    _get_attr(_state, "update")({"dense_adj": dense_adj, "empty_coo": empty_coo, "empty_csc": empty_csc, "empty_csr": empty_csr})
+    _get_attr(_state, "update")({"handled_add": handled_add, "handled_coo_add": handled_coo_add, "handled_dense_matmul": handled_dense_matmul, "handled_mixed_add": handled_mixed_add})
+    _get_attr(_state, "update")({"handled_sub": handled_sub, "sub_csr_res": sub_csr_res})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_edge_cases_and_branch_coverage_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -307,10 +308,10 @@ def _test_sparse_edge_cases_and_branch_coverage_part_2(_state: dict[str, EagerTe
     profiler = SparseProfiler()
     g = IRGraph()
     prepared = profiler._prepare_inputs(g, {"coo": coo_adj, "arr": np.array([1.0, 2.0]), "lst": [3.0, 4.0], "raw": 42})
-    getattr(_state, "update")({"csc_100": csc_100, "csr_100": csr_100, "drop_all": drop_all, "fake_rng": fake_rng})
-    getattr(_state, "update")({"g": g, "prepared": prepared, "profiler": profiler, "sub_csc_b_empty": sub_csc_b_empty})
-    getattr(_state, "update")({"sub_csc_res": sub_csc_res, "sub_csr_b_empty": sub_csr_b_empty})
-    _state.update(locals())
+    _get_attr(_state, "update")({"csc_100": csc_100, "csr_100": csr_100, "drop_all": drop_all, "fake_rng": fake_rng})
+    _get_attr(_state, "update")({"g": g, "prepared": prepared, "profiler": profiler, "sub_csc_b_empty": sub_csc_b_empty})
+    _get_attr(_state, "update")({"sub_csc_res": sub_csc_res, "sub_csr_b_empty": sub_csr_b_empty})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -352,9 +353,9 @@ def _test_sparse_edge_cases_and_branch_coverage_part_3(_state: dict[str, EagerTe
             raise ImportError("no sparse module")
         return as_callable(real_import)(name, *args, **kwargs)
 
-    getattr(_state, "update")({"fake_sparse_import": fake_sparse_import, "g_sum": g_sum, "metrics_fail": metrics_fail, "n_in": n_in})
-    getattr(_state, "update")({"n_out": n_out, "real_import": real_import})
-    _state.update(locals())
+    _get_attr(_state, "update")({"fake_sparse_import": fake_sparse_import, "g_sum": g_sum, "metrics_fail": metrics_fail, "n_in": n_in})
+    _get_attr(_state, "update")({"n_out": n_out, "real_import": real_import})
+    _state.update(_caller_locals())
 
 
 def _test_sparse_edge_cases_and_branch_coverage_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -373,7 +374,7 @@ def _test_sparse_edge_cases_and_branch_coverage_part_4(_state: dict[str, EagerTe
     import ml_switcheroo_compiler.backends.sparse.profiler as sp_prof_mod
 
     importlib.reload(sp_prof_mod)
-    getattr(_state, "update")({"importlib": importlib, "sp_prof_mod": sp_prof_mod})
+    _get_attr(_state, "update")({"importlib": importlib, "sp_prof_mod": sp_prof_mod})
 
 
 def test_sparse_edge_cases_and_branch_coverage() -> None:

@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops import moveaxis, permute
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -53,7 +54,7 @@ def test_moveaxis_eager() -> None:
     config.eager_mode = True
     x = _t(np.array([[1, 2, 3]]), (1, 3))
     out = moveaxis(x, 1, 0)
-    assert as_tensor(getattr(out, "shape")) == (3, 1)
+    assert as_tensor(_get_attr(out, "shape")) == (3, 1)
 
 
 def test_moveaxis_tracing() -> None:
@@ -63,10 +64,10 @@ def test_moveaxis_tracing() -> None:
     try:
         x = _t(np.array([[1, 2, 3]]), (1, 3))
         out = moveaxis(x, 1, 0)
-        assert as_tensor(getattr(out, "shape")) == (3, 1)
+        assert as_tensor(_get_attr(out, "shape")) == (3, 1)
         out2 = moveaxis(x, [1], [0])
-        assert as_tensor(getattr(out2, "shape")) == (3, 1)
+        assert as_tensor(_get_attr(out2, "shape")) == (3, 1)
         out3 = moveaxis(x, -1, -2)
-        assert as_tensor(getattr(out3, "shape")) == (3, 1)
+        assert as_tensor(_get_attr(out3, "shape")) == (3, 1)
     finally:
         global_tracing_state.stop_tracing()

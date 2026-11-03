@@ -9,7 +9,7 @@ import pydantic
 from ml_switcheroo_compiler.backends.registry import as_int, as_shape, get_active_backend
 from ml_switcheroo_compiler.core.config import config as core_config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
@@ -116,7 +116,7 @@ def _extract_seed_pair(seed: TensorOrScalar) -> tuple[int, int]:
     Returns:
         tuple[int, int]: Pair of 32-bit integer state words.
     """
-    raw = getattr(seed, "data", seed)
+    raw = _get_attr(seed, "data", seed)
     if isinstance(raw, (int, float)):
         s0 = int(raw) & 0xFFFFFFFF
         return s0, (s0 ^ 0x9E3779B9) & 0xFFFFFFFF
@@ -125,7 +125,7 @@ def _extract_seed_pair(seed: TensorOrScalar) -> tuple[int, int]:
         for ch in raw:
             h = ((h ^ ord(ch)) * 0x01000193) & 0xFFFFFFFF
         return h, (h ^ 0x9E3779B9) & 0xFFFFFFFF
-    tolist_fn = getattr(raw, "tolist", None)
+    tolist_fn = _get_attr(raw, "tolist", None)
     if callable(tolist_fn):
         raw = tolist_fn()
     if isinstance(raw, (list, tuple)):
@@ -381,7 +381,7 @@ def stateless_parameterized_truncated_normal(
             values.append(cfg.means + z * cfg.stddevs)
         backend = get_active_backend()
         arr = backend.array(values, dtype="float32")
-        reshape_fn = getattr(arr, "reshape", None)
+        reshape_fn = _get_attr(arr, "reshape", None)
         if callable(reshape_fn) and shape_tuple:
             arr = reshape_fn(shape_tuple)
         return Tensor(arr, TensorConfig(shape_tuple, "float32", "cpu"))
@@ -406,11 +406,11 @@ def index_shuffle(index: TensorOrScalar, seed: TensorOrScalar, max_index: Tensor
         TensorOrScalar: Deterministically permuted index in `[0, max_index]`.
     """
     if not core_config.eager_mode:
-        idx_shape = getattr(index, "shape", ()) if hasattr(index, "shape") else ()
+        idx_shape = _get_attr(index, "shape", ()) if _has_attr(index, "shape") else ()
         return _emit_shape_node("IndexShuffle", [index, seed, max_index], {}, idx_shape, "int32")
 
-    raw_max = getattr(max_index, "data", max_index)
-    item_fn = getattr(raw_max, "item", None)
+    raw_max = _get_attr(max_index, "data", max_index)
+    item_fn = _get_attr(raw_max, "item", None)
     if callable(item_fn):
         raw_max = item_fn()
     elif isinstance(raw_max, (list, tuple)) and raw_max:
@@ -438,15 +438,15 @@ def index_shuffle(index: TensorOrScalar, seed: TensorOrScalar, max_index: Tensor
     if isinstance(index, int):
         return _permute_scalar(index)
 
-    raw_idx = getattr(index, "data", index)
-    tolist_idx = getattr(raw_idx, "tolist", None)
+    raw_idx = _get_attr(index, "data", index)
+    tolist_idx = _get_attr(raw_idx, "tolist", None)
     raw_list = tolist_idx() if callable(tolist_idx) else raw_idx
     if not isinstance(raw_list, (list, tuple)):
         return index
     permuted = [_permute_scalar(int(x)) for x in raw_list]
     backend = get_active_backend()
     arr = backend.array(permuted, dtype="int32")
-    return Tensor(arr, TensorConfig(getattr(index, "shape", ()), getattr(index, "dtype", "int32"), getattr(index, "device", "cpu")))
+    return Tensor(arr, TensorConfig(_get_attr(index, "shape", ()), _get_attr(index, "dtype", "int32"), _get_attr(index, "device", "cpu")))
 
 
 def stateless_fold_in(seed: TensorOrScalar, data: TensorOrScalar) -> TensorOrScalar:
@@ -460,7 +460,7 @@ def stateless_fold_in(seed: TensorOrScalar, data: TensorOrScalar) -> TensorOrSca
         TensorOrScalar: New mixed stateless PRNG seed.
     """
     if not core_config.eager_mode:
-        seed_shape = getattr(seed, "shape", (2,)) if hasattr(seed, "shape") else (2,)
+        seed_shape = _get_attr(seed, "shape", (2,)) if _has_attr(seed, "shape") else (2,)
         return _emit_shape_node("StatelessFoldIn", [seed, data], {}, seed_shape, "int64")
 
     s0, s1 = _extract_seed_pair(seed)

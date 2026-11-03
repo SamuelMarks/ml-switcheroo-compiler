@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 
 from ml_switcheroo_compiler.backends.registry import as_bytes
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
@@ -67,8 +67,8 @@ def encode_base64(input: Tensor, pad: TensorOrScalar = False, name: TensorOrScal
         "EncodeBase64",
         [input],
         {"pad": pad, "name": name},
-        getattr(input, "shape", ()),
-        getattr(input, "dtype", "float32"),
+        _get_attr(input, "shape", ()),
+        _get_attr(input, "dtype", "float32"),
     )
 
 
@@ -94,8 +94,8 @@ def decode_base64(input: Tensor, name: TensorOrScalar = None) -> TensorOrScalar:
         "DecodeBase64",
         [input],
         {"name": name},
-        getattr(input, "shape", ()),
-        getattr(input, "dtype", "float32"),
+        _get_attr(input, "shape", ()),
+        _get_attr(input, "dtype", "float32"),
     )
 
 
@@ -117,13 +117,14 @@ class EncodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_1: TensorOrScalar = res
+        return _typed_ret_1
 
 
 @register_op("DecodeBase64")
@@ -144,10 +145,11 @@ class DecodeBase64(OpDef):
         """
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
-        shapes = [getattr(a, "shape", ()) for a in args if hasattr(a, "shape")]
+        shapes = [_get_attr(a, "shape", ()) for a in args if _has_attr(a, "shape")]
         if not shapes:
             return ()
         res = shapes[0]
         for s in shapes[1:]:
             res = broadcast_shapes(res, s)
-        return res
+        _typed_ret_2: TensorOrScalar = res
+        return _typed_ret_2

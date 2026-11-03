@@ -8,6 +8,7 @@ import typing
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from ml_switcheroo_compiler.distributed.webrtc_signaling import SignalingServer, _answers, _candidates, _offers
 from tests.testing_utils import as_callable, as_tensor
 
@@ -45,8 +46,8 @@ def _test_webrtc_signaling_sub_1(_state: dict[str, EagerTensorProtocol]) -> None
     data = json.dumps({"peer_id": "p1", "candidate": "cand1"}).encode("utf-8")
     req = as_tensor(Request(f"{base_url}/candidate", data=data, method="POST"))
     req.add_header("Content-Length", str(len(data)))
-    getattr(_state, "update")({"data": data, "req": req, "resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"data": data, "req": req, "resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_webrtc_signaling_sub_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -82,8 +83,8 @@ def _test_webrtc_signaling_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
 
     # Test GET /candidate
     req = as_tensor(Request(f"{base_url}/candidate?peer_id=p1"))
-    getattr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_webrtc_signaling_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -120,8 +121,8 @@ def _test_webrtc_signaling_sub_3(_state: dict[str, EagerTensorProtocol]) -> None
         as_callable(urlopen)(req)
     except HTTPError as e:
         assert e.code == 404
-    getattr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"data": data, "req": req, "res": res, "resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_webrtc_signaling_sub_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -157,8 +158,8 @@ def _test_webrtc_signaling_sub_4(_state: dict[str, EagerTensorProtocol]) -> None
 
     # Test invalid JSON POST
     req = Request(f"{base_url}/offer", data=b"not-json", method="POST")
-    getattr(_state, "update")({"req": req, "res": res, "resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"req": req, "res": res, "resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_webrtc_signaling_sub_5(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -191,8 +192,8 @@ def _test_webrtc_signaling_sub_5(_state: dict[str, EagerTensorProtocol]) -> None
 
     # Test /ws upgrade path
     req = as_tensor(Request(f"{base_url}/ws"))
-    getattr(_state, "update")({"req": req, "resp": resp})
-    _state.update(locals())
+    _get_attr(_state, "update")({"req": req, "resp": resp})
+    _state.update(_caller_locals())
 
 
 def _test_webrtc_signaling_sub_6(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -211,7 +212,7 @@ def _test_webrtc_signaling_sub_6(_state: dict[str, EagerTensorProtocol]) -> None
     # Test URLs
     assert server.get_url() == base_url
     assert "ws://" in server.get_websocket_url()
-    _state.update(locals())
+    _state.update(_caller_locals())
 
 
 def test_webrtc_signaling() -> None:
@@ -229,8 +230,8 @@ def test_webrtc_signaling() -> None:
 
     try:
         # Test OPTIONS
-        _state: dict[str, EagerTensorProtocol] = dict(locals())
-        getattr(_state, "update")({"base_url": base_url, "server": server})
+        _state: dict[str, EagerTensorProtocol] = dict(_caller_locals())
+        _get_attr(_state, "update")({"base_url": base_url, "server": server})
         for _sub_fn in (
             _test_webrtc_signaling_sub_1,
             _test_webrtc_signaling_sub_2,

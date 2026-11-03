@@ -12,13 +12,14 @@ import pytest
 
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import DType, Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.nn.conv_nd import conv, conv_transpose, depthwise_conv, separable_conv
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-GenericConvConfig = as_tensor(getattr(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_nd"), "GenericConvConfig"))
+GenericConvConfig = as_tensor(_get_attr(importlib.import_module("ml_switcheroo_compiler.ops.nn.conv_nd"), "GenericConvConfig"))
 
 
 def test_conv_nd_extra() -> None:
@@ -135,7 +136,7 @@ def test_conv_nd_coverage() -> None:
 
         import ml_switcheroo_compiler.ops.nn.conv_nd as conv_nd_mod
 
-        setattr(conv_nd_mod, "_emit_linalg_node", dummy_emit)
+        _set_attr(conv_nd_mod, "_emit_linalg_node", dummy_emit)
         assert conv_transpose(t_1d, w_1d) == "emitted"
         config.eager_mode = True
         global_tracing_state.is_tracing = False

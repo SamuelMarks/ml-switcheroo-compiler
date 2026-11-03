@@ -83,6 +83,13 @@ class _MemoryInfoBackendProtocol(typing.Protocol):
         ...
 
 
+@typing.runtime_checkable
+class _NamedBackendObjectProtocol(typing.Protocol):
+    """Protocol for backend classes or mocks exposing a `__name__` attribute."""
+
+    __name__: str
+
+
 def _backend_name(backend: StructuralOperandProtocol | TensorOrScalar) -> str:
     """Resolve display name of a backend class or instance.
 
@@ -92,9 +99,9 @@ def _backend_name(backend: StructuralOperandProtocol | TensorOrScalar) -> str:
     Returns:
         str: Backend name.
     """
-    backend_vars = vars(backend)
-    raw_name = backend_vars.get("__name__")
-    return str(raw_name) if isinstance(raw_name, str) else type(backend).__name__
+    if isinstance(backend, _NamedBackendObjectProtocol) and isinstance(backend.__name__, str):
+        return str(backend.__name__)
+    return type(backend).__name__
 
 
 class DeviceType(Enum):

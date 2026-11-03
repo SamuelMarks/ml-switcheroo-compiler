@@ -6,7 +6,7 @@ import typing
 
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_tensor, as_tensor_pair
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
@@ -32,7 +32,7 @@ class Det(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         return shape[:-2] if len(shape) >= 2 else ()
 
 
@@ -53,7 +53,7 @@ class Slogdet(OpDef):
         inp = args[0] if args else kwargs.get("input")
         if inp is None:
             return ()
-        shape = tuple(int(d) for d in getattr(inp, "shape", getattr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
+        shape = tuple(int(d) for d in _get_attr(inp, "shape", _get_attr(inp, "shape_metadata", inp if isinstance(inp, (list, tuple)) else ())))
         batch_shape = shape[:-2] if len(shape) >= 2 else ()
         return (batch_shape, batch_shape)
 
@@ -75,9 +75,9 @@ def det(input: Tensor) -> TensorOrScalar:
         arr = backend.array(data)
         return Tensor(
             arr,
-            TensorConfig(tuple(getattr(arr, "shape")), getattr(input, "dtype", None), getattr(input, "device", None)),
+            TensorConfig(tuple(_get_attr(arr, "shape")), _get_attr(input, "dtype", None), _get_attr(input, "device", None)),
         )
-    return _emit_linalg_node("Det", [input], {}, [()], [getattr(input, "dtype", None)])
+    return _emit_linalg_node("Det", [input], {}, [()], [_get_attr(input, "dtype", None)])
 
 
 def slogdet(input: Tensor) -> TensorOrScalar:
@@ -99,11 +99,11 @@ def slogdet(input: Tensor) -> TensorOrScalar:
         return (
             Tensor(
                 sign_arr,
-                TensorConfig(sign_arr.shape, getattr(input, "dtype", None), getattr(input, "device", None)),
+                TensorConfig(sign_arr.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None)),
             ),
             Tensor(
                 logdet_arr,
-                TensorConfig(logdet_arr.shape, getattr(input, "dtype", None), getattr(input, "device", None)),
+                TensorConfig(logdet_arr.shape, _get_attr(input, "dtype", None), _get_attr(input, "device", None)),
             ),
         )
-    return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [getattr(input, "dtype", None)] * 2)
+    return _emit_linalg_node("Slogdet", [input], {}, [(), ()], [_get_attr(input, "dtype", None)] * 2)

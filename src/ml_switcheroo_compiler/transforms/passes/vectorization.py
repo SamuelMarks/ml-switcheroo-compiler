@@ -8,7 +8,7 @@ import os
 import yaml
 
 from ml_switcheroo_compiler.backends.registry import as_int, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, _obj_vars
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph, clone_logical_node
 
 
@@ -129,7 +129,7 @@ def _init_input_batch_axes(
             axis = in_axes
 
         batch_axis_map[inp_id] = axis
-        orig_shape: tuple[int, ...] = (getattr(graph.nodes[inp_id], "shape_metadata", ()) or ()) if inp_id in graph.nodes else ()
+        orig_shape: tuple[int, ...] = (_get_attr(graph.nodes[inp_id], "shape_metadata", ()) or ()) if inp_id in graph.nodes else ()
         if axis is not None:
             new_shape = list(orig_shape)
             if len(new_shape) <= axis:
@@ -165,7 +165,7 @@ def _apply_batch_axis_policy(
         if isinstance(new_attrs.get("dim"), int) and int(as_int(new_attrs["dim"])) >= 0:
             new_attrs["dim"] = int(as_int(new_attrs["dim"])) + 1
         if isinstance(new_attrs.get("axes"), (list, tuple)):
-            new_attrs["axes"] = tuple(a + 1 if isinstance(a, int) and a >= 0 else a for a in getattr(new_attrs["axes"], "__iter__")())
+            new_attrs["axes"] = tuple(a + 1 if isinstance(a, int) and a >= 0 else a for a in _get_attr(new_attrs["axes"], "__iter__")())
     elif policy == "shift_permutation":
         perm = list(as_shape(new_attrs.get("permutation", ())))
         new_attrs["permutation"] = tuple([0] + [p + 1 for p in perm])
@@ -200,7 +200,7 @@ def _vectorize_single_node(
         batch_size (int): Concrete batch dimension size.
     """
     if orig_node.op_type == "Input":
-        v_node = IRNode(**orig_node.__dict__)
+        v_node = IRNode(**_obj_vars(orig_node))
         if node_id in shape_map:
             v_node.shape_metadata = shape_map[node_id]
         vectorized.nodes[node_id] = v_node
@@ -209,8 +209,8 @@ def _vectorize_single_node(
     input_axes = [batch_axis_map.get(inp, None) for inp in orig_node.inputs]
     if orig_node.op_type == "Constant" or not any(ax is not None for ax in input_axes):
         batch_axis_map[node_id] = None
-        shape_map[node_id] = getattr(orig_node, "shape_metadata", ()) or ()
-        vectorized.nodes[node_id] = IRNode(**orig_node.__dict__)
+        shape_map[node_id] = _get_attr(orig_node, "shape_metadata", ()) or ()
+        vectorized.nodes[node_id] = IRNode(**_obj_vars(orig_node))
         return
 
     aligned_inputs: list[str] = []
@@ -229,7 +229,7 @@ def _vectorize_single_node(
         new_attrs,
         batch_size,
     )
-    orig_shape = getattr(orig_node, "shape_metadata", ()) or ()
+    orig_shape = _get_attr(orig_node, "shape_metadata", ()) or ()
     out_shape = (batch_size, *orig_shape) if orig_shape else (batch_size,)
 
     cloned_node = clone_logical_node(
@@ -240,7 +240,7 @@ def _vectorize_single_node(
         attributes=new_attrs,
         shape_metadata=out_shape,
     )
-    vectorized.nodes[node_id] = IRNode(**cloned_node.__dict__)
+    vectorized.nodes[node_id] = IRNode(**_obj_vars(cloned_node))
     batch_axis_map[node_id] = 0
     shape_map[node_id] = out_shape
 
@@ -298,7 +298,7 @@ def _infer_vmap_batch_size(graph: IRGraph, node: IRNode, in_axes: int | tuple[in
         int: Concrete batch dimension size (defaults to 1).
     """
     first_inp = graph.nodes.get(node.inputs[0]) if node.inputs else None
-    first_shape = getattr(first_inp, "shape_metadata", None) if first_inp else None
+    first_shape = _get_attr(first_inp, "shape_metadata", None) if first_inp else None
     if not first_shape:
         return 1
     axis = in_axes if isinstance(in_axes, int) else in_axes[0]
@@ -316,13 +316,13 @@ def _ensure_ir_graph(body_graph: IRGraph | TensorOrScalar) -> IRGraph:
     """
     if isinstance(body_graph, IRGraph):
         return body_graph
-    b_graph = IRGraph(name=getattr(body_graph, "id", "body"))
-    b_graph.inputs = list(getattr(body_graph, "inputs", []))
-    b_graph.outputs = list(getattr(body_graph, "outputs", []))
-    raw_nodes = getattr(body_graph, "nodes", [])
+    b_graph = IRGraph(name=_get_attr(body_graph, "id", "body"))
+    b_graph.inputs = list(_get_attr(body_graph, "inputs", []))
+    b_graph.outputs = list(_get_attr(body_graph, "outputs", []))
+    raw_nodes = _get_attr(body_graph, "nodes", [])
     b_nodes = raw_nodes if isinstance(raw_nodes, list) else list(raw_nodes.values())
     for n in b_nodes:
-        b_graph.nodes[n.id] = IRNode(**n.__dict__) if type(n) is not IRNode else n
+        b_graph.nodes[n.id] = IRNode(**_obj_vars(n)) if type(n) is not IRNode else n
     return b_graph
 
 
@@ -344,7 +344,7 @@ def _inline_vmap_node(
         bool: True if the Vmap node had a valid body and was inlined, False otherwise.
     """
     body_graph = node.attributes.get("body")
-    if not body_graph or not hasattr(body_graph, "nodes"):
+    if not body_graph or not _has_attr(body_graph, "nodes"):
         return False
 
     raw_in_axes = node.attributes.get("in_axes", 0)
@@ -362,11 +362,11 @@ def _inline_vmap_node(
         id_map[b_id] = new_b_id
         new_inputs = [id_map.get(inp, inp) for inp in b_node.inputs]
         cloned = clone_logical_node(b_node, id=new_b_id, inputs=new_inputs)
-        new_nodes[new_b_id] = IRNode(**cloned.__dict__)
+        new_nodes[new_b_id] = IRNode(**_obj_vars(cloned))
 
     out_mapped = [id_map.get(o, o) for o in v_body.outputs]
     identity_node = clone_logical_node(node, id=node_id, op_type="Identity", inputs=out_mapped[:1], attributes={})
-    new_nodes[node_id] = IRNode(**identity_node.__dict__)
+    new_nodes[node_id] = IRNode(**_obj_vars(identity_node))
     return True
 
 
@@ -383,12 +383,12 @@ def vectorization_pass(graph: IRGraph) -> IRGraph:
     has_vmap = False
 
     for node_id, node in graph.nodes.items():
-        if getattr(node, "op_type", "") == "Vmap":
+        if _get_attr(node, "op_type", "") == "Vmap":
             has_vmap = True
             if _inline_vmap_node(graph, node_id, node, new_nodes):
                 continue
 
-        new_nodes[node_id] = node if type(node) is IRNode else IRNode(**node.__dict__)
+        new_nodes[node_id] = node if type(node) is IRNode else IRNode(**_obj_vars(node))
 
     if has_vmap:
         graph.nodes.clear()

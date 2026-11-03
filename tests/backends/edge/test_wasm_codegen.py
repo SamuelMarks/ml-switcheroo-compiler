@@ -7,6 +7,7 @@ import typing
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr, _set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable
 
@@ -243,10 +244,10 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_1(_state: dict[str, E
     gen_none = WasmCodeGenerator(g_none)
     src_none = gen_none.generate()
     assert "Loop annotations:" not in src_none
-    getattr(_state, "update")({"UnimplementedMathError": UnimplementedMathError, "g_loop": g_loop, "g_none": g_none, "gen_loop": gen_loop})
-    getattr(_state, "update")({"gen_none": gen_none, "node_loop_no_inputs": node_loop_no_inputs, "node_loop_none": node_loop_none, "patch": patch})
-    getattr(_state, "update")({"pytest": pytest, "src_loop": src_loop, "src_none": src_none})
-    _state.update(locals())
+    _get_attr(_state, "update")({"UnimplementedMathError": UnimplementedMathError, "g_loop": g_loop, "g_none": g_none, "gen_loop": gen_loop})
+    _get_attr(_state, "update")({"gen_none": gen_none, "node_loop_no_inputs": node_loop_no_inputs, "node_loop_none": node_loop_none, "patch": patch})
+    _get_attr(_state, "update")({"pytest": pytest, "src_loop": src_loop, "src_none": src_none})
+    _state.update(_caller_locals())
 
 
 def _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -278,9 +279,9 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_2(_state: dict[str, E
         gen_no_body = WasmCodeGenerator(g_no_body)
         with pytest.raises(UnimplementedMathError, match="MISSING BODY FOR: Acos"):
             gen_no_body.generate()
-    getattr(_state, "update")({"g_missing_yaml": g_missing_yaml, "g_no_body": g_no_body, "gen_missing": gen_missing, "gen_no_body": gen_no_body})
-    getattr(_state, "update")({"in_0": in_0, "node_alibi": node_alibi, "node_unmapped": node_unmapped})
-    _state.update(locals())
+    _get_attr(_state, "update")({"g_missing_yaml": g_missing_yaml, "g_no_body": g_no_body, "gen_missing": gen_missing, "gen_no_body": gen_no_body})
+    _get_attr(_state, "update")({"in_0": in_0, "node_alibi": node_alibi, "node_unmapped": node_unmapped})
+    _state.update(_caller_locals())
 
 
 def _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -291,7 +292,7 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state: dict[str, E
     """
     patch = _state["patch"]
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.config_models.WasmIntrinsicsConfig.model_dump") as mock_dump:
-        setattr(
+        _set_attr(
             mock_dump,
             "return_value",
             {
@@ -315,8 +316,8 @@ def _test_wasm_edge_branches_intrinsics_and_templates_part_3(_state: dict[str, E
         gen_custom = WasmCodeGenerator(g_custom)
         src_custom = gen_custom.generate()
         assert "_scalar_custom_simd_op" in src_custom
-    getattr(_state, "update")({"g_custom": g_custom, "gen_custom": gen_custom, "in_a": in_a, "in_b": in_b})
-    getattr(_state, "update")({"mock_dump": mock_dump, "node_custom": node_custom, "src_custom": src_custom})
+    _get_attr(_state, "update")({"g_custom": g_custom, "gen_custom": gen_custom, "in_a": in_a, "in_b": in_b})
+    _get_attr(_state, "update")({"mock_dump": mock_dump, "node_custom": node_custom, "src_custom": src_custom})
 
 
 def test_wasm_edge_branches_intrinsics_and_templates() -> None:

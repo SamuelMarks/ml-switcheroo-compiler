@@ -6,6 +6,7 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
+from ml_switcheroo_compiler.core.shape import _obj_set_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.rematerialization import _estimate_compute, _estimate_memory, _load_rules, rematerialization_pass
 from tests.testing_utils import as_callable
@@ -47,7 +48,7 @@ def test_rematerialization_pass() -> None:
 
     # Also coverage for the internal functions:
     assert _estimate_memory(n1) == 4.0
-    object.__setattr__(n1, "shape_metadata", 5)
+    _obj_set_attr(n1, "shape_metadata", 5)
     assert _estimate_memory(n1) == 4.0
     assert _estimate_compute(n1, rules) == 1.0
     n3.op_type = "Conv2D"

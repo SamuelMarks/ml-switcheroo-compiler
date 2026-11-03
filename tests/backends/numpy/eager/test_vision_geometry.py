@@ -7,6 +7,7 @@ import typing
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.vision_geometry import _np_affine_grid, _np_elastic_transform
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -28,4 +29,4 @@ def test_affine_grid() -> None:
     theta = np.ones((1, 6))
     size_4d = (1, 3, 10, 10)
     res_4d = _np_affine_grid(as_mod(None), theta, size_4d)
-    assert as_tensor(getattr(res_4d, "shape")) == (1, 10, 10, 2)
+    assert as_tensor(_get_attr(res_4d, "shape")) == (1, 10, 10, 2)

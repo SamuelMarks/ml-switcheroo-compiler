@@ -8,6 +8,7 @@ import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager import math_scatter as scatter_mod
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -28,7 +29,7 @@ def test_math_scatter_ops() -> None:
     sc_up = scatter_mod._np_tensor_scatter_update(np, target, indices, updates)
     assert (
         as_tensor(
-            getattr(sc_up, "__getitem__")(
+            _get_attr(sc_up, "__getitem__")(
                 (
                     0,
                     0,
@@ -37,7 +38,7 @@ def test_math_scatter_ops() -> None:
         )
         == 5.0
         and as_tensor(
-            getattr(sc_up, "__getitem__")(
+            _get_attr(sc_up, "__getitem__")(
                 (
                     1,
                     1,
@@ -52,7 +53,7 @@ def test_math_scatter_ops() -> None:
     sc_add = scatter_mod._np_tensor_scatter_add(np, target, indices, updates)
     assert (
         as_tensor(
-            getattr(sc_add, "__getitem__")(
+            _get_attr(sc_add, "__getitem__")(
                 (
                     0,
                     0,
@@ -61,7 +62,7 @@ def test_math_scatter_ops() -> None:
         )
         == 5.0
         and as_tensor(
-            getattr(sc_add, "__getitem__")(
+            _get_attr(sc_add, "__getitem__")(
                 (
                     1,
                     1,
@@ -76,7 +77,7 @@ def test_math_scatter_ops() -> None:
     sc_max = scatter_mod._np_tensor_scatter_max(np, target, indices, updates)
     assert (
         as_tensor(
-            getattr(sc_max, "__getitem__")(
+            _get_attr(sc_max, "__getitem__")(
                 (
                     0,
                     0,
@@ -85,7 +86,7 @@ def test_math_scatter_ops() -> None:
         )
         == 5.0
         and as_tensor(
-            getattr(sc_max, "__getitem__")(
+            _get_attr(sc_max, "__getitem__")(
                 (
                     1,
                     1,
@@ -101,7 +102,7 @@ def test_math_scatter_ops() -> None:
     sc_min = scatter_mod._np_tensor_scatter_min(np, base, indices, updates)
     assert (
         as_tensor(
-            getattr(sc_min, "__getitem__")(
+            _get_attr(sc_min, "__getitem__")(
                 (
                     0,
                     0,
@@ -110,7 +111,7 @@ def test_math_scatter_ops() -> None:
         )
         == 5.0
         and as_tensor(
-            getattr(sc_min, "__getitem__")(
+            _get_attr(sc_min, "__getitem__")(
                 (
                     1,
                     1,
@@ -125,7 +126,7 @@ def test_math_scatter_ops() -> None:
     sc_nd = scatter_mod._np_scatter_nd(np, indices, updates, (3, 3))
     assert (
         as_tensor(
-            getattr(sc_nd, "__getitem__")(
+            _get_attr(sc_nd, "__getitem__")(
                 (
                     0,
                     0,
@@ -134,7 +135,7 @@ def test_math_scatter_ops() -> None:
         )
         == 5.0
         and as_tensor(
-            getattr(sc_nd, "__getitem__")(
+            _get_attr(sc_nd, "__getitem__")(
                 (
                     1,
                     1,
@@ -150,7 +151,7 @@ def test_math_scatter_ops() -> None:
     idx = np.array([0, 1])
     src = np.array([1.0, 2.0])
     sc_res = scatter_mod._np_scatter(np, inp, idx, src, dim=0)
-    assert as_tensor(getattr(sc_res, "__getitem__")(0)) == 1.0 and as_tensor(getattr(sc_res, "__getitem__")(1)) == 2.0
+    assert as_tensor(_get_attr(sc_res, "__getitem__")(0)) == 1.0 and as_tensor(_get_attr(sc_res, "__getitem__")(1)) == 2.0
     assert as_callable(numpy_eager_registry.get)("Scatter")(np, inp, idx, src) is not None
 
     # _band_part
@@ -178,7 +179,7 @@ def test_math_scatter_ops() -> None:
     up_slice = scatter_mod._np_dynamic_update_slice(np, params, np.array([[99, 88]]), [0, 0])
     assert (
         as_tensor(
-            getattr(up_slice, "__getitem__")(
+            _get_attr(up_slice, "__getitem__")(
                 (
                     0,
                     0,
@@ -187,7 +188,7 @@ def test_math_scatter_ops() -> None:
         )
         == 99
         and as_tensor(
-            getattr(up_slice, "__getitem__")(
+            _get_attr(up_slice, "__getitem__")(
                 (
                     0,
                     1,

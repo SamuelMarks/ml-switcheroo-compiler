@@ -26,6 +26,7 @@ from ml_switcheroo_compiler.backends.hardware_config_models import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.backends.visitor import CodeGeneratorVisitor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _cast_val, _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
 cupy: ModuleType | None = None
@@ -42,7 +43,7 @@ def _calculate_node_bytes(node: IRNode) -> tuple[int, int]:
     Returns:
         tuple[int, int]: (num_elements, total_bytes).
     """
-    shape = getattr(node, "shape_metadata", None)
+    shape = _get_attr(node, "shape_metadata", None)
     if shape:
         num_elements = 1
         for d in shape:
@@ -50,7 +51,7 @@ def _calculate_node_bytes(node: IRNode) -> tuple[int, int]:
     else:
         num_elements = 1024
     bytes_per_elem = 4
-    dtype = node.attributes.get("dtype", "float32") if hasattr(node, "attributes") else "float32"
+    dtype = node.attributes.get("dtype", "float32") if _has_attr(node, "attributes") else "float32"
     if dtype in ("float64", "int64", "double"):
         bytes_per_elem = 8
     elif dtype in ("float16", "int16", "bfloat16"):
@@ -89,12 +90,12 @@ def _prepare_rocm_input_buffers(graph: IRGraph, args: tuple[EagerValue, ...]) ->
     input_buffers: dict[str, bytes] = {}
     for idx, arg in enumerate(args):
         input_name = graph.inputs[idx] if idx < len(graph.inputs) else f"in_{idx}"
-        if hasattr(arg, "tobytes"):
-            input_buffers[input_name] = getattr(arg, "tobytes")()
+        if _has_attr(arg, "tobytes"):
+            input_buffers[input_name] = _get_attr(arg, "tobytes")()
         elif isinstance(arg, (bytes, bytearray, memoryview)):
             input_buffers[input_name] = bytes(arg)
-        elif hasattr(arg, "data") and hasattr(getattr(arg, "data"), "tobytes"):
-            input_buffers[input_name] = getattr(arg, "data").tobytes()
+        elif _has_attr(arg, "data") and _has_attr(_get_attr(arg, "data"), "tobytes"):
+            input_buffers[input_name] = _get_attr(arg, "data").tobytes()
         else:
             input_buffers[input_name] = as_bytes(arg)
     return input_buffers
@@ -112,7 +113,7 @@ def _evaluate_rocm_fallback(graph: IRGraph, args: tuple[EagerValue, ...]) -> Eag
     """
     from ml_switcheroo_compiler.interpreter.evaluator import evaluate_graph
 
-    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: getattr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
+    feed_dict: dict[str, EagerValue] = {graph.inputs[i]: _get_attr(arg, "data", arg) for i, arg in enumerate(args) if i < len(graph.inputs)}
     res_dict = evaluate_graph(graph, feed_dict)
     if len(graph.outputs) == 1:
         return res_dict.get(graph.outputs[0])
@@ -199,7 +200,7 @@ class RocmCodeGenerator(BaseGenerator):
         Returns:
             Optional[Union[HardwareTemplateConfig, dict[str, Union[str, int, float, list[int], None]], list[str], str]]: Existing or synthesized template.
         """
-        op_type = getattr(node, "op_type", "")
+        op_type = _get_attr(node, "op_type", "")
         if op_type.lower() in ("input", "output", "fusedelementwise"):
             return None
         if "unsupported" in op_type.lower():
@@ -207,8 +208,8 @@ class RocmCodeGenerator(BaseGenerator):
         tpl = self.config.templates.get(op_type.lower())
         if not tpl:
             clean_op = op_type.lower().replace("-", "_").replace(".", "_")
-            inps = getattr(node, "inputs", []) or []
-            scalar_expr = getattr(node, "attributes", {}).get("scalar_expr")
+            inps = _get_attr(node, "inputs", []) or []
+            scalar_expr = _get_attr(node, "attributes", {}).get("scalar_expr")
             body = _synthesize_rocm_kernel(clean_op, inps, scalar_expr)
             tpl = HardwareTemplateConfig(
                 body=body,
@@ -237,7 +238,7 @@ class RocmCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             hip (list[str]): Output ROCm HIP source lines.
         """
-        for inp in getattr(node, "inputs", []):
+        for inp in _get_attr(node, "inputs", []):
             if last_consumer.get(inp) == node.id and inp not in outputs_set and inp not in inputs_set:
                 buf_to_free = node_buffers.get(inp)
                 if buf_to_free:
@@ -263,7 +264,7 @@ class RocmCodeGenerator(BaseGenerator):
         Returns:
             str: Output argument name or comma-separated names.
         """
-        raw_outs = getattr(node, "attributes", {}).get("outputs") or (node.outputs if hasattr(node, "outputs") and len(node.outputs) > 1 else None)
+        raw_outs = _get_attr(node, "attributes", {}).get("outputs") or (node.outputs if _has_attr(node, "outputs") and len(node.outputs) > 1 else None)
         if raw_outs and isinstance(raw_outs, (list, tuple)) and len(raw_outs) > 1:
             out_names: list[str] = []
             for out_idx, out_id in enumerate(raw_outs):
@@ -302,7 +303,7 @@ class RocmCodeGenerator(BaseGenerator):
             inputs_set (set[str]): Graph input node names.
             hip (list[str]): Output ROCm HIP source lines.
         """
-        op_type = getattr(node, "op_type", "")
+        op_type = _get_attr(node, "op_type", "")
         if op_type.lower() == "fusedelementwise":
             out_name = f"d_out_{node_idx}"
             node_buffers[node.id] = out_name
@@ -323,13 +324,13 @@ class RocmCodeGenerator(BaseGenerator):
             return
         num_elements, bytes_alloc = _calculate_node_bytes(node)
         out_name = self._allocate_node_outputs(node, node_idx, node_buffers, bytes_alloc, hip)
-        wg = as_int_list(getattr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
+        wg = as_int_list(_get_attr(tpl, "get")("workgroup_size", [1, 1, 1]) or [1, 1, 1])
         hip.append(f"    dim3 block_{node_idx}({wg[0]}, {wg[1]}, {wg[2]});")
 
         (grid_x, grid_y, grid_z), launch_args = resolve_hardware_launch_grid_and_args(node, tpl, node_buffers, out_name, num_elements, node_idx, self.graph)
         hip.append(f"    dim3 grid_{node_idx}({grid_x}, {grid_y}, {grid_z});")
 
-        kernel_fn = _extract_kernel_name(getattr(tpl, "get")("body", ""), op_type.lower())
+        kernel_fn = _extract_kernel_name(_get_attr(tpl, "get")("body", ""), op_type.lower())
         hip.append(f"    hipLaunchKernelGGL({kernel_fn}, grid_{node_idx}, block_{node_idx}, 0, 0, {', '.join(launch_args)});")
         hip.append("    HIP_CHECK(hipGetLastError());")
 
@@ -370,8 +371,8 @@ class RocmCodeGenerator(BaseGenerator):
             "",
         ]
 
-        for node_idx, node in enumerate(getattr(self.graph, "nodes", {}).values()):
-            op_type = getattr(node, "op_type", "")
+        for node_idx, node in enumerate(_get_attr(self.graph, "nodes", {}).values()):
+            op_type = _get_attr(node, "op_type", "")
             if op_type.lower() == "fusedelementwise":
                 scalar_expr = str(node.attributes.get("scalar_expr", "in0"))
                 in_params = ", ".join([f"const float* in_{k}" for k in range(len(node.inputs))])
@@ -387,19 +388,19 @@ class RocmCodeGenerator(BaseGenerator):
             elif op_type.lower() not in ("input", "output"):
                 tpl = self._ensure_template(node, node_idx)
                 if tpl:
-                    hip.append(getattr(tpl, "get")("body", ""))
+                    hip.append(_get_attr(tpl, "get")("body", ""))
 
         hip.append("void evaluate_rocm(const std::vector<float*>& inputs, std::vector<float*>& outputs) {")
         hip.append("    // 1. Dynamic Memory Allocation (Host to Device)")
 
-        node_buffers: dict[str, str] = {inp_name: f"inputs[{i}]" for i, inp_name in enumerate(getattr(self.graph, "inputs", []))}
+        node_buffers: dict[str, str] = {inp_name: f"inputs[{i}]" for i, inp_name in enumerate(_get_attr(self.graph, "inputs", []))}
         last_consumer = compute_liveness(self.graph)
-        outputs_set = set(getattr(self.graph, "outputs", []))
-        inputs_set = set(getattr(self.graph, "inputs", []))
+        outputs_set = set(_get_attr(self.graph, "outputs", []))
+        inputs_set = set(_get_attr(self.graph, "inputs", []))
 
         node_idx = 0
-        for node in getattr(self.graph, "nodes", {}).values():
-            if getattr(node, "op_type", "") == "Input":
+        for node in _get_attr(self.graph, "nodes", {}).values():
+            if _get_attr(node, "op_type", "") == "Input":
                 continue
             self._emit_node(node, node_idx, node_buffers, last_consumer, outputs_set, inputs_set, hip)
             node_idx += 1
@@ -440,7 +441,7 @@ class RocmCodeGenerator(BaseGenerator):
                 try:
                     runner_inst = ROCmRunner()
                     input_buffers = _prepare_rocm_input_buffers(graph, args)
-                    out_dict = getattr(runner_inst, "execute_graph")(graph, input_buffers)
+                    out_dict = _get_attr(runner_inst, "execute_graph")(graph, input_buffers)
                     if len(graph.outputs) == 1:
                         return as_tensor(out_dict.get(graph.outputs[0]))
                     return tuple(out_dict.get(out_name) for out_name in graph.outputs)
@@ -476,8 +477,8 @@ def _marshall_kernel_params(args: list[KernelArgType] | None) -> ctypes.Array[ct
             c_args.append(ctypes.cast(ctypes.byref(ctypes.c_int32(a)), ctypes.c_void_p))
         elif isinstance(a, float):
             c_args.append(ctypes.cast(ctypes.byref(ctypes.c_float(a)), ctypes.c_void_p))
-        elif hasattr(a, "value"):
-            c_args.append(ctypes.c_void_p(getattr(a, "value")))
+        elif _has_attr(a, "value"):
+            c_args.append(ctypes.c_void_p(_get_attr(a, "value")))
         else:
             c_args.append(ctypes.c_void_p(int(a) if a is not None else 0))
     return (ctypes.c_void_p * len(c_args))(*[ctypes.cast(ctypes.byref(arg_obj), ctypes.c_void_p).value for arg_obj in c_args])
@@ -495,16 +496,16 @@ class ROCmRunner:
         """
         if cupy is not None:
             try:
-                return bool(hasattr(cupy.cuda, "is_hip") and cupy.cuda.is_hip)
+                return bool(_has_attr(cupy.cuda, "is_hip") and cupy.cuda.is_hip)
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         try:
             hip_path = ctypes.util.find_library("amdhip64") or ctypes.util.find_library("hip_hcc")
             if hip_path:
                 lib = ctypes.cdll.LoadLibrary(hip_path)
-                if hasattr(lib, "hipInit") and lib.hipInit(0) == 0:
+                if _has_attr(lib, "hipInit") and lib.hipInit(0) == 0:
                     count = ctypes.c_int()
-                    if hasattr(lib, "hipGetDeviceCount") and lib.hipGetDeviceCount(ctypes.byref(count)) == 0:
+                    if _has_attr(lib, "hipGetDeviceCount") and lib.hipGetDeviceCount(ctypes.byref(count)) == 0:
                         return count.value > 0
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -521,7 +522,7 @@ class ROCmRunner:
         self.rocm_lib: ctypes.CDLL | None = None
         self._ctx: ctypes.c_void_p | None = None
 
-        if cupy is not None and getattr(getattr(cupy, "cuda", None), "is_hip", False):
+        if cupy is not None and _get_attr(_get_attr(cupy, "cuda", None), "is_hip", False):
             self.mode = "cupy"
         else:
             self.mode = "ctypes"
@@ -562,7 +563,7 @@ class ROCmRunner:
             device_ptr (ctypes.c_void_p): Device pointer.
             host_data (bytes): Data to write.
         """
-        if device_ptr is None or not getattr(device_ptr, "value", device_ptr):
+        if device_ptr is None or not _get_attr(device_ptr, "value", device_ptr):
             return
 
         if self.mode == "cupy" and cupy is not None:
@@ -586,7 +587,7 @@ class ROCmRunner:
         Returns:
             bytes: Read data.
         """
-        if device_ptr is None or not getattr(device_ptr, "value", device_ptr):
+        if device_ptr is None or not _get_attr(device_ptr, "value", device_ptr):
             return b"\x00" * size
 
         if self.mode == "cupy" and cupy is not None:
@@ -608,7 +609,7 @@ class ROCmRunner:
         Args:
             device_ptr (ctypes.c_void_p): Device pointer.
         """
-        if device_ptr is None or not getattr(device_ptr, "value", device_ptr):
+        if device_ptr is None or not _get_attr(device_ptr, "value", device_ptr):
             return
 
         if self.mode == "cupy":
@@ -659,7 +660,7 @@ class ROCmRunner:
             log_buf = ctypes.create_string_buffer(log_size.value)
             hiprtc_lib.hiprtcGetProgramLog(prog, log_buf)
             log_msg = log_buf.value.decode("utf-8", errors="replace")
-            if hasattr(hiprtc_lib, "hiprtcDestroyProgram"):
+            if _has_attr(hiprtc_lib, "hiprtcDestroyProgram"):
                 hiprtc_lib.hiprtcDestroyProgram(ctypes.byref(prog))
             raise RuntimeError(f"HIPRTC compilation failed: {log_msg}")
 
@@ -667,7 +668,7 @@ class ROCmRunner:
         hiprtc_lib.hiprtcGetCodeSize(prog, ctypes.byref(code_size))
         code_buf = ctypes.create_string_buffer(code_size.value)
         hiprtc_lib.hiprtcGetCode(prog, code_buf)
-        if hasattr(hiprtc_lib, "hiprtcDestroyProgram"):
+        if _has_attr(hiprtc_lib, "hiprtcDestroyProgram"):
             hiprtc_lib.hiprtcDestroyProgram(ctypes.byref(prog))
         return code_buf.raw
 
@@ -738,7 +739,7 @@ class ROCmRunner:
         """
         if self.mode == "cupy" and cupy is not None:
             stream = cupy.cuda.Stream()
-            ptr_val = getattr(stream, "ptr", 0)
+            ptr_val = _get_attr(stream, "ptr", 0)
             return ctypes.c_void_p(int(ptr_val) if isinstance(ptr_val, (int, float)) else 1000)
         if self.rocm_lib:
             stream = ctypes.c_void_p()
@@ -785,7 +786,7 @@ class ROCmRunner:
         if not self.rocm_lib:
             return
 
-        if hasattr(self.rocm_lib, "hipDeviceSynchronize"):
+        if _has_attr(self.rocm_lib, "hipDeviceSynchronize"):
             res = self.rocm_lib.hipDeviceSynchronize()
             if res != 0:
                 raise RuntimeError(f"hipDeviceSynchronize failed with error code {res}")
@@ -838,24 +839,24 @@ class ROCmRunner:
         if out_ptr is not None:
             device_buffers[node.id] = out_ptr
 
-        op_type = getattr(node, "op_type", "").lower()
+        op_type = _get_attr(node, "op_type", "").lower()
         if op_type == "fusedelementwise":
             kernel_fn = f"fused_elementwise_kernel_{node_idx}"
             tpl = HardwareTemplateConfig(body="", workgroup_size=[256, 1, 1])
         else:
-            tpl_opt = typing.cast("HardwareTemplateConfig | None", generator.config.templates.get(op_type))
+            tpl_opt = _cast_val("HardwareTemplateConfig | None", generator.config.templates.get(op_type))
             if tpl_opt is None:
                 return
             tpl = tpl_opt
             kernel_fn = _extract_kernel_name(as_str(tpl.get("body", "")), op_type)
 
         block_cfg, grid_cfg = query_optimal_launch_geometry(
-            getattr(node, "shape_metadata", None) or (num_elements,),
+            _get_attr(node, "shape_metadata", None) or (num_elements,),
         )
         block_size = [block_cfg[0], block_cfg[1], block_cfg[2]]
         grid_size = [grid_cfg[0], grid_cfg[1], grid_cfg[2]]
 
-        kernel_args: list[KernelArgType] = [device_buffers[inp] for inp in getattr(node, "inputs", []) if inp in device_buffers]
+        kernel_args: list[KernelArgType] = [device_buffers[inp] for inp in _get_attr(node, "inputs", []) if inp in device_buffers]
         if out_ptr is not None:
             kernel_args.append(out_ptr)
         kernel_args.append(num_elements)
@@ -896,8 +897,8 @@ class ROCmRunner:
                 tmp_code_path = tf.name
 
         try:
-            for node in getattr(graph, "nodes", {}).values():
-                if getattr(node, "op_type", "") == "Input":
+            for node in _get_attr(graph, "nodes", {}).values():
+                if _get_attr(node, "op_type", "") == "Input":
                     continue
                 self._dispatch_compute_node(node, node_idx, generator, tmp_code_path, device_buffers)
                 node_idx += 1
@@ -907,7 +908,7 @@ class ROCmRunner:
             if tmp_code_path and os.path.exists(tmp_code_path):
                 os.remove(tmp_code_path)
 
-        outputs_set = getattr(graph, "outputs", [])
+        outputs_set = _get_attr(graph, "outputs", [])
         output_data: dict[str, bytes] = {}
 
         for out_name in outputs_set:

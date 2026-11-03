@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.backends.numpy.eager.audio_features import _np_dct, _np_frame, _np_idct, _np_inverse_mdct, _np_mdct, _np_overlap_and_add
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -49,7 +50,7 @@ def test_audio_missing() -> None:
     assert res5 is not None
 
     res5b = _np_frame(np, np.ones((5,)), frame_length=10, frame_step=5)
-    assert as_tensor(getattr(res5b, "shape")) == (0, 10)
+    assert as_tensor(_get_attr(res5b, "shape")) == (0, 10)
 
     res6 = _np_overlap_and_add(np, np.ones((10, 10)), frame_step=5)
     assert res6 is not None

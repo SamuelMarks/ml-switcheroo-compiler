@@ -39,6 +39,7 @@ from ml_switcheroo_compiler.backends.eager.vision_augmentation import (
     random_zoom_eager,
 )
 from ml_switcheroo_compiler.backends.eager.vision_utils import GeometricGridConfig
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -70,12 +71,12 @@ def test_flips(mock_prepare: EagerTensorProtocol) -> None:
     """
     img = np.array([[[1, 2], [3, 4]]])
     rng_high = random.Random()
-    setattr(rng_high, "random", lambda: 0.6)
+    _set_attr(rng_high, "random", lambda: 0.6)
     res = as_callable(_flip_horizontal)(img, rng_high)
     assert id(res) != id(img)
 
     rng_low = random.Random()
-    setattr(rng_low, "random", lambda: 0.4)
+    _set_attr(rng_low, "random", lambda: 0.4)
     res = as_callable(_flip_horizontal)(img, rng_low)
     assert id(res) == id(img)
 

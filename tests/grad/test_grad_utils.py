@@ -7,6 +7,7 @@ import typing
 import pytest
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.grad.utils import _get_inputs_dict, _to_original_type
 from tests.testing_utils import as_callable, as_tensor, as_tensor_dict
 
@@ -58,11 +59,11 @@ def test_to_original_type_dtypes(mocker: EagerTensorProtocol) -> None:
 
     val_int = np.array(1, dtype=np.int32)
     res_int = _to_original_type(val_int, orig)
-    assert as_tensor(getattr(res_int, "dtype")) == DType.Int32
+    assert as_tensor(_get_attr(res_int, "dtype")) == DType.Int32
 
     val_bool = np.array(True, dtype=bool)
     res_bool = _to_original_type(val_bool, orig)
-    assert as_tensor(getattr(res_bool, "dtype")) == DType.Bool
+    assert as_tensor(_get_attr(res_bool, "dtype")) == DType.Bool
 
 
 def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
@@ -111,9 +112,9 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
             return True
 
     t = DummyTensor1(None, TensorConfig((), DType.Float32, None))
-    setattr(t, "_data", DummyData())
+    _set_attr(t, "_data", DummyData())
     t2 = DummyTensor2(None, TensorConfig((), DType.Float32, None))
-    setattr(t2, "_data", DummyData())
+    _set_attr(t2, "_data", DummyData())
 
     class DummyTensor3(Tensor):
         """Test class DummyTensor3."""
@@ -129,7 +130,7 @@ def test_find_wrt_tensors(mocker: EagerTensorProtocol) -> None:
         id = "not_in_graph"
 
     t3 = DummyTensor3(None, TensorConfig((), DType.Float32, None))
-    setattr(t3, "_data", DummyDataNotInGraph())
+    _set_attr(t3, "_data", DummyDataNotInGraph())
 
     wrt_tensors, wrt_ids = as_callable(_find_wrt_tensors)(as_callable(DummyGraph)())
     assert id(t) in [id(x) for x in wrt_tensors]
@@ -192,16 +193,16 @@ def test_get_inputs_dict_success(mocker: EagerTensorProtocol) -> None:
         nodes = as_tensor({"in_valid": {}, "no_val_node": {}})
 
     t_valid = Tensor(None, TensorConfig((), DType.Float32, None))
-    setattr(t_valid, "_data", NodeData("in_valid", concrete_value=123.0))
+    _set_attr(t_valid, "_data", NodeData("in_valid", concrete_value=123.0))
 
     t_no_val = Tensor(None, TensorConfig((), DType.Float32, None))
     proxy = as_callable(ProxyTensor)(None, ())
-    setattr(proxy, "id", "no_val_node")
-    setattr(proxy, "concrete_value", None)
+    _set_attr(proxy, "id", "no_val_node")
+    _set_attr(proxy, "concrete_value", None)
     t_no_val._data = proxy
 
     t_not_in_graph = Tensor(None, TensorConfig((), DType.Float32, None))
-    setattr(t_not_in_graph, "_data", NodeData("orphan_node", concrete_value=999.0))
+    _set_attr(t_not_in_graph, "_data", NodeData("orphan_node", concrete_value=999.0))
 
     Tensor(1.0, TensorConfig((), DType.Float32, None))
 

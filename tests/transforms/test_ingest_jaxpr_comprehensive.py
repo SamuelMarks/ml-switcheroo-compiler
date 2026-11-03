@@ -6,6 +6,7 @@ import typing
 
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.transforms.foreign import ingest_jaxpr
 from tests.testing_utils import as_callable, as_tensor
 
@@ -112,7 +113,7 @@ def test_translate_jax_equation() -> None:
     assert g.nodes[out_id].attributes["tup"] == [1, 2]
     assert g.nodes[out_id].shape_metadata == (2, 3)
 
-    out_id_2 = str(id(as_tensor(getattr(as_tensor(getattr(eqns, "__getitem__")(1)).outvars, "__getitem__")(0))))
+    out_id_2 = str(id(as_tensor(_get_attr(as_tensor(_get_attr(eqns, "__getitem__")(1)).outvars, "__getitem__")(0))))
     assert g.nodes[out_id_2].op_type == "Unknown"
 
 

@@ -7,7 +7,7 @@ import math
 import operator
 from collections.abc import Callable
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_float_list, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import EagerValue, _get_attr, _has_attr, as_callable, as_float, as_float_list, as_tensor
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
 
@@ -20,8 +20,8 @@ def _unwrap_arg(arg: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Unwrapped raw data.
     """
-    if type(arg).__name__ == "Tensor" and hasattr(arg, "data"):
-        return as_tensor(getattr(arg, "data"))
+    if type(arg).__name__ == "Tensor" and _has_attr(arg, "data"):
+        return as_tensor(_get_attr(arg, "data"))
     return arg
 
 
@@ -321,10 +321,10 @@ def _try_awkward_module_op(
     """
     if ak_mod is None:
         return False, None
-    target_fn_name: str | None = fn_name if hasattr(ak_mod, fn_name) else AK_OPS_MAP.get(fn_name)
-    if target_fn_name is not None and hasattr(ak_mod, target_fn_name):
+    target_fn_name: str | None = fn_name if _has_attr(ak_mod, fn_name) else AK_OPS_MAP.get(fn_name)
+    if target_fn_name is not None and _has_attr(ak_mod, target_fn_name):
         try:
-            return True, getattr(ak_mod, target_fn_name)(*actual_args, **kwargs)
+            return True, as_callable(_get_attr(ak_mod, target_fn_name))(*actual_args, **kwargs)
         except Exception as exc:
             msg = f"Failed executing awkward.{target_fn_name}: {exc}"
             raise BackendNotSupportedError(msg) from exc
@@ -341,7 +341,7 @@ def _apply_math_recursive(fn: Callable[[float], float], val: EagerValue) -> Eage
     Returns:
         EagerValue: Transformed structure preserving raggedness.
     """
-    source = getattr(val, "to_list")() if hasattr(val, "to_list") else val
+    source = as_callable(_get_attr(val, "to_list"))() if _has_attr(val, "to_list") else val
     if isinstance(source, (list, tuple)):
         import awkward as ak
 
@@ -367,7 +367,7 @@ def _try_math_ufunc(
     """
     if fn_name in _MATH_UFUNCS and actual_args:
         try:
-            fn = getattr(math, fn_name) if hasattr(math, fn_name) else _MATH_UFUNCS[fn_name]
+            fn = operator.attrgetter(fn_name)(math) if _has_attr(math, fn_name) else _MATH_UFUNCS[fn_name]
             return True, _apply_math_recursive(fn, actual_args[0])
         except Exception as exc:
             msg = f"Failed executing math ufunc {fn_name} on Awkward array: {exc}"

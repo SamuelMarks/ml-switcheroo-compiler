@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.constants import MATRIX_RANK, MIN_CONV_RANK
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
 from ml_switcheroo_compiler.ops.linalg.utils import _emit_linalg_node
 
@@ -40,12 +40,12 @@ def conv_transpose(
         backend = get_active_backend()
         data = backend.execute_op(
             op_name,
-            getattr(lhs, "data", lhs),
-            getattr(rhs, "data", rhs),
+            _get_attr(lhs, "data", lhs),
+            _get_attr(rhs, "data", rhs),
             strides=strides,
             padding=padding,
         )
-        return Tensor(data, TensorConfig(getattr(data, "shape", ()), lhs.dtype, lhs.device))
+        return Tensor(data, TensorConfig(_get_attr(data, "shape", ()), lhs.dtype, lhs.device))
 
     return _emit_linalg_node(op_name, [lhs, rhs], {"strides": strides, "padding": padding}, [()], [lhs.dtype])
 

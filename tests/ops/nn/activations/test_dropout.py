@@ -11,6 +11,7 @@ import numpy as np
 
 import ml_switcheroo_compiler.ops.nn.dropout as do
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Device, DType, Tensor, TensorConfig
 from tests.testing_utils import as_callable
 
@@ -68,7 +69,7 @@ def test_dropout_coverage() -> None:
             """
             return "emitted"
 
-        setattr(d_mod, "_emit_shape_node", dummy_emit)
+        _set_attr(d_mod, "_emit_shape_node", dummy_emit)
         assert do.dropout1d(t) == "emitted"
         assert do.dropout2d(t) == "emitted"
         assert do.dropout3d(t) == "emitted"

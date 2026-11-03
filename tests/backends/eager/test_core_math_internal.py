@@ -16,6 +16,7 @@ from ml_switcheroo_compiler.backends.eager.core_math_ops.math_internal import (
     _np_topk,
 )
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, global_eager_registry
+from ml_switcheroo_compiler.core.shape import _caller_locals, _get_attr
 from tests.testing_utils import as_callable, as_mod, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -88,9 +89,9 @@ def _test_math_internal_all_branches_part_1(_state: dict[str, EagerTensorProtoco
             """
             return {"precision": 4}
 
-    getattr(_state, "update")({"BackendAbsSign": BackendAbsSign, "BackendCopysign": BackendCopysign, "BackendPrintOptions": BackendPrintOptions, "empty_backend": empty_backend})
-    getattr(_state, "update")({"res_cs": res_cs})
-    _state.update(locals())
+    _get_attr(_state, "update")({"BackendAbsSign": BackendAbsSign, "BackendCopysign": BackendCopysign, "BackendPrintOptions": BackendPrintOptions, "empty_backend": empty_backend})
+    _get_attr(_state, "update")({"res_cs": res_cs})
+    _state.update(_caller_locals())
 
 
 def _test_math_internal_all_branches_part_2(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -135,8 +136,8 @@ def _test_math_internal_all_branches_part_2(_state: dict[str, EagerTensorProtoco
     # 4. _np_tensorarraywrite
     # Case A: no args
     assert _np_tensorarraywrite(empty_backend) == 0
-    getattr(_state, "update")({"sample_arr": sample_arr, "sample_dict": sample_dict, "sample_list": sample_list})
-    _state.update(locals())
+    _get_attr(_state, "update")({"sample_arr": sample_arr, "sample_dict": sample_dict, "sample_list": sample_list})
+    _state.update(_caller_locals())
 
 
 def _test_math_internal_all_branches_part_3(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -187,10 +188,10 @@ def _test_math_internal_all_branches_part_3(_state: dict[str, EagerTensorProtoco
     # Default k=1
     vals_def, indices_def = as_callable(_np_topk)(empty_backend, [10, 50, 20])
     assert as_callable(list)(vals_def) == [50]
-    getattr(_state, "update")({"indices": indices, "indices_def": indices_def, "np_arr1": np_arr1, "np_arr2": np_arr2})
-    getattr(_state, "update")({"vals": vals, "vals_def": vals_def, "w_arr1": w_arr1, "w_arr2": w_arr2})
-    getattr(_state, "update")({"w_dict": w_dict, "w_list1": w_list1, "w_list2": w_list2, "w_list_none": w_list_none})
-    _state.update(locals())
+    _get_attr(_state, "update")({"indices": indices, "indices_def": indices_def, "np_arr1": np_arr1, "np_arr2": np_arr2})
+    _get_attr(_state, "update")({"vals": vals, "vals_def": vals_def, "w_arr1": w_arr1, "w_arr2": w_arr2})
+    _get_attr(_state, "update")({"w_dict": w_dict, "w_list1": w_list1, "w_list2": w_list2, "w_list_none": w_list_none})
+    _state.update(_caller_locals())
 
 
 def _test_math_internal_all_branches_part_4(_state: dict[str, EagerTensorProtocol]) -> None:
@@ -210,7 +211,7 @@ def _test_math_internal_all_branches_part_4(_state: dict[str, EagerTensorProtoco
     # Registration checks
     for op_name in ["Copysign", "GetPrintoptions", "NpTensorarrayread", "NpTensorarraywrite", "NpTopk"]:
         assert global_eager_registry.get(op_name) is not None
-    getattr(_state, "update")({"i_fb": i_fb, "v_fb": v_fb})
+    _get_attr(_state, "update")({"i_fb": i_fb, "v_fb": v_fb})
 
 
 def test_math_internal_all_branches() -> None:

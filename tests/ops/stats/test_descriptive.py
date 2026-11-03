@@ -6,6 +6,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.stats.descriptive import (
     ApplyOverAxes,
@@ -121,7 +122,7 @@ def test_funcs(mocker: EagerTensorProtocol) -> None:
         config.eager_mode = False
         mock_get_op = mocker.patch("ml_switcheroo_compiler.ops.stats.descriptive.get_op")
         mock_op = mocker.MagicMock()
-        setattr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
+        _set_attr(mock_get_op, "return_value", mocker.MagicMock(return_value=mock_op))
 
         assert trapezoidal_integral(t, x=t, dx=2.0, axis=1) == mock_op()
         assert confusion_matrix(t, t, 5, weights=t) == mock_op()

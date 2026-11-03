@@ -7,7 +7,7 @@ import typing
 import numpy as np
 
 import ml_switcheroo_compiler.backends.eager.utils as utils_mod
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TypedVariadicCallable, _get_attr
 from tests.testing_utils import as_callable, as_ndarray, as_shape, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -284,7 +284,7 @@ class SignalBackendWrapper:
         Returns:
             EagerCallableProtocol: Resolved callable attribute.
         """
-        return as_callable(getattr(np, name))
+        return as_callable(_get_attr(np, name))
 
     def pad(
         self,

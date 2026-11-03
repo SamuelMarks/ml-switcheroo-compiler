@@ -6,6 +6,7 @@ from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callab
 from ml_switcheroo_compiler.backends.numpy.eager.reductions import _reduce_window
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 
 @numpy_eager_registry.register("ConstantOfShape")
@@ -82,9 +83,9 @@ def _np_rand(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             tuple[int, ...]: Result.
     """
-    dtype = kwargs.get("dtype", getattr(backend_module, "float32", None))
+    dtype = kwargs.get("dtype", _get_attr(backend_module, "float32", None))
     dtype_str = str(dtype).split(".")[-1]
-    dt = getattr(backend_module, dtype_str, dtype)
+    dt = _get_attr(backend_module, dtype_str, dtype)
     if isinstance(dt, str):
         if "bfloat" in dt or "float8" in dt:
             dt = "float32"
@@ -198,7 +199,7 @@ def _logspace(np: BackendModuleProtocol, start: EagerValue, stop: EagerValue, *a
     """
     if args and type(args[0]).__name__ == "SpaceConfig":
         c = args[0]
-        return np.logspace(start, stop, num=getattr(c, "num"), endpoint=getattr(c, "endpoint"), base=getattr(c, "base"), dtype=getattr(c, "dtype"), axis=getattr(c, "axis"))
+        return np.logspace(start, stop, num=_get_attr(c, "num"), endpoint=_get_attr(c, "endpoint"), base=_get_attr(c, "base"), dtype=_get_attr(c, "dtype"), axis=_get_attr(c, "axis"))
     return np.logspace(start, stop, *args, **kwargs)
 
 
@@ -235,8 +236,8 @@ def _np_dtype_op(backend_module: BackendModuleProtocol, value: EagerValue, *args
     """
     if isinstance(value, str):
         return DType(value)
-    if hasattr(value, "dtype"):
-        return DType(str(getattr(value, "dtype")))
+    if _has_attr(value, "dtype"):
+        return DType(str(_get_attr(value, "dtype")))
     return DType(str(backend_module.asarray(value).dtype))
 
 
@@ -252,7 +253,7 @@ def _eager_Gradient(backend_module: BackendModuleProtocol, *args: EagerValue, **
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(backend_module, "gradient", lambda *a, **k: a[0])(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "gradient", lambda *a, **k: a[0])(*args, **kwargs))
 
 
 @numpy_eager_registry.register("I0")
@@ -267,7 +268,7 @@ def _eager_I0(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(backend_module, "i0", lambda *a, **k: a[0])(*args, **kwargs))
+    return as_tensor(_get_attr(backend_module, "i0", lambda *a, **k: a[0])(*args, **kwargs))
 
 
 @numpy_eager_registry.register("BroadcastedIota")
@@ -282,4 +283,4 @@ def _eager_BroadcastedIota(backend_module: BackendModuleProtocol, *args: EagerVa
     Returns:
             tuple[int, ...]: Result.
     """
-    return as_tensor(getattr(backend_module, "broadcast_to", lambda *a, **k: a[0])(backend_module.arange(args[0]), args[1]))
+    return as_tensor(_get_attr(backend_module, "broadcast_to", lambda *a, **k: a[0])(backend_module.arange(args[0]), args[1]))

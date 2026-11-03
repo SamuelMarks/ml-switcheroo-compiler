@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.ops.random_ops import (
     Ball,
     Beta,
@@ -167,7 +168,7 @@ def test_random_ops_coverage() -> None:
                 """
                 pass
 
-        setattr(global_tracing_state, "active_graph", DummyGraph())
+        _set_attr(global_tracing_state, "active_graph", DummyGraph())
 
         assert sobol_sample(2, 10, 0) is not None
 

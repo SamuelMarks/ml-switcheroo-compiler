@@ -7,7 +7,7 @@ from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable, _cast_val, _get_attr, _has_attr, _obj_set_attr, _obj_vars, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_graph
 
@@ -21,7 +21,7 @@ def _get_node_items(block: LogicalGraph) -> Iterable[tuple[str, LogicalNode]]:
     Returns:
         Iterable[tuple[str, LogicalNode]]: Sequence of node ID and LogicalNode pairs.
     """
-    if not hasattr(block, "nodes"):
+    if not _has_attr(block, "nodes"):
         return []
     nodes: list[LogicalNode] | dict[str, LogicalNode] = block.nodes
     if isinstance(nodes, dict):
@@ -55,7 +55,7 @@ def _lift_node_state(node: LogicalNode, nid: str, block: LogicalGraph) -> bool:
         node.attributes["name"] = f"{var_name}_out"
         node.attributes["stop_gradient"] = False
         node.attributes["is_state_update"] = True
-        if hasattr(block, "outputs") and nid not in block.outputs:
+        if _has_attr(block, "outputs") and nid not in block.outputs:
             block.outputs.append(nid)
         return True
 
@@ -75,10 +75,10 @@ def _lift_block(block: LogicalGraph) -> bool:
     for nid, node in _get_node_items(block):
         block_mod = _lift_node_state(node, nid, block) or block_mod
 
-        for sub in getattr(node, "subgraphs", {}).values():
+        for sub in _get_attr(node, "subgraphs", {}).values():
             block_mod = _lift_block(sub) or block_mod
         for attr_val in node.attributes.values():
-            if hasattr(attr_val, "nodes"):
+            if _has_attr(attr_val, "nodes"):
                 block_mod = _lift_block(as_graph(attr_val)) or block_mod
     return block_mod
 
@@ -98,7 +98,8 @@ def _get_val(curr_obj: TensorOrScalar, key: str) -> StateEntry:
     """
     if isinstance(curr_obj, dict):
         return curr_obj.get(key)
-    return getattr(curr_obj, key, None)
+    _typed_ret_1: StateEntry = _get_attr(curr_obj, key, None)
+    return _typed_ret_1
 
 
 def _set_val(curr_obj: TensorOrScalar, key: str, val: StateEntry) -> None:
@@ -112,7 +113,7 @@ def _set_val(curr_obj: TensorOrScalar, key: str, val: StateEntry) -> None:
     if isinstance(curr_obj, dict):
         curr_obj[key] = val
     else:
-        setattr(curr_obj, key, val)
+        _set_attr(curr_obj, key, val)
 
 
 def _navigate(curr_obj: TensorOrScalar, parts: list[str]) -> TensorOrScalar:
@@ -129,7 +130,7 @@ def _navigate(curr_obj: TensorOrScalar, parts: list[str]) -> TensorOrScalar:
         if isinstance(curr_obj, dict):
             curr_obj = curr_obj[p]
         else:
-            curr_obj = getattr(curr_obj, p)
+            curr_obj = _get_attr(curr_obj, p)
     return curr_obj
 
 
@@ -155,7 +156,7 @@ class StateLiftingPass:
             params (dict[str, StateEntry]): Parameter dictionary to populate.
             buffers (dict[str, StateEntry]): Buffer dictionary to populate.
         """
-        if getattr(val, "requires_grad", True):
+        if _get_attr(val, "requires_grad", True):
             params[name] = val
         else:
             buffers[name] = val
@@ -176,13 +177,13 @@ class StateLiftingPass:
             params (dict[str, StateEntry]): Parameter dictionary to populate.
             buffers (dict[str, StateEntry]): Buffer dictionary to populate.
         """
-        if isinstance(attr_val, Tensor) or hasattr(attr_val, "shape"):
+        if isinstance(attr_val, Tensor) or _has_attr(attr_val, "shape"):
             self._record_tensor_entry(full_name, attr_val, params, buffers)
         elif isinstance(attr_val, dict):
             for k, v in attr_val.items():
-                if isinstance(v, Tensor) or hasattr(v, "shape"):
+                if isinstance(v, Tensor) or _has_attr(v, "shape"):
                     self._record_tensor_entry(f"{full_name}.{k}", v, params, buffers)
-        elif hasattr(attr_val, "__dict__") and not callable(attr_val):
+        elif _has_attr(attr_val, "__dict__") and not callable(attr_val):
             sub_p, sub_b = self.extract_state(attr_val, prefix=f"{full_name}.")
             params.update(sub_p)
             buffers.update(sub_b)
@@ -200,10 +201,10 @@ class StateLiftingPass:
         params: dict[str, StateEntry] = {}
         buffers: dict[str, StateEntry] = {}
 
-        if not hasattr(container, "__dict__"):
+        if not _has_attr(container, "__dict__"):
             return params, buffers
 
-        for attr_name, attr_val in container.__dict__.items():
+        for attr_name, attr_val in _obj_vars(container).items():
             if attr_name.startswith("_") and not attr_name.startswith("_buffers"):
                 continue
             full_name = f"{prefix}{attr_name}" if prefix else attr_name
@@ -223,13 +224,13 @@ class StateLiftingPass:
         params, buffers = self.extract_state(container)
         combined_state = {**params, **buffers}
 
-        graph = IRGraph(name=f"functional_{container.__class__.__name__}")
+        graph = IRGraph(name=f"functional_{type(container).__name__}")
         graph.inputs = []
         graph.outputs = []
         for name, tensor in combined_state.items():
             nid = f"param_{name.replace('.', '_')}"
-            shape_meta = getattr(tensor, "shape", ())
-            dtype_meta = getattr(tensor, "dtype", "float32")
+            shape_meta = _get_attr(tensor, "shape", ())
+            dtype_meta = _get_attr(tensor, "dtype", "float32")
             is_param = name in params
             node = IRNode(
                 id=nid,
@@ -245,7 +246,7 @@ class StateLiftingPass:
                     "dtype": str(dtype_meta),
                 },
             )
-            object.__setattr__(node, "shape_metadata", {"shape": tuple(shape_meta)})
+            _obj_set_attr(node, "shape_metadata", {"shape": tuple(shape_meta)})
             graph.nodes[nid] = node
             graph.inputs.append(nid)
 
@@ -293,14 +294,15 @@ class StateLiftingPass:
                     parent = _navigate(container, parts[:-1])
                     new_state[k] = _get_val(parent, parts[-1])
 
-                return typing.cast(tuple[StateEntry, dict[str, StateEntry]], (out, new_state))
+                _typed_ret_2: tuple[StateEntry, dict[str, StateEntry]] = _cast_val(tuple[StateEntry, dict[str, StateEntry]], (out, new_state))
+                return _typed_ret_2
             finally:
                 for k, v in backup.items():
                     parts = k.split(".")
                     parent = _navigate(container, parts[:-1])
                     _set_val(parent, parts[-1], v)
 
-        return current_state, typing.cast("TypedVariadicCallable[tuple[StateEntry, dict[str, StateEntry]]]", pure_fn)
+        return current_state, _cast_val("TypedVariadicCallable[tuple[StateEntry, dict[str, StateEntry]]]", pure_fn)
 
     def run(self, graph: IRGraph) -> bool:
         """Run in-place state lifting pass on IRGraph.

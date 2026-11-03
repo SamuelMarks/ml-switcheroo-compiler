@@ -9,7 +9,7 @@ import pydantic
 
 from ml_switcheroo_compiler.backends.registry import as_tensor
 from ml_switcheroo_compiler.core.device import Device
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr, _obj_vars
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.type_inference import resolve_dtype
 
@@ -34,7 +34,7 @@ class EvaluationContext(pydantic.BaseModel):
             *args (EagerPayload): Positional field values.
             **kwargs (EagerPayload): Keyword field values.
         """
-        super().__init__(**{**dict(zip(self.__class__.model_fields.keys(), args)), **kwargs})
+        super().__init__(**{**dict(zip(type(self).model_fields.keys(), args)), **kwargs})
 
 
 class EvaluationStrategy(abc.ABC):
@@ -70,10 +70,10 @@ class CustomEagerEvalStrategy(EvaluationStrategy):
         """
         op_cls = ctx.op_cls
         op_inst = op_cls() if isinstance(op_cls, type) else op_cls
-        eager_eval_fn = getattr(op_inst, "eager_eval", None)
+        eager_eval_fn = _get_attr(op_inst, "eager_eval", None)
         if callable(eager_eval_fn):
             return as_tensor(eager_eval_fn(*ctx.args, **ctx.kwargs))
-        forward_fn = getattr(op_inst, "forward", None)
+        forward_fn = _get_attr(op_inst, "forward", None)
         if callable(forward_fn):
             return as_tensor(forward_fn(*ctx.args, **ctx.kwargs))
         raise NotImplementedError(f"Operation class '{ctx.op_type}' does not implement custom eager evaluation.")
@@ -91,7 +91,7 @@ class BackendExecuteOpStrategy(EvaluationStrategy):
         Returns:
             EagerPayload: Evaluated raw tensor or scalar data.
         """
-        return as_tensor(getattr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
+        return as_tensor(_get_attr(ctx.backend, "execute_op")(ctx.op_type, *ctx.args, **ctx.kwargs))
 
 
 class EagerEvaluator:
@@ -109,7 +109,7 @@ class EagerEvaluator:
         """
         from ml_switcheroo_compiler.ops.base import OpDef
 
-        has_custom_eval = hasattr(op_cls, "eager_eval") and op_cls.__dict__.get("eager_eval") is not getattr(
+        has_custom_eval = _has_attr(op_cls, "eager_eval") and _obj_vars(op_cls).get("eager_eval") is not _get_attr(
             OpDef,
             "eager_eval",
             None,
@@ -138,7 +138,7 @@ class EagerEvaluator:
                 Tensor(
                     d,
                     TensorConfig(
-                        d.shape if hasattr(d, "shape") else (),
+                        d.shape if _has_attr(d, "shape") else (),
                         resolve_dtype(d, first_tensor),
                         device,
                     ),
@@ -147,7 +147,7 @@ class EagerEvaluator:
             )
 
         dtype = resolve_dtype(res_data, first_tensor)
-        shape = as_tensor(res_data).shape if hasattr(res_data, "shape") else ()
+        shape = as_tensor(res_data).shape if _has_attr(res_data, "shape") else ()
         return Tensor(res_data, TensorConfig(shape, dtype, device))
 
     @staticmethod

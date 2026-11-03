@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -58,5 +59,5 @@ def test_gradient_hooks() -> None:
     # hook multiplies by 10.0 -> 30.0
     # grad of x = 30.0 * 2.0 = 60.0
 
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(v1, "numpy")))(), as_callable(np.array)([12.0], dtype=np.float32))
-    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(getattr(g1, "numpy")))(), as_callable(np.array)([60.0], dtype=np.float32))
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(v1, "numpy")))(), as_callable(np.array)([12.0], dtype=np.float32))
+    as_callable(np.testing.assert_allclose)(as_callable(as_tensor(_get_attr(g1, "numpy")))(), as_callable(np.array)([60.0], dtype=np.float32))

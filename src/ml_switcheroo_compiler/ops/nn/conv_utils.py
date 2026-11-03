@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import math
-import typing
 from collections.abc import Sequence
 
 import pydantic
 
 from ml_switcheroo_compiler.backends.registry import as_callable, as_opt_int_seq, as_shape
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val, _get_attr
 
 # Base logic implementation
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
@@ -117,7 +116,7 @@ def _build_conv_config(
     rhs_dilation = kwargs.get("rhs_dilation", None)
     if isinstance(rhs_dilation, int):
         rhs_dilation = (rhs_dilation,) * (len(dimension_numbers[0]) - 2)
-    return typing.cast(
+    _typed_ret_1: ConvConfig = _cast_val(
         ConvConfig,
         as_callable(ConvConfig)(
             window_strides=as_shape(strides),
@@ -127,6 +126,7 @@ def _build_conv_config(
             dimension_numbers=dimension_numbers,
         ),
     )
+    return _typed_ret_1
 
 
 def _prepare_depthwise_conv(
@@ -163,7 +163,7 @@ def _prepare_depthwise_conv(
 
         in_channels = lhs.shape[-1]
 
-        config_obj = typing.cast(
+        config_obj = _cast_val(
             TensorOrScalar,
             as_callable(ConvConfig)(
                 window_strides=as_shape(strides),
@@ -263,8 +263,8 @@ def collapse_repeated(labels: TensorOrScalar, seq_length: TensorOrScalar, name: 
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     attrs = {"seq_length": seq_length, "name": name}
-    out = _emit_shape_node("CollapseRepeated", [labels], attrs, getattr(labels, "shape", ()), getattr(labels, "dtype", "int32"))
-    new_seq_len = _emit_shape_node("CollapseRepeatedSeqLength", [labels], attrs, getattr(labels, "shape", ()), "int32")
+    out = _emit_shape_node("CollapseRepeated", [labels], attrs, _get_attr(labels, "shape", ()), _get_attr(labels, "dtype", "int32"))
+    new_seq_len = _emit_shape_node("CollapseRepeatedSeqLength", [labels], attrs, _get_attr(labels, "shape", ()), "int32")
     return out, new_seq_len
 
 
@@ -336,15 +336,15 @@ def depthwise_conv2d_backprop_filter(
     """
     from ml_switcheroo_compiler.core.config import config as core_config
 
-    raw_filter_shape = getattr(filter_sizes, "shape", None)
+    raw_filter_shape = _get_attr(filter_sizes, "shape", None)
     target_shape: tuple[int | str, ...] = (int(filter_sizes),) if isinstance(filter_sizes, int) else tuple(filter_sizes) if isinstance(filter_sizes, (list, tuple)) else tuple(raw_filter_shape) if isinstance(raw_filter_shape, (list, tuple)) else ()
-    dtype = getattr(input, "dtype", "float32")
+    dtype = _get_attr(input, "dtype", "float32")
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("DepthwiseConv2dNativeBackpropFilter", getattr(input, "data", input), filter_sizes, getattr(out_backprop, "data", out_backprop), config=config, name=name)
-        return Tensor(data, TensorConfig(target_shape, dtype, getattr(input, "device", "cpu")))
+        data = backend.execute_op("DepthwiseConv2dNativeBackpropFilter", _get_attr(input, "data", input), filter_sizes, _get_attr(out_backprop, "data", out_backprop), config=config, name=name)
+        return Tensor(data, TensorConfig(target_shape, dtype, _get_attr(input, "device", "cpu")))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node(
@@ -377,15 +377,15 @@ def depthwise_conv2d_backprop_input(
     """
     from ml_switcheroo_compiler.core.config import config as core_config
 
-    raw_input_shape = getattr(input_sizes, "shape", None)
+    raw_input_shape = _get_attr(input_sizes, "shape", None)
     target_shape: tuple[int | str, ...] = (int(input_sizes),) if isinstance(input_sizes, int) else tuple(input_sizes) if isinstance(input_sizes, (list, tuple)) else tuple(raw_input_shape) if isinstance(raw_input_shape, (list, tuple)) else ()
-    dtype = getattr(filter, "dtype", "float32")
+    dtype = _get_attr(filter, "dtype", "float32")
     if core_config.eager_mode:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        data = backend.execute_op("DepthwiseConv2dNativeBackpropInput", input_sizes, getattr(filter, "data", filter), getattr(out_backprop, "data", out_backprop), config=config, name=name)
-        return Tensor(data, TensorConfig(target_shape, dtype, getattr(filter, "device", "cpu")))
+        data = backend.execute_op("DepthwiseConv2dNativeBackpropInput", input_sizes, _get_attr(filter, "data", filter), _get_attr(out_backprop, "data", out_backprop), config=config, name=name)
+        return Tensor(data, TensorConfig(target_shape, dtype, _get_attr(filter, "device", "cpu")))
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
     return _emit_shape_node(
@@ -433,7 +433,7 @@ def dilation2d(
         return get_active_backend().execute_op("Dilation2d", input, filter, args=args)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("Dilation2d", [input, filter], {"args": args}, getattr(input, "shape", ()), getattr(input, "dtype", "float32"))
+    return _emit_shape_node("Dilation2d", [input, filter], {"args": args}, _get_attr(input, "shape", ()), _get_attr(input, "dtype", "float32"))
 
 
 def erosion2d(
@@ -459,7 +459,7 @@ def erosion2d(
         return get_active_backend().execute_op("Erosion2d", value, kernel, args=args)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("Erosion2d", [value, kernel], {"args": args}, getattr(value, "shape", ()), getattr(value, "dtype", "float32"))
+    return _emit_shape_node("Erosion2d", [value, kernel], {"args": args}, _get_attr(value, "shape", ()), _get_attr(value, "dtype", "float32"))
 
 
 def convolution(
@@ -480,7 +480,7 @@ def convolution(
     args = args or ConvSpatialArgs()
     _conv_nd = get_op("_ConvNd")()
 
-    num_spatial_dims = len(getattr(input, "shape")) - 2
+    num_spatial_dims = len(_get_attr(input, "shape")) - 2
     return _conv_nd(
         input,
         filters,
@@ -517,4 +517,4 @@ def conv_transpose(
         return get_active_backend().execute_op("ConvTranspose", input, filters, output_shape=output_shape, args=args)
     from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, output_shape, getattr(input, "dtype", "float32"))
+    return _emit_shape_node("ConvTranspose", [input, filters], {"output_shape": output_shape, "args": args}, output_shape, _get_attr(input, "dtype", "float32"))

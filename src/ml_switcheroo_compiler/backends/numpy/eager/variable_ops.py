@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @numpy_eager_registry.register("Assign")
@@ -37,7 +38,7 @@ def _np_cast(backend_module: BackendModuleProtocol, x: EagerValue, dtype: EagerV
     Returns:
             tuple[int, ...]: Result.
     """
-    dt = getattr(dtype, "value", dtype)
+    dt = _get_attr(dtype, "value", dtype)
     if isinstance(dt, str):
         if "bfloat" in dt or "float8" in dt:
             dt = "float32"
@@ -60,7 +61,7 @@ def _np_bitcast(backend_module: BackendModuleProtocol, x: EagerValue, dtype: Eag
     Returns:
             tuple[int, ...]: Result.
     """
-    return backend_module.asarray(x).view(getattr(dtype, "value", dtype))
+    return backend_module.asarray(x).view(_get_attr(dtype, "value", dtype))
 
 
 @numpy_eager_registry.register("ReadVariable")

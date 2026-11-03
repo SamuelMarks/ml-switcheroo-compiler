@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import (
     _dispatch_random,
@@ -47,9 +48,9 @@ def test_emit_random_node_tracing() -> None:
         result = _emit_random_node("RandomOp", [inp], (2,), dtypes.DType.Float32, {"attr1": "val1"})
 
         assert isinstance(result, Tensor)
-        assert as_tensor(getattr(result.data, "id")) == "mock-uuid"
-        assert as_tensor(getattr(result.data, "shape")) == (2,)
-        assert as_tensor(getattr(result.data, "dtype")) == "float32"
+        assert as_tensor(_get_attr(result.data, "id")) == "mock-uuid"
+        assert as_tensor(_get_attr(result.data, "shape")) == (2,)
+        assert as_tensor(_get_attr(result.data, "dtype")) == "float32"
         mock_global_state.add_node.assert_called_once()
 
         node = mock_global_state.add_node.call_args[0][0]

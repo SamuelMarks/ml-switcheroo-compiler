@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -55,10 +56,10 @@ def test_matmul_tracing() -> None:
     mock_shape = MagicMock()
     mock_add = MagicMock()
     mock_multiply = MagicMock()
-    setattr(mod, "_emit_linalg_node", mock_linalg)
-    setattr(mod, "_emit_shape_node", mock_shape)
-    setattr(mod, "add", mock_add)
-    setattr(mod, "multiply", mock_multiply)
+    _set_attr(mod, "_emit_linalg_node", mock_linalg)
+    _set_attr(mod, "_emit_shape_node", mock_shape)
+    _set_attr(mod, "add", mock_add)
+    _set_attr(mod, "multiply", mock_multiply)
     config.eager_mode = False
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
@@ -81,10 +82,10 @@ def test_matmul_tracing() -> None:
     mod.gather_mm(a, b, lhs_indices=None, rhs_indices=c)
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
-    setattr(mod, "_emit_linalg_node", original_linalg)
-    setattr(mod, "_emit_shape_node", original_shape)
-    setattr(mod, "add", original_add)
-    setattr(mod, "multiply", original_multiply)
+    _set_attr(mod, "_emit_linalg_node", original_linalg)
+    _set_attr(mod, "_emit_shape_node", original_shape)
+    _set_attr(mod, "add", original_add)
+    _set_attr(mod, "multiply", original_multiply)
     assert c.shape == (2,)
 
 
@@ -97,7 +98,7 @@ def test_matmul_eager() -> None:
     mock_backend.array.return_value = np.zeros((2, 2))
     mock_backend.array.return_value.shape = (2, 2)
     mock_get_backend.return_value = mock_backend
-    setattr(mod, "get_active_backend", mock_get_backend)
+    _set_attr(mod, "get_active_backend", mock_get_backend)
     config.eager_mode = True
     a = DummyTensor((2, 2))
     b = DummyTensor((2, 2))
@@ -117,7 +118,7 @@ def test_matmul_eager() -> None:
     mod.gather_mm(a, b)
     mod.segmented_mm(a, b, c)
     config.eager_mode = False
-    setattr(mod, "get_active_backend", original_backend)
+    _set_attr(mod, "get_active_backend", original_backend)
     assert c.shape == (2,)
 
 
@@ -195,11 +196,11 @@ def test_dot_general_missing_shape_real() -> None:
         with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.is_tracing", True):
             with patch("ml_switcheroo_compiler.tracing.state.global_tracing_state.active_graph"):
                 original_emit = matmul_mod._emit_linalg_node
-                setattr(matmul_mod, "_emit_linalg_node", lambda *args, **kwargs: "dummy_node")
+                _set_attr(matmul_mod, "_emit_linalg_node", lambda *args, **kwargs: "dummy_node")
                 try:
                     assert matmul_mod.dot_general(t1, t2, (((), ()), ((), ()))) == "dummy_node"
                 finally:
-                    setattr(matmul_mod, "_emit_linalg_node", original_emit)
+                    _set_attr(matmul_mod, "_emit_linalg_node", original_emit)
     finally:
         config.eager_mode = old_eager
 
@@ -257,7 +258,7 @@ def test_einsum_missing_branch() -> None:
 
     p = ParsedEquationPart(chars="ij", shape=(3, 1))
     p.shape = (3, 1)
-    setattr(p, "chars", ["i", "i"])
+    _set_attr(p, "chars", ["i", "i"])
     axis_map = {"i": 3}
     p.process_axis_map(axis_map)
     assert axis_map["i"] == 3

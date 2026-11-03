@@ -10,15 +10,16 @@ import os
 import uuid
 
 import yaml
-from ml_switcheroo_ir import AttributeValue as IRAttrValue
 from pydantic import BaseModel, ConfigDict, Field
 
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import VariadicCallableProtocol, invoke_callable
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.tensor_mixins import TracedDataProtocol
 from ml_switcheroo_compiler.grad.utils import GradValue
-from ml_switcheroo_compiler.ir.core import AttrValue, LogicalGraph, LogicalNode
+from ml_switcheroo_compiler.ir.core import AttrValue, LogicalGraph, LogicalNode, as_attrs
 from ml_switcheroo_compiler.ops import control_flow_utils
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -140,38 +141,39 @@ def checkpoint(
             return invoke_callable(fun, *args, **kwargs)
 
         tensor_args = [a for a in args if isinstance(a, Tensor)]
-        fwd_block = getattr(control_flow_utils, "_trace_function")(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
+        fwd_block = control_flow_utils._trace_function(fun, tuple(tensor_args), f"checkpoint_{uuid.uuid4().hex[:6]}")
 
         out_node_id = fwd_block.outputs[0]
-        nodes_dict = {n.id: n for n in (fwd_block.nodes if isinstance(fwd_block.nodes, list) else fwd_block.nodes.values())}
-        out_node = nodes_dict[out_node_id]
-        real_out_node = nodes_dict[out_node.inputs[0]]
+        out_node = fwd_block.nodes[out_node_id]
+        real_out_node = fwd_block.nodes[out_node.inputs[0]]
 
-        shape = real_out_node.shape_metadata or ()
+        shape: tuple[int | str, ...] = tuple(d if isinstance(d, int) else str(d) for d in (real_out_node.shape_metadata or ()))
         dtype = "float32"
-        if hasattr(real_out_node, "attributes") and "dtype" in real_out_node.attributes:
+        if "dtype" in real_out_node.attributes:
             dtype = str(real_out_node.attributes["dtype"])
         elif tensor_args:
-            dtype = getattr(getattr(tensor_args[0], "dtype", None), "value", "float32")
+            dtype = tensor_args[0].dtype.value
 
-        device = "cpu"
+        device: str | Device = "cpu"
         if tensor_args:
-            device = getattr(tensor_args[0], "device", "cpu")
+            device = tensor_args[0].device
 
         out_id = str(uuid.uuid4())
-        ckpt_attrs: dict[str, IRAttrValue] = {
-            "subgraph": fwd_block,
-            "evicted": active_policy.evict_activations,
-            "policy": active_policy.model_dump(),
-        }
+        ckpt_attrs = as_attrs(
+            {
+                "subgraph": fwd_block,
+                "evicted": active_policy.evict_activations,
+                "policy": active_policy.model_dump(),
+            }
+        )
         node = LogicalNode(
             id=out_id,
             op_type="Checkpoint",
-            inputs=[getattr(a.data, "id") for a in tensor_args if hasattr(a, "data") and hasattr(a.data, "id")],
+            inputs=[a.data.id for a in tensor_args if isinstance(a.data, TracedDataProtocol)],
             attributes=ckpt_attrs,
             shape_metadata=shape,
         )
-        object.__setattr__(node, "attributes", {**node.attributes, "fun": fun})
+        node.attributes["fun"] = as_attrs({"f": fun})["f"]
         global_tracing_state.add_node(node)
 
         proxy = ProxyTensor(id=out_id, shape=shape, dtype=dtype)
@@ -240,7 +242,7 @@ def load_cost_models(path: str | None = None) -> dict[str, AttributeValue]:
 
 def _evaluate_node_costs(
     node: LogicalNode,
-    memory_sizes: dict[str, AttributeValue],
+    memory_sizes: dict[str, AttributeValue] | None,
     heavy_ops: set[str],
     light_ops: set[str],
     heavy_cost: int,
@@ -261,16 +263,16 @@ def _evaluate_node_costs(
     Returns:
         tuple[int, int]: Tuple of (footprint_bytes, flop_cost).
     """
-    shape = getattr(node, "shape_metadata", None) or ()
+    shape = node.shape_metadata or ()
     num_elements = 1
     for dim in shape:
         if isinstance(dim, int) and dim > 0:
             num_elements *= dim
 
     dtype_str = "float32"
-    if hasattr(node, "attributes") and "dtype" in node.attributes:
+    if "dtype" in node.attributes:
         dtype_str = str(node.attributes["dtype"])
-    raw_sz = memory_sizes.get(dtype_str, 4) if hasattr(memory_sizes, "get") else 4
+    raw_sz = memory_sizes.get(dtype_str, 4) if memory_sizes is not None else 4
     dtype_size = int(raw_sz) if isinstance(raw_sz, (int, float, str)) else 4
     footprint_bytes = num_elements * dtype_size
 

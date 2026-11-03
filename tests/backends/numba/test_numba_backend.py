@@ -15,6 +15,7 @@ from ml_switcheroo_compiler.backends.numba.generator import NumbaGenerator
 from ml_switcheroo_compiler.backends.numba.types import array, asarray, item, zeros
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from tests.testing_utils import as_callable, as_tensor
 
@@ -132,7 +133,7 @@ def test_numba_types() -> None:
     assert np.allclose(arr, [1.0, 2.0])
 
     arr_dtype = array([1.0, 2.0], dtype="float64")
-    assert as_tensor(getattr(arr_dtype, "dtype")) == np.float64
+    assert as_tensor(_get_attr(arr_dtype, "dtype")) == np.float64
 
     as_arr = asarray([3.0, 4.0])
     assert isinstance(as_arr, np.ndarray)
@@ -197,9 +198,9 @@ def test_numba_init_import_guard() -> None:
 
     import ml_switcheroo_compiler.backends.numba as nb_pkg
 
-    assert hasattr(nb_pkg, "NumbaGenerator")
-    assert hasattr(nb_pkg, "execute_op")
-    assert hasattr(nb_pkg, "array")
+    assert _has_attr(nb_pkg, "NumbaGenerator")
+    assert _has_attr(nb_pkg, "execute_op")
+    assert _has_attr(nb_pkg, "array")
 
     # Test find_spec raising ValueError
     with patch("importlib.util.find_spec", side_effect=ValueError):

@@ -11,7 +11,7 @@ from ml_switcheroo_ir import LogicalNode
 from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, as_eager_list, as_int, get_active_backend
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr, _has_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ir.core import as_attrs
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
@@ -55,7 +55,7 @@ def _emit_creation_node(
     proxy = ProxyTensor(
         id=out_id,
         shape=shape,
-        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
     )
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
@@ -83,15 +83,15 @@ def _emit_constant_node(
     out_id = str(uuid.uuid4())
     val_arr = get_active_backend().array(
         value,
-        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
     )
-    shape = tuple(getattr(val_arr, "shape"))
+    shape = tuple(_get_attr(val_arr, "shape"))
 
     node = LogicalNode(
         id=out_id,
         op_type="Constant",
         inputs=[],
-        attributes={"value": getattr(val_arr, "tolist")() if getattr(val_arr, "ndim") > 0 else getattr(val_arr, "item")()},
+        attributes={"value": _get_attr(val_arr, "tolist")() if _get_attr(val_arr, "ndim") > 0 else _get_attr(val_arr, "item")()},
         shape_metadata=shape,
     )
     global_tracing_state.add_node(node)
@@ -99,7 +99,7 @@ def _emit_constant_node(
     proxy = ProxyTensor(
         id=out_id,
         shape=shape,
-        dtype=dtype.value if hasattr(dtype, "value") else getattr(dtype, "name", str(dtype)),
+        dtype=dtype.value if _has_attr(dtype, "value") else _get_attr(dtype, "name", str(dtype)),
     )
     return Tensor(proxy, TensorConfig(shape, dtype, config.default_device))
 
@@ -121,7 +121,7 @@ class FromDlpack(OpDef):
             tuple[int, ...]: Inferred tensor shape tuple.
         """
         obj = args[0] if len(args) > 0 else kwargs.get("ext_tensor", kwargs.get("tensor"))
-        return tuple(getattr(obj, "shape", getattr(obj, "shape_metadata", ())))
+        return tuple(_get_attr(obj, "shape", _get_attr(obj, "shape_metadata", ())))
 
 
 @register_op("Frompyfunc")
@@ -144,7 +144,7 @@ class Frompyfunc(OpDef):
         from ml_switcheroo_compiler.core.shape import broadcast_shapes
 
         inps = args[3:] if len(args) > 3 else args
-        shapes = [getattr(inp, "shape", getattr(inp, "shape_metadata", ())) for inp in inps if hasattr(inp, "shape") or hasattr(inp, "shape_metadata")]
+        shapes = [_get_attr(inp, "shape", _get_attr(inp, "shape_metadata", ())) for inp in inps if _has_attr(inp, "shape") or _has_attr(inp, "shape_metadata")]
         if not shapes:
             return ()
         res = shapes[0]
@@ -183,8 +183,8 @@ class Geomspace(OpDef):
             axis = int(as_int(raw_axis))
         except (TypeError, ValueError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
-        shape1 = getattr(start, "shape", getattr(start, "shape_metadata", ()))
-        shape2 = getattr(stop, "shape", getattr(stop, "shape_metadata", ()))
+        shape1 = _get_attr(start, "shape", _get_attr(start, "shape_metadata", ()))
+        shape2 = _get_attr(stop, "shape", _get_attr(stop, "shape_metadata", ()))
         b_shape = shape1 if len(shape1) > len(shape2) else shape2
         if not b_shape:
             return (num,)
@@ -214,7 +214,7 @@ class Geometric(OpDef):
         p = args[0] if len(args) > 0 else kwargs.get("p")
         size = kwargs.get("size", args[1] if len(args) > 1 else None)
         if size is None:
-            return tuple(getattr(p, "shape", getattr(p, "shape_metadata", ())))
+            return tuple(_get_attr(p, "shape", _get_attr(p, "shape_metadata", ())))
         if isinstance(size, int):
             return (size,)
         return tuple(int(as_int(d)) for d in as_eager_list(size))

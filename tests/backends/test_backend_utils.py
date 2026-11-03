@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 
 from ml_switcheroo_compiler.backends.backend_utils import format_shape_metadata, resolve_input_vars
+from ml_switcheroo_compiler.core.shape import _set_attr
 from tests.testing_utils import as_callable
 
 if typing.TYPE_CHECKING:
@@ -51,21 +52,21 @@ def test_format_shape_metadata() -> None:
     assert as_callable(format_shape_metadata)(node, {}) is None
 
     # 2. empty shape metadata
-    setattr(node, "shape_metadata", ())
+    _set_attr(node, "shape_metadata", ())
     assert as_callable(format_shape_metadata)(node, {}) is None
 
     # 3. various dimension types
-    setattr(node, "shape_metadata", (DummyDim("dim1"), "str_dim", 42))
+    _set_attr(node, "shape_metadata", (DummyDim("dim1"), "str_dim", 42))
     var_names = {"dim1": "resolved_dim1"}
     res = as_callable(format_shape_metadata)(node, var_names)
     assert res == "(resolved_dim1, 'str_dim', 42)"
 
     # 4. single element tuple formatting
-    setattr(node, "shape_metadata", (42,))
+    _set_attr(node, "shape_metadata", (42,))
     res = as_callable(format_shape_metadata)(node, {})
     assert res == "(42,)"
 
     # 5. dummy dim missing from var_names
-    setattr(node, "shape_metadata", (DummyDim("missing"),))
+    _set_attr(node, "shape_metadata", (DummyDim("missing"),))
     res = as_callable(format_shape_metadata)(node, {})
     assert res == "(missing,)"

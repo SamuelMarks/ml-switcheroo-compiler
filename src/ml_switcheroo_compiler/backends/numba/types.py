@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numba import kernels
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def zeros(shape: tuple[int, ...]) -> EagerValue:
@@ -32,7 +33,7 @@ def array(
         EagerValue: The created array buffer.
     """
     if dtype is not None:
-        return kernels.array(data, dtype=getattr(dtype, "value", dtype))
+        return kernels.array(data, dtype=_get_attr(dtype, "value", dtype))
     return kernels.array(data)
 
 
@@ -59,4 +60,4 @@ def item(data: EagerValue) -> float:
     Returns:
         float: The extracted scalar float value.
     """
-    return float(getattr(kernels.asarray(data), "item")())
+    return float(_get_attr(kernels.asarray(data), "item")())

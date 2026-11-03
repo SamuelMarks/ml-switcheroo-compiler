@@ -11,6 +11,7 @@ from unittest.mock import patch
 import yaml
 
 import scripts.migrate_domain_ops as mdo
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_attrs, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -92,11 +93,11 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
         }
         res_bin = mdo.migrate_domain("binary_test.yaml", as_attrs(spec_binary))
         assert "Add" in res_bin
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_bin, "__getitem__")("Add")), "__getitem__")("math_semantics")), "__getitem__")("identity_element")) == 0
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_bin, "__getitem__")("Mul")), "__getitem__")("math_semantics")), "__getitem__")("identity_element")) == 1
-        assert "autodiff" in getattr(res_bin, "__getitem__")("Add")
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_bin, "__getitem__")("Add")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "broadcast(x1.shape, x2.shape)"
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_bin, "__getitem__")("Add")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "promote(x1.dtype, x2.dtype)"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_bin, "__getitem__")("Add")), "__getitem__")("math_semantics")), "__getitem__")("identity_element")) == 0
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_bin, "__getitem__")("Mul")), "__getitem__")("math_semantics")), "__getitem__")("identity_element")) == 1
+        assert "autodiff" in _get_attr(res_bin, "__getitem__")("Add")
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_bin, "__getitem__")("Add")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "broadcast(x1.shape, x2.shape)"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_bin, "__getitem__")("Add")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "promote(x1.dtype, x2.dtype)"
 
         # 2. Unary domain specification (covers is_binary=False, default_inputs=['x'])
         spec_unary = {
@@ -107,8 +108,8 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
         }
         res_unary = mdo.migrate_domain("unary_test.yaml", as_attrs(spec_unary))
         assert "Abs" in res_unary
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_unary, "__getitem__")("Abs")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "x.shape"
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_unary, "__getitem__")("Abs")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "x.dtype"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_unary, "__getitem__")("Abs")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "x.shape"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_unary, "__getitem__")("Abs")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "x.dtype"
 
         # 3. Creation domain specification (covers default_inputs=[])
         spec_creation = {
@@ -119,8 +120,8 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
         }
         res_creation = mdo.migrate_domain("creation_test.yaml", as_attrs(spec_creation))
         assert "Zeros" in res_creation
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_creation, "__getitem__")("Zeros")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "shape"
-        assert as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_creation, "__getitem__")("Zeros")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "float32"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_creation, "__getitem__")("Zeros")), "__getitem__")("signature")), "__getitem__")("output_shape_formula")) == "shape"
+        assert as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_creation, "__getitem__")("Zeros")), "__getitem__")("signature")), "__getitem__")("output_dtype_formula")) == "float32"
 
         # 4. Control flow domain (covers non-differentiable domain)
         spec_cf = {
@@ -130,7 +131,7 @@ def test_migrate_domain_full_branches(tmp_path: Path) -> None:
             "is_binary": False,
         }
         res_cf = mdo.migrate_domain("cf_test.yaml", as_attrs(spec_cf))
-        assert not as_tensor(getattr(as_tensor(getattr(as_tensor(getattr(res_cf, "__getitem__")("Cond")), "__getitem__")("math_semantics")), "__getitem__")("differentiable"))
+        assert not as_tensor(_get_attr(as_tensor(_get_attr(as_tensor(_get_attr(res_cf, "__getitem__")("Cond")), "__getitem__")("math_semantics")), "__getitem__")("differentiable"))
     finally:
         mdo.BASE_DIR = orig_base
 

@@ -8,7 +8,7 @@ import typing
 from collections.abc import Callable, Iterable, Iterator
 
 from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_tensor
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _get_attr
 
 T = typing.TypeVar("T")
 PyTree = typing.Union[TensorOrScalar, "TreeDef"]
@@ -299,7 +299,7 @@ def tree_reduce(
     if initializer is None:
         return functools.reduce(f, leaves)
 
-    return as_tensor(getattr(functools, "reduce")(f, leaves, initializer))
+    return as_tensor(_get_attr(functools, "reduce")(f, leaves, initializer))
 
 
 def _count_leaves(t_def: TreeDef) -> int:

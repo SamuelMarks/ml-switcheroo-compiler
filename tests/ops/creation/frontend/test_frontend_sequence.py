@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from unittest.mock import patch
 
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.ops.creation.frontend_sequence import arange, linspace
 from tests.testing_utils import as_tensor
 
@@ -39,12 +40,12 @@ def test_frontend_sequence() -> None:
 
     import ml_switcheroo_compiler.ops.creation.frontend_sequence
 
-    orig_backend = as_tensor(getattr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend"))
-    setattr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend", lambda: DummyBackend())
+    orig_backend = as_tensor(_get_attr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend"))
+    _set_attr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend", lambda: DummyBackend())
 
-    assert as_tensor(getattr(arange(10), "shape")) == (10,)
-    assert as_tensor(getattr(arange(0, 10), "shape")) == (10,)
-    assert as_tensor(getattr(linspace(1, 10, 50), "shape")) == (50,)
+    assert as_tensor(_get_attr(arange(10), "shape")) == (10,)
+    assert as_tensor(_get_attr(arange(0, 10), "shape")) == (10,)
+    assert as_tensor(_get_attr(linspace(1, 10, 50), "shape")) == (50,)
 
     config.eager_mode = False
 
@@ -54,4 +55,4 @@ def test_frontend_sequence() -> None:
         assert linspace(1, 10, 50) == "emitted"
 
     config.eager_mode = True
-    setattr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend", orig_backend)
+    _set_attr(ml_switcheroo_compiler.ops.creation.frontend_sequence, "get_active_backend", orig_backend)

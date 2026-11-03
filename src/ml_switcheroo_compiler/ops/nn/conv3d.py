@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing  # noqa: F401
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, _cast_val
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.configs import ConvConfig
 from ml_switcheroo_compiler.ops.linalg import conv_general_dilated
@@ -29,7 +29,7 @@ def conv3d(lhs: Tensor, rhs: Tensor, config_obj: TensorOrScalar = None, **kwargs
     if config_obj is None:
         config_obj = _build_conv_config(kwargs, ((0, 4, 1, 2, 3), (4, 3, 0, 1, 2), (0, 4, 1, 2, 3)))
 
-    return conv_general_dilated(lhs, rhs, typing.cast(ConvConfig, config_obj))
+    return conv_general_dilated(lhs, rhs, _cast_val(ConvConfig, config_obj))
 
 
 def conv3d_transpose(

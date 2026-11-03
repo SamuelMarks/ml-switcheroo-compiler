@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def pytorch_all_reduce(
@@ -36,7 +37,7 @@ def pytorch_all_reduce(
                 reduce_op = dist.ReduceOp.MIN
 
             t = tensor if isinstance(tensor, torch.Tensor) else torch.as_tensor(tensor)
-            getattr(dist, "all_reduce")(t, op=reduce_op, group=group)
+            _get_attr(dist, "all_reduce")(t, op=reduce_op, group=group)
             return as_tensor(t)
     except ImportError:
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -64,10 +65,10 @@ def pytorch_all_gather(
         import torch.distributed as dist
 
         if dist.is_available() and dist.is_initialized():
-            world_size = getattr(dist, "get_world_size")(group)
+            world_size = _get_attr(dist, "get_world_size")(group)
             t = tensor if isinstance(tensor, torch.Tensor) else torch.as_tensor(tensor)
             gather_list = [torch.empty_like(t) for _ in range(world_size)]
-            getattr(dist, "all_gather")(gather_list, t, group=group)
+            _get_attr(dist, "all_gather")(gather_list, t, group=group)
             return as_tensor(torch.cat(gather_list, dim=axis))
     except ImportError:
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -97,14 +98,14 @@ def pytorch_reduce_scatter(
         import torch.distributed as dist
 
         if dist.is_available() and dist.is_initialized():
-            world_size = getattr(dist, "get_world_size")(group)
+            world_size = _get_attr(dist, "get_world_size")(group)
             t = tensor if isinstance(tensor, torch.Tensor) else torch.as_tensor(tensor)
             input_list = list(torch.chunk(t, world_size, dim=scatter_dim))
             output = torch.empty_like(input_list[0])
             reduce_op = dist.ReduceOp.SUM
             if op.upper() in ("PROD", "PRODUCT"):
                 reduce_op = dist.ReduceOp.PRODUCT
-            getattr(dist, "reduce_scatter")(output, input_list, op=reduce_op, group=group)
+            _get_attr(dist, "reduce_scatter")(output, input_list, op=reduce_op, group=group)
             return as_tensor(output)
     except ImportError:
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
@@ -133,7 +134,7 @@ def pytorch_broadcast(
 
         if dist.is_available() and dist.is_initialized():
             t = tensor if isinstance(tensor, torch.Tensor) else torch.as_tensor(tensor)
-            getattr(dist, "broadcast")(t, src=src, group=group)
+            _get_attr(dist, "broadcast")(t, src=src, group=group)
             return as_tensor(t)
     except ImportError:
         logging.getLogger(__name__).debug("Ignored exception in %s", __name__)

@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.numpy.eager import as_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core.constants import MIN_CONV_RANK
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 def _gelu(
@@ -162,8 +163,8 @@ def _np_time_distributed(
         return np.asarray(get_active_backend().execute_op(wrapped_op_name, x, **kwargs))
     flat_x = np.reshape(x, (shape[0] * shape[1], *shape[2:]))
     out = get_active_backend().execute_op(wrapped_op_name, flat_x, **kwargs)
-    out_shape = (shape[0], shape[1], *as_shape(getattr(out, "shape"))[1:])
-    return as_ndarray(getattr(np, "reshape")(out, out_shape))
+    out_shape = (shape[0], shape[1], *as_shape(_get_attr(out, "shape"))[1:])
+    return as_ndarray(_get_attr(np, "reshape")(out, out_shape))
 
 
 @numpy_eager_registry.register("Rope")
@@ -230,7 +231,7 @@ def _np_rrelu(
     upper = float(upper_val) if upper_val is not None else 1.0 / 3.0
     training = bool(kwargs.get("training", False))
 
-    x_data = backend_module.asarray(getattr(x, "data", x))
+    x_data = backend_module.asarray(_get_attr(x, "data", x))
     if not training:
         alpha = (lower + upper) / 2.0
         return as_ndarray(backend_module.where(x_data >= 0, x_data, x_data * alpha))

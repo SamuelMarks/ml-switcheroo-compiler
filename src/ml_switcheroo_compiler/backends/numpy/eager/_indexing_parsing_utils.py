@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import ast
-import typing
 from collections.abc import Callable
 
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
-from ml_switcheroo_compiler.core.shape import SliceType
+from ml_switcheroo_compiler.core.shape import SliceType, _cast_val, _get_attr
 
 
 def _eval_constant(node: ast.AST) -> EagerValue:
@@ -21,7 +20,7 @@ def _eval_constant(node: ast.AST) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    val = getattr(node, "value", None)
+    val = _get_attr(node, "value", None)
     if val is ...:
         return ...
     return val if isinstance(val, (int, float, complex, str, bool)) else None
@@ -37,7 +36,7 @@ def _eval_slice_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -
     Returns:
         SliceType: Result.
     """
-    return slice(*[typing.cast("int | float | str | None", _eval_fn(a)) for a in getattr(node, "args", [])])
+    return slice(*[_cast_val("int | float | str | None", _eval_fn(a)) for a in _get_attr(node, "args", [])])
 
 
 def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> EagerValue:
@@ -50,7 +49,7 @@ def _eval_array_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -
     Returns:
             tuple[int, ...]: Result.
     """
-    return np.array([_eval_fn(a) for a in getattr(node, "args", [])])
+    return np.array([_eval_fn(a) for a in _get_attr(node, "args", [])])
 
 
 def _is_np_array_call(node: ast.AST) -> bool:
@@ -62,9 +61,10 @@ def _is_np_array_call(node: ast.AST) -> bool:
     Returns:
         True if the node represents a call to `np.array`, False otherwise.
     """
-    func = getattr(node, "func", None)
+    func = _get_attr(node, "func", None)
     if isinstance(func, ast.Attribute):
-        return getattr(getattr(func, "value", None), "id", "") == "np" and getattr(func, "attr", "") == "array"
+        _typed_ret_1: bool = _get_attr(_get_attr(func, "value", None), "id", "") == "np" and _get_attr(func, "attr", "") == "array"
+        return _typed_ret_1
     return False
 
 
@@ -78,11 +78,11 @@ def _eval_call(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> Eage
     Returns:
             tuple[int, ...]: Result.
     """
-    func = getattr(node, "func", None)
+    func = _get_attr(node, "func", None)
     if isinstance(func, ast.Name):
-        if getattr(func, "id", "") == "slice":
+        if _get_attr(func, "id", "") == "slice":
             return _eval_slice_call(node, _eval_fn)
-        if getattr(func, "id", "") == "array":
+        if _get_attr(func, "id", "") == "array":
             return _eval_array_call(node, _eval_fn)
     if _is_np_array_call(node):
         return _eval_array_call(node, _eval_fn)
@@ -98,7 +98,7 @@ def _eval_name(node: ast.AST) -> EagerValue:
     Returns:
             tuple[int, ...]: Result.
     """
-    node_id = getattr(node, "id", "")
+    node_id = _get_attr(node, "id", "")
     if node_id == "Ellipsis":
         return Ellipsis
     if node_id == "None":
@@ -116,8 +116,8 @@ def _eval_unary_op(node: ast.AST, _eval_fn: Callable[[ast.AST], EagerValue]) -> 
     Returns:
             tuple[int, ...]: Result.
     """
-    if isinstance(getattr(node, "op", None), ast.USub):
-        val = _eval_fn(typing.cast(ast.AST, getattr(node, "operand", None)))
+    if isinstance(_get_attr(node, "op", None), ast.USub):
+        val = _eval_fn(_cast_val(ast.AST, _get_attr(node, "operand", None)))
         if isinstance(val, (int, float)):
             return -val
     raise ValueError("Unsupported UnaryOp")
@@ -131,8 +131,8 @@ def _get_node_evaluators() -> dict[type[ast.AST], Callable[[ast.AST, Callable[[a
     """
     return {
         ast.Constant: lambda n, e: _eval_constant(n),
-        ast.Tuple: lambda n, e: tuple(e(elt) for elt in getattr(n, "elts", [])),
-        ast.List: lambda n, e: [e(elt) for elt in getattr(n, "elts", [])],
+        ast.Tuple: lambda n, e: tuple(e(elt) for elt in _get_attr(n, "elts", [])),
+        ast.List: lambda n, e: [e(elt) for elt in _get_attr(n, "elts", [])],
         ast.Call: _eval_call,
         ast.Name: lambda n, e: _eval_name(n),
         ast.UnaryOp: _eval_unary_op,

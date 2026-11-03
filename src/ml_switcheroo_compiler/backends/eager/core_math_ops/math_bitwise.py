@@ -11,6 +11,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 
 @global_eager_registry.register("Signbit")
@@ -25,7 +26,7 @@ def _signbit(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "signbit", None)
+    func = _get_attr(backend_module, "signbit", None)
     if func:
         return as_tensor(func(*args, **kwargs))
     x = as_tensor(args[0])
@@ -44,7 +45,7 @@ def _np_packbits(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "packbits", getattr(backend_module, "packbits", None))
+    func = _get_attr(backend_module, "packbits", _get_attr(backend_module, "packbits", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).packbits(*args, **kwargs)
@@ -62,7 +63,7 @@ def _np_unpackbits(backend_module: BackendModuleProtocol, *args: EagerValue, **k
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "unpackbits", getattr(backend_module, "unpackbits", None))
+    func = _get_attr(backend_module, "unpackbits", _get_attr(backend_module, "unpackbits", None))
     if func is not None:
         return as_tensor(func(*args, **kwargs))
     return _resolve_eager_mod(backend_module).unpackbits(*args, **kwargs)

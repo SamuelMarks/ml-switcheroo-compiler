@@ -14,6 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
     global_eager_registry,
 )
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ops.configs import BBoxConfig
 
 
@@ -45,18 +46,18 @@ def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerV
     """
     mod = _resolve_filter_mod(backend_module)
     if not args:
-        return as_tensor(getattr(backend_module, "asarray")([]) if hasattr(backend_module, "asarray") else mod.array([]))
+        return as_tensor(_get_attr(backend_module, "asarray")([]) if _has_attr(backend_module, "asarray") else mod.array([]))
 
     input_tensor: EagerTensorProtocol = mod.asarray(args[0])
-    ksizes = as_int_list(kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
-    strides = as_int_list(kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if hasattr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
+    ksizes = as_int_list(kwargs.get("ksizes", args[1] if len(args) > 1 else [1, 1, 1, 1, 1]) if _has_attr(kwargs, "get") else (args[1] if len(args) > 1 else [1, 1, 1, 1, 1]))
+    strides = as_int_list(kwargs.get("strides", args[2] if len(args) > 2 else [1, 1, 1, 1, 1]) if _has_attr(kwargs, "get") else (args[2] if len(args) > 2 else [1, 1, 1, 1, 1]))
 
     if input_tensor.ndim != 5:
-        return getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
+        return _get_attr(backend_module, "asarray")(input_tensor) if _has_attr(backend_module, "asarray") else input_tensor
 
     shape = input_tensor.shape
     if any(int(k) <= 0 or int(k) > int(s) for k, s in zip(ksizes, shape)):
-        return getattr(backend_module, "asarray")(input_tensor) if hasattr(backend_module, "asarray") else input_tensor
+        return _get_attr(backend_module, "asarray")(input_tensor) if _has_attr(backend_module, "asarray") else input_tensor
 
     out_dims = [len(range(0, int(shape[d]) - int(ksizes[d]) + 1, int(strides[d]))) for d in range(5)]
     patch_vol = int(ksizes[0]) * int(ksizes[1]) * int(ksizes[2]) * int(ksizes[3]) * int(ksizes[4])
@@ -76,7 +77,7 @@ def _extract_volume_patches(backend_module: BackendModuleProtocol, *args: EagerV
                         ]
                         res[i0, i1, i2, i3, i4] = patch.reshape(-1)
 
-    return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
+    return _get_attr(backend_module, "asarray")(res) if _has_attr(backend_module, "asarray") else res
 
 
 class NMSConfig(pydantic.BaseModel):
@@ -133,8 +134,8 @@ def _extract_box_channels(np_mod: BackendModuleProtocol, img: EagerValue, out: E
     if cropped.size == 0:
         return
 
-    y_indices = getattr(np_mod, "linspace")(0, cropped.shape[0] - 1, crop_h).astype(int)
-    x_indices = getattr(np_mod, "linspace")(0, cropped.shape[1] - 1, crop_w).astype(int)
+    y_indices = _get_attr(np_mod, "linspace")(0, cropped.shape[0] - 1, crop_h).astype(int)
+    x_indices = _get_attr(np_mod, "linspace")(0, cropped.shape[1] - 1, crop_w).astype(int)
     resized = cropped[y_indices][:, x_indices]
     as_tensor(out)[i] = resized
 
@@ -178,13 +179,13 @@ def _extract_boxes_batch(np_mod: BackendModuleProtocol, imgs: EagerValue, bxs: E
     Returns: EagerValue: Extracted boxes.
     """
     imgs_arr = as_tensor(imgs)
-    num_boxes = getattr(bxs, "__len__")()
+    num_boxes = _get_attr(bxs, "__len__")()
     if imgs_arr.ndim == 0:
-        return as_tensor(getattr(np_mod, "zeros")((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype))
+        return as_tensor(_get_attr(np_mod, "zeros")((num_boxes, config.crop_size[0], config.crop_size[1], 1), dtype=imgs_arr.dtype))
 
     channels = imgs_arr.shape[-1] if imgs_arr.ndim > 2 else 1
     out_shape = (num_boxes, config.crop_size[0], config.crop_size[1], channels)
-    out = getattr(np_mod, "zeros")(out_shape, dtype=imgs_arr.dtype)
+    out = _get_attr(np_mod, "zeros")(out_shape, dtype=imgs_arr.dtype)
     batch_ctx = (imgs, bxs, bxs_idx, out)
     for i in range(num_boxes):
         _extract_single_box(np_mod, batch_ctx, i, config)
@@ -209,7 +210,7 @@ def _extract_boxes_tf(backend_module: BackendModuleProtocol, images: EagerValue,
     boxes_np = mod.asarray(boxes)
     box_indices_np = mod.asarray(box_indices)
     res = _extract_boxes_batch(mod, images_np, boxes_np, box_indices_np, config)
-    return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
+    return _get_attr(backend_module, "asarray")(res) if _has_attr(backend_module, "asarray") else res
 
 
 def extract_bounding_boxes_eager(backend_module: BackendModuleProtocol, images: EagerValue, boxes: EagerValue, box_indices: EagerValue, config: BBoxConfig) -> EagerValue:
@@ -242,17 +243,17 @@ def _to_xyxy_format(np_mod: BackendModuleProtocol, boxes: EagerValue, format: st
     Raises:
         ValueError: An exception.
     """
-    boxes = getattr(np_mod, "asarray")(boxes)
+    boxes = _get_attr(np_mod, "asarray")(boxes)
     if format == "xyxy":
         return boxes
     elif format == "xyWH":
         boxes_arr = as_tensor(boxes)
         x, y, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return as_tensor(getattr(np_mod, "stack")([x, y, x + w, y + h], axis=-1))
+        return as_tensor(_get_attr(np_mod, "stack")([x, y, x + w, y + h], axis=-1))
     elif format == "cxcyWH":
         boxes_arr = as_tensor(boxes)
         cx, cy, w, h = boxes_arr[..., 0], boxes_arr[..., 1], boxes_arr[..., 2], boxes_arr[..., 3]
-        return as_tensor(getattr(np_mod, "stack")([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1))
+        return as_tensor(_get_attr(np_mod, "stack")([cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2], axis=-1))
     else:
         msg = f"Unknown format {format}"
         raise ValueError(msg)
@@ -269,21 +270,21 @@ def _compute_iou(np_mod: BackendModuleProtocol, b1: EagerValue, b2: EagerValue) 
     Returns:
             EagerValue: Result.
     """
-    b1 = getattr(np_mod, "asarray")(b1)
-    b2 = getattr(np_mod, "asarray")(b2)
+    b1 = _get_attr(np_mod, "asarray")(b1)
+    b2 = _get_attr(np_mod, "asarray")(b2)
 
-    if getattr(b1, "size") == 0 or getattr(b2, "size") == 0:
-        return as_tensor(getattr(np_mod, "zeros")(as_shape(getattr(b1, "shape"))[:-1], dtype=getattr(b1, "dtype")))
+    if _get_attr(b1, "size") == 0 or _get_attr(b2, "size") == 0:
+        return as_tensor(_get_attr(np_mod, "zeros")(as_shape(_get_attr(b1, "shape"))[:-1], dtype=_get_attr(b1, "dtype")))
 
-    x11, y11, x12, y12 = as_tensor_quad(getattr(np_mod, "split")(b1, 4, axis=-1))
-    x21, y21, x22, y22 = as_tensor_quad(getattr(np_mod, "split")(b2, 4, axis=-1))
+    x11, y11, x12, y12 = as_tensor_quad(_get_attr(np_mod, "split")(b1, 4, axis=-1))
+    x21, y21, x22, y22 = as_tensor_quad(_get_attr(np_mod, "split")(b2, 4, axis=-1))
 
-    xA = getattr(np_mod, "maximum")(x11, x21)
-    yA = getattr(np_mod, "maximum")(y11, y21)
-    xB = getattr(np_mod, "minimum")(x12, x22)
-    yB = getattr(np_mod, "minimum")(y12, y22)
+    xA = _get_attr(np_mod, "maximum")(x11, x21)
+    yA = _get_attr(np_mod, "maximum")(y11, y21)
+    xB = _get_attr(np_mod, "minimum")(x12, x22)
+    yB = _get_attr(np_mod, "minimum")(y12, y22)
 
-    interArea = getattr(np_mod, "maximum")(0, xB - xA) * getattr(np_mod, "maximum")(0, yB - yA)
+    interArea = _get_attr(np_mod, "maximum")(0, xB - xA) * _get_attr(np_mod, "maximum")(0, yB - yA)
     box1Area = (x12 - x11) * (y12 - y11)
     box2Area = (x22 - x21) * (y22 - y21)
 
@@ -307,7 +308,7 @@ def iou_eager(backend_module: BackendModuleProtocol, boxes1: EagerValue, boxes2:
     b1 = _to_xyxy_format(mod, boxes1, bounding_box_format)
     b2 = _to_xyxy_format(mod, boxes2, bounding_box_format)
     res = _compute_iou(mod, b1, b2)
-    return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
+    return _get_attr(backend_module, "asarray")(res) if _has_attr(backend_module, "asarray") else res
 
 
 def _sort_boxes_by_score(np_mod: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, score_threshold: float) -> tuple[EagerValue, EagerValue, EagerValue, EagerValue]:
@@ -322,16 +323,16 @@ def _sort_boxes_by_score(np_mod: BackendModuleProtocol, boxes: EagerValue, score
     Returns:
             tuple[object, object, object, object]: Result.
     """
-    boxes_arr: EagerTensorProtocol = getattr(np_mod, "asarray")(boxes)
-    scores_arr: EagerTensorProtocol = getattr(np_mod, "asarray")(scores)
+    boxes_arr: EagerTensorProtocol = _get_attr(np_mod, "asarray")(boxes)
+    scores_arr: EagerTensorProtocol = _get_attr(np_mod, "asarray")(scores)
 
     if scores_arr.size == 0:
-        return boxes_arr, scores_arr, getattr(np_mod, "array")([], dtype=int), getattr(np_mod, "array")([], dtype=int)
+        return boxes_arr, scores_arr, _get_attr(np_mod, "array")([], dtype=int), _get_attr(np_mod, "array")([], dtype=int)
 
     mask = scores_arr >= score_threshold
     filtered_boxes = boxes_arr[mask]
     filtered_scores = scores_arr[mask]
-    indices = getattr(np_mod, "where")(mask)[0]
+    indices = _get_attr(np_mod, "where")(mask)[0]
 
     order = filtered_scores.argsort()[::-1]
     return filtered_boxes, filtered_scores, indices, order
@@ -371,7 +372,7 @@ def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue,
     """
     bxs_arr = as_tensor(bxs)
     keep: list[int] = []
-    order_list = list(getattr(order, "__iter__")())
+    order_list = list(_get_attr(order, "__iter__")())
     while len(order_list) > 0 and len(keep) < max_output_size:
         i = order_list.pop(0)
         keep.append(i)
@@ -386,7 +387,7 @@ def _apply_suppression_threshold(np_mod: BackendModuleProtocol, bxs: EagerValue,
         to_keep = iou <= iou_threshold
         order_list = [order_list[j] for j in range(len(order_list)) if to_keep[j]]
 
-    return as_tensor(getattr(np_mod, "array")(keep, dtype=getattr(np_mod, "int64")))
+    return as_tensor(_get_attr(np_mod, "array")(keep, dtype=_get_attr(np_mod, "int64")))
 
 
 def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: EagerValue, config: NMSConfig | None = None) -> EagerValue:
@@ -402,9 +403,9 @@ def _nms_tf(backend_module: BackendModuleProtocol, boxes: EagerValue, scores: Ea
             EagerValue: Result.
     """
     if config is None:
-        config = NMSConfig(max_output_size=as_tensor(boxes).shape[0] if hasattr(boxes, "shape") else 100)
+        config = NMSConfig(max_output_size=as_tensor(boxes).shape[0] if _has_attr(boxes, "shape") else 100)
     res = _nms_torch(boxes, scores, config, backend_module)
-    return getattr(backend_module, "asarray")(res) if hasattr(backend_module, "asarray") else res
+    return _get_attr(backend_module, "asarray")(res) if _has_attr(backend_module, "asarray") else res
 
 
 def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend_module: BackendModuleProtocol | None = None) -> EagerValue:
@@ -423,7 +424,7 @@ def _nms_torch(boxes: EagerValue, scores: EagerValue, config: NMSConfig, backend
     boxes = mod.asarray(boxes)
     scores = mod.asarray(scores)
     bxs, _, idxs, order = _sort_boxes_by_score(mod, boxes, scores, config.score_threshold)
-    if getattr(bxs, "__len__")() == 0:
+    if _get_attr(bxs, "__len__")() == 0:
         return as_tensor(mod.array([], dtype=mod.int64))
     kept_local = _apply_suppression_threshold(mod, bxs, order, config.max_output_size, config.iou_threshold)
     return as_tensor(idxs)[kept_local]

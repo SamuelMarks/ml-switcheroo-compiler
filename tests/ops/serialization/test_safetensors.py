@@ -9,6 +9,7 @@ import struct
 import tempfile
 import typing
 
+from ml_switcheroo_compiler.core.shape import _set_attr
 from ml_switcheroo_compiler.serialization.formats.safetensors import SafetensorsWeightFormat
 from tests.testing_utils import as_callable, as_tensor
 
@@ -64,7 +65,7 @@ def test_safetensors_load_save(mocker: EagerTensorProtocol) -> None:
     with tempfile.NamedTemporaryFile() as f:
         as_callable(fmt.save)(weights, f.name)
         mock_backend = mocker.patch("ml_switcheroo_compiler.backends.registry.get_active_backend").return_value
-        setattr(mock_backend.from_buffer, "side_effect", lambda b, dtype, shape: {"buf": b, "type": dtype, "sh": shape})
+        _set_attr(mock_backend.from_buffer, "side_effect", lambda b, dtype, shape: {"buf": b, "type": dtype, "sh": shape})
         loaded2 = fmt.load(f.name)
         assert as_tensor(loaded2["a"]["buf"]) == as_tensor(b"data1")
     with tempfile.NamedTemporaryFile() as f:

@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from ml_switcheroo_compiler.backends.numpy.eager.distributed import TCPDistributedContext, _np_all_gather, _np_all_reduce, _np_all_to_all, _np_axis_index, _np_broadcast, _np_reduce, _np_reduce_scatter, _np_shard_tensor, set_np_distributed_context
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -67,7 +68,7 @@ def test_tcp_context_all_reduce_ring() -> None:
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.send_conns = [MagicMock()]
     ctx.recv_conns = [MagicMock()]
-    setattr(ctx.recv_conns[0].recv, "return_value", np.array([2]))
+    _set_attr(ctx.recv_conns[0].recv, "return_value", np.array([2]))
 
     tensor = np.array([1, 1])
     # sum
@@ -75,7 +76,7 @@ def test_tcp_context_all_reduce_ring() -> None:
     assert np.array_equal(res, np.array([2, 3]))
 
     # prod
-    setattr(ctx.recv_conns[0].recv, "return_value", np.array([2]))
+    _set_attr(ctx.recv_conns[0].recv, "return_value", np.array([2]))
     res = ctx.all_reduce_ring(tensor, op_type="prod", backend_module=np)
 
     # max
@@ -93,7 +94,7 @@ def test_tcp_context_all_gather_tensors() -> None:
     ctx = TCPDistributedContext(world_size=2, rank=0)
     ctx.send_conns = [MagicMock()]
     ctx.recv_conns = [MagicMock()]
-    setattr(ctx.recv_conns[0].recv, "return_value", "recv")
+    _set_attr(ctx.recv_conns[0].recv, "return_value", "recv")
 
     res = ctx.all_gather_tensors("tensor")
     assert res == ["tensor", "recv"]
@@ -107,8 +108,8 @@ def test_tcp_context_shutdown() -> None:
     ctx.listener = MagicMock()
 
     ctx.shutdown()
-    as_tensor(getattr(ctx.recv_conns[0].close, "assert_called"))()
-    as_tensor(getattr(ctx.send_conns[0].close, "assert_called"))()
+    as_tensor(_get_attr(ctx.recv_conns[0].close, "assert_called"))()
+    as_tensor(_get_attr(ctx.send_conns[0].close, "assert_called"))()
     ctx.listener.close.assert_called()
 
 

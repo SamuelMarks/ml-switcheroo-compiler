@@ -7,6 +7,7 @@ import typing
 import numpy as np
 import pytest
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor
 
 if typing.TYPE_CHECKING:
@@ -34,9 +35,9 @@ def test_gradient_integration_across_backends() -> None:
     results = {}
     for be in backends_to_test:
         with pytest.raises(AttributeError):
-            as_tensor(getattr(config, "set_backend"))(be)
+            as_tensor(_get_attr(config, "set_backend"))(be)
             x_t = as_callable(Tensor)(x_val)
             res = grad_f(x_t)
-            results[be] = as_tensor(getattr(res, "numpy"))()
+            results[be] = as_tensor(_get_attr(res, "numpy"))()
     for _be, res in results.items():
         as_callable(np.testing.assert_allclose)(res, expected_grad, rtol=1e-05)

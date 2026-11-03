@@ -10,6 +10,7 @@ from numpy.lib.stride_tricks import as_strided
 from ml_switcheroo_compiler.backends.eager import nms_eager
 from ml_switcheroo_compiler.backends.eager_registry import EagerCallableProtocol, EagerValue, as_callable, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ops.configs import WindowConfig
@@ -25,7 +26,7 @@ def _calc_same_padding(operand_ndim: int, window_dimensions: EagerValue) -> Eage
     Returns:
         list: Result.
     """
-    pad_total = [max(0, w - 1) for w in getattr(window_dimensions, "__iter__")()]
+    pad_total = [max(0, w - 1) for w in _get_attr(window_dimensions, "__iter__")()]
     if len(pad_total) < operand_ndim:
         pad_total = [0] * (operand_ndim - len(pad_total)) + pad_total
     return [(p // 2, p - p // 2) for p in pad_total]
@@ -112,13 +113,13 @@ def _top_k(x: EagerValue, k: int, axis: int = -1) -> tuple[np.ndarray[tuple[int,
     Returns:
             tuple[int, ...]: Result.
     """
-    idx = getattr(np, "argsort")(x, axis=axis)
+    idx = _get_attr(np, "argsort")(x, axis=axis)
     if axis < 0:
-        axis += getattr(x, "ndim")
-    slc = [slice(None)] * getattr(x, "ndim")
+        axis += _get_attr(x, "ndim")
+    slc = [slice(None)] * _get_attr(x, "ndim")
     slc[axis] = slice(-1, -(k + 1), -1)
     idx_k = idx[tuple(slc)]
-    val_k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = getattr(np, "take_along_axis")(x, idx_k, axis=axis)
+    val_k: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = _get_attr(np, "take_along_axis")(x, idx_k, axis=axis)
     return (val_k, idx_k)
 
 
@@ -154,13 +155,13 @@ def _reduce_window(operand: EagerValue, init_value: EagerValue, computation: str
         operand_arr.ndim,
         config.window_dimensions,
     )
-    operand_arr = getattr(np, "pad")(operand_arr, pad_width, mode="constant", constant_values=init_value)
+    operand_arr = _get_attr(np, "pad")(operand_arr, pad_width, mode="constant", constant_values=init_value)
     (view, axis_to_reduce) = _create_sliding_window_view(operand_arr, config)
     strategies: dict[str, EagerCallableProtocol] = {
-        "max": getattr(np, "max"),
-        "min": getattr(np, "min"),
-        "sum": getattr(np, "sum"),
-        "prod": getattr(np, "prod"),
+        "max": _get_attr(np, "max"),
+        "min": _get_attr(np, "min"),
+        "sum": _get_attr(np, "sum"),
+        "prod": _get_attr(np, "prod"),
     }
     if computation not in strategies:
         raise ValueError(f"Unknown computation {computation}")
@@ -178,8 +179,8 @@ def _logsumexp(x: EagerValue, axis: EagerValue = None, keepdims: EagerValue = Fa
     Returns:
             tuple[int, ...]: Result.
     """
-    xmax = getattr(np, "max")(x, axis=axis, keepdims=True)
-    return as_tensor(np.log(getattr(np, "sum")(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax))
+    xmax = _get_attr(np, "max")(x, axis=axis, keepdims=True)
+    return as_tensor(np.log(_get_attr(np, "sum")(np.exp(x - xmax), axis=axis, keepdims=keepdims)) + (np.squeeze(xmax) if not keepdims else xmax))
 
 
 def _segment_sum(
@@ -237,7 +238,7 @@ def _np_trapezoidal_integral(backend_module: BackendModuleProtocol, y: EagerValu
     x = kwargs.get("x", None)
     dx = kwargs.get("dx", 1.0)
     axis = kwargs.get("axis", -1)
-    trapz_fn = as_callable(getattr(np, "trapezoid", getattr(np, "trapz", None)))
+    trapz_fn = as_callable(_get_attr(np, "trapezoid", _get_attr(np, "trapz", None)))
     if x is not None:
         return trapz_fn(y, x=x, axis=axis)
     return trapz_fn(y, dx=dx, axis=axis)
@@ -258,12 +259,12 @@ def _np_confusion_matrix(backend_module: BackendModuleProtocol, labels: EagerVal
     """
     num_classes = kwargs.get("num_classes", None)
     weights = kwargs.get("weights", None)
-    y_true = getattr(labels, "flatten")()
-    y_pred = getattr(predictions, "flatten")()
+    y_true = _get_attr(labels, "flatten")()
+    y_pred = _get_attr(predictions, "flatten")()
     if num_classes is None:
         num_classes = max(np.max(y_true), np.max(y_pred)) + 1
-    cm = getattr(np, "bincount")(as_tensor(y_true) * as_tensor(num_classes) + as_tensor(y_pred), weights=weights, minlength=as_tensor(num_classes) ** 2)
-    return as_tensor(getattr(cm, "reshape")((num_classes, num_classes)))
+    cm = _get_attr(np, "bincount")(as_tensor(y_true) * as_tensor(num_classes) + as_tensor(y_pred), weights=weights, minlength=as_tensor(num_classes) ** 2)
+    return as_tensor(_get_attr(cm, "reshape")((num_classes, num_classes)))
 
 
 @numpy_eager_registry.register("Cummax")
@@ -282,9 +283,9 @@ def _np_cummax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     axis = kwargs.get("axis", None)
     dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        dtype = getattr(dtype, "value", dtype)
-        return as_tensor(getattr(np.maximum, "accumulate")(a, axis=axis, dtype=dtype))
-    return as_tensor(getattr(np.maximum, "accumulate")(a, axis=axis))
+        dtype = _get_attr(dtype, "value", dtype)
+        return as_tensor(_get_attr(np.maximum, "accumulate")(a, axis=axis, dtype=dtype))
+    return as_tensor(_get_attr(np.maximum, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("Cummin")
@@ -303,9 +304,9 @@ def _np_cummin(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     axis = kwargs.get("axis", None)
     dtype = kwargs.get("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        dtype = getattr(dtype, "value", dtype)
-        return as_tensor(getattr(np.minimum, "accumulate")(a, axis=axis, dtype=dtype))
-    return as_tensor(getattr(np.minimum, "accumulate")(a, axis=axis))
+        dtype = _get_attr(dtype, "value", dtype)
+        return as_tensor(_get_attr(np.minimum, "accumulate")(a, axis=axis, dtype=dtype))
+    return as_tensor(_get_attr(np.minimum, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("Cumprod")
@@ -322,8 +323,8 @@ def _np_cumprod(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     """
     dtype = kwargs.pop("dtype", None)
     if dtype is not None and str(dtype) != "None":
-        kwargs["dtype"] = getattr(dtype, "value", dtype)
-    return as_tensor(getattr(np, "cumprod")(*args, **kwargs))
+        kwargs["dtype"] = _get_attr(dtype, "value", dtype)
+    return as_tensor(_get_attr(np, "cumprod")(*args, **kwargs))
 
 
 @numpy_eager_registry.register("Cumlogsumexp")
@@ -341,8 +342,8 @@ def _np_cumlogsumexp(backend_module: BackendModuleProtocol, *args: EagerValue, *
     a = args[0]
     axis = kwargs.get("axis", None)
     if axis is None:
-        return np.logaddexp.accumulate(getattr(np, "ravel")(a))
-    return as_tensor(getattr(np.logaddexp, "accumulate")(a, axis=axis))
+        return np.logaddexp.accumulate(_get_attr(np, "ravel")(a))
+    return as_tensor(_get_attr(np.logaddexp, "accumulate")(a, axis=axis))
 
 
 @numpy_eager_registry.register("ApproxMaxK")
@@ -360,17 +361,17 @@ def _np_approx_max_k(backend_module: BackendModuleProtocol, x: EagerValue, *args
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
-    if not hasattr(x, "shape"):
+    if not _has_attr(x, "shape"):
         x = backend_module.array(x)
-    if getattr(x, "size") == 0:
+    if _get_attr(x, "size") == 0:
         return (x, x)
-    idx = getattr(np, "argsort")(x, axis=reduction_dimension)
-    idx = getattr(np, "take")(
+    idx = _get_attr(np, "argsort")(x, axis=reduction_dimension)
+    idx = _get_attr(np, "take")(
         idx,
-        range(getattr(idx.shape, "__getitem__")(reduction_dimension) - 1, getattr(idx.shape, "__getitem__")(reduction_dimension) - 1 - k, -1),
+        range(_get_attr(idx.shape, "__getitem__")(reduction_dimension) - 1, _get_attr(idx.shape, "__getitem__")(reduction_dimension) - 1 - k, -1),
         axis=reduction_dimension,
     )
-    val = getattr(np, "take_along_axis")(x, idx, axis=reduction_dimension)
+    val = _get_attr(np, "take_along_axis")(x, idx, axis=reduction_dimension)
     return (val, idx)
 
 
@@ -389,13 +390,13 @@ def _np_approx_min_k(backend_module: BackendModuleProtocol, x: EagerValue, *args
     """
     k = args[0] if len(args) > 0 else kwargs.get("k", 1)
     reduction_dimension = kwargs.get("reduction_dimension", -1)
-    if not hasattr(x, "shape"):
+    if not _has_attr(x, "shape"):
         x = backend_module.array(x)
-    if getattr(x, "size") == 0:
+    if _get_attr(x, "size") == 0:
         return (x, x)
-    idx = getattr(np, "argsort")(x, axis=reduction_dimension)
-    idx = getattr(np, "take")(idx, range(as_int(k)), axis=reduction_dimension)
-    val = getattr(np, "take_along_axis")(x, idx, axis=reduction_dimension)
+    idx = _get_attr(np, "argsort")(x, axis=reduction_dimension)
+    idx = _get_attr(np, "take")(idx, range(as_int(k)), axis=reduction_dimension)
+    val = _get_attr(np, "take_along_axis")(x, idx, axis=reduction_dimension)
     return (val, idx)
 
 
@@ -408,10 +409,10 @@ def _get_k_val(k: EagerValue) -> int:
     Returns:
         int: Extracted integer.
     """
-    if hasattr(k, "item"):
-        return int(getattr(k, "item")())
-    if hasattr(k, "data") and hasattr(getattr(k, "data"), "item"):
-        return int(getattr(k, "data").item())
+    if _has_attr(k, "item"):
+        return int(_get_attr(k, "item")())
+    if _has_attr(k, "data") and _has_attr(_get_attr(k, "data"), "item"):
+        return int(_get_attr(k, "data").item())
     return int(as_int(k))
 
 
@@ -432,16 +433,16 @@ def _np_top_k(backend_module: BackendModuleProtocol, x: EagerValue, *args: Eager
     k = _get_k_val(k_arg)
     axis = kwargs.get("axis", -1)
     return_indices = kwargs.get("return_indices", None)
-    if not hasattr(x, "shape"):
+    if not _has_attr(x, "shape"):
         x = backend_module.array(x)
-    kth = max(0, getattr(x, "shape")[axis] - k)
+    kth = max(0, _get_attr(x, "shape")[axis] - k)
     if return_indices is False:
         val = backend_module.partition(x, kth, axis=axis)
-        slc = [slice(None)] * len(getattr(x, "shape"))
+        slc = [slice(None)] * len(_get_attr(x, "shape"))
         as_tensor(slc)[axis] = slice(-k, None)
         return val[tuple(slc)]
     idx = backend_module.argpartition(x, kth, axis=axis)
-    slc = [slice(None)] * len(getattr(x, "shape"))
+    slc = [slice(None)] * len(_get_attr(x, "shape"))
     as_tensor(slc)[axis] = slice(-k, None)
     idx_k = idx[tuple(slc)]
     if return_indices is True:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import typing
 from unittest.mock import MagicMock, patch
 
+from ml_switcheroo_compiler.core.shape import _get_attr
 from tests.testing_utils import as_callable, as_tensor_dict
 
 if typing.TYPE_CHECKING:
@@ -172,4 +173,4 @@ def test_get_jvp_from_data() -> None:
 
     with patch("ml_switcheroo_compiler.ops.generated_registry.OPS_REGISTRY", {"MyOp2": {}}):
         jvp_fn = get_jvp_from_data("MyOp2")
-        assert getattr(jvp_fn, "__name__", "") == "_fallback_finite_difference_jvp"
+        assert _get_attr(jvp_fn, "__name__", "") == "_fallback_finite_difference_jvp"

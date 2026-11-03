@@ -9,6 +9,7 @@ import numpy as np
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_int, as_tensor, numpy_eager_registry
 from ml_switcheroo_compiler.backends.numpy.eager.math_nan import _xlogy  # noqa: F401
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol
+from ml_switcheroo_compiler.core.shape import _get_attr
 
 from .math_general import _get_np_arg
 
@@ -100,7 +101,7 @@ def _np_rfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "rfft")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "rfft")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Ifft")
@@ -120,7 +121,7 @@ def _np_ifft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "ifft")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "ifft")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Fftn")
@@ -140,7 +141,7 @@ def _np_fftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "fftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "fftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Ifftn")
@@ -160,7 +161,7 @@ def _np_ifftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "ifftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "ifftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Rfftn")
@@ -180,7 +181,7 @@ def _np_rfftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "rfftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "rfftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Irfftn")
@@ -200,7 +201,7 @@ def _np_irfftn(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "irfftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "irfftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Ifft2")
@@ -220,7 +221,7 @@ def _np_ifft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "ifft2")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "ifft2")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Rfft2")
@@ -240,7 +241,7 @@ def _np_rfft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "rfft2")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "rfft2")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Irfft2")
@@ -260,7 +261,7 @@ def _np_irfft2(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "irfft2")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "irfft2")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Fftnd")
@@ -280,7 +281,7 @@ def _np_fftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "fftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "fftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Ifftnd")
@@ -300,7 +301,7 @@ def _np_ifftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "ifftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "ifftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Rfftnd")
@@ -320,7 +321,7 @@ def _np_rfftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "rfftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "rfftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Irfftnd")
@@ -340,7 +341,7 @@ def _np_irfftnd(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "irfftn")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "irfftn")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Fftshift")
@@ -360,7 +361,7 @@ def _np_fftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "fftshift")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "fftshift")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Ifftshift")
@@ -380,7 +381,7 @@ def _np_ifftshift(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "ifftshift")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "ifftshift")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Hfft")
@@ -400,7 +401,7 @@ def _np_hfft(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs:
     a = _get_np_arg(args, 0)
     if a is None:
         return None
-    return as_tensor(getattr(fft, "hfft")(a, **kwargs))
+    return as_tensor(_get_attr(fft, "hfft")(a, **kwargs))
 
 
 @numpy_eager_registry.register("Rfftfreq")
@@ -423,7 +424,7 @@ def _np_rfftfreq(backend_module: BackendModuleProtocol, *args: EagerValue, **kwa
         n = int(as_int(args[0]))
     except (TypeError, ValueError):
         return args[0]
-    return as_tensor(getattr(fft, "rfftfreq")(n, **kwargs))
+    return as_tensor(_get_attr(fft, "rfftfreq")(n, **kwargs))
 
 
 @numpy_eager_registry.register("Rrelu")
@@ -443,7 +444,7 @@ def _np_rrelu(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
         return None
     lower = kwargs.get("lower", 0.125)
     upper = kwargs.get("upper", 0.333)
-    alpha = getattr(np.random, "uniform")(lower, upper, size=a.shape)
+    alpha = _get_attr(np.random, "uniform")(lower, upper, size=a.shape)
     return np.where(np.greater_equal(a, 0), a, np.multiply(a, alpha))
 
 
@@ -463,7 +464,7 @@ def _np_softmax(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     if a is None:
         return None
     axis = kwargs.get("axis", -1)
-    e_x = getattr(np, "exp")(a - getattr(np, "max")(a, axis=axis, keepdims=True))
+    e_x = _get_attr(np, "exp")(a - _get_attr(np, "max")(a, axis=axis, keepdims=True))
     return as_tensor(e_x / e_x.sum(axis=axis, keepdims=True))
 
 

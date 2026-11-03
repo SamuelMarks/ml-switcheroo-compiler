@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from ml_switcheroo_compiler.core.shape import _has_attr
+
 
 def test_edge_inits_symbol_exports() -> None:
     """Verify that canonical edge package and BackendRegistry export all edge generators."""
@@ -10,29 +12,29 @@ def test_edge_inits_symbol_exports() -> None:
     import ml_switcheroo_compiler.backends.llvm_cpp as llvm_cpp
     from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-    assert hasattr(edge, "MLIRBytecodeEncoder")
+    assert _has_attr(edge, "MLIRBytecodeEncoder")
     assert edge.MLIRBytecodeEncoder is not None
-    assert hasattr(edge, "ONNXCodeGenerator")
+    assert _has_attr(edge, "ONNXCodeGenerator")
     assert edge.ONNXCodeGenerator is not None
-    assert hasattr(edge, "StableHLOCodeGenerator")
+    assert _has_attr(edge, "StableHLOCodeGenerator")
     assert edge.StableHLOCodeGenerator is not None
-    assert hasattr(edge, "WasmCodeGenerator")
+    assert _has_attr(edge, "WasmCodeGenerator")
     assert edge.WasmCodeGenerator is not None
-    assert hasattr(edge, "WebGLCodeGenerator")
+    assert _has_attr(edge, "WebGLCodeGenerator")
     assert edge.WebGLCodeGenerator is not None
-    assert hasattr(edge, "WebGPUCodeGenerator")
+    assert _has_attr(edge, "WebGPUCodeGenerator")
     assert edge.WebGPUCodeGenerator is not None
 
-    assert hasattr(edge_webrtc, "SignalingHandler")
+    assert _has_attr(edge_webrtc, "SignalingHandler")
     assert edge_webrtc.SignalingHandler is not None
-    assert hasattr(edge_webrtc, "SignalingServer")
+    assert _has_attr(edge_webrtc, "SignalingServer")
     assert edge_webrtc.SignalingServer is not None
-    assert hasattr(edge_webrtc, "WebRTCDataChannelStream")
+    assert _has_attr(edge_webrtc, "WebRTCDataChannelStream")
     assert edge_webrtc.WebRTCDataChannelStream is not None
 
-    assert hasattr(llvm_cpp, "CppGenerator")
+    assert _has_attr(llvm_cpp, "CppGenerator")
     assert llvm_cpp.CppGenerator is not None
-    assert hasattr(llvm_cpp, "LLVMCPPRunner")
+    assert _has_attr(llvm_cpp, "LLVMCPPRunner")
     assert llvm_cpp.LLVMCPPRunner is not None
 
     assert BackendRegistry.get("edge") is edge.ONNXCodeGenerator

@@ -11,6 +11,7 @@ import pytest
 from ml_switcheroo_compiler.core.config import ConfigContext, config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import _get_attr, _set_attr
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.grad import GradOptions, _check_scalar, _get_concrete_val, _to_original_type, checkpoint, custom_vjp, hessian, jacfwd, jacrev, overwrite_with_gradient, value_and_grad
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -38,8 +39,8 @@ def test_get_concrete_val_proxy() -> None:
         pass
 
     t = as_callable(Tensor)(as_callable(MockData)(), as_callable(TensorConfig)((), DType.Float32, as_callable(Device)("cpu")))
-    setattr(t, "_data", as_callable(ProxyTensor)("t1", (), "float32"))
-    setattr(getattr(t, "_data"), "concrete_value", 42.0)
+    _set_attr(t, "_data", as_callable(ProxyTensor)("t1", (), "float32"))
+    _set_attr(_get_attr(t, "_data"), "concrete_value", 42.0)
 
     with mock.patch.object(Tensor, "data", new_callable=mock.PropertyMock, return_value=None):
         assert _get_concrete_val(t) == 42.0
@@ -226,7 +227,7 @@ def test_custom_vjp() -> None:
         """
         return (as_tensor(g) * as_tensor(2.0),)
 
-    as_tensor(getattr(f, "defvjp"))(fwd, bwd)
+    as_tensor(_get_attr(f, "defvjp"))(fwd, bwd)
 
     x = Tensor(np.array([2.0], dtype=np.float32), TensorConfig((1,), DType.Float32, Device("cpu")))
     with ConfigContext(eager_mode=True):
@@ -332,8 +333,8 @@ def test_reconstruct_output_float64() -> None:
     """Test function test_reconstruct_output_float64."""
     t_orig = Tensor(np.array(1.0, dtype=np.float64), TensorConfig((), DType.Float64, Device("cpu")))
     res = _to_original_type(np.array(2.0, dtype=np.float64), t_orig)
-    assert as_tensor(getattr(res, "dtype")) == DType.Float64
-    assert as_tensor(getattr(res, "item"))() == 2.0
+    assert as_tensor(_get_attr(res, "dtype")) == DType.Float64
+    assert as_tensor(_get_attr(res, "item"))() == 2.0
 
 
 def test_grad_and_value_has_aux() -> None:

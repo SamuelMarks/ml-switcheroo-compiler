@@ -9,6 +9,7 @@ import pytest
 from ml_switcheroo_ir import NodeDict
 
 from ml_switcheroo_compiler.backends.edge.wasm import WasmCodeGenerator
+from ml_switcheroo_compiler.core.shape import _get_attr
 from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode
 from tests.testing_utils import as_callable, as_tensor
 
@@ -33,7 +34,7 @@ def global_wasm_mock() -> Iterator[None]:
             OPS_REGISTRY[op] = {"variants": {}}
         if "variants" not in OPS_REGISTRY[op]:
             OPS_REGISTRY[op]["variants"] = {}
-        getattr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
+        _get_attr(OPS_REGISTRY[op]["variants"], "__setitem__")("edge_wasm_simd", {"template": "mock_template_" + op})
 
     with patch("ml_switcheroo_compiler.backends.edge.wasm_simd.wasm_provider.get_wasm_template") as mock_get_wasm_template:
         mock_bodies = {
