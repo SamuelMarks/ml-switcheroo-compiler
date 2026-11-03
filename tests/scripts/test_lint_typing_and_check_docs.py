@@ -34,6 +34,7 @@ class Sub:
         self.x = getattr(self, "x", 1)
         self.y = typing.cast(int, 2)
         self.z = self.__add__(3)
+        self.w = self.__dict__
 ''',
         encoding="utf-8",
     )
@@ -44,6 +45,7 @@ class Sub:
     assert any("prohibited reflection/cast call 'getattr()'" in v for v in violations)
     assert any("prohibited 'typing.cast()' call" in v for v in violations)
     assert any("prohibited direct dunder call '.__add__()'" in v for v in violations)
+    assert any("prohibited dunder attribute '.__dict__'" in v for v in violations)
     assert lt.scan_file(str(exact_file)) == []
 
     assert lt.main([str(tmp_path)]) == 1

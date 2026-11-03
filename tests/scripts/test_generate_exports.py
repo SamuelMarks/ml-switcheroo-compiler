@@ -301,7 +301,6 @@ def test_process_file_no_magic_no_all(tmp_path: Path, monkeypatch: pytest.Monkey
     class MockMod:
         """Mock module."""
 
-        __all__ = None
         x = 1
 
     with patch("subprocess.run"):
