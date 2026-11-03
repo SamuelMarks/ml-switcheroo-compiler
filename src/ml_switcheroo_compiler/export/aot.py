@@ -3,21 +3,134 @@
 from __future__ import annotations
 
 import logging
+import typing
 from collections.abc import Iterable
 
 from ml_switcheroo_ir import LogicalGraph
 
+from ml_switcheroo_compiler.backends.eager_registry import (
+    StructuralOperandProtocol,
+    as_shape,
+)
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, VariadicCallableProtocol, invoke_callable
-from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
+from ml_switcheroo_compiler.core.shape import (
+    AttrValue,
+    TensorOrScalar,
+    VariadicCallableProtocol,
+    invoke_callable,
+)
+from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, _extract_dtype_str
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, TracerTape
 from ml_switcheroo_compiler.transforms.pass_manager import PassManager
 
 _COMPILATION_CACHE: dict[str, VariadicCallableProtocol] = {}
+
+
+@typing.runtime_checkable
+class _TensorArgProtocol(typing.Protocol):
+    """Protocol for tensor-like arguments exposing `.shape` and `.dtype`."""
+
+    @property
+    def shape(self) -> tuple[int | str, ...]:
+        """Return tensor shape.
+
+        Returns:
+            tuple[int | str, ...]: Shape tuple.
+        """
+        ...
+
+    @property
+    def dtype(self) -> TensorOrScalar:
+        """Return tensor dtype.
+
+        Returns:
+            TensorOrScalar: Dtype value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _HasDeviceProtocol(typing.Protocol):
+    """Protocol for objects exposing a `.device` attribute."""
+
+    @property
+    def device(self) -> TensorOrScalar:
+        """Return device object or string.
+
+        Returns:
+            TensorOrScalar: Device specification.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _CodeCallableProtocol(typing.Protocol):
+    """Protocol for Python functions exposing `__code__` and `__name__`."""
+
+    @property
+    def __code__(self) -> TensorOrScalar:
+        """Return function code object.
+
+        Returns:
+            TensorOrScalar: Code object.
+        """
+        ...
+
+    @property
+    def __name__(self) -> str:
+        """Return function name.
+
+        Returns:
+            str: Function name.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _GetModuleProtocol(typing.Protocol):
+    """Protocol for generator classes exposing `get_module()`."""
+
+    def get_module(self) -> TensorOrScalar:
+        """Return backend module.
+
+        Returns:
+            TensorOrScalar: Backend module.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _CompileAotProtocol(typing.Protocol):
+    """Protocol for generators exposing `compile_aot(graph, **kwargs)`."""
+
+    def compile_aot(self, graph: LogicalGraph, **kwargs: AttrValue) -> VariadicCallableProtocol | None:
+        """Compile graph ahead-of-time.
+
+        Args:
+            graph (LogicalGraph): Graph to compile.
+            **kwargs (AttrValue): Compilation options.
+
+        Returns:
+            VariadicCallableProtocol | None: Compiled callable.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _GenerateCodeProtocol(typing.Protocol):
+    """Protocol for generators exposing `generate()`."""
+
+    def generate(self) -> str:
+        """Generate source code string.
+
+        Returns:
+            str: Generated source code.
+        """
+        ...
 
 
 def _fallback_eager(
@@ -57,12 +170,15 @@ def _build_signature_key(fn: TensorOrScalar, backend: str, args: TensorOrScalar)
     sig_parts = []
     args_iter: Iterable[TensorOrScalar] = args if isinstance(args, Iterable) else ()
     for a in args_iter:
-        if hasattr(a, "shape") and hasattr(a, "dtype"):
-            sig_parts.append(f"T({getattr(a, 'shape', ())},{getattr(a, 'dtype', '')})")
+        raw_a: StructuralOperandProtocol = a
+        if isinstance(raw_a, _TensorArgProtocol):
+            sig_parts.append(f"T({raw_a.shape},{raw_a.dtype})")
         else:
             sig_parts.append(f"S({type(a).__name__})")
-    code_sig = getattr(fn, "__code__", None)
-    return f"{getattr(fn, '__name__', '')}_{id(fn)}_{id(code_sig)}_{backend}_" + "_".join(sig_parts)
+    raw_fn: StructuralOperandProtocol = fn
+    code_sig = raw_fn.__code__ if isinstance(raw_fn, _CodeCallableProtocol) else None
+    fn_name = str(raw_fn.__name__) if isinstance(raw_fn, _CodeCallableProtocol) else ""
+    return f"{fn_name}_{id(fn)}_{id(code_sig)}_{backend}_" + "_".join(sig_parts)
 
 
 def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar]:
@@ -76,15 +192,16 @@ def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar
     """
     proxy_args: list[TensorOrScalar] = []
     for i, a in enumerate(args):
-        if hasattr(a, "shape") and hasattr(a, "dtype"):
+        raw_a: StructuralOperandProtocol = a
+        if isinstance(raw_a, _TensorArgProtocol):
             arg_id = f"arg_{i}"
-            shape = getattr(a, "shape", ())
-            raw_dt = getattr(a, "dtype", DType.Float32)
+            shape = as_shape(raw_a.shape)
+            raw_dt = raw_a.dtype
             if isinstance(raw_dt, DType):
                 dtype = raw_dt
                 dt_str = raw_dt.value
             else:
-                dt_str = getattr(raw_dt, "value", str(raw_dt))
+                dt_str = _extract_dtype_str(raw_dt)
                 if dt_str.startswith("DType."):
                     dt_str = dt_str.split(".", 1)[1]
                 if dt_str in DType._value2member_map_:
@@ -93,15 +210,17 @@ def _prepare_proxy_args(args: tuple[TensorOrScalar, ...]) -> list[TensorOrScalar
                     dtype = DType.Float32
                     dt_str = "float32"
             proxy = ProxyTensor(id=arg_id, shape=shape, dtype=dt_str)
-            device = getattr(a, "device", "cpu")
+            device = raw_a.device if isinstance(raw_a, _HasDeviceProtocol) else "cpu"
             proxy_args.append(Tensor(proxy, TensorConfig(proxy.shape, dtype, device)))
             TracingNodeBuilder.create_tracing_logical_node("Input", [], {}, shape)
 
-            last_node = list(getattr(global_tracing_state.active_graph, "nodes").values())[-1]
+            active_graph = global_tracing_state.active_graph
+            assert active_graph is not None
+            last_node = list(active_graph.nodes.values())[-1]
             old_id = last_node.id
-            del getattr(global_tracing_state.active_graph, "nodes")[old_id]
+            del active_graph.nodes[old_id]
             last_node.id = arg_id
-            getattr(global_tracing_state.active_graph, "nodes")[arg_id] = last_node
+            active_graph.nodes[arg_id] = last_node
         else:
             proxy_args.append(a)
     return proxy_args
@@ -113,10 +232,12 @@ def _capture_outputs(out: TensorOrScalar) -> None:
     Args:
         out (TensorOrScalar): Traced function return value or sequence of tensors.
     """
+    active_graph = global_tracing_state.active_graph
+    assert active_graph is not None
     if isinstance(out, Tensor):
         out_id, _ = TracingNodeBuilder.extract_from_tensor(out)
-        out_node_id = TracingNodeBuilder.create_tracing_logical_node("Output", [out_id], {}, getattr(out, "shape", ()))
-        getattr(global_tracing_state.active_graph, "outputs").append(out_node_id)
+        out_node_id = TracingNodeBuilder.create_tracing_logical_node("Output", [out_id], {}, out.shape)
+        active_graph.outputs.append(out_node_id)
     elif isinstance(out, (list, tuple)):
         out_ids = []
         for x in out:
@@ -125,7 +246,7 @@ def _capture_outputs(out: TensorOrScalar) -> None:
                 out_ids.append(oid)
         if out_ids:
             out_node_id = TracingNodeBuilder.create_tracing_logical_node("Output", out_ids, {}, ())
-            getattr(global_tracing_state.active_graph, "outputs").append(out_node_id)
+            active_graph.outputs.append(out_node_id)
 
 
 def _get_namespace(backend: str, generator_cls: TensorOrScalar) -> dict[str, TensorOrScalar]:
@@ -139,8 +260,9 @@ def _get_namespace(backend: str, generator_cls: TensorOrScalar) -> dict[str, Ten
         dict[str, TensorOrScalar]: Namespace dictionary mapping the backend module.
     """
     namespace: dict[str, TensorOrScalar] = {}
-    if hasattr(generator_cls, "get_module"):
-        namespace[backend] = getattr(generator_cls, "get_module")()
+    raw_gen_cls: StructuralOperandProtocol = generator_cls
+    if isinstance(raw_gen_cls, _GetModuleProtocol):
+        namespace[backend] = raw_gen_cls.get_module()
     elif backend == "numpy":
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
@@ -225,12 +347,13 @@ def _try_static_compile_aot(
 
     from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 
-    if not hasattr(generator_cls, "compile_aot"):
+    raw_gen_cls: StructuralOperandProtocol = generator_cls
+    if not isinstance(raw_gen_cls, _CompileAotProtocol):
         return None
     try:
         static_compile = inspect.getattr_static(generator_cls, "compile_aot")
         if isinstance(static_compile, (staticmethod, classmethod)) or not (isinstance(generator_cls, type) and issubclass(generator_cls, BaseGenerator)):
-            compiled_fn = getattr(generator_cls, "compile_aot")(graph, **kwargs)
+            compiled_fn = raw_gen_cls.compile_aot(graph, **kwargs)
             if callable(compiled_fn):
                 res_fn: VariadicCallableProtocol = compiled_fn
                 return res_fn
@@ -389,9 +512,10 @@ def _compile_with_generator_instance(
             raise CompilationError(f"Failed to instantiate generator '{backend}': {e}") from e
         return _fallback_eager(fn, args, kw)
 
-    if hasattr(generator, "compile_aot"):
+    raw_gen: StructuralOperandProtocol = generator
+    if isinstance(raw_gen, _CompileAotProtocol):
         try:
-            res_aot = getattr(generator, "compile_aot")(graph, **kwargs)
+            res_aot = raw_gen.compile_aot(graph, **kwargs)
             if callable(res_aot):
                 aot_fn: VariadicCallableProtocol = res_aot
                 _COMPILATION_CACHE[key] = aot_fn
@@ -403,7 +527,7 @@ def _compile_with_generator_instance(
                 raise CompilationError(f"AOT compilation failed: {e}") from e
             return _fallback_eager(fn, args, kw)
 
-    code = str(getattr(generator, "generate")())
+    code = str(raw_gen.generate()) if isinstance(raw_gen, _GenerateCodeProtocol) else ""
     return _execute_generated_code(code, generator_cls, backend, key, strict, fn, args, kw)
 
 

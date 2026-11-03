@@ -10,8 +10,7 @@ import yaml
 from ml_switcheroo_ir import AttributeValue
 from pydantic import BaseModel, Field, RootModel
 
-from ml_switcheroo_compiler.core.shape import AttrValue
-from ml_switcheroo_compiler.ir.core import as_attr_val, as_attrs
+from ml_switcheroo_compiler.ir.core import as_attr_val
 
 YamlScalar = typing.Union[typing.Union[str, int, float, "bool"], "None"]
 YamlLeaf = typing.Union[YamlScalar, list[YamlScalar], dict[str, YamlScalar], "list[dict[str, YamlScalar]]"]
@@ -74,18 +73,6 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
 
     root: dict[str, TopologyConfig]
 
-    def _dict(self, *args: AttrValue, **kwargs: AttrValue) -> dict[str, AttributeValue]:
-        """Return dict representation.
-
-        Args:
-            *args (AttrValue): Positional dump args.
-            **kwargs (AttrValue): Keyword dump args.
-
-        Returns:
-            dict[str, AttributeValue]: Dictionary representation.
-        """
-        return as_attrs(getattr(super(), "model_dump")(*args, **kwargs))
-
     def items(self) -> ItemsView[str, TopologyConfig]:
         """Return items from the underlying dictionary.
 
@@ -105,9 +92,6 @@ class PipelineTopologiesConfig(RootModel[dict[str, TopologyConfig]]):
             Optional[TopologyConfig]: The topology config or default.
         """
         return self.root.get(key, default)
-
-
-setattr(PipelineTopologiesConfig, "dict", PipelineTopologiesConfig._dict)
 
 
 class ClusterMeshConfig(BaseModel):

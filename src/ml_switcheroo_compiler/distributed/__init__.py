@@ -3,16 +3,36 @@
 from __future__ import annotations
 
 import contextlib
+import typing
 from collections.abc import Iterator
 from contextlib import AbstractContextManager as ContextManager
 
-from ml_switcheroo_compiler.backends.eager_registry import as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    StructuralOperandProtocol,
+    as_callable,
+    as_tensor,
+)
 from ml_switcheroo_compiler.core import config
+from ml_switcheroo_compiler.core.device import _backend_name
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.ops import distributed_ops
 
 from .device_mesh import DeviceMesh
 from .layout_map import LayoutMap, ShardingSpec
+
+
+@typing.runtime_checkable
+class _InitializeDistributedBackendProtocol(typing.Protocol):
+    """Protocol for backends supporting `initialize_distributed()`."""
+
+    def initialize_distributed(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+        """Initialize distributed backend.
+
+        Args:
+            *args (TensorOrScalar): Positional arguments.
+            **kwargs (AttrValue): Keyword arguments.
+        """
+        ...
 
 
 class Distribution:
@@ -128,11 +148,11 @@ def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
-    if hasattr(backend, "initialize_distributed"):
+    backend: StructuralOperandProtocol = registry.get_active_backend()
+    if isinstance(backend, _InitializeDistributedBackendProtocol):
         backend.initialize_distributed(*args, **kwargs)
     else:
-        raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support initialize_distributed()")
+        raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support initialize_distributed()")
 
 
 def list_devices(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
@@ -197,7 +217,7 @@ def distribute_tensor(*args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrSca
     if config.eager_mode:
         return args[0] if args else kwargs.get("tensor")
 
-    return as_tensor(getattr(distributed_ops, "shard_tensor")(*args, **kwargs))
+    return as_tensor(as_callable(distributed_ops.shard_tensor)(*args, **kwargs))
 
 
 __all__ = [

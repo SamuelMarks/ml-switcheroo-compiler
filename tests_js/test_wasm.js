@@ -366,3 +366,132 @@ test('compileWasmGraph and runWasmGraph handle 2D matmul and reductions', async 
     assert.ok(res.outputs['R']);
     assert.strictEqual(res.outputs['R'][0], 134);
 });
+
+test('wasm_runner full branch and function coverage', async () => {
+    // 1. WasmMemoryArena unaligned offset & maxPages exceeded
+    const smallArena = new wasmModule.WasmMemoryArena(1, 1);
+    smallArena.allocate(4, 4);
+    assert.strictEqual(smallArena.allocate(4, 16), 16);
+    assert.throws(() => smallArena.allocate(131072), /exceeded max pages limit/);
+
+    // 2. compileWasmKernel floor & copy, compileWasmBinaryOpKernel all ops
+    for (const op of ['floor', 'copy']) {
+        const k = wasmModule.compileWasmKernel(op);
+        assert.ok(k instanceof Uint8Array);
+    }
+    const defaultKernel = wasmModule.compileWasmKernel();
+    assert.ok(defaultKernel instanceof Uint8Array);
+
+    // 3. WasmGraphBytecodeParser.parseAndCompile all op branches
+    assert.ok(wasmModule.WasmGraphBytecodeParser.parseAndCompile('') instanceof Uint8Array);
+    const sampleBin = wasmModule.compileWasmKernel('add');
+    assert.strictEqual(wasmModule.WasmGraphBytecodeParser.parseAndCompile(sampleBin), sampleBin);
+
+    const jsonGraphStr = JSON.stringify({
+        inputs: ['X'],
+        outputs: ['Y'],
+        nodes: [
+            { id: 'X', op_type: 'Input', shape_metadata: [2] },
+            { id: 'Y', op_type: 'Add', inputs: ['X', 'X'], shape_metadata: [2] }
+        ]
+    });
+    const parsedPlan = wasmModule.WasmGraphBytecodeParser.parseAndCompile(jsonGraphStr);
+    assert.ok(parsedPlan.executionSteps);
+
+    const invalidJson = '{ not valid json }';
+    assert.ok(wasmModule.WasmGraphBytecodeParser.parseAndCompile(invalidJson) instanceof Uint8Array);
+
+    for (const snippet of [
+        'matmul', 'transpose', 'slice', 'reduce_sum', 'mean',
+        'sqrt', 'abs', 'neg', 'ceil', 'floor', 'min', 'max', 'copy'
+    ]) {
+        const res = wasmModule.WasmGraphBytecodeParser.parseAndCompile(snippet);
+        assert.ok(res instanceof Uint8Array);
+    }
+
+    const objGraph = wasmModule.WasmGraphBytecodeParser.parseAndCompile({
+        inputs: ['X'],
+        outputs: ['Y'],
+        nodes: [{ id: 'Y', op_type: 'Neg', inputs: ['X'], shape_metadata: [2] }]
+    });
+    assert.ok(objGraph.executionSteps);
+
+    // 4. WasmTensor symbolic/string dimensions & compileWasmGraph op variants
+    const symTensor = new wasmModule.WasmTensor(['4', 'sym_dim', NaN], 0, 'int32');
+    assert.deepStrictEqual(symTensor.shape, [4, 1, 1]);
+
+    const defaultShapeTensor = new wasmModule.WasmTensor(null, 0);
+    assert.deepStrictEqual(defaultShapeTensor.shape, [1]);
+
+    const multiOpGraph = {
+        inputs: ['A', 'B'],
+        outputs: ['N8'],
+        nodes: {
+            n0: { id: 'A', op_type: 'Input', shape_metadata: [2] },
+            n1: { id: 'B', op_type: 'Input', shape_metadata: [2] },
+            n2: { id: 'N2', op_type: 'Sub', inputs: ['A', 'B'] },
+            n3: { id: 'N3', op_type: 'Div', inputs: ['N2', 'B'] },
+            n4: { id: 'N4', op_type: 'Sqrt', inputs: ['N3'] },
+            n5: { id: 'N5', op_type: 'Abs', inputs: ['N4'] },
+            n6: { id: 'N6', op_type: 'Neg', inputs: ['N5'] },
+            n7: { id: 'N7', op_type: 'Relu', inputs: ['N6'] },
+            n8: { id: 'N8', op_type: 'ReduceMean', inputs: ['N7'], shape_metadata: [1] },
+            n9: { id: 'N9', op_type: 'ReduceMax', inputs: ['A', 'B'], shape_metadata: [2] },
+            n10: { id: 'N10', op_type: 'ReduceMin', inputs: ['A', 'B'], shape_metadata: [2] },
+            n11: { id: 'N11', op_type: 'Min', inputs: ['A', 'B'], shape_metadata: [2] },
+            n12: { id: 'N12', op_type: 'Max', inputs: ['A', 'B'], shape_metadata: [2] },
+            n13: { id: 'N13', op_type: 'Mul', inputs: ['A', 'B'], shape_metadata: [2] }
+        }
+    };
+    const multiPlan = wasmModule.compileWasmGraph(multiOpGraph);
+    const multiRes = await wasmModule.runWasmGraph(multiPlan, {
+        A: new Float32Array([4.0, 9.0]),
+        B: new Float32Array([1.0, 3.0])
+    });
+    assert.ok(multiRes.outputs['N8']);
+
+    // 5. captureWasmTensorShapes all branches & empty graph fallbacks
+    const emptyPlan = wasmModule.compileWasmGraph({});
+    const emptyRes = await wasmModule.runWasmGraph({
+        totalMemoryBytes: 0,
+        tensorMap: { X: { byteOffset: 0, numElements: 2, shape: [2] } },
+        executionSteps: [],
+        graph: {}
+    }, { X: [1.0, 2.0], UNUSED: [3.0] });
+    assert.deepStrictEqual(emptyRes.outputs, {});
+    assert.deepStrictEqual(wasmModule.extractShapeTelemetry({}), {
+        shapes: {},
+        memory_bytes: 0,
+        nodes_evaluated: []
+    });
+
+    // Test 1D matmul & transpose fallback shapes in runWasmGraph
+    const fallback1dGraph = {
+        inputs: ['V1', 'V2'],
+        outputs: ['M1', 'T1', 'S1'],
+        nodes: [
+            { id: 'V1', op_type: 'Input', shape_metadata: [2] },
+            { id: 'V2', op_type: 'Input', shape_metadata: [2] },
+            { id: 'M1', op_type: 'Matmul', inputs: ['V1', 'V2'], shape_metadata: [1] },
+            { id: 'T1', op_type: 'Transpose', inputs: ['V1'], shape_metadata: [2] },
+            { id: 'S1', op_type: 'Slice', inputs: ['V1'], shape_metadata: [2] },
+            { id: 'DEF_OP' }
+        ]
+    };
+    const fbPlan = wasmModule.compileWasmGraph(fallback1dGraph);
+    await wasmModule.runWasmGraph(fbPlan, {
+        V1: new Float32Array([1.0, 2.0]),
+        V2: new Float32Array([3.0, 4.0])
+    });
+
+    assert.deepStrictEqual(wasmModule.captureWasmTensorShapes(null), {});
+    assert.deepStrictEqual(wasmModule.captureWasmTensorShapes('not_an_object'), {});
+    assert.deepStrictEqual(wasmModule.captureWasmTensorShapes({
+        tensorMap: {
+            a: { shape: [2, 3] },
+            b: [4, 5],
+            c: { shape: new Uint32Array([6]) },
+            d: null
+        }
+    }), { a: [2, 3], b: [4, 5], c: [6] });
+});

@@ -352,5 +352,78 @@ class MLXCodeGenerator(ClassBasedGenerator):
 
             return fallback_forward
 
+    @classmethod
+    def zeros(cls, shape: tuple[int, ...]) -> EagerValue:
+        """Create a zero-filled MLX array.
+
+        Args:
+            shape (tuple[int, ...]): Target shape.
+
+        Returns:
+            EagerValue: Zero-filled array.
+        """
+        from .types import zeros as _zeros
+
+        return _zeros(cls, shape)
+
+    @classmethod
+    def array(cls, data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+        """Create an MLX array from data.
+
+        Args:
+            data (EagerValue): Input data.
+            dtype (EagerValue | None): Optional data type.
+
+        Returns:
+            EagerValue: MLX array.
+        """
+        from .types import array as _array
+
+        return _array(cls, data, dtype=dtype)
+
+    @classmethod
+    def asarray(cls, data: EagerValue) -> EagerValue:
+        """Convert data to an MLX array.
+
+        Args:
+            data (EagerValue): Input data.
+
+        Returns:
+            EagerValue: MLX array.
+        """
+        from .types import asarray as _asarray
+
+        return _asarray(cls, data)
+
+    @classmethod
+    def item(cls, data: EagerValue) -> float:
+        """Extract scalar item from an MLX array.
+
+        Args:
+            data (EagerValue): Target array.
+
+        Returns:
+            float: Extracted scalar.
+        """
+        from .types import item as _item
+
+        return _item(cls, data)
+
+    @classmethod
+    def execute_op(cls, op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Execute operation eagerly on MLX backend.
+
+        Args:
+            op_type (str): Operation type.
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            EagerValue: Evaluated MLX array.
+        """
+        from .eager import execute_op as _execute_op
+
+        return _execute_op(cls, op_type, *args, **kwargs)
+
 
 MLXGenerator = MLXCodeGenerator

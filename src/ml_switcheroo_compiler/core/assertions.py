@@ -11,6 +11,44 @@ if typing.TYPE_CHECKING:
 _ASSERTIONS_LIST: list[tuple[TensorOrScalar, str]] = []
 
 
+@typing.runtime_checkable
+class _NumpyConvertibleProtocol(typing.Protocol):
+    """Protocol for objects exposing a `.numpy()` conversion method."""
+
+    def numpy(self) -> TensorOrScalar:
+        """Return numpy representation.
+
+        Returns:
+            TensorOrScalar: Converted value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _AllEvaluatableProtocol(typing.Protocol):
+    """Protocol for array objects exposing an `.all()` reduction method."""
+
+    def all(self) -> bool | TensorOrScalar:
+        """Return True if all elements evaluate to True.
+
+        Returns:
+            bool | TensorOrScalar: Reduction result.
+        """
+        ...
+
+
+def _is_tensor_iterable(val: TensorOrScalar) -> typing.TypeGuard[Iterable[TensorOrScalar]]:
+    """Type guard narrowing `val` to a non-string `Iterable[TensorOrScalar]`.
+
+    Args:
+        val (TensorOrScalar): Value to inspect.
+
+    Returns:
+        bool: True if `val` is an `Iterable` and not `str` or `bytes`.
+    """
+    return isinstance(val, Iterable) and not isinstance(val, (str, bytes))
+
+
 def record_assertion(condition: TensorOrScalar, message: str = "") -> None:
     """Record a boolean or tensor condition assertion for deferred evaluation.
 
@@ -30,7 +68,7 @@ def _is_iterable_non_string(c: TensorOrScalar) -> bool:
     Returns:
         bool: True if `c` is an `Iterable` and not `str` or `bytes`.
     """
-    return isinstance(c, Iterable) and not isinstance(c, (str, bytes))
+    return _is_tensor_iterable(c)
 
 
 def _evaluate_iterable(c: TensorOrScalar) -> bool:
@@ -45,8 +83,8 @@ def _evaluate_iterable(c: TensorOrScalar) -> bool:
     Raises:
         ValueError: If `c` is not a non-string iterable.
     """
-    if isinstance(c, Iterable) and not isinstance(c, (str, bytes)):
-        return all(bool(x) for x in typing.cast("Iterable[TensorOrScalar]", c))
+    if _is_tensor_iterable(c):
+        return all(bool(x) for x in c)
     raise ValueError(f"Could not evaluate boolean value of {type(c)}")
 
 
@@ -59,10 +97,10 @@ def _evaluate_single_condition(cond: TensorOrScalar) -> bool:
     Returns:
         bool: True if the condition holds, else False.
     """
-    c = getattr(cond, "numpy")() if hasattr(cond, "numpy") else cond
+    c = cond.numpy() if isinstance(cond, _NumpyConvertibleProtocol) else cond
 
-    if hasattr(c, "all") and callable(getattr(c, "all")):
-        return bool(getattr(c, "all")())
+    if isinstance(c, _AllEvaluatableProtocol) and callable(c.all):
+        return bool(c.all())
 
     try:
         return bool(c)

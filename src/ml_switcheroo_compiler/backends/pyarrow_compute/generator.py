@@ -2,9 +2,72 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from ml_switcheroo_compiler.backends.base_generator import PythonStringGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_tensor
+from ml_switcheroo_compiler.backends.pyarrow_compute.eager import execute_op as _execute_op
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    array as _array,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    arrow_tensor_to_tensor as _arrow_tensor_to_tensor,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    asarray as _asarray,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    check_parity as _check_parity,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    chunked_array as _chunked_array,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    empty as _empty,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    from_arrow as _from_arrow,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    is_arrow_object as _is_arrow_object,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    item as _item,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    ones as _ones,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    record_batch as _record_batch,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    record_batch_to_tensor as _record_batch_to_tensor,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    slice_record_batch as _slice_record_batch,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    table as _table,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    tensor as _tensor,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    tensor_to_arrow_tensor as _tensor_to_arrow_tensor,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    tensor_to_record_batch as _tensor_to_record_batch,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    to_arrow as _to_arrow,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    to_table as _to_table,
+)
+from ml_switcheroo_compiler.backends.pyarrow_compute.types import (
+    zeros as _zeros,
+)
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 
@@ -18,12 +81,11 @@ def _unwrap_input_val(val: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Unwrapped raw data.
     """
-    from ml_switcheroo_compiler.backends.pyarrow_compute.types import from_arrow, is_arrow_object
     from ml_switcheroo_compiler.core.tensor import Tensor
 
-    if is_arrow_object(val):
-        converted = from_arrow(val)
-        return getattr(converted, "data", converted)
+    if _is_arrow_object(val):
+        converted = _from_arrow(val)
+        return converted.data if isinstance(converted, Tensor) else converted
     if isinstance(val, Tensor):
         return val.data
     return val
@@ -235,13 +297,13 @@ class PyArrowComputeGenerator(PythonStringGenerator):
             Returns:
                 EagerValue: Output results.
             """
-            input_nodes = [n for n in graph.nodes.values() if getattr(n, "op_type", "") == "Input"]
+            input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
             inputs: dict[str, EagerValue] = {inp_node.id: _unwrap_input_val(w_args[i]) for i, inp_node in enumerate(input_nodes) if i < len(w_args)}
             for k, val in w_kw.items():
                 inputs[k] = _unwrap_input_val(val)
 
             evaluated = evaluate_graph(graph, inputs=inputs)
-            if hasattr(graph, "outputs") and graph.outputs:
+            if graph.outputs:
                 if len(graph.outputs) == 1:
                     res = evaluated.get(graph.outputs[0])
                     if zero_copy and is_arrow_object(w_args[0] if w_args else None):
@@ -251,3 +313,303 @@ class PyArrowComputeGenerator(PythonStringGenerator):
             return as_tensor(evaluated)
 
         return aot_arrow_runner
+
+    @staticmethod
+    def zeros(shape: tuple[int, ...]) -> EagerValue:
+        """Create a zero-filled Arrow array.
+
+        Args:
+            shape (tuple[int, ...]): Target shape.
+
+        Returns:
+            EagerValue: Zero-filled array.
+        """
+        return _zeros(shape)
+
+    @staticmethod
+    def ones(shape: tuple[int, ...]) -> EagerValue:
+        """Create a one-filled Arrow array.
+
+        Args:
+            shape (tuple[int, ...]): Target shape.
+
+        Returns:
+            EagerValue: One-filled array.
+        """
+        return _ones(shape)
+
+    @staticmethod
+    def empty(shape: tuple[int, ...]) -> EagerValue:
+        """Create a null-filled Arrow array.
+
+        Args:
+            shape (tuple[int, ...]): Target shape.
+
+        Returns:
+            EagerValue: Null-filled array.
+        """
+        return _empty(shape)
+
+    @staticmethod
+    def array(data: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+        """Create a columnar Arrow array from data.
+
+        Args:
+            data (EagerValue): Input data.
+            dtype (EagerValue | None): Optional dtype string.
+
+        Returns:
+            EagerValue: Arrow array.
+        """
+        dt_str = str(dtype) if dtype is not None else None
+        return _array(data, dtype=dt_str)
+
+    @staticmethod
+    def asarray(data: EagerValue) -> EagerValue:
+        """Convert input to an Arrow columnar array.
+
+        Args:
+            data (EagerValue): Input data.
+
+        Returns:
+            EagerValue: Arrow array.
+        """
+        return _asarray(data)
+
+    @staticmethod
+    def chunked_array(chunks: EagerValue, dtype: EagerValue | None = None) -> EagerValue:
+        """Construct a columnar ChunkedArray.
+
+        Args:
+            chunks (EagerValue): Sequence of array chunks.
+            dtype (EagerValue | None): Optional Arrow type.
+
+        Returns:
+            EagerValue: ChunkedArray.
+        """
+        return _chunked_array(chunks, dtype=dtype)
+
+    @staticmethod
+    def record_batch(
+        data: EagerValue,
+        names: Sequence[str] | None = None,
+        schema: EagerValue | None = None,
+    ) -> EagerValue:
+        """Create a columnar RecordBatch.
+
+        Args:
+            data (EagerValue): Column arrays.
+            names (Sequence[str] | None): Field names.
+            schema (EagerValue | None): Optional schema.
+
+        Returns:
+            EagerValue: RecordBatch.
+        """
+        return _record_batch(data, names=names, schema=schema)
+
+    @staticmethod
+    def slice_record_batch(
+        batch: EagerValue,
+        offset: int = 0,
+        length: int | None = None,
+    ) -> EagerValue:
+        """Perform zero-copy slicing of a RecordBatch.
+
+        Args:
+            batch (EagerValue): Target RecordBatch.
+            offset (int): Starting index.
+            length (int | None): Slice length.
+
+        Returns:
+            EagerValue: Sliced RecordBatch.
+        """
+        return _slice_record_batch(batch, offset=offset, length=length)
+
+    @staticmethod
+    def to_table(
+        data: EagerValue,
+        names: Sequence[str] | None = None,
+        schema: EagerValue | None = None,
+    ) -> EagerValue:
+        """Convert data to an Arrow Table.
+
+        Args:
+            data (EagerValue): Input data.
+            names (Sequence[str] | None): Optional column names.
+            schema (EagerValue | None): Optional schema.
+
+        Returns:
+            EagerValue: Arrow Table.
+        """
+        return _to_table(data, names=names, schema=schema)
+
+    @staticmethod
+    def table(
+        data: EagerValue,
+        names: Sequence[str] | None = None,
+        schema: EagerValue | None = None,
+    ) -> EagerValue:
+        """Construct an Arrow Table.
+
+        Args:
+            data (EagerValue): Input data.
+            names (Sequence[str] | None): Optional column names.
+            schema (EagerValue | None): Optional schema.
+
+        Returns:
+            EagerValue: Arrow Table.
+        """
+        return _table(data, names=names, schema=schema)
+
+    @staticmethod
+    def tensor(data: EagerValue) -> EagerValue:
+        """Construct a pyarrow.Tensor.
+
+        Args:
+            data (EagerValue): Input data.
+
+        Returns:
+            EagerValue: pyarrow.Tensor.
+        """
+        return _tensor(data)
+
+    @staticmethod
+    def check_parity(
+        lhs: EagerValue,
+        rhs: EagerValue,
+        rtol: float = 1e-5,
+        atol: float = 1e-8,
+    ) -> bool:
+        """Check numerical parity between two Arrow structures.
+
+        Args:
+            lhs (EagerValue): First operand.
+            rhs (EagerValue): Second operand.
+            rtol (float): Relative tolerance.
+            atol (float): Absolute tolerance.
+
+        Returns:
+            bool: True if matching.
+        """
+        return _check_parity(lhs, rhs, rtol=rtol, atol=atol)
+
+    @staticmethod
+    def item(data: EagerValue) -> float:
+        """Extract scalar item from Arrow data.
+
+        Args:
+            data (EagerValue): Target data.
+
+        Returns:
+            float: Extracted scalar.
+        """
+        return _item(data)
+
+    @staticmethod
+    def execute_op(op_type: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
+        """Execute operation eagerly on PyArrow Compute backend.
+
+        Args:
+            op_type (str): Operation type.
+            *args (EagerValue): Positional arguments.
+            **kwargs (EagerValue): Keyword arguments.
+
+        Returns:
+            EagerValue: Computed result.
+        """
+        return _execute_op(op_type, *args, **kwargs)
+
+    @staticmethod
+    def tensor_to_arrow_tensor(tensor_val: EagerValue) -> EagerValue:
+        """Convert Tensor to pyarrow.Tensor.
+
+        Args:
+            tensor_val (EagerValue): Input Tensor.
+
+        Returns:
+            EagerValue: pyarrow.Tensor.
+        """
+        return _tensor_to_arrow_tensor(tensor_val)
+
+    @staticmethod
+    def arrow_tensor_to_tensor(arrow_tensor: EagerValue) -> EagerValue:
+        """Convert pyarrow.Tensor to Unified IR Tensor.
+
+        Args:
+            arrow_tensor (EagerValue): Input pyarrow.Tensor.
+
+        Returns:
+            EagerValue: Unified IR Tensor.
+        """
+        return _arrow_tensor_to_tensor(arrow_tensor)
+
+    @staticmethod
+    def tensor_to_record_batch(
+        tensor_val: EagerValue,
+        names: Sequence[str] | None = None,
+    ) -> EagerValue:
+        """Convert Tensor to Arrow RecordBatch.
+
+        Args:
+            tensor_val (EagerValue): Input Tensor.
+            names (Sequence[str] | None): Optional column names.
+
+        Returns:
+            EagerValue: Arrow RecordBatch.
+        """
+        return _tensor_to_record_batch(tensor_val, names=names)
+
+    @staticmethod
+    def record_batch_to_tensor(
+        batch: EagerValue,
+        columns: Sequence[str] | None = None,
+        dtype: str | None = None,
+    ) -> EagerValue:
+        """Convert Arrow RecordBatch to Unified IR Tensor.
+
+        Args:
+            batch (EagerValue): Input RecordBatch.
+            columns (Sequence[str] | None): Optional column subset.
+            dtype (str | None): Optional target dtype.
+
+        Returns:
+            EagerValue: Unified IR Tensor.
+        """
+        return _record_batch_to_tensor(batch, columns=columns, dtype=dtype)
+
+    @staticmethod
+    def is_arrow_object(obj: EagerValue) -> bool:
+        """Check if object is a PyArrow construct.
+
+        Args:
+            obj (EagerValue): Candidate object.
+
+        Returns:
+            bool: True if PyArrow construct.
+        """
+        return _is_arrow_object(obj)
+
+    @staticmethod
+    def to_arrow(data: EagerValue, target_type: str = "tensor") -> EagerValue:
+        """Convert Tensor to specified Arrow type.
+
+        Args:
+            data (EagerValue): Input Tensor.
+            target_type (str): Target Arrow type.
+
+        Returns:
+            EagerValue: Converted Arrow object.
+        """
+        return _to_arrow(data, target_type=target_type)
+
+    @staticmethod
+    def from_arrow(data: EagerValue) -> EagerValue:
+        """Convert Arrow structure to Unified IR Tensor.
+
+        Args:
+            data (EagerValue): Input Arrow object.
+
+        Returns:
+            EagerValue: Unified IR Tensor.
+        """
+        return _from_arrow(data)

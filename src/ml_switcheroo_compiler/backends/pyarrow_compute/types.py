@@ -5,13 +5,184 @@ from __future__ import annotations
 import importlib
 import logging
 import math
+import operator
 import typing
 from collections.abc import Iterable, Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    StructuralOperandProtocol,
+    as_callable,
+    as_float,
+    as_int,
+    as_shape,
+    as_tensor,
+)
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.core.tensor import Tensor
+
+
+@typing.runtime_checkable
+class ArrowArrayProtocol(typing.Protocol):
+    """Protocol for PyArrow Array and ChunkedArray objects."""
+
+    def to_numpy(self, zero_copy_only: bool = False) -> EagerValue:
+        """Convert Arrow array to a zero-copy or copied buffer.
+
+        Args:
+            zero_copy_only (bool): Whether to require zero-copy.
+
+        Returns:
+            EagerValue: Buffer view.
+        """
+        ...
+
+    def to_pylist(self) -> list[EagerValue]:
+        """Convert Arrow array to a Python list.
+
+        Returns:
+            list[EagerValue]: Python list.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class ArrowRecordBatchProtocol(typing.Protocol):
+    """Protocol for PyArrow RecordBatch objects."""
+
+    @property
+    def num_columns(self) -> int:
+        """Return number of columns.
+
+        Returns:
+            int: Column count.
+        """
+        ...
+
+    @property
+    def schema(self) -> EagerValue:
+        """Return record batch schema.
+
+        Returns:
+            EagerValue: Schema object.
+        """
+        ...
+
+    def column(self, i: int | str) -> EagerValue:
+        """Retrieve column by index or name.
+
+        Args:
+            i (int | str): Column index or name.
+
+        Returns:
+            EagerValue: Column array.
+        """
+        ...
+
+    def slice(self, offset: int = 0, length: int | None = None) -> EagerValue:
+        """Slice record batch zero-copy.
+
+        Args:
+            offset (int): Starting index.
+            length (int | None): Slice length.
+
+        Returns:
+            EagerValue: Sliced RecordBatch.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class ArrowTableProtocol(typing.Protocol):
+    """Protocol for PyArrow Table objects."""
+
+    def to_batches(self) -> list[EagerValue]:
+        """Convert table to a list of RecordBatches.
+
+        Returns:
+            list[EagerValue]: RecordBatch list.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class ArrowTensorProtocol(typing.Protocol):
+    """Protocol for PyArrow Tensor objects."""
+
+    def to_numpy(self) -> EagerValue:
+        """Convert Arrow Tensor to buffer view.
+
+        Returns:
+            EagerValue: Buffer view.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _ArrowScalarProtocol(typing.Protocol):
+    """Protocol for PyArrow Scalar objects exposing `.as_py()`."""
+
+    def as_py(self) -> float | int | bool:
+        """Convert scalar to Python value.
+
+        Returns:
+            float | int | bool: Python scalar.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DunderArrayProtocol(typing.Protocol):
+    """Protocol for objects exposing `__array__()`."""
+
+    def __array__(self) -> EagerValue:
+        """Convert to array buffer.
+
+        Returns:
+            EagerValue: Array buffer.
+        """
+        ...
+
+
+def _has_attr(obj: StructuralOperandProtocol | EagerValue, name: str) -> bool:
+    """Return True if `obj` or its class hierarchy defines `name`.
+
+    Args:
+        obj (StructuralOperandProtocol | EagerValue): Target object.
+        name (str): Attribute name.
+
+    Returns:
+        bool: True if present.
+    """
+    if obj is None:
+        return False
+    try:
+        operator.attrgetter(name)(obj)
+        return True
+    except AttributeError:
+        return False
+
+
+def _get_attr(
+    obj: StructuralOperandProtocol | EagerValue,
+    name: str,
+    default: EagerValue = None,
+) -> EagerValue:
+    """Retrieve attribute `name` from `obj` without `getattr`.
+
+    Args:
+        obj (StructuralOperandProtocol | EagerValue): Target object.
+        name (str): Attribute name.
+        default (EagerValue): Default value if not found.
+
+    Returns:
+        EagerValue: Attribute value or bound callable.
+    """
+    try:
+        return as_tensor(operator.attrgetter(name)(obj))
+    except AttributeError:
+        return default
 
 
 def _get_pa_module() -> EagerValue:
@@ -35,8 +206,8 @@ def _unwrap_tensor(val: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Underlying buffer or original value.
     """
-    if hasattr(val, "config") and hasattr(val, "data"):
-        return as_tensor(getattr(val, "data"))
+    if _has_attr(val, "config") and _has_attr(val, "data"):
+        return _get_attr(val, "data")
     return val
 
 
@@ -50,14 +221,14 @@ def _pa_to_ndarray(raw_data: EagerValue, dtype: str | None = None) -> EagerValue
     Returns:
         EagerValue: Buffer array with shape and dtype metadata.
     """
-    if hasattr(raw_data, "shape") and hasattr(raw_data, "dtype") and hasattr(raw_data, "ndim"):
-        if dtype is not None and hasattr(raw_data, "astype"):
-            return as_tensor(getattr(raw_data, "astype")(dtype))
+    if _has_attr(raw_data, "shape") and _has_attr(raw_data, "dtype") and _has_attr(raw_data, "ndim"):
+        if dtype is not None and _has_attr(raw_data, "astype"):
+            return as_tensor(as_callable(_get_attr(raw_data, "astype"))(dtype))
         return raw_data
 
-    if hasattr(raw_data, "__array__"):
-        arr = getattr(raw_data, "__array__")()
-        return as_tensor(arr)
+    raw_op: StructuralOperandProtocol = raw_data
+    if isinstance(raw_op, _DunderArrayProtocol) and _has_attr(raw_data, "__array__"):
+        return as_tensor(raw_op.__array__())
 
     import pyarrow as pa
 
@@ -83,18 +254,18 @@ def zeros(shape: tuple[int, ...]) -> EagerValue:
     """
     total = int(math.prod(shape)) if shape else 1
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "array"):
+    if _has_attr(pa_mod, "array"):
         try:
-            return as_tensor(getattr(pa_mod, "array")([0.0] * total))
+            return as_tensor(as_callable(_get_attr(pa_mod, "array"))([0.0] * total))
         except Exception:
             import pyarrow as pa
 
-            base = pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False)
-            return as_tensor(getattr(base, "reshape")(shape))
+            base = as_tensor(pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False))
+            return as_tensor(base.reshape(shape))
     import pyarrow as pa
 
-    base = pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False)
-    return as_tensor(getattr(base, "reshape")(shape))
+    base = as_tensor(pa.repeat(pa.scalar(0.0, type=pa.float32()), total).to_numpy(zero_copy_only=False))
+    return as_tensor(base.reshape(shape))
 
 
 def ones(shape: tuple[int, ...]) -> EagerValue:
@@ -108,8 +279,8 @@ def ones(shape: tuple[int, ...]) -> EagerValue:
     """
     total = int(math.prod(shape)) if shape else 1
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "repeat"):
-        return as_tensor(getattr(pa_mod, "repeat")(1.0, total))
+    if _has_attr(pa_mod, "repeat"):
+        return as_tensor(as_callable(_get_attr(pa_mod, "repeat"))(1.0, total))
     return [1.0] * total
 
 
@@ -124,10 +295,10 @@ def empty(shape: tuple[int, ...]) -> EagerValue:
     """
     total = int(math.prod(shape)) if shape else 1
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "nulls"):
+    if _has_attr(pa_mod, "nulls"):
         import pyarrow as pa
 
-        return as_tensor(getattr(pa_mod, "nulls")(total, type=pa.float32()))
+        return as_tensor(as_callable(_get_attr(pa_mod, "nulls"))(total, type=pa.float32()))
     return [None] * total
 
 
@@ -143,9 +314,9 @@ def array(data: EagerValue, dtype: str | None = None) -> EagerValue:
     """
     raw_data = _unwrap_tensor(data)
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "array"):
+    if _has_attr(pa_mod, "array"):
         try:
-            return as_tensor(getattr(pa_mod, "array")(raw_data))
+            return as_tensor(as_callable(_get_attr(pa_mod, "array"))(raw_data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _pa_to_ndarray(raw_data, dtype=dtype)
@@ -162,9 +333,9 @@ def asarray(data: EagerValue) -> EagerValue:
     """
     raw_data = _unwrap_tensor(data)
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "array"):
+    if _has_attr(pa_mod, "array"):
         try:
-            return as_tensor(getattr(pa_mod, "array")(raw_data))
+            return as_tensor(as_callable(_get_attr(pa_mod, "array"))(raw_data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return _pa_to_ndarray(raw_data)
@@ -184,11 +355,11 @@ def chunked_array(
         EagerValue: Constructed pyarrow ChunkedArray or list of chunks fallback.
     """
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "chunked_array"):
+    if _has_attr(pa_mod, "chunked_array"):
         try:
             chunk_list = chunks if isinstance(chunks, (list, tuple)) else [chunks]
-            conv_chunks = [array(c) if not hasattr(c, "type") else c for c in chunk_list]
-            return as_tensor(getattr(pa_mod, "chunked_array")(conv_chunks, type=dtype))
+            conv_chunks = [array(c) if not _has_attr(c, "type") else c for c in chunk_list]
+            return as_tensor(as_callable(_get_attr(pa_mod, "chunked_array"))(conv_chunks, type=dtype))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return list(chunks) if isinstance(chunks, (list, tuple)) else [chunks]
@@ -210,11 +381,12 @@ def record_batch(
         EagerValue: Constructed RecordBatch or dict fallback.
     """
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "RecordBatch") and hasattr(getattr(pa_mod, "RecordBatch"), "from_arrays"):
+    rb_cls = _get_attr(pa_mod, "RecordBatch")
+    if _has_attr(rb_cls, "from_arrays"):
         try:
             data_list = list(data) if isinstance(data, Iterable) else [data]
             name_list = list(names) if names is not None else None
-            return as_tensor(getattr(pa_mod, "RecordBatch").from_arrays(data_list, names=name_list, schema=schema))
+            return as_tensor(as_callable(_get_attr(rb_cls, "from_arrays"))(data_list, names=name_list, schema=schema))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     if names is not None and isinstance(data, (list, tuple)):
@@ -237,8 +409,9 @@ def slice_record_batch(
     Returns:
         EagerValue: Sliced RecordBatch.
     """
-    if hasattr(batch, "slice"):
-        return as_tensor(getattr(batch, "slice")(offset=offset, length=length))
+    raw_batch: StructuralOperandProtocol = batch
+    if isinstance(raw_batch, ArrowRecordBatchProtocol) or _has_attr(batch, "slice"):
+        return as_tensor(as_callable(_get_attr(batch, "slice"))(offset=offset, length=length))
     if isinstance(batch, dict):
         end = offset + length if length is not None else None
         return {k: as_tensor(v)[offset:end] for k, v in batch.items()}
@@ -262,19 +435,19 @@ def to_table(
         EagerValue: Constructed pyarrow Table.
     """
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "Table"):
-        table_cls = getattr(pa_mod, "Table")
-        if hasattr(table_cls, "from_batches"):
-            if hasattr(data, "schema"):
-                return as_tensor(table_cls.from_batches([data], schema=schema))
+    if _has_attr(pa_mod, "Table"):
+        table_cls = _get_attr(pa_mod, "Table")
+        if _has_attr(table_cls, "from_batches"):
+            if _has_attr(data, "schema"):
+                return as_tensor(as_callable(_get_attr(table_cls, "from_batches"))([data], schema=schema))
             if isinstance(data, (list, tuple)) and data:
-                if hasattr(data[0], "schema"):
-                    return as_tensor(table_cls.from_batches(list(data), schema=schema))
-        if hasattr(table_cls, "from_pydict") and isinstance(data, dict):
-            return as_tensor(table_cls.from_pydict(data, schema=schema))
-        if hasattr(table_cls, "from_arrays") and isinstance(data, (list, tuple)):
+                if _has_attr(data[0], "schema"):
+                    return as_tensor(as_callable(_get_attr(table_cls, "from_batches"))(list(data), schema=schema))
+        if _has_attr(table_cls, "from_pydict") and isinstance(data, dict):
+            return as_tensor(as_callable(_get_attr(table_cls, "from_pydict"))(data, schema=schema))
+        if _has_attr(table_cls, "from_arrays") and isinstance(data, (list, tuple)):
             col_names = list(names) if names else [f"f{i}" for i in range(len(data))]
-            return as_tensor(table_cls.from_arrays(list(data), names=col_names, schema=schema))
+            return as_tensor(as_callable(_get_attr(table_cls, "from_arrays"))(list(data), names=col_names, schema=schema))
     return data
 
 
@@ -305,22 +478,23 @@ def item(data: EagerValue) -> float:
     Returns:
         float: Extracted scalar value.
     """
-    if hasattr(data, "num_columns") and hasattr(data, "column"):
-        if getattr(data, "num_columns") > 0:
-            return item(getattr(data, "column")(0))
+    raw_op: StructuralOperandProtocol = data
+    if isinstance(raw_op, ArrowRecordBatchProtocol) or (_has_attr(data, "num_columns") and _has_attr(data, "column")):
+        if as_int(_get_attr(data, "num_columns", 0)) > 0:
+            return item(as_callable(_get_attr(data, "column"))(0))
         return 0.0
-    if hasattr(data, "as_py"):
-        return float(getattr(data, "as_py")())
-    if hasattr(data, "to_pylist"):
-        lst = getattr(data, "to_pylist")()
-        if lst:
+    if isinstance(raw_op, _ArrowScalarProtocol) or _has_attr(data, "as_py"):
+        return float(as_float(as_callable(_get_attr(data, "as_py"))()))
+    if _has_attr(data, "to_pylist"):
+        lst: EagerValue = as_callable(_get_attr(data, "to_pylist"))()
+        if isinstance(lst, (list, tuple)) and lst:
             first = lst[0]
             val = next(iter(first.values())) if isinstance(first, dict) else (first[0] if isinstance(first, (list, tuple)) else first)
-            return float(val)
-    if hasattr(data, "item"):
-        return float(getattr(data, "item")())
+            return float(as_float(val))
+    if _has_attr(data, "item"):
+        return float(as_float(as_callable(_get_attr(data, "item"))()))
     arr = _pa_to_ndarray(data)
-    return float(getattr(arr, "item")())
+    return float(as_float(as_callable(_get_attr(arr, "item"))()))
 
 
 def tensor_to_record_batch(
@@ -339,26 +513,27 @@ def tensor_to_record_batch(
     raw_data = _unwrap_tensor(tensor)
     arr = _pa_to_ndarray(raw_data)
     pa_mod = _get_pa_module()
+    rb_cls = _get_attr(pa_mod, "RecordBatch")
 
-    ndim = int(getattr(arr, "ndim", 1))
+    ndim = as_int(_get_attr(arr, "ndim", 1))
     if ndim <= 1:
         col_names = list(names) if names else ["f0"]
-        if hasattr(pa_mod, "RecordBatch") and hasattr(getattr(pa_mod, "RecordBatch"), "from_arrays") and hasattr(pa_mod, "array"):
+        if _has_attr(rb_cls, "from_arrays") and _has_attr(pa_mod, "array"):
             try:
-                pa_col = getattr(pa_mod, "array")(arr if ndim == 1 else [getattr(arr, "item")()])
-                return as_tensor(getattr(pa_mod, "RecordBatch").from_arrays([pa_col], names=col_names))
+                pa_col = as_callable(_get_attr(pa_mod, "array"))(arr if ndim == 1 else [as_callable(_get_attr(arr, "item"))()])
+                return as_tensor(as_callable(_get_attr(rb_cls, "from_arrays"))([pa_col], names=col_names))
             except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
                 logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
         return {col_names[0]: arr}
 
-    shape = as_shape(getattr(arr, "shape"))
+    shape = as_shape(_get_attr(arr, "shape"))
     num_cols = shape[1]
     col_names = list(names) if names and len(names) == num_cols else [f"f{i}" for i in range(num_cols)]
     arr_proto = as_tensor(arr)
-    if hasattr(pa_mod, "RecordBatch") and hasattr(getattr(pa_mod, "RecordBatch"), "from_arrays") and hasattr(pa_mod, "array"):
+    if _has_attr(rb_cls, "from_arrays") and _has_attr(pa_mod, "array"):
         try:
-            col_arrays = [getattr(pa_mod, "array")(arr_proto[:, i]) for i in range(num_cols)]
-            return as_tensor(getattr(pa_mod, "RecordBatch").from_arrays(col_arrays, names=col_names))
+            col_arrays = [as_callable(_get_attr(pa_mod, "array"))(arr_proto[:, i]) for i in range(num_cols)]
+            return as_tensor(as_callable(_get_attr(rb_cls, "from_arrays"))(col_arrays, names=col_names))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return {col_names[i]: arr_proto[:, i] for i in range(num_cols)}
@@ -381,9 +556,9 @@ def _stack_columns_1d(columns: list[EagerValue], dtype: str | None = None) -> Ea
     pa_cols = [pa.array(c) for c in columns]
     num_rows = len(pa_cols[0])
     num_cols = len(pa_cols)
-    concat_buf = pa.concat_arrays(pa_cols).to_numpy(zero_copy_only=False)
-    reshaped = getattr(getattr(concat_buf, "reshape")((num_cols, num_rows)), "T")
-    return as_tensor(getattr(reshaped, "copy")())
+    concat_buf = as_tensor(pa.concat_arrays(pa_cols).to_numpy(zero_copy_only=False))
+    reshaped = concat_buf.reshape((num_cols, num_rows)).T
+    return as_tensor(reshaped.copy())
 
 
 def _dict_to_tensor(
@@ -406,10 +581,10 @@ def _dict_to_tensor(
     col_keys = list(columns) if columns else list(actual_batch.keys())
     if not col_keys:
         empty_arr = _pa_to_ndarray([], dtype=dtype or "float32")
-        return Tensor(empty_arr, TensorConfig(shape=getattr(empty_arr, "shape"), dtype=str(getattr(empty_arr, "dtype")), device="cpu"))
+        return Tensor(empty_arr, TensorConfig(shape=as_shape(_get_attr(empty_arr, "shape")), dtype=str(_get_attr(empty_arr, "dtype")), device="cpu"))
     arrays = [_pa_to_ndarray(actual_batch[k]) for k in col_keys]
     arr = _stack_columns_1d(arrays, dtype=dtype)
-    return Tensor(arr, TensorConfig(shape=getattr(arr, "shape"), dtype=str(getattr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
 
 
 def _rb_to_tensor(
@@ -429,24 +604,28 @@ def _rb_to_tensor(
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    col_names = list(columns) if columns else [getattr(actual_batch, "schema").field(i).name for i in range(getattr(actual_batch, "num_columns"))]
+    schema_obj = _get_attr(actual_batch, "schema")
+    num_cols = as_int(_get_attr(actual_batch, "num_columns", 0))
+    col_names = list(columns) if columns else [str(_get_attr(as_callable(_get_attr(schema_obj, "field"))(i), "name")) for i in range(num_cols)]
     if not col_names:
         empty_arr = _pa_to_ndarray([], dtype=dtype or "float32")
-        return Tensor(empty_arr, TensorConfig(shape=getattr(empty_arr, "shape"), dtype=str(getattr(empty_arr, "dtype")), device="cpu"))
+        return Tensor(empty_arr, TensorConfig(shape=as_shape(_get_attr(empty_arr, "shape")), dtype=str(_get_attr(empty_arr, "dtype")), device="cpu"))
 
     extracted: list[EagerValue] = []
+    col_fn = as_callable(_get_attr(actual_batch, "column"))
     for name in col_names:
-        col = getattr(actual_batch, "column")(name) if hasattr(actual_batch, "column") and isinstance(name, str) else getattr(actual_batch, "column")(int(name))
-        if hasattr(col, "to_numpy"):
+        col = col_fn(name) if _has_attr(actual_batch, "column") and isinstance(name, str) else col_fn(int(name))
+        raw_col: StructuralOperandProtocol = col
+        if isinstance(raw_col, ArrowArrayProtocol) or _has_attr(col, "to_numpy"):
             try:
-                extracted.append(col.to_numpy(zero_copy_only=False))
+                extracted.append(as_callable(_get_attr(col, "to_numpy"))(zero_copy_only=False))
             except Exception:
-                extracted.append(_pa_to_ndarray(col.to_pylist()))
+                extracted.append(_pa_to_ndarray(as_callable(_get_attr(col, "to_pylist"))()))
         else:
             extracted.append(_pa_to_ndarray(col))
 
     arr = _stack_columns_1d(extracted, dtype=dtype)
-    return Tensor(arr, TensorConfig(shape=getattr(arr, "shape"), dtype=str(getattr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
 
 
 def record_batch_to_tensor(
@@ -469,11 +648,12 @@ def record_batch_to_tensor(
     if isinstance(batch, dict):
         return _dict_to_tensor(batch, columns, dtype)
 
-    if hasattr(batch, "num_columns") and hasattr(batch, "column"):
+    raw_batch: StructuralOperandProtocol = batch
+    if isinstance(raw_batch, ArrowRecordBatchProtocol) or (_has_attr(batch, "num_columns") and _has_attr(batch, "column")):
         return _rb_to_tensor(batch, columns, dtype)
 
     arr = _pa_to_ndarray(batch, dtype=dtype)
-    return Tensor(arr, TensorConfig(shape=getattr(arr, "shape"), dtype=str(getattr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
 
 
 def tensor_to_arrow_tensor(
@@ -490,9 +670,10 @@ def tensor_to_arrow_tensor(
     raw_data = _unwrap_tensor(tensor)
     arr = _pa_to_ndarray(raw_data)
     pa_mod = _get_pa_module()
-    if hasattr(pa_mod, "Tensor") and hasattr(getattr(pa_mod, "Tensor"), "from_numpy"):
+    pa_tensor_cls = _get_attr(pa_mod, "Tensor")
+    if _has_attr(pa_tensor_cls, "from_numpy"):
         try:
-            return as_tensor(getattr(pa_mod, "Tensor").from_numpy(arr))
+            return as_tensor(as_callable(_get_attr(pa_tensor_cls, "from_numpy"))(arr))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
     return arr
@@ -525,11 +706,13 @@ def arrow_tensor_to_tensor(
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    if hasattr(arrow_tensor, "to_numpy"):
-        arr = getattr(arrow_tensor, "to_numpy")()
+    raw_at: StructuralOperandProtocol = arrow_tensor
+    arr: EagerValue
+    if isinstance(raw_at, ArrowTensorProtocol) or _has_attr(arrow_tensor, "to_numpy"):
+        arr = as_callable(_get_attr(arrow_tensor, "to_numpy"))()
     else:
         arr = _pa_to_ndarray(arrow_tensor)
-    return Tensor(arr, TensorConfig(shape=getattr(arr, "shape"), dtype=str(getattr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
 
 
 def _table_to_tensor(actual_data: EagerValue) -> EagerValue:
@@ -543,15 +726,20 @@ def _table_to_tensor(actual_data: EagerValue) -> EagerValue:
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
-    batches = getattr(actual_data, "to_batches")() if hasattr(actual_data, "to_batches") else []
+    raw_data: StructuralOperandProtocol = actual_data
+    batches_raw: EagerValue = as_callable(_get_attr(actual_data, "to_batches"))() if (isinstance(raw_data, ArrowTableProtocol) or _has_attr(actual_data, "to_batches")) else []
+    batches = list(batches_raw) if isinstance(batches_raw, (list, tuple)) else []
     if batches:
         if len(batches) == 1:
             return record_batch_to_tensor(batches[0])
         import pyarrow as pa
 
-        sub_tensors = [getattr(record_batch_to_tensor(b), "data", record_batch_to_tensor(b)) for b in batches]
+        sub_tensors = []
+        for b in batches:
+            rb_t = record_batch_to_tensor(b)
+            sub_tensors.append(rb_t.data if isinstance(rb_t, Tensor) else _get_attr(rb_t, "data", rb_t))
         combined = pa.concat_arrays([pa.array(s) for s in sub_tensors]).to_numpy(zero_copy_only=False)
-        return Tensor(combined, TensorConfig(shape=getattr(combined, "shape"), dtype=str(getattr(combined, "dtype")), device="cpu"))
+        return Tensor(combined, TensorConfig(shape=as_shape(_get_attr(combined, "shape")), dtype=str(_get_attr(combined, "dtype")), device="cpu"))
     empty_arr = _pa_to_ndarray([], dtype="float32")
     return Tensor(empty_arr, TensorConfig(shape=(0,), dtype="float32", device="cpu"))
 
@@ -567,11 +755,12 @@ def _chunked_or_array_to_tensor(actual_data: EagerValue) -> EagerValue:
     """
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
+    arr: EagerValue
     try:
-        arr = getattr(actual_data, "to_numpy")(zero_copy_only=False)
+        arr = as_callable(_get_attr(actual_data, "to_numpy"))(zero_copy_only=False)
     except Exception:
-        arr = _pa_to_ndarray(getattr(actual_data, "to_pylist")())
-    return Tensor(arr, TensorConfig(shape=getattr(arr, "shape"), dtype=str(getattr(arr, "dtype")), device="cpu"))
+        arr = _pa_to_ndarray(as_callable(_get_attr(actual_data, "to_pylist"))())
+    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
 
 
 def from_arrow(
@@ -588,28 +777,29 @@ def from_arrow(
     from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 
     # pyarrow.Tensor
-    if type(data).__name__ == "Tensor" and hasattr(data, "to_numpy") and not hasattr(data, "config"):
+    if type(data).__name__ == "Tensor" and _has_attr(data, "to_numpy") and not _has_attr(data, "config"):
         return arrow_tensor_to_tensor(data)
 
     # RecordBatch
-    if hasattr(data, "num_columns") and hasattr(data, "column") and hasattr(data, "schema") and not hasattr(data, "combine_chunks"):
+    if _has_attr(data, "num_columns") and _has_attr(data, "column") and _has_attr(data, "schema") and not _has_attr(data, "combine_chunks"):
         return record_batch_to_tensor(data)
 
     # Table
-    if hasattr(data, "to_batches"):
+    raw_data: StructuralOperandProtocol = data
+    if isinstance(raw_data, ArrowTableProtocol) or _has_attr(data, "to_batches"):
         return _table_to_tensor(data)
 
     # ChunkedArray / Array
-    if hasattr(data, "to_numpy"):
+    if isinstance(raw_data, ArrowArrayProtocol) or _has_attr(data, "to_numpy"):
         return _chunked_or_array_to_tensor(data)
 
     # Scalar
-    if hasattr(data, "as_py"):
-        return as_tensor(getattr(data, "as_py")())
+    if isinstance(raw_data, _ArrowScalarProtocol) or _has_attr(data, "as_py"):
+        return as_tensor(as_callable(_get_attr(data, "as_py"))())
 
     # Fallback
     arr = _pa_to_ndarray(data)
-    return Tensor(arr, TensorConfig(shape=getattr(arr, "shape"), dtype=str(getattr(arr, "dtype")), device="cpu"))
+    return Tensor(arr, TensorConfig(shape=as_shape(_get_attr(arr, "shape")), dtype=str(_get_attr(arr, "dtype")), device="cpu"))
 
 
 def to_arrow(
@@ -653,7 +843,7 @@ def is_arrow_object(obj: EagerValue) -> bool:
     Returns:
         bool: True if obj is an Arrow array, table, batch, tensor, scalar, or chunked array.
     """
-    mod_name = getattr(type(obj), "__module__", "")
+    mod_name = str(type(obj).__module__)
     return mod_name.startswith("pyarrow")
 
 
@@ -670,18 +860,22 @@ def shares_buffer(obj1: EagerValue, obj2: EagerValue) -> bool:
     data1 = _unwrap_tensor(obj1)
     data2 = _unwrap_tensor(obj2)
 
-    buf1 = getattr(data1, "buffer", None)
-    buf2 = getattr(data2, "buffer", None)
-    if buf1 is not None and buf2 is not None and hasattr(buf1, "address") and hasattr(buf2, "address"):
-        return bool(buf1.address == buf2.address and buf1.address != 0)
+    buf1 = _get_attr(data1, "buffer")
+    buf2 = _get_attr(data2, "buffer")
+    if buf1 is not None and buf2 is not None and _has_attr(buf1, "address") and _has_attr(buf2, "address"):
+        addr1 = _get_attr(buf1, "address")
+        addr2 = _get_attr(buf2, "address")
+        return bool(addr1 == addr2 and addr1 != 0)
 
-    arr1 = getattr(data1, "to_numpy")() if hasattr(data1, "to_numpy") else data1
-    arr2 = getattr(data2, "to_numpy")() if hasattr(data2, "to_numpy") else data2
-    iface1 = getattr(arr1, "__array_interface__", None)
-    iface2 = getattr(arr2, "__array_interface__", None)
+    arr1 = as_callable(_get_attr(data1, "to_numpy"))() if _has_attr(data1, "to_numpy") else data1
+    arr2 = as_callable(_get_attr(data2, "to_numpy"))() if _has_attr(data2, "to_numpy") else data2
+    iface1 = _get_attr(arr1, "__array_interface__")
+    iface2 = _get_attr(arr2, "__array_interface__")
     if isinstance(iface1, dict) and isinstance(iface2, dict):
-        addr1 = iface1.get("data", (0,))[0]
-        addr2 = iface2.get("data", (0,))[0]
+        data_tup1 = iface1.get("data", (0,))
+        data_tup2 = iface2.get("data", (0,))
+        addr1 = data_tup1[0] if isinstance(data_tup1, tuple) and data_tup1 else 0
+        addr2 = data_tup2[0] if isinstance(data_tup2, tuple) and data_tup2 else 0
         return bool(addr1 == addr2 and addr1 != 0)
     return False
 
@@ -703,10 +897,10 @@ def check_parity(
     Returns:
         bool: True if all elements match within tolerance.
     """
-    arr1 = getattr(_pa_to_ndarray(_unwrap_tensor(lhs)), "reshape")(-1)
-    arr2 = getattr(_pa_to_ndarray(_unwrap_tensor(rhs)), "reshape")(-1)
-    list1 = getattr(arr1, "tolist")()
-    list2 = getattr(arr2, "tolist")()
+    arr1 = as_tensor(_pa_to_ndarray(_unwrap_tensor(lhs))).reshape(-1)
+    arr2 = as_tensor(_pa_to_ndarray(_unwrap_tensor(rhs))).reshape(-1)
+    list1 = arr1.tolist()
+    list2 = arr2.tolist()
     if len(list1) != len(list2):
         return False
     return all(math.isclose(float(a), float(b), rel_tol=rtol, abs_tol=atol) for a, b in zip(list1, list2))

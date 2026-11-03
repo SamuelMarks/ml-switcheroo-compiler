@@ -30,6 +30,130 @@ class CallableObjectProtocol(typing.Protocol):
 
 
 @typing.runtime_checkable
+class TracedDataProtocol(typing.Protocol):
+    """Protocol for traced proxy data objects exposing `.id`, `.shape`, and `.dtype`."""
+
+    @property
+    def id(self) -> str:
+        """Return traced node identifier.
+
+        Returns:
+            str: Node identifier.
+        """
+        ...
+
+    @property
+    def shape(self) -> tuple[int | str, ...]:
+        """Return traced shape tuple.
+
+        Returns:
+            tuple[int | str, ...]: Shape tuple.
+        """
+        ...
+
+    @property
+    def dtype(self) -> str:
+        """Return traced data type string.
+
+        Returns:
+            str: Data type string.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class BackendBufferProtocol(typing.Protocol):
+    """Protocol for backend array buffers exposing `.shape`, `.dtype`, `.size`, `.tolist()`, and `.item()`."""
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Return array shape tuple.
+
+        Returns:
+            tuple[int, ...]: Shape tuple.
+        """
+        ...
+
+    @property
+    def dtype(self) -> DType | str | type | None:
+        """Return array data type.
+
+        Returns:
+            DType | str | type | None: Data type descriptor.
+        """
+        ...
+
+    @property
+    def size(self) -> int:
+        """Return total number of elements.
+
+        Returns:
+            int: Element count.
+        """
+        ...
+
+    def tolist(self) -> AttributeValue:
+        """Convert buffer to nested Python list.
+
+        Returns:
+            AttributeValue: Python list or scalar.
+        """
+        ...
+
+    def item(self) -> float | int | bool:
+        """Extract scalar Python value.
+
+        Returns:
+            float | int | bool: Scalar value.
+        """
+        ...
+
+
+def _has_member(val: StructuralOperandProtocol | TensorOrScalar, name: str) -> bool:
+    """Return True if `val` or its class MRO defines `name` in `__dict__`.
+
+    Args:
+        val (StructuralOperandProtocol | TensorOrScalar): Candidate runtime object.
+        name (str): Attribute or method name.
+
+    Returns:
+        bool: True if `name` is present.
+    """
+    if val is None:
+        return False
+    try:
+        if name in vars(val):
+            return True
+    except TypeError:
+        pass
+    return any(name in vars(cls) for cls in type(val).__mro__)
+
+
+def is_traced_data(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[TracedDataProtocol]:
+    """Check whether `val` satisfies `TracedDataProtocol` or exposes `.id`.
+
+    Args:
+        val (StructuralOperandProtocol | TensorOrScalar): Candidate runtime object.
+
+    Returns:
+        bool: True if `val` is a traced proxy data object.
+    """
+    return isinstance(val, TracedDataProtocol) or _has_member(val, "id")
+
+
+def is_backend_buffer(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[BackendBufferProtocol]:
+    """Check whether `val` satisfies `BackendBufferProtocol`.
+
+    Args:
+        val (StructuralOperandProtocol | TensorOrScalar): Candidate runtime buffer.
+
+    Returns:
+        bool: True if `val` is a backend array buffer.
+    """
+    return isinstance(val, BackendBufferProtocol) or _has_member(val, "tolist") or _has_member(val, "item") or _has_member(val, "size")
+
+
+@typing.runtime_checkable
 class VariadicCallableProtocol(typing.Protocol):
     """Protocol for callables taking arbitrary TensorOrScalar arguments."""
 

@@ -8,7 +8,12 @@ from collections.abc import Callable, Generator, Sequence
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import (
+    StructuralOperandProtocol as StructuralOperandProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+)
 
 
 @typing.runtime_checkable

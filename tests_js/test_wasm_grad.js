@@ -47,7 +47,7 @@ with ConfigContext(backend="numpy"):
 `;
 
     fs.writeFileSync('temp_wasm_test.py', script);
-    execSync('python3 temp_wasm_test.py');
+    execSync('python3 temp_wasm_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
     fs.unlinkSync('temp_wasm_test.py');
 
     const wasmCppCode = fs.readFileSync('temp_wasm_code.js', 'utf8');
@@ -125,7 +125,7 @@ with ConfigContext(backend="numpy"):
         f.write(wat)
 `;
     fs.writeFileSync('temp_arbitrary_test.py', script);
-    execSync('python3 temp_arbitrary_test.py');
+    execSync('python3 temp_arbitrary_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
     fs.unlinkSync('temp_arbitrary_test.py');
 
     execSync('wat2wasm temp_arbitrary_shape.wat -o temp_arbitrary_shape.wasm');

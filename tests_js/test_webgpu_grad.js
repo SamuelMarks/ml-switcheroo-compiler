@@ -68,7 +68,7 @@ with ConfigContext(backend="numpy"):
 `;
 
     fs.writeFileSync('temp_webgpu_test.py', script);
-    execSync('python3 temp_webgpu_test.py');
+    execSync('python3 temp_webgpu_test.py', { env: { ...process.env, NODE_V8_COVERAGE: '' } });
     fs.unlinkSync('temp_webgpu_test.py');
 
     const fwdCode = fs.readFileSync('temp_fwd_webgpu.js', 'utf8');
@@ -89,8 +89,9 @@ with ConfigContext(backend="numpy"):
 
     await new Promise((resolve) => server.listen(8984, resolve));
 
+    let browser = null;
     try {
-        const browser = await puppeteer.launch({
+        browser = await puppeteer.launch({
             executablePath: chromePath,
             headless: 'new',
             args: [
@@ -151,11 +152,13 @@ with ConfigContext(backend="numpy"):
         assert.strictEqual(results.jvpVal, 6.0);
 
         console.log("WebGPU AD Graph numerical verification successful: forward=9.0, VJP=6.0, JVP=6.0");
-        await browser.close();
     } catch (err) {
         console.error("Test error:", err);
         throw err;
     } finally {
+        if (browser) {
+            await browser.close();
+        }
         if (server.closeAllConnections) {
             server.closeAllConnections();
         }

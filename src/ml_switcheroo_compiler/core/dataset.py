@@ -8,6 +8,7 @@ import typing
 from collections.abc import Iterator, Sized
 from enum import Enum
 
+from ml_switcheroo_compiler.backends.registry import ShapeProtocol, as_shape
 from ml_switcheroo_compiler.core.config import ConfigContext
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
@@ -85,6 +86,10 @@ class Dataset:
         self._buffer_size = 0
         self._prefetch_buffer = 0
         self._drop_remainder = False
+        self._elements: TensorOrScalar = None
+        self._seed: int | None = None
+        self._reshuffle: bool | None = None
+        self._map_func: TensorOrScalar = None
         self.options_ = Options()
 
     @classmethod
@@ -115,7 +120,7 @@ class Dataset:
             Dataset: Configured dataset stream instance.
         """
         ds = cls()
-        setattr(ds, "_elements", elements)
+        ds._elements = elements
         ds.length = len(elements) if isinstance(elements, Sized) else 0
         ds._indices = list(range(ds.length))
         return ds
@@ -402,18 +407,18 @@ class Dataset:
         Yields:
             tuple[Tensor, ...]: Tuple of batch tensors for each stream step.
         """
-        if not hasattr(self, "tensors") or not self.tensors:
+        if not self.tensors:
             yield ()
             return
 
         indices = self._indices.copy()
         if self._shuffle:
-            if hasattr(self, "_seed") and self._seed is not None:
+            if self._seed is not None:
                 random.seed(self._seed)
             random.shuffle(indices)
 
         num_batches = math.ceil(self.length / self._batch_size)
-        if getattr(self, "_drop_remainder", False):
+        if self._drop_remainder:
             num_batches = self.length // self._batch_size
 
         from ml_switcheroo_compiler.backends.registry import get_active_backend
@@ -439,10 +444,10 @@ class Dataset:
                     batch_tensors.append(as_tensor_obj(take(t, batch_idx_tensor, axis=0)))
                 batch_tuple: tuple[Tensor, ...] = tuple(batch_tensors)
 
-            if hasattr(self, "_map_func"):
+            if self._map_func is not None:
                 from ml_switcheroo_compiler.core.shape import invoke_callable
 
-                mapped: TensorOrScalar = invoke_callable(getattr(self, "_map_func"), *batch_tensors)
+                mapped: TensorOrScalar = invoke_callable(self._map_func, *batch_tensors)
                 assert _is_tensor_tuple(mapped)
                 yield mapped
             else:
@@ -679,7 +684,7 @@ class NumpyDataset(Dataset):
 
         tensors = []
         for arr in arrays:
-            shape = getattr(arr, "shape", ())
+            shape = as_shape(arr.shape) if isinstance(arr, ShapeProtocol) else ()
             dtype = resolve_dtype(arr, None)
             tensors.append(Tensor(arr, TensorConfig(shape, dtype, Device(DeviceType.CPU))))
         super().__init__(*tensors)

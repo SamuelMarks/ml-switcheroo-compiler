@@ -5,18 +5,92 @@ from __future__ import annotations
 import logging
 import os
 import typing
+from contextlib import AbstractContextManager
 from types import ModuleType
 
 import yaml
 from ml_switcheroo_ir import NodeDict
 
 import ml_switcheroo_compiler.backends.registry as registry
-from ml_switcheroo_compiler.backends.eager_registry import as_bool
+from ml_switcheroo_compiler.backends.dpnp.types import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import (
+    StructuralOperandProtocol,
+    as_bool,
+    as_callable,
+)
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.distributed import Distribution
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, as_attrs
 
 AttrType = typing.Union[int, float, str, bool, list["AttrType"], tuple["AttrType", ...], dict[str, "AttrType"], "None"]
+
+
+@typing.runtime_checkable
+class _SocketConnectionProtocol(typing.Protocol):
+    """Protocol for socket connections used by `Server`."""
+
+    def setblocking(self, flag: bool) -> None:
+        """Set blocking or non-blocking mode on socket.
+
+        Args:
+            flag (bool): Blocking flag.
+        """
+        ...
+
+    def recv(self, bufsize: int) -> bytes:
+        """Receive up to `bufsize` bytes from socket.
+
+        Args:
+            bufsize (int): Maximum byte count.
+
+        Returns:
+            bytes: Received bytes.
+        """
+        ...
+
+    def sendall(self, data: bytes) -> None:
+        """Send all bytes to socket.
+
+        Args:
+            data (bytes): Bytes to send.
+        """
+        ...
+
+
+def _is_strategy_dict(val: AttrType) -> typing.TypeGuard[dict[str, dict[str, AttrType]]]:
+    """Type guard narrowing YAML dict to strategy config mapping.
+
+    Args:
+        val (AttrType): Loaded YAML value.
+
+    Returns:
+        bool: True if dict.
+    """
+    return isinstance(val, dict)
+
+
+def _is_attr_map(val: AttrType) -> typing.TypeGuard[dict[str, AttrType]]:
+    """Type guard narrowing YAML dict to `dict[str, AttrType]`.
+
+    Args:
+        val (AttrType): Loaded YAML value.
+
+    Returns:
+        bool: True if dict.
+    """
+    return isinstance(val, dict)
+
+
+def _is_context_manager(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[AbstractContextManager[TensorOrScalar]]:
+    """Type guard narrowing socket connection to `AbstractContextManager`.
+
+    Args:
+        val (StructuralOperandProtocol | TensorOrScalar): Candidate connection object.
+
+    Returns:
+        bool: Always True for runtime socket objects.
+    """
+    return val is not None
 
 
 def _load_strategy_config() -> dict[str, dict[str, AttrType]]:
@@ -28,7 +102,10 @@ def _load_strategy_config() -> dict[str, dict[str, AttrType]]:
     yaml_path = os.path.join(os.path.dirname(__file__), "strategy_config.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return typing.cast(dict[str, dict[str, "AttrType"]], yaml.safe_load(f).get("strategies", {}))
+            raw: AttrType = yaml.safe_load(f)
+            strategies: AttrType = raw.get("strategies", {}) if isinstance(raw, dict) else {}
+            assert _is_strategy_dict(strategies)
+            return strategies
     return {}
 
 
@@ -54,7 +131,9 @@ def _load_webrtc_topology() -> dict[str, AttrType]:
     yaml_path = os.path.join(os.path.dirname(__file__), "webrtc_topology.yaml")
     if os.path.exists(yaml_path):
         with open(yaml_path) as f:
-            return typing.cast(dict[str, "AttrType"], yaml.safe_load(f))
+            raw: AttrType = yaml.safe_load(f) or {}
+            assert _is_attr_map(raw)
+            return raw
     return {}
 
 
@@ -71,7 +150,8 @@ class ParameterServerStrategy(Distribution):
         self.cluster_resolver = cluster_resolver
         self.config = _load_strategy_config().get("ParameterServerStrategy", {})
         self.device_mesh = _load_device_mesh_config()
-        self.ps_mesh = getattr(getattr(self.device_mesh, "get")("cluster_meshes", {}), "get")("default", {})
+        cluster_meshes = self.device_mesh.get("cluster_meshes", {})
+        self.ps_mesh = cluster_meshes.get("default", {}) if isinstance(cluster_meshes, dict) else {}
 
     @staticmethod
     def _is_parameter_node(node: IRNode) -> bool:
@@ -89,7 +169,7 @@ class ParameterServerStrategy(Distribution):
         if node.op_type in ("Parameter", "Variable", "Weight") or attrs.get("is_parameter") is True or attrs.get("trainable") is True or attrs.get("role") in ("parameter", "weight", "bias"):
             return True
         if node.op_type == "Constant":
-            shape = getattr(node, "shape_metadata", None)
+            shape = node.shape_metadata
             return not (shape is not None and len(shape) == 0)
         return False
 
@@ -103,9 +183,10 @@ class ParameterServerStrategy(Distribution):
             bool: True if mutated.
         """
         backend = registry.get_active_backend()
-        hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("pull")
-        if hook_name and hasattr(backend, hook_name):
-            return as_bool(getattr(backend, hook_name)(graph, self.cluster_resolver))
+        hooks = self.config.get("registry_hooks", {})
+        hook_name = hooks.get("pull") if isinstance(hooks, dict) else None
+        if isinstance(hook_name, str) and hook_name and _has_attr(backend, hook_name):
+            return as_bool(as_callable(_get_attr(backend, hook_name))(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -124,7 +205,7 @@ class ParameterServerStrategy(Distribution):
                     id=recv_id,
                     op_type="Recv",
                     inputs=[],
-                    shape_metadata=getattr(node, "shape_metadata", None),
+                    shape_metadata=node.shape_metadata,
                     attributes={"src_rank": ps_rank, "tag": tag_counter, "async_pull": self.config.get("async_pull", True)},
                 )
                 tag_counter += 1
@@ -152,9 +233,10 @@ class ParameterServerStrategy(Distribution):
             bool: True if mutated.
         """
         backend = registry.get_active_backend()
-        hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("push")
-        if hook_name and hasattr(backend, hook_name):
-            return as_bool(getattr(backend, hook_name)(graph, self.cluster_resolver))
+        hooks = self.config.get("registry_hooks", {})
+        hook_name = hooks.get("push") if isinstance(hooks, dict) else None
+        if isinstance(hook_name, str) and hook_name and _has_attr(backend, hook_name):
+            return as_bool(as_callable(_get_attr(backend, hook_name))(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -172,7 +254,7 @@ class ParameterServerStrategy(Distribution):
                     id=send_id,
                     op_type="Send",
                     inputs=[node.id],
-                    shape_metadata=getattr(node, "shape_metadata", None),
+                    shape_metadata=node.shape_metadata,
                     attributes={"dst_rank": ps_rank, "tag": tag_counter, "method": self.config.get("gradient_push_method", "async")},
                 )
                 tag_counter += 1
@@ -230,9 +312,10 @@ class DataParallelStrategy(Distribution):
             bool: True if the graph was mutated.
         """
         backend = registry.get_active_backend()
-        hook_name = getattr(getattr(self.config, "get")("registry_hooks", {}), "get")("sync")
-        if hook_name and hasattr(backend, hook_name):
-            return as_bool(getattr(backend, hook_name)(graph, self.cluster_resolver))
+        hooks = self.config.get("registry_hooks", {})
+        hook_name = hooks.get("sync") if isinstance(hooks, dict) else None
+        if isinstance(hook_name, str) and hook_name and _has_attr(backend, hook_name):
+            return as_bool(as_callable(_get_attr(backend, hook_name))(graph, self.cluster_resolver))
 
         from ml_switcheroo_compiler.ir.core import IRNode
 
@@ -360,7 +443,7 @@ class PreemptionCheckpointHandler:
         payload: dict[str, AttrType] = {
             "checkpoint_id": cp_id,
             "timestamp": time.time(),
-            "cluster_resolver": str(getattr(self.cluster_resolver, "__class__", type(self.cluster_resolver)).__name__),
+            "cluster_resolver": str(type(self.cluster_resolver).__name__),
             "data": checkpoint_data or {},
         }
         with open(cp_path, "w", encoding="utf-8") as f:
@@ -390,9 +473,10 @@ class PreemptionCheckpointHandler:
         import signal
 
         try:
-            getattr(signal, "signal")(signal.SIGTERM, self._handle_preemption_signal)
-            getattr(signal, "signal")(signal.SIGINT, self._handle_preemption_signal)
-        except (ValueError, AttributeError):
+            sig_fn = vars(signal).get("signal")
+            as_callable(sig_fn)(signal.SIGTERM, self._handle_preemption_signal)
+            as_callable(sig_fn)(signal.SIGINT, self._handle_preemption_signal)
+        except (ValueError, AttributeError, TypeError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
 
     def _handle_preemption_signal(self, signum: int, frame: TensorOrScalar) -> None:
@@ -440,8 +524,8 @@ class Server:
 
         try:
             backend = registry.get_active_backend()
-            if hasattr(backend, "start_server"):
-                backend.start_server(self)
+            if _has_attr(backend, "start_server"):
+                as_callable(_get_attr(backend, "start_server"))(self)
                 return
         except Exception as e:
             import warnings
@@ -455,11 +539,11 @@ class Server:
         self._thread = threading.Thread(target=self._run_server, daemon=True)
         self._thread.start()
 
-    def _handle_pull_action(self, conn: TensorOrScalar, tensor_id: str, backend_mod: ModuleType) -> None:
+    def _handle_pull_action(self, conn: StructuralOperandProtocol | TensorOrScalar, tensor_id: str, backend_mod: ModuleType) -> None:
         """Handle a parameter pull request over a client socket.
 
         Args:
-            conn (TensorOrScalar): Active client socket connection.
+            conn (StructuralOperandProtocol | TensorOrScalar): Active client socket connection.
             tensor_id (str): Identifier of the requested tensor weight.
             backend_mod (ModuleType): Backend module instance used for serialization.
         """
@@ -472,32 +556,35 @@ class Server:
             bio = io.BytesIO()
             backend_mod.save(bio, tensor_data, allow_pickle=False)
             data = bio.getvalue()
-            getattr(conn, "sendall")(len(data).to_bytes(8, "big"))
-            getattr(conn, "sendall")(data)
+            sendall_fn = as_callable(_get_attr(conn, "sendall"))
+            sendall_fn(len(data).to_bytes(8, "big"))
+            sendall_fn(data)
         except Exception:
             logging.getLogger(__name__).debug("Failed to pull weight", exc_info=True)
 
-    def _handle_push_or_send_action(self, conn: TensorOrScalar, action: str, tensor_id: str, backend_mod: ModuleType) -> None:
+    def _handle_push_or_send_action(self, conn: StructuralOperandProtocol | TensorOrScalar, action: str, tensor_id: str, backend_mod: ModuleType) -> None:
         """Handle a gradient push or tensor send request over a client socket.
 
         Args:
-            conn (TensorOrScalar): Active client socket connection.
+            conn (StructuralOperandProtocol | TensorOrScalar): Active client socket connection.
             action (str): Action type ('push' or 'send').
             tensor_id (str): Identifier of the incoming tensor.
             backend_mod (ModuleType): Backend module instance used for deserialization.
         """
         import io
 
-        data_len_b = getattr(conn, "recv")(8)
-        if not data_len_b:
+        recv_fn = as_callable(_get_attr(conn, "recv"))
+        data_len_b: TensorOrScalar = recv_fn(8)
+        if not data_len_b or not isinstance(data_len_b, (bytes, bytearray)):
             return
         data_len = int.from_bytes(data_len_b, "big")
         payload = bytearray()
         while len(payload) < data_len:
-            chunk = getattr(conn, "recv")(min(4096, data_len - len(payload)))
-            if not chunk:
-                break
-            payload.extend(chunk)
+            chunk: TensorOrScalar = recv_fn(min(4096, data_len - len(payload)))
+            if chunk and isinstance(chunk, (bytes, bytearray)):
+                payload.extend(chunk)
+            else:
+                data_len = 0
         bio = io.BytesIO(bytes(payload))
         arr = backend_mod.load(bio, allow_pickle=False)
         self.inbox.put((tensor_id, arr))
@@ -507,23 +594,25 @@ class Server:
             else:
                 self.state_store[tensor_id] = arr
 
-    def _process_client_connection(self, conn: TensorOrScalar, np: ModuleType) -> None:
+    def _process_client_connection(self, conn: StructuralOperandProtocol | TensorOrScalar, np: ModuleType) -> None:
         """Read header and dispatch action for an accepted client socket.
 
         Args:
-            conn (TensorOrScalar): Accepted client socket connection.
+            conn (StructuralOperandProtocol | TensorOrScalar): Accepted client socket connection.
             np (ModuleType): NumPy module instance.
         """
         import json
-        from contextlib import AbstractContextManager
 
-        with typing.cast("AbstractContextManager[TensorOrScalar]", conn):
-            getattr(conn, "setblocking")(True)
-            header_len_b = getattr(conn, "recv")(4)
-            if not header_len_b:
+        assert _is_context_manager(conn)
+        with conn:
+            as_callable(_get_attr(conn, "setblocking"))(True)
+            recv_fn = as_callable(_get_attr(conn, "recv"))
+            header_len_b: TensorOrScalar = recv_fn(4)
+            if not header_len_b or not isinstance(header_len_b, (bytes, bytearray)):
                 return
             header_len = int.from_bytes(header_len_b, "big")
-            header_str = getattr(conn, "recv")(header_len).decode("utf-8")
+            raw_hdr: TensorOrScalar = recv_fn(header_len)
+            header_str = raw_hdr.decode("utf-8") if isinstance(raw_hdr, (bytes, bytearray)) else str(raw_hdr)
             header = json.loads(header_str)
 
             action = header.get("action")
@@ -550,7 +639,7 @@ class Server:
                 ready, _, _ = select.select([self._server], [], [], 0.1)
                 if ready:
                     conn, _ = self._server.accept()
-                    getattr(self, "_process_client_connection")(conn, np)
+                    self._process_client_connection(conn, np)
             except Exception as e:
                 import warnings
 
@@ -562,8 +651,8 @@ class Server:
 
         try:
             backend = registry.get_active_backend()
-            if hasattr(backend, "join_server"):
-                backend.join_server(self)
+            if _has_attr(backend, "join_server"):
+                as_callable(_get_attr(backend, "join_server"))(self)
                 return
         except Exception as e:
             import warnings
@@ -913,11 +1002,11 @@ class PipelineParallelStrategy(Distribution):
         """
         num_stages = max(2, len(graph.nodes) // 10) if graph.nodes else 2
 
-        if not hasattr(self, "config") or not getattr(self.config, "schedule", None):
+        if "config" not in vars(self) or self.config.schedule is None:
             return self._build_fallback_schedule(num_stages)
 
         schedule: list[tuple[str, int]] = []
-        for phase in getattr(self.config.schedule, "phases"):
+        for phase in self.config.schedule.phases:
             count = int(eval(phase.count_expression, {"num_stages": num_stages, "num_microbatches": self.num_microbatches}))
             self._append_phase_steps(schedule, phase.type, count, list(phase.operations), num_stages)
 
@@ -950,10 +1039,13 @@ class PipelineParallelStrategy(Distribution):
         schedule = self.generate_schedule(graph)
 
         # Emit schedule metadata into graph attributes for the executor
-        if not hasattr(graph, "attributes"):
-            object.__setattr__(graph, "attributes", {})
-        getattr(graph, "attributes")["pipeline_schedule"] = schedule
-        getattr(graph, "attributes")["num_pipeline_stages"] = num_stages
+        graph_vars = vars(graph)
+        if "attributes" not in graph_vars or not isinstance(graph_vars["attributes"], dict):
+            graph_vars["attributes"] = {}
+        attrs_dict = graph_vars["attributes"]
+        assert isinstance(attrs_dict, dict)
+        attrs_dict["pipeline_schedule"] = schedule
+        attrs_dict["num_pipeline_stages"] = num_stages
 
         return True
 
@@ -963,7 +1055,7 @@ class PipelineParallelStrategy(Distribution):
         Returns:
             str: Computed result.
         """
-        if getattr(self, "target_env", "host") == "browser":
+        if vars(self).get("target_env", "host") == "browser":
             return "webrtc"
         return "tcp"
 
@@ -1013,19 +1105,19 @@ class SPMDShardingStrategy(Distribution):
             graph (IRGraph): The IR graph to process.
         """
         for node in graph.nodes.values():
-            if getattr(node, "sharding", None) is not None:
+            if node.sharding is not None:
                 continue
 
             for inp_id in node.inputs:
                 inp_node = graph.nodes.get(inp_id)
-                if inp_node and getattr(inp_node, "sharding", None) is not None:
-                    object.__setattr__(node, "sharding", inp_node.sharding)
+                if inp_node is not None and inp_node.sharding is not None:
+                    vars(node)["sharding"] = inp_node.sharding
                     break
 
             if self.layout_map:
                 spec = self.layout_map.get(node.id)
                 if spec:
-                    object.__setattr__(node, "sharding", spec)
+                    vars(node)["sharding"] = spec
 
     def lower_sharding(self, graph: IRGraph) -> bool:
         """Execute SPMD graph partitioning, lowering 1D/2D mesh sharding to explicit collectives.

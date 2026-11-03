@@ -7,11 +7,29 @@ import uuid
 
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol, as_shape
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    is_traced_data,
+)
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+
+@typing.runtime_checkable
+class _HasStrDTypeProtocol(typing.Protocol):
+    """Protocol for proxy objects exposing a `.dtype` string attribute."""
+
+    @property
+    def dtype(self) -> str:
+        """Return data type string.
+
+        Returns:
+            str: Data type string.
+        """
+        ...
 
 
 class ProxyMathOverloadsMixin:
@@ -42,8 +60,8 @@ class ProxyMathOverloadsMixin:
                 msg,
             )
 
-        other_id = getattr(other, "id", None)
-        other_shape = getattr(other, "shape", ())
+        other_id = other.id if is_traced_data(other) else None
+        other_shape = as_shape(other.shape) if isinstance(other, ShapeProtocol) else ()
 
         # Broadcast shapes
         from ml_switcheroo_compiler.ir.shape_system import broadcast_shapes
@@ -172,12 +190,12 @@ class ProxyMathOverloadsMixin:
 
             raise TracingError(msg)
 
-        other_id = getattr(other, "id", None)
+        other_id = other.id if is_traced_data(other) else None
         if other_id is None:
             msg = "MatMul right hand side must be a ProxyTensor."
             raise ValueError(msg)
 
-        other_shape = getattr(other, "shape", ())
+        other_shape = as_shape(other.shape) if isinstance(other, ShapeProtocol) else ()
 
         from ml_switcheroo_compiler.ir.shape_system import matmul_shape
 
@@ -227,10 +245,12 @@ class ProxyMathOverloadsMixin:
 
         var_name = node.attributes.get("variable_name")
 
+        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
         # Constant wrapping if not a proxy tensor
-        value_id = getattr(value, "id", None)
-        value_shape = getattr(value, "shape", ())
-        value_dtype = getattr(value, "dtype", self.dtype)
+        value_id = value.id if isinstance(value, ProxyTensor) else (value.id if is_traced_data(value) else None)
+        value_shape = value.shape if isinstance(value, ProxyTensor) else (as_shape(value.shape) if isinstance(value, ShapeProtocol) else ())
+        value_dtype = str(value.dtype) if isinstance(value, (ProxyTensor, _HasStrDTypeProtocol)) else self.dtype
 
         if value_id is None:
             value_id = str(uuid.uuid4())
@@ -259,8 +279,6 @@ class ProxyMathOverloadsMixin:
             shape_metadata=value_shape,
         )
         global_tracing_state.add_node(assign_node)
-
-        from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
         return ProxyTensor(id=out_id, shape=value_shape, dtype=value_dtype)
 

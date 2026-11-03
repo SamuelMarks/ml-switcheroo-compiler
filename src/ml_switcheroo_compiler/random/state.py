@@ -8,11 +8,13 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol, as_shape, as_tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
+from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, is_traced_data
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
+from ml_switcheroo_compiler.core.tensor_mixins import _DataWrapperProtocol
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops import get_op
 from ml_switcheroo_compiler.tracing import global_tracing_state
@@ -41,7 +43,7 @@ def _emit_random_node(
         Tensor: Resulting tensor.
     """
     shape_tuple: tuple[int, ...] = (shape,) if isinstance(shape, int) else tuple(shape)
-    dtype_str = getattr(dtype, "value") if hasattr(dtype, "value") else (str(dtype) if dtype is not None else "float32")
+    dtype_str = dtype.value if isinstance(dtype, dtypes.DType) else (str(dtype) if dtype is not None else "float32")
     if config.eager_mode:
         eager_kwargs: dict[str, RandomArg] = dict(attributes) if attributes else {}
         if "shape" not in eager_kwargs:
@@ -49,11 +51,12 @@ def _emit_random_node(
         if "dtype" not in eager_kwargs:
             eager_kwargs["dtype"] = dtype_str
         res = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **eager_kwargs)
-        res_shape = getattr(res, "shape", shape_tuple)
+        raw_res: StructuralOperandProtocol = res
+        res_shape = as_shape(raw_res.shape) if isinstance(raw_res, ShapeProtocol) else shape_tuple
         return Tensor(res, TensorConfig(res_shape, dtype, "cpu"))
 
     out_id = str(uuid.uuid4())
-    in_ids = [getattr(inp.data, "id") if hasattr(inp, "data") and hasattr(inp.data, "id") else str(inp) for inp in inputs]
+    in_ids = [inp.data.id if isinstance(inp, (Tensor, _DataWrapperProtocol)) and is_traced_data(inp.data) else str(inp) for inp in inputs]
     attrs = dict(attributes) if attributes is not None else {}
 
     node = LogicalNode(

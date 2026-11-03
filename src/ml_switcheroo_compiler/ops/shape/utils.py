@@ -13,6 +13,7 @@ from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
+from ml_switcheroo_compiler.ir.core import as_attrs
 from ml_switcheroo_compiler.ops.registry import register_util
 from ml_switcheroo_compiler.tracing import ProxyTensor, global_tracing_state
 from ml_switcheroo_compiler.tracing.builder import TracingNodeBuilder
@@ -54,11 +55,9 @@ def _emit_shape_node(
         id=out_id,
         op_type=op_type,
         inputs=flat_inputs,
-        attributes={},
+        attributes=as_attrs(dict(attrs)) if attrs else {},
         shape_metadata=norm_shape,
     )
-    if attrs:
-        object.__setattr__(node, "attributes", dict(attrs))
     global_tracing_state.add_node(node)
 
     from ml_switcheroo_compiler.backends.registry import as_shape
@@ -67,7 +66,8 @@ def _emit_shape_node(
     shape_tuple = as_shape(tuple(raw_out_shape))
 
     proxy = ProxyTensor(id=out_id, shape=shape_tuple, dtype=dtype_val)
-    device = getattr(seq_inputs[0], "device", config.default_device) if len(seq_inputs) > 0 else config.default_device
+    first_in = seq_inputs[0] if len(seq_inputs) > 0 else None
+    device = first_in.device if isinstance(first_in, Tensor) else config.default_device
     return Tensor(proxy, TensorConfig(shape_tuple, out_dtype, device))
 
 

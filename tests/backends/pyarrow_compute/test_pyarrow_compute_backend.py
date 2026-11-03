@@ -397,6 +397,15 @@ def _test_pyarrow_compute_chunked_and_tables_part_3(_state: dict[str, EagerTenso
         assert list_slice == [20]
         tbl_fallback = pa_pkg.to_table({"a": [1, 2]})
         assert isinstance(tbl_fallback, dict)
+
+    assert PyArrowComputeGenerator.ones((2,)) is not None
+    assert PyArrowComputeGenerator.empty((2,)) is not None
+    assert PyArrowComputeGenerator.to_table({"x": [1, 2]}) is not None
+    assert PyArrowComputeGenerator.table({"x": [1, 2]}) is not None
+    pa_t = PyArrowComputeGenerator.tensor([1.0, 2.0])
+    assert pa_t is not None
+    ir_t = PyArrowComputeGenerator.from_arrow(pa_t)
+    assert PyArrowComputeGenerator.to_arrow(ir_t) is not None
     getattr(_state, "update")({"ca_fallback": ca_fallback, "list_slice": list_slice, "mock_pa_empty": mock_pa_empty, "rb_fallback": rb_fallback})
     getattr(_state, "update")({"slice_fallback": slice_fallback, "tbl_fallback": tbl_fallback})
 

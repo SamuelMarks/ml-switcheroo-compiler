@@ -89,6 +89,12 @@ repos:
     language: system
     name: Check typing.Any usage
     pass_filenames: false
+  - entry: python3 scripts/lint_typing.py
+    files: \.py$
+    id: lint-typing
+    language: system
+    name: Check Strict Typing and Anti-Reflection
+    pass_filenames: false
   - entry: python3 scripts/lint_pass.py --check-zero-assertions
     files: \.py$
     id: lint-pass

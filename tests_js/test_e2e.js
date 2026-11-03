@@ -386,7 +386,7 @@ payload = {
 print(json.dumps(payload))
 `;
 
-    const pyOutputStr = execFileSync("python3", ["-c", pyScript]).toString();
+    const pyOutputStr = execFileSync("python3", ["-c", pyScript], { env: { ...process.env, NODE_V8_COVERAGE: '' } }).toString();
     const payload = JSON.parse(pyOutputStr);
 
     // 2. In browser runner: compile and evaluate IRGraph on WASM memory
@@ -422,7 +422,7 @@ print(json.dumps({
 }))
 `;
 
-    const feedbackOutputStr = execFileSync("python3", ["-c", feedbackScript]).toString();
+    const feedbackOutputStr = execFileSync("python3", ["-c", feedbackScript], { env: { ...process.env, NODE_V8_COVERAGE: '' } }).toString();
     const feedbackResult = JSON.parse(feedbackOutputStr);
 
     // 6. Assert dynamic SymInt variable was resolved to concrete static bound
@@ -456,7 +456,7 @@ payload = {
 print(json.dumps(payload))
 `;
 
-    const pyOutputStr = execFileSync("python3", ["-c", pyScript]).toString();
+    const pyOutputStr = execFileSync("python3", ["-c", pyScript], { env: { ...process.env, NODE_V8_COVERAGE: '' } }).toString();
     const payload = JSON.parse(pyOutputStr);
 
     // 2. Mock WebGPU device with telemetry
@@ -539,7 +539,7 @@ print(json.dumps({
 }))
 `;
 
-    const feedbackOutputStr = execFileSync("python3", ["-c", feedbackScript]).toString();
+    const feedbackOutputStr = execFileSync("python3", ["-c", feedbackScript], { env: { ...process.env, NODE_V8_COVERAGE: '' } }).toString();
     const feedbackResult = JSON.parse(feedbackOutputStr);
 
     assert.strictEqual(feedbackResult.bounds['seq_len'], 4);

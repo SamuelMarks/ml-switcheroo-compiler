@@ -16,6 +16,20 @@ from ml_switcheroo_compiler.backends.transpiler_config_models import (
     load_cst_rewrite_rules,
     load_transpiler_config,
 )
+from ml_switcheroo_compiler.tree_util import PyTree
+
+
+def _is_eager_dict(val: PyTree) -> typing.TypeGuard[dict[str, EagerValue]]:
+    """Type guard narrowing unflattened PyTree to `dict[str, EagerValue]`.
+
+    Args:
+        val (PyTree): Unflattened PyTree.
+
+    Returns:
+        bool: True if `val` is a dict.
+    """
+    return isinstance(val, dict)
+
 
 _CONFIG_PATH = os.path.join(os.path.dirname(__file__), "transpilation_rules.yaml")
 _CONFIG = load_transpiler_config(_CONFIG_PATH)
@@ -38,11 +52,23 @@ def _build_attribute_chain(names: list[str]) -> cst.BaseExpression:
     Returns:
         cst.BaseExpression: Constructed LibCST Name or nested Attribute expression.
     """
+    return _build_import_name_chain(names)
+
+
+def _build_import_name_chain(names: list[str]) -> cst.Attribute | cst.Name:
+    """Build a LibCST Name or Attribute chain suitable for import aliases.
+
+    Args:
+        names (list[str]): Ordered list of attribute path components.
+
+    Returns:
+        cst.Attribute | cst.Name: Constructed LibCST Name or nested Attribute expression.
+    """
     if not names:
         return cst.Name("empty")
     if len(names) == 1:
         return cst.Name(names[0])
-    expr: cst.BaseExpression = cst.Name(names[0])
+    expr: cst.Attribute | cst.Name = cst.Name(names[0])
     for name in names[1:]:
         expr = cst.Attribute(value=expr, attr=cst.Name(name))
     return expr
@@ -355,14 +381,14 @@ class CSTTransformer(cst.CSTTransformer):
             if isinstance(node, cst.Attribute):
                 base = _get_import_name(node.value)
                 return f"{base}.{node.attr.value}" if base else node.attr.value
-            return getattr(node, "value", "")
+            return node.value if isinstance(node, cst.Name) else ""
 
         for alias in updated_node.names:
             alias_full = _get_import_name(alias.name)
             remapped = self.matcher.match_import(alias_full, self.target_framework)
             if remapped:
                 target_parts = remapped.split(".")
-                new_alias = alias.with_changes(name=typing.cast(cst.Name, _build_attribute_chain(target_parts)))
+                new_alias = alias.with_changes(name=_build_import_name_chain(target_parts))
                 new_names.append(new_alias)
                 mutated = True
                 continue
@@ -371,7 +397,7 @@ class CSTTransformer(cst.CSTTransformer):
             if base_mod in KNOWN_SOURCE_FRAMEWORKS:
                 if alias_full != target_module:
                     target_parts = target_module.split(".")
-                    new_alias = alias.with_changes(name=typing.cast(cst.Name, _build_attribute_chain(target_parts)))
+                    new_alias = alias.with_changes(name=_build_import_name_chain(target_parts))
                     new_names.append(new_alias)
                     mutated = True
                 else:
@@ -649,7 +675,7 @@ class CSTTransformer(cst.CSTTransformer):
                 ret1 = stmt1.body.body[0].body[0].value
                 ret2 = stmt2.body[0].value
                 if ret1 is not None and ret2 is not None:
-                    target_module_parts = getattr(self.target_config, "module_path", None) or ["jnp"]
+                    target_module_parts = self.target_config.module_path or ["jnp"]
                     where_func = _build_attribute_chain(target_module_parts + ["where"])
                     where_call = cst.Call(
                         func=where_func,
@@ -917,7 +943,9 @@ class StateLiftingTransformer(cst.CSTTransformer):
         tree.visit(InitExtractor())
 
         leaves, tree_def = tree_flatten(extracted_params)
-        reconstructed: dict[str, EagerValue] = typing.cast("dict[str, EagerValue]", tree_unflatten(tree_def, leaves))
+        unflattened = tree_unflatten(tree_def, leaves)
+        assert _is_eager_dict(unflattened)
+        reconstructed: dict[str, EagerValue] = unflattened
 
         transformer = cls(param_var_name=param_var_name)
         transformed_tree = tree.visit(transformer)

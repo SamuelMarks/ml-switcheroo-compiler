@@ -8,7 +8,33 @@ from collections.abc import Callable
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_float, as_tensor
 
 if typing.TYPE_CHECKING:
-    pass
+    from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
+    from ml_switcheroo_compiler.backends.eager.types_utils import ZerosModule
+
+
+@typing.runtime_checkable
+class _GetModuleClassProtocol(typing.Protocol):
+    """Protocol for generator classes exposing `get_module()`."""
+
+    def get_module(self) -> ZerosModule:
+        """Return underlying backend module.
+
+        Returns:
+            ZerosModule: Backend module.
+        """
+        ...
+
+
+def _is_base_gen(val: GeneratorLifecycleMixin) -> typing.TypeGuard[BaseGenerator]:
+    """Type guard narrowing `GeneratorLifecycleMixin` receiver to `BaseGenerator`.
+
+    Args:
+        val (GeneratorLifecycleMixin): Mixin self instance.
+
+    Returns:
+        bool: True if instance is non-None.
+    """
+    return val is not None
 
 
 class GeneratorLifecycleMixin:
@@ -71,9 +97,10 @@ class GeneratorLifecycleMixin:
         Args:
             input_prefix (str): The input_prefix parameter for the operation.
         """
-        from ml_switcheroo_compiler.backends.base_generator import BaseGenerator, IRGraphWalker
+        from ml_switcheroo_compiler.backends.base_generator import IRGraphWalker
 
-        walker: IRGraphWalker = IRGraphWalker(typing.cast(BaseGenerator, self))
+        assert _is_base_gen(self)
+        walker: IRGraphWalker = IRGraphWalker(self)
         walker.walk(input_prefix)
 
 
@@ -108,7 +135,7 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_zeros
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
         return generic_zeros(mod, shape)
 
     @classmethod
@@ -125,7 +152,7 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_array
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
         return as_tensor(as_callable(generic_array)(mod, data, dtype))
 
     @classmethod
@@ -141,7 +168,7 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_asarray
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
         return as_tensor(as_callable(generic_asarray)(mod, data))
 
     @classmethod
@@ -157,5 +184,5 @@ class EagerExecutionMixin:
         from ml_switcheroo_compiler.backends.eager.types_utils import generic_item
         from ml_switcheroo_compiler.backends.registry import BackendRegistry
 
-        mod = cls.get_module() if hasattr(cls, "get_module") else BackendRegistry.get("numpy").get_module()
+        mod = cls.get_module() if isinstance(cls, _GetModuleClassProtocol) else BackendRegistry.get("numpy").get_module()
         return as_float(as_callable(generic_item)(mod, data))

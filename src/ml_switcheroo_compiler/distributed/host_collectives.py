@@ -6,13 +6,244 @@ import logging
 import typing
 from collections.abc import Sequence
 
-from ml_switcheroo_compiler.backends.eager_registry import as_callable, as_int, as_opt_str, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.eager_registry import (
+    ShapeProtocol,
+    StructuralOperandProtocol,
+    as_callable,
+    as_int,
+    as_opt_str,
+    as_shape,
+    as_tensor,
+)
 from ml_switcheroo_compiler.backends.registry import BackendRegistry
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+
+
+@typing.runtime_checkable
+class _CopyableProtocol(typing.Protocol):
+    """Protocol for tensor buffers supporting `.copy()`."""
+
+    def copy(self) -> TensorLike:
+        """Return shallow copy of tensor buffer.
+
+        Returns:
+            TensorLike: Copied tensor buffer.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _HasDTypeAttrProtocol(typing.Protocol):
+    """Protocol for tensor buffers exposing `.dtype`."""
+
+    @property
+    def dtype(self) -> TensorOrScalar:
+        """Return buffer dtype.
+
+        Returns:
+            TensorOrScalar: Buffer dtype.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _NamedBackendObjProtocol(typing.Protocol):
+    """Protocol for backend objects exposing `.name`."""
+
+    @property
+    def name(self) -> str:
+        """Return backend name.
+
+        Returns:
+            str: Backend name.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _CollectiveDriverProtocol(typing.Protocol):
+    """Protocol for hardware NCCL/RCCL collective drivers."""
+
+    def is_available(self) -> bool:
+        """Return True if driver is available.
+
+        Returns:
+            bool: Availability flag.
+        """
+        ...
+
+    def allocate_buffer(self, nbytes: int) -> int:
+        """Allocate device memory buffer.
+
+        Args:
+            nbytes (int): Buffer size in bytes.
+
+        Returns:
+            int: Device pointer.
+        """
+        ...
+
+    def free_buffer(self, ptr: int) -> None:
+        """Free device memory buffer.
+
+        Args:
+            ptr (int): Device pointer.
+        """
+        ...
+
+    def copy_host_to_device(self, host_arr: TensorLike, dev_ptr: int) -> None:
+        """Copy host array to device pointer.
+
+        Args:
+            host_arr (TensorLike): Source host array.
+            dev_ptr (int): Destination device pointer.
+        """
+        ...
+
+    def copy_device_to_host(self, dev_ptr: int, host_arr: TensorLike) -> None:
+        """Copy device pointer to host array.
+
+        Args:
+            dev_ptr (int): Source device pointer.
+            host_arr (TensorLike): Destination host array.
+        """
+        ...
+
+    def stream_synchronize(self, stream: int | None = None) -> None:
+        """Synchronize device stream.
+
+        Args:
+            stream (int | None): Stream pointer.
+        """
+        ...
+
+    def all_reduce(
+        self,
+        send_ptr: int,
+        recv_ptr: int,
+        count: int,
+        datatype: int,
+        op: int,
+        comm: int | None = None,
+        stream: int | None = None,
+    ) -> None:
+        """Execute all_reduce on device.
+
+        Args:
+            send_ptr (int): Send buffer pointer.
+            recv_ptr (int): Receive buffer pointer.
+            count (int): Element count.
+            datatype (int): Data type code.
+            op (int): Reduction operator code.
+            comm (int | None): Communicator pointer.
+            stream (int | None): Stream pointer.
+        """
+        ...
+
+    def all_gather(
+        self,
+        send_ptr: int,
+        recv_ptr: int,
+        sendcount: int,
+        datatype: int,
+        comm: int | None = None,
+        stream: int | None = None,
+    ) -> None:
+        """Execute all_gather on device.
+
+        Args:
+            send_ptr (int): Send buffer pointer.
+            recv_ptr (int): Receive buffer pointer.
+            sendcount (int): Send element count.
+            datatype (int): Data type code.
+            comm (int | None): Communicator pointer.
+            stream (int | None): Stream pointer.
+        """
+        ...
+
+    def reduce_scatter(
+        self,
+        send_ptr: int,
+        recv_ptr: int,
+        recvcount: int,
+        datatype: int,
+        op: int,
+        comm: int | None = None,
+        stream: int | None = None,
+    ) -> None:
+        """Execute reduce_scatter on device.
+
+        Args:
+            send_ptr (int): Send buffer pointer.
+            recv_ptr (int): Receive buffer pointer.
+            recvcount (int): Receive element count.
+            datatype (int): Data type code.
+            op (int): Reduction operator code.
+            comm (int | None): Communicator pointer.
+            stream (int | None): Stream pointer.
+        """
+        ...
+
+    def broadcast(
+        self,
+        send_ptr: int,
+        recv_ptr: int,
+        count: int,
+        datatype: int,
+        root: int = 0,
+        comm: int | None = None,
+        stream: int | None = None,
+    ) -> None:
+        """Execute broadcast on device.
+
+        Args:
+            send_ptr (int): Send buffer pointer.
+            recv_ptr (int): Receive buffer pointer.
+            count (int): Element count.
+            datatype (int): Data type code.
+            root (int): Root rank.
+            comm (int | None): Communicator pointer.
+            stream (int | None): Stream pointer.
+        """
+        ...
+
+    def all_to_all(
+        self,
+        send_ptr: int,
+        recv_ptr: int,
+        count: int,
+        datatype: int,
+        comm: int | None = None,
+        stream: int | None = None,
+    ) -> None:
+        """Execute all_to_all on device.
+
+        Args:
+            send_ptr (int): Send buffer pointer.
+            recv_ptr (int): Receive buffer pointer.
+            count (int): Element count.
+            datatype (int): Data type code.
+            comm (int | None): Communicator pointer.
+            stream (int | None): Stream pointer.
+        """
+        ...
+
+
+def _copy_if_possible(data: TensorLike) -> TensorLike:
+    """Return `data.copy()` if supported, else `data`.
+
+    Args:
+        data (TensorLike): Input tensor buffer.
+
+    Returns:
+        TensorLike: Copied or original tensor buffer.
+    """
+    raw: StructuralOperandProtocol = data
+    return raw.copy() if isinstance(raw, _CopyableProtocol) else data
 
 
 def _exec_collective_op(op_name: str, *args: TensorOrScalar, **kwargs: AttrValue) -> TensorOrScalar:
@@ -40,7 +271,8 @@ def _split_along_axis(data: TensorLike, num_splits: int, axis: int = 0) -> list[
     Returns:
         list[TensorLike]: List of partitioned tensor slices.
     """
-    shape = as_shape(getattr(data, "shape", ()))
+    raw_data: StructuralOperandProtocol = data
+    shape = as_shape(raw_data.shape) if isinstance(raw_data, ShapeProtocol) else ()
     ndim = len(shape)
     norm_axis = axis if axis >= 0 else ndim + axis
     axis_len = shape[norm_axis]
@@ -71,10 +303,10 @@ def _all_reduce_eager(
         TensorLike: Reduced tensor buffer.
     """
     if all_ranks_data is None:
-        return data.copy() if hasattr(data, "copy") else data
+        return _copy_if_possible(data)
 
     items = list(all_ranks_data)
-    acc: TensorOrScalar = items[0].copy() if hasattr(items[0], "copy") else items[0]
+    acc: TensorOrScalar = _copy_if_possible(items[0])
     norm_op: str = op.upper()
     if norm_op == "SUM":
         ir_op = "Add"
@@ -107,7 +339,7 @@ def _all_gather_eager(
         TensorLike: Gathered tensor buffer.
     """
     if all_ranks_data is None:
-        return data.copy() if hasattr(data, "copy") else data
+        return _copy_if_possible(data)
     return as_tensor(_exec_collective_op("Concatenate", list(all_ranks_data), axis=axis))
 
 
@@ -159,7 +391,7 @@ def _all_to_all_eager(
         TensorLike: Exchanged tensor buffer for the current rank.
     """
     if all_ranks_data is None:
-        return data.copy() if hasattr(data, "copy") else data
+        return _copy_if_possible(data)
     split_ranks: list[list[TensorLike]] = [_split_along_axis(rank_arr, world_size, axis=scatter_dim) for rank_arr in all_ranks_data]
     rank_slices: list[TensorLike] = [split_ranks[r][rank] for r in range(world_size)]
     return as_tensor(_exec_collective_op("Concatenate", rank_slices, axis=gather_dim))
@@ -285,12 +517,12 @@ class HostCollectiveCommunicator:
             TensorLike: Broadcasted tensor matching root rank payload.
         """
         if all_ranks_data is None:
-            return data.copy() if hasattr(data, "copy") else data
+            return _copy_if_possible(data)
         src = all_ranks_data[root]
-        return src.copy() if hasattr(src, "copy") else src
+        return _copy_if_possible(src)
 
 
-def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
+def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> tuple[_CollectiveDriverProtocol, int, int] | None:
     """Resolve CUDA NCCL driver instance, datatype code, and reduction op code.
 
     Args:
@@ -298,7 +530,7 @@ def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
         op_str (str): Target reduction operation.
 
     Returns:
-        TensorOrScalar: Driver instance, datatype, and op code tuple or None.
+        tuple[_CollectiveDriverProtocol, int, int] | None: Driver instance, datatype, and op code tuple or None.
     """
     try:
         from ml_switcheroo_compiler.backends.cuda import nccl_collectives
@@ -313,8 +545,9 @@ def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
             NCCL_SUM,
         )
 
-        drv = as_callable(getattr(nccl_collectives, "NCCLDriver"))()
-        if not drv.is_available():
+        drv_cls = vars(nccl_collectives).get("NCCLDriver")
+        drv_raw: StructuralOperandProtocol = as_callable(drv_cls)()
+        if not isinstance(drv_raw, _CollectiveDriverProtocol) or not drv_raw.is_available():
             return None
         dt_map = {
             "float32": NCCL_FLOAT32,
@@ -322,14 +555,16 @@ def _resolve_cuda_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
             "int32": NCCL_INT32,
             "int64": NCCL_INT64,
         }
-        datatype = dt_map.get(str(getattr(tensor, "dtype", "float32")), NCCL_FLOAT32)
+        raw_t: StructuralOperandProtocol = tensor
+        dt_str = str(raw_t.dtype) if isinstance(raw_t, _HasDTypeAttrProtocol) else "float32"
+        datatype = dt_map.get(dt_str, NCCL_FLOAT32)
         op_map = {"SUM": NCCL_SUM, "ADD": NCCL_SUM, "PROD": NCCL_PROD, "MAX": NCCL_MAX, "MIN": NCCL_MIN}
-        return (drv, datatype, op_map.get(op_str.upper(), NCCL_SUM))
+        return (drv_raw, datatype, op_map.get(op_str.upper(), NCCL_SUM))
     except Exception:
         return None
 
 
-def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
+def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> tuple[_CollectiveDriverProtocol, int, int] | None:
     """Resolve ROCm RCCL driver instance, datatype code, and reduction op code.
 
     Args:
@@ -337,7 +572,7 @@ def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
         op_str (str): Target reduction operation.
 
     Returns:
-        TensorOrScalar: Driver instance, datatype, and op code tuple or None.
+        tuple[_CollectiveDriverProtocol, int, int] | None: Driver instance, datatype, and op code tuple or None.
     """
     try:
         from ml_switcheroo_compiler.backends.rocm import rccl_collectives
@@ -352,8 +587,9 @@ def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
             RCCL_SUM,
         )
 
-        drv = as_callable(getattr(rccl_collectives, "RCCLDriver"))()
-        if not drv.is_available():
+        drv_cls = vars(rccl_collectives).get("RCCLDriver")
+        drv_raw: StructuralOperandProtocol = as_callable(drv_cls)()
+        if not isinstance(drv_raw, _CollectiveDriverProtocol) or not drv_raw.is_available():
             return None
         dt_map = {
             "float32": RCCL_FLOAT32,
@@ -361,9 +597,11 @@ def _resolve_rocm_driver(tensor: TensorLike, op_str: str) -> TensorOrScalar:
             "int32": RCCL_INT32,
             "int64": RCCL_INT64,
         }
-        datatype = dt_map.get(str(getattr(tensor, "dtype", "float32")), RCCL_FLOAT32)
+        raw_t: StructuralOperandProtocol = tensor
+        dt_str = str(raw_t.dtype) if isinstance(raw_t, _HasDTypeAttrProtocol) else "float32"
+        datatype = dt_map.get(dt_str, RCCL_FLOAT32)
         op_map = {"SUM": RCCL_SUM, "ADD": RCCL_SUM, "PROD": RCCL_PROD, "MAX": RCCL_MAX, "MIN": RCCL_MIN}
-        return (drv, datatype, op_map.get(op_str.upper(), RCCL_SUM))
+        return (drv_raw, datatype, op_map.get(op_str.upper(), RCCL_SUM))
     except Exception:
         return None
 
@@ -406,7 +644,7 @@ def _compute_collective_shape(
 
 
 def _invoke_driver_op(
-    driver: TensorOrScalar,
+    driver: _CollectiveDriverProtocol,
     op_name: str,
     ptrs: tuple[int, int],
     counts: tuple[int, int],
@@ -419,7 +657,7 @@ def _invoke_driver_op(
     """Invoke appropriate collective method on accelerator driver.
 
     Args:
-        driver (TensorOrScalar): Accelerator collective driver instance.
+        driver (_CollectiveDriverProtocol): Accelerator collective driver instance.
         op_name (str): Operation name string.
         ptrs (tuple[int, int]): Send and receive buffer pointers (send_ptr, recv_ptr).
         counts (tuple[int, int]): Send and receive element counts (send_count, recv_count).
@@ -435,18 +673,18 @@ def _invoke_driver_op(
     root = int(as_int(kwargs.get("root", 0)))
 
     if op_name == "AllReduce":
-        getattr(driver, "all_reduce")(send_ptr, recv_ptr, count=count, datatype=datatype, op=op_code, comm=comm, stream=stream)
+        driver.all_reduce(send_ptr, recv_ptr, count=count, datatype=datatype, op=op_code, comm=comm, stream=stream)
     elif op_name == "AllGather":
-        getattr(driver, "all_gather")(send_ptr, recv_ptr, sendcount=count, datatype=datatype, comm=comm, stream=stream)
+        driver.all_gather(send_ptr, recv_ptr, sendcount=count, datatype=datatype, comm=comm, stream=stream)
     elif op_name == "ReduceScatter":
-        getattr(driver, "reduce_scatter")(send_ptr, recv_ptr, recvcount=recv_count, datatype=datatype, op=op_code, comm=comm, stream=stream)
+        driver.reduce_scatter(send_ptr, recv_ptr, recvcount=recv_count, datatype=datatype, op=op_code, comm=comm, stream=stream)
     elif op_name == "Broadcast":
-        getattr(driver, "broadcast")(send_ptr, recv_ptr, count=count, datatype=datatype, root=root, comm=comm, stream=stream)
+        driver.broadcast(send_ptr, recv_ptr, count=count, datatype=datatype, root=root, comm=comm, stream=stream)
     elif op_name == "AllToAll":
         chunk_elems = max(1, count // world_size)
-        getattr(driver, "all_to_all")(send_ptr, recv_ptr, count=chunk_elems, datatype=datatype, comm=comm, stream=stream)
+        driver.all_to_all(send_ptr, recv_ptr, count=chunk_elems, datatype=datatype, comm=comm, stream=stream)
     else:
-        getattr(driver, "all_reduce")(send_ptr, recv_ptr, count=count, datatype=datatype, op=op_code, comm=comm, stream=stream)
+        driver.all_reduce(send_ptr, recv_ptr, count=count, datatype=datatype, op=op_code, comm=comm, stream=stream)
 
 
 def _emulate_collective_ground_truth(
@@ -471,10 +709,10 @@ def _emulate_collective_ground_truth(
         TensorLike: Computed reference array.
     """
     if ranks_seq is None:
-        return tensor.copy() if hasattr(tensor, "copy") else tensor
+        return _copy_if_possible(tensor)
 
     comm_emulator = HostCollectiveCommunicator(world_size=world_size, rank=rank)
-    res: TensorLike = tensor.copy() if hasattr(tensor, "copy") else tensor
+    res: TensorLike = _copy_if_possible(tensor)
     if op_name == "AllReduce":
         res = comm_emulator.all_reduce(tensor, op=str(kwargs.get("op", "SUM")), all_ranks_data=ranks_seq)
     elif op_name == "AllGather":
@@ -517,7 +755,7 @@ def _dispatch_accelerator_collective(
         TensorLike | None: Result tensor or None if unsupported or failed.
     """
     op_str = str(kwargs.get("op", "SUM"))
-    resolved = None
+    resolved: tuple[_CollectiveDriverProtocol, int, int] | None = None
     if "cuda" in backend_name:
         resolved = _resolve_cuda_driver(tensor, op_str)
     elif "rocm" in backend_name or "hip" in backend_name:
@@ -526,7 +764,7 @@ def _dispatch_accelerator_collective(
     if resolved is None:
         return None
 
-    driver, datatype, op_code = typing.cast(tuple[TensorOrScalar, int, int], resolved)
+    driver, datatype, op_code = resolved
 
     try:
         all_ranks_data = kwargs.get("all_ranks_data")
@@ -544,13 +782,13 @@ def _dispatch_accelerator_collective(
         _ = _compute_collective_shape(op_name, tensor.shape, world_size, axis, scatter_dim, gather_dim)
         clean_kwargs = {k: v for k, v in kwargs.items() if k not in ("rank", "world_size")}
         ground_truth = _emulate_collective_ground_truth(op_name, tensor, ranks_seq, world_size, rank, **clean_kwargs)
-        out_tensor = ground_truth.copy() if hasattr(ground_truth, "copy") else ground_truth
+        out_tensor = _copy_if_possible(ground_truth)
 
-        send_ptr = getattr(driver, "allocate_buffer")(max(1, int(tensor.nbytes)))
-        recv_ptr = getattr(driver, "allocate_buffer")(max(1, int(out_tensor.nbytes)))
+        send_ptr = driver.allocate_buffer(max(1, int(tensor.nbytes)))
+        recv_ptr = driver.allocate_buffer(max(1, int(out_tensor.nbytes)))
 
         try:
-            getattr(driver, "copy_host_to_device")(tensor, send_ptr)
+            driver.copy_host_to_device(tensor, send_ptr)
             root = int(as_int(kwargs.get("root", 0)))
             _invoke_driver_op(
                 driver,
@@ -564,13 +802,13 @@ def _dispatch_accelerator_collective(
                 world_size=world_size,
                 root=root,
             )
-            getattr(driver, "stream_synchronize")(stream_val)
-            getattr(driver, "copy_host_to_device")(out_tensor, recv_ptr)
-            getattr(driver, "copy_device_to_host")(recv_ptr, out_tensor)
+            driver.stream_synchronize(stream_val)
+            driver.copy_host_to_device(out_tensor, recv_ptr)
+            driver.copy_device_to_host(recv_ptr, out_tensor)
             return out_tensor
         finally:
-            getattr(driver, "free_buffer")(send_ptr)
-            getattr(driver, "free_buffer")(recv_ptr)
+            driver.free_buffer(send_ptr)
+            driver.free_buffer(recv_ptr)
     except Exception:
         return None
 
@@ -679,7 +917,7 @@ def _dispatch_numpy_collective(
     if op_name == "Broadcast":
         return comm.broadcast(tensor, root=int(as_int(kwargs.get("root", 0))), all_ranks_data=ranks_seq)
 
-    return tensor.copy() if hasattr(tensor, "copy") else tensor
+    return _copy_if_possible(tensor)
 
 
 def _dispatch_eager_collective(
@@ -700,8 +938,8 @@ def _dispatch_eager_collective(
     from ml_switcheroo_compiler.backends.registry import get_active_backend
 
     try:
-        backend_instance = get_active_backend()
-        backend_name = getattr(backend_instance, "name", "").lower()
+        backend_instance: StructuralOperandProtocol = get_active_backend()
+        backend_name = str(backend_instance.name).lower() if isinstance(backend_instance, _NamedBackendObjProtocol) else ""
     except Exception:
         backend_name = "numpy"
 
@@ -745,7 +983,7 @@ def all_reduce(
     if config.eager_mode:
         raw_arr = as_tensor(tensor.data)
         res = _dispatch_eager_collective("AllReduce", raw_arr, op=op, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=tensor.device))
 
     return _emit_shape_node("AllReduce", [tensor], {"op": op, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, as_opt_str(tensor.dtype))
 
@@ -788,9 +1026,9 @@ def pmean(
     denom = float(len(all_ranks_data)) if isinstance(all_ranks_data, (list, tuple)) and all_ranks_data else float(as_int(kwargs.get("world_size", 1) or 1))
     if not isinstance(summed, Tensor):
         return as_tensor(_exec_collective_op("Divide", summed, denom))
-    if config.eager_mode and getattr(summed, "data", None) is not None:
+    if config.eager_mode and summed.data is not None:
         div_arr = as_tensor(_exec_collective_op("Divide", summed.data, denom))
-        return Tensor(div_arr, TensorConfig(shape=div_arr.shape, dtype=as_opt_str(summed.dtype), device=getattr(summed, "device")))
+        return Tensor(div_arr, TensorConfig(shape=div_arr.shape, dtype=as_opt_str(summed.dtype), device=summed.device))
     return _emit_shape_node("PMean", [tensor], {"mesh_axis": mesh_axis, **kwargs}, tensor.shape, as_opt_str(tensor.dtype))
 
 
@@ -819,7 +1057,7 @@ def all_gather(
     if config.eager_mode:
         raw_arr = as_tensor(tensor.data)
         res = _dispatch_eager_collective("AllGather", raw_arr, axis=axis, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=tensor.device))
 
     out_shape = list(tensor.shape)
     if 0 <= axis < len(out_shape):
@@ -852,7 +1090,7 @@ def all_to_all(
     if config.eager_mode:
         raw_arr = as_tensor(tensor.data)
         res = _dispatch_eager_collective("AllToAll", raw_arr, scatter_dim=scatter_dim, gather_dim=gather_dim, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=tensor.device))
 
     return _emit_shape_node("AllToAll", [tensor], {"scatter_dim": scatter_dim, "gather_dim": gather_dim, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, as_opt_str(tensor.dtype))
 
@@ -884,7 +1122,7 @@ def reduce_scatter(
     if config.eager_mode:
         raw_arr = as_tensor(tensor.data)
         res = _dispatch_eager_collective("ReduceScatter", raw_arr, op=op, scatter_dim=scatter_dim, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=tensor.device))
 
     out_shape = list(tensor.shape)
     if 0 <= scatter_dim < len(out_shape):
@@ -915,6 +1153,6 @@ def broadcast(
     if config.eager_mode:
         raw_arr = as_tensor(tensor.data)
         res = _dispatch_eager_collective("Broadcast", raw_arr, root=root, mesh_axis=mesh_axis, **kwargs)
-        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=getattr(tensor, "device")))
+        return Tensor(res, TensorConfig(shape=res.shape, dtype=as_opt_str(tensor.dtype), device=tensor.device))
 
     return _emit_shape_node("Broadcast", [tensor], {"root": root, "mesh_axis": mesh_axis, **kwargs}, tensor.shape, as_opt_str(tensor.dtype))

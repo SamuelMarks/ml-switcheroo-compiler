@@ -418,6 +418,7 @@ def test_cst_transpiler_advanced_transforms() -> None:
             """Test function __init__."""
             self.checked = False
             self.method_map: dict[str, str] = {}
+            self.module_path: list[str] = []
 
         def __bool__(self) -> bool:
             """Test function __bool__."""

@@ -27,6 +27,7 @@ from .conv_ops import ConvGeneralDilatedLocal as ConvGeneralDilatedLocal
 from .conv_ops import ConvGeneralDilatedPatches as ConvGeneralDilatedPatches
 from .conv_ops import ConvWithGeneralPadding as ConvWithGeneralPadding
 from .decompositions.norms import power_iteration as power_iteration
+from .decompositions.qr import qr as qr
 from .einsum_frontend import einsum as einsum
 from .einsum_frontend import tensordot as tensordot
 from .linear_operator import LinearOperator as LinearOperator
@@ -278,6 +279,7 @@ __all__ = [
     "normalize",
     "outer",
     "power_iteration",
+    "qr",
     "segmented_mm",
     "set_diag",
     "sqrtm",

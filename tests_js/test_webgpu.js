@@ -640,3 +640,179 @@ test('runWebGPUMultiPassCompute supports timestamp query telemetry', async () =>
     assert.strictEqual(results.telemetry.duration_ns, 50000);
     assert.strictEqual(results.telemetry.duration_ms, 0.05);
 });
+
+test('webgpu_runner full branch and function coverage', async () => {
+    const mockDevice = {
+        features: new Set(),
+        createBuffer: (desc) => ({
+            desc,
+            size: desc.size,
+            mapAsync: async () => {},
+            getMappedRange: () => new Float32Array([1, 2, 3, 4]).buffer,
+            unmap: () => {},
+            destroy: () => {}
+        }),
+        queue: {
+            writeBuffer: () => {},
+            submit: () => {}
+        },
+        createShaderModule: () => ({}),
+        createComputePipeline: () => ({
+            getBindGroupLayout: () => ({})
+        }),
+        createBindGroup: () => ({}),
+        createCommandEncoder: () => ({
+            beginComputePass: () => ({
+                setPipeline: () => {},
+                setBindGroup: () => {},
+                dispatchWorkgroups: () => {},
+                end: () => {}
+            }),
+            copyBufferToBuffer: () => {},
+            finish: () => ({})
+        }),
+        destroy: () => {}
+    };
+
+    // 1. createUniformBuffer & updateUniformBuffer with null shape/strides
+    const nullU = webgpuModule.createUniformBuffer(mockDevice, null, null);
+    webgpuModule.updateUniformBuffer(mockDevice, nullU, null, null);
+
+    // 2. WebGPUPipelineChain branches (getStorageBuffer alias loop, recycleBuffer alias loop, setStorageBuffer write data into recycled, captureRuntimeShapes, destroy recycled)
+    const chain = new webgpuModule.WebGPUPipelineChain(mockDevice);
+    chain.setStorageBuffer('root_buf', new Float32Array([1, 2, 3, 4]));
+    chain.aliasBuffer('alias_1', 'root_buf');
+    chain.aliasBuffer('alias_2', 'alias_1');
+    assert.ok(chain.getStorageBuffer('alias_2'));
+    assert.strictEqual(chain.getStorageBuffer('nonexistent'), null);
+
+    chain.setUniform('u1', [2, 2], [2, 1]);
+    chain.setUniform('u1', [4, 1], [1, 1]); // update existing uniform
+    const captured = webgpuModule.captureRuntimeShapes(chain);
+    assert.deepStrictEqual(captured.u1, [4, 1]);
+    assert.deepStrictEqual(captured.root_buf, [4]);
+
+    // Execute pass with missing inputId/uniformId/outputId and no explicit outputIds
+    chain.addPass({
+        wgslCode: '@compute @workgroup_size(1) fn main() {}',
+        inputIds: ['missing_in'],
+        uniformIds: ['missing_u'],
+        outputIds: ['missing_out']
+    });
+    chain.addPass({
+        wgslCode: '@compute @workgroup_size(1) fn main2() {}'
+    });
+    await chain.execute();
+    await chain.execute(['missing_target']);
+
+    chain.recycleBuffer('alias_2');
+    chain.recycleBuffer('nonexistent');
+    // Re-use recycled buffer with TypedArray payload
+    chain.setStorageBuffer('reused_with_data', new Float32Array([5, 6, 7, 8]));
+    chain.recycleBuffer('reused_with_data');
+    chain.destroy();
+
+    // 3. captureRuntimeShapes with Map, Object, and null
+    assert.deepStrictEqual(webgpuModule.captureRuntimeShapes(null), {});
+    assert.deepStrictEqual(webgpuModule.captureRuntimeShapes('primitive'), {});
+    const mapShapes = new Map([
+        ['m1', { shape: [3, 3] }],
+        ['m2', { size: 16 }],
+        ['m3', null]
+    ]);
+    assert.deepStrictEqual(webgpuModule.captureRuntimeShapes(mapShapes), { m1: [3, 3], m2: [4] });
+    assert.deepStrictEqual(webgpuModule.captureRuntimeShapes({
+        o1: [2, 4],
+        o2: { shape: [5] },
+        o3: { size: 12 },
+        o4: null
+    }), { o1: [2, 4], o2: [5], o3: [3] });
+
+    // 3. runWebGPUMultiPassCompute with uniform config and runWebGPUBackward
+    const nav = {
+        gpu: {
+            requestAdapter: async () => ({
+                features: new Set(),
+                requestDevice: async () => mockDevice
+            })
+        }
+    };
+    const passes = [{
+        outputId: 'y',
+        inputIds: ['x'],
+        wgslCode: '@compute @workgroup_size(1) fn main() {}',
+        uniform: { shape: [4], strides: [1] }
+    }, {
+        outputId: 'z',
+        wgslCode: '@compute @workgroup_size(1) fn main2() {}'
+    }];
+    const bwdRes = await webgpuModule.runWebGPUBackward(
+        nav,
+        passes,
+        { x: new Float32Array([1, 2, 3, 4]) },
+        { dy: new Float32Array([1, 1, 1, 1]) }
+    );
+    assert.ok(bwdRes.y);
+
+    // 4. WebRTCCollectiveClient in webgpu_runner.js
+    const { WebRTCCollectiveClient } = webgpuModule;
+    const c0 = new WebRTCCollectiveClient(0, 2, { chunkSize: 8 });
+    const c1 = new WebRTCCollectiveClient(1, 2, { chunkSize: 8 });
+    let ch1OnMsg = null;
+    let toggleView = false;
+    const ch0 = {
+        readyState: 'open',
+        send: (msg) => {
+            if (typeof msg === 'string') {
+                c1.handleMessage(0, { data: msg });
+            } else if (ch1OnMsg) {
+                toggleView = !toggleView;
+                ch1OnMsg({ data: toggleView ? new Uint8Array(msg) : msg });
+            }
+        }
+    };
+    const ch1 = {
+        set onmessage(fn) { ch1OnMsg = fn; },
+        get onmessage() { return ch1OnMsg; },
+        send: (msg) => {
+            c0.handleMessage(1, { data: msg });
+        }
+    };
+    c0.registerDataChannel(1, ch0);
+    c1.registerDataChannel(0, ch1);
+
+    await Promise.all([c0.barrier('b1'), c1.barrier('b1')]);
+
+    let recvOut = null;
+    c1.opWaiters.set('ar01', { resolve: (r) => { recvOut = r; } });
+    await c0.allReduce('ar01', new Float32Array([1, 2, 3, 4]));
+    assert.ok(recvOut instanceof Float32Array);
+
+    c0.registerDataChannel(1, {
+        readyState: 'open',
+        send: () => { throw new Error('send err'); }
+    });
+    c0.broadcastControl({ type: 'PING' });
+    await c0.allReduce('ar02', new Float32Array([1, 2]));
+
+    const ag = await c0.allGather('ag1', new Float32Array([1, 2]));
+    assert.strictEqual(ag.length, 4);
+    const rs = await c0.reduceScatter('rs1', new Float32Array([1, 2, 3, 4]));
+    assert.strictEqual(rs.length, 2);
+    const a2a = await c0.allToAll('a2a1', new Float32Array([1, 2]));
+    assert.strictEqual(a2a.length, 2);
+    const bc = await c0.broadcast('bc1', new Float32Array([1, 2]), 0);
+    assert.strictEqual(bc.length, 2);
+
+    c1.handleMessage(0, { data: '{bad' });
+    c1.handleMessage(0, { data: 12345 });
+    assert.strictEqual(c1.finalizeCollective(1, 'missing').length, 0);
+
+    const single = new WebRTCCollectiveClient(0, 1);
+    await single.barrier();
+    await single.allReduce('s1', [1, 2]);
+    await single.allGather('s2', [1, 2]);
+    await single.reduceScatter('s3', [1, 2]);
+    await single.allToAll('s4', [1, 2]);
+    await single.broadcast('s5', [1, 2]);
+});

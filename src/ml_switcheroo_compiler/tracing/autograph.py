@@ -7,9 +7,30 @@ import typing
 from collections.abc import Callable
 from types import TracebackType
 
+from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 F = typing.TypeVar("F")
+
+
+@typing.runtime_checkable
+class _GraphMetadataProtocol(typing.Protocol):
+    """Protocol for graph objects exposing a `metadata` dictionary."""
+
+    metadata: dict[str, LoopOptions | None]
+
+
+def _set_graph_loop_options(active_g: StructuralOperandProtocol, opts: LoopOptions | None) -> None:
+    """Attach `opts` to `active_g` and its `metadata` dict if present.
+
+    Args:
+        active_g (StructuralOperandProtocol): Active graph instance.
+        opts (LoopOptions | None): Loop options to attach.
+    """
+    vars(active_g)["loop_options"] = opts
+    if isinstance(active_g, _GraphMetadataProtocol) and isinstance(active_g.metadata, dict):
+        active_g.metadata["loop_options"] = opts
+
 
 ShapeInvariantType = typing.Union[
     tuple[typing.Union[int, "None"], ...],
@@ -54,10 +75,7 @@ class LoopOptions:
         self._prev_options = global_tracing_state.current_loop_options
         global_tracing_state.current_loop_options = self
         if global_tracing_state.active_graph is not None:
-            object.__setattr__(global_tracing_state.active_graph, "loop_options", self)
-            metadata = getattr(global_tracing_state.active_graph, "metadata", None)
-            if isinstance(metadata, dict):
-                metadata["loop_options"] = self
+            _set_graph_loop_options(global_tracing_state.active_graph, self)
         return self
 
     def __exit__(
@@ -75,10 +93,7 @@ class LoopOptions:
         """
         global_tracing_state.current_loop_options = self._prev_options
         if global_tracing_state.active_graph is not None:
-            object.__setattr__(global_tracing_state.active_graph, "loop_options", self._prev_options)
-            metadata = getattr(global_tracing_state.active_graph, "metadata", None)
-            if isinstance(metadata, dict):
-                metadata["loop_options"] = self._prev_options
+            _set_graph_loop_options(global_tracing_state.active_graph, self._prev_options)
 
 
 def set_loop_options(
@@ -106,10 +121,7 @@ def set_loop_options(
     )
     if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
         global_tracing_state.current_loop_options = options
-        object.__setattr__(global_tracing_state.active_graph, "loop_options", options)
-        metadata = getattr(global_tracing_state.active_graph, "metadata", None)
-        if isinstance(metadata, dict):
-            metadata["loop_options"] = options
+        _set_graph_loop_options(global_tracing_state.active_graph, options)
     return options
 
 
@@ -132,8 +144,9 @@ def do_not_convert(func: F | None = None) -> F | Callable[[F], F]:
         Returns:
             F: The original function with the skip flag attached.
         """
-        setattr(f, "_autograph_do_not_convert", True)
-        setattr(f, "__wrapped__", f)
+        f_dict = vars(f)
+        f_dict["_autograph_do_not_convert"] = True
+        f_dict["__wrapped__"] = f
         return f
 
     if func is not None:

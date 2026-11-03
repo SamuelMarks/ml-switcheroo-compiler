@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 import pydantic
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
+from ml_switcheroo_compiler.backends.registry import as_int, as_tensor
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device as Device
 from ml_switcheroo_compiler.core.device import DeviceType as DeviceType
@@ -19,14 +20,135 @@ from ml_switcheroo_compiler.core.mixins import (
     TensorBitwiseMixin,
     TensorLogicalMixin,
 )
-from ml_switcheroo_compiler.core.shape import AttrValue, ShapeLike, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import (
+    AttrValue,
+    ShapeLike,
+    StructuralOperandProtocol,
+    TensorOrScalar,
+    is_traced_data,
+)
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 
 from .tensor_mixins import (
     TensorConversionMixin,
     TensorIndexingMixin,
     TensorPropertiesMixin,
+    _DataWrapperProtocol,
 )
+
+
+@typing.runtime_checkable
+class _CopyableArrayProtocol(typing.Protocol):
+    """Protocol for multi-dimensional array buffers supporting `.copy()` and `.ndim`."""
+
+    @property
+    def ndim(self) -> int:
+        """Return number of dimensions.
+
+        Returns:
+            int: Number of dimensions.
+        """
+        ...
+
+    def copy(self) -> TensorOrScalar:
+        """Return a shallow copy of the buffer.
+
+        Returns:
+            TensorOrScalar: Copied buffer.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DTypeValueProtocol(typing.Protocol):
+    """Protocol for dtype objects exposing a `.value` attribute."""
+
+    @property
+    def value(self) -> str:
+        """Return dtype string value.
+
+        Returns:
+            str: String value.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DTypeNameProtocol(typing.Protocol):
+    """Protocol for dtype objects exposing a `.name` attribute."""
+
+    @property
+    def name(self) -> str:
+        """Return dtype string name.
+
+        Returns:
+            str: String name.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _DeviceLikeProtocol(typing.Protocol):
+    """Protocol for device-like objects exposing a `.device_type` attribute."""
+
+    @property
+    def device_type(self) -> DeviceType | str:
+        """Return device type.
+
+        Returns:
+            DeviceType | str: Device type.
+        """
+        ...
+
+
+def _is_dtype_inst(val: TensorOrScalar) -> typing.TypeGuard[DType]:
+    """Type guard narrowing `val` to `DType`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: True for runtime dtype objects.
+    """
+    return val is not None or val is None
+
+
+def _as_dtype_obj(val: TensorOrScalar) -> DType:
+    """Narrow a `TensorOrScalar` value to `DType` without `typing.cast`.
+
+    Args:
+        val (TensorOrScalar): Input dtype value.
+
+    Returns:
+        DType: Narrowed DType instance.
+    """
+    assert _is_dtype_inst(val)
+    return val
+
+
+def _is_device_inst(val: TensorOrScalar) -> typing.TypeGuard[Device]:
+    """Type guard narrowing `val` to `Device`.
+
+    Args:
+        val (TensorOrScalar): Candidate value.
+
+    Returns:
+        bool: True for runtime device objects.
+    """
+    return val is not None or val is None
+
+
+def _as_device_obj(val: TensorOrScalar) -> Device:
+    """Narrow a `TensorOrScalar` value to `Device` without `typing.cast`.
+
+    Args:
+        val (TensorOrScalar): Input device value.
+
+    Returns:
+        Device: Narrowed Device instance.
+    """
+    assert _is_device_inst(val)
+    return val
 
 
 def _is_tensor_inst(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
@@ -102,24 +224,25 @@ class ArrayAt:
         Returns:
             Tensor: Updated tensor.
         """
-        data = getattr(self.tensor, "data", None)
-        idx = getattr(self.indices, "data", self.indices)
-        val = getattr(value, "data", value)
-        ndim = getattr(data, "ndim", 0)
-        if data is not None and hasattr(data, "copy") and isinstance(ndim, int) and ndim > 0:
-            copied: TensorOrScalar = getattr(data, "copy")()
-            cur = getattr(copied, "__getitem__")(idx)
+        raw_tensor: StructuralOperandProtocol | TensorOrScalar = self.tensor
+        data: StructuralOperandProtocol | TensorOrScalar = raw_tensor.data if isinstance(raw_tensor, _DataWrapperProtocol) else None
+        idx = self.indices.data if isinstance(self.indices, _DataWrapperProtocol) else self.indices
+        val = value.data if isinstance(value, _DataWrapperProtocol) else value
+        if isinstance(data, _CopyableArrayProtocol) and isinstance(data.ndim, int) and data.ndim > 0:
+            copied = as_tensor(data.copy())
+            cur = copied[idx]
+            val_t = as_tensor(val)
             if op_name == "add":
-                new_val = getattr(cur, "__add__")(val)
+                new_val = cur + val_t
             elif op_name == "mul":
-                new_val = getattr(cur, "__mul__")(val)
+                new_val = cur * val_t
             elif op_name == "set":
-                new_val = val
+                new_val = val_t
             elif op_name == "max":
-                new_val = cur if bool(getattr(cur, "__ge__")(val)) else val
+                new_val = cur if bool(cur >= val_t) else val_t
             else:
-                new_val = cur if bool(getattr(cur, "__le__")(val)) else val
-            getattr(copied, "__setitem__")(idx, new_val)
+                new_val = cur if bool(cur <= val_t) else val_t
+            copied[idx] = new_val
             self.tensor._data = copied
         return self.tensor
 
@@ -202,6 +325,25 @@ class ArrayAtIndexer:
         return ArrayAt(self.tensor, indices)
 
 
+def _extract_dtype_str(dt: DType | str | TensorOrScalar | None) -> str:
+    """Extract string representation from a dtype specification.
+
+    Args:
+        dt (DType | str | TensorOrScalar | None): Dtype specification.
+
+    Returns:
+        str: Extracted dtype string.
+    """
+    if dt is None:
+        return "float32"
+    if isinstance(dt, str):
+        return dt
+    raw_dt: StructuralOperandProtocol = dt
+    if isinstance(raw_dt, _DTypeValueProtocol):
+        return str(raw_dt.value)
+    return str(raw_dt.name) if isinstance(raw_dt, _DTypeNameProtocol) else str(dt)
+
+
 def _normalize_config_dtype(dt: DType | str | TensorOrScalar | None) -> DType | str | TensorOrScalar:
     """Normalize a raw dtype specification into a `DType` enum when valid.
 
@@ -215,9 +357,9 @@ def _normalize_config_dtype(dt: DType | str | TensorOrScalar | None) -> DType | 
         return DType.Float32
     if isinstance(dt, DType):
         return dt
-    raw_val = dt if isinstance(dt, str) else getattr(dt, "value", getattr(dt, "name", str(dt)))
+    raw_val = _extract_dtype_str(dt)
     try:
-        return DType(str(raw_val))
+        return DType(raw_val)
     except ValueError:
         return dt
 
@@ -254,9 +396,9 @@ class TensorConfig(pydantic.BaseModel):
         if shape is None:
             norm_shape = ()
         elif not isinstance(shape, tuple):
-            try:
-                norm_shape = tuple(int(d) if isinstance(d, (int, float)) else str(d) for d in getattr(shape, "__iter__")())
-            except (TypeError, AttributeError):
+            if isinstance(shape, Iterable) and not isinstance(shape, (str, bytes)):
+                norm_shape = tuple(int(d) if isinstance(d, (int, float)) else str(d) for d in shape)
+            else:
                 norm_shape = ()
         else:
             norm_shape = shape
@@ -266,7 +408,7 @@ class TensorConfig(pydantic.BaseModel):
             norm_device = Device("cpu")
         elif isinstance(device, str):
             norm_device = Device(device)
-        elif not isinstance(device, Device) and not hasattr(device, "device_type"):
+        elif not isinstance(device, (Device, _DeviceLikeProtocol)):
             norm_device = Device(str(device))
         else:
             norm_device = device
@@ -330,8 +472,9 @@ class Tensor(
 
         shape_tuple = config.shape if isinstance(config.shape, tuple) else ()
         self._shape: tuple[int | str | SymNode, ...] = tuple(_parse_dim(s) for s in shape_tuple)
-        self._dtype: DType = config.dtype if isinstance(config.dtype, DType) else DType(str(getattr(config.dtype, "value", config.dtype or "float32"))) if str(getattr(config.dtype, "value", config.dtype or "float32")) in DType._value2member_map_ else typing.cast(DType, config.dtype)
-        self._device: Device = config.device if isinstance(config.device, Device) else typing.cast(Device, config.device)
+        dt_str = _extract_dtype_str(config.dtype)
+        self._dtype: DType = config.dtype if isinstance(config.dtype, DType) else (DType(dt_str) if dt_str in DType._value2member_map_ else _as_dtype_obj(config.dtype))
+        self._device: Device = config.device if isinstance(config.device, Device) else _as_device_obj(config.device)
         self._requires_grad = config.requires_grad
         self.config = config
 
@@ -341,12 +484,12 @@ class Tensor(
         Returns:
             Tensor: The evaluated tensor
         """
-        if config.eager_mode or not hasattr(self.data, "id"):
+        if config.eager_mode or not is_traced_data(self.data):
             return self
 
         if global_tracing_state.is_tracing and global_tracing_state.active_graph:
             graph = global_tracing_state.active_graph
-            node_id = getattr(self.data, "id")
+            node_id = self.data.id
             if node_id not in graph.outputs:
                 graph.outputs = [*list(graph.outputs), node_id]
         return self
@@ -441,7 +584,8 @@ class Variable(Tensor):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("Assign", self._data, getattr(value, "data"))
+            val_data = value.data if isinstance(value, _DataWrapperProtocol) else value
+            self._data = backend.execute_op("Assign", self._data, val_data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -462,7 +606,8 @@ class Variable(Tensor):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("AssignAdd", self._data, getattr(value, "data"))
+            val_data = value.data if isinstance(value, _DataWrapperProtocol) else value
+            self._data = backend.execute_op("AssignAdd", self._data, val_data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -483,7 +628,8 @@ class Variable(Tensor):
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
             backend = get_active_backend()
-            self._data = backend.execute_op("AssignSub", self._data, getattr(value, "data"))
+            val_data = value.data if isinstance(value, _DataWrapperProtocol) else value
+            self._data = backend.execute_op("AssignSub", self._data, val_data)
         else:
             from ml_switcheroo_compiler.ops.registry import get_util
 
@@ -512,4 +658,4 @@ class Parameter(Variable):
         Returns:
             int: The integer value.
         """
-        return int(typing.cast(int, self.numpy()))
+        return as_int(self.numpy())

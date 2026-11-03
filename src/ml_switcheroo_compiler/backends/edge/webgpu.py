@@ -459,8 +459,6 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         op_type: str = getattr(node, "op_type", "")
         resolved_op: str = self._resolve_wgsl_op_name(op_type)
-        if resolved_op in ("Input", "Output"):
-            return ([], "1", "1", "1")
 
         mapping: dict[str, str] = self._resolve_wgsl_mapping(node, op_type, resolved_op)
         inputs: list[str] = getattr(node, "inputs", [])
@@ -915,6 +913,9 @@ class WebGPUCodeGenerator(BaseGenerator):
 
         for node in self.sorted_nodes:
             op_type: str = getattr(node, "op_type", "")
+            resolved_op: str = self._resolve_wgsl_op_name(op_type)
+            if resolved_op in ("Input", "Output"):
+                continue
             nid: str = getattr(node, "id", "")
             clean_id: str = nid.replace("-", "_")
 

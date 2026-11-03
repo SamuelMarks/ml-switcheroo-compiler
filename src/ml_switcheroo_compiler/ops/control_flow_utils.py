@@ -15,13 +15,47 @@ from collections.abc import Sequence
 from ml_switcheroo_ir import LogicalGraph, LogicalNode
 from ml_switcheroo_ir.types import TensorSpec
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, invoke_callable
+from ml_switcheroo_compiler.core.shape import (
+    StructuralOperandProtocol,
+    TensorOrScalar,
+    invoke_callable,
+    is_traced_data,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor, increment_trace_count
 
 if typing.TYPE_CHECKING:
     pass
+
+
+class SubgraphWithId(LogicalGraph):
+    """LogicalGraph subclass carrying an explicit subgraph id property."""
+
+    @property
+    def id(self) -> str:
+        """Return subgraph identifier.
+
+        Returns:
+            str: Subgraph identifier.
+        """
+        return self.name
+
+    @id.setter
+    def id(self, val: str) -> None:
+        """Set subgraph identifier.
+
+        Args:
+            val (str): New subgraph identifier.
+        """
+        self.name = val
+
+
+@typing.runtime_checkable
+class _HasInputSpecsProtocol(typing.Protocol):
+    """Protocol for graph objects exposing an input_specs dictionary."""
+
+    input_specs: dict[str, TensorSpec]
 
 
 def _wrap_proxy_inputs(
@@ -54,7 +88,7 @@ def _wrap_proxy_inputs(
             )
             subgraph.nodes[in_id] = node
             input_ids.append(in_id)
-            if hasattr(subgraph, "input_specs"):
+            if isinstance(subgraph, _HasInputSpecsProtocol):
                 from ml_switcheroo_ir.types import DType as IRDType
 
                 ir_dt: IRDType | str = IRDType(arg.dtype.value) if arg.dtype.value in IRDType._value2member_map_ else str(arg.dtype.value)
@@ -66,6 +100,20 @@ def _wrap_proxy_inputs(
         else:
             proxy_args.append(arg)
     return input_ids, proxy_args
+
+
+@typing.runtime_checkable
+class _HasIdProtocol(typing.Protocol):
+    """Protocol for objects exposing an id property."""
+
+    @property
+    def id(self) -> str:
+        """Return identifier string.
+
+        Returns:
+            str: Identifier string.
+        """
+        ...
 
 
 def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
@@ -81,13 +129,14 @@ def _get_tensor_ids(obj: TensorOrScalar) -> list[str]:
         TypeError: An exception.
     """
     if isinstance(obj, Tensor):
-        cur: TensorOrScalar = obj
-        while isinstance(cur, Tensor) and isinstance(getattr(cur, "data", None), Tensor):
-            cur = getattr(cur, "data")
-        if hasattr(cur, "data") and hasattr(getattr(cur, "data"), "id"):
-            return [str(getattr(getattr(cur, "data"), "id"))]
-        if hasattr(cur, "id"):
-            return [str(getattr(cur, "id"))]
+        cur: Tensor = obj
+        while isinstance(cur.data, Tensor):
+            cur = cur.data
+        if is_traced_data(cur.data):
+            return [str(cur.data.id)]
+        raw_cur: StructuralOperandProtocol | TensorOrScalar = cur
+        if isinstance(raw_cur, _HasIdProtocol):
+            return [str(raw_cur.id)]
         return [str(uuid.uuid4())]
     if isinstance(obj, (tuple, list)):
         ids = []
@@ -142,7 +191,16 @@ def _trace_function(func: TensorOrScalar, args: Sequence[TensorOrScalar], name: 
     compiler_config.eager_mode = False
     increment_trace_count(func)
 
-    subgraph = global_tracing_state.start_tracing(name=name)
+    raw_subgraph = global_tracing_state.start_tracing(name=name)
+    subgraph = SubgraphWithId(
+        name=raw_subgraph.name,
+        nodes=raw_subgraph.nodes,
+        inputs=raw_subgraph.inputs,
+        input_specs=raw_subgraph.input_specs,
+        outputs=raw_subgraph.outputs,
+        initializers=raw_subgraph.initializers,
+    )
+    global_tracing_state.active_graph = subgraph
     input_ids, proxy_args = _wrap_proxy_inputs(args, subgraph)
     subgraph.inputs = input_ids
 
@@ -155,6 +213,6 @@ def _trace_function(func: TensorOrScalar, args: Sequence[TensorOrScalar], name: 
         global_tracing_state.is_tracing = is_tracing
         compiler_config.eager_mode = prev_eager
 
-    object.__setattr__(subgraph, "id", name)
+    subgraph.id = name
     subgraph.outputs = [out_node_id]
     return subgraph

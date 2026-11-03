@@ -74,9 +74,11 @@ else:
     DType.BFloat16 = DType.bfloat16
     DType.Float8E4M3B11FNUZ = DType.float8_e4m3b11fnuz
     DType.Float8E4M3FN = DType.float8_e4m3fn
-    DType.Float8E4M3FNUZ = getattr(DType, "float8_e4m3fnuz", DType.fp8_e4m3fnuz)
+    DType.float8_e4m3fnuz = DType.fp8_e4m3fnuz
+    DType.float8_e5m2fnuz = DType.fp8_e5m2fnuz
+    DType.Float8E4M3FNUZ = DType.fp8_e4m3fnuz
     DType.Float8E5M2 = DType.float8_e5m2
-    DType.Float8E5M2FNUZ = getattr(DType, "float8_e5m2fnuz", DType.fp8_e5m2fnuz)
+    DType.Float8E5M2FNUZ = DType.fp8_e5m2fnuz
     DType.Complex64 = DType.complex64
     DType.Complex128 = DType.complex128
     DType.Int64 = DType.int64

@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import logging
 import os
-import typing
 
 import yaml
 from ml_switcheroo_ir import AttributeValue
 
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.export.pb_utils import ProtobufWriter
 from ml_switcheroo_compiler.ir.core import IRGraph
 
@@ -23,7 +22,7 @@ class ExportArchive:
             int,
             int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
         ] = {}
-        self.endpoints: dict[str, TypedVariadicCallable[AttributeValue]] = {}
+        self.endpoints: dict[str, TensorOrScalar] = {}
         self.collections: dict[
             str,
             int | float | str | bool | list[AttributeValue] | tuple[AttributeValue, ...] | dict[str, AttributeValue] | None,
@@ -61,7 +60,7 @@ class ExportArchive:
             **kwargs (Union[int, float, str, bool, list[AttributeValue], tuple[AttributeValue, ...], dict[str, AttributeValue], None]): Optional endpoint metadata.
         """
         _ = kwargs
-        self.endpoints[name] = typing.cast(TypedVariadicCallable[AttributeValue], fn)
+        self.endpoints[name] = fn
 
     def _get_tf_dtype(self, dtype_str: str) -> int:
         """Map an IR dtype string to its protobuf `DataType` enum integer.
@@ -111,21 +110,22 @@ class ExportArchive:
             msg = "Exporting SignatureDef requires an explicit IRGraph or valid schema declaration."
             raise ValueError(msg)
 
-        input_nodes = [n for n in getattr(graph, "nodes").values() if n.op_type == "Input"]
+        input_nodes = [n for n in graph.nodes.values() if n.op_type == "Input"]
         for i, node in enumerate(input_nodes):
             inp_tensor = ProtobufWriter()
             inp_tensor.add_string(1, node.id)
-            inp_tensor.add_varint(2, self._get_tf_dtype(getattr(node, "dtype", "float32")))
+            node_dt = str(node.dtype.value if node.dtype is not None else "float32")
+            inp_tensor.add_varint(2, self._get_tf_dtype(node_dt))
 
             inp_map = ProtobufWriter()
             inp_map.add_string(1, f"input_{i}")
             inp_map.add_message(2, inp_tensor)
             sig.add_message(1, inp_map)
 
-        if hasattr(graph, "outputs") and graph.outputs:
+        if graph.outputs:
             for i, out_id in enumerate(graph.outputs):
-                out_node = getattr(graph, "nodes").get(out_id)
-                dtype = getattr(out_node, "dtype", "float32") if out_node else "float32"
+                out_node = graph.nodes.get(out_id)
+                dtype = str(out_node.dtype.value if out_node is not None and out_node.dtype is not None else "float32")
 
                 out_tensor = ProtobufWriter()
                 out_tensor.add_string(1, out_id)

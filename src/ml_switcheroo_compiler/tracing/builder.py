@@ -8,12 +8,31 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import AttributeValue, LogicalNode
 
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.backends.eager_registry import (
+    ShapeProtocol,
+    as_callable,
+    as_shape,
+)
+from ml_switcheroo_compiler.core.dtype import DType
+from ml_switcheroo_compiler.core.shape import (
+    AttrValue,
+    StructuralOperandProtocol,
+    TensorOrScalar,
+    is_backend_buffer,
+    is_traced_data,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.ops.shape_inference import infer_shape
 from ml_switcheroo_compiler.ops.type_inference import resolve_output_dtype_and_device
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
+
+
+@typing.runtime_checkable
+class _ConstantCacheStateProtocol(typing.Protocol):
+    """Protocol for tracing state objects exposing `constant_cache`."""
+
+    constant_cache: dict[int, str]
 
 
 def _to_attr_value(val: TensorOrScalar) -> AttributeValue:
@@ -69,15 +88,16 @@ class TracingNodeBuilder:
         Returns:
             tuple[str, tuple[int | str, ...]]: A tuple containing the node ID and its shape.
         """
-        if hasattr(a.data, "id"):
-            return str(getattr(a.data, "id")), a.shape
+        if is_traced_data(a.data):
+            return str(a.data.id), a.shape
         data_id = id(a.data)
-        if hasattr(global_tracing_state, "constant_cache") and data_id in global_tracing_state.constant_cache:
-            return global_tracing_state.constant_cache[data_id], a.shape
-        val = getattr(a.data, "tolist", lambda a=a: a.data)()
+        raw_state: StructuralOperandProtocol = global_tracing_state
+        if isinstance(raw_state, _ConstantCacheStateProtocol) and data_id in raw_state.constant_cache:
+            return raw_state.constant_cache[data_id], a.shape
+        val = a.data.tolist() if is_backend_buffer(a.data) else a.data
         out_id = TracingNodeBuilder.create_constant_node(val, a.shape)
-        if hasattr(global_tracing_state, "constant_cache"):
-            global_tracing_state.constant_cache[data_id] = out_id
+        if isinstance(raw_state, _ConstantCacheStateProtocol):
+            raw_state.constant_cache[data_id] = out_id
         return out_id, a.shape
 
     @staticmethod
@@ -94,9 +114,9 @@ class TracingNodeBuilder:
             ids: list[str] = []
             shapes: list[tuple[int | str, ...]] = []
             for x in a:
-                if isinstance(x, ProxyTensor) or type(x).__name__ == "ProxyTensor":
-                    ids.append(str(getattr(x, "id")))
-                    shapes.append(tuple(getattr(x, "shape", ())))
+                if isinstance(x, ProxyTensor) or is_traced_data(x):
+                    ids.append(str(x.id))
+                    shapes.append(tuple(x.shape))
                 else:
                     oid, oshape = TracingNodeBuilder.extract_from_constant(x)
                     ids.append(oid if isinstance(oid, str) else str(oid[0]))
@@ -106,9 +126,9 @@ class TracingNodeBuilder:
         from ml_switcheroo_compiler.backends.registry import get_active_backend
 
         backend = get_active_backend()
-        arr = backend.array(a)
-        val = getattr(arr, "tolist", lambda arr=arr: arr)()
-        shape = tuple(getattr(arr, "shape", ()))
+        arr: TensorOrScalar = backend.array(a)
+        val = arr.tolist() if is_backend_buffer(arr) else arr
+        shape = as_shape(arr.shape) if isinstance(arr, ShapeProtocol) else ()
         out_id = TracingNodeBuilder.create_constant_node(val, shape)
         return out_id, shape
 
@@ -134,8 +154,9 @@ class TracingNodeBuilder:
             if isinstance(a, Tensor):
                 first_tensor = a if first_tensor is None else first_tensor
                 out_id, shape = TracingNodeBuilder.extract_from_tensor(a)
-            elif hasattr(a, "id"):
-                out_id, shape = str(getattr(a, "id")), tuple(getattr(a, "shape", ()))
+            elif isinstance(a, ProxyTensor) or is_traced_data(a):
+                raw_a: StructuralOperandProtocol = a
+                out_id, shape = str(a.id), as_shape(raw_a.shape) if isinstance(raw_a, ShapeProtocol) else ()
             else:
                 out_id, shape = TracingNodeBuilder.extract_from_constant(a)
 
@@ -196,9 +217,8 @@ class TracingNodeBuilder:
         """
         input_ids, shapes, first_tensor = TracingNodeBuilder.extract_proxy_inputs(args)
 
-        infer_fn = typing.cast("TypedVariadicCallable[Sequence[int | str] | None]", infer_shape)
-        inferred = infer_fn(op_type, *shapes, **kwargs)
-        out_shape: tuple[int | str, ...] = tuple(inferred) if inferred is not None else ()
+        inferred: TensorOrScalar = as_callable(infer_shape)(op_type, *shapes, **kwargs)
+        out_shape: tuple[int | str, ...] = tuple(int(d) if isinstance(d, int) else str(d) for d in inferred) if isinstance(inferred, (tuple, list)) else ()
         out_dtype, device = resolve_output_dtype_and_device(first_tensor, kwargs)
 
         out_id = TracingNodeBuilder.create_tracing_logical_node(
@@ -208,6 +228,6 @@ class TracingNodeBuilder:
             out_shape,
         )
 
-        dtype_val = out_dtype.value if hasattr(out_dtype, "value") else str(out_dtype)
+        dtype_val = out_dtype.value if isinstance(out_dtype, DType) else str(out_dtype)
         proxy = ProxyTensor(id=out_id, shape=out_shape, dtype=dtype_val)
         return Tensor(proxy, TensorConfig(out_shape, out_dtype, device))

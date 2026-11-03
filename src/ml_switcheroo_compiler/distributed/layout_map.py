@@ -9,7 +9,22 @@ from collections.abc import Sequence
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
+    from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol
     from ml_switcheroo_compiler.distributed.device_mesh import DeviceMesh
+
+
+@typing.runtime_checkable
+class _NamedMeshProtocol(typing.Protocol):
+    """Protocol for mesh objects exposing a `.name` attribute."""
+
+    @property
+    def name(self) -> str | None:
+        """Return mesh name.
+
+        Returns:
+            str | None: Mesh name.
+        """
+        ...
 
 
 class ShardingSpec:
@@ -121,13 +136,15 @@ class LayoutMap:
         """
         specs_dict: dict[str, dict[str, str | list[str | None] | None]] = {}
         for path, spec in self._map.items():
+            raw_mesh: StructuralOperandProtocol = spec.mesh
             specs_dict[path] = {
-                "mesh_name": getattr(spec.mesh, "name", "default") if spec.mesh else None,
+                "mesh_name": (raw_mesh.name if isinstance(raw_mesh, _NamedMeshProtocol) else "default") if spec.mesh else None,
                 "mesh_mapping": list(spec.mesh_mapping),
             }
+        raw_dev_mesh: StructuralOperandProtocol = self.device_mesh
         return {
             "version": "1.0",
-            "device_mesh": getattr(self.device_mesh, "name", None) if self.device_mesh else None,
+            "device_mesh": (raw_dev_mesh.name if isinstance(raw_dev_mesh, _NamedMeshProtocol) else None) if self.device_mesh else None,
             "specs": specs_dict,
         }
 

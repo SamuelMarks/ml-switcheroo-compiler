@@ -446,15 +446,36 @@ def _eval_binary_int_op(op: str, v1: int, v2: int) -> int | None:
     return fn(v1, v2) if fn is not None else None
 
 
-class SymNode(IRSymNode):
+if typing.TYPE_CHECKING:
+
+    class _SymNodeBase:
+        """Type-checking base class for SymNode."""
+
+    class _SymBinaryOpBase:
+        """Type-checking base class for SymBinaryOp."""
+
+    class _SymUnaryOpBase:
+        """Type-checking base class for SymUnaryOp."""
+
+    class _SymIntBase:
+        """Type-checking base class for SymInt."""
+
+else:
+    _SymNodeBase = IRSymNode
+    _SymBinaryOpBase = IRSymBinaryOp
+    _SymUnaryOpBase = IRSymUnaryOp
+    _SymIntBase = IRSymInt
+
+
+class SymNode(_SymNodeBase):
     """Base class for all symbolic expression tree nodes."""
 
     @classmethod
-    def to_node(cls, val: int | str | IRSymNode | IRSymInt | TensorOrScalar) -> SymNode:
+    def to_node(cls, val: int | str | SymNode | SymInt | IRSymNode | IRSymInt | TensorOrScalar) -> SymNode:
         """Convert an int, str, SymNode, or SymInt into a SymNode.
 
         Args:
-            val (Union[int, str, IRSymNode, IRSymInt]): Value to convert.
+            val (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Value to convert.
 
         Returns:
             SymNode: Structured symbolic expression node.
@@ -539,11 +560,11 @@ class SymNode(IRSymNode):
         """
         return set()
 
-    def __add__(self, other: int | str | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __add__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
         """Add two symbolic expressions.
 
         Args:
-            other (Union[int, str, IRSymNode, IRSymInt]): Operand to add.
+            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Operand to add.
 
         Returns:
             SymBinaryOp: Addition expression node.
@@ -561,11 +582,11 @@ class SymNode(IRSymNode):
         """
         return SymBinaryOp("+", SymNode.to_node(other), self)
 
-    def __sub__(self, other: int | str | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __sub__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
         """Subtract symbolic expressions.
 
         Args:
-            other (Union[int, str, IRSymNode, IRSymInt]): Operand to subtract.
+            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Operand to subtract.
 
         Returns:
             SymBinaryOp: Subtraction expression node.
@@ -583,11 +604,11 @@ class SymNode(IRSymNode):
         """
         return SymBinaryOp("-", SymNode.to_node(other), self)
 
-    def __mul__(self, other: int | str | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __mul__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
         """Multiply symbolic expressions.
 
         Args:
-            other (Union[int, str, IRSymNode, IRSymInt]): Operand to multiply.
+            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Operand to multiply.
 
         Returns:
             SymBinaryOp: Multiplication expression node.
@@ -605,11 +626,11 @@ class SymNode(IRSymNode):
         """
         return SymBinaryOp("*", SymNode.to_node(other), self)
 
-    def __floordiv__(self, other: int | str | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __floordiv__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
         """Floor-divide symbolic expressions.
 
         Args:
-            other (Union[int, str, IRSymNode, IRSymInt]): Divisor operand.
+            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Divisor operand.
 
         Returns:
             SymBinaryOp: Floor division expression node.
@@ -627,11 +648,11 @@ class SymNode(IRSymNode):
         """
         return SymBinaryOp("//", SymNode.to_node(other), self)
 
-    def __mod__(self, other: int | str | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __mod__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
         """Modulo symbolic expressions.
 
         Args:
-            other (Union[int, str, IRSymNode, IRSymInt]): Divisor operand.
+            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Divisor operand.
 
         Returns:
             SymBinaryOp: Modulo expression node.
@@ -649,11 +670,11 @@ class SymNode(IRSymNode):
         """
         return SymBinaryOp("%", SymNode.to_node(other), self)
 
-    def __pow__(self, other: int | str | IRSymNode | IRSymInt) -> SymBinaryOp:
+    def __pow__(self, other: int | str | SymNode | SymInt | IRSymNode | IRSymInt) -> SymBinaryOp:
         """Exponentiate symbolic expression.
 
         Args:
-            other (Union[int, str, IRSymNode, IRSymInt]): Exponent operand.
+            other (Union[int, str, SymNode, SymInt, IRSymNode, IRSymInt]): Exponent operand.
 
         Returns:
             SymBinaryOp: Power expression node.
@@ -1068,7 +1089,7 @@ _BINARY_SIMPLIFIERS: dict[str, Callable[[SymNode, SymNode], SymNode | None]] = {
 }
 
 
-class SymBinaryOp(SymNode, IRSymBinaryOp):
+class SymBinaryOp(SymNode, _SymBinaryOpBase):
     """Binary operation node in symbolic expression tree.
 
     Attributes:
@@ -1222,7 +1243,7 @@ class SymBinaryOp(SymNode, IRSymBinaryOp):
         return hash((self.op, self.left, self.right))
 
 
-class SymUnaryOp(SymNode, IRSymUnaryOp):
+class SymUnaryOp(SymNode, _SymUnaryOpBase):
     """Unary operation node in symbolic expression tree (abs, ceil, floor, neg).
 
     Attributes:
@@ -1583,14 +1604,14 @@ def _parse_sym_str(s: str) -> SymNode:
     return SymVar(s)
 
 
-class SymInt(IRSymInt):
+class SymInt(_SymIntBase):
     """Symbolic Integer to trace graphs with dynamic dimensions."""
 
-    def __init__(self, name_or_expr: str | int | IRSymNode | IRSymInt) -> None:
+    def __init__(self, name_or_expr: str | int | SymNode | SymInt | IRSymNode | IRSymInt) -> None:
         """Initialize SymInt.
 
         Args:
-            name_or_expr (Union[str, int, IRSymNode, IRSymInt]): The name, expression string,
+            name_or_expr (Union[str, int, SymNode, SymInt, IRSymNode, IRSymInt]): The name, expression string,
                 integer, or underlying SymNode.
         """
         if isinstance(name_or_expr, SymInt):
@@ -1632,11 +1653,11 @@ class SymInt(IRSymInt):
         """
         return SymInt(self.node.canonical())
 
-    def __add__(self, other: IRSymInt | int | IRSymNode | str) -> SymInt:
+    def __add__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
         """Execute add for compiler processing.
 
         Args:
-            other (Union[IRSymInt, int, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of addition.
@@ -1656,11 +1677,11 @@ class SymInt(IRSymInt):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("+", other_node, self.node))
 
-    def __sub__(self, other: IRSymInt | int | IRSymNode | str) -> SymInt:
+    def __sub__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
         """Execute sub for compiler processing.
 
         Args:
-            other (Union[IRSymInt, int, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of subtraction.
@@ -1680,11 +1701,11 @@ class SymInt(IRSymInt):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("-", other_node, self.node))
 
-    def __mul__(self, other: IRSymInt | int | IRSymNode | str) -> SymInt:
+    def __mul__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
         """Execute mul for compiler processing.
 
         Args:
-            other (Union[IRSymInt, int, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of multiplication.
@@ -1704,11 +1725,11 @@ class SymInt(IRSymInt):
         other_node = SymNode.to_node(other)
         return SymInt(SymBinaryOp("*", other_node, self.node))
 
-    def __floordiv__(self, other: IRSymInt | int | IRSymNode | str) -> SymInt:
+    def __floordiv__(self, other: SymInt | int | SymNode | IRSymInt | IRSymNode | str) -> SymInt:
         """Execute floordiv for compiler processing.
 
         Args:
-            other (Union[IRSymInt, int, IRSymNode, str]): The other operand.
+            other (Union[SymInt, int, SymNode, IRSymInt, IRSymNode, str]): The other operand.
 
         Returns:
             SymInt: Result of floor division.

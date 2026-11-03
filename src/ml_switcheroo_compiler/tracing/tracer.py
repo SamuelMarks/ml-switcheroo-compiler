@@ -15,12 +15,30 @@ from ml_switcheroo_compiler.core.mixins import (
 )
 
 if typing.TYPE_CHECKING:
+    from ml_switcheroo_ir import NodeDict
+    from ml_switcheroo_ir.types import TensorSpec
+
     from ml_switcheroo_compiler.core.shape import TensorOrScalar
     from ml_switcheroo_compiler.ir.core import IRNode
 from ml_switcheroo_compiler.tracing.state import global_tracing_state as global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer_mixins import ProxyMathOverloadsMixin
 
 T = typing.TypeVar("T", bound="ProxyTensor")
+
+
+@typing.runtime_checkable
+class _ActiveGraphInputsProtocol(typing.Protocol):
+    """Protocol for graph objects exposing `inputs` and `nodes`."""
+
+    inputs: list[str]
+    nodes: NodeDict
+
+
+@typing.runtime_checkable
+class _ActiveGraphSpecsProtocol(typing.Protocol):
+    """Protocol for graph objects exposing `input_specs`."""
+
+    input_specs: dict[str, TensorSpec]
 
 
 _TRACE_COUNTS: dict[int, int] = {}
@@ -130,10 +148,10 @@ class ProxyTensor(ProxyMathOverloadsMixin, TensorArithmeticMixin, TensorBitwiseM
 
         if global_tracing_state.is_tracing and global_tracing_state.active_graph is not None:
             active_g = global_tracing_state.active_graph
-            if hasattr(active_g, "inputs") and hasattr(active_g, "nodes"):
+            if isinstance(active_g, _ActiveGraphInputsProtocol):
                 if self.id not in active_g.nodes and self.id not in active_g.inputs:
                     active_g.inputs.append(self.id)
-                    if hasattr(active_g, "input_specs"):
+                    if isinstance(active_g, _ActiveGraphSpecsProtocol):
                         from ml_switcheroo_ir.types import DType as IRDType
                         from ml_switcheroo_ir.types import TensorSpec
 

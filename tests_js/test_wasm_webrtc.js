@@ -120,10 +120,14 @@ test('WebRTCCollectiveClient AllReduce, AllGather, ReduceScatter', async () => {
     // AllToAll
     const a2aRes = await client.allToAll('op_a2a', localTensor);
     assert.strictEqual(a2aRes.length, 4);
+    const a2aArrRes = await client.allToAll('op_a2a_arr', [1.0, 2.0]);
+    assert.strictEqual(a2aArrRes.length, 2);
 
     // Broadcast
     const bcRes = await client.broadcast('op_bc', localTensor, 0);
     assert.strictEqual(bcRes.length, 4);
+    const bcArrRes = await client.broadcast('op_bc_arr', [1.0, 2.0], 0);
+    assert.strictEqual(bcArrRes.length, 2);
 
     // Single worker fast paths
     const singleClient = new WebRTCCollectiveClient(0, 1);
@@ -134,4 +138,43 @@ test('WebRTCCollectiveClient AllReduce, AllGather, ReduceScatter', async () => {
     const s_rs = await singleClient.reduceScatter('s_rs', [1, 2]);
     assert.strictEqual(s_rs[0], 1);
     await singleClient.barrier('s_bar');
+
+    // Test binary chunk transmission and receiveChunk / finalizeCollective
+    const c0 = new WebRTCCollectiveClient(0, 2, { chunkSize: 8 });
+    const c1 = new WebRTCCollectiveClient(1, 2, { chunkSize: 8 });
+    let toggleView = false;
+    c0.registerDataChannel(1, {
+        readyState: 'open',
+        send: (buf) => {
+            if (typeof ch1.onmessage === 'function') {
+                toggleView = !toggleView;
+                ch1.onmessage({ data: toggleView ? new Uint8Array(buf) : buf });
+            }
+        }
+    });
+    const ch1 = {
+        send: (buf) => { throw new Error('send error'); }
+    };
+    c1.registerDataChannel(0, ch1);
+    c1.broadcastControl({ type: 'PING' });
+
+    let finalizedData = null;
+    c1.opWaiters.set('op01', {
+        resolve: (res) => { finalizedData = res; }
+    });
+    await c0.allReduce('op01', new Float32Array([10.0, 20.0, 30.0, 40.0]), 'SUM');
+    assert.ok(finalizedData instanceof Float32Array);
+    assert.strictEqual(finalizedData[0], 10.0);
+
+    // Test send throwing in allReduce
+    c0.registerDataChannel(1, {
+        readyState: 'open',
+        send: () => { throw new Error('send chunk err'); }
+    });
+    await c0.allReduce('op02', new Float32Array([1.0, 2.0]), 'SUM');
+
+    // Invalid JSON control message, non-buffer message, and empty finalizeCollective
+    c1.handleMessage(0, { data: '{invalid_json' });
+    c1.handleMessage(0, { data: 12345 });
+    assert.strictEqual(c1.finalizeCollective(1, 'nonexistent_op').length, 0);
 });

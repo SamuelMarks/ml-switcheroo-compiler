@@ -27,7 +27,16 @@ else:
     jss = importlib.import_module("jax.scipy.special") if _has_jax else None
     _ = (importlib.import_module("jax.ops"), importlib.import_module("jax.scipy.linalg"), importlib.import_module("jax.scipy.signal"), importlib.import_module("jax.scipy.stats")) if _has_jax else None
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, as_callable, as_eager_list, as_float, as_tensor
+from ml_switcheroo_compiler.backends.dpnp.types import _get_attr, _has_attr
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ShapeProtocol,
+    as_callable,
+    as_eager_list,
+    as_float,
+    as_int_list,
+    as_tensor,
+)
 
 
 def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> EagerValue:
@@ -48,7 +57,7 @@ def _execute_adaptive_avg_pool(operand: EagerValue, output_size: EagerValue) -> 
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(getattr(output_size, "__iter__")())
+        output_size_list = list(as_int_list(output_size))
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -95,7 +104,7 @@ def _execute_adaptive_max_pool(operand: EagerValue, output_size: EagerValue) -> 
     if isinstance(output_size, int):
         output_size_list: list[int] = [output_size]
     else:
-        output_size_list = list(getattr(output_size, "__iter__")())
+        output_size_list = list(as_int_list(output_size))
 
     out_s: list[int] = list(output_size_list)
     spatial_rank: int = len(out_s)
@@ -149,7 +158,7 @@ def _execute_binom_cdf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """
     k, n, p = as_tensor(args[0]), as_tensor(args[1]), as_tensor(args[2])
     loc: float = float(as_float(kwargs.get("loc", 0.0)))
-    return as_tensor(getattr(jss, "betainc")(n - (k - loc), (k - loc) + 1, 1 - p))
+    return as_tensor(as_callable(_get_attr(jss, "betainc"))(n - (k - loc), (k - loc) + 1, 1 - p))
 
 
 def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -162,7 +171,7 @@ def _execute_binom_pmf(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Binomial PMF array.
     """
-    return as_tensor(getattr(jax.scipy.stats.binom, "pmf")(*args, **kwargs))
+    return as_tensor(jax.scipy.stats.binom.pmf(*args, **kwargs))
 
 
 def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -175,7 +184,7 @@ def _execute_convolve2d(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Convolved 2D array.
     """
-    return as_tensor(getattr(jax.scipy.signal, "convolve2d")(*args, **kwargs))
+    return as_tensor(jax.scipy.signal.convolve2d(*args, **kwargs))
 
 
 def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -188,7 +197,7 @@ def _execute_welch(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     Returns:
         EagerValue: Sample frequencies and power spectral density.
     """
-    return as_tensor(getattr(jax.scipy.signal, "welch")(*args, **kwargs))
+    return as_tensor(jax.scipy.signal.welch(*args, **kwargs))
 
 
 def _execute_bessel_jn(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -214,7 +223,7 @@ def _execute_unsorted_segment_sum(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(jax.ops, "segment_sum")(*args, **kwargs))
+    return as_tensor(jax.ops.segment_sum(*args, **kwargs))
 
 
 def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -227,7 +236,7 @@ def _execute_unsorted_segment_max(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(jax.ops, "segment_max")(*args, **kwargs))
+    return as_tensor(jax.ops.segment_max(*args, **kwargs))
 
 
 def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -240,7 +249,7 @@ def _execute_unsorted_segment_min(*args: EagerValue, **kwargs: EagerValue) -> Ea
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(jax.ops, "segment_min")(*args, **kwargs))
+    return as_tensor(jax.ops.segment_min(*args, **kwargs))
 
 
 def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -253,7 +262,7 @@ def _execute_unsorted_segment_prod(*args: EagerValue, **kwargs: EagerValue) -> E
     Returns:
             EagerValue: Result.
     """
-    return as_tensor(getattr(jax.ops, "segment_prod")(*args, **kwargs))
+    return as_tensor(jax.ops.segment_prod(*args, **kwargs))
 
 
 def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -269,7 +278,7 @@ def _execute_variance(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     import jax.numpy as jnp
 
     kwargs.setdefault("ddof", 0)
-    return as_tensor(getattr(jnp, "var")(*args, **kwargs))
+    return as_tensor(as_callable(_get_attr(jnp, "var"))(*args, **kwargs))
 
 
 def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -284,19 +293,19 @@ def _execute_cast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
     """
     tensor: EagerValue = args[0]
     dtype: EagerValue = kwargs.get("dtype") if "dtype" in kwargs else args[1]
-    dt_str: str = str(getattr(dtype, "value", dtype)).split(".")[-1]
+    dt_str: str = str(_get_attr(dtype, "value", dtype)).split(".")[-1]
     import jax.numpy as jnp
 
     if "int4" in dt_str:
-        dt: EagerValue = as_tensor(getattr(jnp, "int8"))
+        dt: EagerValue = _get_attr(jnp, "int8")
     elif "bfloat16" in dt_str:
-        dt = as_tensor(getattr(jnp, "bfloat16"))
+        dt = _get_attr(jnp, "bfloat16")
     elif "float16" in dt_str:
-        dt = as_tensor(getattr(jnp, "float16"))
+        dt = _get_attr(jnp, "float16")
     elif "float8" in dt_str:
-        dt = as_tensor(getattr(jnp, "float8_e4m3fn", getattr(jnp, "float32")))
+        dt = _get_attr(jnp, "float8_e4m3fn", _get_attr(jnp, "float32"))
     else:
-        dt = as_tensor(getattr(jnp, dt_str, None))
+        dt = _get_attr(jnp, dt_str, None)
     return as_tensor(tensor).astype(dt)
 
 
@@ -312,17 +321,17 @@ def _execute_ragged_tensor_to_dense(*args: EagerValue, **kwargs: EagerValue) -> 
     """
     rt: EagerValue = args[0]
     # Check shape/type via duck typing since jnp.ndarray might be masked
-    if isinstance(rt, (list, tuple)) and len(rt) > 0 and hasattr(rt[0], "shape"):
+    if isinstance(rt, (list, tuple)) and len(rt) > 0 and isinstance(rt[0], ShapeProtocol):
         max_len: int = max(len(x) for x in rt)
         padded: list[EagerValue] = [jnp.pad(x, (0, max_len - len(x))) for x in rt]
-        return as_tensor(getattr(jnp, "stack")(padded))
+        return as_tensor(as_callable(_get_attr(jnp, "stack"))(padded))
     return rt
 
 
 _OP_DISPATCH = (
     {
         "Variance": _execute_variance,
-        "Cumprod": lambda *a, **k: __import__("jax").numpy.cumprod.__call__(*a, **k),
+        "Cumprod": lambda *a, **k: __import__("jax").numpy.cumprod(*a, **k),
         "RaggedTensorToDense": _execute_ragged_tensor_to_dense,
         "Cast": _execute_cast,
         "Convolve2d": jax.scipy.signal.convolve2d,
@@ -364,17 +373,17 @@ _OP_DISPATCH = (
         "AdaptiveMaxPool2D": _execute_adaptive_max_pool,
         "AdaptiveMaxPool3D": _execute_adaptive_max_pool,
         "AdaptiveMaxPool3D_Indices": lambda *args, **kwargs: (_execute_adaptive_max_pool(*args, **kwargs), _execute_adaptive_max_pool(*args, **kwargs)),
-        "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, __import__("jax").numpy.zeros((), dtype=getattr(target, "dtype", None))),
+        "AdaptiveLogSoftmaxWithLoss": lambda input, target, *args, **kwargs: (target, __import__("jax").numpy.zeros((), dtype=_get_attr(target, "dtype", None))),
         "Adjoint": lambda x, **kwargs: __import__("jax").numpy.conj(__import__("jax").numpy.transpose(x)),
-        "AllGather": lambda tensor, *args, **kwargs: __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if hasattr(__import__("jax").lax, "all_gather") else __import__("jax").numpy.stack([tensor]),
+        "AllGather": lambda tensor, *args, **kwargs: __import__("jax").lax.all_gather(tensor, axis_name=kwargs.get("axis_name", "i")) if _has_attr(__import__("jax").lax, "all_gather") else __import__("jax").numpy.stack([tensor]),
         "AllReduce": lambda tensor, *args, **kwargs: __import__("jax").lax.psum(tensor, axis_name=kwargs.get("axis_name", "i")) if str(kwargs.get("op_type", "sum")).lower() == "sum" else __import__("jax").lax.pmax(tensor, axis_name=kwargs.get("axis_name", "i")),
         "ReduceScatter": lambda tensor, *args, **kwargs: (
             __import__("jax").lax.reduce_scatter(tensor, __import__("jax").lax.add if str(kwargs.get("op_type", "sum")).lower() == "sum" else __import__("jax").lax.max, scatter_dimension=kwargs.get("axis", 0), axis_name=kwargs.get("axis_name", "i"))
-            if hasattr(__import__("jax").lax, "reduce_scatter")
+            if _has_attr(__import__("jax").lax, "reduce_scatter")
             else tensor
         ),
-        "AllToAll": lambda tensor, *args, **kwargs: __import__("jax").lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if hasattr(__import__("jax").lax, "all_to_all") else tensor,
-        "AlphaDropout": lambda x, **kwargs: __import__("jax").numpy.where(__import__("jax").random.bernoulli.__call__(__import__("jax").random.PRNGKey.__call__(0), 1.0 - float(kwargs.get("p", 0.5)), x.shape), x, 0.0),
+        "AllToAll": lambda tensor, *args, **kwargs: __import__("jax").lax.all_to_all(tensor, kwargs.get("axis_name", "i"), kwargs.get("split_axis", 0), kwargs.get("concat_axis", 0)) if _has_attr(__import__("jax").lax, "all_to_all") else tensor,
+        "AlphaDropout": lambda x, **kwargs: __import__("jax").numpy.where(__import__("jax").random.bernoulli(__import__("jax").random.PRNGKey(0), 1.0 - float(kwargs.get("p", 0.5)), x.shape), x, 0.0),
         "AsString": lambda arr, **kwargs: str(arr),
         "Assert": lambda condition, data, summarize=3, **kwargs: None,
         "Assign": lambda ref, value, **kwargs: value,
@@ -382,46 +391,46 @@ _OP_DISPATCH = (
         "AssignSub": lambda ref, value, **kwargs: ref - value,
         "AssignVariable": lambda ref, value, **kwargs: value,
         "AssociativeScan": lambda *args, **kwargs: args[1] if len(args) > 1 and callable(args[0]) else args[0],
-        "Atleast1d": lambda *a, **k: __import__("jax").numpy.atleast_1d.__call__(*a, **k),
-        "Atleast2d": lambda *a, **k: __import__("jax").numpy.atleast_2d.__call__(*a, **k),
-        "Atleast3d": lambda *a, **k: __import__("jax").numpy.atleast_3d.__call__(*a, **k),
-        "AxisIndex": lambda *args, **kwargs: __import__("jax").numpy.array.__call__(0),
+        "Atleast1d": lambda *a, **k: __import__("jax").numpy.atleast_1d(*a, **k),
+        "Atleast2d": lambda *a, **k: __import__("jax").numpy.atleast_2d(*a, **k),
+        "Atleast3d": lambda *a, **k: __import__("jax").numpy.atleast_3d(*a, **k),
+        "AxisIndex": lambda *args, **kwargs: __import__("jax").numpy.array(0),
         "BesselI0": jax.scipy.special.i0,
         "BesselI0e": jax.scipy.special.i0e,
         "BesselI1": jax.scipy.special.i1,
         "BesselI1e": jax.scipy.special.i1e,
-        "Frombuffer": lambda *args, **kwargs: __import__("jax").numpy.frombuffer.__call__(args[0], **kwargs),
-        "Fft2": lambda *args, **kwargs: __import__("jax").numpy.fft.fft2.__call__(args[0], **kwargs),
-        "Fftfreq": lambda *args, **kwargs: __import__("jax").numpy.fft.fftfreq.__call__(*args, **kwargs),
-        "Fftn": lambda *args, **kwargs: __import__("jax").numpy.fft.fftn.__call__(args[0], **kwargs),
-        "Fftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.fftn.__call__(args[0], **kwargs),
-        "Fftshift": lambda *args, **kwargs: __import__("jax").numpy.fft.fftshift.__call__(args[0], **kwargs),
-        "HardSilu": lambda x: __import__("jax").nn.hard_silu.__call__(x),
-        "HardSwish": lambda x: __import__("jax").nn.hard_swish.__call__(x),
-        "Hfft": lambda *args, **kwargs: __import__("jax").numpy.fft.hfft.__call__(args[0], **kwargs),
-        "Ifft": lambda *args, **kwargs: __import__("jax").numpy.fft.ifft.__call__(args[0], **kwargs),
-        "Ifft2": lambda *args, **kwargs: __import__("jax").numpy.fft.ifft2.__call__(args[0], **kwargs),
-        "Ifftn": lambda *args, **kwargs: __import__("jax").numpy.fft.ifftn.__call__(args[0], **kwargs),
-        "Ifftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.ifftn.__call__(args[0], **kwargs),
-        "Ifftshift": lambda *args, **kwargs: __import__("jax").numpy.fft.ifftshift.__call__(args[0], **kwargs),
-        "Ihfft": lambda *args, **kwargs: __import__("jax").numpy.fft.ihfft.__call__(args[0], **kwargs),
-        "Irfft": lambda *args, **kwargs: __import__("jax").numpy.fft.irfft.__call__(args[0], **kwargs),
-        "Irfft2": lambda *args, **kwargs: __import__("jax").numpy.fft.irfft2.__call__(args[0], **kwargs),
-        "Irfftn": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn.__call__(args[0], **kwargs),
-        "Irfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn.__call__(args[0], **kwargs),
-        "LogSoftmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.log_softmax.__call__(x, axis=axis),
-        "Mish": lambda x: __import__("jax").nn.mish.__call__(x) if hasattr(__import__("jax").nn, "mish") else x * __import__("jax").numpy.tanh.__call__(__import__("jax").numpy.log1p.__call__(__import__("jax").numpy.exp.__call__(x))),
-        "OneHot": lambda *args, **kwargs: __import__("jax").nn.one_hot.__call__(args[0], kwargs.get("depth", args[1] if len(args) > 1 else 1)),
-        "Rfft": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft.__call__(args[0], **kwargs),
-        "Rfft2": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft2.__call__(args[0], **kwargs),
-        "Rfftfreq": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftfreq.__call__(*args, **kwargs),
-        "Rfftn": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftn.__call__(args[0], **kwargs),
-        "Rfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftn.__call__(args[0], **kwargs),
-        "Sigmoid": lambda *args, **kwargs: __import__("jax").nn.sigmoid.__call__(args[0]),
-        "Softmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.softmax.__call__(x, axis=axis),
-        "Squareplus": lambda x: __import__("jax").nn.squareplus.__call__(x) if hasattr(__import__("jax").nn, "squareplus") else 0.5 * (x + __import__("jax").numpy.sqrt.__call__(x**2 + 4.0)),
+        "Frombuffer": lambda *args, **kwargs: __import__("jax").numpy.frombuffer(args[0], **kwargs),
+        "Fft2": lambda *args, **kwargs: __import__("jax").numpy.fft.fft2(args[0], **kwargs),
+        "Fftfreq": lambda *args, **kwargs: __import__("jax").numpy.fft.fftfreq(*args, **kwargs),
+        "Fftn": lambda *args, **kwargs: __import__("jax").numpy.fft.fftn(args[0], **kwargs),
+        "Fftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.fftn(args[0], **kwargs),
+        "Fftshift": lambda *args, **kwargs: __import__("jax").numpy.fft.fftshift(args[0], **kwargs),
+        "HardSilu": lambda x: __import__("jax").nn.hard_silu(x),
+        "HardSwish": lambda x: __import__("jax").nn.hard_swish(x),
+        "Hfft": lambda *args, **kwargs: __import__("jax").numpy.fft.hfft(args[0], **kwargs),
+        "Ifft": lambda *args, **kwargs: __import__("jax").numpy.fft.ifft(args[0], **kwargs),
+        "Ifft2": lambda *args, **kwargs: __import__("jax").numpy.fft.ifft2(args[0], **kwargs),
+        "Ifftn": lambda *args, **kwargs: __import__("jax").numpy.fft.ifftn(args[0], **kwargs),
+        "Ifftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.ifftn(args[0], **kwargs),
+        "Ifftshift": lambda *args, **kwargs: __import__("jax").numpy.fft.ifftshift(args[0], **kwargs),
+        "Ihfft": lambda *args, **kwargs: __import__("jax").numpy.fft.ihfft(args[0], **kwargs),
+        "Irfft": lambda *args, **kwargs: __import__("jax").numpy.fft.irfft(args[0], **kwargs),
+        "Irfft2": lambda *args, **kwargs: __import__("jax").numpy.fft.irfft2(args[0], **kwargs),
+        "Irfftn": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn(args[0], **kwargs),
+        "Irfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.irfftn(args[0], **kwargs),
+        "LogSoftmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.log_softmax(x, axis=axis),
+        "Mish": lambda x: __import__("jax").nn.mish(x) if _has_attr(__import__("jax").nn, "mish") else x * __import__("jax").numpy.tanh(__import__("jax").numpy.log1p(__import__("jax").numpy.exp(x))),
+        "OneHot": lambda *args, **kwargs: __import__("jax").nn.one_hot(args[0], kwargs.get("depth", args[1] if len(args) > 1 else 1)),
+        "Rfft": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft(args[0], **kwargs),
+        "Rfft2": lambda *args, **kwargs: __import__("jax").numpy.fft.rfft2(args[0], **kwargs),
+        "Rfftfreq": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftfreq(*args, **kwargs),
+        "Rfftn": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftn(args[0], **kwargs),
+        "Rfftnd": lambda *args, **kwargs: __import__("jax").numpy.fft.rfftn(args[0], **kwargs),
+        "Sigmoid": lambda *args, **kwargs: __import__("jax").nn.sigmoid(args[0]),
+        "Softmax": lambda x, axis=-1, **kwargs: __import__("jax").nn.softmax(x, axis=axis),
+        "Squareplus": lambda x: __import__("jax").nn.squareplus(x) if _has_attr(__import__("jax").nn, "squareplus") else 0.5 * (x + __import__("jax").numpy.sqrt(x**2 + 4.0)),
     }
-    if getattr(jax, "scipy", None) is not None
+    if _get_attr(jax, "scipy", None) is not None
     else {}
 )
 
@@ -469,9 +478,9 @@ def execute_op(cls: type, op_type: str, *args: EagerValue, **kwargs: EagerValue)
     elif snake == "div":
         snake = "divide"
     func = None
-    for mod in [jnp, lax, getattr(jnp, "linalg", None), getattr(jnp, "fft", None)]:
-        if mod is not None and hasattr(mod, snake) and snake != "totally_unknown_op_missing" and snake != "unknown_op_missing_missing":
-            func = getattr(mod, snake)
+    for mod in [jnp, lax, _get_attr(jnp, "linalg", None), _get_attr(jnp, "fft", None)]:
+        if mod is not None and _has_attr(mod, snake) and snake != "totally_unknown_op_missing" and snake != "unknown_op_missing_missing":
+            func = as_callable(_get_attr(mod, snake))
             break
     if func is not None:
         return as_tensor(func(*args, **kwargs))

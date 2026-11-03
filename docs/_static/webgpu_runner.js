@@ -536,7 +536,7 @@ async function runWebGPUMultiPassCompute(nav, passes, initialInputs, options = {
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
         });
         device.queue.writeBuffer(buf, 0, data);
-        bufferRegistry[id] = { buffer: buf, size: Math.max(16, data.byteLength) };
+        bufferRegistry[id] = { buffer: buf, size: Math.max(16, data.byteLength), shape: [data.length] };
     }
 
     const encoder = device.createCommandEncoder();
@@ -564,7 +564,7 @@ async function runWebGPUMultiPassCompute(nav, passes, initialInputs, options = {
         });
     }
 
-    const cpuStartTime = (typeof performance !== 'undefined') ? performance.now() : 0;
+    const cpuStartTime = /* c8 ignore next */ (typeof performance !== 'undefined') ? performance.now() : 0;
 
     // Encode multi-stage passes
     for (let i = 0; i < passes.length; i++) {
@@ -590,6 +590,7 @@ async function runWebGPUMultiPassCompute(nav, passes, initialInputs, options = {
                 passConfig.uniform.offset || 0,
                 passConfig.uniform.batchSize || 1
             );
+            uBuf.shape = Array.from(passConfig.uniform.shape);
             uniformRegistry[uKey] = uBuf;
         }
 
@@ -678,7 +679,7 @@ async function runWebGPUMultiPassCompute(nav, passes, initialInputs, options = {
             isGpuTimestamp = true;
         }
     } else {
-        const cpuEndTime = (typeof performance !== 'undefined') ? performance.now() : 0;
+        const cpuEndTime = /* c8 ignore next */ (typeof performance !== 'undefined') ? performance.now() : 0;
         durationNs = Math.round((cpuEndTime - cpuStartTime) * 1e6);
     }
 

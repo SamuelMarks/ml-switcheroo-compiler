@@ -9,7 +9,92 @@ from types import TracebackType
 import pydantic
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+    from ml_switcheroo_compiler.core.shape import AttrValue, StructuralOperandProtocol, TensorOrScalar
+
+
+@typing.runtime_checkable
+class _ClearCacheBackendProtocol(typing.Protocol):
+    """Protocol for backends supporting `clear_cache()`."""
+
+    def clear_cache(self) -> None:
+        """Clear backend memory cache."""
+        ...
+
+
+@typing.runtime_checkable
+class _ExportFunctionBackendProtocol(typing.Protocol):
+    """Protocol for backends supporting `export_function()`."""
+
+    def export_function(self, *args: TensorOrScalar, **kwargs: AttrValue) -> None:
+        """Export computational trace or function.
+
+        Args:
+            *args (TensorOrScalar): Positional arguments.
+            **kwargs (AttrValue): Keyword arguments.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _LogicalDevicesBackendProtocol(typing.Protocol):
+    """Protocol for backends supporting `get_logical_devices()`."""
+
+    def get_logical_devices(self, device_type: str | None = None) -> list[Device]:
+        """Return logical devices.
+
+        Args:
+            device_type (str | None): Device type filter.
+
+        Returns:
+            list[Device]: Logical devices.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _PhysicalDevicesBackendProtocol(typing.Protocol):
+    """Protocol for backends supporting `get_physical_devices()`."""
+
+    def get_physical_devices(self, device_type: str | None = None) -> list[Device]:
+        """Return physical devices.
+
+        Args:
+            device_type (str | None): Device type filter.
+
+        Returns:
+            list[Device]: Physical devices.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _MemoryInfoBackendProtocol(typing.Protocol):
+    """Protocol for backends supporting `get_memory_info()`."""
+
+    def get_memory_info(self, device: str | None = None) -> dict[str, int]:
+        """Return memory usage statistics.
+
+        Args:
+            device (str | None): Device identifier.
+
+        Returns:
+            dict[str, int]: Memory telemetry dictionary.
+        """
+        ...
+
+
+def _backend_name(backend: StructuralOperandProtocol | TensorOrScalar) -> str:
+    """Resolve display name of a backend class or instance.
+
+    Args:
+        backend (StructuralOperandProtocol | TensorOrScalar): Active backend class or instance.
+
+    Returns:
+        str: Backend name.
+    """
+    backend_vars = vars(backend)
+    raw_name = backend_vars.get("__name__")
+    return str(raw_name) if isinstance(raw_name, str) else type(backend).__name__
 
 
 class DeviceType(Enum):
@@ -101,11 +186,11 @@ def clear_cache() -> None:
 
     import ml_switcheroo_compiler.backends.registry as registry
 
-    backend = registry.get_active_backend()
-    if hasattr(backend, "clear_cache"):
+    backend: StructuralOperandProtocol = registry.get_active_backend()
+    if isinstance(backend, _ClearCacheBackendProtocol):
         backend.clear_cache()
     else:
-        warnings.warn(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support clear_cache()", stacklevel=2)
+        warnings.warn(f"Active backend '{_backend_name(backend)}' does not support clear_cache()", stacklevel=2)
 
 
 class FunctionExporter:
@@ -159,11 +244,11 @@ def export_function(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
-    if hasattr(backend, "export_function"):
+    backend: StructuralOperandProtocol = registry.get_active_backend()
+    if isinstance(backend, _ExportFunctionBackendProtocol):
         backend.export_function(*args, **kwargs)
     else:
-        raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support export_function()")
+        raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support export_function()")
 
 
 def exporter(*args: TensorOrScalar, **kwargs: AttrValue) -> FunctionExporter:
@@ -194,10 +279,10 @@ def get_logical_devices(device_type: str | None = None) -> list[Device]:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
-    if hasattr(backend, "get_logical_devices"):
+    backend: StructuralOperandProtocol = registry.get_active_backend()
+    if isinstance(backend, _LogicalDevicesBackendProtocol):
         return backend.get_logical_devices(device_type)
-    raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_logical_devices()")
+    raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support get_logical_devices()")
 
 
 def get_physical_devices(device_type: str | None = None) -> list[Device]:
@@ -215,10 +300,10 @@ def get_physical_devices(device_type: str | None = None) -> list[Device]:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
-    if hasattr(backend, "get_physical_devices"):
+    backend: StructuralOperandProtocol = registry.get_active_backend()
+    if isinstance(backend, _PhysicalDevicesBackendProtocol):
         return backend.get_physical_devices(device_type)
-    raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_physical_devices()")
+    raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support get_physical_devices()")
 
 
 def get_memory_info(device: str | None = None) -> dict[str, int]:
@@ -236,7 +321,7 @@ def get_memory_info(device: str | None = None) -> dict[str, int]:
     import ml_switcheroo_compiler.backends.registry as registry
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
-    backend = registry.get_active_backend()
-    if hasattr(backend, "get_memory_info"):
+    backend: StructuralOperandProtocol = registry.get_active_backend()
+    if isinstance(backend, _MemoryInfoBackendProtocol):
         return backend.get_memory_info(device)
-    raise BackendNotSupportedError(f"Active backend '{getattr(backend, '__name__', type(backend).__name__)}' does not support get_memory_info()")
+    raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support get_memory_info()")

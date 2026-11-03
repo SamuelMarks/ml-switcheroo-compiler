@@ -336,10 +336,10 @@ def ConfigContext(**kwargs: AttrValue) -> Iterator[None]:
     new_state = old_state.clone()
 
     for k, v in kwargs.items():
-        if hasattr(new_state.execution, k):
-            setattr(new_state.execution, k, v)
-        elif hasattr(new_state.env, k):
-            setattr(new_state.env, k, v)
+        if k in ExecutionConfig.model_fields:
+            new_state.execution = new_state.execution.model_copy(update={k: v})
+        elif k in EnvironmentConfig.model_fields:
+            new_state.env = new_state.env.model_copy(update={k: v})
         else:
             msg = f"Unknown config key: {k}"
             raise ValueError(msg)

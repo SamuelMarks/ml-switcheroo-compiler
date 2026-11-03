@@ -24,7 +24,7 @@ from ml_switcheroo_ir.types import TensorSpec
 
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar, TypedVariadicCallable
+from ml_switcheroo_compiler.core.shape import TensorOrScalar
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymInt, SymNode
@@ -237,20 +237,14 @@ LogicalNodeOverrideValue = typing.Union[
 ]
 
 
-def clone_logical_node(
-    node: LogicalNode,
-    **overrides: LogicalNodeOverrideValue,
-) -> LogicalNode:
+def clone_logical_node(node: LogicalNode, **overrides: LogicalNodeOverrideValue) -> LogicalNode:
     """Clones a LogicalNode, allowing overrides via keyword arguments.
 
     Args:
         node (LogicalNode): The source LogicalNode to clone.
-        **overrides (LogicalNodeOverrideValue): Optional field overrides (id, op_type, domain,
-            version, attributes, inputs, outputs, shape_metadata, source_ast_ref, sharding,
-            dtype, output_specs, subgraphs, device, stream).
+        **overrides (LogicalNodeOverrideValue): Keyword overrides for LogicalNode fields.
 
     Returns:
         LogicalNode: The cloned LogicalNode.
     """
-    clone_fn = typing.cast(TypedVariadicCallable[LogicalNode], getattr(node, "clone"))
-    return clone_fn(**overrides)
+    return node.model_copy(update=dict(overrides), deep=True)

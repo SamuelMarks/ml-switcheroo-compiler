@@ -4,16 +4,26 @@ from __future__ import annotations
 
 import typing
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.registry import as_int, as_shape, as_tensor
+from ml_switcheroo_compiler.backends.registry import ShapeProtocol, as_int, as_shape, as_tensor
 from ml_switcheroo_compiler.core.config import config
 from ml_switcheroo_compiler.core.device import Device
 from ml_switcheroo_compiler.core.dtype import DType
 from ml_switcheroo_compiler.core.mixins import _as_tensor_self
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import (
+    BackendBufferProtocol as BackendBufferProtocol,
+)
+from ml_switcheroo_compiler.core.shape import (
+    TensorOrScalar,
+    is_backend_buffer,
+    is_traced_data,
+)
+from ml_switcheroo_compiler.core.shape import (
+    TracedDataProtocol as TracedDataProtocol,
+)
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
 
@@ -21,6 +31,20 @@ if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.ir.shape_system import SymNode
 
     from .tensor import ArrayAtIndexer, Tensor
+
+
+@typing.runtime_checkable
+class _DataWrapperProtocol(typing.Protocol):
+    """Protocol for objects wrapping a `.data` payload."""
+
+    @property
+    def data(self) -> TensorOrScalar:
+        """Return underlying data payload.
+
+        Returns:
+            TensorOrScalar: Underlying data payload.
+        """
+        ...
 
 
 class TensorPropertiesMixin:
@@ -129,7 +153,7 @@ class TensorConversionMixin(_ConversionBase):
         except Exception:
             return get_active_backend().asarray(self._data)
 
-    def __array__(self, dtype: DType | str | type | None = None) -> TensorOrScalar:
+    def to_backend_array(self, dtype: DType | str | type | None = None) -> TensorOrScalar:
         """Convert the tensor to a backend array with optional dtype cast.
 
         Args:
@@ -142,7 +166,7 @@ class TensorConversionMixin(_ConversionBase):
 
         backend = get_active_backend()
 
-        if hasattr(self.data, "id"):
+        if is_traced_data(self.data):
             data = backend.zeros(self.shape)
         else:
             data = self.data
@@ -150,7 +174,29 @@ class TensorConversionMixin(_ConversionBase):
         try:
             return backend.array(data, dtype=dtype) if dtype is not None else backend.asarray(data)
         except Exception:
-            return backend.array(getattr(data, "tolist")() if hasattr(data, "tolist") else data, dtype=dtype)
+            return backend.array(data.tolist() if is_backend_buffer(data) else data, dtype=dtype)
+
+    def to_numpy(self, dtype: DType | str | type | None = None) -> TensorOrScalar:
+        """Convert the tensor to a NumPy/backend array with optional dtype cast.
+
+        Args:
+            dtype (DType | str | type | None): Optional target data type.
+
+        Returns:
+            TensorOrScalar: The converted array.
+        """
+        return self.to_backend_array(dtype=dtype)
+
+    def __array__(self, dtype: DType | str | type | None = None) -> TensorOrScalar:
+        """Convert the tensor to a backend array with optional dtype cast.
+
+        Args:
+            dtype (DType | str | type | None): Optional target data type.
+
+        Returns:
+            TensorOrScalar: The converted array.
+        """
+        return self.to_backend_array(dtype=dtype)
 
     def item(self) -> float:
         """Return the value of this tensor as a standard Python number.
@@ -162,7 +208,7 @@ class TensorConversionMixin(_ConversionBase):
 
         backend = get_active_backend()
 
-        if self.eval().__class__.__name__ == "Tensor":
+        if type(self.eval()).__name__ == "Tensor":
             return backend.item(self.eval().data)
         return backend.item(self.eval())
 
@@ -199,9 +245,10 @@ class TensorConversionMixin(_ConversionBase):
         Raises:
             ValueError: If the tensor has more than one element.
         """
-        arr = self.__array__()
-        if getattr(arr, "size", 1) == 1:
-            return bool(getattr(arr, "item", lambda: arr)())
+        arr = self.to_backend_array()
+        size = arr.size if is_backend_buffer(arr) else 1
+        if size == 1:
+            return bool(arr.item() if is_backend_buffer(arr) else arr)
         msg = "The truth value of an array with more than one element is ambiguous."
         raise ValueError(
             msg,
@@ -224,15 +271,16 @@ class TensorConversionMixin(_ConversionBase):
         Raises:
             TypeError: If the tensor is 0-dimensional.
         """
-        arr = self.__array__()
-        shape = getattr(arr, "shape", [0])
+        arr = self.to_backend_array()
+        shape: Sequence[int | str] = arr.shape if isinstance(arr, ShapeProtocol) else [0]
         if not shape:
             raise TypeError("iteration over a 0-d tensor")
-        for i in range(shape[0]):
+        for i in range(int(shape[0])):
             from .tensor import Tensor, TensorConfig
 
-            item_arr = as_tensor(arr)[i]
-            yield Tensor(item_arr, TensorConfig(getattr(item_arr, "shape", ()), self.dtype, self.device))
+            item_arr: TensorOrScalar = as_tensor(arr)[i]
+            item_shape = as_shape(item_arr.shape) if isinstance(item_arr, ShapeProtocol) else ()
+            yield Tensor(item_arr, TensorConfig(item_shape, self.dtype, self.device))
 
 
 if typing.TYPE_CHECKING:
@@ -257,15 +305,15 @@ class TensorIndexingMixin(_IndexingBase):
             IndexError: If the index is out of bounds or invalid.
             RuntimeError: If tracing but not in an active tracing context.
         """
-        arr = self.__array__()
-        if hasattr(key, "data"):
-            key = getattr(key, "data")
+        arr = self.to_backend_array()
+        if isinstance(key, _DataWrapperProtocol):
+            key = key.data
         elif isinstance(key, tuple):
-            key = tuple(getattr(k, "data", k) for k in key)
+            key = tuple(k.data if isinstance(k, _DataWrapperProtocol) else k for k in key)
 
         try:
-            res = as_tensor(arr)[tuple(key) if isinstance(key, list) else key]
-            res_shape = getattr(res, "shape", ())
+            res: TensorOrScalar = as_tensor(arr)[tuple(key) if isinstance(key, list) else key]
+            res_shape = as_shape(res.shape) if isinstance(res, ShapeProtocol) else ()
         except IndexError as e:
             if config.eager_mode:
                 raise
@@ -279,7 +327,7 @@ class TensorIndexingMixin(_IndexingBase):
             return Tensor(res, TensorConfig(res_shape, self.dtype, self.device))
 
         nid = f"getitem_{uuid.uuid4().hex[:6]}"
-        input_id = getattr(self.data, "id", "const")
+        input_id = self.data.id if is_traced_data(self.data) else "const"
 
         node = LogicalNode(
             id=nid,
@@ -308,7 +356,7 @@ class TensorIndexingMixin(_IndexingBase):
             TypeError: If attempted during tracing.
         """
         if config.eager_mode:
-            val = getattr(value, "data", value)
+            val = value.data if isinstance(value, _DataWrapperProtocol) else value
             as_tensor(self.data)[key] = val
         else:
             msg = "Tensor object does not support item assignment in tracing mode. Use .at[...].set(...) instead."

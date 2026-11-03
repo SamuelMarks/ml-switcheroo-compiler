@@ -81,3 +81,9 @@ def test_mlx_generator_save_load(monkeypatch: EagerTensorProtocol) -> None:
     assert MLXCodeGenerator.save("dummy.npy", None) is None
     assert MLXCodeGenerator.savez("dummy.npz", None) is None
     assert MLXCodeGenerator.savez_compressed("dummy.npz", None) is None
+
+
+def test_mlx_generator_zeros_and_item() -> None:
+    """Test MLXCodeGenerator.zeros and MLXCodeGenerator.item classmethods."""
+    z_arr = MLXCodeGenerator.zeros((1,))
+    assert MLXCodeGenerator.item(z_arr) == 0.0

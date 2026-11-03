@@ -65,6 +65,18 @@ class FallbackPrefixProtocol(typing.Protocol):
         ...
 
 
+def _is_fallback_prefix_gen(val: CommonASTVisitor | FallbackPrefixProtocol | BaseGenerator) -> typing.TypeGuard[FallbackPrefixProtocol]:
+    """Type guard narrowing `val` to `FallbackPrefixProtocol`.
+
+    Args:
+        val (CommonASTVisitor | FallbackPrefixProtocol | BaseGenerator): Candidate generator or visitor.
+
+    Returns:
+        bool: True if non-None.
+    """
+    return val is not None
+
+
 class CommonASTVisitor:
     """Define base mixin/visitor for shared AST generation logic across backends."""
 
@@ -75,6 +87,7 @@ class CommonASTVisitor:
     _lu_vjp_imported: bool
     _qr_vjp_imported: bool
     _svd_vjp_imported: bool
+    _generator: FallbackPrefixProtocol | BaseGenerator | None = None
 
     def __init__(
         self,
@@ -102,7 +115,9 @@ class CommonASTVisitor:
         Returns:
             FallbackPrefixProtocol: The generator or self.
         """
-        return typing.cast(FallbackPrefixProtocol, getattr(self, "_generator", None) or self)
+        gen: CommonASTVisitor | FallbackPrefixProtocol | BaseGenerator = self._generator if self._generator is not None else self
+        assert _is_fallback_prefix_gen(gen)
+        return gen
 
     def get_fallback_prefix(self) -> str:
         """Return the backend prefix (e.g., 'jax', 'pt', 'mx').

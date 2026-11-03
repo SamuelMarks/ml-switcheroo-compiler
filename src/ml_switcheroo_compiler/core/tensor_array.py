@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import typing
 import uuid
 
 from ml_switcheroo_ir import LogicalNode
 
+from ml_switcheroo_compiler.backends.registry import as_int
 from ml_switcheroo_compiler.core.device import Device, DeviceType
-from ml_switcheroo_compiler.core.shape import TensorOrScalar
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, is_traced_data
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
 from ml_switcheroo_compiler.tracing.tracer import ProxyTensor
@@ -43,17 +43,18 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = int(typing.cast(int, get_active_backend().asarray(index.data)))
+            idx = as_int(get_active_backend().asarray(index.data))
             val = self._data[idx]
             if val is None:
                 val = get_active_backend().execute_op("Zeros", self.element_shape)
             return Tensor(val, TensorConfig(self.element_shape, self.dtype, Device(DeviceType.CPU)))
 
         out_id = str(uuid.uuid4())
+        idx_id = index.data.id if is_traced_data(index.data) else "const"
         node = LogicalNode(
             id=out_id,
             op_type="TensorArrayRead",
-            inputs=[getattr(self, "id"), getattr(index.data, "id")],
+            inputs=[self.id, idx_id],
             attributes={},
             shape_metadata=self.element_shape,
         )
@@ -74,15 +75,17 @@ class TensorArray:
         if not global_tracing_state.is_tracing:
             from ml_switcheroo_compiler.backends.registry import get_active_backend
 
-            idx = int(typing.cast(int, get_active_backend().asarray(index.data)))
+            idx = as_int(get_active_backend().asarray(index.data))
             self._data[idx] = value.data
             return self
 
         out_id = str(uuid.uuid4())
+        idx_id = index.data.id if is_traced_data(index.data) else "const"
+        val_id = value.data.id if is_traced_data(value.data) else "const"
         node = LogicalNode(
             id=out_id,
             op_type="TensorArrayWrite",
-            inputs=[getattr(self, "id"), getattr(index.data, "id"), getattr(value.data, "id")],
+            inputs=[self.id, idx_id, val_id],
             attributes={},
             shape_metadata=(),
         )

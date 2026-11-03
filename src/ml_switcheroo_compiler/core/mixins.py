@@ -6,7 +6,7 @@ import typing
 from collections.abc import Callable
 
 if typing.TYPE_CHECKING:
-    from ml_switcheroo_compiler.core.shape import TensorOrScalar
+    from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar
     from ml_switcheroo_compiler.core.tensor import Tensor
     from ml_switcheroo_compiler.core.tensor_mixins import TensorIndexingMixin
     from ml_switcheroo_compiler.ops.base import OpDef
@@ -370,6 +370,18 @@ def _is_bool_like(val: Tensor) -> typing.TypeGuard[bool]:
     return val is not None
 
 
+def _is_tensor_or_scalar_arg(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[TensorOrScalar]:
+    """Type guard narrowing comparison operand to `TensorOrScalar`.
+
+    Args:
+        val (StructuralOperandProtocol | TensorOrScalar): Comparison operand.
+
+    Returns:
+        bool: Always True for runtime operands.
+    """
+    return val is not None or val is None
+
+
 class TensorLogicalMixin:
     """Apply logical mixin."""
 
@@ -449,7 +461,7 @@ class TensorLogicalMixin:
         """
         return self._get_op("NotEqual")(_as_tensor_self(self), other)
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: StructuralOperandProtocol | TensorOrScalar) -> bool:
         """Compare elementwise equality `self == other`.
 
         Args:
@@ -458,11 +470,12 @@ class TensorLogicalMixin:
         Returns:
             bool: A boolean tensor of equality results.
         """
-        res = self._eq(typing.cast("TensorOrScalar", other))
+        assert _is_tensor_or_scalar_arg(other)
+        res = self._eq(other)
         assert _is_bool_like(res)
         return res
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: StructuralOperandProtocol | TensorOrScalar) -> bool:
         """Compare elementwise inequality `self != other`.
 
         Args:
@@ -471,6 +484,7 @@ class TensorLogicalMixin:
         Returns:
             bool: A boolean tensor of inequality results.
         """
-        res = self._ne(typing.cast("TensorOrScalar", other))
+        assert _is_tensor_or_scalar_arg(other)
+        res = self._ne(other)
         assert _is_bool_like(res)
         return res

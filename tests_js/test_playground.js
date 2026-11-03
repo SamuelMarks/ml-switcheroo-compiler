@@ -660,3 +660,190 @@ test('Accessibility audit', async () => {
     assert.strictEqual(results.violations.length, 0, 'Axe violations: ' + JSON.stringify(results.violations, null, 2));
     assert.ok(results);
 });
+
+test('playground full branch coverage for resolveWheelUrls, compileCode, and execute feedback loops', async () => {
+    // 1. resolveWheelUrls relative link branch and fetch error branch
+    const mockDocRel = {
+        querySelector: () => ({ dataset: { wheels: 'https://cdn.org/a.whl, b.whl' } }),
+        querySelectorAll: () => []
+    };
+    const resDefaultWin = await playgroundModule.resolveWheelUrls(null);
+    assert.strictEqual(resDefaultWin.length, 2);
+
+    const resDataAttr = await playgroundModule.resolveWheelUrls(mockDocRel, { __ML_SWITCHEROO_WHEELS__: ['https://cdn.org/w1.whl', 'w2.whl'] });
+    assert.strictEqual(resDataAttr[0], 'https://cdn.org/w1.whl');
+
+    const resDataEl = await playgroundModule.resolveWheelUrls(mockDocRel, {});
+    assert.strictEqual(resDataEl[0], 'https://cdn.org/a.whl');
+
+    const mockDocHrefRel = {
+        querySelector: () => ({ dataset: { wheels: ' , ' } }),
+        querySelectorAll: () => [
+            { getAttribute: () => 'custom_pkg.whl' },
+            { getAttribute: () => '' }
+        ]
+    };
+    const resHrefRel = await playgroundModule.resolveWheelUrls(mockDocHrefRel, {});
+    assert.deepStrictEqual(resHrefRel, ['./_static/custom_pkg.whl']);
+
+    const mockDocEmptyLinks = {
+        querySelector: () => null,
+        querySelectorAll: () => [{ getAttribute: () => null }]
+    };
+    const winFetchThrow = {
+        fetch: async () => { throw new Error('network error'); }
+    };
+    const resFetchThrow = await playgroundModule.resolveWheelUrls(mockDocEmptyLinks, winFetchThrow);
+    assert.strictEqual(resFetchThrow.length, 2);
+
+    const winFetchHttp = {
+        fetch: async () => ({
+            ok: true,
+            json: async () => ({ wheels: ['https://cdn.org/remote.whl', 'local.whl'] })
+        })
+    };
+    const resFetchHttp = await playgroundModule.resolveWheelUrls(null, winFetchHttp);
+    assert.strictEqual(resFetchHttp[0], 'https://cdn.org/remote.whl');
+
+    // 2. extractRuntimeShapesAndStrides branches
+    assert.deepStrictEqual(playgroundModule.extractRuntimeShapesAndStrides(null), {});
+    assert.deepStrictEqual(playgroundModule.extractRuntimeShapesAndStrides({ shape: [2, 3], strides: [3, 1] }), { out_0: [2, 3] });
+    assert.deepStrictEqual(playgroundModule.extractRuntimeShapesAndStrides([1, 2, 3]), { out_0: [3] });
+    assert.deepStrictEqual(playgroundModule.extractRuntimeShapesAndStrides({}), {});
+
+    // 3. compileCode non-JSON and JSON without code field and error with traceback
+    const dom = new JSDOM('<html><body><div id="pg-console"></div></body></html>');
+    const doc = dom.window.document;
+    const pyRaw = { runPython: () => "not json" };
+    assert.strictEqual(playgroundModule.compileCode(pyRaw, "x=1", "jax", "pytorch", doc), "not json");
+
+    const pyObj = { runPython: () => JSON.stringify({ other: 123 }) };
+    assert.strictEqual(playgroundModule.compileCode(pyObj, "x=1", "jax", "pytorch", doc), JSON.stringify({ other: 123 }));
+
+    const pyErr = { runPython: () => JSON.stringify({ error: "bad syntax", traceback: "line 1" }) };
+    assert.match(playgroundModule.compileCode(pyErr, "x=1", "jax", "pytorch", doc), /bad syntax/);
+    assert.match(playgroundModule.compileCode(pyErr, "x=1", "jax", "pytorch", null), /bad syntax/);
+
+    const pyShapes = {
+        runPython: () => JSON.stringify({
+            code: "compiled_code_v1",
+            learned: true,
+            shapes: { n1: { op: "Add", shape: "dynamic" }, n2: { op: "Mul", shape: [2, 2] } },
+            inputs: { x: { shape: [2, 2], dtype: "float32" } },
+            outputs: { y: { shape: [2, 2], dtype: "float32" } }
+        })
+    };
+    assert.strictEqual(playgroundModule.compileCode(pyShapes, "x=1", "jax", "webgpu", doc, { x: [2, 2] }), "compiled_code_v1");
+
+    // 4. Execute button with compiled metadata, custom capturers, and feedback loop recompilation
+    const domExec = new JSDOM(`
+        <html data-theme="dark"><body>
+            <select id="target-framework"><option value="webgpu">WebGPU</option><option value="wasm_simd">WASM</option><option value="other">Other</option></select>
+            <button id="btn-execute"></button>
+            <select id="source-framework"><option value="jax">JAX</option></select>
+            <select id="source-example"><option value="simple_mlp">MLP</option></select>
+            <div id="editor-source"></div>
+            <div id="editor-target"></div>
+            <button id="btn-compile"></button>
+            <div id="pg-console"></div>
+        </body></html>
+    `);
+    const winExec = domExec.window;
+    winExec.matchMedia = () => ({ matches: false });
+    winExec.require = (deps, cb) => cb();
+    winExec.monaco = {
+        editor: {
+            create: () => ({
+                getValue: () => "code",
+                setValue: () => {},
+                getModel: () => ({})
+            }),
+            setTheme: () => {},
+            setModelLanguage: () => {}
+        }
+    };
+    winExec.pyodideInstance = pyShapes;
+    winExec.captureRuntimeShapes = () => ({ out_0: [4] });
+    winExec.captureWasmTensorShapes = () => ({ out_0: [4] });
+    global.runWebGPUCompute = async () => [1.0, 2.0, 3.0, 4.0];
+    global.runWasmCompute = async () => [1.0, 2.0, 3.0, 4.0];
+
+    playgroundModule.initPlayground(domExec.window.document, new MockStorage(), winExec);
+
+    domExec.window.document.getElementById('target-framework').value = 'webgpu';
+    domExec.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 50));
+
+    domExec.window.document.getElementById('target-framework').value = 'wasm_simd';
+    domExec.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 50));
+
+    // Also test when outputs shape is empty array []
+    const pyEmptyOutShape = {
+        runPython: () => JSON.stringify({
+            code: "compiled_code_v2",
+            inputs: { x: { shape: [2], dtype: "float32" } },
+            outputs: { y: { shape: [], dtype: "float32" } }
+        })
+    };
+    playgroundModule.compileCode(pyEmptyOutShape, "x=1", "jax", "webgpu", doc);
+    delete winExec.captureRuntimeShapes;
+    delete winExec.captureWasmTensorShapes;
+    domExec.window.document.getElementById('target-framework').value = 'webgpu';
+    domExec.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 50));
+
+    playgroundModule.compileCode(pyEmptyOutShape, "x=1", "jax", "wasm_simd", doc);
+    domExec.window.document.getElementById('target-framework').value = 'wasm_simd';
+    domExec.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 50));
+
+    domExec.window.document.getElementById('target-framework').value = 'other';
+    domExec.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 20));
+
+    // Test when learnedShapes is empty {} and when target-framework / source-framework / source-editor are missing
+    winExec.captureRuntimeShapes = () => ({});
+    winExec.captureWasmTensorShapes = () => ({});
+    domExec.window.document.getElementById('target-framework').value = 'webgpu';
+    domExec.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 30));
+
+    domExec.window.document.getElementById('target-framework').value = 'wasm_simd';
+    domExec.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 30));
+
+    const domNoSource = new JSDOM(`
+        <html><body>
+            <select id="target-framework"><option value="webgpu">WebGPU</option><option value="wasm_simd">WASM</option></select>
+            <button id="btn-execute"></button>
+            <div id="editor-target"></div>
+            <div id="pg-console"></div>
+        </body></html>
+    `);
+    const winNoSource = domNoSource.window;
+    winNoSource.matchMedia = () => ({ matches: false });
+    winNoSource.require = (deps, cb) => cb();
+    winNoSource.monaco = {
+        editor: {
+            create: () => ({
+                getValue: () => "code",
+                setValue: () => {},
+                getModel: () => ({})
+            }),
+            setTheme: () => {},
+            setModelLanguage: () => {}
+        }
+    };
+    winNoSource.pyodideInstance = { runPython: () => "" };
+    playgroundModule.initPlayground(domNoSource.window.document, new MockStorage(), winNoSource);
+    domNoSource.window.document.getElementById('target-framework').value = 'webgpu';
+    domNoSource.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 30));
+    domNoSource.window.document.getElementById('target-framework').value = 'wasm_simd';
+    domNoSource.window.document.getElementById('btn-execute').click();
+    await new Promise(r => setTimeout(r, 30));
+
+    delete global.runWebGPUCompute;
+    delete global.runWasmCompute;
+});

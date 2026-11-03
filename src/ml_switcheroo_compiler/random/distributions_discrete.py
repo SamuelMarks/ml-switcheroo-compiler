@@ -2,11 +2,36 @@
 
 from __future__ import annotations
 
+import typing
 from collections.abc import Sequence
 
+from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol, as_shape
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.random.state import RandomArg, _dispatch_random, _emit_random_node
+
+
+@typing.runtime_checkable
+class _RandomTensorProtocol(typing.Protocol):
+    """Protocol for tensor-like objects exposing `.shape` and `.dtype`."""
+
+    @property
+    def shape(self) -> Sequence[int | str]:
+        """Return tensor shape.
+
+        Returns:
+            Sequence[int | str]: Shape sequence.
+        """
+        ...
+
+    @property
+    def dtype(self) -> dtypes.DType | str | None:
+        """Return tensor dtype.
+
+        Returns:
+            dtypes.DType | str | None: Tensor dtype.
+        """
+        ...
 
 
 def randint(
@@ -93,8 +118,8 @@ def permutation(
     Returns:
         Tensor: Permuted tensor.
     """
-    shape = getattr(x, "shape", ())
-    dtype = getattr(x, "dtype", None)
+    shape: tuple[int, ...] = as_shape(x.shape) if isinstance(x, (Tensor, ShapeProtocol, _RandomTensorProtocol)) else ()
+    dtype: dtypes.DType | str | None = x.dtype if isinstance(x, (Tensor, _RandomTensorProtocol)) else None
     return _emit_random_node("RandomPermutation", [key, x], shape, dtype, {"axis": axis, "independent": independent})
 
 

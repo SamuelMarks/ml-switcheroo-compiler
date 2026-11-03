@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import builtins  # noqa: F401
 import typing  # noqa: F401
+from collections.abc import Iterator
 
+from ml_switcheroo_compiler.backends.dpnp.types import _get_attr, _has_attr
 from ml_switcheroo_compiler.backends.eager.utils import _resolve_eager_mod
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
+    as_callable,
     as_tensor,
     global_eager_registry,
 )
@@ -32,7 +35,7 @@ def _nan_to_num(backend_module: BackendModuleProtocol, *args: EagerValue, **kwar
     nan = kwargs.get("nan", 0.0)
     posinf = kwargs.get("posinf", None)
     neginf = kwargs.get("neginf", None)
-    if hasattr(backend_module, "nan_to_num"):
+    if _has_attr(backend_module, "nan_to_num"):
         return backend_module.nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
     return _resolve_eager_mod(backend_module).nan_to_num(x, nan=nan, posinf=posinf, neginf=neginf)
 
@@ -100,13 +103,13 @@ def _divide_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, **k
             EagerValue: Result.
     """
     mod = backend_module
-    func = getattr(backend_module, "math", backend_module)
-    func2 = getattr(func, "divide_no_nan", None)
+    func = _get_attr(backend_module, "math", backend_module)
+    func2 = _get_attr(func, "divide_no_nan", None)
     if func2:
-        return as_tensor(func2(*args, **kwargs))
+        return as_tensor(as_callable(func2)(*args, **kwargs))
     (x, y) = (as_tensor(args[0]), as_tensor(args[1]))
-    safe_y = mod.where(y.__eq__(0), 1.0, y)
-    return mod.where(y.__eq__(0), 0, x / safe_y)
+    safe_y = mod.where(y == 0, 1.0, y)
+    return mod.where(y == 0, 0, x / safe_y)
 
 
 @global_eager_registry.register("Finfo")
@@ -154,9 +157,9 @@ def _heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
             EagerValue: Result.
     """
     mod = backend_module
-    func = getattr(backend_module, "heaviside", None)
+    func = _get_attr(backend_module, "heaviside", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     x, y = as_tensor(args[0]), args[1]
     return mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y))
 
@@ -252,7 +255,7 @@ def _infeed(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     if queue_name in _INFEED_QUEUES:
         it = _INFEED_QUEUES[queue_name]
         try:
-            val = getattr(it, "__next__")() if hasattr(it, "__next__") else as_mod(it).pop(0)
+            val: EagerValue = next(it) if isinstance(it, Iterator) else as_mod(it).pop(0)
             return val
         except (StopIteration, IndexError):
             return 0
@@ -286,9 +289,9 @@ def _iscomplex(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "iscomplex", None)
+    func = _get_attr(backend_module, "iscomplex", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).iscomplex(*args, **kwargs)
 
 
@@ -304,9 +307,9 @@ def _iscomplexobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "iscomplexobj", None)
+    func = _get_attr(backend_module, "iscomplexobj", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     x = args[0]
     return _resolve_eager_mod(backend_module).iscomplexobj(x)
 
@@ -339,9 +342,9 @@ def _isneginf(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
             EagerValue: Result.
     """
     mod = backend_module
-    func = getattr(backend_module, "isneginf", None)
+    func = _get_attr(backend_module, "isneginf", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     x = as_tensor(args[0])
     return mod.logical_and(mod.isinf(x), x < 0)
 
@@ -358,9 +361,9 @@ def _isreal(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs: 
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "isreal", None)
+    func = _get_attr(backend_module, "isreal", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     return _resolve_eager_mod(backend_module).isreal(*args, **kwargs)
 
 
@@ -376,9 +379,9 @@ def _isrealobj(backend_module: BackendModuleProtocol, *args: EagerValue, **kwarg
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "isrealobj", None)
+    func = _get_attr(backend_module, "isrealobj", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     x = args[0]
     return _resolve_eager_mod(backend_module).isrealobj(x)
 
@@ -395,9 +398,9 @@ def _isscalar(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             EagerValue: Result.
     """
-    func = getattr(backend_module, "isscalar", None)
+    func = _get_attr(backend_module, "isscalar", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     x = args[0]
     return _resolve_eager_mod(backend_module).isscalar(x)
 
@@ -462,12 +465,12 @@ def _multiply_no_nan(backend_module: BackendModuleProtocol, *args: EagerValue, *
             EagerValue: Result.
     """
     mod = backend_module
-    func = getattr(backend_module, "math", backend_module)
-    func2 = getattr(func, "multiply_no_nan", None)
+    func = _get_attr(backend_module, "math", backend_module)
+    func2 = _get_attr(func, "multiply_no_nan", None)
     if func2:
-        return as_tensor(func2(*args, **kwargs))
+        return as_tensor(as_callable(func2)(*args, **kwargs))
     (x, y) = (as_tensor(args[0]), as_tensor(args[1]))
-    return mod.where(y.__eq__(0), 0, x * y)
+    return mod.where(y == 0, 0, x * y)
 
 
 @global_eager_registry.register("NpHeaviside")
@@ -483,9 +486,9 @@ def _np_heaviside(backend_module: BackendModuleProtocol, *args: EagerValue, **kw
             EagerValue: Result.
     """
     mod = backend_module
-    func = getattr(backend_module, "heaviside", None)
+    func = _get_attr(backend_module, "heaviside", None)
     if func:
-        return as_tensor(func(*args, **kwargs))
+        return as_tensor(as_callable(func)(*args, **kwargs))
     x, y = as_tensor(args[0]), args[1]
     return mod.where(x < 0, 0.0, mod.where(x > 0, 1.0, y))
 

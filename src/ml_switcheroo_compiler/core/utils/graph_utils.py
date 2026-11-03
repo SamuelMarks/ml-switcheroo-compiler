@@ -3,10 +3,26 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Iterable
 
 from ml_switcheroo_compiler.core.errors import CompilationError
-from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, LogicalNode
+from ml_switcheroo_compiler.core.shape import TensorOrScalar, is_traced_data
+from ml_switcheroo_compiler.ir.core import IRGraph, LogicalNode, as_node_list
+
+
+@typing.runtime_checkable
+class _NodeGetProtocol(typing.Protocol):
+    """Protocol for node containers supporting `.get(node_id)`."""
+
+    def get(self, key: str) -> LogicalNode | None:
+        """Retrieve node by key.
+
+        Args:
+            key (str): Node key.
+
+        Returns:
+            LogicalNode | None: Retrieved node or None.
+        """
+        ...
 
 
 class _TopologicalSorter:
@@ -40,12 +56,13 @@ class _TopologicalSorter:
             return
 
         self.temp_mark.add(node_id)
-        node = None
-        if hasattr(self.graph.nodes, "get"):
-            node = self.graph.nodes.get(node_id)
+        node: LogicalNode | None = None
+        raw_nodes: TensorOrScalar = self.graph.nodes
+        if isinstance(raw_nodes, _NodeGetProtocol):
+            node = raw_nodes.get(node_id)
         else:
-            for n in typing.cast(Iterable[IRNode], self.graph.nodes):
-                if getattr(n, "id", "") == node_id:
+            for n in as_node_list(raw_nodes):
+                if n.id == node_id:
                     node = n
                     break
 
@@ -63,17 +80,19 @@ class _TopologicalSorter:
         """Perform the topological sort.
 
         Returns:
-            list[object]: The sorted nodes.
+            list[LogicalNode]: The sorted nodes.
         """
-        nodes_iterable: Iterable[str | LogicalNode] = self.graph.nodes
-        if isinstance(nodes_iterable, dict):
-            nodes_iterable = list(nodes_iterable.keys())
-        elif not isinstance(nodes_iterable, list):
+        raw_nodes: TensorOrScalar = self.graph.nodes
+        node_ids: list[str]
+        if isinstance(raw_nodes, dict):
+            node_ids = [str(k) for k in raw_nodes.keys()]
+        elif isinstance(raw_nodes, list):
+            node_ids = [x if isinstance(x, str) else (str(x.id) if isinstance(x, LogicalNode) or is_traced_data(x) else str(x)) for x in raw_nodes]
+        else:
             return []
-        for n in nodes_iterable:
-            node_id = getattr(n, "id", n) if not isinstance(n, str) else n
+        for node_id in node_ids:
             if node_id not in self.visited:
-                self.visit(str(node_id))
+                self.visit(node_id)
         return self.sorted_nodes
 
 

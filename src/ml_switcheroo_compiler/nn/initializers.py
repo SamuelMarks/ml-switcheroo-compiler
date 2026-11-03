@@ -8,8 +8,11 @@ from collections.abc import Callable, Sequence
 
 import ml_switcheroo_compiler.core.dtype as dtypes
 from ml_switcheroo_compiler import ops
-from ml_switcheroo_compiler.backends.eager_registry import as_int
-from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
+from ml_switcheroo_compiler.backends.eager_registry import (
+    as_callable,
+    as_int,
+    as_tensor_pair,
+)
 from ml_switcheroo_compiler.core.tensor import Tensor
 from ml_switcheroo_compiler.ops.configs import InitializerConfig
 
@@ -275,7 +278,8 @@ def variance_scaling(config: InitializerConfig) -> InitializerFn:
         Returns:
             Tensor: Variance-scaled initialized tensor.
         """
-        dt = typing.cast("TypedVariadicCallable[dtypes.DType]", _resolve_dtype)(init_dtype, config.dtype)
+        default_dt: dtypes.DType | str = config.dtype if isinstance(config.dtype, (dtypes.DType, str)) else dtypes.DType.Float32
+        dt = _resolve_dtype(init_dtype, default_dt)
         fan_in, fan_out = _compute_fans(shape, as_int(config.in_axis), as_int(config.out_axis))
         if config.mode == "fan_in":
             denom = float(fan_in)
@@ -533,8 +537,8 @@ def orthogonal(
             if idx != col_ax:
                 rows *= dim
         flat_matrix = ops.randn(max(rows, cols), min(rows, cols), dtype=dt)
-        q_mat, _ = getattr(ops, "qr")(flat_matrix)
-        reshaped = getattr(ops, "reshape")(q_mat, shape)
+        q_raw, _ = as_tensor_pair(as_callable(ops.qr)(flat_matrix))
+        reshaped = as_callable(ops.reshape)(q_raw, shape)
         return ops.scalar_mul(reshaped, float(scale))
 
     return init

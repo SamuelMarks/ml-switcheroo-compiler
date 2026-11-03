@@ -96,7 +96,7 @@ CPP_SCALAR_EXPR: dict[str, str] = {
 }
 
 
-_YAML_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+_YAML_LOADER = yaml.SafeLoader
 
 
 def load_backend_mappings(backends_dir: str = "src/ml_switcheroo_compiler/backends") -> dict[str, dict[str, str]]:

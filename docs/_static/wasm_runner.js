@@ -799,7 +799,7 @@ function compileWasmGraph(irGraph) {
     // Allocate memory for inputs
     const inputs = irGraph.inputs || [];
     for (const inp of inputs) {
-        const inpNode = nodes.find(n => n.id === inp) || { shape_metadata: [1] };
+        const inpNode = nodes.find(n => n.id === inp) || {};
         const shape = inpNode.shape_metadata || [1];
         const tensor = new WasmTensor(shape, currentOffset);
         tensorMap[inp] = tensor;
@@ -839,8 +839,10 @@ function compileWasmGraph(irGraph) {
             op = 'abs';
         } else if (rawOp.includes('neg')) {
             op = 'neg';
-        } else if (rawOp.includes('relu')) {
+        } else if (rawOp.includes('relu') || rawOp.includes('max')) {
             op = 'max';
+        } else if (rawOp.includes('min')) {
+            op = 'min';
         }
 
         const shape = node.shape_metadata || (node.inputs && tensorMap[node.inputs[0]] ? tensorMap[node.inputs[0]].shape : [1]);
@@ -917,7 +919,7 @@ async function runWasmGraph(graphPlan, inputBuffers) {
             const kernelMem = new Float32Array(wasmInstance.exports.memory.buffer);
 
             if (step.stepKind === 'matmul' && inTensor1) {
-                const M = inTensor0.shape[0] || 1;
+                const M = inTensor0.shape[0];
                 const K = inTensor0.shape[1] || inTensor0.numElements;
                 const N = inTensor1.shape[1] || (inTensor1.numElements / K);
 
@@ -936,7 +938,7 @@ async function runWasmGraph(graphPlan, inputBuffers) {
                 const outFloats = kernelMem.subarray(cOff / 4, cOff / 4 + outTensor.numElements);
                 memFloat32.set(outFloats, outTensor.byteOffset / 4);
             } else if (step.stepKind === 'transpose') {
-                const R = inTensor0.shape[0] || 1;
+                const R = inTensor0.shape[0];
                 const C = inTensor0.shape[1] || inTensor0.numElements;
                 const inFloats = memFloat32.subarray(inTensor0.byteOffset / 4, inTensor0.byteOffset / 4 + inTensor0.numElements);
                 kernelMem.set(inFloats, 0);

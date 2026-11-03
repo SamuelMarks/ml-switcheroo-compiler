@@ -11,10 +11,11 @@ from __future__ import annotations
 import hashlib
 import json
 import typing
-from collections.abc import Callable, Iterable, Sequence  # noqa: F401
+from collections.abc import Callable, Iterable, Mapping, Sequence  # noqa: F401
 
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, NodeDict  # noqa: F401
 
+from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, TensorOrScalar
 from ml_switcheroo_compiler.ir.core import as_node_list
 
 if typing.TYPE_CHECKING:
@@ -23,6 +24,66 @@ if typing.TYPE_CHECKING:
 from ml_switcheroo_compiler.core.errors import CompilationError
 from ml_switcheroo_compiler.core.utils.graph_utils import topological_sort
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode, clone_logical_node
+
+
+@typing.runtime_checkable
+class _NamedPassProtocol(typing.Protocol):
+    """Protocol for pass callables exposing a `__name__` attribute."""
+
+    @property
+    def __name__(self) -> str:
+        """Return pass function name.
+
+        Returns:
+            str: Pass name.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _NodesMappingProtocol(typing.Protocol):
+    """Protocol for node containers supporting `.values()` and `.items()`."""
+
+    def values(self) -> Iterable[IRNode]:
+        """Return node values.
+
+        Returns:
+            Iterable[IRNode]: Node values.
+        """
+        ...
+
+    def items(self) -> Iterable[tuple[str, IRNode]]:
+        """Return node key-value pairs.
+
+        Returns:
+            Iterable[tuple[str, IRNode]]: Node key-value pairs.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _MutableNodesMappingProtocol(typing.Protocol):
+    """Protocol for mutable node containers supporting `.clear()` and `.update()`."""
+
+    def clear(self) -> None:
+        """Clear all nodes."""
+        ...
+
+    def update(self, other: dict[str, IRNode]) -> None:
+        """Update with nodes dictionary.
+
+        Args:
+            other (dict[str, IRNode]): Nodes dictionary.
+        """
+        ...
+
+
+@typing.runtime_checkable
+class _GraphInputsAttrProtocol(typing.Protocol):
+    """Protocol for graphs exposing `inputs` and `outputs`."""
+
+    inputs: list[str]
+    outputs: list[str]
 
 
 class IRValidator:
@@ -47,10 +108,11 @@ class IRValidator:
         Raises:
             CompilationError: If a node is missing shape metadata.
         """
-        nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else as_node_list(graph.nodes)
+        raw_nodes: TensorOrScalar = graph.nodes
+        nodes_iterable: Iterable[IRNode] = raw_nodes.values() if isinstance(raw_nodes, _NodesMappingProtocol) else as_node_list(raw_nodes)
         for node in nodes_iterable:
-            if getattr(node, "shape_metadata", None) is None:
-                msg = f"Node {getattr(node, 'id', '')} is missing shape_metadata."
+            if node.shape_metadata is None:
+                msg = f"Node {node.id} is missing shape_metadata."
                 raise CompilationError(msg)
 
 
@@ -64,11 +126,12 @@ def _graph_hash(graph: IRGraph) -> str:
         str: MD5 hash digest of the serialized graph structure.
     """
     state: dict[str, dict[str, str | list[str]]] = {}
-    nodes_iterable: Iterable[IRNode] = graph.nodes.values() if hasattr(graph.nodes, "values") else as_node_list(graph.nodes)
+    raw_nodes: TensorOrScalar = graph.nodes
+    nodes_iterable: Iterable[IRNode] = raw_nodes.values() if isinstance(raw_nodes, _NodesMappingProtocol) else as_node_list(raw_nodes)
     for node in nodes_iterable:
-        state[getattr(node, "id", "")] = {
-            "op": str(getattr(node, "op_type", "")),
-            "inputs": list(getattr(node, "inputs", [])),
+        state[node.id] = {
+            "op": str(node.op_type),
+            "inputs": list(node.inputs),
         }
     return hashlib.md5(json.dumps(state, sort_keys=True).encode("utf-8")).hexdigest()
 
@@ -83,16 +146,17 @@ def _snapshot_graph(graph: IRGraph) -> dict[str, dict[str, IRNode] | list[str]]:
         dict[str, dict[str, IRNode] | list[str]]: Snapshot containing cloned nodes and io lists.
     """
     nodes_copy: dict[str, IRNode] = {}
-    nodes_iterable = graph.nodes
-    if hasattr(nodes_iterable, "items"):
+    nodes_iterable: TensorOrScalar = graph.nodes
+    if isinstance(nodes_iterable, _NodesMappingProtocol):
         for nid, n in nodes_iterable.items():
             nodes_copy[nid] = clone_logical_node(n)
     else:
         for n in as_node_list(nodes_iterable):
-            nodes_copy[getattr(n, "id", "")] = clone_logical_node(n)
+            nodes_copy[n.id] = clone_logical_node(n)
 
-    inputs_copy: list[str] = list(graph.inputs) if hasattr(graph, "inputs") and graph.inputs is not None else []
-    outputs_copy: list[str] = list(graph.outputs) if hasattr(graph, "outputs") and graph.outputs is not None else []
+    raw_graph: StructuralOperandProtocol = graph
+    inputs_copy: list[str] = list(raw_graph.inputs) if isinstance(raw_graph, _GraphInputsAttrProtocol) and raw_graph.inputs is not None else []
+    outputs_copy: list[str] = list(raw_graph.outputs) if isinstance(raw_graph, _GraphInputsAttrProtocol) and raw_graph.outputs is not None else []
     return {"nodes": nodes_copy, "inputs": inputs_copy, "outputs": outputs_copy}
 
 
@@ -104,16 +168,21 @@ def _restore_graph(graph: IRGraph, snapshot: dict[str, dict[str, IRNode] | list[
         snapshot (dict[str, dict[str, IRNode] | list[str]]): The snapshot to restore from.
     """
     nodes_data = snapshot["nodes"]
+    raw_nodes: StructuralOperandProtocol | TensorOrScalar = graph.nodes
     if isinstance(nodes_data, dict):
-        if hasattr(graph.nodes, "clear") and hasattr(graph.nodes, "update"):
-            graph.nodes.clear()
-            graph.nodes.update(nodes_data)
+        if isinstance(raw_nodes, _MutableNodesMappingProtocol):
+            raw_nodes.clear()
+            raw_nodes.update(nodes_data)
         else:
-            object.__setattr__(graph, "nodes", list(nodes_data.values()))
-    if hasattr(graph, "inputs") and "inputs" in snapshot:
-        graph.inputs = list(snapshot["inputs"])
-    if hasattr(graph, "outputs") and "outputs" in snapshot:
-        graph.outputs = list(snapshot["outputs"])
+            vars(graph)["nodes"] = list(nodes_data.values())
+    raw_graph: StructuralOperandProtocol = graph
+    if isinstance(raw_graph, _GraphInputsAttrProtocol):
+        in_snap = snapshot.get("inputs", [])
+        out_snap = snapshot.get("outputs", [])
+        assert isinstance(in_snap, list)
+        assert isinstance(out_snap, list)
+        raw_graph.inputs = list(in_snap)
+        raw_graph.outputs = list(out_snap)
 
 
 class PassManager:
@@ -144,7 +213,9 @@ class PassManager:
             name (str, optional): The name of the pass.
         """
         self.passes.append(ir_pass)
-        self.pass_names.append(name or str(getattr(ir_pass, "__name__", "unknown_pass")))
+        raw_pass: StructuralOperandProtocol = ir_pass
+        pass_name = name if name is not None else (str(raw_pass.__name__) if isinstance(raw_pass, _NamedPassProtocol) and raw_pass.__name__ else "unknown_pass")
+        self.pass_names.append(pass_name)
 
     @staticmethod
     def _resolve_config_path(config_path: str | None) -> str:
@@ -251,8 +322,9 @@ class PassManager:
         self.pass_names = []
         execution_order = self._extract_execution_order(res, opt_level)
 
+        passes_dict = vars(passes_module)
         for pass_name in execution_order:
-            pass_func = getattr(passes_module, f"{pass_name}_pass", None) or getattr(passes_module, pass_name, None)
+            pass_func = passes_dict.get(f"{pass_name}_pass") or passes_dict.get(pass_name)
             if pass_func and callable(pass_func):
                 self.add_pass(pass_func, name=pass_name)
 
@@ -296,7 +368,7 @@ class PassManager:
         self.validate(graph)
 
         if self.convergence_criteria is not None:
-            max_iterations = getattr(self.convergence_criteria, "max_iterations", max_iterations)
+            max_iterations = self.convergence_criteria.max_iterations
 
         history_hashes: list[str] = [_graph_hash(graph)]
         history_snapshots: list[dict[str, dict[str, IRNode] | list[str]]] = [_snapshot_graph(graph)]
