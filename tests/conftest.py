@@ -30,7 +30,12 @@ if typing.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def reset_global_tracing_state() -> Iterator[None]:
-    """Test function reset_global_tracing_state."""
+    """Reset global tracing, backend, and distributed state around each test.
+
+    Yields:
+        None: Test execution context.
+    """
+    import ml_switcheroo_compiler.backends.numpy.eager.distributed as np_dist
     import ml_switcheroo_compiler.backends.registry as reg
     import ml_switcheroo_compiler.tracing.state as state
     from ml_switcheroo_compiler.core.config import config
@@ -43,6 +48,7 @@ def reset_global_tracing_state() -> Iterator[None]:
     old_eager = config.eager_mode
     had_active_backend = _has_attr(reg, "_ACTIVE_BACKEND")
     old_active_backend = _get_attr(reg, "_ACTIVE_BACKEND", None)
+    np_dist._tcp_dist_ctx = np_dist.TCPDistributedContext()
 
     import os
 
@@ -97,3 +103,4 @@ def reset_global_tracing_state() -> Iterator[None]:
         _set_attr(reg, "_ACTIVE_BACKEND", old_active_backend)
     elif _has_attr(reg, "_ACTIVE_BACKEND"):
         del reg._ACTIVE_BACKEND
+    np_dist._tcp_dist_ctx = np_dist.TCPDistributedContext()

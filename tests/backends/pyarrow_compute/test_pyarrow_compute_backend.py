@@ -149,7 +149,7 @@ def test_pyarrow_compute_types() -> None:
             """Return empty list.
 
             Returns:
-                list[object]: Empty list.
+                list[EagerValue]: Empty list.
             """
             return []
 

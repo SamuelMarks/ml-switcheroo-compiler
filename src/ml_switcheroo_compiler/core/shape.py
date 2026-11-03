@@ -161,7 +161,7 @@ def is_traced_data(val: StructuralOperandProtocol | TensorOrScalar) -> typing.Ty
     Returns:
         bool: True if `val` is a traced proxy data object.
     """
-    return isinstance(val, (TracedDataProtocol, _IdMemberProtocol))
+    return _has_attr(val, "id")
 
 
 def is_backend_buffer(val: StructuralOperandProtocol | TensorOrScalar) -> typing.TypeGuard[BackendBufferProtocol]:
@@ -173,7 +173,7 @@ def is_backend_buffer(val: StructuralOperandProtocol | TensorOrScalar) -> typing
     Returns:
         bool: True if `val` is a backend array buffer.
     """
-    return isinstance(val, (BackendBufferProtocol, _TolistMemberProtocol, _ItemMemberProtocol, _SizeMemberProtocol))
+    return _has_attr(val, "tolist") or _has_attr(val, "item") or _has_attr(val, "size")
 
 
 @typing.runtime_checkable

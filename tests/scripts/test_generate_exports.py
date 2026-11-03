@@ -27,7 +27,7 @@ def _mock_mod_import(mod_obj: EagerValue) -> TypedVariadicCallable[EagerValue]:
         mod_obj (EagerValue): Object to return when user/test module is imported.
 
     Returns:
-        TypedVariadicCallable[object]: Mock import side-effect function.
+        TypedVariadicCallable[EagerValue]: Mock import side-effect function.
     """
 
     def _imp(name: str, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:

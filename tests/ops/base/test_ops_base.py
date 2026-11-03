@@ -88,7 +88,7 @@ def _test_register_and_get_op_sub_2(_state: dict[str, EagerTensorProtocol]) -> N
                 **kwargs (EagerValue): Additional keyword arguments.
 
                 Returns:
-                tuple[object, ...]: The resulting output.
+                tuple[EagerValue, ...]: The resulting output.
                 """
                 return ()
 
@@ -249,7 +249,7 @@ def _test_opdef_call_eager_sub_2(_state: dict[str, EagerTensorProtocol]) -> None
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                tuple[object, ...]: The computed result.
+                tuple[EagerValue, ...]: The computed result.
                 """
                 return ()
 
@@ -411,7 +411,7 @@ def _test_opdef_call_tracing_sub_2(_state: dict[str, EagerTensorProtocol]) -> No
                 **kwargs: Additional keyword arguments.
 
                 Returns:
-                tuple[object, ...]: The computed result.
+                tuple[EagerValue, ...]: The computed result.
                 """
                 return ()
 

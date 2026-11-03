@@ -14,7 +14,7 @@ from ml_switcheroo_compiler.backends.eager_registry import (
 )
 from ml_switcheroo_compiler.core import config
 from ml_switcheroo_compiler.core.device import _backend_name
-from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar
+from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, _has_attr
 from ml_switcheroo_compiler.ops import distributed_ops
 
 from .device_mesh import DeviceMesh
@@ -149,7 +149,7 @@ def initialize(*args: TensorOrScalar, **kwargs: AttrValue) -> None:
     from ml_switcheroo_compiler.core.errors import BackendNotSupportedError
 
     backend: StructuralOperandProtocol = registry.get_active_backend()
-    if isinstance(backend, _InitializeDistributedBackendProtocol):
+    if _has_attr(backend, "initialize_distributed"):
         backend.initialize_distributed(*args, **kwargs)
     else:
         raise BackendNotSupportedError(f"Active backend '{_backend_name(backend)}' does not support initialize_distributed()")

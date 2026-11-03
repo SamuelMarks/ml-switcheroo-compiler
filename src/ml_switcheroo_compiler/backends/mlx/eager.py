@@ -717,7 +717,7 @@ def _mlx_all_reduce(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     """
     mx = backend_module
 
-    if isinstance(mx, _MlxDistributedNamespaceProtocol) and _has_attr(mx.distributed, "all_sum"):
+    if _has_attr(mx, "distributed") and _has_attr(mx.distributed, "all_sum"):
         return as_tensor(mx.distributed.all_sum(tensor))
     return tensor
 
@@ -735,7 +735,7 @@ def _mlx_all_gather(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     """
     mx = backend_module
 
-    if isinstance(mx, _MlxDistributedNamespaceProtocol) and _has_attr(mx.distributed, "all_gather"):
+    if _has_attr(mx, "distributed") and _has_attr(mx.distributed, "all_gather"):
         return as_tensor(mx.distributed.all_gather(tensor))
     return as_tensor(mx.expand_dims(tensor, axis=0))
 
@@ -753,7 +753,7 @@ def _mlx_all_to_all(backend_module: BackendModuleProtocol, tensor: EagerValue, *
     """
     mx = backend_module
 
-    if isinstance(mx, _MlxDistributedNamespaceProtocol) and _has_attr(mx.distributed, "all_to_all"):
+    if _has_attr(mx, "distributed") and _has_attr(mx.distributed, "all_to_all"):
         return as_tensor(mx.distributed.all_to_all(tensor))
     return tensor
 
@@ -880,7 +880,7 @@ def _mlx_reduce_scatter(backend_module: BackendModuleProtocol | None, tensor: Ea
     """
     mx_mod = backend_module
 
-    if mx_mod is not None and isinstance(mx_mod, _MlxDistributedNamespaceProtocol) and _has_attr(mx_mod.distributed, "all_sum"):
+    if mx_mod is not None and _has_attr(mx_mod, "distributed") and _has_attr(mx_mod.distributed, "all_sum"):
         return _mlx_native_reduce_scatter(mx_mod, tensor, kwargs)
 
     all_ranks_data = kwargs.get("all_ranks_data")

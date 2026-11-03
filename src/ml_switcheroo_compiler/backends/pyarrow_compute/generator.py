@@ -131,7 +131,7 @@ class PyArrowComputeGenerator(PythonStringGenerator):
         """Retrieve operation formatting templates for PyArrow Compute operations.
 
         Args:
-            kwargs (dict[str, object] | None): Keyword arguments passed to the visitor.
+            kwargs (dict[str, EagerValue] | None): Keyword arguments passed to the visitor.
 
         Returns:
             dict[str, str]: Map from op_type to formatting template.

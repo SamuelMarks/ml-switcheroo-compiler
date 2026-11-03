@@ -12,9 +12,8 @@ from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol, as_sha
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
-from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, is_traced_data
+from ml_switcheroo_compiler.core.shape import StructuralOperandProtocol, _get_attr, _has_attr, is_traced_data
 from ml_switcheroo_compiler.core.tensor import Tensor, TensorConfig, as_tensor_obj
-from ml_switcheroo_compiler.core.tensor_mixins import _DataWrapperProtocol
 from ml_switcheroo_compiler.interpreter.evaluator import TensorLike
 from ml_switcheroo_compiler.ops import get_op
 from ml_switcheroo_compiler.tracing import global_tracing_state
@@ -56,7 +55,7 @@ def _emit_random_node(
         return Tensor(res, TensorConfig(res_shape, dtype, "cpu"))
 
     out_id = str(uuid.uuid4())
-    in_ids = [inp.data.id if isinstance(inp, (Tensor, _DataWrapperProtocol)) and is_traced_data(inp.data) else str(inp) for inp in inputs]
+    in_ids = [str(_get_attr(_get_attr(inp, "data"), "id")) if _has_attr(inp, "data") and is_traced_data(_get_attr(inp, "data")) else str(inp) for inp in inputs]
     attrs = dict(attributes) if attributes is not None else {}
 
     node = LogicalNode(

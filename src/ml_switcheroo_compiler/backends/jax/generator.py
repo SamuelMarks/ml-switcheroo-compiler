@@ -9,7 +9,6 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.common.generator_mixins import get_shared_ast_visitors
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
-    StructuralOperandProtocol,
     as_callable,
     as_tensor,
 )
@@ -21,44 +20,6 @@ from ml_switcheroo_compiler.backends.jax.generator_mixins import (
 from ml_switcheroo_compiler.backends.registry import register_backend
 from ml_switcheroo_compiler.core.shape import _get_attr, _has_attr
 from ml_switcheroo_compiler.ir.core import IRGraph
-
-
-@typing.runtime_checkable
-class _JaxDistributedCollectivesProtocol(typing.Protocol):
-    """Protocol for JAX distributed collectives module."""
-
-    def jax_all_reduce(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Execute jax_all_reduce.
-
-        Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
-
-        Returns:
-            EagerValue: Reduced result.
-        """
-
-    def jax_all_gather(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Execute jax_all_gather.
-
-        Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
-
-        Returns:
-            EagerValue: Gathered result.
-        """
-
-    def jax_broadcast(self, *args: EagerValue, **kwargs: EagerValue) -> EagerValue:
-        """Execute jax_broadcast.
-
-        Args:
-            *args (EagerValue): Positional arguments.
-            **kwargs (EagerValue): Keyword arguments.
-
-        Returns:
-            EagerValue: Broadcasted result.
-        """
 
 
 @register_backend("jax")
@@ -420,9 +381,8 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import importlib
 
-        dc: StructuralOperandProtocol = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        assert isinstance(dc, _JaxDistributedCollectivesProtocol)
-        return dc.jax_all_reduce(*args, **kwargs)
+        dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
+        return as_callable(_get_attr(dc, "jax_all_reduce"))(*args, **kwargs)
 
     @staticmethod
     def all_gather(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -437,9 +397,8 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import importlib
 
-        dc: StructuralOperandProtocol = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        assert isinstance(dc, _JaxDistributedCollectivesProtocol)
-        return dc.jax_all_gather(*args, **kwargs)
+        dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
+        return as_callable(_get_attr(dc, "jax_all_gather"))(*args, **kwargs)
 
     @staticmethod
     def broadcast(*args: EagerValue, **kwargs: EagerValue) -> EagerValue:
@@ -454,9 +413,8 @@ class JAXCodeGenerator(BaseGenerator):
         """
         import importlib
 
-        dc: StructuralOperandProtocol = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
-        assert isinstance(dc, _JaxDistributedCollectivesProtocol)
-        return dc.jax_broadcast(*args, **kwargs)
+        dc = importlib.import_module("ml_switcheroo_compiler.backends.jax.distributed_collectives")
+        return as_callable(_get_attr(dc, "jax_broadcast"))(*args, **kwargs)
 
 
 JaxGenerator = JAXCodeGenerator
