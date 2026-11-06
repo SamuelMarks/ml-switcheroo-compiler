@@ -78,7 +78,7 @@ def _apply_conv_lstm_gates(
 
     axis_val = -1 if data_format == "channels_last" else 1
     parts = [ensure_tensor(t) for t in ensure_eager_list(split(gates, 4, axis=axis_val))]
-    i, f, c, o = parts[0], parts[1], parts[2], parts[3]
+    i, f, c, o = parts
 
     i = _sigmoid(i)
     f = _sigmoid(f)

@@ -135,7 +135,8 @@ def dce_pass(graph: IRGraph) -> bool:
         if _prune_nested_subgraphs(node):
             subgraphs_modified = True
 
-    graph_outputs: list[str] = list(graph.outputs or [])
+    raw_graph: IRGraph | _GraphOutputsProtocol | str = graph
+    graph_outputs: list[str] = list(raw_graph.outputs or []) if isinstance(raw_graph, _GraphOutputsProtocol) else []
     initial_reachable = set(graph_outputs) | _find_side_effect_nodes(graph)
     reachable = _build_reachable_set(graph, initial_reachable)
 
@@ -148,10 +149,11 @@ def dce_pass(graph: IRGraph) -> bool:
         del graph.nodes[nid]
 
     # Clean any dead references in graph outputs if node was pruned
-    if graph.outputs:
-        new_outputs = [out for out in graph.outputs if out in graph.nodes]
-        if new_outputs != graph.outputs:
-            graph.outputs = new_outputs
+    raw_graph_end: IRGraph | _GraphOutputsProtocol | str = graph
+    if isinstance(raw_graph_end, _GraphOutputsProtocol) and raw_graph_end.outputs:
+        new_outputs = [out for out in raw_graph_end.outputs if out in graph.nodes]
+        if new_outputs != raw_graph_end.outputs:
+            raw_graph_end.outputs = new_outputs
             subgraphs_modified = True
 
     return len(nodes_to_remove) > 0 or subgraphs_modified

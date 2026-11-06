@@ -449,6 +449,10 @@ def test_np_solve_ex() -> None:
 
 def test_np_svd() -> None:
     """Test function test_np_svd."""
+    from ml_switcheroo_compiler.backends.numpy.eager.linalg_advanced import _np_banded_triangular_solve
+
     a = np.array([[1.0, 2.0], [3.0, 4.0]])
     (u, s, vh) = ensure_callable(_np_svd)(None, a)
     assert ensure_eager_tensor(s).shape == (2,)
+    res_banded = _np_banded_triangular_solve(ensure_mod(np), np.ones((1, 2)), np.ones((2,)))
+    assert ensure_eager_tensor(res_banded).shape == (2,)

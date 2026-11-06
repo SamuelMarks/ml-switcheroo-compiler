@@ -576,8 +576,10 @@ def test_dyn_custom_grad_infer_shape_and_vjp() -> None:
             pt = ProxyTensor(id="pt", shape=(1,), dtype="float32")
             out = ensure_callable(my_op)(pt)
             assert out is not None
+            from tests.testing_utils import get_backend_member
+
             node = ensure_eager_tensor(graph.nodes)[ensure_eager_tensor(ensure_eager_tensor(out)._data).id]
-            op_obj = ensure_eager_tensor(node).op
+            op_obj = get_backend_member(node, "op", get_backend_member(node, "op_type", None))
             from ml_switcheroo_compiler.ops.registry import get_op
 
             OpCls = ensure_callable(get_op)(op_obj)

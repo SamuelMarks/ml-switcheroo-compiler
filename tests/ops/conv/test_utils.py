@@ -438,11 +438,12 @@ def test_conv_utils_frontend_funcs_extra4() -> None:
     try:
         config.eager_mode = False
         import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
+        from tests.testing_utils import get_backend_member
 
-        orig_conv2d = ensure_eager_tensor(conv_utils).conv2d
-        orig_conv2d_transpose = ensure_eager_tensor(conv_utils).conv2d_transpose
-        orig_conv_nd = ensure_eager_tensor(conv_utils)._conv_nd
-        orig_get_op = ensure_eager_tensor(base).get_op
+        orig_conv2d = get_backend_member(conv_utils, "conv2d", None)
+        orig_conv2d_transpose = get_backend_member(conv_utils, "conv2d_transpose", None)
+        orig_conv_nd = get_backend_member(conv_utils, "_conv_nd", None)
+        orig_get_op = get_backend_member(base, "get_op", None)
 
         class MockOp:
             """Test class MockOp."""
@@ -603,12 +604,13 @@ def test_conv_utils_frontend_funcs_extra5() -> None:
 
     t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     import ml_switcheroo_compiler.ops.nn.conv2d as conv2d_mod
+    from tests.testing_utils import get_backend_member
 
     orig_conv2d = ensure_eager_tensor(conv2d_mod).conv2d
     orig_conv2d_transpose = ensure_eager_tensor(conv2d_mod).conv2d_transpose
     import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
 
-    orig_conv_nd = ensure_eager_tensor(conv_utils)._conv_nd
+    orig_conv_nd = get_backend_member(conv_utils, "_conv_nd", None)
     orig_eager = config.eager_mode
     try:
         _state: dict[str, EagerTensorProtocol] = {}
@@ -623,9 +625,9 @@ def test_conv_utils_frontend_funcs_extra5() -> None:
     finally:
         config.eager_mode = orig_eager
         if orig_conv2d:
-            conv2d_mod.conv2d = orig_conv2d
+            ensure_mutable(conv2d_mod).conv2d = orig_conv2d
         if orig_conv2d_transpose:
-            conv2d_mod.conv2d_transpose = orig_conv2d_transpose
+            ensure_mutable(conv2d_mod).conv2d_transpose = orig_conv2d_transpose
         if orig_conv_nd:
             ensure_mutable(conv_utils)._conv_nd = ensure_eager_tensor(orig_conv_nd)
     assert config.eager_mode == orig_eager
@@ -978,8 +980,9 @@ def test_conv_utils_frontend_funcs_extra11() -> None:
 
     t1 = ensure_callable(Tensor)(ensure_callable(DummyTensor)((2, 2, 2)), ensure_callable(TensorConfig)(shape=(2, 2, 2), dtype=ensure_callable(DummyTensor)((2, 2, 2)).dtype, device=None, requires_grad=False, trainable=False))
     import ml_switcheroo_compiler.ops.nn.conv_utils as conv_utils
+    from tests.testing_utils import get_backend_member
 
-    orig_conv2d = ensure_eager_tensor(conv_utils).conv2d
+    orig_conv2d = get_backend_member(conv_utils, "conv2d", None)
     orig_eager = config.eager_mode
     try:
         config.eager_mode = False

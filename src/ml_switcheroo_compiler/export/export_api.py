@@ -6,7 +6,7 @@ import logging
 import os
 
 import yaml
-from ml_switcheroo_ir import AttributeValue
+from ml_switcheroo_ir import AttributeValue, DType
 
 from ml_switcheroo_compiler.core.shape import TensorOrScalar
 from ml_switcheroo_compiler.export.pb_utils import ProtobufWriter
@@ -114,7 +114,8 @@ class ExportArchive:
         for i, node in enumerate(input_nodes):
             inp_tensor = ProtobufWriter()
             inp_tensor.add_string(1, node.id)
-            node_dt = str(node.dtype.value if node.dtype is not None else "float32")
+            raw_dt: DType | str | None = node.dtype
+            node_dt = str(raw_dt.value if isinstance(raw_dt, DType) else (raw_dt if raw_dt is not None else "float32"))
             inp_tensor.add_varint(2, self._get_tf_dtype(node_dt))
 
             inp_map = ProtobufWriter()
@@ -125,7 +126,8 @@ class ExportArchive:
         if graph.outputs:
             for i, out_id in enumerate(graph.outputs):
                 out_node = graph.nodes.get(out_id)
-                dtype = str(out_node.dtype.value if out_node is not None and out_node.dtype is not None else "float32")
+                raw_out_dt: DType | str | None = out_node.dtype if out_node is not None else None
+                dtype = str(raw_out_dt.value if isinstance(raw_out_dt, DType) else (raw_out_dt if raw_out_dt is not None else "float32"))
 
                 out_tensor = ProtobufWriter()
                 out_tensor.add_string(1, out_id)

@@ -50,8 +50,16 @@ class DummySharding(PartitionSpec):
         Args:
             mapping: Test parameter `mapping`.
         """
-        super().__init__(axes=tuple(str(m) if m is not None else None for m in mapping))
-        ensure_mutable(self).mesh_mapping = ensure_eager_tensor(mapping)
+        super().__init__(axes=[str(m) if m is not None else None for m in mapping])
+
+    @property
+    def mesh_mapping(self) -> list[str | None]:
+        """Return mesh mapping list.
+
+        Returns:
+            list[str | None]: Mesh mapping axes.
+        """
+        return [str(m) if m is not None else None for m in self.axes]
 
 
 def test_get_spmd_rules_yaml_fallback() -> None:

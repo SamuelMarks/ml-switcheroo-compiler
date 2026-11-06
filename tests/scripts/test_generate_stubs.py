@@ -15,7 +15,7 @@ from pytest import CaptureFixture
 
 import scripts.generate_stubs as gs
 from ml_switcheroo_compiler.core.shape import TypedVariadicCallable
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_module_type, ensure_mutable
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_module_type, ensure_mutable, get_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
@@ -191,7 +191,7 @@ def test_generate_stubs_from_live_module_exhaustive(tmp_path: Path) -> None:
         Args:
             obj: Test parameter `obj`.
         """
-        if ensure_eager_tensor(obj).fail_sig:
+        if get_backend_member(obj, "fail_sig", False):
             raise ValueError("Signature failed")
         return real_sig(obj)
 

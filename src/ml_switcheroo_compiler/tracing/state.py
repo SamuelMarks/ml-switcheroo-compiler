@@ -107,11 +107,13 @@ class TracingState:
         Args:
             node (LogicalNode): The IR node to enrich.
         """
-        if node.source_ast_ref is None:
-            node.source_ast_ref = get_source_ast_ref()
+        raw_node: LogicalNode | _NodeAstRefProtocol | str = node
+        if isinstance(raw_node, _NodeAstRefProtocol) and raw_node.source_ast_ref is None:
+            raw_node.source_ast_ref = get_source_ast_ref()
         active_g = self.active_graph
-        if active_g is not None and active_g.name and node.domain in (None, ""):
-            node.domain = active_g.name
+        raw_dom_node: LogicalNode | _NodeDomainProtocol | str = node
+        if active_g is not None and active_g.name and isinstance(raw_dom_node, _NodeDomainProtocol) and raw_dom_node.domain in (None, ""):
+            raw_dom_node.domain = active_g.name
 
     def _enrich_stream(self, node: LogicalNode) -> None:
         """Enrich a node with current stream information.
@@ -123,8 +125,9 @@ class TracingState:
             return
         from ml_switcheroo_compiler.core.config import config as active_config
 
-        if node.stream is None and active_config.current_stream != "default":
-            node.stream = active_config.current_stream
+        raw_node: LogicalNode | _NodeStreamProtocol | str = node
+        if isinstance(raw_node, _NodeStreamProtocol) and raw_node.stream is None and active_config.current_stream != "default":
+            raw_node.stream = active_config.current_stream
 
     def _enrich_node(self, node: LogicalNode) -> None:
         """Enrich a newly created node with implicit context metadata (AST, domain, stream).
@@ -149,9 +152,10 @@ class TracingState:
         Args:
             node (LogicalNode): The IR node to populate with loop options.
         """
-        if self.current_loop_options is None or node.op_type not in ("Loop", "WhileLoop") or not isinstance(node.attributes, dict):
+        raw_node: LogicalNode | _NodeLoopAttrsProtocol | str = node
+        if self.current_loop_options is None or not isinstance(raw_node, _NodeLoopAttrsProtocol) or raw_node.op_type not in ("Loop", "WhileLoop") or not isinstance(raw_node.attributes, dict):
             return
-        attrs = node.attributes
+        attrs = raw_node.attributes
         assert _is_attr_dict(attrs)
         opts = self.current_loop_options
         opt_items: tuple[tuple[str, int | bool | ShapeInvariantType | None], ...] = (
@@ -179,7 +183,9 @@ class TracingState:
         self._apply_loop_options_to_node(node)
 
         self.active_graph.nodes[node.id] = node
-        if node.op_type != "Input" and isinstance(self.active_graph, _GraphInputsProtocol):
+        raw_node: LogicalNode | _NodeOpTypeProtocol | str = node
+        op_type = raw_node.op_type if isinstance(raw_node, _NodeOpTypeProtocol) else None
+        if op_type != "Input" and isinstance(self.active_graph, _GraphInputsProtocol):
             if node.id in self.active_graph.inputs:
                 self.active_graph.inputs.remove(node.id)
                 if isinstance(self.active_graph, _GraphInputSpecsProtocol):

@@ -9,7 +9,7 @@ from ml_switcheroo_ir import PartitionSpec
 from ml_switcheroo_compiler.distributed.strategy import MeshShardingStrategy
 from ml_switcheroo_compiler.ir.core import IRGraph, IRNode
 from ml_switcheroo_compiler.transforms.passes.spmd import inject_spmd_communication_pass
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mutable, ensure_node
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_node
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -25,7 +25,15 @@ class MockSharding(PartitionSpec):
             axes: Test parameter `axes`.
         """
         super().__init__(axes=tuple(str(a) if a is not None else None for a in axes))
-        ensure_mutable(self).mesh_mapping = ensure_eager_tensor(axes)
+
+    @property
+    def mesh_mapping(self) -> list[str | None]:
+        """Return mesh mapping list.
+
+        Returns:
+            list[str | None]: Mesh mapping axes.
+        """
+        return [str(a) if a is not None else None for a in self.axes]
 
 
 def test_spmd_all_gather(monkeypatch: EagerTensorProtocol) -> None:

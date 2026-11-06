@@ -13,7 +13,7 @@ import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as _mod_raw
 import ml_switcheroo_compiler.ops as ops
 from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import numpy_eager_registry
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_mutable, ensure_tensor_dict
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_mod, ensure_mutable, ensure_tensor_dict, get_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -7454,10 +7454,10 @@ def _test_math_misc_coverage_part_367(_state: dict[str, EagerTensorProtocol]) ->
         mod._np_debugnans(dummy_bk, np.array([1.0, np.nan]))
     mod._np_confusion_matrix(bk, np.array([0, 1]), np.array([0, 1]))
     _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
-    _orig_rem = ensure_eager_tensor(_ops).rem
-    _orig_cm = ensure_eager_tensor(_ops).confusion_matrix
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_rem = get_backend_member(_ops, "rem", None)
+    _orig_cm = get_backend_member(_ops, "confusion_matrix", None)
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_cm": _orig_cm, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
     _state.update(ensure_tensor_dict({"_orig_rem": _orig_rem}))
     _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
@@ -7667,7 +7667,7 @@ def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) ->
             """
             pass
 
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(DummyDescClass)
     mod._np_descriptive(bk, np.array([1.0]))
     if _orig_desc:
@@ -7687,7 +7687,7 @@ def _test_math_misc_coverage_part_374(_state: dict[str, EagerTensorProtocol]) ->
             """
             pass
 
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(DummyDistClass)
     _state.update(ensure_tensor_dict({"DummyDescClass": DummyDescClass, "DummyDistClass": DummyDistClass, "_ops": _ops, "_orig_desc": _orig_desc}))
     _state.update(ensure_tensor_dict({"_orig_dist": _orig_dist}))
@@ -7924,14 +7924,14 @@ def _test_math_misc_coverage_part_383(_state: dict[str, EagerTensorProtocol]) ->
         _state: Shared test state dictionary.
     """
     (_ops, bk, dummy_bk, test_desc_func) = (_state["_ops"], _state["bk"], _state["dummy_bk"], _state["test_desc_func"])
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(test_desc_func)
     mod._np_descriptive(bk, np.array([1.0]))
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del _ops.descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(test_desc_func)
     mod._np_distributions(bk, np.array([1.0]))
     if _orig_dist:
@@ -8034,14 +8034,14 @@ def _test_math_misc_coverage_part_386(_state: dict[str, EagerTensorProtocol]) ->
         assert len(a) >= 1
         return a[0]
 
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(test_func)
     mod._np_descriptive(bk, np.array([1.0]))
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del ensure_mutable(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(test_func)
     _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "test_func": test_func}))
     _state.update(ensure_tensor_dict({"bk": bk, "dummy_bk": dummy_bk}))
@@ -8087,14 +8087,14 @@ def _test_math_misc_coverage_part_388(_state: dict[str, EagerTensorProtocol]) ->
         """
         raise ValueError("buggy")
 
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(buggy_desc)
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del ensure_mutable(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(buggy_desc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "buggy_desc": buggy_desc}))
@@ -8113,13 +8113,13 @@ def _test_math_misc_coverage_part_389(_state: dict[str, EagerTensorProtocol]) ->
     else:
         del ensure_mutable(_ops).distributions
     _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     if _orig_desc:
         del ensure_mutable(_ops).descriptive
     mod._np_descriptive(dummy_bk)
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
-    _orig_dist = ensure_eager_tensor(ensure_eager_tensor(_ops).distributions)
+    _orig_dist = ensure_eager_tensor(get_backend_member(_ops, "distributions", None))
     if _orig_dist:
         del ensure_mutable(_ops).distributions
     _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
@@ -8143,13 +8143,13 @@ def _test_math_misc_coverage_part_390(_state: dict[str, EagerTensorProtocol]) ->
         pass
 
     _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     if _orig_desc:
         del ensure_mutable(_ops).descriptive
     mod._np_descriptive(FakeDescBackend(), np.array([1.0]))
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
-    _orig_dist = ensure_eager_tensor(ensure_eager_tensor(_ops).distributions)
+    _orig_dist = ensure_eager_tensor(get_backend_member(_ops, "distributions", None))
     _state.update(ensure_tensor_dict({"FakeDescBackend": FakeDescBackend, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
     _state.update(ensure_tensor_dict({"dummy_bk": dummy_bk}))
 
@@ -8186,7 +8186,7 @@ def _test_math_misc_coverage_part_391(_state: dict[str, EagerTensorProtocol]) ->
         return ensure_eager_tensor("mock_dist")
 
     _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(MockDescriptiveFunc)
     _state.update(ensure_tensor_dict({"MockDescriptiveFunc": MockDescriptiveFunc, "MockDistributionsFunc": MockDistributionsFunc, "_ops": _ops, "_orig_desc": _orig_desc}))
     _state.update(ensure_tensor_dict({"FakeDescBackend": FakeDescBackend, "_orig_dist": _orig_dist}))
@@ -8204,7 +8204,7 @@ def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) ->
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del ensure_mutable(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(MockDistributionsFunc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
@@ -8224,7 +8224,7 @@ def _test_math_misc_coverage_part_392(_state: dict[str, EagerTensorProtocol]) ->
             """
             raise ValueError("exploding")
 
-    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    _orig_desc = ensure_eager_tensor(get_backend_member(_ops, "descriptive", None))
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(ExplodingFunc)
     _state.update(ensure_tensor_dict({"ExplodingFunc": ExplodingFunc, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
     _state.update(ensure_tensor_dict({"MockDistributionsFunc": MockDistributionsFunc, "_ops": _ops, "dummy_bk": dummy_bk}))
@@ -8242,7 +8242,7 @@ def _test_math_misc_coverage_part_393(_state: dict[str, EagerTensorProtocol]) ->
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del ensure_mutable(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(ExplodingFunc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
@@ -8260,7 +8260,7 @@ def _test_math_misc_coverage_part_393(_state: dict[str, EagerTensorProtocol]) ->
         """
         raise ValueError("error")
 
-    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    _orig_desc = ensure_eager_tensor(get_backend_member(_ops, "descriptive", None))
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(raise_err)
     _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist, "raise_err": raise_err}))
     _state.update(ensure_tensor_dict({"ExplodingFunc": ExplodingFunc, "dummy_bk": dummy_bk}))
@@ -8278,7 +8278,7 @@ def _test_math_misc_coverage_part_394(_state: dict[str, EagerTensorProtocol]) ->
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del ensure_mutable(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(raise_err)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
@@ -8410,14 +8410,14 @@ def _test_math_misc_coverage_part_397(_state: dict[str, EagerTensorProtocol]) ->
             """
             raise RuntimeError("Boom")
 
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(BadDesc)
     mod._np_descriptive(dummy_bk, np.array([1.0]))
-    if _orig_desc:
+    if _orig_desc is not None:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del ensure_mutable(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(BadDesc)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     _state.update(ensure_tensor_dict({"BadDesc": BadDesc, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
@@ -8689,7 +8689,7 @@ def _test_math_misc_coverage_part_405(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_confusion_matrix(bk, np.array([0, 1]), np.array([0, 1]))
     if _orig_cm:
         ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(_orig_cm)
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     _state.update(ensure_tensor_dict({"_ops": _ops, "_orig_cm": _orig_cm, "_orig_desc": _orig_desc, "_orig_rem": _orig_rem}))
     _state.update(ensure_tensor_dict({"val_err": val_err}))
     _state.update(ensure_tensor_dict({"arg1": arg1, "arg2": arg2, "bk": bk}))
@@ -8708,7 +8708,7 @@ def _test_math_misc_coverage_part_406(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(bk, arg1)
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(val_err)
     mod._np_distributions(bk, arg1)
     if _orig_dist:
@@ -8751,7 +8751,7 @@ def _test_math_misc_coverage_part_407(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_confusion_matrix(bk, np.array([0, 1]), np.array([0, 1]))
     if _orig_cm:
         ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(_orig_cm)
-    _orig_desc = ensure_eager_tensor(_ops).descriptive
+    _orig_desc = get_backend_member(_ops, "descriptive", None)
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(ValErrClass)
     mod._np_descriptive(bk, arg1)
     _state.update(ensure_tensor_dict({"_orig_cm": _orig_cm, "_orig_desc": _orig_desc}))
@@ -8769,7 +8769,7 @@ def _test_math_misc_coverage_part_408(_state: dict[str, EagerTensorProtocol]) ->
     bk = _state["bk"]
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(ValErrClass)
     mod._np_distributions(bk, arg1)
     if _orig_dist:
@@ -8784,7 +8784,7 @@ def _test_math_misc_coverage_part_408(_state: dict[str, EagerTensorProtocol]) ->
             """Test function __call__."""
             raise ValueError("boom")
 
-    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    _orig_desc = ensure_eager_tensor(get_backend_member(_ops, "descriptive", None))
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(Explosive())
     _state.update(ensure_tensor_dict({"Explosive": Explosive, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
     _state.update(ensure_tensor_dict({"ValErrClass": ValErrClass, "arg1": arg1, "bk": bk}))
@@ -8802,7 +8802,7 @@ def _test_math_misc_coverage_part_409(_state: dict[str, EagerTensorProtocol]) ->
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
     else:
         del ensure_mutable(_ops).descriptive
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(Explosive())
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
@@ -8816,7 +8816,7 @@ def _test_math_misc_coverage_part_409(_state: dict[str, EagerTensorProtocol]) ->
         pass
 
     _ops = ensure_eager_tensor(importlib.import_module("ml_switcheroo_compiler.ops"))
-    _orig_desc = ensure_eager_tensor(ensure_eager_tensor(_ops).descriptive)
+    _orig_desc = ensure_eager_tensor(get_backend_member(_ops, "descriptive", None))
     ensure_mutable(_ops).descriptive = ensure_eager_tensor(FakeOpDef)
     ensure_mutable(_ops).OpDef = ensure_eager_tensor(FakeOpDef)
     _state.update(ensure_tensor_dict({"FakeOpDef": FakeOpDef, "_ops": _ops, "_orig_desc": _orig_desc, "_orig_dist": _orig_dist}))
@@ -8833,7 +8833,7 @@ def _test_math_misc_coverage_part_410(_state: dict[str, EagerTensorProtocol]) ->
     mod._np_descriptive(dummy_bk, np.array([1.0]))
     if _orig_desc:
         ensure_mutable(_ops).descriptive = ensure_eager_tensor(_orig_desc)
-    _orig_dist = ensure_eager_tensor(_ops).distributions
+    _orig_dist = get_backend_member(_ops, "distributions", None)
     ensure_mutable(_ops).distributions = ensure_eager_tensor(FakeOpDef)
     mod._np_distributions(dummy_bk, np.array([1.0]))
     if _orig_dist:
@@ -9409,14 +9409,18 @@ def test_math_misc_missing_branches_mocked() -> None:
     """Test function test_math_misc_missing_branches_mocked."""
     import ml_switcheroo_compiler.ops as ops
 
-    orig_rem = ensure_eager_tensor(ops).rem
-    orig_cm = ensure_eager_tensor(ops).confusion_matrix
-    orig_desc = ensure_eager_tensor(ops).descriptive
-    orig_dist = ensure_eager_tensor(ops).distributions
-    del ensure_mutable(ops).rem
-    del ensure_mutable(ops).confusion_matrix
-    del ensure_mutable(ops).descriptive
-    del ensure_mutable(ops).distributions
+    orig_rem = get_backend_member(ops, "rem", None)
+    orig_cm = get_backend_member(ops, "confusion_matrix", None)
+    orig_desc = get_backend_member(ops, "descriptive", None)
+    orig_dist = get_backend_member(ops, "distributions", None)
+    if orig_rem is not None:
+        del ensure_mutable(ops).rem
+    if orig_cm is not None:
+        del ensure_mutable(ops).confusion_matrix
+    if orig_desc is not None:
+        del ensure_mutable(ops).descriptive
+    if orig_dist is not None:
+        del ensure_mutable(ops).distributions
     try:
         res = numpy_eager_registry._registry["RawMatMul"](None, np.array([[1]]), np.array([[2]]))
         assert ensure_eager_tensor(res).shape == (1, 1)
@@ -9431,10 +9435,14 @@ def test_math_misc_missing_branches_mocked() -> None:
         res = numpy_eager_registry._registry["distributions"](None, np.array([1, 2]))
         assert ensure_callable(len)(res) == 2
     finally:
-        ensure_mutable(ops).rem = orig_rem
-        ensure_mutable(ops).confusion_matrix = orig_cm
-        ensure_mutable(ops).descriptive = orig_desc
-        ensure_mutable(ops).distributions = orig_dist
+        if orig_rem is not None:
+            ensure_mutable(ops).rem = orig_rem
+        if orig_cm is not None:
+            ensure_mutable(ops).confusion_matrix = orig_cm
+        if orig_desc is not None:
+            ensure_mutable(ops).descriptive = orig_desc
+        if orig_dist is not None:
+            ensure_mutable(ops).distributions = orig_dist
 
 
 def test_math_advanced_oserror() -> None:
@@ -9624,41 +9632,53 @@ def test_fallback_branches_return(monkeypatch: EagerTensorProtocol) -> None:
 
         pass
 
-    def FakeDistributions(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-        """Test function FakeDistributions.
+    class FakeDistributions(str):
+        """Test class FakeDistributions."""
 
-        Args:
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
-        """
-        return ensure_eager_tensor("dist2")
+        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeDistributions:
+            """Test function __new__.
 
-    def FakeCM(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-        """Test function FakeCM.
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
+            return super().__new__(cls, "dist2")
 
-        Args:
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
-        """
-        return ensure_eager_tensor("cm2")
+    class FakeCM(str):
+        """Test class FakeCM."""
 
-    def FakeDesc(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-        """Test function FakeDesc.
+        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeCM:
+            """Test function __new__.
 
-        Args:
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
-        """
-        return ensure_eager_tensor("desc2")
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
+            return super().__new__(cls, "cm2")
 
-    def FakeRem(*args: EagerValue, **kwargs: EagerValue) -> EagerTensorProtocol:
-        """Test function FakeRem.
+    class FakeDesc(str):
+        """Test class FakeDesc."""
 
-        Args:
-            args: Test parameter `args`.
-            kwargs: Test parameter `kwargs`.
-        """
-        return ensure_eager_tensor("rem2")
+        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeDesc:
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
+            return super().__new__(cls, "desc2")
+
+    class FakeRem(str):
+        """Test class FakeRem."""
+
+        def __new__(cls, *args: EagerValue, **kwargs: EagerValue) -> FakeRem:
+            """Test function __new__.
+
+            Args:
+                args: Test parameter `args`.
+                kwargs: Test parameter `kwargs`.
+            """
+            return super().__new__(cls, "rem2")
 
     monkeypatch.setattr(ops, "OpDef", DummyOpDef, raising=False)
     monkeypatch.setattr(ops, "distributions", FakeDistributions, raising=False)

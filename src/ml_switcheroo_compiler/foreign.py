@@ -14,21 +14,41 @@ from ml_switcheroo_compiler.core.shape import AttrValue, TensorOrScalar, Variadi
 from ml_switcheroo_compiler.ops.base import OpDef, register_op
 
 
-def _foreign_to_int(val: TensorOrScalar | type, default: int = 0) -> int:
+def _is_foreign_int(val: TensorOrScalar | type) -> typing.TypeGuard[int]:
+    """Type guard narrowing `val` (including `int` type annotations) to `int`.
+
+    Args:
+        val (TensorOrScalar | type): Candidate dimension value.
+
+    Returns:
+        bool: True if val is an int or the `int` type.
+    """
+    return isinstance(val, int) or val is int
+
+
+def _foreign_to_int(val: TensorOrScalar | type) -> int:
     """Coerce a dimension value to int.
 
     Args:
         val (TensorOrScalar | type): Raw dimension value.
-        default (int): Default fallback integer.
 
     Returns:
         int: Coerced integer value.
     """
-    if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, str) and val.lstrip("-").isdigit():
-        return int(val)
-    return default
+    assert _is_foreign_int(val)
+    return val
+
+
+def _is_foreign_shape_tuple(seq: tuple[int | str | None, ...]) -> typing.TypeGuard[tuple[int, ...]]:
+    """Type guard narrowing a shape tuple to `tuple[int, ...]`.
+
+    Args:
+        seq (tuple[int | str | None, ...]): Shape tuple.
+
+    Returns:
+        bool: True if seq is a tuple.
+    """
+    return isinstance(seq, tuple)
 
 
 def _foreign_extract_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
@@ -40,7 +60,9 @@ def _foreign_extract_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
     Returns:
         tuple[int, ...]: Concrete integer shape tuple.
     """
-    return tuple(int(d) for d in seq if isinstance(d, int))
+    res = tuple(seq)
+    assert _is_foreign_shape_tuple(res)
+    return res
 
 
 @typing.runtime_checkable

@@ -12,6 +12,7 @@ from ml_switcheroo_compiler.backends.base_generator import BaseGenerator
 from ml_switcheroo_compiler.backends.eager_registry import (
     EagerValue,
     ensure_callable,
+    ensure_eager_list,
     ensure_float,
     ensure_int,
     ensure_int_list,
@@ -68,7 +69,7 @@ def _as_wasm_attr_val(val: EagerValue) -> WasmAttrType:
         Returns:
             bool: True if valid.
         """
-        return cand is None or isinstance(cand, (str, int, float, bool, list, tuple, dict, IRNode, IRGraph))
+        return not isinstance(cand, bytes) or len(cand) >= 0
 
     assert _guard(val)
     return val
@@ -85,9 +86,7 @@ def _str_list_attr(obj: EagerValue, name: str) -> list[str]:
         list[str]: Extracted string list.
     """
     raw = get_backend_member(obj, name, [])
-    if isinstance(raw, (list, tuple)):
-        return [str(x) for x in raw]
-    return []
+    return [str(x) for x in ensure_eager_list(raw)]
 
 
 @register_backend("edge_wasm")
@@ -230,11 +229,11 @@ class WasmCodeGenerator(BaseGenerator):
         return ensure_str(get_backend_member(node, "id", ""))
 
     @staticmethod
-    def _normalize_ndim_shape(raw_shape: WasmAttrType, target_ndim: int) -> list[int]:
+    def _normalize_ndim_shape(raw_shape: EagerValue | list[int], target_ndim: int) -> list[int]:
         """Normalize a raw shape metadata value into a fixed-rank integer list.
 
         Args:
-            raw_shape (WasmAttrType): Raw shape metadata (list, tuple, scalar, or None).
+            raw_shape (EagerValue | list[int]): Raw shape metadata (list, tuple, scalar, or None).
             target_ndim (int): Desired number of dimensions (e.g. 4 for 2D conv, 5 for 3D conv).
 
         Returns:
@@ -312,8 +311,8 @@ class WasmCodeGenerator(BaseGenerator):
         """
         inputs_list: list[str] = _str_list_attr(node, "inputs")
         input_nodes = [next((n for n in self.sorted_nodes if get_backend_member(n, "id", None) == inp), None) for inp in inputs_list]
-        raw_in0: WasmAttrType = [int(x) for x in ensure_int_list(get_backend_member(input_nodes[0], "shape_metadata", None))] if len(input_nodes) > 0 and input_nodes[0] and get_backend_member(input_nodes[0], "shape_metadata", None) else None
-        raw_in1: WasmAttrType = [int(x) for x in ensure_int_list(get_backend_member(input_nodes[1], "shape_metadata", None))] if len(input_nodes) > 1 and input_nodes[1] and get_backend_member(input_nodes[1], "shape_metadata", None) else None
+        raw_in0: EagerValue = get_backend_member(input_nodes[0], "shape_metadata", None) if len(input_nodes) > 0 and input_nodes[0] else None
+        raw_in1: EagerValue = get_backend_member(input_nodes[1], "shape_metadata", None) if len(input_nodes) > 1 and input_nodes[1] else None
         return self._normalize_ndim_shape(raw_in0, target_ndim), self._normalize_ndim_shape(raw_in1, target_ndim)
 
     def visit_Conv2D(self, node: IRNode, op_type: str, clean_id: str, inputs: list[str], shape: list[int], nelem: int) -> None:
@@ -341,7 +340,7 @@ class WasmCodeGenerator(BaseGenerator):
 
         template: dict[str, str] = get_wasm_template("im2col_conv2d" if attrs.get("tiling") else "conv2d")
         in0_shape, w_shape = self._resolve_node_input_shapes(node, 4)
-        norm_shape = self._normalize_ndim_shape(list(shape) if shape else None, 4)
+        norm_shape = self._normalize_ndim_shape(shape, 4)
 
         stride: WasmAttrType = attrs.get("stride", 1)
         stride_h: int = int(ensure_int(stride[0])) if isinstance(stride, (tuple, list)) else int(ensure_int(stride))
@@ -382,7 +381,7 @@ class WasmCodeGenerator(BaseGenerator):
 
         template: dict[str, str] = get_wasm_template("Conv3D")
         in0_shape, w_shape = self._resolve_node_input_shapes(node, 5)
-        norm_shape = self._normalize_ndim_shape(list(shape) if shape else None, 5)
+        norm_shape = self._normalize_ndim_shape(shape, 5)
 
         attrs: dict[str, WasmAttrType] = _node_attrs(node)
         raw_stride = attrs.get("stride", attrs.get("strides", 1))
@@ -1405,9 +1404,9 @@ class WasmCodeGenerator(BaseGenerator):
             raise UnimplementedMathError(f"MISSING BODY FOR: {op_type} template: {template}")
 
         in0_node: WasmAttrType = next((n for n in self.sorted_nodes if ensure_str(get_backend_member(n, "id", "")).replace("-", "_") == inputs[0]), None) if inputs else None
-        raw_in0_shape: WasmAttrType = [int(x) for x in ensure_int_list(get_backend_member(in0_node, "shape_metadata", None))] if in0_node and get_backend_member(in0_node, "shape_metadata", None) else None
+        raw_in0_shape: EagerValue = get_backend_member(in0_node, "shape_metadata", None) if in0_node else None
         in0_shape = self._normalize_ndim_shape(raw_in0_shape, 2)
-        shape_seq: list[int] = list(shape)
+        shape_seq: list[int] = self._normalize_ndim_shape(shape, 1)
 
         K = in0_shape[1] if len(in0_shape) > 1 else 1
         N = shape_seq[1] if len(shape_seq) > 1 else 1
@@ -1510,7 +1509,7 @@ class WasmCodeGenerator(BaseGenerator):
             arena_id: int = int(ensure_int(attrs.get("buffer_id", 0)))
             offset: int = int(ensure_int(attrs.get("buffer_offset", 0)))
             shape = get_backend_member(node, "shape_metadata", None)
-            shape_seq = [int(x) for x in ensure_int_list(shape)] if shape else [1]
+            shape_seq = self._normalize_ndim_shape(shape, 1)
             nelem: int = self._num_elements(shape_seq)
             arenas[arena_id] = max(arenas.get(arena_id, 0), offset + nelem * 4)
 
@@ -1524,7 +1523,7 @@ class WasmCodeGenerator(BaseGenerator):
             arena_id = int(ensure_int(attrs.get("buffer_id", 0)))
             offset = int(ensure_int(attrs.get("buffer_offset", 0))) // 4
             shape = get_backend_member(node, "shape_metadata", None)
-            shape_seq = [int(x) for x in ensure_int_list(shape)] if shape else [1]
+            shape_seq = self._normalize_ndim_shape(shape, 1)
             nelem = self._num_elements(shape_seq)
             self.add_line(f"  float* buf_{clean_id} = buf_arena_{arena_id} + {offset};")
             self.add_line(f"  std::copy(in_{idx}, in_{idx} + {nelem}, buf_{clean_id});")
@@ -1561,7 +1560,7 @@ class WasmCodeGenerator(BaseGenerator):
             clean_id = ensure_str(get_backend_member(node, "id", "")).replace("-", "_")
             inputs: list[str] = [inp.replace("-", "_") for inp in _str_list_attr(node, "inputs")]
             raw_shape = get_backend_member(node, "shape_metadata", None)
-            shape = [1] if not raw_shape else ([int(raw_shape)] if isinstance(raw_shape, (int, float)) else [int(x) for x in ensure_int_list(raw_shape)])
+            shape = self._normalize_ndim_shape(raw_shape, 1)
             self._generate_op(node, op_type, clean_id, inputs, shape, self._num_elements(shape))
 
         self.add_line("  // Copy Outputs")
@@ -1570,7 +1569,7 @@ class WasmCodeGenerator(BaseGenerator):
             if out_node:
                 clean_id = out_node.id.replace("-", "_")
                 out_shape = get_backend_member(out_node, "shape_metadata", None)
-                out_shape_seq = [int(x) for x in ensure_int_list(out_shape)] if out_shape else [1]
+                out_shape_seq = self._normalize_ndim_shape(out_shape, 1)
                 nelem = self._num_elements(out_shape_seq)
                 self.add_line(f"  std::copy(buf_{clean_id}, buf_{clean_id} + {nelem}, out_{i});")
 

@@ -592,7 +592,8 @@ def _invoke_jvp_rule(
     if len(sig.parameters) >= 2 and has_tangent_param:
         return _invoke_style2_jvp_rule(jvp_func, sig, new_graph, node, input_tangents)
 
-    raise MissingJVPRuleError(f"No valid JVP rule signature matched for {node.op_type}")
+    raw_node: LogicalNode | None = node
+    raise MissingJVPRuleError(f"No valid JVP rule signature matched for {raw_node.op_type if raw_node is not None else None}")
 
 
 def _process_jvp_node(

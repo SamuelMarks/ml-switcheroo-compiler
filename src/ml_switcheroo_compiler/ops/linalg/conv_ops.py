@@ -43,7 +43,7 @@ class ConvGeneralDilated(OpDef):
         spatial_k = rhs_shape[2:]
         cfg = config if isinstance(config, ConvConfig) else ConvConfig(window_strides=[], padding=[])
         strides = cfg.window_strides or [1] * len(spatial_in)
-        padding = cfg.padding if isinstance(cfg.padding, (list, tuple)) and cfg.padding else [(0, 0)] * len(spatial_in)
+        padding = cfg.padding or [(0, 0)] * len(spatial_in)
         lhs_dilation = cfg.lhs_dilation or [1] * len(spatial_in)
         rhs_dilation = cfg.rhs_dilation or [1] * len(spatial_in)
 

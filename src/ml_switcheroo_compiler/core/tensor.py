@@ -25,7 +25,6 @@ from ml_switcheroo_compiler.core.mixins import (
 from ml_switcheroo_compiler.core.shape import (
     AttrValue,
     ShapeLike,
-    is_backend_buffer,
     is_traced_data,
 )
 from ml_switcheroo_compiler.tracing.state import global_tracing_state
@@ -417,7 +416,9 @@ class TensorConfig(pydantic.BaseModel):
             norm_shape = ()
         elif not isinstance(shape, tuple):
             if isinstance(shape, Iterable) and not isinstance(shape, (str, bytes)):
-                norm_shape = tuple(int(d) if isinstance(d, (int, float)) else str(d) for d in shape)
+                from ml_switcheroo_compiler.ir.shape_system import SymNode
+
+                norm_shape = tuple(d if isinstance(d, SymNode) else (int(d) if isinstance(d, (int, float)) else str(d)) for d in shape)
             else:
                 norm_shape = ()
         else:
@@ -672,8 +673,5 @@ class Parameter(Variable):
             int: The integer value.
         """
         np_val = self.numpy()
-        if isinstance(np_val, (int, float)):
-            return int(np_val)
-        if is_backend_buffer(np_val):
-            return int(np_val.item())
-        return int(self.item())
+        assert isinstance(np_val, int)
+        return np_val

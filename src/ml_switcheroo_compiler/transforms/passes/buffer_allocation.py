@@ -51,10 +51,8 @@ def _ensure_graph_attributes(graph: IRGraph) -> dict[str, AttributeValue]:
         dict[str, AttributeValue]: Mutable graph attributes dictionary.
     """
     raw_graph: TensorOrScalar = graph
-    if isinstance(raw_graph, _GraphAttributesProtocol):
-        if isinstance(raw_graph.attributes, dict):
-            return raw_graph.attributes
-        del raw_graph.attributes
+    if isinstance(raw_graph, _GraphAttributesProtocol) and isinstance(raw_graph.attributes, dict):
+        return raw_graph.attributes
     assert _is_graph_attributes_holder(graph)
     new_attrs: dict[str, AttributeValue] = {}
     graph.attributes = new_attrs

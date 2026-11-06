@@ -8,7 +8,6 @@ from collections.abc import Sequence
 
 from ml_switcheroo_ir import LogicalNode
 
-from ml_switcheroo_compiler.backends.eager_registry import ShapeProtocol, ensure_eager_tensor
 from ml_switcheroo_compiler.backends.registry import get_active_backend
 from ml_switcheroo_compiler.core import dtype as dtypes
 from ml_switcheroo_compiler.core.config import config
@@ -41,16 +40,16 @@ def _is_random_tensor_like(val: TensorOrScalar) -> typing.TypeGuard[TensorLike]:
     return val is not None
 
 
-def _coerce_random_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
-    """Convert a sequence of dimensions into a concrete integer shape tuple.
+def _is_random_tensor(val: TensorOrScalar | Tensor) -> typing.TypeGuard[Tensor]:
+    """Type guard narrowing `val` to `Tensor`.
 
     Args:
-        seq (Sequence[int | str | None]): Shape sequence.
+        val (TensorOrScalar | Tensor): Candidate value.
 
     Returns:
-        tuple[int, ...]: Concrete integer shape tuple.
+        bool: True if non-None.
     """
-    return tuple(int(d) for d in seq if isinstance(d, int))
+    return val is not None
 
 
 def _ensure_tensor_obj(val: TensorOrScalar | Tensor) -> Tensor:
@@ -62,10 +61,8 @@ def _ensure_tensor_obj(val: TensorOrScalar | Tensor) -> Tensor:
     Returns:
         Tensor: Wrapped or narrowed `Tensor` instance.
     """
-    if isinstance(val, Tensor):
-        return val
-    shape = _coerce_random_shape(val.shape) if isinstance(val, ShapeProtocol) else ()
-    return Tensor(ensure_eager_tensor(val), TensorConfig(shape, dtypes.DType.Float32, "cpu"))
+    assert _is_random_tensor(val)
+    return val
 
 
 def _emit_random_node(
@@ -96,9 +93,7 @@ def _emit_random_node(
         if "dtype" not in eager_kwargs:
             eager_kwargs["dtype"] = dtype_str
         res = _dispatch_random_eager(op_type.lower(), op_type, *inputs, **eager_kwargs)
-        raw_res: TensorOrScalar = res
-        res_shape = _coerce_random_shape(raw_res.shape) if isinstance(raw_res, ShapeProtocol) else shape_tuple
-        return Tensor(res, TensorConfig(res_shape, dtype, "cpu"))
+        return Tensor(res, TensorConfig(shape_tuple, dtype, "cpu"))
 
     out_id = str(uuid.uuid4())
     in_ids = [str(inp.data.id) if isinstance(inp, _DataWrapperProtocol) and is_traced_data(inp.data) else str(inp) for inp in inputs]
@@ -144,16 +139,17 @@ def _dispatch_random(func_name: str, *args: RandomArg, **kwargs: RandomArg) -> T
     Returns:
         Tensor: Resulting tensor.
     """
+    from ml_switcheroo_compiler.ops.base import OpDef
+
     op_name = "".join(word.capitalize() for word in func_name.split("_"))
     if config.eager_mode:
         return _ensure_tensor_obj(_dispatch_random_eager(func_name, op_name, *args, **kwargs))
-    try:
-        op_cls = get_op(op_name)
-        return _ensure_tensor_obj(op_cls()(*args, **kwargs))
-    except KeyError:
-        from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
+    raw_op_cls: type[OpDef] | None = get_op(op_name)
+    if raw_op_cls is not None:
+        return _ensure_tensor_obj(raw_op_cls()(*args, **kwargs))
+    from ml_switcheroo_compiler.ops.shape.utils import _emit_shape_node
 
-        return _emit_shape_node(op_name, list(args), dict(kwargs), (), "float32")
+    return _emit_shape_node(op_name, list(args), dict(kwargs), (), "float32")
 
 
 def rng_uniform(

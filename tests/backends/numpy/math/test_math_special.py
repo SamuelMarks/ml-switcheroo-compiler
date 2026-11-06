@@ -12,7 +12,7 @@ import pytest
 import ml_switcheroo_compiler.backends.numpy.eager.math_advanced as _mm_raw
 import ml_switcheroo_compiler.ops as _ops
 from ml_switcheroo_compiler.backends.numpy.eager.math_advanced import _np_confusion_matrix, _np_decode_csv, _np_decode_image, _np_descriptive, _np_distributions, _np_parse_example, _np_parse_tensor, _np_rawmatmul, _np_read_file, _np_rem, _np_serialize_tensor, _np_sparsedensematmul, _np_write_file
-from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_int, ensure_mutable, ensure_tensor_dict, get_test_members, has_backend_member
+from tests.testing_utils import ensure_callable, ensure_eager_tensor, ensure_int, ensure_mutable, ensure_tensor_dict, get_backend_member, get_test_members, has_backend_member
 
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerTensorProtocol, EagerValue
@@ -276,14 +276,14 @@ def test_math_misc_more_edges() -> None:
             """
             pass
 
-    old_di = ensure_eager_tensor(ops).DecodeImage
+    old_di = get_backend_member(ops, "DecodeImage", None)
     ensure_mutable(ops).DecodeImage = ensure_eager_tensor(MockOpFunc)
     try:
         mm._np_decode_image(np, np.ones((2, 2)))
     except (ValueError, TypeError, AttributeError, IndexError, KeyError, RuntimeError, ZeroDivisionError, NotImplementedError, OSError, ImportError, OverflowError, RecursionError, LookupError, ArithmeticError):
         _caught_err = True
     finally:
-        if old_di:
+        if old_di is not None:
             ensure_mutable(ops).DecodeImage = ensure_eager_tensor(old_di)
         else:
             del ensure_mutable(ops).DecodeImage
@@ -1614,8 +1614,8 @@ def _test_np_ops_subclass_sub_1(_state: dict[str, EagerTensorProtocol]) -> None:
     original_serialize_tensor = ensure_eager_tensor(_ops).serialize_tensor
     original_write_file = ensure_eager_tensor(_ops).write_file
     original_confusion_matrix = ensure_eager_tensor(_ops).confusion_matrix
-    original_descriptive = ensure_eager_tensor(_ops).descriptive
-    original_distributions = ensure_eager_tensor(_ops).distributions
+    original_descriptive = get_backend_member(_ops, "descriptive", None)
+    original_distributions = get_backend_member(_ops, "distributions", None)
     _state.update(ensure_tensor_dict({"original_confusion_matrix": original_confusion_matrix, "original_decode_csv": original_decode_csv, "original_decode_image": original_decode_image, "original_descriptive": original_descriptive}))
     _state.update(ensure_tensor_dict({"original_distributions": original_distributions, "original_parse_example": original_parse_example, "original_parse_tensor": original_parse_tensor, "original_rawmatmul": original_rawmatmul}))
     _state.update(ensure_tensor_dict({"original_read_file": original_read_file, "original_rem": original_rem, "original_serialize_tensor": original_serialize_tensor, "original_sparsedensematmul": original_sparsedensematmul}))
@@ -1751,6 +1751,8 @@ def _test_np_ops_missing_sub_3(_state: dict[str, EagerTensorProtocol]) -> None:
 
 def test_np_ops_missing() -> None:
     """Test function test_np_ops_missing."""
+    from tests.testing_utils import get_backend_member
+
     original_rawmatmul = ensure_eager_tensor(_ops).RawMatMul
     original_sparsedensematmul = ensure_eager_tensor(_ops).SparseDenseMatMul
     original_decode_csv = ensure_eager_tensor(_ops).decode_csv
@@ -1762,8 +1764,8 @@ def test_np_ops_missing() -> None:
     original_serialize_tensor = ensure_eager_tensor(_ops).serialize_tensor
     original_write_file = ensure_eager_tensor(_ops).write_file
     original_confusion_matrix = ensure_eager_tensor(_ops).confusion_matrix
-    original_descriptive = ensure_eager_tensor(_ops).descriptive
-    original_distributions = ensure_eager_tensor(_ops).distributions
+    original_descriptive = get_backend_member(_ops, "descriptive", None)
+    original_distributions = get_backend_member(_ops, "distributions", None)
     try:
         _state: dict[str, EagerTensorProtocol] = {}
         _state.update(ensure_tensor_dict({"original_confusion_matrix": original_confusion_matrix, "original_decode_csv": original_decode_csv, "original_decode_image": original_decode_image, "original_descriptive": original_descriptive}))
@@ -1785,8 +1787,10 @@ def test_np_ops_missing() -> None:
         ensure_mutable(_ops).serialize_tensor = ensure_eager_tensor(original_serialize_tensor)
         ensure_mutable(_ops).write_file = ensure_eager_tensor(original_write_file)
         ensure_mutable(_ops).confusion_matrix = ensure_eager_tensor(original_confusion_matrix)
-        ensure_mutable(_ops).descriptive = ensure_eager_tensor(original_descriptive)
-        ensure_mutable(_ops).distributions = ensure_eager_tensor(original_distributions)
+        if original_descriptive is not None:
+            ensure_mutable(_ops).descriptive = ensure_eager_tensor(original_descriptive)
+        if original_distributions is not None:
+            ensure_mutable(_ops).distributions = ensure_eager_tensor(original_distributions)
 
 
 def test_confusion_matrix_num_classes() -> None:

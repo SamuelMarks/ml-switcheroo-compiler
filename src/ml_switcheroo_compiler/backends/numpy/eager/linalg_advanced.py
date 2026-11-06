@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import numpy as np
 
 from ml_switcheroo_compiler.backends.eager_registry import (
@@ -19,13 +21,13 @@ from ml_switcheroo_compiler.backends.numpy.eager import ensure_ndarray
 from ml_switcheroo_compiler.backends.protocols import BackendModuleProtocol, get_backend_member
 
 
-def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[int]) -> list[int]:
+def _get_uncontracted_dims(dims: list[int], batch: Sequence[int], contracting: Sequence[int]) -> list[int]:
     """Execute the eager get uncontracted dims operation on the active backend array.
 
     Args:
         dims (list[int]): The dims parameter.
-        batch (list[int]): The batch parameter.
-        contracting (list[int]): The contracting parameter.
+        batch (Sequence[int]): The batch parameter.
+        contracting (Sequence[int]): The contracting parameter.
 
     Returns:
             tuple[int, ...]: Result.
@@ -36,7 +38,7 @@ def _get_uncontracted_dims(dims: list[int], batch: list[int], contracting: list[
 
 def _parse_dot_dimension_numbers(
     dimension_numbers: EagerValue,
-) -> tuple[list[int], list[int], list[int], list[int]]:
+) -> tuple[Sequence[int], Sequence[int], Sequence[int], Sequence[int]]:
     """Execute the eager parse dot dimension numbers operation on the active backend array.
 
     Args:
@@ -48,10 +50,10 @@ def _parse_dot_dimension_numbers(
     dn = ensure_eager_tensor(dimension_numbers)
     contracting = dn[0]
     batch = dn[1]
-    a_contracting = [int(x) for x in ensure_int_list(contracting[0])]
-    b_contracting = [int(x) for x in ensure_int_list(contracting[1])]
-    a_batch = [int(x) for x in ensure_int_list(batch[0])]
-    b_batch = [int(x) for x in ensure_int_list(batch[1])]
+    a_contracting = ensure_int_list(contracting[0])
+    b_contracting = ensure_int_list(contracting[1])
+    a_batch = ensure_int_list(batch[0])
+    b_batch = ensure_int_list(batch[1])
     return (a_contracting, b_contracting, a_batch, b_batch)
 
 
@@ -240,11 +242,11 @@ def _np_cross(backend_module: BackendModuleProtocol, *args: EagerValue, **kwargs
     Returns:
             tuple[int, ...]: Result.
     """
+    from ml_switcheroo_compiler.backends.eager_registry import ensure_opt_int
+
     axes = kwargs.pop("axes", None)
-    if isinstance(axes, dict):
-        kwargs.update({str(k): v for k, v in axes.items() if v is not None})
-    elif axes:
-        kwargs.update({str(k): v for k, v in get_backend_member(axes, "items")() if bool(v)})
+    if axes:
+        kwargs.update({str(k): v for k, v in get_backend_member(axes, "items")() if ensure_opt_int(v) is not None})
     if "axis" in kwargs and kwargs["axis"] is None:
         kwargs.pop("axis")
     return backend_module.cross(*args, **kwargs)

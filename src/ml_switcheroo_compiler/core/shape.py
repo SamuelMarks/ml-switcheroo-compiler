@@ -785,18 +785,24 @@ CallableLike = typing.Union[  # noqa: UP007
     TypedVariadicCallable[_R_co],
 ]
 SymbolicDim = typing.Union[str, SymNode, SymInt, SymVar, IRSymNode, IRSymInt]  # noqa: UP007
-ShapeLike = typing.Union[  # noqa: UP007
-    tuple[typing.Union[int, SymbolicDim, None], ...],  # noqa: UP007
-    Sequence[typing.Union[int, SymbolicDim, None]],  # noqa: UP007
-    int,
-    SymbolicDim,
-    TensorShape,
-    Tensor,
-    EagerTensorProtocol,
-    ShapeProtocol,
-    None,
+ShapeLike = typing.Annotated[
+    typing.Union[  # noqa: UP007
+        tuple[typing.Union[int, SymbolicDim, None], ...],  # noqa: UP007
+        Sequence[typing.Union[int, SymbolicDim, None]],  # noqa: UP007
+        int,
+        SymbolicDim,
+        TensorShape,
+        Tensor,
+        EagerTensorProtocol,
+        ShapeProtocol,
+        None,
+    ],
+    _AttributeValuePydanticAnnotation,
 ]
-AxesLike = typing.Union[int, Sequence[int], Tensor, EagerTensorProtocol, None]  # noqa: UP007
+AxesLike = typing.Annotated[
+    typing.Union[int, Sequence[int], Tensor, EagerTensorProtocol, None],  # noqa: UP007
+    _AttributeValuePydanticAnnotation,
+]
 ScalarLike = typing.Union[int, float, bool, complex]  # noqa: UP007
 TensorOrScalar = typing.Annotated[
     typing.Union[  # noqa: UP007

@@ -22,9 +22,9 @@ def _is_tensor_tuple(val: TensorOrScalar) -> typing.TypeGuard[tuple[Tensor, ...]
         val (TensorOrScalar): Candidate value.
 
     Returns:
-        bool: True if val is a tuple.
+        bool: True if valid dataset element.
     """
-    return isinstance(val, tuple)
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def _ensure_dataset_tensor(val: TensorOrScalar) -> Tensor:

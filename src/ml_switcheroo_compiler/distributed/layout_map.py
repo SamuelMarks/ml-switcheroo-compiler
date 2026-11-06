@@ -56,9 +56,11 @@ class ShardingSpec:
         Returns:
             bool: True if equal.
         """
+        from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_tensor
+
         if not isinstance(other, ShardingSpec):
             return False
-        return self.mesh == other.mesh and self.mesh_mapping == other.mesh_mapping
+        return bool(ensure_eager_tensor(self.mesh) == ensure_eager_tensor(other.mesh)) and self.mesh_mapping == other.mesh_mapping
 
     _eq = __eq__
 

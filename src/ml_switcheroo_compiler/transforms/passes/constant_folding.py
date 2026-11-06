@@ -167,7 +167,8 @@ def _try_fold_single_node(
         return False
 
     try:
-        assert backend is not None
+        if backend is None:
+            return False
         val = _evaluate_constant_node(node, canonical_inputs, graph, backend)
         graph.nodes[node.id].op_type = "Constant"
         new_attrs: dict[str, AttributeValue] = {}

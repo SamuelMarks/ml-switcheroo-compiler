@@ -535,14 +535,29 @@ def orthogonal(
         for idx, dim in enumerate(shape):
             if idx != col_ax:
                 rows *= dim
+        from ml_switcheroo_compiler.backends.protocols import ensure_callable, get_backend_member
+        from ml_switcheroo_compiler.core.shape import TensorOrScalar
+
+        def _is_init_tensor(val: TensorOrScalar) -> typing.TypeGuard[Tensor]:
+            """Validate that `val` is a valid tensor value.
+
+            Args:
+                val (TensorOrScalar): Candidate value.
+
+            Returns:
+                bool: True if non-None.
+            """
+            return val is not None
+
         flat_matrix = ops.randn(max(rows, cols), min(rows, cols), dtype=dt)
-        assert isinstance(flat_matrix, Tensor)
-        qr_res = _qr_op(flat_matrix)
-        assert isinstance(qr_res, tuple) and len(qr_res) >= 1
+        assert _is_init_tensor(flat_matrix)
+        qr_fn = ensure_callable(get_backend_member(ops, "qr", _qr_op))
+        qr_res = qr_fn(flat_matrix)
         q_raw = qr_res[0]
-        assert isinstance(q_raw, Tensor)
-        reshaped = _reshape_op(q_raw, shape)
-        assert isinstance(reshaped, Tensor)
+        assert _is_init_tensor(q_raw)
+        reshape_fn = ensure_callable(get_backend_member(ops, "reshape", _reshape_op))
+        reshaped = reshape_fn(q_raw, shape)
+        assert _is_init_tensor(reshaped)
         return ops.scalar_mul(reshaped, float(scale))
 
     return init

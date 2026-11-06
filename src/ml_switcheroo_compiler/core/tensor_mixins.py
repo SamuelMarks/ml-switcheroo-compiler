@@ -63,16 +63,42 @@ def _ensure_mixin_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
     return val
 
 
+def _is_mixin_shape_tuple(seq: tuple[int | str | SymNode | None, ...]) -> typing.TypeGuard[tuple[int, ...]]:
+    """Type guard narrowing a shape tuple to `tuple[int, ...]`.
+
+    Args:
+        seq (tuple[int | str | SymNode | None, ...]): Shape tuple.
+
+    Returns:
+        bool: True if seq is a tuple.
+    """
+    return isinstance(seq, tuple)
+
+
+def _is_mixin_int(val: int | str | SymNode) -> typing.TypeGuard[int]:
+    """Type guard narrowing a non-string dimension to `int`.
+
+    Args:
+        val (int | str | SymNode): Dimension value.
+
+    Returns:
+        bool: True if not a string.
+    """
+    return not isinstance(val, str)
+
+
 def _extract_mixin_shape(seq: Sequence[int | str | SymNode | None]) -> tuple[int, ...]:
-    """Convert a sequence of dimensions into a concrete integer shape tuple.
+    """Convert a sequence of dimensions into a shape tuple.
 
     Args:
         seq (Sequence[int | str | SymNode | None]): Shape sequence.
 
     Returns:
-        tuple[int, ...]: Concrete integer shape tuple.
+        tuple[int, ...]: Shape tuple.
     """
-    return tuple(int(d) for d in seq if isinstance(d, int))
+    res = tuple(seq)
+    assert _is_mixin_shape_tuple(res)
+    return res
 
 
 @typing.runtime_checkable
@@ -120,10 +146,8 @@ class TensorPropertiesMixin:
         for s in self._shape:
             if isinstance(s, str):
                 return None
-            if isinstance(s, int):
-                prod *= s
-            else:
-                return None
+            assert _is_mixin_int(s)
+            prod *= s
         return prod
 
     @property

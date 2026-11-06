@@ -285,7 +285,9 @@ def test_create_token(monkeypatch: EagerTensorProtocol) -> None:
     Args:
         monkeypatch: Test parameter `monkeypatch`.
     """
-    if ensure_eager_tensor(CreateToken).__abstractmethods__ is not None:
+    from tests.testing_utils import get_backend_member
+
+    if get_backend_member(CreateToken, "__abstractmethods__", None) is not None:
         ensure_mutable(CreateToken).__abstractmethods__ = ensure_eager_tensor(frozenset())
     monkeypatch.setattr(CreateToken, "infer_shape", lambda self, *args, **kwargs: ())
     monkeypatch.setattr(CreateToken, "_" + "_call_" + "_", lambda self, *args, **kwargs: args[0])

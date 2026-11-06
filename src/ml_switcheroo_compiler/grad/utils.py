@@ -53,16 +53,30 @@ def _ensure_grad_tensor(val: TensorOrScalar) -> EagerTensorProtocol:
     return val
 
 
+def _is_grad_shape_tuple(seq: tuple[int | str | None, ...]) -> typing.TypeGuard[tuple[int, ...]]:
+    """Type guard narrowing a shape tuple to `tuple[int, ...]`.
+
+    Args:
+        seq (tuple[int | str | None, ...]): Shape tuple.
+
+    Returns:
+        bool: True if seq is a tuple.
+    """
+    return isinstance(seq, tuple)
+
+
 def _coerce_grad_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
-    """Convert a sequence of dimensions into a concrete integer shape tuple.
+    """Convert a sequence of dimensions into a shape tuple.
 
     Args:
         seq (Sequence[int | str | None]): Shape sequence.
 
     Returns:
-        tuple[int, ...]: Concrete integer shape tuple.
+        tuple[int, ...]: Shape tuple.
     """
-    return tuple(int(d) for d in seq if isinstance(d, int))
+    res = tuple(seq)
+    assert _is_grad_shape_tuple(res)
+    return res
 
 
 @typing.runtime_checkable

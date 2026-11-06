@@ -196,7 +196,8 @@ def _pa_to_ndarray(raw_data: EagerValue, dtype: str | None = None) -> EagerValue
 
     pa_type = pa.from_numpy_dtype(dtype) if dtype is not None else None
     if isinstance(raw_data, _DunderArrayProtocol):
-        return ensure_eager_tensor(pa.array(raw_data, type=pa_type).to_numpy(zero_copy_only=False))
+        arr_fn = ensure_callable(raw_data.__array__)
+        return ensure_eager_tensor(arr_fn(dtype) if dtype is not None else arr_fn())
     if isinstance(raw_data, (list, tuple)):
         if not raw_data:
             fill_type = pa_type if pa_type is not None else pa.float32()
@@ -345,7 +346,7 @@ def record_batch(
         EagerValue: Constructed RecordBatch or dict fallback.
     """
     pa_mod = _get_pa_module()
-    rb_cls = get_backend_member(pa_mod, "RecordBatch")
+    rb_cls = get_backend_member(pa_mod, "RecordBatch", None)
     if has_backend_member(rb_cls, "from_arrays"):
         try:
             data_list = list(data) if isinstance(data, Iterable) else [data]
@@ -477,7 +478,7 @@ def tensor_to_record_batch(
     raw_data = _unwrap_tensor(tensor)
     arr = _pa_to_ndarray(raw_data)
     pa_mod = _get_pa_module()
-    rb_cls = get_backend_member(pa_mod, "RecordBatch")
+    rb_cls = get_backend_member(pa_mod, "RecordBatch", None)
 
     ndim = ensure_int(get_backend_member(arr, "ndim", 1))
     if ndim <= 1:
@@ -634,7 +635,7 @@ def tensor_to_arrow_tensor(
     raw_data = _unwrap_tensor(tensor)
     arr = _pa_to_ndarray(raw_data)
     pa_mod = _get_pa_module()
-    pa_tensor_cls = get_backend_member(pa_mod, "Tensor")
+    pa_tensor_cls = get_backend_member(pa_mod, "Tensor", None)
     if has_backend_member(pa_tensor_cls, "from_numpy"):
         try:
             return ensure_eager_tensor(ensure_callable(get_backend_member(pa_tensor_cls, "from_numpy"))(arr))
@@ -824,24 +825,22 @@ def shares_buffer(obj1: EagerValue, obj2: EagerValue) -> bool:
     data1 = _unwrap_tensor(obj1)
     data2 = _unwrap_tensor(obj2)
 
-    buf1: EagerValue = get_backend_member(data1, "buffer")
-    buf2: EagerValue = get_backend_member(data2, "buffer")
+    buf1: EagerValue = get_backend_member(data1, "buffer", None)
+    buf2: EagerValue = get_backend_member(data2, "buffer", None)
     if buf1 is not None and buf2 is not None and has_backend_member(buf1, "address") and has_backend_member(buf2, "address"):
-        addr1: EagerValue = get_backend_member(buf1, "address")
-        addr2: EagerValue = get_backend_member(buf2, "address")
+        addr1: int = int(ensure_int(get_backend_member(buf1, "address", 0)))
+        addr2: int = int(ensure_int(get_backend_member(buf2, "address", 0)))
         return bool(addr1 == addr2 and addr1 != 0)
 
     arr1 = ensure_callable(get_backend_member(data1, "to_numpy"))() if has_backend_member(data1, "to_numpy") else data1
     arr2 = ensure_callable(get_backend_member(data2, "to_numpy"))() if has_backend_member(data2, "to_numpy") else data2
-    raw_arr1: EagerValue = arr1
-    raw_arr2: EagerValue = arr2
-    iface1 = raw_arr1.__array_interface__ if isinstance(raw_arr1, _ArrayInterfaceProtocol) else None
-    iface2 = raw_arr2.__array_interface__ if isinstance(raw_arr2, _ArrayInterfaceProtocol) else None
+    iface1 = get_backend_member(arr1, "__array_interface__", None)
+    iface2 = get_backend_member(arr2, "__array_interface__", None)
     if isinstance(iface1, dict) and isinstance(iface2, dict):
         data_tup1 = iface1.get("data", (0,))
         data_tup2 = iface2.get("data", (0,))
-        addr1 = data_tup1[0] if isinstance(data_tup1, tuple) and data_tup1 else 0
-        addr2 = data_tup2[0] if isinstance(data_tup2, tuple) and data_tup2 else 0
+        addr1 = int(ensure_int(data_tup1[0])) if isinstance(data_tup1, tuple) and data_tup1 else 0
+        addr2 = int(ensure_int(data_tup2[0])) if isinstance(data_tup2, tuple) and data_tup2 else 0
         return bool(addr1 == addr2 and addr1 != 0)
     return False
 

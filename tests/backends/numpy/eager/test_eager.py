@@ -2920,7 +2920,7 @@ def test_math_misc_brute_coverage() -> None:
     import numpy as np
 
     from ml_switcheroo_compiler.backends.eager_registry import numpy_eager_registry
-    from tests.testing_utils import get_test_members
+    from tests.testing_utils import get_backend_member, get_test_members
 
     np_members = get_test_members(np)
 
@@ -2936,7 +2936,7 @@ def test_math_misc_brute_coverage() -> None:
     for k, op in list(numpy_eager_registry._registry.items()):
         if k in ("write_file", "WriteFile", "save", "save_gguf", "savez", "savez_compressed"):
             continue
-        func = ensure_eager_tensor(op).func
+        func = get_backend_member(op, "func", op)
         if ensure_eager_tensor(func).__module__ != "ml_switcheroo_compiler.backends.numpy.eager.math_misc":
             continue
         try:
@@ -3265,6 +3265,8 @@ def test_math_misc_np_ops() -> None:
             pass
 
     b: EagerValue = None
+    orig_rmm = ensure_eager_tensor(ops).RawMatMul
+    orig_sdmm = ensure_eager_tensor(ops).SparseDenseMatMul
     try:
         ensure_mutable(ops).RawMatMul = ensure_eager_tensor(FakeThrowingClass)
         ensure_mutable(ops).SparseDenseMatMul = ensure_eager_tensor(FakeThrowingClass)
@@ -3329,6 +3331,8 @@ def test_math_misc_np_ops() -> None:
     ensure_callable(numpy_eager_registry.get)("write_file")(b, "/tmp/ml_switcheroo_test_file.txt", b"content")
     ensure_callable(numpy_eager_registry.get)("confusion_matrix")(b, ensure_callable(np.array)([0]), ensure_callable(np.array)([0]))
     ensure_callable(numpy_eager_registry.get)("decode_csv")(b, ["1,2"])
+    ensure_mutable(ops).RawMatMul = orig_rmm
+    ensure_mutable(ops).SparseDenseMatMul = orig_sdmm
 
 
 def test_math_misc_np_ops_lower() -> None:

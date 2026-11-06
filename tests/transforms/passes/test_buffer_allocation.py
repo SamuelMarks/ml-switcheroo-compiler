@@ -6,6 +6,8 @@ import typing
 
 from ml_switcheroo_ir import NodeDict
 
+from tests.testing_utils import ensure_eager_tensor
+
 if typing.TYPE_CHECKING:
     from ml_switcheroo_compiler.backends.eager_registry import EagerValue
 
@@ -48,7 +50,7 @@ def test_buffer_allocation_in_place() -> None:
     with patch("ml_switcheroo_compiler.transforms.pass_manager.DAGTopologicalSorter.sort", return_value=[n1, n2]):
         with patch("ml_switcheroo_compiler.transforms.passes.buffer_allocation._get_node_byte_size", return_value=128):
             buffer_allocation_pass(g)
-            assert n1.attributes["buffer_offset"] == n2.attributes["buffer_offset"]
+            assert ensure_eager_tensor(n1.attributes["buffer_offset"]) == ensure_eager_tensor(n2.attributes["buffer_offset"])
 
 
 def test_buffer_allocation_dynamic() -> None:

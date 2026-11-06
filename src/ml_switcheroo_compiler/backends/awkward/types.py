@@ -392,13 +392,13 @@ def from_regular(data: EagerValue) -> EagerValue:
 
 
 def to_numpy(data: EagerValue) -> EagerValue:
-    """Convert Awkward structure to standard host buffer via ak.to_numpy.
+    """Convert an Awkward array to a zero-copy or copied host buffer.
 
     Args:
-        data (EagerValue): Awkward array.
+        data (EagerValue): Awkward array or compatible input.
 
     Returns:
-        EagerValue: Host buffer converted by Awkward.
+        EagerValue: Host buffer.
     """
     ak_mod = _get_ak_module()
     if has_backend_member(ak_mod, "to_numpy"):
@@ -406,6 +406,9 @@ def to_numpy(data: EagerValue) -> EagerValue:
             return ensure_eager_tensor(ensure_callable(get_backend_member(ak_mod, "to_numpy"))(data))
         except (ImportError, AttributeError, TypeError, ValueError, KeyError, RuntimeError, OSError):
             logging.getLogger(__name__).debug("Ignored exception in %s", __name__)
+    if isinstance(data, _DunderArrayProtocol):
+        arr_fn = ensure_callable(data.__array__)
+        return ensure_eager_tensor(arr_fn())
     import awkward as ak
 
     return ensure_eager_tensor(ak.to_numpy(ak.Array(data)))

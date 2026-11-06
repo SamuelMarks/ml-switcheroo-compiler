@@ -116,9 +116,10 @@ def _prepare_mlx_inputs(
     if mx is None:
         return []
     mx_mod = ensure_mod(mx)
+    mx_array_cls = get_backend_member(mx, "array", None)
     mlx_inputs: list[EagerValue] = []
     for val in inputs.values():
-        if type(val).__name__ == "array" and "mlx" in str(type(val).__module__):
+        if (isinstance(mx_array_cls, type) and isinstance(val, mx_array_cls)) or (type(val).__name__ == "array" and "mlx" in str(type(val).__module__)):
             mlx_inputs.append(val)
         else:
             mlx_inputs.append(mx_mod.array(val, dtype=mx_mod.float32))

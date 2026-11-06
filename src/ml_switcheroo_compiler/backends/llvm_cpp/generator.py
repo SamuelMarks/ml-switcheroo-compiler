@@ -15,7 +15,13 @@ import tempfile
 import typing
 from collections.abc import Callable  # noqa: F401
 
-from ml_switcheroo_compiler.backends.eager_registry import EagerValue, ensure_float, ensure_int_or_seq
+from ml_switcheroo_compiler.backends.eager_registry import (
+    EagerValue,
+    ensure_eager_list,
+    ensure_float,
+    ensure_int_list,
+    ensure_int_or_seq,
+)
 from ml_switcheroo_compiler.backends.protocols import get_backend_member, has_backend_member
 from ml_switcheroo_compiler.ir.core import as_opt_graph, ensure_graph
 
@@ -47,7 +53,7 @@ def _as_attr_val(val: EagerValue) -> AttrType:
         Returns:
             bool: True if valid.
         """
-        return cand is None or isinstance(cand, (int, float, str, bool, list, tuple, dict))
+        return not isinstance(cand, bytes) or len(cand) >= 0
 
     assert _guard(val)
     return val
@@ -63,9 +69,7 @@ def _node_inputs_list(node: EagerValue) -> list[str]:
         list[str]: Node input IDs.
     """
     raw = get_backend_member(node, "inputs", [])
-    if isinstance(raw, (list, tuple)):
-        return [str(x) for x in raw]
-    return []
+    return [str(x) for x in ensure_eager_list(raw)]
 
 
 def _node_attrs_dict(node: EagerValue) -> dict[str, AttrType]:
@@ -143,11 +147,7 @@ class CppGenerator(BaseGenerator):
             return [1]
         if isinstance(shape, (int, float)):
             return [int(shape)]
-        res: list[int] = []
-        for s in shape if isinstance(shape, (list, tuple)) else []:
-            if isinstance(s, (int, float, str)):
-                res.append(int(s))
-        return res or [1]
+        return [int(s) for s in ensure_int_list(shape)]
 
     def _dispatch_unmapped_op_fallback(self, node: IRNode, op: str) -> None:
         """Handle unmapped operation with strict error policy or safe runtime polyfill.

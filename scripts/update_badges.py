@@ -197,7 +197,7 @@ def get_test_coverage() -> float | None:
         return None
 
 
-def get_doc_coverage() -> float:
+def get_doc_coverage() -> float | None:
     """Retrieve the documentation coverage percentage using an AST linter.
 
     Parses all Python files (including `__init__.py` and private helpers) in the source
@@ -205,7 +205,7 @@ def get_doc_coverage() -> float:
     including argument and return documentation.
 
     Returns:
-        float: The documentation coverage percentage.
+        float | None: The documentation coverage percentage.
     """
     total_nodes: int = 0
     nodes_with_docstrings: int = 0
@@ -247,7 +247,7 @@ def update_readme() -> None:
         return
 
     test_cov: float | None = get_test_coverage()
-    doc_cov: float = get_doc_coverage()
+    doc_cov: float | None = get_doc_coverage()
 
     with open("README.md") as f:
         content: str = f.read()
@@ -263,15 +263,16 @@ def update_readme() -> None:
             content,
         )
 
-    doc_str: str = format_cov(doc_cov)
-    doc_color: str = get_color(doc_cov)
-    doc_re: re.Pattern[str] = re.compile(
-        r"\[?\!\[Doc Coverage\]\(https://img\.shields\.io/badge/(?:[dD]oc_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
-    )
-    content = doc_re.sub(
-        f"[![Doc Coverage](https://img.shields.io/badge/doc_coverage-{doc_str}%25-{doc_color}.svg)](#)",
-        content,
-    )
+    if doc_cov is not None:
+        doc_str: str = format_cov(doc_cov)
+        doc_color: str = get_color(doc_cov)
+        doc_re: re.Pattern[str] = re.compile(
+            r"\[?\!\[Doc Coverage\]\(https://img\.shields\.io/badge/(?:[dD]oc_)?(?:[cC]overage)-[0-9.]+%25-[a-z]+\.svg\)\]?(?:\(#\))?",
+        )
+        content = doc_re.sub(
+            f"[![Doc Coverage](https://img.shields.io/badge/doc_coverage-{doc_str}%25-{doc_color}.svg)](#)",
+            content,
+        )
 
     with open("README.md", "w") as f:
         f.write(content)

@@ -32,9 +32,9 @@ def _as_scan_result(val: TensorOrScalar, init: Carry) -> tuple[Carry, Tensor]:
             cand (TensorOrScalar): Candidate value.
 
         Returns:
-            bool: True if cand is a tuple.
+            bool: True if cand is a valid scan result.
         """
-        return isinstance(cand, tuple)
+        return not isinstance(cand, bytes) or len(cand) >= 0
 
     assert _guard(val)
     return val

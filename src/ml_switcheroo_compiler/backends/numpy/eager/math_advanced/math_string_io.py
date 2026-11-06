@@ -434,15 +434,16 @@ def _np_parse_example_camel(backend_module: BackendModuleProtocol, *args: EagerV
     from ml_switcheroo_compiler.backends.eager_registry import ensure_shape
 
     features = kwargs.get("features", args[1] if len(args) > 1 else {})
-    feat_items = features.items() if isinstance(features, dict) else get_backend_member(features, "items")()
     if len(args) == 0:
-        return {str(k): np.zeros(ensure_shape(get_backend_member(v, "shape", (1,))), dtype=get_backend_member(v, "dtype", np.float32)) for (k, v) in feat_items}
+        feat_items_0 = features.items() if isinstance(features, dict) else get_backend_member(features, "items")()
+        return {str(k): np.zeros(ensure_shape(get_backend_member(v, "shape", (1,))), dtype=get_backend_member(v, "dtype", np.float32)) for (k, v) in feat_items_0}
     data = np.asarray(args[0]).item() if np.asarray(args[0]).ndim == 0 else np.asarray(args[0]).flatten()[0]
     out: dict[str, EagerValue] = {}
     try:
         if isinstance(data, bytes):
             data = data.decode("utf-8")
         parsed = json.loads(data)
+        feat_items = features.items() if isinstance(features, dict) else get_backend_member(features, "items")()
         for k, v in feat_items:
             k_str = str(k)
             if k_str in parsed:

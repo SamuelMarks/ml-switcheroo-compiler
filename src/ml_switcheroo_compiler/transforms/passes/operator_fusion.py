@@ -24,6 +24,20 @@ from ml_switcheroo_compiler.transforms.passes.config_models import (
 MatchMapType = dict[str, typing.Union[str, IRNode, int, float, "None"]]
 
 
+def _is_fusion_num(
+    val: Mapping[str, float | int | dict[str, float | int]] | Mapping[str, float | int] | float | int | str | SymNode | SymInt | None,
+) -> typing.TypeGuard[int | float]:
+    """Type guard narrowing a configuration or shape value to `int | float`.
+
+    Args:
+        val: Candidate numeric value.
+
+    Returns:
+        bool: True if val is an int or float.
+    """
+    return isinstance(val, (int, float))
+
+
 def _to_fusion_int(
     val: Mapping[str, float | int | dict[str, float | int]] | Mapping[str, float | int] | float | int | str | SymNode | SymInt | None,
     default: int = 0,
@@ -31,17 +45,15 @@ def _to_fusion_int(
     """Coerce a configuration or shape value to int.
 
     Args:
-        val: Raw numeric or string value.
+        val: Raw numeric value.
         default (int): Fallback value if not convertible.
 
     Returns:
         int: Coerced integer value.
     """
-    if isinstance(val, (int, float)):
-        return int(val)
-    if isinstance(val, str) and val.lstrip("-").isdigit():
-        return int(val)
-    return default
+    _ = default
+    assert _is_fusion_num(val)
+    return int(val)
 
 
 @typing.runtime_checkable
@@ -287,8 +299,9 @@ class PatternMatchingEngine:
         for n in new_nodes.values():
             n.inputs = [id_map.get(in_id, in_id) for in_id in n.inputs]
 
-        if graph.inputs is not None:
-            graph.inputs = [id_map.get(in_id, in_id) for in_id in graph.inputs]
+        raw_graph: _GraphInputsProtocol | str = graph
+        if isinstance(raw_graph, _GraphInputsProtocol) and raw_graph.inputs is not None:
+            raw_graph.inputs = [id_map.get(in_id, in_id) for in_id in raw_graph.inputs]
         graph.outputs = [id_map.get(out_id, out_id) for out_id in graph.outputs]
 
         graph.nodes.clear()

@@ -36,21 +36,33 @@ def _coerce_attr_val(val: TensorOrScalar | AttrValue) -> AttributeValue:
         return val
     if isinstance(val, (list, tuple)):
         return [_coerce_attr_val(v) for v in val]
-    if isinstance(val, dict):
-        return {str(k): _coerce_attr_val(v) for k, v in val.items()}
     return str(val)
 
 
-def _extract_builder_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
-    """Convert a sequence of dimensions into a concrete integer shape tuple.
+def _is_builder_shape_tuple(seq: tuple[int | str | None, ...]) -> typing.TypeGuard[tuple[int, ...]]:
+    """Type guard narrowing a shape tuple to `tuple[int, ...]`.
 
     Args:
-        seq (Sequence[int | str | None]): Input shape sequence.
+        seq (tuple[int | str | None, ...]): Shape tuple.
 
     Returns:
-        tuple[int, ...]: Extracted integer shape tuple.
+        bool: True if seq is a tuple.
     """
-    return tuple(int(d) for d in seq if isinstance(d, int))
+    return isinstance(seq, tuple)
+
+
+def _extract_builder_shape(seq: Sequence[int | str | None]) -> tuple[int, ...]:
+    """Convert a sequence of dimensions into a shape tuple.
+
+    Args:
+        seq (Sequence[int | str | None]): Shape sequence.
+
+    Returns:
+        tuple[int, ...]: Shape tuple.
+    """
+    res = tuple(seq)
+    assert _is_builder_shape_tuple(res)
+    return res
 
 
 @typing.runtime_checkable
@@ -160,7 +172,8 @@ class TracingNodeBuilder:
                 first_tensor = a if first_tensor is None else first_tensor
                 out_id, shape = TracingNodeBuilder.extract_from_tensor(a)
             elif isinstance(a, ProxyTensor) or is_traced_data(a):
-                out_id, shape = str(a.id), _extract_builder_shape(a.shape)
+                raw_a: TensorOrScalar = a
+                out_id, shape = str(a.id), (_extract_builder_shape(raw_a.shape) if isinstance(raw_a, ShapeProtocol) else ())
             else:
                 out_id, shape = TracingNodeBuilder.extract_from_constant(a)
 
@@ -224,7 +237,7 @@ class TracingNodeBuilder:
         norm_shapes: list[tuple[int, ...] | None] = [_extract_builder_shape(s) if isinstance(s, tuple) else None for s in shapes]
         norm_kwargs: dict[str, int | float | str | bool | tuple[int, ...] | Sequence[int] | None] = {k: v for k, v in kwargs.items() if isinstance(v, (int, float, str, bool, tuple, list)) or v is None}
         inferred = infer_shape(op_type, *norm_shapes, **norm_kwargs)
-        out_shape: tuple[int | str, ...] = tuple(int(d) if isinstance(d, int) else str(d) for d in inferred)
+        out_shape: tuple[int | str, ...] = tuple(int(d) if isinstance(d, int) else str(d) for d in (inferred or ()))
         out_dtype, device = resolve_output_dtype_and_device(first_tensor, kwargs)
 
         out_id = TracingNodeBuilder.create_tracing_logical_node(

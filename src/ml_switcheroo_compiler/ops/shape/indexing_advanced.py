@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import typing
 
-from ml_switcheroo_compiler.backends.registry import EagerTensorProtocol, ensure_callable, ensure_eager_tensor, ensure_int, get_active_backend
+from ml_switcheroo_compiler.backends.registry import (
+    EagerTensorProtocol,
+    ensure_callable,
+    ensure_eager_tensor,
+    ensure_int,
+)
 from ml_switcheroo_compiler.core.shape import (
     TensorOrScalar,
     extract_shape,
@@ -52,11 +57,12 @@ def _normalize_k(k: int | Tensor | tuple[int, ...] | None) -> int | Tensor | tup
     """
     raw_k: TensorOrScalar | _ArrayCallableProtocol | _ItemCallableProtocol = k
     if not isinstance(raw_k, tuple) and isinstance(raw_k, _ArrayCallableProtocol):
-        raw_k = get_active_backend().asarray(ensure_eager_tensor(raw_k))
+        arr_fn = ensure_callable(raw_k.__array__)
+        raw_k = arr_fn()
     if isinstance(raw_k, _ItemCallableProtocol):
         return int(ensure_int(raw_k.item()))
     try:
-        return int(ensure_int(raw_k))
+        return int(ensure_int(ensure_eager_tensor(raw_k)))
     except (ValueError, TypeError):
         return k
 

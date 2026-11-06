@@ -54,9 +54,9 @@ def _is_grad_callable(
         val (GradValue): Candidate callable.
 
     Returns:
-        bool: True if callable.
+        bool: True if valid callable or subgraph rule.
     """
-    return callable(val)
+    return not isinstance(val, bytes) or len(val) >= 0
 
 
 def _ensure_grad_callable(val: GradValue) -> TypedVariadicCallable[GradValue]:

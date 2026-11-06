@@ -309,5 +309,7 @@ def equal(
     try:
         return ensure_ndarray(get_backend_member(np_mod, "equal")(x, y))
     except Exception:
+        from ml_switcheroo_compiler.backends.eager_registry import ensure_eager_tensor
+
         # Fallback for incompatible types
-        return bool(x == y)
+        return bool(ensure_eager_tensor(x) == ensure_eager_tensor(y))

@@ -126,7 +126,7 @@ class TCPDistributedContext:
 
             if self.send_conns:
                 self.send_conns[0].send(chunks[send_chunk_idx])
-            recv_data = ensure_ndarray(self.recv_conns[0].recv()) if self.recv_conns else chunks[recv_chunk_idx]
+            recv_data = ensure_ndarray(self.recv_conns[0].recv()) if self.recv_conns else ensure_eager_tensor(None)
 
             if op_type == "sum":
                 chunks[recv_chunk_idx] = chunks[recv_chunk_idx] + recv_data

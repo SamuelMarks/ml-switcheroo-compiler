@@ -133,6 +133,13 @@ def _split_shape(op_type: str, shape: tuple[AttributeValue, ...], op_config: dic
     return shape
 
 
+@typing.runtime_checkable
+class _NodeAttributesProtocol(typing.Protocol):
+    """Protocol for nodes exposing an `attributes` mapping."""
+
+    attributes: dict[str, AttributeValue]
+
+
 def loop_tiling_pass(graph: IRGraph) -> bool:
     """Pad shapes or add attributes for loop tiling based on heuristics.
 
@@ -159,7 +166,8 @@ def loop_tiling_pass(graph: IRGraph) -> bool:
             continue
 
         if _should_tile(op_type, shape, op_config):
-            if not node.attributes:
+            raw_node: _NodeAttributesProtocol | str = node
+            if not isinstance(raw_node, _NodeAttributesProtocol):
                 node.attributes = {}
 
             # Perform actual IR mutation (splitting the shape for tile chunks)
